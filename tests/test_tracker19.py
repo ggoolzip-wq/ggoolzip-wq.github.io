@@ -30,7 +30,7 @@ DONE={1,3,6,7,10}
 CH=[ch(i,i in DONE) for i in range(1,12)]+[ch(12,False,'루나'),ch(13,True,'루나'),ch(14,False,'챌린저스2'),ch(15,False,'테스트월드')]
 PRESET={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':[],'monthHistory':[],'characters':CH,
   'settings':{'accounts':[],'autoSync':False,'lastSync':int(time.time()*1000)}}
-ORDER="[...document.querySelectorAll('#charList .char[data-id]')].map(e=>e.dataset.id)"
+ORDER="sortedChars(worldGroups().get(worldTab)||[]).map(c=>c.id)"
 GEOM="""(()=>{const r=e=>e?e.getBoundingClientRect():null, de=document.scrollingElement;
   const rs=r(document.querySelector('.resetcard')), cl=document.querySelector('#charList'), fc=r(document.querySelector('#feedCard'));
   const chs=[...cl.querySelectorAll('.char[data-id]')], L=r(cl);
@@ -51,9 +51,9 @@ try:
       g=pg.evaluate(GEOM); tag=f'{vw}x{vh}'
       check(f'{tag}: reset card is last in right column, not in sidebar', g['inRcol'] and not g['sideReset'] and '초기화까지' in g['reset']['txt'], g['reset'])
       check(f'{tag}: reset card fully inside viewport at top', g['reset']['bot']<=g['ih'] and g['reset']['top']>=0, (g['reset'],g['ih']))
-      check(f'{tag}: char list shows up to 8 rows (8 when it fits), scrolls internally', g['n']==11 and (g['vis']==8 if vh>=1000 else 4<=g['vis']<=8) and g['listScroll'], (g['n'],g['vis']))
+      check(f'{tag}: char list paged: 8 rows + pager (no internal scroll)', pg.locator('#charList .char[data-id]').count()==8 and not pg.evaluate("document.querySelector('#charPager').hidden"), g['vis'])
       check(f'{tag}: feed card directly below character card', g['feedTop'] is not None and 0<=g['feedTop']-g['listBot']<=14, (g['feedTop'],g['listBot']))
-      check(f'{tag}: sidebar fits in viewport', g['sideBot']<=g['ih']+1, (g['sideBot'],g['ih']))
+      if vh>=1000: check(f'{tag}: sidebar fits in viewport', g['sideBot']<=g['ih']+1, (g['sideBot'],g['ih']))
       save_shot(pg,f'shot19_layout_{tag}.png')
       pg.evaluate("scrollTo(0,document.scrollingElement.scrollHeight)"); pg.wait_for_timeout(300); g2=pg.evaluate(GEOM)
       check(f'{tag}: reset card still inside viewport after page scroll', g2['reset']['bot']<=g2['ih'] and g2['reset']['top']>=0, g2['reset'])
@@ -61,7 +61,7 @@ try:
       # page scrolling: wheel over char list scrolls list not page
       xy=pg.evaluate("(()=>{const r=document.querySelector('#charList').getBoundingClientRect();return [r.left+r.width/2,r.top+60]})()"); pg.mouse.move(xy[0],xy[1]); pg.mouse.wheel(0,400); pg.wait_for_timeout(300)
       st=pg.evaluate("[document.querySelector('#charList').scrollTop, scrollY]")
-      check(f'{tag}: wheel over list scrolls the list', st[0]>0, st)
+      pass  # (2026-10-10 페이지 방식: 목록 스크롤 없음)
       pg.evaluate("document.querySelector('#charList').scrollTop=0")
       if vw==1280:
         base=pg.evaluate(ORDER)
@@ -79,9 +79,9 @@ try:
         check('saved default order unchanged', saved[:11]==base, saved)
         check('mode remembered in localStorage', pg.evaluate("localStorage.getItem('mapleBossTracker.charSort')")=='undone')
         check('reorder locked in sorted view', pg.evaluate("[...document.querySelectorAll('#charList [data-move]')].every(b=>b.disabled) && document.querySelector('#charList .char').getAttribute('draggable')==='false'"))
-        pg.evaluate("document.querySelector('#charList').scrollTop=0"); g3=pg.evaluate(GEOM); check('sorted view same rows + scroll', g3['vis']==g['vis'] and g3['listScroll'], g3['vis'])
+        check('sorted view same 8 rows', pg.locator('#charList .char[data-id]').count()==8)
         pg.evaluate("document.querySelector('#charList').scrollTop=0")
-        save_shot(pg,'shot19_sort_undone.png',clip={'x':0,'y':0,'width':360,'height':g3['listBot']+10})
+        save_shot(pg,'shot19_sort_undone.png',clip={'x':0,'y':0,'width':360,'height':g['listBot']+60})
         pg.reload(); pg.wait_for_selector('.sortlink.on'); pg.wait_for_timeout(200)
         check('mode persists after reload', pg.evaluate(ORDER)==exp and pg.evaluate("document.querySelector('.sortlink.on').dataset.csort")=='undone')
         # 완료 상태가 바뀌면 순서도 바뀜: c2 를 완료로
@@ -130,7 +130,7 @@ try:
     pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.evaluate("p=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p))}",PRESET); pg.reload(); pg.wait_for_timeout(500)
     m=pg.evaluate("({sw:document.scrollingElement.scrollWidth,iw:innerWidth,reset:!!document.querySelector('.rcol .resetcard #resetInfo b'),vis:document.querySelector('#charList').classList.contains('scroll')})")
-    check('mobile: no horizontal overflow, reset card present, list scrolls', m['sw']<=m['iw']+1 and m['reset'] and m['vis'], m)
+    check('mobile: no horizontal overflow, reset card present', m['sw']<=m['iw']+1 and m['reset'], m)
     save_shot(pg,'shot19_mobile.png',full_page=True)
     b.close()
 finally:

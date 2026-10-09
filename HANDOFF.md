@@ -252,3 +252,5 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 
 ## b36
 - 에픽빔 합계 숫자 (b37): `.epbeam` ::before = conic-gradient 대각선 4방향 프리즘 광선(epray), ::after = 흰·청록 코어 글로우(epcore). 절대 위치·pointer-events:none, 모션 줄이기 시 정지. 푸터의 localStorage/드라이브 저장 문구 삭제.
+- 캐릭터 목록 (b37): 스크롤 대신 8명씩 페이지 (`CHAR_PER_PAGE`, `#charPager`). 월드 탭·정렬 변경 → 1쪽, 인원 감소 → 마지막 쪽으로, 1쪽뿐이면 숨김. `fitCharList()` 는 높이 제한 없이 즉시 반환.
+- 결정석 가격 하단: (마지막 확인 …) 은 다음 줄.

@@ -639,3 +639,9 @@ select.impworld option{color:#111}
 @keyframes epray{0%,100%{opacity:.7;transform:scale(.72) rotate(0deg)}50%{opacity:1;transform:scale(1.08) rotate(4deg)}}
 @keyframes epcore{0%,100%{opacity:.65;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
 @media (prefers-reduced-motion: reduce){.epbeam::before,.epbeam::after{animation:none}}
+.pc-foot{white-space:pre-line}
+.cpager{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin-top:8px}
+.cpager[hidden]{display:none}
+.cpg{min-width:26px;height:26px;padding:0 6px;border-radius:7px;border:1px solid transparent;background:transparent;color:var(--muted,#a0a0ab);font:inherit;font-size:.85rem;cursor:pointer}
+.cpg:hover{border-color:var(--line,#3a3a46);color:var(--text,#ececf1)}
+.cpg.on{color:var(--accent,#ff8a1f);font-weight:800}

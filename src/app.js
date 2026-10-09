@@ -1085,7 +1085,8 @@ function setCharSort(v){ charSort=v==='undone'?'undone':'base'; try{ localStorag
 /* 캐릭터 목록: 8명까지 보이고 넘으면 목록 안에서 스크롤 (페이지는 안 늘어남).
  * 데스크톱에서 화면이 낮아 8줄 + 소식 카드 최소 높이가 안 들어가면 들어가는 만큼만(최소 4줄) 보여 줌 → 사이드바 때문에 페이지가 길어지지 않음. */
 const CHAR_ROWS=8, CHAR_ROWS_MIN=4, SIDE_FEED_MIN=31*2+70+12; // 소식 카드 최소 높이(feedFit 의 minH) + 카드 간격
-function fitCharList(){
+function fitCharList(){ // 2026-10-10: 스크롤 대신 페이지(8명) — 높이 제한 없음
+  { const el=$('#charList'); if(el){ el.style.maxHeight=''; el.classList.remove('scroll'); } return; }
   const el=$('#charList'); if(!el) return; const cs=[...el.querySelectorAll('.char[data-id]')], st=el.scrollTop;
   el.style.maxHeight=''; el.classList.remove('scroll');
   let n=CHAR_ROWS;
@@ -1115,12 +1116,13 @@ const WORLD_TAB_KEY='mapleBossTracker.worldTab';
 let worldTab=(()=>{ try{ return localStorage.getItem(WORLD_TAB_KEY)||''; }catch(e){ return ''; } })();
 let seenActive=null, dndEndAt=0;
 function setWorldTab(w){ worldTab=w; try{ localStorage.setItem(WORLD_TAB_KEY,w); }catch(e){} render(); }
+const CHAR_PER_PAGE=8; let charPage=1, charPageKey='';
 function renderChars(){
   if(dnd) return; // 드래그 중에는 다시 그리지 않음
   const el=$('#charList'), tabsEl=$('#worldTabs');
   const fixed=charSort==='undone'; // 미완료순 보기에서는 순서 바꾸기(드래그·▲▼) 잠금 — 기본순에서만
   el.classList.toggle('sorted',fixed);
-  if(!S.characters.length){ if(tabsEl) tabsEl.innerHTML=''; el.innerHTML='<div class="muted" style="padding:8px 2px">아직 캐릭터가 없습니다.<br><b>+ 추가</b> 또는 아래 <b>넥슨 API</b>로 불러오세요.</div>'; fitCharList(); return; }
+  if(!S.characters.length){ if(tabsEl) tabsEl.innerHTML=''; if($('#charPager')) $('#charPager').hidden=true; el.innerHTML='<div class="muted" style="padding:8px 2px">아직 캐릭터가 없습니다.<br><b>+ 추가</b> 또는 아래 <b>넥슨 API</b>로 불러오세요.</div>'; fitCharList(); return; }
   const groups=worldGroups(); const worlds=[...groups.keys()];
   // 다른 곳(수익 요약 등)에서 다른 월드 캐릭터를 고르면 그 월드 탭으로
   const act=activeChar();
@@ -1132,7 +1134,14 @@ function renderChars(){
   if(tabsEl) tabsEl.innerHTML=`<span class="wtablist" role="tablist" aria-label="월드">${worlds.map((w,i)=>(i?'<span class="wdiv" aria-hidden="true">ㅣ</span>':'')+
       `<span role="tab" tabindex="0" class="wtab${w===worldTab?' on':''}" aria-selected="${w===worldTab}" data-wtab="${esc(w)}" data-world="${esc(w)}" draggable="${multi}" title="${esc(w)} 캐릭터 ${groups.get(w).length}명${multi?' · 끌어서 월드 순서 변경':''}">${worldIcon(w)}<span class="wnm">${esc(w)}</span> <span class="cnt">(${groups.get(w).length})</span></span>`).join('')}</span>${sortCtl}`;
   const list=sortedChars(groups.get(worldTab)||[]), w=worldTab;
-  el.innerHTML=list.map((c,ci)=>{const r=cRev(c);return `
+  // 페이지: 8명씩. 월드 탭·정렬이 바뀌면 1쪽, 인원이 줄면 마지막 쪽으로
+  const pk=worldTab+'|'+charSort; if(pk!==charPageKey){ charPageKey=pk; charPage=1; }
+  const pages=Math.max(1,Math.ceil(list.length/CHAR_PER_PAGE)); charPage=Math.min(Math.max(1,charPage),pages);
+  const p0=(charPage-1)*CHAR_PER_PAGE;
+  let pg=$('#charPager'); if(!pg){ pg=document.createElement('div'); pg.id='charPager'; pg.className='cpager'; el.after(pg); }
+  pg.innerHTML=pages>1?Array.from({length:pages},(_,i)=>`<button type="button" class="cpg${i+1===charPage?' on':''}" data-cpage="${i+1}"${i+1===charPage?' aria-current="page"':''}>${i+1}</button>`).join(''):'';
+  pg.hidden=pages<=1;
+  el.innerHTML=list.slice(p0,p0+CHAR_PER_PAGE).map((c,cj)=>{const ci=p0+cj; const r=cRev(c);return `
     <div class="char ${c.id===S.activeId?'on':''}${r.weekly>=S.settings.weeklyLimit?' alldone':''}" data-id="${c.id}" data-world="${esc(w)}" draggable="${fixed?'false':'true'}">
       ${doneOverlay(c,r)}
       <span class="drag-h" title="드래그해서 순서 변경">⠿</span>
@@ -1269,7 +1278,7 @@ function revPanel(a,cur){
 }
 // 보스+난이도별 가격 행 (싼 순서) — 보스 체크 탭 가격 카드
 const priceRows = g => BOSSES.filter(b=>b.type===g).flatMap(b=>b.diffs.map(d=>({b,d,k:priceKey(b,d),p:price(b,d)}))).sort((x,y)=>x.p-y.p);
-const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신 (마지막 확인 ${officialInfo.checkedAt||'-'})${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
+const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신\n(마지막 확인 ${officialInfo.checkedAt||'-'})${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
 /* 보스 체크 탭 오른쪽: 결정석 가격 (읽기 전용, prices.json 자동 갱신) */
 function priceCard(){
   const row=r=>`<div class="pc-row" title="${esc(r.b.name)} ${D[r.d]} — ${r.p.toLocaleString()} 메소">${bossIcon(r.b)}<span class="pc-nm">${esc(r.b.name)} <span class="muted">${D[r.d]}</span></span><b>${meso(r.p)}</b></div>`;
@@ -2257,7 +2266,7 @@ document.addEventListener('click',e=>{
   const dc=e.target.closest('[data-drop]'); if(dc){ changeDrop(dc.dataset.drop,+1); return; }
   if(e.target.closest('.drop.erda')) return; // 솔 에르다의 기운: 정보 표시 전용 (클릭해도 아무 일 없음)
   const svl=e.target.closest('[data-svlogin]'); if(svl){ const a=accById(svl.dataset.svlogin); if(a&&a.key) svLogin(a.key,a.id); return; }
-  const t=e.target.closest('[data-tab],[data-dqg],[data-dqc],[data-dqhide],[data-move],[data-wmove],[data-id],[data-edit],[data-filter],[data-check],[data-toggle],[data-setdiff],[data-delhist],[data-acctest],[data-accdel],button[id]');
+  const t=e.target.closest('[data-cpage],[data-tab],[data-dqg],[data-dqc],[data-dqhide],[data-move],[data-wmove],[data-id],[data-edit],[data-filter],[data-check],[data-toggle],[data-setdiff],[data-delhist],[data-acctest],[data-accdel],button[id]');
   if(!t) return;
   const c=activeChar();
   if(t.dataset.tab){ const go=()=>{ tab=t.dataset.tab; syncTabs(); render(); tabTick(); };
@@ -2267,6 +2276,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.dqg){ const k=t.dataset.dqg; if(S.dq.off[k]) delete S.dq.off[k]; else S.dq.off[k]=1; save(); renderDaily(); return; }
   if(t.dataset.dqc){ dqToggleChar(t.dataset.dqc); return; }
   if(t.dataset.dqhide){ const id=t.dataset.dqhide; if(S.dq.hide[id]) delete S.dq.hide[id]; else S.dq.hide[id]=1; save(); renderDaily(); return; }
+  if(t.dataset.cpage){ charPage=+t.dataset.cpage; renderChars(); return; }
   if(t.dataset.move){ e.stopPropagation(); const [id,d]=t.dataset.move.split('|'); moveCharBy(id,+d); render(); return; }
   if(t.dataset.wmove){ e.stopPropagation(); const i=t.dataset.wmove.lastIndexOf('|'); moveWorldBy(t.dataset.wmove.slice(0,i),+t.dataset.wmove.slice(i+1)); render(); return; }
   if(e.target.closest('.drag-h')) return;
