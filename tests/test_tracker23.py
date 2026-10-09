@@ -48,7 +48,12 @@ try:
     ca,pa=mkctx(b); pa.goto(URL)
     pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
     check('flag on: header ☁ 로그인, no auto login, no popup', pa.inner_text('#gBtn')=='☁ 로그인' and not popups and not pa.evaluate("svTok()"), pa.inner_text('#gBtn'))
-    pa.click('#gBtn'); pa.wait_for_selector('#gMenu:not([hidden]) [data-svlogin="a1"]')
+    pa.click('#gBtn'); pa.wait_for_selector('#gMenu:not([hidden]) #svInvite')
+    check('first: invite password asked (no key buttons yet)', pa.locator('[data-svlogin]').count()==0)
+    pa.fill('#svInvite','wrong'); pa.press('#svInvite','Enter'); pa.wait_for_timeout(800)
+    check('wrong invite → error shown, still asking', pa.locator('#svInvite').count()==1 and '맞지 않' in pa.inner_text('#gMenu'), pa.inner_text('#gMenu')[:200])
+    pa.fill('#svInvite',cf_dev.TEST_PASS); pa.click('#svInviteBtn'); pa.wait_for_selector('#gMenu:not([hidden]) [data-svlogin="a1"]')
+    check('invite ok → device ticket stored, key login shown', bool(pa.evaluate("svDev()")))
     check('menu: login with stored key button, key not shown', '본계정 키로 로그인' in pa.inner_text('#gMenu') and KA not in pa.inner_text('#gMenu') and KA not in pa.content().split('<script')[0])
     shot_path=os.path.join(OUT,'sv_login_menu.png'); pa.locator('#gMenu').screenshot(path=shot_path)
     if SHOTDIR: shutil.copy(shot_path,SHOTDIR)
@@ -62,7 +67,7 @@ try:
     # 2) 기기 B (빈 PC): 키 입력 → 내려받기 + 그 키 자동 채움
     cb,pb=mkctx(b); pb.goto(URL)
     pb.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); pb.reload(); pb.wait_for_timeout(300)
-    pb.click('#gBtn'); pb.wait_for_selector('#svKey'); pb.fill('#svKey',KA); pb.press('#svKey','Enter'); wait_on(pb)
+    pb.click('#gBtn'); pb.wait_for_selector('#svInvite'); pb.fill('#svInvite',cf_dev.TEST_PASS); pb.press('#svInvite','Enter'); pb.wait_for_selector('#svKey'); pb.fill('#svKey',KA); pb.press('#svKey','Enter'); wait_on(pb)
     sb=st(pb)
     check('B (empty PC) login → pulled 2 chars, key filled for that account', len(sb['characters'])==2 and sb['settings']['accounts'][0].get('key')==KA, [a.get('key','')[:8] for a in sb['settings']['accounts']])
     # 3) B 에서 바꿈 → 자동 저장(5초) → A 가 당겨옴
@@ -106,6 +111,8 @@ try:
     except urllib.error.HTTPError as e: code=e.code
     check('logout: token removed, server session dead, local data kept, header ☁ 로그인', not pa.evaluate("svTok()") and code==401 and len(st(pa)['characters'])>=2 and pa.inner_text('#gBtn')=='☁ 로그인', (code,pa.inner_text('#gBtn')))
     check('B still logged in (other device unaffected)', pb.evaluate("!!svTok()"))
+    pa.click('#gBtn') if pa.is_hidden('#gMenu') else None; pa.wait_for_timeout(200)
+    check('after logout: device ticket kept → key login directly (no invite again)', pa.locator('#gMenu [data-svlogin]').count()>0 and pa.locator('#svInvite').count()==0)
     check('never opened a popup', not popups, popups)
     b.close()
 except Exception as e:

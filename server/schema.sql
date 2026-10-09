@@ -45,3 +45,10 @@ CREATE TABLE IF NOT EXISTS rate (
   n           INTEGER NOT NULL,
   reset_at    INTEGER NOT NULL
 );
+-- 초대 비밀번호를 통과한 기기 표 (원본 표는 브라우저, 서버는 해시만). pass_ver = SITE_PASS_HASH 앞 12자 → 비밀번호를 바꾸면 무효
+CREATE TABLE IF NOT EXISTS devices (
+  ticket_hash TEXT PRIMARY KEY,
+  created_at  INTEGER NOT NULL,
+  expires_at  INTEGER NOT NULL,
+  pass_ver    TEXT NOT NULL
+);

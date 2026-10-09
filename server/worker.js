@@ -6,8 +6,14 @@
  * 데이터: 사용자별 JSON 1개 (state). rev 로 동시 저장 충돌 감지(409 → 브라우저가 3-way 병합 후 다시 저장).
  *   저장 전에 settings.apiKey · settings.accounts[].key 를 서버에서도 한 번 더 지움(원본 키가 절대 저장되지 않게).
  *
+ * 초대 비밀번호(친구 전용): 로그인 전에 기기마다 한 번 POST /api/invite {pass} → 기기 표(device ticket, 365일).
+ *   서버는 비밀번호 해시만 secret SITE_PASS_HASH 로 보관 (= sha256('ggoolzip-invite:' + 앞뒤 공백 뺀 비밀번호), 대소문자 구분).
+ *   SITE_PASS_HASH 가 없으면 로그인 전부 거부(fail closed). 비밀번호를 바꾸면 기존 기기 표로는 새 로그인이 안 됨(이미 로그인한 세션은 유지).
+ * 사용량 제한: 로그인·초대 IP별, 읽기/저장은 세션별·사용자별(한 사람이 다른 사람 몫을 다 쓰지 못하게).
+ *
  * API (모두 JSON, 인증 = Authorization: Bearer <토큰>)
- *   POST   /api/login         {key, label?}        → {token, user, accounts:[hash], newUser, rev}
+ *   POST   /api/invite        {pass}               → {device}  (초대 비밀번호 확인, 기기 표 발급)
+ *   POST   /api/login         {key, device, label?} → {token, user, accounts:[hash], newUser, rev}
  *   POST   /api/link          {key}                (인증) 다른 넥슨 계정 키를 같은 데이터에 연결 → {accounts}
  *   POST   /api/logout                             (인증) 이 세션 삭제
  *   POST   /api/logout-all                         (인증) 모든 기기 세션 삭제
@@ -22,6 +28,14 @@ const SESSION_DAYS = 365;
 const MAX_BODY = 1_800_000;          // D1 한 행 최대 2MB
 const HISTORY_KEEP = 10;
 const LOGIN_LIMIT = { n: 30, windowMs: 10 * 60e3 };
+const INVITE_LIMIT = { n: 10, windowMs: 10 * 60e3 };          // 초대 비밀번호 시도 (IP별)
+const LIMITS = {                                               // 세션별·사용자별 (1분 창)
+  read:  { n: 90, windowMs: 60e3 },                            //   GET (앱은 1분에 1~2번 확인)
+  write: { n: 20, windowMs: 60e3 },                            //   PUT (자동 저장은 5초 모아서)
+  userWrite: { n: 40, windowMs: 60e3 },                        //   한 사용자의 모든 기기 합계
+  link:  { n: 10, windowMs: 10 * 60e3 },
+};
+const DEVICE_DAYS = 365;
 const DAY = 86400e3;
 
 const enc = new TextEncoder();
@@ -51,6 +65,7 @@ function corsHeaders(env, req) {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     'Access-Control-Max-Age': '86400',
+    'Access-Control-Expose-Headers': 'Retry-After',
   });
   return h;
 }
@@ -78,14 +93,31 @@ async function nexonAccounts(env, key) {
   return hashes;
 }
 
-/* ---------- 로그인 시도 제한 ---------- */
-async function rateLimit(env, req) {
-  const ip = req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For') || 'local';
-  const k = 'login:' + (await sha256hex(pepper(env) + ':ip:' + ip)).slice(0, 32), now = Date.now();
-  const row = await env.DB.prepare('SELECT n, reset_at FROM rate WHERE k=?').bind(k).first();
-  if (!row || row.reset_at < now) { await env.DB.prepare('INSERT OR REPLACE INTO rate (k,n,reset_at) VALUES (?,1,?)').bind(k, now + LOGIN_LIMIT.windowMs).run(); return; }
-  if (row.n >= LOGIN_LIMIT.n) throw new HttpError(429, 'too_many', '로그인 시도가 너무 많습니다 — 10분 뒤 다시 시도하세요');
-  await env.DB.prepare('UPDATE rate SET n=n+1 WHERE k=?').bind(k).run();
+/* ---------- 사용량 제한 (D1 고정 창 카운터, 요청당 쓰기 1번) ---------- */
+async function hit(env, k, lim) {
+  const now = Date.now();
+  const row = await env.DB.prepare(`INSERT INTO rate (k,n,reset_at) VALUES (?1,1,?2)
+    ON CONFLICT(k) DO UPDATE SET n=CASE WHEN reset_at<?3 THEN 1 ELSE n+1 END, reset_at=CASE WHEN reset_at<?3 THEN ?2 ELSE reset_at END
+    RETURNING n, reset_at`).bind(k, now + lim.windowMs, now).first();
+  if (Math.random() < 0.01) await env.DB.prepare('DELETE FROM rate WHERE reset_at<?').bind(now - DAY).run(); // 오래된 카운터 정리
+  return row.n <= lim.n ? 0 : Math.max(1, Math.ceil((row.reset_at - now) / 1000));
+}
+async function limit(env, k, lim, msg) {
+  const wait = await hit(env, k, lim);
+  if (wait) throw new HttpError(429, 'too_many', msg || `요청이 너무 많습니다 — ${wait}초 뒤 다시 시도하세요`, { retryAfter: wait });
+}
+const ipKey = async (env, req, kind) => kind + ':' + (await sha256hex(pepper(env) + ':ip:' + (req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For') || 'local'))).slice(0, 32);
+const rateLimit = async (env, req) => limit(env, await ipKey(env, req, 'login'), LOGIN_LIMIT, '로그인 시도가 너무 많습니다 — 10분 뒤 다시 시도하세요');
+
+/* ---------- 초대 비밀번호 ---------- */
+const normPass = p => String(p || '').trim(); // 앞뒤 공백만 제거 (대소문자 구분)
+function sameHex(a, b) { a = String(a || '').toLowerCase(); b = String(b || '').toLowerCase(); if (a.length !== b.length || !a.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }
+const passVer = env => String(env.SITE_PASS_HASH || '').toLowerCase().slice(0, 12); // 비밀번호가 바뀌면 달라짐 → 예전 기기 표 무효
+async function checkDevice(env, device) {
+  if (!env.SITE_PASS_HASH) throw new HttpError(503, 'not_configured', '서버 설정이 아직 끝나지 않았습니다 (초대 비밀번호 미설정)');
+  if (!/^[A-Za-z0-9_-]{20,100}$/.test(String(device || ''))) throw new HttpError(403, 'need_invite', '초대 비밀번호를 먼저 입력해 주세요');
+  const d = await env.DB.prepare('SELECT expires_at, pass_ver FROM devices WHERE ticket_hash=?').bind(await sha256hex(device)).first();
+  if (!d || d.expires_at < Date.now() || d.pass_ver !== passVer(env)) throw new HttpError(403, 'need_invite', '초대 비밀번호를 다시 입력해 주세요 (비밀번호가 바뀌었거나 만료됨)');
 }
 
 /* ---------- 세션 ---------- */
@@ -133,9 +165,20 @@ async function route(req, env) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, ''), M = req.method;
   if (p === '/api/health') return json(200, { ok: true });
 
+  if (p === '/api/invite' && M === 'POST') {
+    if (!env.SITE_PASS_HASH) throw new HttpError(503, 'not_configured', '서버 설정이 아직 끝나지 않았습니다 (초대 비밀번호 미설정)');
+    await limit(env, await ipKey(env, req, 'invite'), INVITE_LIMIT, '비밀번호 시도가 너무 많습니다 — 10분 뒤 다시 시도하세요');
+    const b = await readBody(req);
+    if (!sameHex(await sha256hex('ggoolzip-invite:' + normPass(b.pass)), env.SITE_PASS_HASH)) throw new HttpError(403, 'bad_invite', '초대 비밀번호가 맞지 않습니다');
+    const device = randToken(), now = Date.now();
+    await env.DB.prepare('INSERT INTO devices (ticket_hash,created_at,expires_at,pass_ver) VALUES (?,?,?,?)').bind(await sha256hex(device), now, now + DEVICE_DAYS * DAY, passVer(env)).run();
+    return json(200, { device });
+  }
+
   if (p === '/api/login' && M === 'POST') {
     await rateLimit(env, req);
     const b = await readBody(req);
+    await checkDevice(env, b.device);
     const hashes = await nexonAccounts(env, b.key);
     const qs = hashes.map(() => '?').join(',');
     const found = (await env.DB.prepare(`SELECT a.acct_hash, a.user_id, s.saved_at FROM accounts a LEFT JOIN state s ON s.user_id=a.user_id WHERE a.acct_hash IN (${qs})`).bind(...hashes).all()).results;
@@ -152,7 +195,11 @@ async function route(req, env) {
   }
 
   const me = await auth(env, req);
+  const sk = me.th.slice(0, 32);
+  if (M === 'GET') await limit(env, 'r:' + sk, LIMITS.read);
+  if (M === 'PUT') { await limit(env, 'w:' + sk, LIMITS.write); await limit(env, 'uw:' + me.userId, LIMITS.userWrite); }
   if (p === '/api/link' && M === 'POST') {
+    await limit(env, 'l:' + sk, LIMITS.link);
     const b = await readBody(req);
     const hashes = await nexonAccounts(env, b.key), now = Date.now();
     const qs = hashes.map(() => '?').join(',');
@@ -205,7 +252,7 @@ export default {
       for (const [k, v] of Object.entries(cors)) res.headers.set(k, v);
       return res;
     } catch (e) {
-      if (e instanceof HttpError) return json(e.status, { error: e.code, message: e.message, ...(e.extra || {}) }, cors);
+      if (e instanceof HttpError) return json(e.status, { error: e.code, message: e.message, ...(e.extra || {}) }, { ...cors, ...(e.extra?.retryAfter ? { 'Retry-After': String(e.extra.retryAfter) } : {}) });
       console.error(e);
       return json(500, { error: 'server', message: '서버 오류' }, cors);
     }

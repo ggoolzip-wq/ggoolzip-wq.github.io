@@ -2297,8 +2297,17 @@ function loadOfficialPrices(){
  *   - 옮기기: 처음 로그인 때 서버가 비어 있으면 이 PC 데이터를 올림 / '구글 드라이브에서 가져오기' 버튼(한 번, 클릭 시 구글 로그인)
  * ===================================================================== */
 const SYNC_API_URL = ''; // 배포 후 예: 'https://ggoolzip-sync.<계정>.workers.dev' — 비우면 구글 드라이브
-const SV_ON = (()=>{ let u=SYNC_API_URL; try{ u=localStorage.getItem('mapleBossTracker.syncApi')||u; }catch(e){} return String(u||'').replace(/\/+$/,''); })();
-const SV_TOKEN_KEY='mapleBossTracker.svToken';
+const SYNC_TEST_URL = ''; // 배포한 서버 주소 — 주소 뒤에 ?sync=test 를 붙여 열면 이 브라우저만 서버 모드로 미리 써 보기, ?sync=off 로 되돌림
+const SV_ON = (()=>{ let u=SYNC_API_URL;
+  try{
+    const q=new URLSearchParams(location.search).get('sync');
+    if(q==='test'&&SYNC_TEST_URL) localStorage.setItem('mapleBossTracker.syncApi',SYNC_TEST_URL);
+    if(q==='off') localStorage.removeItem('mapleBossTracker.syncApi');
+    if(q){ const url=new URL(location.href); url.searchParams.delete('sync'); history.replaceState(null,'',url.pathname+url.search+url.hash); }
+    u=localStorage.getItem('mapleBossTracker.syncApi')||u;
+  }catch(e){} return String(u||'').replace(/\/+$/,''); })();
+const SV_TOKEN_KEY='mapleBossTracker.svToken', SV_DEVICE_KEY='mapleBossTracker.svDevice'; // svDevice = 초대 비밀번호를 통과한 기기 표 (로그아웃해도 유지)
+const svDev=()=>{ try{ return localStorage.getItem(SV_DEVICE_KEY)||''; }catch(e){ return ''; } };
 const svTok=()=>{ try{ return localStorage.getItem(SV_TOKEN_KEY)||''; }catch(e){ return ''; } };
 const SV_NEED_LOGIN='로그인이 필요해요 — 상단 ☁ 버튼에서 넥슨 API 키로 로그인하면 이어서 동기화돼요 (바꾼 내용은 이 PC에 그대로 있어요)';
 async function svFetch(path,opt={}){
@@ -2345,7 +2354,10 @@ function gdRender(){
   }
   const st=$('#gdStatus'); if(st) st.innerHTML=gdStatusHtml();
 }
-function svLoginHtml(){ // 서버 모드 로그인: 이 PC 에 등록된 키로 / 새 키 입력 (키는 화면에 표시하지 않음)
+function svLoginHtml(){ // 서버 모드 로그인: (기기당 한 번) 초대 비밀번호 → 이 PC 에 등록된 키로 / 새 키 입력 (키는 화면에 표시하지 않음)
+  if(!svDev()) return `<div class="svlogin"><div class="muted tiny" style="margin:0 0 6px">친구 초대 전용이에요. <b>초대 비밀번호</b>를 넣어 주세요 (이 기기에서 한 번만).</div>
+    <div class="row" style="display:flex;gap:6px"><input class="pin" id="svInvite" type="password" autocomplete="off" placeholder="초대 비밀번호" style="flex:1;min-width:0;text-align:left"><button class="btn sm" id="svInviteBtn">확인</button></div>
+    ${gd.svErr?`<div class="impmsg warn" style="margin-top:6px">${esc(gd.svErr)}</div>`:''}</div>`;
   const ks=accounts().filter(a=>a.key);
   return `<div class="svlogin"><div class="muted tiny" style="margin:0 0 6px">넥슨 Open API 키로 로그인하면 이 데이터가 서버에 저장되어 다른 기기에서도 이어서 쓸 수 있어요. <b>키 자체는 서버에 저장되지 않아요</b> (넥슨에 확인만 하고 계정 식별값만 보관).</div>
     ${ks.length?`<div class="toolbar">${ks.map(a=>`<button class="btn sm" data-svlogin="${a.id}">${esc(a.label)} 키로 로그인</button>`).join('')}</div>`:''}
@@ -2719,7 +2731,7 @@ async function svLogin(key,accId){
   key=String(key||'').trim(); if(!key){ gd.svErr='API 키를 넣어 주세요'; return gdRender(); }
   gd.svErr=''; gdSet('connecting','넥슨 API 키 확인 중…');
   try{
-    const b=await svFetch('/api/login',{method:'POST',noAuth:true,body:{key,label:(navigator.userAgentData?.platform||navigator.platform||'').slice(0,30)}});
+    const b=await svFetch('/api/login',{method:'POST',noAuth:true,body:{key,device:svDev(),label:(navigator.userAgentData?.platform||navigator.platform||'').slice(0,30)}});
     localStorage.setItem(SV_TOKEN_KEY,b.token);
     gd.login={key,accId:accId||'',hashes:b.accounts||[]};
     const la=accId&&accById(accId); // 등록된 키로 로그인: 첫 저장 전에 계정 해시(ah)를 붙여 둠 → 다른 기기에서 키 짝짓기
@@ -2728,7 +2740,14 @@ async function svLogin(key,accId){
     await gdConnect(true);
     svAfterLogin();
     if(gd.state==='on') toast('☁ 로그인했습니다'+(b.newUser?' — 이 데이터를 서버에 저장합니다':''));
-  }catch(e){ gd.svErr=e.message; gdSet('off'); gdMenu(true); }
+  }catch(e){ if(e.code==='need_invite') localStorage.removeItem(SV_DEVICE_KEY); gd.svErr=e.message; gdSet('off'); gdMenu(true); }
+}
+async function svInvite(pass){
+  if(!String(pass||'').trim()){ gd.svErr='초대 비밀번호를 넣어 주세요'; return gdMenu(true); }
+  gd.svErr='';
+  try{ const b=await svFetch('/api/invite',{method:'POST',noAuth:true,body:{pass}}); localStorage.setItem(SV_DEVICE_KEY,b.device); toast('초대 확인 완료 — 이제 넥슨 API 키로 로그인하세요'); }
+  catch(e){ gd.svErr=e.message; }
+  gdMenu(true); setTimeout(()=>$(svDev()?'#svKey':'#svInvite')?.focus(),0);
 }
 // 로그인에 쓴 키를 계정에 연결: 그 계정의 ah(서버 계정 해시) 기록 / 내려받은 데이터에서 같은 ah 계정에 키 채움 / 없으면 새 계정
 function svAfterLogin(){
@@ -2853,6 +2872,7 @@ document.addEventListener('click',e=>{
     case 'gBtn': gdHeaderClick(); break;
     case 'gdLogin': gdLogin(); break;
     case 'svLoginBtn': svLogin($('#svKey')?.value); break;
+    case 'svInviteBtn': svInvite($('#svInvite')?.value); break;
     case 'svImportDrive': gdMenu(false); svImportDrive(); break;
     case 'gdLogout': gdLogout(false); break;
     case 'gdSaveNow': gdPush({manual:true}); break;
@@ -2882,7 +2902,7 @@ document.addEventListener('pointerdown',e=>{ const t=e.target.closest?.('[data-t
   if(e.pointerType==='touch'){ tipTouchAt=t?Date.now():0; if(t){ tipShow(t); clearTimeout(tipTimer); tipTimer=setTimeout(tipHide,3000); } else tipHide(); } },true);
 let tipKbd=false; // 키보드(Tab)로 칩에 왔을 때만 포커스로 표시/숨김 — 클릭·터치 뒤 다시 그려질 때 툴팁이 사라지지 않게
 document.addEventListener('keydown',e=>{ if(e.key==='Tab') tipKbd=true; },true);
-document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='svKey'){ e.preventDefault(); svLogin(e.target.value); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='svKey'){ e.preventDefault(); svLogin(e.target.value); } if(e.key==='Enter'&&e.target.id==='svInvite'){ e.preventDefault(); svInvite(e.target.value); } });
 document.addEventListener('pointerdown',()=>{ tipKbd=false; },true);
 document.addEventListener('focusin',e=>{ if(!tipKbd) return; const t=e.target.closest?.('[data-tip]'); if(t) tipShow(t); });
 document.addEventListener('focusout',()=>{ if(tipKbd) tipHide(); });
