@@ -302,3 +302,73 @@ img.ric{width:16px;height:16px;object-fit:contain;image-rendering:pixelated}
 @media(max-width:400px){.hbtn.sbtn .hl{display:none}}
 .hbtn[hidden]{display:none!important}
 .logo .leaf.mush{width:34px;height:34px;padding:3px;box-sizing:border-box;background:#fff8ef;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.18);image-rendering:auto}
+/* ---- 상단 탭: '총 수익' 뒤 짧은 ㅡ 구분선 ---- */
+nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius:2px;background:rgba(255,255,255,.6);margin:0 6px}
+/* ---- 일퀘 현황 ---- */
+.dqtop{margin-bottom:12px}
+.dqtop h2{flex-wrap:wrap;margin:0}
+.dqstat{display:inline-flex;align-items:center;gap:5px;font-weight:500}
+.dqspin{width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sbspin .8s linear infinite}
+.dqedit{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:6px}
+.dqchips{display:flex;flex-wrap:wrap;gap:6px}
+.dqchip{border:1px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:700;cursor:pointer;text-decoration:line-through}
+.dqchip.on{color:var(--text);text-decoration:none;border-color:var(--c);box-shadow:inset 3px 0 0 var(--c)}
+.dqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
+.dqc{padding:12px}
+.dqc.hid{opacity:.45}
+.dqh{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.dqh .avatar{width:36px;height:36px}
+.dqh .nm{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dqh .meta{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dqh .grow{flex:1;min-width:0}
+.dqcnt{font-size:.78rem;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
+.dqcnt.full{background:var(--ok);border-color:var(--ok);color:#fff}
+.dqeye{padding:3px 8px;font-size:.78rem}
+.dqcells{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.dqi{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:7px 8px 6px 11px;min-height:44px;display:flex;flex-direction:column;justify-content:center;gap:2px;overflow:hidden}
+.dqi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.dqn{font-size:.82rem;font-weight:800;word-break:keep-all;overflow-wrap:anywhere;line-height:1.2}
+.dqs{font-size:.72rem;color:var(--muted);white-space:nowrap;line-height:1.2}
+.dqs em{font-style:normal;font-weight:700}
+.dqi.s-prog .dqs{color:var(--accent);font-weight:700}
+.dqi.s-done .dqs{color:var(--ok);font-weight:700}
+.dqi.s-none{opacity:.55}
+.dqi.off{opacity:.4;border-style:dashed}
+.dqi.off .dqn{text-decoration:line-through}
+.dqi[data-dqc]{cursor:pointer}
+.dqi[data-dqc]:hover{border-color:var(--accent)}
+/* 완료 덮개: 주간 보스 완료 덮개와 같은 처리 (rgba 0,0,0,.55 · 마우스를 올리면 사라짐 · 클릭 통과) */
+.dqov{position:absolute;inset:0;border-radius:inherit;background:rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  color:#fff;font-weight:800;font-size:.8rem;line-height:1.2;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none;opacity:1;transition:opacity .15s ease;z-index:2;padding:2px 4px}
+.dqov-n{font-size:.78rem;word-break:keep-all}
+.dqov-t{font-size:.72rem}
+.dqov-t b{color:#7dffb0}
+/* 덮개가 있을 때는 원래 글자를 숨겨 겹치지 않게 (마우스를 올리면 덮개가 사라지고 원래 칸이 보임) */
+.dqi.s-done:not(.off)>.dqn,.dqi.s-done:not(.off)>.dqs{opacity:0;transition:opacity .15s ease}
+@media(hover:hover){.dqi:hover .dqov{opacity:0}.dqi.s-done:not(.off):hover>.dqn,.dqi.s-done:not(.off):hover>.dqs{opacity:1}}
+.dqlock{font-size:.74rem;margin-top:8px}
+.dqmsg{font-size:.84rem;padding:6px 2px}
+.dqfoot{margin:10px 2px 0}
+@media(max-width:520px){.dqgrid{grid-template-columns:1fr}.dqcells{grid-template-columns:repeat(3,minmax(0,1fr))}.dqtop h2 .dqstat{order:5;width:100%}}
+/* ---- 길드 현황 ---- */
+.gcard h2{flex-wrap:wrap}
+.gmeta{display:flex;align-items:center;gap:10px;font-size:.88rem;margin-bottom:10px}
+.glv{background:var(--accent);color:#fff;font-weight:800;border-radius:8px;padding:2px 8px;font-size:.8rem}
+.gtiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.gtile{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:12px 14px}
+.gk{font-size:.82rem;color:var(--muted);font-weight:700}
+.gv{font-size:1.45rem;font-weight:900;margin-top:4px;letter-spacing:-.01em}
+.gv small{font-size:.8rem;font-weight:700;color:var(--muted);margin-left:2px}
+.gv.dim{font-size:1rem;color:var(--muted)}
+.grk{font-size:.86rem;margin-top:2px}
+.grk b{color:var(--accent);font-size:1.05rem}
+.grow-r{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line)}
+.grow-r:last-of-type{border-bottom:0}
+.grow-r .grow{flex:1;min-width:0}
+.grow-r .nm{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grow-r .meta{font-size:.78rem;color:var(--muted)}
+.gsc{display:flex;flex-direction:column;align-items:flex-end;min-width:64px}
+.gsc b{font-size:.95rem;white-space:nowrap}
+.gsc b small{font-size:.72rem;color:var(--muted);font-weight:600}
+.gsc.main b{font-size:1.15rem;color:var(--accent)}
+@media(max-width:520px){.gv{font-size:1.2rem}.grow-r{flex-wrap:wrap}.grow-r .grow{flex-basis:calc(100% - 50px)}.gsc{min-width:0;flex:1;align-items:flex-start}}

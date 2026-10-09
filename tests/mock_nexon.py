@@ -17,11 +17,35 @@ SCHED={'ocid-main':([('스우','hard',1),('데미안','hard',1),('루시드','ha
        'ocid-alt1':([('스우','하드',1),('데미안','노멀',1),('루시드','노말',0),('힐라','하드',1),('핑크빈','카오스',1)],2),
        'ocid-b1':([('가디언 엔젤 슬라임','normal',1),('더스크','normal',1),('듄켈','normal',0)],2),
        'ocid-b2':([('스우','normal',1)],1)}
+# 일퀘/길드 (실제 응답 이름 그대로, 2026-10-09 실측): (quest_state, now, max) — 지역 순서 세르니움…기어드락
+DQ_NAMES=['[일일 퀘스트] 세르니움 조사','[일일 퀘스트] 호텔 아르크스 주변 청소','[일일 퀘스트] 오디움 일대 탐사','[일일 퀘스트] 도원경 오염 정화',
+  '[일일 퀘스트] 아르테리아 잔당 처치','[일일 퀘스트] 카르시온 복구 지원','[일일 퀘스트] 탈라하트 고대신의 힘 조사','[일일 퀘스트] 기어드락 크로노스의 잔재 수집']
+OLD_DQ=['[일일 퀘스트] 소멸의 여로 조사','[일일 퀘스트] 츄츄 아일랜드 최고의 요리','[일일 퀘스트] 리멘 조사']
+DQ={'ocid-main':(['2','2','2','1','2','1','0','0'],(7,14),(5,5,'2'),(23513,10000,10)),
+    'ocid-alt1':(['2','1','0','0','0','0','0','0'],(3,14),(2,5,'1'),(0,0,0)),
+    'ocid-b1':(['2','2','0','0','0','0','0','0'],(0,14),(0,5,'1'),(1200,0,4)),
+    'ocid-b2':(['1','0','0','0','0','0','0','0'],(0,14),None,None)}
+def sched_extra(o):
+    if o not in DQ: return [],[]
+    qs,mp,xmp,gd=DQ[o]
+    daily=[{'content_name':'몬스터파크','type':'contents','registration_flag':'true','now_count':mp[0],'max_count':mp[1],'quest_state':None}]
+    daily+=[{'content_name':n,'type':'quest','registration_flag':'false','now_count':0,'max_count':0,'quest_state':'0'} for n in OLD_DQ]
+    daily+=[{'content_name':n,'type':'quest','registration_flag':'true','now_count':0,'max_count':100 if q=='1' else 0,'quest_state':q} for n,q in zip(DQ_NAMES,qs)]
+    weekly=[{'content_name':'에픽 던전 : 악몽선경','type':'contents','registration_flag':'true','now_count':5,'max_count':0,'quest_state':None}]
+    if xmp: weekly.append({'content_name':'[몬스터파크] 익스트림 몬스터파커에 도전해보겠나?','type':'quest','registration_flag':'true','now_count':xmp[0],'max_count':xmp[1],'quest_state':xmp[2]})
+    if gd: weekly+=[{'content_name':'[길드] 주간 미션 포인트','type':'contents','registration_flag':'false','now_count':gd[2],'max_count':10,'quest_state':None},
+                    {'content_name':'[길드] 지하 수로','type':'contents','registration_flag':'false','now_count':gd[0],'max_count':0,'quest_state':None},
+                    {'content_name':'[길드] 플래그 레이스','type':'contents','registration_flag':'false','now_count':gd[1],'max_count':0,'quest_state':None}]
+    return daily,weekly
+GUILD_EMPTY=set()   # 이 날짜(YYYY-MM-DD)는 랭킹이 아직 비어 있음 → 앱이 어제로 대체하는지 확인
+CALLS=[]            # (path, query) 호출 기록
+GUILD_ROWS={1:(4000,523),2:(137591,532)}
 def handle(route):
     u=urllib.parse.urlparse(route.request.url); q=dict(urllib.parse.parse_qsl(u.query)); p=u.path
     if '/static/maplestory/character/look/' in p:
         col={'main':'#f28c28','alt1':'#7b5cd6','alt2':'#2fa36b','b1':'#d94a7a','b2':'#3a8fd9'}.get(p.rsplit('-',1)[-1],'#4a90d9')
         return route.fulfill(status=200,content_type='image/svg+xml',body=AV.format(c=col))
+    CALLS.append((p,q))
     k=route.request.headers.get('x-nxopen-api-key')
     if k not in ACC: return route.fulfill(status=400,json={'error':{'name':'OPENAPI00005','message':'The apikey is not valid.'}})
     own={c[0] for c in ACC[k]}
@@ -36,10 +60,15 @@ def handle(route):
         EXP={'ocid-main':('73.512',123456789012),'ocid-alt1':('8.004',5550000000),'ocid-alt2':('99.990',1),'ocid-luna':('41.5',1),'ocid-b1':('0.123',1)}
         if q['ocid'] in EXP: body['character_exp_rate'],body['character_exp']=EXP[q['ocid']]
         return route.fulfill(json=body)
+    if p.endswith('/ranking/guild'):
+        if not q.get('date'): return route.fulfill(status=400,json={'error':{'name':'OPENAPI00004','message':'date required'}})
+        if q['date'] in GUILD_EMPTY or q.get('guild_name')!='봉사활동': return route.fulfill(json={'ranking':[]})
+        pt,rk=GUILD_ROWS[int(q['ranking_type'])]
+        return route.fulfill(json={'ranking':[{'date':q['date'],'world_name':'스카니아','guild_name':'봉사활동','guild_level':30,'guild_mark':'','guild_point':pt,'ranking':rk,'guild_master_name':'터래플'}]})
     if p.endswith('/scheduler/character-state'):
         if q['ocid'] not in own or q['ocid'] not in SCHED: return route.fulfill(status=400,json={'error':{'name':'OPENAPI00003','message':'Please input valid id'}})
         c=ALL[q['ocid']]; bs,cl=SCHED[q['ocid']]
-        return route.fulfill(json={'date':'2026-10-09T00:00+09:00','character_name':c[1],'world_name':c[2],'character_level':c[4],'character_class':c[3],'daily_contents':[],'weekly_contents':[],
+        return route.fulfill(json={'date':'2026-10-09T00:00+09:00','character_name':c[1],'world_name':c[2],'character_level':c[4],'character_class':c[3],'daily_contents':sched_extra(q['ocid'])[0],'weekly_contents':sched_extra(q['ocid'])[1],
           'boss_contents':[{'content_name':n,'difficulty':d,'cycle':'bossMonthly' if n=='검은 마법사' else 'bossWeekly','list_order_no':i,'registration_flag':'true','complete_flag':'true' if f else 'false'} for i,(n,d,f) in enumerate(bs)],
           'weekly_boss_clear_count':cl,'weekly_boss_clear_limit_count':12})
     return route.fulfill(status=400,json={'error':{'name':'OPENAPI00006','message':'invalid path'}})

@@ -253,8 +253,10 @@ function defaultSettings(){
   return {weeklyLimit:CONFIG.WEEKLY_BOSS_LIMIT, monthlyLimit:CONFIG.MONTHLY_BOSS_LIMIT,
     prices:{}, accounts:[], autoSync:true, autoEnable:true, lastSync:0};
 }
+// 일퀘 현황 표시 설정: off{항목:1}=전체 숨김, charOff{캐릭터:{항목:1}}=캐릭터별 숨김, hide{캐릭터:1}=카드 숨김
+function defaultDq(){ return {off:{}, charOff:{}, hide:{}}; }
 function defaultState(){
-  return {version:5, theme:null, activeId:null, characters:[], worldOrder:[], history:[], monthHistory:[], startWeek:weekId(), settings:defaultSettings(),
+  return {version:5, theme:null, activeId:null, characters:[], worldOrder:[], history:[], monthHistory:[], startWeek:weekId(), settings:defaultSettings(), dq:defaultDq(),
     period:{week:weekId(), day:dayId(), month:monthId()}};
 }
 /* character: {id,name,job,level,world,ocid,image,isMain, bosses:{slot:{enabled,diff,party}},
@@ -272,6 +274,7 @@ function load(){
   S.settings.weeklyLimit=CONFIG.WEEKLY_BOSS_LIMIT; S.settings.monthlyLimit=CONFIG.MONTHLY_BOSS_LIMIT; // 처치 한도는 고정값 (설정 화면 제거)
   delete S.settings.worldLimit; // 월드 결정석 판매 한도 기능 제거 (수익 = 클리어한 보스 합계, 상한 없음)
   S.characters.forEach(normChar);
+  S.dq=Object.assign(defaultDq(),S.dq&&typeof S.dq==='object'?S.dq:{}); ['off','charOff','hide'].forEach(k=>{ if(!S.dq[k]||typeof S.dq[k]!=='object') S.dq[k]={}; });
   if(typeof S.updatedAt!=='number') S.updatedAt=0;
   lastBody=bodyOf();
 }
@@ -622,13 +625,200 @@ async function syncAll(opts={}){
       if(!a.key||badAcc.has(a.id)){ errs++; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:`'${a.label}' 계정 API 키 오류: ${a.status?.msg||'키 없음'}`}); continue; }
       if(!c.ocid){ try{ c.ocid=(await nx('/maplestory/v1/id',{character_name:c.name},a.key)).ocid; }catch(e){ c.sync={...c.sync,ok:false,msg:'ocid 조회 실패: '+e.message}; errs++; continue; } }
       try{ await fetchBasic(c,a.key); }catch(e){} // 이미지·레벨·EXP 갱신 (동기화마다)
-      try{ total+=applyScheduler(c, await nx('/maplestory/v1/scheduler/character-state',{ocid:c.ocid},a.key)); }
+      try{ total+=applyScheduler(c, await fetchSched(c,a)); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
       catch(e){ errs++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
     }
     S.settings.lastSync=Date.now(); save();
     if(!opts.silent || total || assigned || accMsgs.length) toast(`동기화 완료 — 새로 체크된 보스 ${total}개`+(assigned?` · 계정 자동 연결 ${assigned}명`:'')+(errs?` · 일부 캐릭터 실패 ${errs}`:'')+(accMsgs.length?` · 계정 오류: ${accMsgs.join(', ')}`:''));
   }catch(e){ if(!opts.silent) toast('동기화 실패: '+e.message); save(); }
   finally{ syncing=false; render(); }
+}
+
+/* =====================================================================
+ *  일퀘 현황 · 길드 현황 — 스케줄러(/scheduler/character-state) 재사용
+ *  스케줄러 응답 요약을 localStorage(SCHED_KEY)에 캐릭터별로 보관 → 동기화·탭 자동 갱신이 같은 캐시를 씀.
+ *  실측(2026-10-09) 이름: daily_contents '[일일 퀘스트] 세르니움 조사' … '[일일 퀘스트] 기어드락 크로노스의 잔재 수집',
+ *  '몬스터파크'(contents, now/max=…/14), weekly_contents '[몬스터파크] 익스트림 몬스터파커에 도전해보겠나?'(주간 퀘스트, now/max=…/5),
+ *  '[길드] 지하 수로' · '[길드] 플래그 레이스' · '[길드] 주간 미션 포인트'(now_count = 이번 주 점수).
+ *  quest_state: "2" 완료, "1" 진행 중, "0" 기타(미수락·미해금).
+ * ===================================================================== */
+const DQ_ITEMS = [ // lv: 일일 퀘스트 수행 가능 레벨 (그란디스 지역)
+  {id:'cer',  label:'세르니움',   key:'세르니움',   lv:260, col:'#e0b04a'},
+  {id:'arcs', label:'아르크스',   key:'아르크스',   lv:265, col:'#e2843a'},
+  {id:'odium',label:'오디움',     key:'오디움',     lv:270, col:'#3fb3a3'},
+  {id:'dow',  label:'도원경',     key:'도원경',     lv:275, col:'#e57ba8'},
+  {id:'art',  label:'아르테리아', key:'아르테리아', lv:280, col:'#d9574a'},
+  {id:'car',  label:'카르시온',   key:'카르시온',   lv:285, col:'#4a8fe0'},
+  {id:'tal',  label:'탈라하트',   key:'탈라하트',   lv:290, col:'#9a6ae0'},
+  {id:'gear', label:'기어드락',   key:'기어드락',   lv:295, col:'#8a97a8'},
+  {id:'mp',   label:'몬스터파크', kind:'mp',  lv:0,   col:'#4caf50'},
+  {id:'xmp',  label:'익스트림 몬파', kind:'xmp', lv:260, col:'#1f9e74', weekly:true},
+];
+const DQ_TTL_MS = 10*60e3;      // 일퀘 탭: 캐릭터별 스케줄러 10분마다 (접속 중/접속 종료 시에만 넥슨이 갱신)
+const GUILD_TTL_MS = 30*60e3;   // 길드 랭킹: 하루 1번(09:30경) 갱신 데이터라 30분 캐시
+const MP_CHAR_DAILY = 7;        // 몬스터파크: 캐릭터당 하루 7회 (스케줄러 max_count 14 = 월드 기준)
+const GUILD = {name:'봉사활동', world:'스카니아'}; // 고정값 (사용자 요청 시 변경)
+const SCHED_KEY = 'mapleBossTracker.sched', GUILD_KEY = 'mapleBossTracker.guild';
+const lsGet = k => { try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } };
+const lsSet = (k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+let schedC = lsGet(SCHED_KEY) || {};   // charId → {date, level, items{id:{st,now,max,reg,name}}, guild{suro,flag,mission}, at, ok, msg}
+let guildC = lsGet(GUILD_KEY);          // {date, t1, t2, at, ok, msg}
+let dqBusy=false, guildBusy=false, dqEdit=false, apiPauseUntil=0;
+
+function schedSummary(d){
+  const daily=Array.isArray(d?.daily_contents)?d.daily_contents:[], weekly=Array.isArray(d?.weekly_contents)?d.weekly_contents:[];
+  const nm=r=>normName(r?.content_name);
+  const pick=r=>r?{st:String(r.quest_state??''),now:Number(r.now_count)||0,max:Number(r.max_count)||0,reg:flagOn(r.registration_flag),name:String(r.content_name||'')}:null;
+  const items={};
+  for(const it of DQ_ITEMS){
+    let r=null;
+    if(it.kind==='mp') r=daily.find(x=>nm(x)==='몬스터파크');
+    else if(it.kind==='xmp') r=weekly.find(x=>nm(x).includes('익스트림몬스터파'))||daily.find(x=>nm(x).includes('익스트림몬스터파'));
+    else r=daily.find(x=>nm(x).includes(normName(it.key)) && (x.type==='quest'||/일일/.test(x.content_name||'')));
+    if(r) items[it.id]=pick(r);
+  }
+  const g=k=>{ const r=weekly.find(x=>nm(x).includes(k)); return r?{now:Number(r.now_count)||0,max:Number(r.max_count)||0}:null; };
+  return {date:String(d?.date||'').slice(0,10)||dayId(), level:Number(d?.character_level)||0, items,
+    guild:{suro:g('지하수로'), flag:g('플래그레이스'), mission:g('주간미션포인트')}, at:Date.now(), ok:true, msg:''};
+}
+function schedPut(c,d){ schedC[c.id]=schedSummary(d); lsSet(SCHED_KEY,schedC); }
+function schedErr(c,e){ schedC[c.id]={...(schedC[c.id]||{}),errAt:Date.now(),ok:false,msg:e.message,code:e.code||''}; lsSet(SCHED_KEY,schedC); }
+/* 스케줄러 1회 호출 = 보스 자동 체크(applyScheduler) + 일퀘/길드 요약 저장 (동기화와 같은 경로) */
+async function fetchSched(c,a){
+  try{ const d=await nx('/maplestory/v1/scheduler/character-state',{ocid:c.ocid},a.key); schedPut(c,d); return d; }
+  catch(e){ schedErr(c,e); throw e; }
+}
+const schedOk = c => !!(c.ocid && accOf(c)?.key);
+const schedFresh = (c,ttl) => { const x=schedC[c.id]; const t=Math.max(x?.at||0,x?.errAt||0); return !!x && Date.now()-t<ttl && (!x.ok||x.date===dayId()); };
+/* 열려 있는 탭에 필요한 캐릭터만, 오래된 것만(ttl) 순서대로 갱신. 동기화 중·호출량 초과 대기 중이면 건너뜀 */
+async function refreshSched(chars, ttl=DQ_TTL_MS){
+  if(dqBusy||syncing||Date.now()<apiPauseUntil) return;
+  const todo=chars.filter(c=>schedOk(c)&&!schedFresh(c,ttl)); if(!todo.length) return;
+  dqBusy=true; renderTabView(); let n=0;
+  try{
+    for(const c of todo){
+      try{ n+=applyScheduler(c, await fetchSched(c,accOf(c))); }
+      catch(e){ if(e.code==='OPENAPI00007'||e.status===429){ apiPauseUntil=Date.now()+DQ_TTL_MS; break; } if(e.code==='NETWORK') break; }
+      renderTabView();
+    }
+    save();
+    if(n) toast(`스케줄러 갱신 — 새로 체크된 보스 ${n}개`);
+  } finally { dqBusy=false; renderChars(); renderTabView(); }
+}
+/* 길드 랭킹: 오늘 날짜(09:30 KST 이후) → 비었거나 준비 전이면 어제 */
+async function refreshGuild(force){
+  if(guildBusy||Date.now()<apiPauseUntil) return; const key=anyKey(); if(!key) return;
+  const ttl=guildC?.ok&&guildC.date===dayId()?3*GUILD_TTL_MS:GUILD_TTL_MS;
+  if(!force && guildC && Date.now()-(guildC.at||0)<ttl) return;
+  guildBusy=true; renderTabView();
+  const k=kst(), ready=k.getUTCHours()*60+k.getUTCMinutes()>=9*60+30;
+  const days=(ready?[dayId()]:[]).concat(dayId(Date.now()-864e5));
+  let got=null, lastErr=null;
+  try{
+    for(const d of days){
+      const rows={};
+      try{
+        for(const t of [2,1]){
+          const r=await nx('/maplestory/v1/ranking/guild',{date:d,world_name:GUILD.world,ranking_type:t,guild_name:GUILD.name},key);
+          rows[t]=(Array.isArray(r?.ranking)?r.ranking:[]).find(x=>x&&x.guild_name===GUILD.name&&(!x.world_name||x.world_name===GUILD.world))||null;
+        }
+      }catch(e){ lastErr=e; if(e.code==='OPENAPI00007'||e.status===429||e.code==='NETWORK') break; continue; }
+      if(rows[1]||rows[2]){ got={date:d,t1:rows[1],t2:rows[2]}; break; }
+    }
+    if(got) guildC={...got,at:Date.now(),ok:true,msg:''};
+    else guildC={...(guildC||{}),at:Date.now(),ok:false,msg:lastErr?lastErr.message:`'${GUILD.world}' 월드 랭킹에서 '${GUILD.name}' 길드를 찾지 못했습니다`};
+    lsSet(GUILD_KEY,guildC);
+  } finally { guildBusy=false; renderTabView(); }
+}
+/* 60초 타이머·탭 열기·화면 복귀 시 호출: 열려 있는 탭만 갱신 */
+function tabTick(){
+  if(document.hidden) return;
+  if(tab==='daily') refreshSched(dqChars().filter(c=>!S.dq.hide[c.id]));
+  else if(tab==='guild'){ refreshGuild(); refreshSched(S.characters.filter(c=>c.isMain)); }
+}
+function renderTabView(){ if(tab==='daily') renderDaily(); else if(tab==='guild') renderGuild(); }
+const hhmm = t => { const d=kst(t); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
+const dqChars = () => orderedChars().filter(schedOk);
+/* 항목 상태: lock(레벨 미달) · none(스케줄러에 없음) · done · prog · idle */
+function dqState(it, x, lv){
+  if(it.lv && lv && lv<it.lv) return 'lock';
+  if(!x) return 'none';
+  if(it.kind==='mp') return x.now>=Math.min(MP_CHAR_DAILY, x.max||MP_CHAR_DAILY)?'done':x.now>0?'prog':'idle';
+  if(x.st==='2' || (it.kind==='xmp' && x.max>0 && x.now>=x.max)) return 'done';
+  if(x.st==='1') return 'prog';
+  return 'idle';
+}
+const DQ_TXT = {done:'완료', prog:'진행 중', idle:'미수락', none:'정보 없음'};
+function dqCell(c, it, x, st, off){
+  // 몬스터파크: 캐릭터당 하루 7회 기준(n/7회) · 익스트림 몬파: 주간 퀘스트(주간 n/5) · 진행 중 퀘스트에 카운트가 있으면 '진행 n/m'
+  let txt=DQ_TXT[st], cnt='';
+  if(x && it.kind==='mp'){ txt=st==='done'?'완료':''; cnt=`${Math.min(x.now,MP_CHAR_DAILY)}/${MP_CHAR_DAILY}회`; }
+  else if(x && it.kind==='xmp'){ txt=st==='done'?'완료':'주간'; cnt=x.max>0?`${x.now}/${x.max}`:''; }
+  else if(x && st==='prog' && x.max>0){ txt='진행'; cnt=`${x.now}/${x.max}`; }
+  const tip = (x?.name||it.label)+(it.weekly?' (주간)':'')+(it.kind==='mp'?` · 오늘 ${x?.now??0}회 (캐릭터당 하루 ${MP_CHAR_DAILY}회, 스케줄러 최대 ${x?.max??'-'})`:'')+(dqEdit?'\n클릭: 이 캐릭터에서 '+(off?'다시 표시':'숨기기'):'');
+  return `<div class="dqi s-${st}${off?' off':''}" style="--c:${it.col}" data-dqi="${it.id}" ${dqEdit?`data-dqc="${c.id}|${it.id}" role="button" tabindex="0"`:''} title="${esc(tip)}">
+    <b class="dqn">${esc(it.label)}</b><span class="dqs">${esc(txt)}${cnt?`${txt?' ':''}<em>${cnt}</em>`:''}</span>
+    ${st==='done'&&!off?`<div class="dqov" aria-hidden="true"><span class="dqov-n">${esc(it.label)}</span><span class="dqov-t"><b>✓</b> 완료</span></div>`:''}</div>`;
+}
+function renderDaily(){
+  const v=$('#view'); const D=S.dq, all=dqChars(), today=dayId();
+  const noKey=S.characters.filter(c=>!schedOk(c)).length;
+  const shown=all.filter(c=>dqEdit||!D.hide[c.id]), hidden=all.length-all.filter(c=>!D.hide[c.id]).length;
+  const items=DQ_ITEMS.filter(it=>!D.off[it.id]);
+  const newest=Math.max(0,...all.map(c=>schedC[c.id]?.at||0));
+  const status=dqBusy?'<span class="dqspin" aria-hidden="true"></span>갱신 중…':newest?`갱신 ${hhmm(newest)} · 10분마다 자동`:'';
+  const chips=dqEdit?`<div class="dqedit"><span class="muted tiny">표시 항목 (전체 캐릭터)</span><div class="dqchips">${DQ_ITEMS.map(it=>`<button class="dqchip${D.off[it.id]?'':' on'}" data-dqg="${it.id}" style="--c:${it.col}" aria-pressed="${!D.off[it.id]}">${esc(it.label)}</button>`).join('')}</div>
+    <div class="muted tiny">카드의 항목을 누르면 그 캐릭터에서만 숨기거나 다시 표시 · 카드의 👁 로 캐릭터 숨기기</div></div>`:'';
+  const card=c=>{
+    const x=schedC[c.id], ok=x&&x.ok!==false&&x.date===today, lv=Number(ok&&x.level||c.level)||0, co=D.charOff[c.id]||{};
+    const hid=!!D.hide[c.id];
+    let body='', done=0, tot=0;
+    if(!x||(!ok&&x.ok!==false)) body=`<div class="dqmsg muted">${dqBusy||!x?'불러오는 중…':'오늘 데이터를 기다리는 중…'}</div>`;
+    else if(x.ok===false&&x.date!==today) body=`<div class="dqmsg warnc">⚠ 스케줄러 조회 실패 — ${esc(x.msg||'')}</div>`;
+    else{
+      const locked=[], cells=[];
+      for(const it of items){
+        const st=dqState(it,x.items?.[it.id],lv), off=!!co[it.id];
+        if(st==='lock'){ locked.push(it); continue; }
+        if(off&&!dqEdit) continue;
+        if(!off&&st!=='none'){ tot++; if(st==='done') done++; }
+        cells.push(dqCell(c,it,x.items?.[it.id],st,off));
+      }
+      body=(cells.length?`<div class="dqcells">${cells.join('')}</div>`:`<div class="dqmsg muted">표시할 항목이 없어요${dqEdit?'':' · 편집에서 항목을 켜세요'}</div>`)
+        +(locked.length?`<div class="dqlock muted" title="캐릭터 레벨이 낮아 아직 할 수 없는 항목">🔒 ${locked.map(it=>`${esc(it.label)} Lv.${it.lv}`).join(' · ')}</div>`:'')
+        +(x.ok===false?`<div class="dqlock warnc">⚠ 최근 갱신 실패 (${hhmm(x.errAt)}) — ${esc(x.msg||'')}</div>`:'');
+    }
+    return `<div class="card dqc${hid?' hid':''}${tot&&done===tot?' alldone':''}" data-dqchar="${c.id}">
+      <div class="dqh">${avatar(c)}<div class="grow"><div class="nm">${esc(c.name)}${c.isMain?'<span class="mainbadge">★</span>':''}</div><div class="meta">Lv.${esc(lv||'?')} · ${esc(c.job||'')}</div></div>
+      ${tot?`<span class="dqcnt${done===tot?' full':''}">${done}/${tot}</span>`:''}${dqEdit?`<button class="btn sm plain dqeye" data-dqhide="${c.id}" title="${hid?'이 캐릭터 다시 표시':'이 캐릭터 숨기기'}" aria-label="${hid?'다시 표시':'숨기기'}">${hid?'숨김':'👁'}</button>`:''}</div>
+      ${body}</div>`;
+  };
+  v.innerHTML=`<div class="card dqtop"><h2>📋 일퀘 현황 <span class="muted" style="font-weight:500">${esc(today)}</span><span class="hspace"></span><span class="muted tiny dqstat">${status}</span>
+      <button class="btn sm ${dqEdit?'':'plain'}" id="dqEditBtn" aria-pressed="${dqEdit}">${dqEdit?'완료':'편집'}</button></h2>${chips}
+    ${!hasApi()?'<div class="note">넥슨 API 키를 등록하면 메이플 스케줄러에서 일퀘 진행 상황을 실시간으로 불러옵니다. 사이드바 <b>+ 추가</b>에서 계정별 API 키를 등록하세요.</div>':''}</div>
+    ${shown.length?`<div class="dqgrid">${shown.map(card).join('')}</div>`:(hasApi()?'<div class="card muted">표시할 캐릭터가 없습니다.</div>':'')}
+    ${hidden&&!dqEdit||noKey?`<div class="muted tiny dqfoot">${hidden&&!dqEdit?`숨긴 캐릭터 ${hidden}명 (편집에서 다시 표시)`:''}${hidden&&!dqEdit&&noKey?' · ':''}${noKey?`API 키가 연결되지 않은 캐릭터 ${noKey}명은 표시하지 않아요`:''}</div>`:''}`;
+}
+const num = n => (Number(n)||0).toLocaleString('ko-KR');
+function renderGuild(){
+  const v=$('#view'), g=guildC, mains=S.characters.filter(c=>c.isMain);
+  const tile=(lbl,ico,r)=>`<div class="gtile"><div class="gk">${ico} ${lbl}</div>${r?`<div class="gv">${num(r.guild_point)}<small>점</small></div><div class="grk"><b>${num(r.ranking)}</b>위</div>`:`<div class="gv dim">기록 없음</div><div class="grk muted">랭킹 미등록</div>`}</div>`;
+  const info=g?.t2||g?.t1;
+  const head=!hasApi()?'<div class="note">넥슨 API 키를 등록하면 길드 랭킹을 불러옵니다. 사이드바 <b>+ 추가</b>에서 API 키를 등록하세요.</div>'
+    : !g ? `<div class="muted">${guildBusy?'불러오는 중…':'잠시 후 불러옵니다…'}</div>`
+    : `${info?`<div class="gmeta"><span class="glv">Lv.${esc(info.guild_level)}</span><span>마스터 <b>${esc(info.guild_master_name||'-')}</b></span></div>
+       <div class="gtiles">${tile('지하 수로','🌊',g.t2)}${tile('플래그 레이스','🚩',g.t1)}</div>`:''}
+       ${g.ok===false?`<div class="dqlock warnc">⚠ 길드 랭킹 조회 실패 — ${esc(g.msg||'')}</div>`:''}`;
+  const sub=g?.date?`<span class="muted tiny">기준 ${esc(g.date)}${g.date!==dayId()?' (어제 · 오늘 랭킹 준비 전)':''}${guildBusy?' · 갱신 중…':g.at?` · 확인 ${hhmm(g.at)}`:''}</span>`:'';
+  const row=c=>{ const x=schedC[c.id], gg=x?.guild||{}, has=x&&x.ok!==false;
+    const cell=(o,lbl)=>`<div class="gsc"><span class="muted tiny">${lbl}</span><b>${o?num(o.now)+(o.max>0?`<small>/${num(o.max)}</small>`:''):'-'}</b></div>`;
+    return `<div class="grow-r">${avatar(c)}<div class="grow"><div class="nm">${esc(c.name)} <span class="mainbadge">★ 본캐</span></div><div class="meta">Lv.${esc(c.level||'?')} · ${esc(c.job||'')}</div></div>
+      ${!schedOk(c)?'<span class="muted tiny">API 키 미연결</span>':!x?`<span class="muted tiny">${dqBusy?'불러오는 중…':'대기 중…'}</span>`:!has?`<span class="warnc tiny" title="${esc(x.msg||'')}">⚠ 조회 실패</span>`
+       :`<div class="gsc main"><span class="muted tiny">지하 수로</span><b>${gg.suro?num(gg.suro.now):'-'}</b></div>${cell(gg.flag,'플래그')}${cell(gg.mission,'주간 미션')}`}</div>`; };
+  v.innerHTML=`<div class="grid"><div class="card gcard"><h2>🛡️ ${esc(GUILD.name)} <span class="muted" style="font-weight:500">${esc(GUILD.world)}</span><span class="hspace"></span>${sub}</h2>${head}</div>
+    <div class="card"><h2>⭐ 본캐 지하 수로 <span class="muted" style="font-weight:500">이번 주</span></h2>
+      ${mains.length?mains.map(row).join(''):'<div class="muted">★ 본캐로 지정된 캐릭터가 없습니다. 사이드바 ✎에서 본캐로 지정하세요.</div>'}
+      <div class="muted tiny" style="margin-top:8px">캐릭터 점수는 메이플 스케줄러의 '[길드] 지하 수로' 점수(이번 주 누적, 목요일 초기화)입니다. 길드 순위·점수는 넥슨 길드 랭킹(하루 1번, 09:30경 갱신) 기준입니다.</div></div></div>`;
 }
 
 /* =====================================================================
@@ -652,9 +842,9 @@ function applyTheme(){
   document.documentElement.dataset.theme = dark?'dark':'light';
   $('#themeBtn').textContent = dark?'☀️ 라이트':'🌙 다크';
 }
-function render(){ if(!['boss','summary','history','total'].includes(tab)) tab='boss';
+function render(){ if(!['boss','summary','history','total','daily','guild'].includes(tab)) tab='boss';
   renderChars(); renderHeaderSync(); renderResetInfo(); if($('#importModal').classList.contains('show')) renderAccList();
-  ({boss:renderBoss,summary:renderSummary,history:renderHistory,total:renderTotal})[tab](); }
+  ({boss:renderBoss,summary:renderSummary,history:renderHistory,total:renderTotal,daily:renderDaily,guild:renderGuild})[tab](); }
 /* 헤더: 🔄 지금 동기화 (API 키가 있을 때만) */
 function renderHeaderSync(){
   const b=$('#syncBtn'); if(!b) return; const st=S.settings; b.hidden=!hasApi(); b.disabled=syncing;
@@ -1439,15 +1629,18 @@ document.addEventListener('click',e=>{
   const dd=e.target.closest('[data-dropdec]'); if(dd){ e.stopPropagation(); changeDrop(dd.dataset.dropdec,-1); return; }
   const dm=e.target.closest('[data-dropmore]'); if(dm){ const id=dm.dataset.dropmore; dropOpen.has(id)?dropOpen.delete(id):dropOpen.add(id); render(); return; }
   const dc=e.target.closest('[data-drop]'); if(dc){ changeDrop(dc.dataset.drop,+1); return; }
-  const t=e.target.closest('[data-tab],[data-move],[data-wmove],[data-id],[data-edit],[data-filter],[data-check],[data-toggle],[data-setdiff],[data-delhist],[data-acctest],[data-accdel],button[id]');
+  const t=e.target.closest('[data-tab],[data-dqg],[data-dqc],[data-dqhide],[data-move],[data-wmove],[data-id],[data-edit],[data-filter],[data-check],[data-toggle],[data-setdiff],[data-delhist],[data-acctest],[data-accdel],button[id]');
   if(!t) return;
   const c=activeChar();
-  if(t.dataset.tab){ tab=t.dataset.tab; syncTabs(); render(); return; }
+  if(t.dataset.tab){ tab=t.dataset.tab; syncTabs(); render(); tabTick(); return; }
+  if(t.dataset.dqg){ const k=t.dataset.dqg; if(S.dq.off[k]) delete S.dq.off[k]; else S.dq.off[k]=1; save(); renderDaily(); return; }
+  if(t.dataset.dqc){ dqToggleChar(t.dataset.dqc); return; }
+  if(t.dataset.dqhide){ const id=t.dataset.dqhide; if(S.dq.hide[id]) delete S.dq.hide[id]; else S.dq.hide[id]=1; save(); renderDaily(); return; }
   if(t.dataset.move){ e.stopPropagation(); const [id,d]=t.dataset.move.split('|'); moveCharBy(id,+d); render(); return; }
   if(t.dataset.wmove){ e.stopPropagation(); const i=t.dataset.wmove.lastIndexOf('|'); moveWorldBy(t.dataset.wmove.slice(0,i),+t.dataset.wmove.slice(i+1)); render(); return; }
   if(e.target.closest('.drag-h')) return;
   if(t.dataset.edit){ e.stopPropagation(); openCharModal(t.dataset.edit); return; }
-  if(t.dataset.id){ S.activeId=t.dataset.id; save(); if(tab==='history'||tab==='total') {tab='boss';syncTabs();} render(); return; }
+  if(t.dataset.id){ S.activeId=t.dataset.id; save(); if(['history','total','daily','guild'].includes(tab)) {tab='boss';syncTabs();} render(); return; }
   if(t.dataset.filter){ bossFilter=t.dataset.filter; render(); return; }
   if(t.dataset.toggle && c){ const s=t.dataset.toggle,b=findBoss(s); const cfg=c.bosses[s]||(c.bosses[s]={enabled:false,diff:b.diffs[0],party:1}); cfg.enabled=!cfg.enabled; save(); render(); return; }
   if(t.dataset.setdiff && c){
@@ -1472,6 +1665,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
   switch(t.id){
     case 'editModeBtn': editMode=!editMode; render(); break;
+    case 'dqEditBtn': dqEdit=!dqEdit; renderDaily(); break;
     case 'syncBtn': syncAll(); break;
     case 'importAccBtn': openImport(); break;
     case 'impRetry': openImport(impAccId); break;
@@ -1490,6 +1684,8 @@ document.addEventListener('click',e=>{
     case 'gdClose': $('#driveModal').classList.remove('show'); break;
   }
 });
+function dqToggleChar(v){ const [id,k]=v.split('|'); const o=S.dq.charOff[id]||(S.dq.charOff[id]={}); if(o[k]) delete o[k]; else o[k]=1; if(!Object.keys(o).length) delete S.dq.charOff[id]; save(); renderDaily(); }
+document.addEventListener('keydown',e=>{ const q=(e.key==='Enter'||e.key===' ')&&e.target.closest?.('[data-dqc]'); if(q){ e.preventDefault(); dqToggleChar(q.dataset.dqc); } });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('#ringModal').classList.contains('show')) closeRing(); if(celebrate.running) endCelebrate(); if($('#importModal').classList.contains('show')&&!$('#charModal').classList.contains('show')) closeImport(); gdMenu(false); } });
 document.addEventListener('contextmenu',e=>{ const dc=e.target.closest('[data-drop]'); if(!dc) return; e.preventDefault(); changeDrop(dc.dataset.drop,-1); });
 document.addEventListener('keydown',e=>{ const dc=e.target.closest?.('[data-drop]'); if(!dc) return; if(e.key==='Enter'||e.key===' '){ e.preventDefault(); changeDrop(dc.dataset.drop,+1); } else if(e.key==='Backspace'||e.key==='Delete'||e.key==='-'){ e.preventDefault(); changeDrop(dc.dataset.drop,-1); } });
@@ -1541,8 +1737,8 @@ if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
 checkResets(); loadOfficialPrices(); save(); applyTheme(); render();
 const autoDue=()=>hasApi() && S.settings.autoSync && S.characters.some(c=>c.ocid) && Date.now()-(S.settings.lastSync||0) > CONFIG.AUTO_SYNC_MIN*60e3;
 if(autoDue() || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))) syncAll({silent:true}); // 기존 데이터: 계정 자동 배정
-setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden && autoDue()) syncAll({silent:true}); }, 60e3);
-document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); return; } if(checkResets()) render(); if(autoDue()) syncAll({silent:true}); });
+setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden && autoDue()) syncAll({silent:true}); else tabTick(); }, 60e3);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); return; } if(checkResets()) render(); if(autoDue()) syncAll({silent:true}); else tabTick(); });
 window.addEventListener('pagehide',()=>{ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); });
 gdRender();
 if(gdUsable()){ gdLoadLib().catch(()=>{}); if(gdMeta.on) gdConnect(false); }
