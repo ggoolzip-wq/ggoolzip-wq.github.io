@@ -1,0 +1,114 @@
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div class="logo">
+      <img class="leaf mush" src="__LOGO64__" alt="" width="30" height="30">
+      보스 캐릭터 관리 <span style="font-weight:500;opacity:.85;font-size:.8rem">KMS</span>
+    </div>
+    <div class="hspace"></div>
+    <button class="hbtn sbtn" id="syncBtn" hidden><span class="hl">동기화</span></button>
+    <div class="gwrap"><button class="hbtn gbtn" id="gBtn" aria-haspopup="true" aria-expanded="false">☁ 구글 로그인</button>
+      <div class="gmenu" id="gMenu" hidden role="dialog" aria-label="구글 드라이브 동기화"></div></div>
+    <button class="hbtn" id="themeBtn" title="테마 전환">🌙 다크</button>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="boss" class="on">보스 체크</button>
+    <button data-tab="summary">수익 요약</button>
+    <button data-tab="history">주간 기록</button>
+    <button data-tab="total">총 수익</button>
+  </nav>
+</header>
+
+<main>
+  <aside class="side-sticky">
+    <div class="card">
+      <h2>캐릭터 <span class="hspace"></span><button class="btn sm" id="addCharBtn">+ 추가</button></h2>
+      <div class="chars" id="charList"></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="muted" id="resetInfo"></div>
+    </div>
+  </aside>
+  <section id="view"></section>
+</main>
+<div class="foot">결정석 가격은 공식 패치 노트 기준으로 자동 갱신됩니다. 데이터와 API 키는 이 브라우저(localStorage)에 저장되고, 구글 로그인 시 내 드라이브(앱 전용 숨김 폴더)에도 저장됩니다. Data based on NEXON Open API.</div>
+
+<div class="modal-bg" id="charModal">
+  <div class="modal">
+    <h3 id="charModalTitle">캐릭터 추가</h3>
+    <div class="field hidden" id="fPickWrap"><label>이 계정 캐릭터에서 선택 · <span id="fPickAcc"></span> <button type="button" class="linkbtn" id="fPickReload">새로고침</button></label>
+      <div class="pick-list" id="fPick"></div></div>
+    <div class="field"><label>캐릭터 이름</label>
+      <div class="keyrow"><input type="text" id="fName" maxlength="20" placeholder="예: 단풍잎용사"><button class="btn sm plain" id="fLookup" title="넥슨 Open API로 직업·레벨·월드·이미지 불러오기">API 조회</button></div>
+      <div class="muted" id="fLookupMsg" style="margin-top:4px"></div></div>
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <div class="avatar lg" id="fAvatar">?</div>
+      <div style="flex:1">
+        <div class="field"><label>직업</label><input type="text" id="fJob" list="jobList" maxlength="20" placeholder="예: 아크메이지(불,독)"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="field" style="flex:1"><label>레벨</label><input type="number" id="fLevel" min="1" max="300" placeholder="예: 270"></div>
+      <div class="field" style="flex:1"><label>월드</label><input type="text" id="fWorld" list="worldList" maxlength="12" placeholder="예: 스카니아"></div>
+    </div>
+    <div class="field"><label>넥슨 계정 (API 자동 체크에 사용할 키)</label><select class="in" id="fAcc"></select></div>
+    <label class="checkline"><input type="checkbox" id="fMain"> 본캐로 지정 (★)</label>
+    <div class="row">
+      <button class="btn danger hidden" id="fDelete">삭제</button>
+      <span style="flex:1"></span>
+      <button class="btn plain" id="fCancel">취소</button>
+      <button class="btn" id="fSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="importModal">
+  <div class="modal wide addm" role="dialog" aria-modal="true" aria-labelledby="addTitle">
+    <button class="ringx" id="impClose" aria-label="닫기">✕</button>
+    <h3 id="addTitle">캐릭터 추가</h3>
+    <section class="addsec">
+      <div class="addsec-h"><b>🔑 넥슨 API 키</b><span class="muted">넥슨 계정마다 하나씩 — 그 계정의 캐릭터만 불러올 수 있어요</span></div>
+      <div id="accList"></div>
+      <div class="accadd"><input id="newAccLabel" class="pin" maxlength="12" placeholder="계정 이름" aria-label="계정 이름">
+        <input id="newAccKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="live_… API 키 붙여넣기" aria-label="API 키">
+        <button class="btn sm" id="newAccBtn">+ API 키 추가</button></div>
+      <div class="muted tiny">키 발급: <a href="https://openapi.nexon.com" target="_blank" rel="noopener">openapi.nexon.com</a> → 마이페이지 → 애플리케이션 상세에서 복사. 키는 이 브라우저와 (구글 로그인 시) 내 드라이브 앱 전용 숨김 폴더에만 저장됩니다.</div>
+      <div class="optlines compact" id="accOpts"></div>
+    </section>
+    <section class="addsec" id="impSec">
+      <div class="addsec-h"><b>👥 <span id="impTitle">계정 캐릭터</span></b><span class="muted" id="impCount"></span></div>
+      <div class="impmsg" id="impMsg"></div>
+      <div class="toolbar" id="impTools"><input type="search" id="impQ" class="pin" placeholder="이름·직업 검색" style="width:130px;text-align:left"><span class="muted">최소 레벨</span><input type="number" id="impMin" value="" min="0" placeholder="전체" style="width:70px" class="pin"><select id="impWorld" class="pin" style="width:auto;text-align:left"></select><span style="flex:1"></span><button class="btn sm plain" id="impAll">전체 선택</button></div>
+      <div class="imp-list" id="impList"></div>
+      <div class="row"><span class="muted tiny" style="flex:1">처음 추가하면 레벨이 가장 높은 캐릭터가 본캐(★)가 됩니다. 추가 후 이미지·보스 클리어를 자동 동기화합니다.</span><button class="btn" id="impOk">선택 추가</button></div>
+    </section>
+    <div class="addfoot muted">API 키 없이 추가하거나 다른 계정 캐릭터를 이름으로 찾으려면 → <button class="linkbtn" id="impManual">이름으로 직접 추가</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="ringModal">
+  <div class="modal ringm" role="dialog" aria-modal="true" aria-labelledby="ringTitle">
+    <button class="ringx" id="ringClose" aria-label="닫기 (기록 안 함)" title="닫기 (기록 안 함)">✕</button>
+    <div class="ringhead"><span id="ringBoxIcon" class="ringbox"></span><div><h3 id="ringTitle">반지 상자 획득!</h3><div class="muted" id="ringSub"></div></div></div>
+    <div class="ringchoices">
+      <button class="ringc r4" data-ring="r4"><span class="ringico" id="ricR"></span><b>리스트레인트 링 4레벨을 먹었어요</b></button>
+      <button class="ringc c4" data-ring="c4"><span class="ringico" id="ricC"></span><b>컨티뉴어스 링 4레벨을 먹었어요</b></button>
+      <button class="ringc x" data-ring="x"><span class="ringico ricx">✕</span><b>둘 다 못 먹었어요</b></button>
+    </div>
+    <div class="muted" style="font-size:.75rem;margin-top:8px">✕ · Esc · 바깥을 누르면 아무것도 기록하지 않고 닫습니다.</div>
+  </div>
+</div>
+<div class="modal-bg" id="driveModal">
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="gdTitle">
+    <button class="ringx" id="gdClose" aria-label="나중에">✕</button>
+    <h3 id="gdTitle">☁️ 어느 데이터를 쓸까요?</h3>
+    <div id="gdBody"></div>
+  </div>
+</div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="congrats" role="status" aria-live="polite"></div>
+
+<datalist id="jobList"></datalist>
+<datalist id="worldList"></datalist>
+<div class="toast" id="toast"></div>

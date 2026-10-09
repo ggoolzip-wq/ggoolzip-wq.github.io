@@ -1,31 +1,18 @@
 #!/usr/bin/env python3
-"""보스 캐릭터 관리 — 로컬 도우미 서버 (선택 사항)
+"""메이플스토리 공식 '업데이트' 공지에서 '강렬한 힘의 결정' 판매 가격표를 찾아 읽는 파서
+(GitHub Actions 의 scripts/update_prices.py 가 사용. 표준 라이브러리만 사용)
 
-사용법:  python serve.py      (Windows: start-windows.bat 더블클릭, 창은 열어 두기만 하면 됩니다)
-         python serve.py --open   → 브라우저로 http://localhost:8787 도 함께 엽니다
-
-하는 일
-1) /nexon-prices : 메이플스토리 공식 홈페이지 '업데이트' 공지에서 '강렬한 힘의 결정' 판매 가격표를 찾아 JSON으로 돌려줍니다.
-   (index.html 을 더블클릭으로 연 file:// 페이지에서도 호출할 수 있도록 CORS 허용 — 이 PC 안에서만 접속 가능)
-2) /nxapi/...    : 넥슨 Open API 프록시 (브라우저에서 직접 호출이 막히는 환경용)
-3) 이 폴더의 index.html 제공 (http://localhost:8787)
-
-- 127.0.0.1(내 PC)에만 열리며, API 키는 저장/기록하지 않습니다. 외부 라이브러리 필요 없음(파이썬 표준 라이브러리).
+테스트: MBT_FIXTURE_DIR 환경 변수에 저장된 HTML 폴더를 주면 실제 접속 대신 그 파일을 읽습니다.
 """
-import http.server, json, os, re, sys, time, urllib.parse, urllib.request, urllib.error, webbrowser
+import json, os, re, sys, time, urllib.parse, urllib.request, urllib.error
 from html.parser import HTMLParser
 
-PORT = int(os.environ.get("PORT", "8787"))
-ROOT = os.path.dirname(os.path.abspath(__file__))
-UPSTREAM = "https://open.api.nexon.com"
-PREFIX = "/nxapi"
 SITE = "https://maplestory.nexon.com"
 LIST_URL = SITE + "/News/Update?page={page}"
 POST_URL = SITE + "/News/Update/{id}"
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
 FIXTURE_DIR = os.environ.get("MBT_FIXTURE_DIR")  # 테스트용: 실제 접속 대신 저장된 HTML 사용
-_cache = {"at": 0, "key": None, "data": None}
 
 
 # ---------------------------------------------------------------- 가져오기
@@ -207,90 +194,3 @@ def nexon_prices(posts=8, gather=1, pages=1):
     return {"ok": True, "source": {"url": first["url"], "title": first["title"], "date": first["date"]},
             "rows": first["rows"], "notes": first["notes"], "more": found[1:], "scanned": scanned,
             "fetchedAt": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
-
-
-# ---------------------------------------------------------------- 서버
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *a, **kw):
-        super().__init__(*a, directory=ROOT, **kw)
-
-    def cors(self):
-        # file:// 로 연 index.html (Origin: null) 에서도 호출 가능. 서버는 127.0.0.1 에만 열려 있음
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "x-nxopen-api-key, accept, content-type")
-        self.send_header("Access-Control-Allow-Private-Network", "true")
-        self.send_header("Access-Control-Max-Age", "600")
-
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self.cors()
-        self.end_headers()
-
-    def do_GET(self):
-        path = urllib.parse.urlparse(self.path)
-        if path.path.startswith(PREFIX + "/maplestory/"):
-            return self.proxy()
-        if path.path == "/nexon-prices":
-            return self.prices(urllib.parse.parse_qs(path.query))
-        if path.path == "/health":
-            return self.json(200, {"ok": True, "app": "maple-boss-tracker", "port": PORT})
-        return super().do_GET()
-
-    def json(self, status, obj):
-        body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
-        self.send_response(status)
-        self.send_header("content-type", "application/json; charset=utf-8")
-        self.send_header("cache-control", "no-store")
-        self.cors()
-        self.end_headers()
-        self.wfile.write(body)
-
-    def prices(self, q):
-        posts = max(1, min(30, int((q.get("posts") or ["8"])[0])))
-        gather = max(1, min(5, int((q.get("gather") or ["1"])[0])))
-        key = (posts, gather)
-        if _cache["data"] and _cache["key"] == key and time.time() - _cache["at"] < 600 and not q.get("refresh"):
-            return self.json(200, _cache["data"])
-        try:
-            data = nexon_prices(posts=posts, gather=gather)
-        except urllib.error.HTTPError as e:
-            return self.json(502, {"ok": False, "error": {"name": "HTTP_%d" % e.code, "message": f"메이플스토리 홈페이지 응답 오류 (HTTP {e.code})"}})
-        except Exception as e:
-            return self.json(502, {"ok": False, "error": {"name": "FETCH", "message": f"메이플스토리 홈페이지에 연결하지 못했습니다: {e}"}})
-        if data.get("ok"):
-            _cache.update(at=time.time(), key=key, data=data)
-        self.json(200 if data.get("ok") else 404, data)
-
-    def proxy(self):
-        url = UPSTREAM + self.path[len(PREFIX):]
-        req = urllib.request.Request(url, headers={
-            "x-nxopen-api-key": self.headers.get("x-nxopen-api-key", ""),
-            "accept": "application/json", "user-agent": "maple-boss-tracker-local"})
-        try:
-            with urllib.request.urlopen(req, timeout=20) as r:
-                status, body = r.status, r.read()
-        except urllib.error.HTTPError as e:
-            status, body = e.code, e.read()
-        except Exception as e:
-            status, body = 502, json.dumps({"error": {"name": "PROXY", "message": str(e)}}).encode()
-        self.send_response(status)
-        self.send_header("content-type", "application/json; charset=utf-8")
-        self.send_header("cache-control", "no-store")
-        self.cors()
-        self.end_headers()
-        self.wfile.write(body)
-
-    def log_message(self, fmt, *args):  # 키가 로그에 남지 않도록 경로만 간단히 출력
-        sys.stderr.write("%s\n" % (fmt % args))
-
-
-if __name__ == "__main__":
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    print(f"보스 캐릭터 관리 도우미 실행 중: http://localhost:{PORT}  (종료: Ctrl+C 또는 창 닫기)")
-    print("  · 더블클릭으로 연 index.html 에서 [결정석 가격 갱신]을 누르면 됩니다. 이 창은 열어 두세요.")
-    if "--open" in sys.argv:
-        try: webbrowser.open(f"http://localhost:{PORT}/index.html")
-        except Exception: pass
-    try: srv.serve_forever()
-    except KeyboardInterrupt: print("\n종료합니다.")

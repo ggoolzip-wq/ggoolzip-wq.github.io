@@ -1,0 +1,32 @@
+name: 결정석 가격 자동 갱신
+
+on:
+  schedule:
+    - cron: "17 3 * * *"   # 매일 03:17 UTC (12:17 KST)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-prices
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: 공식 업데이트 공지에서 가격표 읽기
+        run: python3 scripts/update_prices.py
+      - name: 바뀐 경우에만 커밋
+        run: |
+          if git diff --quiet -- prices.json && [ -z "$(git ls-files --others --exclude-standard prices.json)" ]; then
+            echo "prices.json 변경 없음"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add prices.json
+          git commit -m "결정석 가격 자동 갱신 ($(TZ=Asia/Seoul date +%F))"
+          git push

@@ -1,0 +1,101 @@
+# HANDOFF — 보스 캐릭터 관리 (메이플스토리 KMS 보스 결정석·드롭 관리)
+
+다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
+
+## 1. 개요
+- 목적: 메이플스토리(KMS) 본캐·부캐의 **주간/월간 보스 클리어 체크 → 강렬한 힘의 결정 판매 수익 계산**, 보스 드롭(반지 상자 등) 획득 **개수** 기록, 주간·누적 기록.
+- 라이브 주소: **https://ggoolzip-wq.github.io/** (GitHub Pages, `main` 브랜치 루트). 예전 주소 `https://ggoolzip-wq.github.io/maple-boss-tracker/` 는 새 주소로 리디렉트(저장소 `ggoolzip-wq/maple-boss-tracker`의 index.html).
+- 서버 없음. **index.html 한 파일**(CSS/JS/아이콘 base64 내장, 외부 라이브러리 없음). 데이터는 브라우저 localStorage + (선택) 구글 드라이브 appDataFolder.
+- 사용자: 한국어 사용, 비개발자. 집 PC와 PC방에서 같은 데이터로 사용.
+
+## 2. 저장소 구조
+```
+index.html              빌드 결과물 (Pages가 그대로 서비스) — 직접 고치지 말고 src/ 수정 후 빌드
+favicon.png, apple-touch-icon.png   주황버섯 아이콘
+prices.json             결정석 공식 가격 (GitHub Action이 매일 갱신)
+README.md               사용자용 사용법 (한국어)
+HANDOFF.md              이 문서
+.nojekyll               Jekyll 처리 끔
+.github/workflows/update-prices.yml   매일 03:17 UTC 가격 갱신 + workflow_dispatch
+scripts/nexon_prices.py 공식 업데이트 공지 HTML → 가격표 파서 (표준 라이브러리만)
+scripts/update_prices.py  위 파서로 prices.json 갱신 (실패 시 기존 파일 유지, exit 0)
+src/app.js              앱 전체 JS (상태·렌더·이벤트·API·드라이브 동기화)
+src/body.html           <body> 마크업 (헤더, 모달들)
+src/style_v1.css, src/extra.css   스타일 (extra.css가 뒤에 붙음)
+src/icons.json          보스 아이콘 base64 (미리 생성됨)
+src/itemicons.json      드롭 아이템 아이콘 32px base64 (tools/build_items.py로 생성)
+src/logo.json           주황버섯 16/32/64px data URI (tools/build_logo.py로 생성)
+src/assets/             아이템·반지·주황버섯 원본 PNG
+tools/build.py          src/ → index.html
+tools/build_items.py    src/assets → src/itemicons.json (Pillow 필요)
+tools/build_logo.py     주황버섯 PNG → logo.json, favicon.png, apple-touch-icon.png
+tests/                  Playwright 회귀 테스트(test_tracker4~13), mock_nexon.py, fixtures/(공지 HTML 사본), run_all.sh
+```
+
+## 3. 빌드 · 테스트 · 배포
+- 빌드: `python3 tools/build.py` → 루트 `index.html` 갱신. (빌드는 표준 라이브러리만 사용)
+- 아이콘 재생성(필요할 때만): `pip install pillow` 후 `python3 tools/build_items.py`, `python3 tools/build_logo.py src/assets/orange_mushroom_1210102.png src/logo.json .`
+- 테스트: `pip install playwright && python -m playwright install chromium` → `bash tests/run_all.sh` (크롬 지정: `CHROME=/usr/bin/google-chrome`). 결과/스크린샷은 `tests/out/`.
+  - 테스트는 `python -m http.server 8787`로 루트를 띄우거나 file:// 로 엽니다. 넥슨 API·구글(GIS/Drive)은 전부 모의(mock) 응답 — 실제 키·개인 데이터 없음.
+  - test_tracker4/5/6/7/8/10은 결과를 출력(PASS/값)하는 형식, 9/11/12/13은 `FAILS: []`·`ERRORS: []`로 판정. 모든 테스트에서 JS 오류(ERRORS) 0이어야 함.
+  - test13 = 현재 UI 구조(＋추가 통합 모달, 헤더 동기화, ☁ 메뉴) 핵심 테스트.
+- 배포: `main`에 일반 push(강제 push 금지) → Pages가 1분 내 반영. 확인: `curl -s https://ggoolzip-wq.github.io/ | grep '<title>'`.
+- Action이 prices.json을 커밋하므로 push 전 `git pull --rebase`.
+
+## 4. 데이터 모델 · 저장소 키
+- localStorage
+  - `mapleBossTracker.v1` — 앱 상태 S (version 5)
+  - `mapleBossTracker.officialPrices` — 마지막으로 받은 prices.json 캐시
+  - `mapleBossTracker.gdrive` — 드라이브 동기화 메타 `{on, base, fileId, lastSave, lastLoad}`
+  - sessionStorage `mapleBossTracker.gtoken` — 구글 액세스 토큰(탭 세션 동안만)
+  - 키 이름·드라이브 파일명은 기존 데이터 호환을 위해 **바꾸지 말 것** (예전 이름 maple-boss-tracker 그대로).
+- S 구조(요약): `characters[]`(id, name, job, level, world, ocid, accId, isMain, image, exp, `bosses{slot:{enabled,diff,party}}`, `weekly{slot:true}`, `monthly{slot:week}`, `auto`, `sync`, `drops{'slot|item':n}`, `mdrops`, `dropOut{'slot|item':['r4'|'c4'|'x']}`, `mdropOut`), `history[]`(주간 기록: week,total,cleared,crystals,items,perChar[{id,name,meso,count,bosses,items{'slot|item#N':n},outcomes}]), `monthHistory[]`, `startWeek`, `period{week,day,month}`, `worldOrder`, `activeId`, `theme`, `updatedAt`, `settings{accounts[{id,label,key,status}], autoSync, autoEnable, lastSync, weeklyLimit:12, monthlyLimit:1, prices:{}}`.
+- 초기화: 주간 = 목요일 00:00 KST, 월간 = 1일 00:00 KST. `checkResets()`가 지난 기간을 history/monthHistory로 보관(그 시점 파티 인원으로 라벨 고정, 키 `item#N`).
+- 마이그레이션은 `load()/migrate()/normChar()`에서 처리(예전 필드 삭제: apiMode, driveKeys, worldLimit, dropParty, priceSource, 수동 가격 등). 새 기능은 항상 기존 데이터가 깨지지 않게 추가.
+- 구글 드라이브: 파일 `maple-boss-tracker.json` (appDataFolder, 범위 `drive.appdata`). 내용 `{app, format:1, savedAt, updatedAt, characters(개수), withKeys:true, data:S(API 키 포함)}`.
+  - 로그인 시: 드라이브만 있음→불러오기, 이 PC만→업로드, 둘 다 다르면 시각·캐릭터 수를 보여 주고 한 번 질문(드라이브 불러오기 / 이 PC로 덮어쓰기). 이후 변경 5초 뒤·페이지 숨김 시 자동 저장, 저장 전 원격 updatedAt 확인으로 덮어쓰기 방지.
+
+## 5. 넥슨 Open API (https://openapi.nexon.com)
+- 브라우저에서 `https://open.api.nexon.com` **직접 호출**(헤더 `x-nxopen-api-key`). 프록시 없음.
+- 사용 엔드포인트: `/maplestory/v1/character/list`(키 소유 계정의 캐릭터 목록, account_list 여러 개 합침), `/maplestory/v1/id`(이름→ocid), `/maplestory/v1/character/basic`(레벨·직업·이미지·경험치), `/maplestory/v1/scheduler/character-state`(메이플 스케줄러: 보스 complete_flag/clear_flag → 자동 체크).
+- 규칙: character/list·scheduler는 **그 키를 발급한 넥슨 계정의 캐릭터만** 조회 → 계정마다 키 등록(accounts[]), 캐릭터는 accId로 키 연결. 스케줄러는 2026-06-25 이후 접속한 캐릭터만. 파티 인원은 API에 없음(수동).
+- 오류는 HTTP 상태+코드(OPENAPI00001~00011)+서버 메시지+한국어 안내로 표시.
+- 자동 동기화: 페이지가 열려 있으면 15분마다(옵션), 헤더 **동기화** 버튼으로 수동.
+
+## 6. 결정석 가격 자동 갱신
+- `.github/workflows/update-prices.yml`: 매일 03:17 UTC(12:17 KST) + 수동 실행. `scripts/update_prices.py`가 https://maplestory.nexon.com/News/Update 목록을 최신순으로 훑어 '강렬한 힘의 결정' 가격표가 있는 공지를 찾아 `prices.json`(rows: boss/old/new/effective, source url/title/date, checkedAt, fetchedAt) 갱신. 내용이 바뀌었을 때만 커밋(가격 동일하면 7일마다 checkedAt만).
+- 사이트는 로드 시 `./prices.json?d=날짜`를 받아 보스·난이도 이름 매칭 후 적용. 적용일(effective)이 미래면 그날까지 대기. 실패 시 캐시/내장 가격(2026-09-17 공지) 사용.
+- 가격은 **보스당 한 줄, 수정 UI 없음**, 출처 라벨 없음. 오른쪽 '결정석 가격' 카드(강렬한 힘의 결정 (주간) 아이콘, 싼 순서)에 작게 '마지막 확인 날짜'.
+- 테스트 픽스처: `tests/fixtures/`(공식 공지 813 사본, 46행). 이 작업 박스에서는 nexon.com 접속이 막혀 실서버 확인 불가였음 — Action 실행 결과는 GitHub Actions 탭에서 확인.
+
+## 7. 구글 OAuth
+- 클라이언트 ID: `463037848804-2ut2277bsc2cf4vpf4qb0rl7hlt9ur8c.apps.googleusercontent.com` (src/app.js 상단 `GOOGLE_CLIENT_ID`). 승인된 JavaScript 원본: `https://ggoolzip-wq.github.io` (경로 없음).
+- Google Identity Services 토큰 모델(`accounts.google.com/gsi/client`) + Drive REST v3, 범위 `https://www.googleapis.com/auth/drive.appdata`(비민감 범위).
+- 동의 화면은 **테스트 모드**일 가능성 → 사용할 구글 계정을 'Google 인증 플랫폼 > 대상 > 테스트 사용자'에 추가해야 함. '확인되지 않은 앱' 화면은 '계속'으로 진행. access_denied/popup_closed 등은 한국어 안내 모달.
+- https 또는 localhost에서만 로그인 가능(file://에서는 ☁ 메뉴에 안내).
+
+## 8. 사용자가 정한 동작·취향 (변경 시 사용자 확인 필요)
+- **단순한 UI** 선호. 설정 탭 없음. JSON 백업(내보내기/가져오기) 없음. 로컬 프록시(serve.py) 없음.
+- 일일 보스 없음. 처치 한도 고정: 캐릭터당 **주간 12 / 월간 1**(UI 없음). 월드 판매 한도 계산 없음.
+- **주간 수익에서 월간 보스(검은 마법사) 제외**, '이번 달 월간 보스'로 따로 표시·월간 기록에 보관.
+- 수익 = 결정석만. **드롭은 개수만 기록**(메소 환산 없음). 칩 클릭 +1, − 배지/우클릭 −1.
+- 반지 상자(녹옥/홍옥/흑옥/백옥/생명) 클릭 → 결과 선택 모달 '리스트레인트 링 4레벨 / 컨티뉴어스 링 4레벨 / 둘 다 못 먹었어요'(리4/컨4/꽝). 리4·컨4는 **불꽃놀이 + 축하드립니다!**. X/Esc는 기록 안 함.
+- 파티 표시: 1인은 이름만, 파티는 '아이템 (N인 분배)'. 이번 주/달 기록은 **현재 파티 인원 설정을 따름**, 기록 보관(초기화) 후에는 고정. 모든 화면에서 같은 형식·×개수.
+- 결정석 가격: 보스당 단일 가격, 출처 라벨 없음, 자동 갱신만.
+- 사이드바: 캐릭터 카드에 레벨 항상 표시, 이번 주 12/12면 왼쪽 위 빨간 **'완' 도장**(초기화/12 미만이면 사라짐).
+- 헤더: 로고 = 메이플 **주황버섯**(몹 1210102) 실제 게임 이미지(파비콘 동일), **동기화** 버튼(아이콘+텍스트, 마지막 시각은 툴팁, 동기화 중 아이콘 회전), **☁** 버튼 → 작은 메뉴(상태·구글 로그인/로그아웃·지금 저장).
+- 캐릭터 추가: 사이드바 **+ 추가** 하나로 통합 모달 — 여러 넥슨 API 키 관리(이름, 가린 키, 캐릭터 목록, 삭제, + API 키 추가) → 바로 그 계정 캐릭터 목록(검색·필터·여러 명 선택 추가), 아래 '이름으로 직접 추가'. 기존 캐릭터는 ✎로 수정.
+- **넥슨 API 키는 드라이브에 기본 저장**(앱 전용 숨김 폴더). 체크박스 없음.
+- **'로그아웃 후 이 PC 데이터 지우기' 버튼 없음**(사용자 결정: PC방 PC는 종료 시 자동 초기화). ☁ 메뉴엔 일반 로그인/로그아웃만.
+- 사이트 이름 '보스 캐릭터 관리'. 주소는 루트(ggoolzip-wq.github.io).
+
+## 9. 알려진 한계 · 주의
+- 실제 구글 로그인·실제 넥슨 키 흐름은 자동 테스트로 확인 불가(모의 응답으로 검증). 실서버 동작은 사용자 확인으로 검증해 옴.
+- 공식 공지 HTML 구조가 바뀌면 파서가 0행 → Action은 기존 prices.json 유지(경고만). 이때 scripts/nexon_prices.py 수정 필요.
+- 공지 표에 없는 보스 가격은 내장 기본값(src/app.js PRICE_CONFIG) 사용.
+- GitHub 무료 계정: 60일간 커밋이 없으면 예약 Action이 자동 비활성화될 수 있음(Actions 탭에서 다시 켜기).
+- index.html은 아이콘 base64 때문에 약 340KB.
+- 드롭 목록(src/app.js DROPS, RING_DROPS)은 커뮤니티 자료 기준(반지 상자 분류: 2026-09 기준).
+
+## 10. 보류 중인 아이디어
+- **테스트 서버 공지의 가격을 '다음 패치 예정 가격'으로 표시** — 사용자 결정 대기 중(아직 구현 안 함).
