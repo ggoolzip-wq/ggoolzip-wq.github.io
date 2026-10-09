@@ -372,3 +372,11 @@ nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius
 .gsc b small{font-size:.72rem;color:var(--muted);font-weight:600}
 .gsc.main b{font-size:1.15rem;color:var(--accent)}
 @media(max-width:520px){.gv{font-size:1.2rem}.grow-r{flex-wrap:wrap}.grow-r .grow{flex-basis:calc(100% - 50px)}.gsc{min-width:0;flex:1;align-items:flex-start}}
+/* 일퀘 칸 지역 아이콘 (이름 왼쪽 20px, 덮개 안에서는 살짝 어둡게) */
+.dqn{display:flex;align-items:center;gap:4px;min-width:0}
+.dqn>span{min-width:0}
+.dqico{width:20px;height:20px;object-fit:contain;flex:none;image-rendering:auto;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+.dqov-n{display:inline-flex;align-items:center;gap:4px}
+.dqov-n .dqico.ov{width:18px;height:18px;opacity:.85}
+.dqi{padding-left:9px}
+@media(max-width:520px){.dqico{width:18px;height:18px}.dqn{gap:3px}}

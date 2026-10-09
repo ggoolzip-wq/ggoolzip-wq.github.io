@@ -23,6 +23,8 @@ js = lambda n: json.load(open(os.path.join(SRC, n), encoding='utf-8'))
 s = rd('app.js')
 s = s.replace('/*__BOSS_ICONS__*/{}', json.dumps(js('icons.json'), separators=(',', ':')))
 s = s.replace('/*__ITEM_ICONS__*/{}', json.dumps(js('itemicons.json'), separators=(',', ':')))
+if os.path.exists(os.path.join(SRC, 'dqicons.json')):  # 일퀘 현황 지역 아이콘 (tools/build_dqicons.py)
+    s = s.replace('/*__DQ_ICONS__*/{}', json.dumps(js('dqicons.json'), separators=(',', ':')))
 css = rd('style_v1.css').replace('</style>', rd('extra.css') + '</style>')
 LOGO = js('logo.json')  # 주황버섯 (mob 1210102, maplestory.io KMS 389 mob icon)
 head = ('<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n'
