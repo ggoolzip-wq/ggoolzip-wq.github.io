@@ -13,10 +13,13 @@
 index.html              빌드 결과물 (Pages가 그대로 서비스) — 직접 고치지 말고 src/ 수정 후 빌드
 favicon.png, apple-touch-icon.png   주황버섯 아이콘
 prices.json             결정석 공식 가격 (GitHub Action이 매일 갱신)
+feed.json               소식 피드 (GitHub Action이 5분마다 확인, 새 글이 있을 때만 커밋) — 10장 참고
 README.md               사용자용 사용법 (한국어)
 HANDOFF.md              이 문서
 .nojekyll               Jekyll 처리 끔
 .github/workflows/update-prices.yml   매일 03:17 UTC 가격 갱신 + workflow_dispatch
+.github/workflows/update-feed.yml     5분마다 소식 수집(scripts/update_feed.py) + workflow_dispatch, secret NEXON_API_KEY 사용
+scripts/update_feed.py  소식 수집기 4종(사료감지·패치내역·테섭·마빡도로시) → feed.json (표준 라이브러리만)
 scripts/nexon_prices.py 공식 업데이트 공지 HTML → 가격표 파서 (표준 라이브러리만)
 scripts/update_prices.py  위 파서로 prices.json 갱신 (실패 시 기존 파일 유지, exit 0)
 src/app.js              앱 전체 JS (상태·렌더·이벤트·API·드라이브 동기화)
@@ -30,7 +33,7 @@ src/assets/             아이템·반지·주황버섯 원본 PNG
 tools/build.py          src/ → index.html
 tools/build_items.py    src/assets → src/itemicons.json (Pillow 필요)
 tools/build_logo.py     주황버섯 PNG → logo.json, favicon.png, apple-touch-icon.png
-tests/                  Playwright 회귀 테스트(test_tracker4~14), mock_nexon.py, fixtures/(공지 HTML 사본), run_all.sh
+tests/                  Playwright 회귀 테스트(test_tracker4~15), mock_nexon.py, fixtures/(공지 HTML 사본), run_all.sh
 ```
 
 ## 3. 빌드 · 테스트 · 배포
@@ -41,6 +44,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~14), mock_nexo
   - test_tracker4/5/6/7/8/10은 결과를 출력(PASS/값)하는 형식, 9/11/12/13은 `FAILS: []`·`ERRORS: []`로 판정. 모든 테스트에서 JS 오류(ERRORS) 0이어야 함.
   - test13 = 현재 UI 구조(＋추가 통합 모달, 헤더 동기화, ☁ 메뉴) 핵심 테스트.
   - test14 = 일퀘 현황·길드 현황 탭(탭 순서·ㅡ 구분선, 항목/상태/잠금, 완료 덮개·호버, 편집(전체/캐릭터별/카드 숨김)·저장, 10분 캐시·자동 갱신, 길드 랭킹 어제 대체, 본캐 수로, 375/320px). `MBT_SHOTDIR=폴더`면 tab_daily.png·tab_daily_hover.png·tab_guild.png 를 그 폴더에도 저장. mock_nexon.py에 실제 응답 이름 그대로의 daily/weekly_contents와 /ranking/guild 모의 응답, 호출 기록(CALLS)·GUILD_EMPTY 추가.
+  - test15 = 소식 피드 카드(모의 feed.json: 위치, 탭·안 읽은 수, N 배지·읽음 유지, 사료 기한·만료 흐림, 한 줄 말줄임, 쪽 번호 5개+‹›, 탭 전환 시 1쪽, 수집 실패 표시, 1280x800·1920x1080 모든 탭에서 카드 때문에 페이지가 길어지지 않음·스크롤해도 화면 안, 390/320px 모바일). 스크린샷 feed_card*.png.
   - test12 = 12/12 완료 덮개(문구·두 줄 배치·카드 안 맞춤·호버/클릭/터치 통과). `MBT_SHOT=경로`를 주면 사이드바 스크린샷을 그 경로에도 저장.
   - 주의: 8787 포트를 다른 서버(예: 로컬 개발 사본 /workspace/maple-boss-tracker)가 이미 쓰고 있으면 테스트가 그쪽 파일을 엽니다 → 개발 사본도 같은 index.html로 맞춘 뒤 테스트.
 - 배포: `main`에 일반 push(강제 push 금지) → Pages가 1분 내 반영. 확인: `curl -s https://ggoolzip-wq.github.io/ | grep '<title>'`.
@@ -52,6 +56,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~14), mock_nexo
   - `mapleBossTracker.officialPrices` — 마지막으로 받은 prices.json 캐시
   - `mapleBossTracker.sched` — 캐릭터별 스케줄러 요약 캐시 `{charId:{date, level, items{cer…xmp:{st,now,max,reg,name}}, guild{suro,flag,mission}, at, ok, msg, errAt}}` (일퀘·길드 탭용, 드라이브 동기화 안 함)
   - `mapleBossTracker.guild` — 길드 랭킹 캐시 `{date, t1, t2(랭킹 행), at, ok, msg}`
+  - `mapleBossTracker.feedSeen` — 소식 카드에서 읽은(클릭한) 글 id 배열 (feed.json에 남아 있는 것만 보관, 드라이브 동기화 안 함)
   - `mapleBossTracker.gdrive` — 드라이브 동기화 메타 `{on, base, fileId, lastSave, lastLoad}`
   - sessionStorage `mapleBossTracker.gtoken` — 구글 액세스 토큰(탭 세션 동안만)
   - 키 이름·드라이브 파일명은 기존 데이터 호환을 위해 **바꾸지 말 것** (예전 이름 maple-boss-tracker 그대로).
@@ -85,6 +90,20 @@ tests/                  Playwright 회귀 테스트(test_tracker4~14), mock_nexo
 - 가격은 **보스당 한 줄, 수정 UI 없음**, 출처 라벨 없음. 오른쪽 '결정석 가격' 카드(강렬한 힘의 결정 (주간) 아이콘, 싼 순서)에 작게 '마지막 확인 날짜'.
 - 테스트 픽스처: `tests/fixtures/`(공식 공지 813 사본, 46행). 이 작업 박스에서는 nexon.com 접속이 막혀 실서버 확인 불가였음 — Action 실행 결과는 GitHub Actions 탭에서 확인.
 
+## 6-1. 소식 피드 (왼쪽 아래 카드, 2026-10-09 추가)
+- 구조: `.github/workflows/update-feed.yml`(cron `*/5 * * * *` + 수동 실행) → `scripts/update_feed.py`가 4개 출처를 확인해 **새 글만** `feed.json`에 추가 → 바뀐 게 있을 때만 커밋(`git pull --rebase -X theirs` 후 push, 최대 5회 재시도). 사이트는 `./feed.json?t=<5분 단위>`만 읽음(로드 시 + 5분마다 + 탭 복귀 시). **사용자 API 키 사용 안 함.** file:// 로 열면 https://ggoolzip-wq.github.io/feed.json 을 읽음(Pages는 CORS *).
+- GitHub cron은 실제로 5~15분 늦게 도는 일이 흔함(무료 러너 사정). 저장소에 60일간 커밋이 없으면 예약 실행이 꺼질 수 있지만 피드 커밋이 있어서 사실상 유지됨.
+- 출처(소스별 try/except, 하나가 실패해도 나머지는 계속):
+  - **사료감지(saryo)**: 넥슨 Open API `/maplestory/v1/notice`(매회) + `/notice-event`(15분마다), 워터마크보다 큰 id만 `…/detail` 조회(회당 최대 10건). 규칙 = 본문에 '메이플 운영자' 또는 '운영자 NPC'가 있고, 그 앞 100자·뒤 70자 안에 수령/지급/받기 등이 있음. 제외: '수령 불가', '받을 수 없', '지급되지 않', 코인샵/상점, 소울 교환/조각, '교환하기/교환해 주/교환할 수'('교환 여부' 같은 안내 문구는 제외하지 않음 — 150276 본문에 있음). '수령 기간 … ~ M월 D일 (오전|오후) H시 M분'에서 마감 추출(없으면 23:59) → `end`. 만료된 글은 카드에서 흐리게.
+  - **패치내역(patch)**: `/notice-update`(10분마다).
+  - **테섭(test)**: https://maplestory.nexon.com/Testworld/News/Update 목록 HTML 스크랩(`[수정N]` em 태그 제거).
+  - **마빡도로시(mabbak)**: 인벤 닉네임 검색 `https://www.inven.co.kr/board/maple/{게시판}?name=nicname&keyword=마빡도로시`, 게시판 5974·2304·2314·2316·2587 각 1회(1.2초 간격, 회당 5요청 + 새 글당 본문 1요청). 새 글은 본문의 articleTitle/articleDate(연도·시각)로 기록. 게시판 첫 방문 땐 워터마크만 설정(공지 고정글·옛 글을 채우지 않음). 모든 게시판이 실패할 때만 소스 실패.
+- API 호출량(개발 키 1,000회/일): 5분 실행 288회 × /notice 1 + /notice-update 144 + /notice-event 96 ≈ 530회/일 + 새 공지 detail. (cron 지연 때문에 실제로는 더 적음.) 키는 저장소 secret `NEXON_API_KEY` (2026-10-09 설정, 개발 키). 할당량이 모자라면 실서비스 키로 교체: Settings → Secrets → Actions.
+- 처음 실행/워터마크 없는 출처는 '지금 있는 글 = 이미 본 것'으로 처리(예전 글을 채우지 않음). 시드(2026-10-09): 사료 150276 '(추가) 리워드 드롭 관련 오류 안내'(~2026-10-21 23:59), 패치 814 '클라이언트 1.2.419(5) 업데이트 안내', 테섭 199·198, 마빡도로시 인벤 5974/7258005 '10월 테섭(라방) 일정 / 2026 한글날 이벤트 요약'(2026-09-30 02:36).
+- feed.json 형식: `{version:1, updatedAt, sources:{saryo|patch|test|mabbak:{label, ok, checkedAt, lastOkAt, error}}, state:{watermarks:{notice, notice-event, notice-update, test, inven:<게시판>}}, items:{saryo|patch|test|mabbak:[{id, title, url, date(ISO KST), end?, src?, board?}]}}` — id로 중복 제거, 최신순, 탭당 최대 200개. 저장 조건 = 새 글 / 출처 성공·실패 바뀜 / 워터마크 바뀜 / 3시간 하트비트(상태 시각 갱신). `GITHUB_OUTPUT`에 changed=true|false.
+- 로컬 실행: `NEXON_API_KEY=… python3 scripts/update_feed.py` (옵션 `FEED_ALL=1` 모든 출처 강제, `FEED_OUT=경로`, `FEED_PROXY=http://…` nexon.com·인벤 요청에만 프록시).
+- 카드 UI(src/app.js renderFeed()/feedFit(), extra.css .feedcard/.ftab/.fit/.fpg): 탭 4개 + 안 읽은 수, 글 = N 배지·한 줄 제목(말줄임)·날짜(올해가 아니면 yy.mm.dd)·사료는 ~마감일, 클릭 = 새 탭 + 읽음. 안쪽 스크롤 없음 — 쪽 번호(최대 5개, 6쪽 이상이면 ‹ ›), 탭 바꾸면 1쪽. 카드 높이 = 남은 화면 높이(본문이 더 길면 본문 끝까지, 짧으면 화면 끝 − 아래 안내문, 따라 내려올 때도 화면 안), 쪽당 줄 수 = 그 높이 ÷ 31px(최소 2, 최대 20). 820px 이하 모바일은 본문 아래로(사이드바 display:contents + order) 고정 6줄. 출처 실패면 탭 안에 작게 '⚠ 수집 실패 · 마지막 성공 …'(오류는 툴팁). 새로고침 버튼 없음.
+
 ## 7. 구글 OAuth
 - 클라이언트 ID: `463037848804-2ut2277bsc2cf4vpf4qb0rl7hlt9ur8c.apps.googleusercontent.com` (src/app.js 상단 `GOOGLE_CLIENT_ID`). 승인된 JavaScript 원본: `https://ggoolzip-wq.github.io` (경로 없음).
 - Google Identity Services 토큰 모델(`accounts.google.com/gsi/client`) + Drive REST v3, 범위 `https://www.googleapis.com/auth/drive.appdata`(비민감 범위).
@@ -113,6 +132,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~14), mock_nexo
 - 일퀘 칸 아이콘(이름 왼쪽 20px, 모바일 18px, 완료 덮개 안에도 18px로 살짝 어둡게): 세르니움~카르시온 = 넥슨 Open API `/character/symbol-equipment`의 어센틱심볼 symbol_icon(터래플), 탈라하트/기어드락 = maplestory.io GMS/270 item 1714000/1714001(그랜드 어센틱심볼, JMS/444와 픽셀 동일 — KMS 389 데이터엔 아직 없음), 몬스터파크 = maplestory.io KMS/389 item 4001864(몬스터파크 REBORN 무료 이용권), 익스트림 몬파 = maplestory.io KMS/389 NPC 9071000 '슈피겔만'(몬스터파크 맵 951000000, 흰 호랑이 버전) 얼굴·모자만 잘라냄(원본 src/assets/dqicons/xmp_src_npc9071000.png).
 - 일퀘 칸은 **모든 상태에서 가운데 정렬**(아이콘+지역명, 상태 줄). **완료 칸은 항상 덮개**(편집 중 캐릭터별로 숨김 처리한 완료 칸 포함) — test14가 '완료'로 보이는 모든 칸에 덮개가 보이는지 확인.
 - 일퀘 현황: 설정 탭 없이 탭 안 **편집** 토글 하나로 표시 항목(전체 칩)·캐릭터별 항목(칸 클릭)·캐릭터 카드 숨김(👁) 설정. 완료 칸 = 보스 완료 덮개와 같은 rgba(0,0,0,.55) 덮개 + 지역명/✓ 완료, 마우스를 올리면 사라짐(밑글자는 덮개가 있을 때 숨김). 코드: src/app.js renderDaily()/dqCell(), extra.css .dq*.
+- 소식 카드: 왼쪽 아래, 페이지가 카드 때문에 스크롤되면 안 됨(안쪽 스크롤도 없음, 쪽 번호로). 새로고침 버튼·설정 없음. 마빡도로시 = 인벤 닉네임 검색(포털 글보다 실제 게시글 우선).
 - 길드 현황: 길드/월드는 고정값(설정 없음, 사용자가 바꿔 달라고 하면 GUILD 상수 수정). 본캐 목록 = isMain 캐릭터(현재 UI는 본캐 1명만 지정 가능).
 
 ## 9. 알려진 한계 · 주의
@@ -124,12 +144,15 @@ tests/                  Playwright 회귀 테스트(test_tracker4~14), mock_nexo
 - 몬스터파크 now_count가 캐릭터 기준인지 월드 기준인지 API 문서에 없음(실측 두 캐릭터 모두 0이라 미확인). 앱은 캐릭터 기준으로 보고 7회 이상이면 완료 처리.
 - 스케줄러 일퀘·몬파 정보는 넥슨이 '접속 중·접속 종료 시'에만 갱신 → 게임 안에서 막 끝낸 퀘스트는 접속을 끊기 전엔 반영이 늦을 수 있음.
 - 320px 화면에서 API 키가 있으면(동기화 버튼 표시) 헤더 버튼이 약 20px 넘침 — 이번 작업 전부터 있던 현상(헤더는 손대지 않음).
+- 소식 카드 높이는 남은 화면에 맞추므로 캐릭터가 많으면(사이드바 위쪽이 길면) 1280x800에서 쪽당 2줄까지 줄어듦(최소 2줄 — 그보다 좁으면 그만큼 페이지가 길어짐).
+- 인벤은 GitHub Actions(해외 클라우드 IP)를 막을 수 있음 → 실패 시 카드에 '수집 실패' 표시. 실측 결과는 11장 변경 기록 참고.
 - 드롭 목록(src/app.js DROPS, RING_DROPS)은 커뮤니티 자료 기준(반지 상자 분류: 2026-09 기준).
 
 ## 10. 보류 중인 아이디어
 - **테스트 서버 공지의 가격을 '다음 패치 예정 가격'으로 표시** — 사용자 결정 대기 중(아직 구현 안 함).
 
 ## 11. 변경 기록
+- 2026-10-09: **소식 피드 카드** 추가(왼쪽 아래, 사료감지·패치내역·테섭·마빡도로시). update-feed.yml(5분 cron) + scripts/update_feed.py + feed.json(시드), secret NEXON_API_KEY(개발 키) 설정. 카드 높이 자동 맞춤·쪽 번호·N 배지/안 읽은 수(localStorage feedSeen)·수집 실패 표시. test15 추가(run_all에 15). 자세한 내용은 6-1장.
 - 2026-10-09: 일퀘 칸 지역 아이콘 추가(어센틱/그랜드 어센틱심볼 8종, 몬스터파크 이용권, 익몬 = 몬스터파크 NPC 슈피겔만 얼굴; 출처는 8장). 칸 내용 모든 상태 가운데 정렬. tools/build_dqicons.py·src/dqicons.json 추가, build.py에 DQ_ICONS 치환.
 - 2026-10-09: 완료 덮개 확인 — 미리보기 사진에서 단풍용사 '아르크스' 칸에 덮개가 없던 것은 미리보기 스크립트가 그 칸에 마우스를 올린 채 찍었기 때문(버그 아님). 다만 편집 중 '캐릭터별 숨김'으로 표시된 완료 칸에는 덮개가 빠지던 불일치가 있어 고침(완료면 항상 덮개). test14에 '완료로 보이는 모든 칸에 덮개(불투명도 1, rgba .55)' 확인, 아이콘·가운데 정렬 확인 추가.
 - 2026-10-09: 상단 탭에 ㅡ 구분선 + **일퀘 현황**·**길드 현황** 탭 추가. 스케줄러 호출을 fetchSched()로 통일(동기화·탭 공용, 요약 캐시 mapleBossTracker.sched). 일퀘: 그란디스 8지역 일퀘·몬파·익몬(주간), 완료 덮개·호버, 레벨 잠금 줄, 편집(전체/캐릭터별/카드 숨김 → S.dq), 10분 자동 갱신. 길드: 봉사활동(스카니아) 지하 수로·플래그 레이스 점수·순위·레벨·마스터(오늘→어제 대체), 본캐 이번 주 지하 수로·플래그·주간 미션. test14 추가, mock 확장, run_all에 14 포함.

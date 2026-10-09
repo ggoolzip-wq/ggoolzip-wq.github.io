@@ -1,0 +1,90 @@
+{
+ "version": 1,
+ "updatedAt": "2026-10-09T22:37:48+09:00",
+ "sources": {
+  "saryo": {
+   "label": "사료감지",
+   "ok": true,
+   "checkedAt": "2026-10-09T22:37:42+09:00",
+   "lastOkAt": "2026-10-09T22:37:42+09:00",
+   "error": ""
+  },
+  "patch": {
+   "label": "패치내역",
+   "ok": true,
+   "checkedAt": "2026-10-09T22:37:42+09:00",
+   "lastOkAt": "2026-10-09T22:37:42+09:00",
+   "error": ""
+  },
+  "test": {
+   "label": "테섭",
+   "ok": true,
+   "checkedAt": "2026-10-09T22:37:43+09:00",
+   "lastOkAt": "2026-10-09T22:37:43+09:00",
+   "error": ""
+  },
+  "mabbak": {
+   "label": "마빡도로시",
+   "ok": true,
+   "checkedAt": "2026-10-09T22:37:48+09:00",
+   "lastOkAt": "2026-10-09T22:37:48+09:00",
+   "error": ""
+  }
+ },
+ "state": {
+  "watermarks": {
+   "notice": 150276,
+   "notice-event": 1397,
+   "notice-update": 814,
+   "test": 199,
+   "inven:5974": 7258005,
+   "inven:2304": 48312,
+   "inven:2314": 11275,
+   "inven:2316": 1786,
+   "inven:2587": 2867
+  }
+ },
+ "items": {
+  "saryo": [
+   {
+    "id": "notice:150276",
+    "title": "(추가) 리워드 드롭 관련 오류 안내",
+    "url": "https://maplestory.nexon.com/News/Notice/Notice/150276",
+    "date": "2026-10-08T18:12:00+09:00",
+    "end": "2026-10-21T23:59:00+09:00",
+    "src": "notice"
+   }
+  ],
+  "patch": [
+   {
+    "id": "update:814",
+    "title": "클라이언트 1.2.419(5) 업데이트 안내",
+    "url": "https://maplestory.nexon.com/news/update/814",
+    "date": "2026-09-22T09:00:00+09:00"
+   }
+  ],
+  "test": [
+   {
+    "id": "test:199",
+    "title": "클라이언트 1.2.206 릴리즈(이벤트, 컨텐츠, 개선사항 및 오류 수정)",
+    "url": "https://maplestory.nexon.com/Testworld/News/Update/199",
+    "date": "2026-09-10T00:00:00+09:00"
+   },
+   {
+    "id": "test:198",
+    "title": "클라이언트 1.2.206 릴리즈(스킬 조정)",
+    "url": "https://maplestory.nexon.com/Testworld/News/Update/198",
+    "date": "2026-09-10T00:00:00+09:00"
+   }
+  ],
+  "mabbak": [
+   {
+    "id": "inven:5974:7258005",
+    "title": "10월 테섭(라방) 일정 / 2026 한글날 이벤트 요약",
+    "url": "https://www.inven.co.kr/board/maple/5974/7258005",
+    "date": "2026-09-30T02:36:00+09:00",
+    "board": "5974"
+   }
+  ]
+ }
+}

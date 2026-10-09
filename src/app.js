@@ -1742,5 +1742,91 @@ if(autoDue() || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))) syncAll({s
 setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden && autoDue()) syncAll({silent:true}); else tabTick(); }, 60e3);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); return; } if(checkResets()) render(); if(autoDue()) syncAll({silent:true}); else tabTick(); });
 window.addEventListener('pagehide',()=>{ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); });
+/* =====================================================================
+ *  소식 피드 (왼쪽 아래 카드)
+ *  GitHub Actions(update-feed.yml, 5분마다)가 feed.json 을 갱신 → 사이트는 그 파일만 읽음.
+ *  API 키·외부 요청 없음. 읽음 표시는 이 브라우저 localStorage(mapleBossTracker.feedSeen).
+ * ===================================================================== */
+const FEED_TABS=[['saryo','사료감지'],['patch','패치내역'],['test','테섭'],['mabbak','마빡도로시']];
+const FEED_LIVE='https://ggoolzip-wq.github.io/feed.json', FEED_SEEN_KEY='mapleBossTracker.feedSeen', FEED_ROW=31, FEED_MOBILE_ROWS=6;
+const feed={data:null,err:'',tab:'saryo',page:1,per:5,at:0};
+let feedSeen=new Set((()=>{ try{ return JSON.parse(localStorage.getItem(FEED_SEEN_KEY))||[]; }catch(e){ return []; } })());
+const feedItems=t=>((feed.data&&feed.data.items&&feed.data.items[t])||[]);
+const feedUnseen=t=>feedItems(t).filter(x=>!feedSeen.has(x.id)).length;
+function feedSaveSeen(){ // feed 에 아직 있는 글만 기억 (무한히 커지지 않게)
+  const live=new Set(FEED_TABS.flatMap(([t])=>feedItems(t).map(x=>x.id)));
+  const keep=feed.data?[...feedSeen].filter(id=>live.has(id)):[...feedSeen];
+  try{ localStorage.setItem(FEED_SEEN_KEY,JSON.stringify(keep)); }catch(e){}
+}
+async function feedLoad(){
+  try{
+    const base=location.protocol==='file:'?FEED_LIVE:'./feed.json'; // 압축본(로컬 파일)으로 열었을 때는 사이트의 feed.json
+    const r=await fetch(base+'?t='+Math.floor(Date.now()/3e5),{cache:'no-cache'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json(); if(!d||typeof d.items!=='object') throw new Error('형식 오류');
+    feed.data=d; feed.err=''; feed.at=Date.now();
+  }catch(e){ if(!feed.data) feed.err='소식을 불러오지 못했습니다'; }
+  renderFeed();
+}
+const fdKst=iso=>{ const t=Date.parse(iso); if(isNaN(t)) return null; const d=new Date(t+9*3600e3); return {y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate(),h:d.getUTCHours(),mi:d.getUTCMinutes()}; };
+const p2=n=>String(n).padStart(2,'0');
+function fdShort(iso){ const k=fdKst(iso), now=fdKst(new Date().toISOString()); if(!k) return '';
+  return (k.y!==now.y?String(k.y).slice(2)+'.':'')+p2(k.m)+'.'+p2(k.d); }
+function fdFull(iso){ const k=fdKst(iso); return k?`${k.y}.${p2(k.m)}.${p2(k.d)} ${p2(k.h)}:${p2(k.mi)}`:''; }
+function renderFeed(){
+  const c=$('#feedCard'); if(!c) return;
+  const t=feed.tab, items=feedItems(t), per=Math.max(1,feed.per), pages=Math.max(1,Math.ceil(items.length/per));
+  feed.page=Math.min(Math.max(1,feed.page),pages);
+  const src=feed.data&&feed.data.sources&&feed.data.sources[t];
+  const tabs=FEED_TABS.map(([k,l])=>{ const n=feedUnseen(k);
+    return `<button type="button" class="ftab${k===t?' on':''}" data-ftab="${k}" aria-pressed="${k===t}">${l}${n?`<b class="fcnt" aria-label="새 글 ${n}개">${n>99?'99+':n}</b>`:''}</button>`; }).join('');
+  let note='';
+  if(src&&src.ok===false) note=`<div class="fnote" title="${esc(src.error||'')}">⚠ 수집 실패${src.lastOkAt?` · 마지막 성공 ${esc(fdFull(src.lastOkAt))}`:''}</div>`;
+  const now=Date.now(), rows=items.slice((feed.page-1)*per,feed.page*per).map(x=>{
+    const isNew=!feedSeen.has(x.id), exp=x.end&&Date.parse(x.end)<now;
+    const tip=`${x.title}\n${fdFull(x.date)}${x.end?`\n수령 기한 ~${fdFull(x.end)}${exp?' (종료)':''}`:''}`;
+    return `<li><a class="fit${exp?' exp':''}" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" data-fid="${esc(x.id)}" title="${esc(tip)}">${isNew?'<span class="fnew">N</span>':''}<span class="ftt">${esc(x.title)}</span>${x.end?`<span class="fend">~${esc(fdShort(x.end))}</span>`:''}<span class="fdt">${esc(fdShort(x.date))}</span></a></li>`; }).join('');
+  const body=feed.err?`<div class="fempty">${esc(feed.err)}</div>`:!feed.data?`<div class="fempty">불러오는 중…</div>`:items.length?`<ul class="flist">${rows}</ul>`:`<div class="fempty">아직 소식이 없습니다</div>`;
+  let pager='';
+  if(pages>1){ let s=Math.max(1,feed.page-2), e=Math.min(pages,s+4); s=Math.max(1,e-4);
+    const nums=[]; for(let i=s;i<=e;i++) nums.push(`<button type="button" class="fpg${i===feed.page?' on':''}" data-fpage="${i}"${i===feed.page?' aria-current="page"':''}>${i}</button>`);
+    const more=pages>5;
+    pager=(more?`<button type="button" class="fpg fnav" data-fpage="${feed.page-1}"${feed.page<=1?' disabled':''} aria-label="이전">‹</button>`:'')+nums.join('')+(more?`<button type="button" class="fpg fnav" data-fpage="${feed.page+1}"${feed.page>=pages?' disabled':''} aria-label="다음">›</button>`:''); }
+  c.innerHTML=`<div class="ftabs" role="tablist">${tabs}</div>${note}<div class="fbody">${body}</div><div class="fpager">${pager}</div>`;
+}
+/* 카드 높이 = 남은 화면 높이 (페이지가 이 카드 때문에 스크롤되지 않게), 쪽당 글 수 = 그 높이에 들어가는 줄 수 */
+function feedFit(){
+  const c=$('#feedCard'); if(!c) return; const old=feed.per;
+  if(matchMedia('(max-width:820px)').matches){ c.style.height=''; feed.per=FEED_MOBILE_ROWS; }
+  else{
+    const aside=c.parentElement, main=aside.parentElement, ms=getComputedStyle(main), foot=$('.foot');
+    const inner=c.getBoundingClientRect().top-aside.getBoundingClientRect().top;
+    const topDoc=main.getBoundingClientRect().top+scrollY+parseFloat(ms.paddingTop)+inner;     // 맨 위에 있을 때
+    const below=parseFloat(ms.paddingBottom)+(foot?foot.offsetHeight:0);
+    const stick=parseFloat(getComputedStyle(aside).top)||0;
+    const view=$('#view'), viewBot=view?Math.max(0,...[...view.children].map(e=>e.getBoundingClientRect().bottom))+scrollY:0; // 그리드가 #view 를 늘리므로 내용 끝 기준
+    // 본문이 더 길면 본문 끝까지 써도 페이지 길이가 안 늘어남 / 짧으면 화면 끝(아래 안내문 포함)까지
+    const hStatic=Math.max(innerHeight-topDoc-below, viewBot-topDoc);
+    const hStick=innerHeight-stick-inner-16;                                                        // 따라 내려올 때도 화면 안
+    const h=Math.floor(Math.min(hStatic,hStick))-1;
+    const minH=FEED_ROW*2+70;
+    c.style.height=Math.max(minH,h)+'px';
+    const fb=c.querySelector('.fbody'); const avail=fb?fb.clientHeight:0;
+    feed.per=Math.min(20,Math.max(2,Math.floor(avail/FEED_ROW)));
+  }
+  if(feed.per!==old){ const first=(feed.page-1)*old; feed.page=Math.floor(first/feed.per)+1; renderFeed(); }
+}
+$('#feedCard').addEventListener('click',e=>{
+  const tb=e.target.closest('[data-ftab]'); if(tb){ feed.tab=tb.dataset.ftab; feed.page=1; renderFeed(); feedFit(); return; }
+  const pg=e.target.closest('[data-fpage]'); if(pg&&!pg.disabled){ feed.page=+pg.dataset.fpage; renderFeed(); return; }
+  const a=e.target.closest('a[data-fid]'); if(a&&!feedSeen.has(a.dataset.fid)){ feedSeen.add(a.dataset.fid); feedSaveSeen(); setTimeout(renderFeed,0); }
+});
+$('#feedCard').addEventListener('auxclick',e=>{ const a=e.target.closest('a[data-fid]'); if(a&&e.button===1&&!feedSeen.has(a.dataset.fid)){ feedSeen.add(a.dataset.fid); feedSaveSeen(); setTimeout(renderFeed,0); } });
+renderFeed(); feedFit();
+addEventListener('resize',feedFit);
+if(window.ResizeObserver){ const ro=new ResizeObserver(()=>feedFit()); document.querySelectorAll('.side-sticky>.card:not(#feedCard), .foot, header, #view').forEach(el=>ro.observe(el)); }
+feedLoad().then(feedFit);
+setInterval(()=>{ if(!document.hidden) feedLoad(); },3e5);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&Date.now()-feed.at>3e5) feedLoad(); });
 gdRender();
 if(gdUsable()){ gdLoadLib().catch(()=>{}); if(gdMeta.on) gdConnect(false); }

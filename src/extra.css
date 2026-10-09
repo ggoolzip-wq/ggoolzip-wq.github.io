@@ -384,3 +384,35 @@ nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius
 .dqi{align-items:center;text-align:center;padding:7px 6px 6px 9px}
 .dqn{justify-content:center;max-width:100%}
 .dqs{text-align:center}
+
+/* 소식 피드 카드 (왼쪽 아래) — 높이는 JS(feedFit)가 남은 화면 높이로 맞춤, 안쪽 스크롤 없음 */
+.feedcard{display:flex;flex-direction:column;padding:10px 10px 8px;overflow:hidden;min-height:0}
+.ftabs{display:flex;gap:2px;border-bottom:1px solid var(--line);flex:none}
+.ftab{flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:3px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);font:inherit;font-size:.8rem;font-weight:600;padding:5px 3px 6px;cursor:pointer;white-space:nowrap}
+.ftab:hover{color:var(--text)}
+.ftab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.fcnt{min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--warn);color:#fff;font-size:.64rem;line-height:15px;font-weight:700;box-sizing:border-box;text-align:center}
+.fnote{flex:none;font-size:.72rem;color:var(--muted);padding:4px 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help}
+.fbody{flex:1 1 auto;min-height:0;overflow:hidden;padding-top:3px}
+.flist{list-style:none;margin:0;padding:0}
+.flist li{height:31px}
+.fit{display:flex;align-items:center;gap:6px;height:30px;padding:0 6px;border-radius:8px;color:var(--text);text-decoration:none;font-size:.84rem}
+.fit:hover{background:var(--panel2)}
+.ftt{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fdt{flex:none;color:var(--muted);font-size:.74rem;font-variant-numeric:tabular-nums}
+.fend{flex:none;color:var(--accent);font-size:.72rem;font-weight:700;font-variant-numeric:tabular-nums}
+.fnew{flex:none;width:15px;height:15px;border-radius:4px;background:var(--warn);color:#fff;font-size:.62rem;font-weight:800;line-height:15px;text-align:center}
+.fit.exp{opacity:.45}
+.fit.exp .fend{color:var(--muted);font-weight:600;text-decoration:line-through}
+.fempty{color:var(--muted);font-size:.82rem;padding:10px 4px}
+.fpager{flex:none;display:flex;justify-content:center;gap:3px;min-height:26px;align-items:center;padding-top:4px}
+.fpg{min-width:24px;height:22px;padding:0 5px;border-radius:6px;border:1px solid transparent;background:none;color:var(--muted);font:inherit;font-size:.76rem;cursor:pointer;font-variant-numeric:tabular-nums}
+.fpg:hover:not(:disabled){color:var(--text);border-color:var(--line)}
+.fpg.on{color:var(--accent);border-color:var(--accent);font-weight:700}
+.fpg:disabled{opacity:.35;cursor:default}
+@media(max-width:820px){
+  /* 모바일: 피드는 본문 아래로 자연스럽게 */
+  .side-sticky{display:contents}
+  .side-sticky>.card{margin-top:0!important}
+  #feedCard{order:2}
+}
