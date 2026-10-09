@@ -83,7 +83,7 @@ with sync_playwright() as p:
         close(pg)
     pg.click('#addCharBtn'); pg.wait_for_timeout(300); print('T4b account row status:', pg.inner_text('#accList .accrow .accst'), '| title:', pg.get_attribute('#accList .accrow .warnc','title')); close(pg)
     # 4c. '캐릭터 목록' button on the account row
-    pg.evaluate("([id])=>{accById(id).key='live_mock_MULTI'; accById(id).status=null; save();}",[aid]); pg.click('#addCharBtn'); pg.click(f'[data-acctest="{aid}"]'); pg.wait_for_selector('#importModal.show'); pg.wait_for_function("!document.querySelector('#impMsg .spin')"); pg.wait_for_timeout(200)
+    pg.evaluate("([id])=>{accById(id).key='live_mock_MULTI'; accById(id).status=null; save();}",[aid]); pg.click('#addCharBtn'); pg.click(f'[data-acctest="{aid}"] .accst'); pg.wait_for_selector('#importModal.show'); pg.wait_for_function("!document.querySelector('#impMsg .spin')"); pg.wait_for_timeout(200)
     print('T4c test button (key typed, no blur):', imp(pg)['items'], '| list calls so far for MULTI:', sum(1 for c in calls if c==('list','live_mock_MULTI')))
     close(pg)
     # 5. character modal picker

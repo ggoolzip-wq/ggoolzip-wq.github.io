@@ -87,10 +87,10 @@ with sync_playwright() as p:
     # ---- B. import from each account
     pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.wait_for_timeout(500)
     print('B1 account rows:', pg.eval_on_selector_all('#accList .acclbl','e=>e.map(x=>x.value)'))
-    pg.click('#accList .accrow:has(.acclbl[value="본계정"]) [data-acctest]'); pg.wait_for_timeout(500)
+    pg.click('#accList .accrow:has(.acclbl[value="본계정"]) .accst'); pg.wait_for_timeout(500)
     print('B2 main list:', pg.eval_on_selector_all('#impList .imp-item b','e=>e.map(x=>x.textContent)'))
     pg.click('#impAll'); pg.click('#impOk'); wait_sync(pg)
-    pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.wait_for_timeout(300); pg.click('#accList .accrow:has(.acclbl[value="부계정"]) [data-acctest]'); pg.wait_for_timeout(500)
+    pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.wait_for_timeout(300); pg.click('#accList .accrow:has(.acclbl[value="부계정"]) .accst'); pg.wait_for_timeout(500)
     pg.click('#impAll'); pg.click('#impOk'); wait_sync(pg); s=st(pg); lab={a['id']:a['label'] for a in s['settings']['accounts']}
     print('B3 all chars:', [(c['name'],lab.get(c.get('accId')),c['world'],c['sync'].get('ok')) for c in s['characters']])
     print('B4 sidebar worlds/order:', worlds(pg), names(pg))
@@ -160,7 +160,7 @@ with sync_playwright() as p:
     else: print('note: seren row not visible, view=', pg.evaluate('tab'), pg.evaluate('activeChar()&&activeChar().name'))
     pg.evaluate("window.scrollTo(0,0);document.querySelector('#toast').classList.remove('show')"); pg.wait_for_timeout(500)
     pg.screenshot(path=SHOT,full_page=True)
-    for t in ['summary']:
+    for t in ['total']:
         pg.click(f'[data-tab="{t}"]'); pg.evaluate("window.scrollTo(0,0);document.querySelector('#toast').classList.remove('show')"); pg.wait_for_timeout(300)
         pg.screenshot(path=OUT+f'/shot4_{t}.png',full_page=True)
     data=st(pg)

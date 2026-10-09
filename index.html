@@ -671,6 +671,35 @@ html:not(.dark) .pbtn.pcancel.on, body.light .pbtn.pcancel.on{color:var(--text,#
 .revpanel h2 .ric{width:22px;height:22px;vertical-align:-5px}
 .rp-items-n{font-size:.75rem;margin-top:6px;display:flex;align-items:center;gap:4px}
 .rp-items-n .ric{width:18px;height:18px}
+/* 2026-10-10 batch */
+.drop.off{opacity:.35;filter:grayscale(1);cursor:default;pointer-events:none}
+.pbtn{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);border-radius:8px;padding:4px 12px;margin-left:6px}
+.pbtn.on{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.06)}
+.pbtn.psave.on{border-color:#ff8a1f;background:rgba(255,138,31,.12)}
+.rpm-t{display:inline-flex;flex-direction:column;line-height:1.2;vertical-align:middle}
+.rpm-t small{font-size:.7rem}
+.boss .grow{padding-left:4px}
+.hav2{width:40px!important;height:40px!important;flex:none}
+.card h2 .avatar.hav2{margin-right:6px}
+.lx.aur{background:linear-gradient(90deg,#2de2c8,#8b5cf6,#ff4fa3);-webkit-background-clip:text;background-clip:text;color:transparent!important;font-weight:800}
+.regok{display:inline-flex;align-items:center;gap:4px;color:#3ccf6e;font-weight:700}
+.okic{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#3ccf6e;color:#fff;font-size:10px}
+.accrow[data-acctest]{cursor:pointer}
+select.impworld{color:var(--text,#ececf1);background:var(--panel2,#25252c);border:1px solid var(--line,#3a3a46);opacity:1;appearance:auto;padding:4px 8px}
+select.impworld option{color:#111}
+.cbmodal{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;background:rgba(0,0,0,.6)}
+.cbbox{background:var(--panel,#1c1c22);border:1px solid var(--line,#333);border-radius:16px;padding:20px 22px;min-width:320px;max-width:92vw;text-align:center}
+.cbbox h3{margin:0 0 14px}
+.cblist{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.cbopt{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:10px;border:1px solid var(--line,#333);background:var(--panel2,#25252c);color:inherit;font:inherit;cursor:pointer;text-align:left}
+.cbopt:hover,.cbopt:focus-visible{border-color:#ff8a1f}
+.cbopt img{width:40px;height:40px;object-fit:contain;image-rendering:auto}
+.cbx{display:inline-flex;align-items:center;gap:4px;margin-left:8px;white-space:nowrap}
+.cbx .ric,.cbx img{width:20px;height:20px}
+#iconBurst{position:fixed;left:50%;top:45%;width:0;height:0;z-index:9500;pointer-events:none}
+#iconBurst img{position:absolute;left:-16px;top:-16px;width:32px;height:32px;opacity:0;will-change:transform,opacity;animation:ib 1.8s cubic-bezier(.15,.7,.3,1) forwards}
+@keyframes ib{0%{transform:translate(0,0) scale(.2) rotate(0);opacity:1}70%{opacity:1}100%{transform:translate(var(--x),var(--y)) scale(var(--s)) rotate(var(--r));opacity:0}}
+.expinc{white-space:normal!important;max-width:100%;overflow-wrap:anywhere}.expinc small{display:inline-block}
 </style>
 </head>
 <body>
@@ -687,8 +716,7 @@ html:not(.dark) .pbtn.pcancel.on, body.light .pbtn.pcancel.on{color:var(--text,#
   </div>
   <nav class="tabs" id="tabs">
     <button data-tab="boss" class="on">보스 현황</button>
-    <button data-tab="summary">캐릭터 별 기록</button>
-    <button data-tab="total">총 수익</button>
+    <button data-tab="total">수익 분석</button>
     <span class="tabsep" aria-hidden="true"></span>
     <button data-tab="daily">일퀘 현황</button>
     <button data-tab="guild">길드 현황</button>
@@ -752,11 +780,11 @@ html:not(.dark) .pbtn.pcancel.on, body.light .pbtn.pcancel.on{color:var(--text,#
       <div class="optlines compact" id="accOpts"></div>
     </section>
     <section class="addsec" id="impSec">
-      <div class="addsec-h"><b>👥 <span id="impTitle">계정 캐릭터</span></b><span class="muted" id="impCount"></span></div>
+      <span id="impTitle" hidden></span><span id="impCount" hidden></span>
       <div class="impmsg" id="impMsg"></div>
-      <div class="toolbar" id="impTools"><input type="search" id="impQ" class="pin" placeholder="이름·직업 검색" style="width:130px;text-align:left"><span class="muted">최소 레벨</span><input type="number" id="impMin" value="" min="0" placeholder="전체" style="width:70px" class="pin"><select id="impWorld" class="pin" style="width:auto;text-align:left"></select><span style="flex:1"></span><button class="btn sm plain" id="impAll">전체 선택</button></div>
+      <div class="toolbar" id="impTools"><input type="search" id="impQ" class="pin" placeholder="이름·직업 검색" style="width:130px;text-align:left"><span class="muted">최소 레벨</span><input type="number" id="impMin" value="" min="0" placeholder="전체" style="width:70px" class="pin"><select id="impWorld" class="btn sm ghost impworld"></select><button class="btn sm" id="impOk">캐릭터 추가</button><span style="flex:1"></span><button class="btn sm plain" id="impAll">전체 선택</button></div>
       <div class="imp-list" id="impList"></div>
-      <div class="row"><span class="muted tiny" style="flex:1">처음 추가하면 레벨이 가장 높은 캐릭터가 본캐(★)가 됩니다. 추가 후 이미지·보스 클리어를 자동 동기화합니다.</span><button class="btn" id="impOk">선택 추가</button></div>
+      <div class="row"><span class="muted tiny" style="flex:1">처음 추가하면 레벨이 가장 높은 캐릭터가 본캐(★)가 됩니다. 추가 후 이미지·보스 클리어를 자동 동기화합니다.</span></div>
     </section>
   </div>
 </div>
@@ -973,6 +1001,11 @@ const DROPS = {
   jupiter:[['sin',['hard']],['chaosbox',['normal','hard']],['g_faith',['normal','hard']],['se4',['normal','hard']]],
   blackmage:[['genesis',['hard','extreme']],['h_belt',['extreme']]]
 };
+// 2026-10-10: 보스 장신구 세트(파풀라투스 마크 제외)·여명 세트 = 드롭 표 끝에 회색 칩(누를 수 없음, 기록 안 함)
+const DROPS_OFF = {zakum:[['cfs',['chaos']],['aquatic',['chaos']],['zbelt',['chaos']]], magnus:[['wentus',['hard']],['shoulder',['hard']]],
+  slime:[['gar',['normal','chaos']]], lucid:[['twilight',['normal','hard']]], will:[['twilight',['normal','hard']]], dusk:[['estella',['normal','chaos']]],
+  jinhilla:[['daybreak',['normal','hard']]], dunkel:[['estella',['normal','hard']]], seren:[['daybreak',['normal','hard','extreme']]]};
+const dropsOff = (b,diff) => (DROPS_OFF[b.id]||[]).filter(([,ds])=>ds.includes(diff)).map(([k])=>k);
 const dropsFor = (b,diff) => [...(DROPS[b.id]||[]).filter(([,ds])=>ds.includes(diff)).map(([k])=>k),
   ...Object.entries(RING_DROPS).filter(([,m])=>(m[b.id]||[]).includes(diff)).map(([k])=>k)];
 const DROP_MAX = 99; // (예전: 3개 넘으면 +N 묶음) — 이제 묶지 않고 모두 표시
@@ -1011,7 +1044,7 @@ function itemIcon(k){
 }
 const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
-  const ks=dropsFor(b,diff), en=erdaFor(b,diff); if(!ks.length&&!en&&!eternalFor(b,diff)) return '';
+  const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!eternalFor(b,diff)) return '';
   const et=eternalFor(b,diff);
   const erda=(en?`<span class="drop erda" aria-label="솔 에르다의 기운 ${en}개">${itemIcon('erda')}<b class="ecnt">${en}</b></span>`:'')
     +(et?`<span class="drop erda eter" data-tip="${esc(eternalTip(et.k,et.n,diff))}" aria-label="${esc(ITEMS[et.k].n)} ${et.n}개">${itemIcon(et.k)}<b class="ecnt">${et.n}</b></span>`:'');
@@ -1023,17 +1056,19 @@ function dropsHtml(b,diff,c){
   // 아래 줄: 이 보스에서 획득한 아이템 (모든 화면과 같은 형식: 이름(N인 분배) ×개수 결과)
   const mine=c?(d=>({items:Object.fromEntries(Object.entries(d.items).filter(([k])=>k.split('|')[0]===b.id)),outcomes:d.outcomes}))(charDrops(c,b.type)):null;
   const ringLine=mine?itemsInline(mine.items,{outs:mine.outcomes}):'';
-  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${shown.map(chip).join('')}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
+  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${shown.map(chip).join('')}${off.map(k=>`<span class="drop off s-${ITEMS[k].set}" aria-disabled="true" title="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}<span class="dn">${esc(ITEMS[k].s||ITEMS[k].n)}</span></span>`).join('')}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
 }
 function changeDrop(key, delta){
   const c=activeChar(); if(!c) return; const [slot,item]=key.split('|'); const b=findBoss(slot); if(!b||!ITEMS[item]) return;
   if(delta>0 && (+dropMap(c,b.type)[key]||0)>=1) delta=-1; // 보스·아이템당 기간에 1번만: 이미 획득 → 다시 누르면 취소
   pendStart();
+  if(delta>0 && item==='chaosbox'){ openChaos(key); return; } // 칠흑 장신구 상자: 어떤 장신구인지 고른 뒤 +1
   if(delta>0 && isRing(item)){ openRing(key); return; } // 반지 상자는 결과를 고른 뒤 +1
   const m=dropMap(c,b.type); const n=Math.max(0,Math.min(1,(+m[key]||0)+delta)); if(n) m[key]=n; else delete m[key];
   const pty=curParty(c,slot);
-  if(delta<0 && isRing(item)){ const om=outMap(c,b.type); const l=om[key]; if(l&&l.length) l.pop(); if(!n||(l&&!l.length)) delete om[key]; } // 가장 최근 획득(결과 포함) 취소
-  save(); render(); toast(`${ITEMS[item].n}${delta>0?partyTxt(pty):''} ${delta>0?'획득':'획득 취소'} — 저장을 눌러야 기록돼요`);
+  if(delta<0 && hasOut(item)){ const om=outMap(c,b.type); const l=om[key]; if(l&&l.length) l.pop(); if(!n||(l&&!l.length)) delete om[key]; } // 가장 최근 획득(결과 포함) 취소
+  save(); render(); if(delta>0&&n) celebrate(null,item);
+  toast(`${ITEMS[item].n}${delta>0?partyTxt(pty):''} ${delta>0?'획득':'획득 취소'} — 저장을 눌러야 기록돼요`);
 }
 /* 반지 상자 결과 선택 모달 (닫기 = 기록 안 함) */
 let ringPending=null;
@@ -1058,22 +1093,33 @@ function chooseRing(o){
   if(o==='x') toast(`${ITEMS[item].s}${partyTxt(pty)} — 꽝 기록 (${c.name} 이번 ${b.type==='monthly'?'달':'주'} ${m[p.key]}개)`); else celebrate(o);
 }
 /* 축하 연출: 캔버스 불꽃놀이 + 꽃가루 (~2.6초, 외부 라이브러리 없음) */
-function celebrate(o){
+// 아이콘 불꽃: 같은 아이콘 수십 개가 가운데서 사방으로 (CSS transform, 약 2초 후 제거, 모션 줄이기 존중)
+function iconBurst(src){
+  document.querySelector('#iconBurst')?.remove(); if(!src||matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const box=document.createElement('div'); box.id='iconBurst'; box.setAttribute('aria-hidden','true');
+  const N=42; let h='';
+  for(let i=0;i<N;i++){ const a=Math.PI*2*(i/N)+Math.random()*.3, d=160+Math.random()*320, x=Math.cos(a)*d, y=Math.sin(a)*d+60, r=(Math.random()*2-1)*540, sc=.6+Math.random()*.8, dl=(i%3)*90;
+    h+=`<img src="${src}" style="--x:${x.toFixed(0)}px;--y:${y.toFixed(0)}px;--r:${r.toFixed(0)}deg;--s:${sc.toFixed(2)};animation-delay:${dl}ms">`; }
+  box.innerHTML=h; document.body.appendChild(box); setTimeout(()=>box.remove(),2100);
+}
+function celebrate(o,item){
   const cv=$('#fx'), msg=$('#congrats');
-  msg.innerHTML=`<div class="cg-in">${o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}<div class="cg-big">축하드립니다!</div><div class="cg-sub">${OUT_NAME[o]} 획득 🎉</div></div>`;
+  msg.innerHTML=`<div class="cg-in">${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}<div class="cg-big">축하드립니다!</div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득 🎉</div></div>`;
+  const img=null; iconBurst(ITEM_ICONS[item||(o==='r4'?'ring_restraint':'ring_continuous')]);
   msg.classList.add('show'); cv.classList.add('show'); celebrate.running=true;
-  clearTimeout(celebrate._t); celebrate._t=setTimeout(endCelebrate,2700);
+  clearTimeout(celebrate._t); celebrate._t=setTimeout(endCelebrate,2200);
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const dpr=Math.min(2,devicePixelRatio||1), W=innerWidth, H=innerHeight; cv.width=W*dpr; cv.height=H*dpr; const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
   const P=[], COL=['#ff5a5f','#ffb400','#4ecdc4','#a66cff','#ffe66d','#ff8fab','#7bdff2','#9be84a'];
-  const burst=(x,y)=>{ const n=70, col=COL[Math.random()*COL.length|0]; for(let i=0;i<n;i++){ const a=Math.PI*2*i/n, v=2+Math.random()*4; P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,dec:.012+Math.random()*.012,r:2+Math.random()*1.5,col:Math.random()<.3?COL[Math.random()*COL.length|0]:col,k:'s'}); } };
+  const burst=(x,y)=>{ const n=70, col=COL[Math.random()*COL.length|0]; for(let i=0;i<n;i++){ const a=Math.PI*2*i/n, v=2+Math.random()*4; P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,dec:.012+Math.random()*.012,r:2+Math.random()*1.5,col:Math.random()<.3?COL[Math.random()*COL.length|0]:col,k:'s'}); }};
   for(let i=0;i<90;i++) P.push({x:Math.random()*W,y:-20-Math.random()*H*.5,vx:(Math.random()-.5)*2,vy:2+Math.random()*3,life:1,dec:.004,r:4+Math.random()*4,col:COL[i%COL.length],k:'c',rot:Math.random()*6,vr:(Math.random()-.5)*.3});
   const t0=performance.now(); let nb=0;
   const step=now=>{ if(!celebrate.running) return; const t=now-t0;
     while(nb<6 && t>nb*320){ burst(W*(.18+Math.random()*.64), H*(.15+Math.random()*.35)); nb++; }
     g.clearRect(0,0,W,H);
     for(const q of P){ if(q.life<=0) continue; q.x+=q.vx; q.y+=q.vy; q.life-=q.dec;
-      if(q.k==='s'){ q.vx*=.985; q.vy=q.vy*.985+.06; g.globalAlpha=Math.max(0,q.life); g.fillStyle=q.col; g.beginPath(); g.arc(q.x,q.y,q.r,0,7); g.fill(); }
+      if(q.k==='i'){ q.vx*=.985; q.vy=q.vy*.985+.05; q.rot+=q.vr; g.globalAlpha=Math.max(0,q.life); g.save(); g.translate(q.x,q.y); g.rotate(q.rot); if(img.complete) g.drawImage(img,-q.r/2,-q.r/2,q.r,q.r); g.restore(); }
+      else if(q.k==='s'){ q.vx*=.985; q.vy=q.vy*.985+.06; g.globalAlpha=Math.max(0,q.life); g.fillStyle=q.col; g.beginPath(); g.arc(q.x,q.y,q.r,0,7); g.fill(); }
       else { q.vy+=.02; q.rot+=q.vr; g.globalAlpha=Math.max(0,Math.min(1,q.life*1.5)); g.save(); g.translate(q.x,q.y); g.rotate(q.rot); g.fillStyle=q.col; g.fillRect(-q.r/2,-q.r/4,q.r,q.r/2); g.restore(); } }
     g.globalAlpha=1; if(t<2600) requestAnimationFrame(step); };
   requestAnimationFrame(step);
@@ -1197,7 +1243,7 @@ const partyMax = (b,diff) => { const v=PARTY_MAX[b?.id??b]; const n=typeof v==='
 function clampParty(c,slot){ const cfg=c?.bosses?.[slot]; if(!cfg) return; const b=findBoss(slot); if(!b) return; const m=partyMax(b,cfg.diff||b.diffs[0]); if((parseInt(cfg.party)||1)>m) cfg.party=m; }
 let dropClampN=0; // 2026-10-10: 보스·아이템당 기간 1개로 — 예전 2개 이상 기록을 1로 줄인 수 (콘솔 보고)
 function clampDropMap(m,om){ for(const k of Object.keys(m||{})) if(k.includes('|')&&(+m[k]||0)>1){ m[k]=1; dropClampN++; if(om&&Array.isArray(om[k])&&om[k].length>1) om[k]=om[k].slice(-1); } }
-function normChar(c){ ['bosses','weekly','monthly','auto','sync','drops','mdrops','dropOut','mdropOut'].forEach(k=>c[k]=c[k]||{}); clampDropMap(c.drops,c.dropOut); clampDropMap(c.mdrops,c.mdropOut); delete c.dropParty; delete c.mdropParty; c.world=c.world||''; Object.keys(c.bosses).forEach(s=>clampParty(c,s)); }
+function normChar(c){ ['bosses','weekly','monthly','auto','sync','drops','mdrops','dropOut','mdropOut'].forEach(k=>c[k]=c[k]||{}); clampDropMap(c.drops,c.dropOut); clampDropMap(c.mdrops,c.mdropOut); delete c.dropParty; delete c.mdropParty; c.world=c.world||''; Object.values(c.bosses).forEach(cfg=>{ if(cfg&&typeof cfg==='object') cfg.party=Math.max(1,parseInt(cfg.party)||1); }); Object.keys(c.bosses).forEach(s=>clampParty(c,s)); } // party 는 항상 숫자 (없음/'1' 문자열이면 취소·저장 비교가 어긋났음)
 // updatedAt: 데이터 내용이 '실제로' 바뀐 시각 (구글 드라이브 동기화에서 어느 쪽이 최신인지 비교)
 // — 기기마다 다른 값·자동으로 계속 바뀌는 값(테마, 선택한 캐릭터, 날짜(period), 마지막 동기화 시각, 캐릭터 sync/이미지/EXP, 계정 상태)은
 //   contentSig 에서 빠지므로 updatedAt 을 바꾸지 않고 드라이브 저장도 하지 않음 (2026-10-10: 이것 때문에 '어느 데이터를 쓸까요?'가 반복됐음)
@@ -1206,6 +1252,10 @@ function bodyOf(){ const u=S.updatedAt; S.updatedAt=0; const b=JSON.stringify(S)
 /* 보스 목록 [취소]/[저장]: 파티 인원 변경·드롭 클릭은 '대기 중' — 저장 전에는 수익 기록(수익 패널·캐릭터 목록·기록 탭)과 저장소에 반영 안 됨.
  * 첫 변경 직전 상태(pend.base)를 복사해 두고, 취소 = 되돌림 / 저장 = 확정(+서버 모드면 서버 저장). 나중 버튼도 pendSave() 만 부르면 됨. */
 let pend=null;
+// 비교용 정규화: 파티 인원 숫자화(없음·'1' → 1), 0개 드롭·빈 결과 목록 제거
+function pendSig(x){ const d=JSON.parse(JSON.stringify(x)); (d.characters||[]).forEach(c=>{ normChar(c);
+  for(const m of [c.drops,c.mdrops]) for(const k of Object.keys(m)) if(!(+m[k]>0)) delete m[k];
+  for(const m of [c.dropOut,c.mdropOut,c.chaosOut,c.mchaosOut]) for(const k of Object.keys(m||{})) if(!Array.isArray(m[k])||!m[k].length) delete m[k]; }); return contentSig(d); }
 function pendStart(){ if(!pend){ pend={base:JSON.parse(JSON.stringify(S))}; } }
 const COMMITTED=fn=>{ if(!pend) return fn(); const live=S; pend.base.activeId=live.activeId; S=pend.base; try{ return fn(); } finally{ S=live; } };
 const cRev=c=>COMMITTED(()=>charRevenue(S.characters.find(x=>x.id===c.id)||c));
@@ -1213,7 +1263,7 @@ function pendCancel(){ if(!pend) return; const keepId=S.activeId; S=pend.base; S
 async function pendSave(){ if(!pend&&!svUnsaved()) return; pend=null; save(); render(); if(SV_ON&&svTok()&&gdMeta.on){ await svSaveNow(); render(); } else toast('저장했습니다'); }
 function pendAsk(){ svAsk('변경사항을 취소하시겠습니까?',[['yes','예'],['no','아니오']]).then(k=>{ if(k==='yes') pendCancel(); }); }
 function save(){
-  if(pend){ if(contentSig(S)===contentSig(pend.base)) pend=null; else return; } // 대기 중: 저장소에 쓰지 않음. 되돌려서 스냅샷과 같아지면 대기 해제(버튼 비활성)
+  if(pend){ if(pendSig(S)===pendSig(pend.base)) pend=null; else return; } // 대기 중: 저장소에 쓰지 않음. 되돌려서 스냅샷과 같아지면 대기 해제(버튼 비활성)
   const sig=contentSig(S), changed=sig!==lastSig;
   if(changed){ S.updatedAt=Date.now(); lastSig=sig; }
   lastBody=bodyOf();
@@ -1308,7 +1358,7 @@ const itemSum = m => Object.values(m||{}).reduce((s,n)=>s+(+n||0),0);
 const RING_KEYS = new Set(['r_green','r_red','r_black','r_white','r_life']);
 const isRing = k => RING_KEYS.has(k);
 const outMap = (c,type) => type==='monthly' ? (c.mdropOut||(c.mdropOut={})) : (c.dropOut||(c.dropOut={}));
-const cleanOut = m => Object.fromEntries(Object.entries(m||{}).filter(([,a])=>Array.isArray(a)&&a.length).map(([k,a])=>[k,a.filter(o=>o==='r4'||o==='c4'||o==='x')]));
+const cleanOut = m => Object.fromEntries(Object.entries(m||{}).filter(([,a])=>Array.isArray(a)&&a.length).map(([k,a])=>[k,a.filter(o=>o==='r4'||o==='c4'||o==='x'||/^cb:\w+$/.test(o))]));
 const OUT_LABEL = {r4:'리4', c4:'컨4', x:'꽝'};
 /* 파티 인원: 이번 주/이번 달의 획득 기록은 그 캐릭터의 해당 보스 '파티 인원' 설정을 따릅니다 (드롭다운을 바꾸면 이번 기간 기록 표시도 바뀜).
  * 주간/월간 초기화로 기록에 저장될 때 키에 인원이 고정됩니다: 'boss|item'(1인) / 'boss|item#N'(N인 분배) */
@@ -1320,10 +1370,24 @@ function parseIK(k){ const [a,pp]=String(k).split('#'); const i=a.indexOf('|'); 
 function charDrops(c,type){
   const m=type==='monthly'?c.mdrops:c.drops, om=type==='monthly'?c.mdropOut:c.dropOut, I={}, O={};
   for(const [k,n] of Object.entries(m||{})){ if(!(+n>0)) continue; const slot=k.split('|')[0], p=curParty(c,slot), key=p>1?`${k}#${p}`:k;
-    I[key]=+n; const l=(om||{})[k]; if(Array.isArray(l)&&l.length) O[key]=l.filter(o=>o==='r4'||o==='c4'||o==='x'); }
+    I[key]=+n; const l=(om||{})[k]; if(Array.isArray(l)&&l.length) O[key]=l.filter(o=>o==='r4'||o==='c4'||o==='x'||/^cb:\w+$/.test(o)); }
   return {items:I, outcomes:O};
 }
 const charAllDrops = c => { const w=charDrops(c,'weekly'), m=charDrops(c,'monthly'); return {items:{...w.items,...m.items}, outcomes:{...w.outcomes,...m.outcomes}}; };
+const CHAOS_PICK = ['lcm','eye','belt','book','terror','cfe','sos'];
+const hasOut = it => isRing(it)||it==='chaosbox';
+const chaosHtml = (outs,n) => { const l=(outs||[]).filter(o=>/^cb:/.test(o)).map(o=>o.slice(3)).filter(k=>ITEMS[k]);
+  return l.map(k=>`<span class="cbx">${miniIcon('chaosbox')} - ${itemIcon(k)}<span class="dln">${esc(ITEMS[k].n)}</span></span>`).join('') + (n>l.length?`<span class="cbx muted">${miniIcon('chaosbox')} - 미기록 ${xN(n-l.length)}</span>`:''); };
+function openChaos(key){
+  const c=activeChar(); if(!c) return; document.querySelector('#chaosModal')?.remove();
+  const el=document.createElement('div'); el.id='chaosModal'; el.className='modal show cbmodal'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
+  el.innerHTML=`<div class="mbox cbbox"><h3>어떤 장신구를 획득하셨나요?</h3><div class="cblist">${CHAOS_PICK.map(k=>`<button class="cbopt" data-cbpick="${k}">${itemIcon(k)}<span>${esc(ITEMS[k].n)}</span></button>`).join('')}</div><button class="btn ghost cbcancel" data-cbpick="">취소</button></div>`;
+  document.body.appendChild(el);
+  el.onclick=e=>{ const t=e.target.closest('[data-cbpick]'); if(!t&&e.target!==el) return; el.remove(); const k=t?t.dataset.cbpick:'';
+    if(!k){ if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; render(); return; }
+    const cc=S.characters.find(x=>x.id===c.id); const b=findBoss(key.split('|')[0]); if(!cc||!b) return;
+    pendStart(); dropMap(cc,b.type)[key]=1; outMap(cc,b.type)[key]=['cb:'+k]; save(); render(); celebrate(null,k); };
+}
 const OUT_NAME = {r4:'리스트레인트 링 4레벨', c4:'컨티뉴어스 링 4레벨'};
 const miniIcon = k => ITEM_ICONS[k] ? `<img class="ric" src="${ITEM_ICONS[k]}" alt="" aria-hidden="true">` : '';
 const outIcon = o => o==='r4'?miniIcon('ring_restraint'):o==='c4'?miniIcon('ring_continuous'):'';
@@ -1352,13 +1416,14 @@ function monthSummary(mid){
  * byBoss: 보스별로 따로 (보스 이름 표시) / 기본: 아이템 + 인원별 합계 */
 function dropLine(it, party, n, outs, boss){
   const I=ITEMS[it];
-  return `<span class="dl ${party>1?'pty':''}" title="${esc((boss?boss+' · ':'')+I.n+partyTxt(party))} ${xN(n)}">${boss?`<span class="dlb">${esc(boss)}</span>`:''}<span class="dlt">${itemIcon(it)}<span class="dln">${esc(I.n+partyTxt(party))}</span> <b class="dlc">${xN(n)}</b>${isRing(it)?' '+outHtml(outs,n,true):''}</span></span>`;
+  if(it==='chaosbox') return `<span class="dl cbl">${boss?`<span class="dlb">${esc(boss)}</span>`:''}${chaosHtml(outs,n)}</span>`;
+  return `<span class="dl ${party>1?'pty':''}" title="${esc((boss?boss+' · ':'')+I.n+partyTxt(party))} ${xN(n)}">${boss?`<span class="dlb">${esc(boss)}</span>`:''}<span class="dlt">${itemIcon(it)}<span class="dln">${esc(I.n+partyTxt(party))}</span> <b class="dlc">${xN(n)}</b>${isRing(it)?' '+outHtml(outs,n,true):''}</span>${it==='chaosbox'?chaosHtml(outs,n):''}</span>`;
 }
 function itemsInline(items, opts={}){
   const agg={}, outs={}, meta={};
   for(const [k,n] of Object.entries(items||{})){ const {slot,it,party}=parseIK(k); if(!ITEMS[it]||!(+n>0)) continue;
     const a=(opts.byBoss?slot+'|':'')+it+'#'+party; meta[a]={slot,it,party};
-    agg[a]=(agg[a]||0)+(+n); if(isRing(it)) (outs[a]=outs[a]||[]).push(...((opts.outs||{})[k]||[])); }
+    agg[a]=(agg[a]||0)+(+n); if(hasOut(it)) (outs[a]=outs[a]||[]).push(...((opts.outs||{})[k]||[])); }
   const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; }, ii=it=>Object.keys(ITEMS).indexOf(it);
   const ks=Object.keys(agg).sort((x,y)=>{ const X=meta[x], Y=meta[y]; return (opts.byBoss?bi(X.slot)-bi(Y.slot):0) || ii(X.it)-ii(Y.it) || X.party-Y.party; });
   if(!ks.length) return opts.empty??'';
@@ -1768,9 +1833,9 @@ function applyTheme(){
   document.documentElement.dataset.theme = dark?'dark':'light';
   $('#themeBtn').textContent = dark?'☀️ 라이트':'🌙 다크';
 }
-function render(){ if(!['boss','summary','total','daily','guild'].includes(tab)) tab='boss';
+function render(){ if(!['boss','total','daily','guild'].includes(tab)) tab='boss';
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
-  ({boss:renderBoss,summary:()=>COMMITTED(renderSummary),total:()=>COMMITTED(renderTotal),daily:renderDaily,guild:renderGuild})[tab](); renderResetInfo(); }
+  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),daily:renderDaily,guild:renderGuild})[tab](); renderResetInfo(); }
 /* 캐릭터 카드 제목 옆: 🔄 지금 동기화 아이콘 버튼 (API 키가 있을 때만, 넥슨 API 전용 — 구글 드라이브는 헤더 ☁ 버튼) */
 function renderHeaderSync(){
   const b=$('#syncBtn'); if(!b) return; const st=S.settings; b.hidden=!hasApi(); b.disabled=syncing;
@@ -1976,7 +2041,7 @@ function renderBoss(){
   const acc=accOf(c);
   const syncLine = needAssign(c) ? `<span class="pill err">계정 미지정</span> <span class="muted">이 캐릭터의 넥슨 계정을 선택해야 자동 체크가 됩니다.</span> <button class="btn sm ghost" data-edit="${c.id}">계정 선택</button>`
     : c.ocid ? (sy.ok===false ? `<span class="pill err">API 실패</span> <span class="muted">${esc(sy.msg)}</span>`
-      : sy.at ? `<span class="pill api">API</span> <span class="muted">게임 내 주간 보스 처치 <b>${sy.clear??'?'} / ${sy.limit||lim}</b> · ${hm(sy.at)} KST 동기화${(um=>um.length?` · 매칭 안 된 보스: ${esc(um.join(', '))}`:'')((sy.unmatched||[]).filter(x=>!isSeasonBoss(x)))}</span>` : '<span class="muted">API 연결 캐릭터 — 아직 동기화 전</span>')
+      : sy.at ? `<span class="muted">게임 내 주간 보스 처치 <b>${sy.clear??'?'} / ${sy.limit||lim}</b> · ${hm(sy.at)} KST 동기화${(um=>um.length?` · 매칭 안 된 보스: ${esc(um.join(', '))}`:'')((sy.unmatched||[]).filter(x=>!isSeasonBoss(x)))}</span>` : '<span class="muted">API 연결 캐릭터 — 아직 동기화 전</span>')
     : '<span class="muted">수동 캐릭터 (API 미연결)</span>';
   v.innerHTML=`<div class="bosslay"><div class="grid">
    <div class="card">
@@ -2011,7 +2076,7 @@ function revPanel(a,cur){
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     <div class="rp-total">${meso(a.total)}<small> 메소</small></div>
     <div class="muted" style="font-size:.75rem">${a.total.toLocaleString()} · 주간 보스 결정석 ${a.count}개</div>
-    ${a.monthTotal||S.characters.some(c=>c.bosses.blackmage?.enabled)?`<div class="rp-month"><span><span class="hbi">${bossIcon(findBoss('blackmage'))}</span>${+S.period.month.slice(5)}월 월간 보스 <small class="muted">(별도)</small></span><b>${a.monthTotal?meso(a.monthTotal):'-'}</b></div>`:''}
+    ${a.monthTotal||S.characters.some(c=>c.bosses.blackmage?.enabled)?`<div class="rp-month"><span><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="rpm-t">${+S.period.month.slice(5)}월 월간 보스<small class="muted">(따로 합산)</small></span></span><b>${a.monthTotal?meso(a.monthTotal):'-'}</b></div>`:''}
     ${(()=>{const n=S.characters.reduce((s,c)=>s+itemSum(c.drops),0); return `<div class="rp-items-n muted">${miniIcon('chaosbox')} 이번 주 획득 아이템 ${n}개</div>`;})()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
@@ -2045,9 +2110,7 @@ function bossRow(c,b){
     </div>`;
   }
   return `<div class="boss ${done?'done':''}">
-    <label class="chk ${done?'on':''}" data-check="${slot}" title="클리어 체크">${done?'✓':''}</label>
     <div class="grow"><div class="bn">${bossIcon(b)}${esc(b.name)} <span class="pill">${D[diff]}</span>
-      ${c.auto[slot]&&done?'<span class="pill api" title="넥슨 스케줄러 API에서 자동 체크됨">API 자동</span>':''}
       ${cr&&!cr.counted?'<span class="pill err">한도 초과</span>':''}</div>
       ${dropsHtml(b,diff,c)}
     </div>
@@ -2095,7 +2158,7 @@ function totalData(){
   const add=(p,f)=>{ const k=keyOf(p); const o=chars[k]||(chars[k]={name:nameOf(p),week:0,month:0,items:{},outs:{},weeks:0}); f(o);
     for(const [ik,n] of Object.entries(p.items||{})){ const {it,party}=parseIK(ik); if(!ITEMS[it]) continue; const a=party>1?it+'#'+party:it; o.items[a]=(o.items[a]||0)+(+n);
       const I=items[a]||(items[a]={n:0,by:{},outs:[]}); I.n+=+n; I.by[o.name]=(I.by[o.name]||0)+(+n);
-      if(isRing(it)){ const l=(p.outcomes||{})[ik]||[]; I.outs.push(...l); (o.outs[a]=o.outs[a]||[]).push(...l); const t=outTally(l,n); for(const q in ring) ring[q]+=t[q]; } } };
+      if(hasOut(it)){ const l=(p.outcomes||{})[ik]||[]; I.outs.push(...l); (o.outs[a]=o.outs[a]||[]).push(...l); if(isRing(it)){ const t=outTally(l,n); for(const q in ring) ring[q]+=t[q]; } } } };
   weeks.forEach(w=>(w.perChar||[]).forEach(p=>add(p,o=>{o.week+=p.meso||0; if(p.meso) o.weeks++;})));
   months.forEach(m=>(m.perChar||[]).forEach(p=>add(p,o=>{o.month+=p.meso||0;})));
   return {weeks,months,wTotal,mTotal,grand:wTotal+mTotal,ring,chars:Object.values(chars).sort((a,b)=>(b.week+b.month)-(a.week+a.month)),items:Object.entries(items).sort((a,b)=>b[1].n-a[1].n)};
@@ -2135,7 +2198,7 @@ function renderTotal(){
     <p class="muted" style="margin:8px 0 0;font-size:.78rem">수익은 결정석 판매 금액만 합산합니다(드롭 아이템은 개수만 기록). 주간 기록은 자동으로 지워지지 않으며 구글 로그인 시 드라이브에 함께 저장됩니다.</p>
   </div>
   <div class="card"><h2>📈 주별 수익 · 누적 <span class="muted" style="font-weight:500">막대: 주간 결정석 수익 · 파란 선: 누적</span></h2>${weekChart(T.weeks,{cum:true,minBar:22})}</div>
-  <div class="card"><h2>${(m=>m&&safeImg(m.image)?`<span class="hav"><img src="${esc(m.image)}" alt="" onerror="this.parentNode.textContent='👤'"></span>`:'<span class="hav fb">👤</span>')(S.characters.find(c=>c.isMain))} 캐릭터별 누적</h2><div style="overflow-x:auto"><table><thead><tr><th>캐릭터</th><th class="num">주간 보스</th><th class="num">월간 보스</th><th class="num">합계</th><th>획득 아이템</th></tr></thead><tbody>
+  <div class="card"><h2>${(m=>m?avatar(m,'hav2'):'<span class="hav fb">👤</span>')(S.characters.find(c=>c.isMain))} 캐릭터별 누적</h2><div style="overflow-x:auto"><table><thead><tr><th>캐릭터</th><th class="num">주간 보스</th><th class="num">월간 보스</th><th class="num">합계</th><th>획득 아이템</th></tr></thead><tbody>
     ${T.chars.map(o=>`<tr><td><b>${esc(o.name)}</b></td><td class="num">${meso(o.week)}</td><td class="num muted">${o.month?meso(o.month):'-'}</td><td class="num"><b>${meso(o.week+o.month)}</b></td><td>${itemsInline(o.items,{empty:'<span class="muted">-</span>',outs:o.outs})}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}
   </tbody></table></div></div>
   <div class="card"><h2>${miniIcon('ring_restraint')} 시드링 획득</h2>
@@ -2143,10 +2206,11 @@ function renderTotal(){
     ${(()=>{ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(!isRing(it)) return; const o=R[it]||(R[it]={n:0,outs:[]}); o.n+=I.n; o.outs.push(...I.outs); });
       const ks=Object.keys(R).sort((x,y)=>Object.keys(ITEMS).indexOf(x)-Object.keys(ITEMS).indexOf(y));
       return ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${itemIcon(k)}<span class="ln">${esc(ITEMS[k].n)}</span> <b class="lx">${xN(R[k].n)}</b></span>${outHtml(R[k].outs,R[k].n,true)}</div>`).join('')}</div>`:'<p class="muted">아직 획득한 반지 상자가 없습니다.</p>'; })()}</div>
-  <div class="card"><h2>${miniIcon('sos')} 물욕 누적 획득</h2>
-    ${(()=>{ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(isRing(it)) return; R[it]=(R[it]||0)+I.n; });
-      const ks=Object.keys(R).sort((x,y)=>Object.keys(ITEMS).indexOf(x)-Object.keys(ITEMS).indexOf(y));
-      return ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${itemIcon(k)}<span class="ln">${esc(ITEMS[k].n)}</span> <b class="lx">${xN(R[k])}</b></span></div>`).join('')}</div>`:'<p class="muted">아직 기록한 아이템이 없습니다. 보스 현황 탭에서 보스 행의 아이템을 누르고 저장하면 기록됩니다.</p>'; })()}</div>
+  <div class="card"><h2>${miniIcon('sos')} 에픽빔 본 횟수</h2>
+    ${(()=>{ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(isRing(it)) return; if(it==='chaosbox'){ let u=I.n; (I.outs||[]).forEach(o=>{ if(/^cb:/.test(o)&&ITEMS[o.slice(3)]){ R[o]=(R[o]||0)+1; u--; } }); if(u>0) R[it]=(R[it]||0)+u; return; } R[it]=(R[it]||0)+I.n; });
+      const oi=k=>/^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*CHAOS_PICK.indexOf(k.slice(3)):Object.keys(ITEMS).indexOf(k);
+      const ks=Object.keys(R).sort((x,y)=>oi(x)-oi(y));
+      return ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${/^cb:/.test(k)?`${miniIcon('chaosbox')} - ${itemIcon(k.slice(3))}<span class="ln">${esc(ITEMS[k.slice(3)].n)}</span>`:`${itemIcon(k)}<span class="ln">${esc(ITEMS[k].n)}</span>`} <b class="lx aur">${xN(R[k])}</b></span></div>`).join('')}</div>`:'<p class="muted">아직 기록한 아이템이 없습니다. 보스 현황 탭에서 보스 행의 아이템을 누르고 저장하면 기록됩니다.</p>'; })()}</div>
   <div class="card"><h2>🗓 전체 주 목록</h2><div style="overflow-x:auto"><table><thead><tr><th>주차</th><th class="num">클리어</th><th class="num">아이템</th><th class="num">주간 수익</th><th class="num">누적</th></tr></thead><tbody>
     ${T.weeks.map(w=>{cum+=w.total||0;return {w,cum};}).reverse().map(({w,cum})=>`<tr><td>${fmtWeek(w.week)}${w.cur?' <span class="pill">이번 주</span>':''}</td><td class="num">${w.cleared??'-'}</td><td class="num">${w.items??itemSum(Object.assign({},...(w.perChar||[]).map(p=>p.items||{})))}</td><td class="num"><b>${meso(w.total||0)}</b></td><td class="num muted">${meso(cum)}</td></tr>`).join('')}
   </tbody></table></div></div></div>`;
@@ -2248,10 +2312,10 @@ function renderAccList(){
   const el=$('#accList'); if(!el) return;
   el.innerHTML=accounts().length?accounts().map(a=>{
     const linked=S.characters.filter(c=>c.accId===a.id).length;
-    const stt=!a.key?'<span class="warnc">키 없음</span>':a.status?.ok===false?`<span class="warnc" title="${esc(a.status.msg)}">⚠ 오류</span>`:a.status?.ok?(a.status.count?`<span class="okc">✓ ${a.status.count}명</span>`:'<span class="warnc" title="연결은 됐지만 캐릭터 0명 — [캐릭터 목록]에서 원인 확인">⚠ 0명</span>'):'<span class="muted">미확인</span>';
-    return `<div class="accrow ${a.id===impAccId?'on':''}"><input class="pin acclbl" data-acclabel="${a.id}" value="${esc(a.label)}" maxlength="12" aria-label="계정 이름">
-      <code class="kmask" title="API 키 (가림)">${esc(maskKey(a.key))}</code><span class="accst">${stt} <span class="muted">· 등록 ${linked}명</span></span>
-      <span class="accbtns"><button class="btn sm ${a.id===impAccId?'':'ghost'}" data-acctest="${a.id}" ${a.key?'':'disabled'}>캐릭터 목록</button><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>`;
+    const stt=!a.key?'<span class="warnc">키 없음</span>':a.status?.ok===false?`<span class="warnc" title="${esc(a.status.msg)}">⚠ 오류</span>`:'<span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료</span>';
+    return `<div class="accrow ${a.id===impAccId?'on':''}" ${a.key?`data-acctest="${a.id}" title="이 계정의 캐릭터 보기"`:''}><input class="pin acclbl" data-acclabel="${a.id}" value="${esc(a.label)}" maxlength="12" aria-label="계정 이름">
+      <span class="accst">${stt}</span>
+      <span class="accbtns"><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>`;
   }).join(''):'<div class="muted acc-empty">등록된 API 키가 없습니다. 아래에 키를 붙여넣고 <b>+ API 키 추가</b>를 누르면 바로 그 계정의 캐릭터 목록이 나와요.</div>';
   $('#newAccLabel').placeholder=accounts().length?`부계정${accounts().length}`:'본계정';
   $('#accOpts').innerHTML=''; // (예전 '스케줄러 보스 자동 추가' 옵션 — 2026-10-10 삭제: 항상 켜짐)
@@ -2277,7 +2341,7 @@ async function openImport(accId){
     $('#impWorld').innerHTML=`<option value="">모든 월드</option>`+worlds.map(w=>`<option>${esc(w)}</option>`).join('');
     const nAcc=listCache[a.id]?.accounts||0;
     if(!all.length){ msg.className='impmsg warn'; msg.innerHTML=emptyHtml(a)+`<div class="toolbar"><button class="btn sm plain" id="impRetry">다시 불러오기</button></div>`; }
-    else { msg.className='impmsg ok'; msg.innerHTML=`✓ 캐릭터 <b>${all.length}명</b>${nAcc>1?` (메이플 계정 ${nAcc}개 합계)`:''}${n?` · 이미 등록된 ${n}명 이 계정으로 연결`:''} — 추가할 캐릭터를 골라 <b>선택 추가</b>를 누르세요.`; }
+    else { msg.className='impmsg ok'; msg.innerHTML=''; msg.className='impmsg'; }
     renderImportList(); render();
   }catch(e){
     if(impAccId!==a.id) return;
@@ -2302,7 +2366,7 @@ function renderImportList(){
   $('#impCount').textContent=accChars.length?(list.length===accChars.length?`${accChars.length}명`:`${accChars.length}명 중 ${list.length}명 표시`):'';
   if(!accChars.length){ $('#impList').innerHTML=''; return; }
   $('#impList').innerHTML=list.length?list.map(x=>{const dup=(x.ocid&&have.has(x.ocid))||haveName.has(x.character_name);return `<label class="imp-item ${dup?'dis':''}"><input type="checkbox" value="${esc(x.ocid)}" ${dup?'disabled':''}>
-    <div class="grow" style="flex:1"><b>${esc(x.character_name)}</b> <span class="muted">Lv.${x.character_level} · ${esc(x.character_class)}</span></div><span class="muted">${esc(x.world_name)}${multi?` · 메이플 계정${x.accIdx+1}`:''}${dup?' · 추가됨':''}</span></label>`}).join('')
+    <div class="grow" style="flex:1"><b>${esc(x.character_name)}</b> <span class="muted">Lv.${x.character_level} · ${esc(x.character_class)}</span></div><span class="muted">${esc(x.world_name)}${dup?' · 추가됨':''}</span></label>`}).join('')
     :`<div class="muted" style="padding:12px">필터 조건에 맞는 캐릭터가 없습니다. <button class="btn sm plain" id="impClear">필터 초기화</button></div>`;
 }
 function doImport(){
@@ -3008,7 +3072,7 @@ document.addEventListener('click',e=>{
     }
     save(); render(); return;
   }
-  if(t.dataset.acctest){ const a=accById(t.dataset.acctest); if(a&&a.key) openImport(a.id); return; }
+  if(t.dataset.acctest){ if(e.target.closest('input')) return; const a=accById(t.dataset.acctest); if(a&&a.key) openImport(a.id); return; }
   if(t.dataset.accdel){ const a=accById(t.dataset.accdel); if(!a) return; const n=S.characters.filter(c=>c.accId===a.id).length;
     if(confirm(`'${a.label}' 계정을 삭제할까요?${n?`\n연결된 캐릭터 ${n}명은 삭제되지 않고 '계정 미지정' 상태가 됩니다.`:''}`)){ S.characters.forEach(c=>{ if(c.accId===a.id) delete c.accId; }); S.settings.accounts=accounts().filter(x=>x!==a); if(impAccId===a.id){ impAccId=null; accChars=[]; } save(); render(); if($('#importModal').classList.contains('show')) openImport(); } return; }
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
@@ -3177,6 +3241,11 @@ function renderFeed(){
 /* 썬데이 메이플 카드 (feed.json 의 sunday) — 클릭하면 이벤트 글 */
 const SUN_SVG='<svg class="sunico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6" fill="currentColor"/><g stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.2v2.6M12 19.2v2.6M2.2 12h2.6M19.2 12h2.6M5.1 5.1l1.8 1.8M17.1 17.1l1.8 1.8M5.1 18.9l1.8-1.8M17.1 6.9l1.8-1.8"/></g></svg>';
 const sunCropUrl=s=>s&&s.crop?(location.protocol==='file:'?FEED_LIVE.replace(/feed\.json$/,''):'./')+s.crop:'';
+// 월요일 00:00 KST 가 지나면 지난 글 → '저번 주 혜택'; 새 글(게시일 ≥ 이번 월요일)이 오면 다시 '이번 주 혜택'
+function lastMondayKST(now=Date.now()){ const k=new Date(now+9*3600e3); const dow=(k.getUTCDay()+6)%7; return Date.UTC(k.getUTCFullYear(),k.getUTCMonth(),k.getUTCDate()-dow)-9*3600e3; }
+function sunPostTime(s){ const v=s&&(s.date||s.start); if(!v) return NaN; return /^\d{4}-\d{2}-\d{2}$/.test(v)?Date.parse(v+'T00:00:00+09:00'):Date.parse(v); }
+function sunLabel(s,now=Date.now()){ const t=sunPostTime(s); return isFinite(t)&&t<lastMondayKST(now)?'저번 주 혜택':'이번 주 혜택'; }
+setInterval(()=>{ const b=document.querySelector('#sunCard .sunben b'), s=feed.data&&feed.data.sunday; if(b&&s&&b.textContent!==sunLabel(s)) renderSun(); },60e3);
 function renderSun(){
   const c=$('#sunCard'); if(!c) return;
   const s=feed.data&&feed.data.sunday;
@@ -3188,7 +3257,7 @@ function renderSun(){
     const lines=bens.length?bens:[s.title||'썬데이 메이플'];
     body=`<button type="button" class="sunimg" data-sunopen title="크게 보기"><img src="${esc(src)}" alt="${esc(s.title||'썬데이 메이플')}" loading="lazy" referrerpolicy="no-referrer"></button>`+
       `<div class="suncap"><span class="ftt">${esc(s.title||'썬데이 메이플')}</span><span class="fdt">${esc(when)}</span></div>`+
-      `<div class="sunben"><b>이번 주 혜택</b><ul>${lines.map(t=>`<li title="${esc(t)}">${esc(t)}</li>`).join('')}</ul></div>`;
+      `<div class="sunben"><b>${sunLabel(s)}</b><ul>${lines.map(t=>`<li title="${esc(t)}">${esc(t)}</li>`).join('')}</ul></div>`;
   }else body=`<div class="sunempty">${SUN_SVG}<span>${feed.data||feed.err?'아직 썬데이 메이플 소식이 없어요':'불러오는 중…'}</span></div>`;
   c.innerHTML=`<div class="ftabs"><span class="ftab on stab" role="heading" aria-level="2">${SUN_SVG}썬데이</span></div><div class="sunbody">${body}</div>`;
   c.dataset.sid=JSON.stringify(s||null);

@@ -13,8 +13,7 @@
   </div>
   <nav class="tabs" id="tabs">
     <button data-tab="boss" class="on">보스 현황</button>
-    <button data-tab="summary">캐릭터 별 기록</button>
-    <button data-tab="total">총 수익</button>
+    <button data-tab="total">수익 분석</button>
     <span class="tabsep" aria-hidden="true"></span>
     <button data-tab="daily">일퀘 현황</button>
     <button data-tab="guild">길드 현황</button>
@@ -78,11 +77,11 @@
       <div class="optlines compact" id="accOpts"></div>
     </section>
     <section class="addsec" id="impSec">
-      <div class="addsec-h"><b>👥 <span id="impTitle">계정 캐릭터</span></b><span class="muted" id="impCount"></span></div>
+      <span id="impTitle" hidden></span><span id="impCount" hidden></span>
       <div class="impmsg" id="impMsg"></div>
-      <div class="toolbar" id="impTools"><input type="search" id="impQ" class="pin" placeholder="이름·직업 검색" style="width:130px;text-align:left"><span class="muted">최소 레벨</span><input type="number" id="impMin" value="" min="0" placeholder="전체" style="width:70px" class="pin"><select id="impWorld" class="pin" style="width:auto;text-align:left"></select><span style="flex:1"></span><button class="btn sm plain" id="impAll">전체 선택</button></div>
+      <div class="toolbar" id="impTools"><input type="search" id="impQ" class="pin" placeholder="이름·직업 검색" style="width:130px;text-align:left"><span class="muted">최소 레벨</span><input type="number" id="impMin" value="" min="0" placeholder="전체" style="width:70px" class="pin"><select id="impWorld" class="btn sm ghost impworld"></select><button class="btn sm" id="impOk">캐릭터 추가</button><span style="flex:1"></span><button class="btn sm plain" id="impAll">전체 선택</button></div>
       <div class="imp-list" id="impList"></div>
-      <div class="row"><span class="muted tiny" style="flex:1">처음 추가하면 레벨이 가장 높은 캐릭터가 본캐(★)가 됩니다. 추가 후 이미지·보스 클리어를 자동 동기화합니다.</span><button class="btn" id="impOk">선택 추가</button></div>
+      <div class="row"><span class="muted tiny" style="flex:1">처음 추가하면 레벨이 가장 높은 캐릭터가 본캐(★)가 됩니다. 추가 후 이미지·보스 클리어를 자동 동기화합니다.</span></div>
     </section>
   </div>
 </div>

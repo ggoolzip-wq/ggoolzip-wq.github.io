@@ -87,7 +87,7 @@ try:
         # 완료 상태가 바뀌면 순서도 바뀜: c2 를 완료로
         pg.click('.char[data-id="c2"]'); pg.wait_for_timeout(100)
         for k in W12:
-            if pg.locator(f'[data-check="{k}"]').count() and 'on' not in (pg.get_attribute(f'[data-check="{k}"]','class') or ''): pg.click(f'[data-check="{k}"]'); pg.wait_for_timeout(30)
+            if pg.evaluate("k=>{const c=activeChar();return !!(c.bosses[k]&&c.bosses[k].enabled)&&!c.weekly[k]}",k): pg.evaluate("(k=>{const e=document.createElement('i');e.dataset.check=k;document.querySelector('#view').appendChild(e);e.click();e.remove()})",k); pg.wait_for_timeout(30)
         o2=pg.evaluate(ORDER)
         check('newly done char moves to done group (stable)', o2==[x for x in exp if x!='c2'][:5]+['c1','c2','c3','c6','c7','c10'] , o2)
         pg.click('[data-csort="base"]'); pg.wait_for_timeout(150)

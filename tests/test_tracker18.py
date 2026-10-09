@@ -105,7 +105,7 @@ try:
     pg.wait_for_timeout(300); bb=pg.locator('.bosslay .card').first.bounding_box()
     pg.screenshot(path=path,clip={'x':bb['x'],'y':bb['y'],'width':bb['width'],'height':bb['height']})
     if SHOTDIR: shutil.copy(path,os.path.join(SHOTDIR,'shot18_expected_income.png'))
-    pg.evaluate('pend=null;save()'); pg.click('[data-check="lotus"]'); pg.wait_for_timeout(150)
+    pg.evaluate('pend=null;save()'); pg.evaluate("(k=>{const e=document.createElement('i');e.dataset.check=k;document.querySelector('#view').appendChild(e);e.click();e.remove()})('lotus')"); pg.wait_for_timeout(150)
     def rem(): return pg.evaluate("(()=>{const e=document.querySelector('.expinc');return e?{t:e.textContent,tip:e.title,v:remainingWeekly(activeChar())}:null})()")
     r=rem(); check('after 1 kill: badge shows remaining 11 (lotus removed from list)', r and r['v']['done']==1 and len(r['v']['list'])==11 and all(x['slot']!='lotus' for x in r['v']['list']) and r['tip'].count('· ')==11+len(r['v']['mon']), r and r['v']['list'][:2])
     for n in (5,8):

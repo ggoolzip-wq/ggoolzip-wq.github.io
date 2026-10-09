@@ -32,7 +32,7 @@ with sync_playwright() as p:
     print('M2 sidebar rev c1 = weekly only:', pg.inner_text('.char[data-id="c1"] .rev'), '| expected', pg.evaluate(f"meso({r['c1']})"))
     print('M3 revpanel:', pg.inner_text('.revpanel .rp-total'), '|', pg.inner_text('.revpanel .rp-month') if pg.locator('.rp-month').count() else None, '| world section gone:', pg.locator('.rp-world').count()==0 and 'rp-sec' in pg.inner_html('.revpanel') and '월드별' not in pg.inner_text('.revpanel'))
     print('M4 boss stats:', pg.eval_on_selector_all('#view .stat .k','e=>e.map(x=>x.textContent)'), pg.inner_text('#view .stat:nth-child(3) .v'))
-    pg.click('[data-tab="summary"]'); pg.wait_for_timeout(100)
+    pg.click('[data-tab="total"]'); pg.wait_for_timeout(100)
     print('M5 summary stats:', pg.eval_on_selector_all('#view .stat','e=>e.map(x=>x.innerText.replace(/\\n/g," / "))'), '| 90 anywhere:', '/ 90' in pg.inner_text('#view'))
     pg.screenshot(path=OUT+'/shot6_summary.png',full_page=True)
     # week rollover → history weekly only; month rollover → monthHistory

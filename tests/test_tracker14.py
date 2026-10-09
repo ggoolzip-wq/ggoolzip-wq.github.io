@@ -47,7 +47,7 @@ try:
     today=pg.evaluate('dayId()'); yday=pg.evaluate('dayId(Date.now()-864e5)')
     # 1) 탭 바: 총 수익 → ㅡ 구분선 → 일퀘 현황 → 길드 현황
     tabs=pg.eval_on_selector_all('#tabs > *',"e=>e.map(x=>x.tagName==='SPAN'?'|'+x.className:x.textContent.trim())")
-    check('tab order with divider', tabs==['보스 현황','캐릭터 별 기록','총 수익','|tabsep','일퀘 현황','길드 현황'], tabs)
+    check('tab order with divider', tabs==['보스 현황','수익 분석','|tabsep','일퀘 현황','길드 현황'], tabs)
     sep=pg.evaluate("(()=>{const r=document.querySelector('#tabs .tabsep').getBoundingClientRect(),t=document.querySelector('[data-tab=total]').getBoundingClientRect();return {w:r.width,h:r.height,mid:Math.abs((r.top+r.bottom)/2-(t.top+t.bottom)/2)}})()")
     check('divider is a short horizontal line, vertically centered', 8<=sep['w']<=20 and 1<=sep['h']<=3 and sep['mid']<6, sep)
     check('no API calls before opening tabs', not sched_calls() and not guild_calls(), CALLS)
@@ -138,7 +138,7 @@ try:
     pg.click('[data-tab=guild]'); pg.wait_for_timeout(150)
     # 6) 사이드바 캐릭터 클릭 → 보스 체크로 이동, 기존 탭 정상
     pg.click('#charList .char[data-id=c2]'); pg.wait_for_timeout(150); check('sidebar click → boss tab', pg.evaluate('tab')=='boss' and pg.evaluate('S.activeId')=='c2')
-    for t in ['summary','total','boss']: pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(80)
+    for t in ['total','boss']: pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(80)
     check('existing tabs still render', pg.query_selector('#view .card') is not None)
     # 7) 모바일 375 / 320
     for w in (375,320):
