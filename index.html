@@ -706,6 +706,11 @@ select.impworld option{color:#111}
 #congrats,#congrats *,#fx,#iconBurst,#iconBurst *{pointer-events:none!important}
 #congrats{cursor:default;background:transparent}
 .lx.aur.epsum{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#7fe0ff!important;-webkit-text-fill-color:#7fe0ff;text-shadow:0 0 6px rgba(127,224,255,.85),0 0 14px rgba(127,224,255,.5)}
+.bossloot .blrow{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)}
+.bossloot .blrow:first-of-type{border-top:0}
+.bossloot .blb{flex:none;min-width:150px;display:inline-flex;align-items:center;gap:6px}
+.bossloot .blb .bicon{width:24px;height:24px}
+.bossloot .loots,.itemtot .loots{flex:1}
 </style>
 </head>
 <body>
@@ -2165,9 +2170,37 @@ function totalData(){
     for(const [ik,n] of Object.entries(p.items||{})){ const {it,party}=parseIK(ik); if(!ITEMS[it]) continue; const a=party>1?it+'#'+party:it; o.items[a]=(o.items[a]||0)+(+n);
       const I=items[a]||(items[a]={n:0,by:{},outs:[]}); I.n+=+n; I.by[o.name]=(I.by[o.name]||0)+(+n);
       if(hasOut(it)){ const l=(p.outcomes||{})[ik]||[]; I.outs.push(...l); (o.outs[a]=o.outs[a]||[]).push(...l); if(isRing(it)){ const t=outTally(l,n); for(const q in ring) ring[q]+=t[q]; } } } };
+  // 보스(난이도)별 아이템: 난이도는 그 주 기록의 보스 태그 '이름(난이도)' → 없으면 현재 캐릭터 설정
+  const byBoss={};
+  const addB=p=>{ const tags={}; (p.bosses||[]).forEach(t=>{ const m=/^(.+?)\((.+?)\)/.exec(t); if(m) tags[m[1]]=m[2]; });
+    const cc=p.id&&S.characters.find(x=>x.id===p.id);
+    for(const [ik,n] of Object.entries(p.items||{})){ const {slot,it}=parseIK(ik); const b=findBoss(slot); if(!b||!ITEMS[it]||!(+n>0)) continue;
+      const dl=tags[b.name]||(cc&&cc.bosses[slot]?.diff?D[cc.bosses[slot].diff]:'');
+      const bk=slot+'|'+dl, o=byBoss[bk]||(byBoss[bk]={slot,dl,items:{}}); let u=+n;
+      if(it==='chaosbox') ((p.outcomes||{})[ik]||[]).forEach(q=>{ if(/^cb:/.test(q)&&ITEMS[q.slice(3)]&&u>0){ o.items[q]=(o.items[q]||0)+1; u--; } });
+      if(u>0) o.items[it]=(o.items[it]||0)+u; } };
+  weeks.forEach(w=>(w.perChar||[]).forEach(addB)); months.forEach(m=>(m.perChar||[]).forEach(addB));
   weeks.forEach(w=>(w.perChar||[]).forEach(p=>add(p,o=>{o.week+=p.meso||0; if(p.meso) o.weeks++;})));
   months.forEach(m=>(m.perChar||[]).forEach(p=>add(p,o=>{o.month+=p.meso||0;})));
-  return {weeks,months,wTotal,mTotal,grand:wTotal+mTotal,ring,chars:Object.values(chars).sort((a,b)=>(b.week+b.month)-(a.week+a.month)),items:Object.entries(items).sort((a,b)=>b[1].n-a[1].n)};
+  return {weeks,months,wTotal,mTotal,grand:wTotal+mTotal,ring,byBoss,chars:Object.values(chars).sort((a,b)=>(b.week+b.month)-(a.week+a.month)),items:Object.entries(items).sort((a,b)=>b[1].n-a[1].n)};
+}
+// 아이템 칩: 'cb:<장신구>' = 칠흑 상자에서 고른 장신구, 'ring:r4|c4' = 시드링 결과
+const lootName = k => /^cb:/.test(k)?ITEMS[k.slice(3)].n : k==='ring:r4'?OUT_NAME.r4 : k==='ring:c4'?OUT_NAME.c4 : ITEMS[k].n;
+const lootIco = k => /^cb:/.test(k)?itemIcon(k.slice(3)) : k==='ring:r4'?miniIcon('ring_restraint') : k==='ring:c4'?miniIcon('ring_continuous') : itemIcon(k);
+const lootOrd = k => /^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*(1+CHAOS_PICK.indexOf(k.slice(3))) : /^ring:/.test(k)?-1+(k==='ring:c4'?.5:0) : Object.keys(ITEMS).indexOf(k);
+const lootChips = m => `<span class="loots">${Object.keys(m).filter(k=>m[k]>0).sort((a,b)=>lootOrd(a)-lootOrd(b)).map(k=>`<span class="loot">${lootIco(k)}<span class="ln">${esc(lootName(k))}</span> <b class="lx">${xN(m[k])}</b></span>`).join('')}</span>`;
+function bossLootHtml(T){
+  const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; };
+  const rows=Object.values(T.byBoss||{}).filter(o=>Object.values(o.items).some(n=>n>0)).sort((a,b)=>bi(a.slot)-bi(b.slot)||a.dl.localeCompare(b.dl));
+  return `<div class="card bossloot"><h2>${miniIcon('chaosbox')} 보스 별 누적 아이템 드랍</h2>${rows.length?rows.map(o=>{ const b=findBoss(o.slot);
+    return `<div class="blrow"><span class="blb"><span class="hbi">${bossIcon(b)}</span><b>${esc(b.name)}</b>${o.dl?` <span class="muted">${esc(o.dl)}</span>`:''}</span>${lootChips(o.items)}</div>`; }).join(''):'<p class="muted">아직 저장된 드랍 기록이 없습니다.</p>'}</div>`;
+}
+// 총 아이템 획득량: 반지 상자는 상자 자체 + 기록된 결과(리4·컨4)를 시드링 아이템으로 따로 (꽝은 아이템이 아님), 칠흑 상자는 고른 장신구로
+function itemTotalsHtml(T){
+  const m={};
+  for(const o of Object.values(T.byBoss||{})) for(const [k,n] of Object.entries(o.items)){ const kk=/^cb:/.test(k)?k.slice(3):k; m[kk]=(m[kk]||0)+n; }
+  m['ring:r4']=T.ring.r4||0; m['ring:c4']=T.ring.c4||0;
+  return `<div class="card itemtot"><h2>${miniIcon('bliss')} 총 아이템 획득량</h2>${Object.values(m).some(n=>n>0)?lootChips(m):'<p class="muted">아직 저장된 아이템이 없습니다.</p>'}</div>`;
 }
 function weekChart(rows, opts={}){
   // rows: [{week,total,cur}] — 막대(주간 수익) + 선택적으로 누적선
@@ -2203,8 +2236,8 @@ function renderTotal(){
     </div>
     <p class="muted" style="margin:8px 0 0;font-size:.78rem">수익은 결정석 판매 금액만 합산합니다(드롭 아이템은 개수만 기록). 주간 기록은 자동으로 지워지지 않으며 구글 로그인 시 드라이브에 함께 저장됩니다.</p>
   </div>
-  <div class="card"><h2>📈 주별 수익 · 누적 <span class="muted" style="font-weight:500">막대: 주간 결정석 수익 · 파란 선: 누적</span></h2>${weekChart(T.weeks,{cum:true,minBar:22})}</div>
-  <div class="card"><h2>${(m=>m?avatar(m,'hav2'):'<span class="hav fb">👤</span>')(S.characters.find(c=>c.isMain))} 캐릭터별 누적</h2><div style="overflow-x:auto"><table><thead><tr><th>캐릭터</th><th class="num">주간 보스</th><th class="num">월간 보스</th><th class="num">합계</th><th>획득 아이템</th></tr></thead><tbody>
+  <div class="card"><h2>📈 주별 누적 결정석 메소 <span class="muted" style="font-weight:500">막대: 주간 결정석 수익 · 파란 선: 누적</span></h2>${weekChart(T.weeks,{cum:true,minBar:22})}</div>
+  <div class="card"><h2>${(m=>m?avatar(m,'hav2'):'<span class="hav fb">👤</span>')(S.characters.find(c=>c.isMain))} 캐릭터별 누적 결정석 메소</h2><div style="overflow-x:auto"><table><thead><tr><th>캐릭터</th><th class="num">주간 보스</th><th class="num">월간 보스</th><th class="num">합계</th><th>획득 아이템</th></tr></thead><tbody>
     ${T.chars.map(o=>`<tr><td><b>${esc(o.name)}</b></td><td class="num">${meso(o.week)}</td><td class="num muted">${o.month?meso(o.month):'-'}</td><td class="num"><b>${meso(o.week+o.month)}</b></td><td>${itemsInline(o.items,{empty:'<span class="muted">-</span>',outs:o.outs})}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}
   </tbody></table></div></div>
   <div class="card"><h2>${miniIcon('ring_restraint')} 시드링 획득</h2>
@@ -2217,6 +2250,7 @@ function renderTotal(){
       const ks=Object.keys(R).sort((x,y)=>oi(x)-oi(y));
       const tot=Object.values(R).reduce((x,y)=>x+y,0); const hd=`<h2>${miniIcon('sos')} 에픽빔 본 횟수${tot?` <b class="lx aur epsum">${xN(tot)}</b>`:''}</h2>`;
       return hd+(ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${/^cb:/.test(k)?`${miniIcon('chaosbox')} - ${itemIcon(k.slice(3))}<span class="ln">${esc(ITEMS[k.slice(3)].n)}</span>`:`${itemIcon(k)}<span class="ln">${esc(ITEMS[k].n)}</span>`} <b class="lx">${xN(R[k])}</b></span></div>`).join('')}</div>`:'<p class="muted">아직 기록한 아이템이 없습니다. 보스 현황 탭에서 보스 행의 아이템을 누르고 저장하면 기록됩니다.</p>'); })()}</div>
+  ${bossLootHtml(T)}${itemTotalsHtml(T)}
   <div class="card"><h2>🗓 전체 주 목록</h2><div style="overflow-x:auto"><table><thead><tr><th>주차</th><th class="num">클리어</th><th class="num">아이템</th><th class="num">주간 수익</th><th class="num">누적</th></tr></thead><tbody>
     ${T.weeks.map(w=>{cum+=w.total||0;return {w,cum};}).reverse().map(({w,cum})=>`<tr><td>${fmtWeek(w.week)}${w.cur?' <span class="pill">이번 주</span>':''}</td><td class="num">${w.cleared??'-'}</td><td class="num">${w.items??itemSum(Object.assign({},...(w.perChar||[]).map(p=>p.items||{})))}</td><td class="num"><b>${meso(w.total||0)}</b></td><td class="num muted">${meso(cum)}</td></tr>`).join('')}
   </tbody></table></div></div></div>`;

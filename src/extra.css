@@ -599,3 +599,8 @@ select.impworld option{color:#111}
 #congrats,#congrats *,#fx,#iconBurst,#iconBurst *{pointer-events:none!important}
 #congrats{cursor:default;background:transparent}
 .lx.aur.epsum{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#7fe0ff!important;-webkit-text-fill-color:#7fe0ff;text-shadow:0 0 6px rgba(127,224,255,.85),0 0 14px rgba(127,224,255,.5)}
+.bossloot .blrow{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)}
+.bossloot .blrow:first-of-type{border-top:0}
+.bossloot .blb{flex:none;min-width:150px;display:inline-flex;align-items:center;gap:6px}
+.bossloot .blb .bicon{width:24px;height:24px}
+.bossloot .loots,.itemtot .loots{flex:1}

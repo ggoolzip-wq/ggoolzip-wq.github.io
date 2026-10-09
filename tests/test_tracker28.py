@@ -100,6 +100,20 @@ try:
     check('에픽빔 heading sum = stored non-ring drops, glowing sky-blue', sm==f'x{exp}' and exp==3 and pg.evaluate("getComputedStyle(document.querySelector('.epsum')).color")=='rgb(127, 224, 255)' and 'rgb' in pg.evaluate("getComputedStyle(document.querySelector('.epsum')).textShadow"), (sm,exp))
     check('per-item counts crimson, no gradient, sum matches', all(c=='rgb(224, 17, 95)' and bc!='text' for _,c,bc in items) and sum(int(t[1:]) for t,_,_ in items)==exp, items)
     pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b29_epic.png') if SHOTDIR else None
+    # b31
+    pg.evaluate("S.characters[0].drops['kaling|r_white']=1; S.characters[0].dropOut['kaling|r_white']=['r4']; S.history.push({week:'2026-10-01',weeklyOnly:true,total:0,perChar:[{id:'c1',name:'단풍용사',meso:0,bosses:['카링(하드)'],items:{'kaling|chaosbox':1,'seren|mitra':1},outcomes:{'kaling|chaosbox':['cb:sos']}}]}); save(); render()"); pg.wait_for_timeout(200)
+    h=pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.textContent.trim())')
+    check('renamed headings', any(x.startswith('📈 주별 누적 결정석 메소') for x in h) and any(x.endswith('캐릭터별 누적 결정석 메소') for x in h) and pg.locator('#view h2:has-text("캐릭터별 누적") .avatar').count()==1, h)
+    order=[x for x in h if x.startswith('에픽빔') or x.endswith('보스 별 누적 아이템 드랍') or x.endswith('총 아이템 획득량')]
+    check('new sections below 에픽빔 in order', len(order)==3 and order[0].startswith('에픽빔') and order[1].endswith('드랍') and order[2].endswith('획득량'), order)
+    rows=pg.eval_on_selector_all('.bossloot .blrow','e=>e.map(x=>x.innerText.split(String.fromCharCode(10)).join(" "))')
+    kal=[r for r in rows if r.startswith('카링')]
+    check('per boss+difficulty rows (카링 하드 from history tag / 카링 노멀 current), chaos as accessory, ring box as box', any('하드' in r and '고통의 근원 x1' in r for r in kal) and any('노말' in r and '마력이 깃든 안대 x1' in r and '백옥의 보스 반지 상자 x1' in r for r in kal) and any(r.startswith('선택받은 세렌') and '미트라의 분노 선택 상자 x2' in r for r in rows) and pg.locator('.bossloot .blrow .bicon').count()>=2, rows)
+    col=pg.eval_on_selector_all('.bossloot .lx, .itemtot .lx','e=>[...new Set(e.map(x=>getComputedStyle(x).color))]')
+    tot=pg.inner_text('.itemtot .loots').replace('\n',' ')
+    check('총 아이템 획득량: icon+name+qty only, ring outcome counted, box too, chaos→accessory, no 0', '리스트레인트 링 4레벨 x1' in tot and '백옥의 보스 반지 상자 x1' in tot and '미트라의 분노 선택 상자 x2' in tot and '고통의 근원 x1' in tot and '마력이 깃든 안대 x1' in tot and '혼돈의 칠흑' not in tot and 'x0' not in tot and '컨티뉴어스' not in tot and '카링' not in tot and '단풍' not in tot and pg.locator('.itemtot .loot img').count()==pg.locator('.itemtot .loot').count(), tot)
+    check('counts crimson', col==['rgb(224, 17, 95)'], col)
+    pg.locator('#view').screenshot(path='/workspace/shots/b31.png') if SHOTDIR else None
     # 12 썬데이 라벨 (mocked clock)
     lab=lambda now: pg.evaluate("n=>sunLabel(feed.data.sunday,n)",now)
     ms=lambda s: pg.evaluate("s=>Date.parse(s)",s)
