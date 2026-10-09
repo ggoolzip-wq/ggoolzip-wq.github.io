@@ -89,6 +89,12 @@ main{max-width:1480px}
 .drop.s-칠흑{border-color:#8a63d2;background:color-mix(in srgb,#8a63d2 10%,var(--panel))}
 .drop.s-여명{border-color:#5aa9e6;background:color-mix(in srgb,#5aa9e6 10%,var(--panel))}
 .drop.s-해머{border-color:#d97a3a}
+.drop.s-연마석{border-color:#9aa7b8}
+.drop.s-에테르{border-color:#b06ad8;background:color-mix(in srgb,#b06ad8 8%,var(--panel))}
+/* 솔 에르다의 기운: 정보 표시 전용 — 아이콘 왼쪽 위에 개수 배지 */
+.drop.erda{position:relative;flex:none;padding:1px 2px;cursor:default;border-style:dashed;background:color-mix(in srgb,#46b6c9 8%,var(--panel))}
+.drop.erda .ecnt{position:absolute;top:-3px;left:-3px;min-width:15px;padding:0 3px;border-radius:8px;background:#2b8fa3;color:#fff;font-size:.6rem;font-weight:800;line-height:13px;text-align:center;box-shadow:0 0 0 1px var(--panel);pointer-events:none}
+.drops{padding-top:3px;padding-left:3px}
 @media(max-width:560px){.drop .dn{max-width:9em}}
 /* 사이드바 카드: 이름 한 줄 유지, 좁은 화면 가로 넘침 방지 */
 main{grid-template-columns:320px minmax(0,1fr)}
@@ -450,3 +456,40 @@ html.sunlb-open{overflow:hidden}
   .side-sticky>.card{margin-top:0!important}
   #feedCard{order:2}
 }
+
+/* 이번 주 보스를 아직 안 잡은 캐릭터: 예상 주간 수익 (강렬한 힘의 결정 아이콘) */
+.expinc{display:inline-flex;align-items:center;gap:3px;margin-left:4px;padding:0 7px 0 3px;border-radius:999px;border:1px solid var(--line);background:var(--accent-soft);color:var(--text);font-size:.8rem;white-space:nowrap;vertical-align:middle}
+.expinc .ric{width:18px;height:18px}
+.expinc b{color:var(--accent)}
+.expinc small{color:var(--muted);font-size:.7rem}
+
+/* 오른쪽 열: 수익 · 결정석 가격 · 초기화까지(맨 아래). 화면 높이 안에 맞추고 넘치면 가격 목록(그다음 수익 패널)이 안에서 스크롤 → 초기화 카드는 항상 보임 */
+.rcol>.revpanel{flex:0 0 auto;max-height:calc((100vh - 124px)*.46);overflow-y:auto;scrollbar-width:thin}
+.rcol>.pricecard{flex:1 1 0;min-height:110px;display:flex;flex-direction:column}
+.rcol>.pricecard .pc-list{flex:1 1 auto;min-height:40px;max-height:none}
+.rcol>.resetcard{flex:none;margin-top:auto;padding:10px 14px;font-size:.82rem;line-height:1.5}
+@media(max-width:1180px){.rcol>.revpanel,.rcol>.pricecard{overflow:visible;max-height:none;flex:none}.rcol>.pricecard .pc-list{max-height:260px}}
+/* 캐릭터 목록: 8명 넘으면 목록 안에서 스크롤 (fitCharList 가 max-height 지정) */
+#charList.scroll{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-right:2px}
+#charList.sorted .char .drag-h{visibility:hidden}
+.charsort{display:inline-flex;gap:8px;margin-left:auto;padding-left:8px;white-space:nowrap}
+.sortlink{all:unset;cursor:pointer;font-size:.74rem;font-weight:500;color:var(--muted);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.sortlink.on{font-weight:800;color:var(--text);text-decoration-thickness:2px}
+.sortlink:hover{color:#c95a00}
+[data-theme="dark"] .sortlink:hover{color:#ff9a3c}
+.sortlink:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+/* 월드 탭 (캐릭터 카드): 밑줄 글자 탭 'ㅣ' 구분, 활성 = 굵은 주황(다크) / 진한 주황(라이트), 마우스 올리면 주황 */
+.wtabs{display:flex;align-items:center;flex-wrap:wrap;row-gap:2px;margin:2px 0 6px;font-size:.84rem}
+.wtabs:empty{display:none}
+.wtablist{display:inline-flex;align-items:center;flex-wrap:wrap;min-width:0}
+.wtab{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:3px;padding:2px 3px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;white-space:nowrap;border-radius:4px;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-user-drag:element}
+.wtab .cnt{font-weight:500}
+.wtab:hover{color:#c95a00}
+.wtab.on{color:#c95a00;font-weight:800;text-decoration-thickness:2px}
+[data-theme="dark"] .wtab:hover,[data-theme="dark"] .wtab.on{color:#ff9a3c}
+.wtab:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.wtab .wico{width:14px;height:14px;image-rendering:pixelated;flex:none;text-decoration:none}
+.wdiv{color:var(--muted);opacity:.55;padding:0 3px;user-select:none}
+.wtab.dragging{opacity:.4}
+.wtab.drop-before{box-shadow:-2px 0 0 var(--accent)}
+.wtab.drop-after{box-shadow:2px 0 0 var(--accent)}

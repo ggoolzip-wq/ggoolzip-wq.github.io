@@ -57,9 +57,9 @@ try:
     pg.goto(URL); pg.evaluate("p=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p))}",PRESET); feed_hits.clear(); pg.reload()
     pg.wait_for_selector('#feedCard .flist li'); pg.wait_for_timeout(300)
     check('feed.json fetched once, cache-busted', len(feed_hits)==1 and '?t=' in feed_hits[0], feed_hits)
-    # 1) 위치: 왼쪽 사이드바, 리셋 카드 아래
-    pos=pg.evaluate("(()=>{const f=document.querySelector('#feedCard'),r=document.querySelector('#resetInfo').closest('.card');return {inAside:!!f.closest('aside.side-sticky'),after:r.nextElementSibling===f,below:f.getBoundingClientRect().top>=r.getBoundingClientRect().bottom,left:f.getBoundingClientRect().left<400}})()")
-    check('card in left sidebar right below the reset card', all(pos.values()), pos)
+    # 1) 위치: 왼쪽 사이드바, 캐릭터 카드 바로 아래 ('초기화까지' 카드는 2026-10-10 오른쪽 열로 이동)
+    pos=pg.evaluate("(()=>{const f=document.querySelector('#feedCard'),r=document.querySelector('#charList').closest('.card');return {inAside:!!f.closest('aside.side-sticky'),after:r.nextElementSibling===f,below:f.getBoundingClientRect().top>=r.getBoundingClientRect().bottom,left:f.getBoundingClientRect().left<400}})()")
+    check('card in left sidebar right below the character card (reset card moved to right column 2026-10-10)', all(pos.values()), pos)
     tabs=pg.eval_on_selector_all('#feedCard .ftab',"e=>e.map(x=>[x.dataset.ftab,x.childNodes[0].textContent,(x.querySelector('.fcnt')||{}).textContent||''])")
     check('4 tabs with unseen counts', tabs==[['saryo','사료감지','2'],['patch','패치내역','16'],['test','테섭','49'],['mabbak','마빡도로시','1']], tabs)
     check('tabs fit on one line', pg.evaluate("(()=>{const t=[...document.querySelectorAll('#feedCard .ftab')].map(e=>e.getBoundingClientRect().top);return Math.max(...t)-Math.min(...t)<1 && document.querySelector('#feedCard .ftabs').scrollWidth<=document.querySelector('#feedCard .ftabs').clientWidth})()"))

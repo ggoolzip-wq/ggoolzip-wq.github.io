@@ -16,7 +16,12 @@ SRC={ # key: file
  'wentus':'itemicons/1182087.png','shoulder':'itemicons/1152170.png',
  'r_green':'ringicons/2028407.png','r_red':'ringicons/2028408.png','r_black':'ringicons/2028409.png','r_white':'ringicons/2028410.png','r_life':'ringicons/Use_Life_Boss_Ring_Box.png',
  'ring_restraint':'ringicons/Eqp_Ring_of_Restraint.png','ring_continuous':'ringicons/Eqp_Continuous_Ring.png',
- 'ipc':'ringicons/4001928.png'}  # 강렬한 힘의 결정 (주간), item 4001928 (maplestory.io GMS 255 game data = maplestorywiki 'Etc Intense Power Crystal (Weekly)')
+ 'ipc':'ringicons/4001928.png',  # 강렬한 힘의 결정 (주간), item 4001928 (maplestory.io GMS 255 game data = maplestorywiki 'Etc Intense Power Crystal (Weekly)')
+ # 연마석: 생명 2539001 (maplestory.io KMS 389), 신념 2539003 (maplestory.io GMS 270 'Grindstone of Faith' — KMS 데이터에 아직 없음)
+ 'g_life':'itemicons/2539001.png','g_faith':'itemicons/2539003.png',
+ # 소울 에테르 1~4단계 (2026-09-17 추가, maplestory.io 미수록) — maple.ai.kr 소울웨폰 개편 글의 게임 아이콘 이미지를 잘라 배경 제거
+ 'se1':'itemicons/soul_ether_1.png','se2':'itemicons/soul_ether_2.png','se3':'itemicons/soul_ether_3.png','se4':'itemicons/soul_ether_4.png',
+ 'erda':'itemicons/2636421.png'}  # 솔 에르다의 기운 2636421 (maplestory.io KMS 389) — 정보 표시 전용  # 강렬한 힘의 결정 (주간), item 4001928 (maplestory.io GMS 255 game data = maplestorywiki 'Etc Intense Power Crystal (Weekly)')
 out={}; S=32
 for k,f in SRC.items():
     im=Image.open(f).convert('RGBA'); bb=im.getbbox(); im=im.crop(bb) if bb else im

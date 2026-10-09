@@ -78,5 +78,5 @@ def handle(route):
     return route.fulfill(status=400,json={'error':{'name':'OPENAPI00006','message':'invalid path'}})
 
 def st(pg): return json.loads(pg.evaluate("localStorage.getItem('mapleBossTracker.v1')"))
-def names(pg): return pg.eval_on_selector_all('#charList .char .nm', "els=>els.map(e=>e.childNodes[0].textContent.trim())")
-def worlds(pg): return pg.eval_on_selector_all('#charList .world-h', "els=>els.map(e=>e.dataset.world)")
+def names(pg): return pg.evaluate("orderedChars().map(c=>c.name)")  # 월드 탭(2026-10-10)으로 사이드바엔 한 월드만 보이므로 전체 순서는 상태에서
+def worlds(pg): return pg.eval_on_selector_all('#worldTabs .wtab', "els=>els.map(e=>e.dataset.world)")

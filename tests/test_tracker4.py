@@ -45,8 +45,8 @@ def handle(route):
     return route.fulfill(status=400,json={'error':{'name':'OPENAPI00006','message':'invalid path'}})
 
 def st(pg): return json.loads(pg.evaluate("localStorage.getItem('mapleBossTracker.v1')"))
-def names(pg): return pg.eval_on_selector_all('#charList .char .nm', "els=>els.map(e=>e.childNodes[0].textContent.trim())")
-def worlds(pg): return pg.eval_on_selector_all('#charList .world-h', "els=>els.map(e=>e.dataset.world)")
+def names(pg): return pg.evaluate("orderedChars().map(c=>c.name)")  # 월드 탭(2026-10-10)으로 사이드바엔 한 월드만 보이므로 전체 순서는 상태에서
+def worlds(pg): return pg.eval_on_selector_all('#worldTabs .wtab', "els=>els.map(e=>e.dataset.world)")
 def wait_sync(pg): pg.wait_for_function("!syncing", timeout=20000); pg.wait_for_timeout(250)
 
 with sync_playwright() as p:
@@ -104,8 +104,7 @@ with sync_playwright() as p:
     before=names(pg)
     pg.drag_and_drop('.char[data-id="c-ocid-b1"]', '.char[data-id="c-ocid-main"]', target_position={'x':40,'y':4}); pg.wait_for_timeout(200)
     print('C1 HTML5 drag 부계정비숍 above 단풍용사:', names(pg))
-    pg.drag_and_drop('.char[data-id="c-ocid-b1"]', '#charList .char[data-world="루나"]'); pg.wait_for_timeout(200)
-    print('C2 cross-world drop rejected:', names(pg))
+    print('C2 only selected world shown:', pg.evaluate("[...new Set([...document.querySelectorAll('#charList .char')].map(e=>e.dataset.world))]"))
     pg.click('[data-move="c-ocid-main|-1"]'); pg.wait_for_timeout(100)
     print('C3 ▲ on 단풍용사:', names(pg))
     # touch drag via pointer events on handle: move 불독메이지 to bottom of 스카니아
@@ -119,9 +118,9 @@ with sync_playwright() as p:
     }"""); pg.wait_for_timeout(150)
     print('C4 touch drag 불독메이지 to bottom:', names(pg))
     print('C5 worlds before:', worlds(pg))
-    pg.click('[data-wmove="루나|-1"]'); pg.wait_for_timeout(100)
-    print('C6 ▲ world 루나:', worlds(pg))
-    pg.drag_and_drop('.world-h[data-world="베라"]', '.world-h[data-world="루나"]', target_position={'x':20,'y':2}); pg.wait_for_timeout(150)
+    pg.drag_and_drop('.wtab[data-world="루나"]', '.wtab[data-world="스카니아"]', target_position={'x':2,'y':5}); pg.wait_for_timeout(150)
+    print('C6 drag tab 루나 before 스카니아:', worlds(pg))
+    pg.drag_and_drop('.wtab[data-world="베라"]', '.wtab[data-world="루나"]', target_position={'x':2,'y':5}); pg.wait_for_timeout(150)
     print('C7 HTML5 drag world 베라 above 루나:', worlds(pg))
     order=names(pg); wo=worlds(pg)
     # set main on another char & sync -> order unchanged
@@ -145,7 +144,7 @@ with sync_playwright() as p:
     rp=pg.evaluate("(()=>{const r=document.querySelector('.revpanel');if(!r)return null;const b=r.getBoundingClientRect(),m=document.querySelector('.bosslay>.grid').getBoundingClientRect();return {x:Math.round(b.x),w:Math.round(b.width),mainRight:Math.round(m.right),total:r.querySelector('.rp-total').textContent,chars:r.querySelectorAll('.rp-char').length,worlds:r.querySelectorAll('.rp-world').length,app:meso(allRevenue().total)}})()")
     print('G4 revpanel desktop:', rp)
     pg.click('.revpanel .rp-char:nth-child(2)'); pg.wait_for_timeout(100); print('G4b click panel char selects:', pg.evaluate('activeChar().name'))
-    pg.click('.char[data-id="c-ocid-main"]'); pg.wait_for_timeout(100)
+    pg.evaluate("setWorldTab('스카니아')"); pg.click('.char[data-id="c-ocid-main"]'); pg.wait_for_timeout(100)  # 다른 월드 캐릭터를 고른 뒤라 스카니아 탭으로
     # ---- E. export excludes keys
     print('G5 UI markers gone (src tags / 공식 / 커뮤니티 text in UI):', pg.locator('.src').count(), pg.evaluate("document.body.innerText.includes('커뮤니티')||document.body.innerText.includes('공식 20')"), '| one price per row:', pg.evaluate("[...document.querySelectorAll('table tr:has(input[data-price])')].every(r=>r.querySelectorAll('input[data-price]').length===1)"), pg.locator('input[data-price]').count())
     print('G5b prices kaling/star/will/damien:', pg.evaluate("[PRICE_CONFIG.kaling_normal,PRICE_CONFIG.star_normal,PRICE_CONFIG.will_easy,PRICE_CONFIG.damien_normal]"))

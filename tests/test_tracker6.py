@@ -47,7 +47,7 @@ with sync_playwright() as p:
     print('R1 dropsFor:', pg.evaluate("Object.fromEntries([['lotus','normal'],['lotus','extreme'],['seren','normal'],['seren','extreme'],['kalos','chaos'],['jinhilla','normal'],['bellona','hard'],['jupiter','normal'],['blackmage','hard'],['zakum','chaos']].map(([b,d])=>[b+':'+d,dropsFor(findBoss(b),d)]))"))
     print('R2 RING_DROPS diffs valid:', pg.evaluate("Object.entries(RING_DROPS).flatMap(([k,m])=>Object.entries(m).flatMap(([b,ds])=>ds.filter(d=>!findBoss(b)||!findBoss(b).diffs.includes(d)).map(d=>k+':'+b+':'+d)))"), '| icons:', pg.evaluate("['r_green','r_red','r_black','r_white','r_life'].every(k=>ITEM_ICONS[k])"))
     pg.click('[data-tab="boss"]'); pg.wait_for_timeout(100)
-    rows=pg.evaluate("[...document.querySelectorAll('.boss')].map(e=>{const d=e.querySelector('.drops');return [e.querySelector('.bn').textContent.trim().split(/\\s+/)[0], d?[...d.querySelectorAll('.drop')].map(x=>x.querySelector('.dn').textContent):[], d?Math.round(d.getBoundingClientRect().height):0, d?d.scrollWidth<=d.clientWidth+1:true]})")
+    rows=pg.evaluate("[...document.querySelectorAll('.boss')].map(e=>{const d=e.querySelector('.drops');return [e.querySelector('.bn').textContent.trim().split(/\\s+/)[0], d?[...d.querySelectorAll('.drop:not(.erda)')].map(x=>x.querySelector('.dn').textContent):[], d?Math.round(d.getBoundingClientRect().height):0, d?d.scrollWidth<=d.clientWidth+1:true]})")
     print('R3 boss rows chips (name, chips, height, fits):', rows)
     pg.screenshot(path=OUT+'/shot6_boss.png',full_page=True)
     def lvcheck(page,tag):
