@@ -16,7 +16,7 @@ database_name = "ggoolzip-sync"
 database_id = "0c815aec-cfbc-4205-af28-d7dddb3d5074"   # 2026-10-10 생성 (region WNAM)
 
 [vars]
-ALLOWED_ORIGINS = "https://ggoolzip-wq.github.io,https://maple.pages.dev"
+ALLOWED_ORIGINS = "https://ggoolzip-wq.github.io,https://bossmaple.pages.dev"
 ALLOW_LOCALHOST = "1"          # http://localhost:* / http://127.0.0.1:* 허용 (테스트용)
 NEXON_BASE = "https://open.api.nexon.com"
 

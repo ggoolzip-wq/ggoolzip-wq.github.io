@@ -1,0 +1,40 @@
+# Cloudflare Pages (bossmaple.pages.dev) 배포 — main 에 push 할 때마다 + 자동 갱신 워크플로(피드·가격·썬데이)가 끝난 뒤
+# (GITHUB_TOKEN 으로 만든 자동 커밋은 push 이벤트를 다시 일으키지 않으므로 workflow_run 으로 받음)
+# 필요한 저장소 secret: CLOUDFLARE_API_TOKEN (권한: Account > Cloudflare Pages > Edit), CLOUDFLARE_ACCOUNT_ID
+name: Deploy Cloudflare Pages
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Update feed", "결정석 가격 자동 갱신", "Sunday watch"]
+    types: [completed]
+  workflow_dispatch:
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check secret
+        id: chk
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: if [ -n "$T" ]; then echo "ok=1" >> "$GITHUB_OUTPUT"; else echo "::warning::CLOUDFLARE_API_TOKEN secret 없음 — 배포 건너뜀"; fi
+      - uses: actions/checkout@v4
+        if: steps.chk.outputs.ok == '1'
+        with:
+          ref: main
+      - name: Build _site
+        if: steps.chk.outputs.ok == '1'
+        run: bash tools/pages_dist.sh
+      - uses: actions/setup-node@v4
+        if: steps.chk.outputs.ok == '1'
+        with:
+          node-version: 22
+      - name: Deploy
+        if: steps.chk.outputs.ok == '1'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx -y wrangler@4 pages deploy _site --project-name bossmaple --branch main --commit-dirty=true
