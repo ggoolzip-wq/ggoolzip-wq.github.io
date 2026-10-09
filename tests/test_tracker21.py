@@ -33,7 +33,7 @@ try:
       pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e)))
       pg.goto(URL); pg.evaluate("p=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p))}",PRESET); pg.reload()
       pg.wait_for_selector('[data-party="kaling"]'); pg.wait_for_timeout(300)
-      st=lambda: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')).characters[0]")
+      st=lambda: pg.evaluate("JSON.parse(JSON.stringify(S.characters[0]))")  # 2026-10-10: 드롭 클릭은 [저장] 전까지 대기 중 → 화면 상태(S) 확인
       tip=lambda: pg.evaluate("(()=>{const t=document.getElementById('mbtTip');return t&&t.classList.contains('show')?t.textContent:''})()")
       if not touch:
         ex=pg.evaluate("""(()=>{const f=(id,d)=>{const e=eternalFor(findBoss(id),d);return e?[e.k,e.n]:null};

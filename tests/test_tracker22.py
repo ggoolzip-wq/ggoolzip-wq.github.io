@@ -57,7 +57,7 @@ try:
     check('click → spins + disabled while syncing', pg.evaluate("syncing && document.querySelector('#syncBtn').classList.contains('busy') && getComputedStyle(document.querySelector('#syncBtn .rot')).animationName==='sbspin'"))
     pg.wait_for_function("!syncing",timeout=30000); check('manual click syncs', len(calls)>0)
     pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.wait_for_timeout(300)
-    check('+ 추가 modal: 15-min auto-sync checkbox gone', pg.locator('#sAuto').count()==0 and pg.locator('#sAutoEnable').count()==1)
+    check('+ 추가 modal: 15-min auto-sync checkbox gone', pg.locator('#sAuto').count()==0 and pg.locator('#sAutoEnable').count()==0)
     pg.keyboard.press('Escape'); pg.evaluate("document.querySelector('#toast').classList.remove('show')"); pg.wait_for_timeout(200)
     shot(pg.locator('aside .card').first,'sidebar_header.png')
     # ☁ 다시 연결은 헤더에 그대로

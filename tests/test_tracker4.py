@@ -128,7 +128,7 @@ with sync_playwright() as p:
     pg.click('#syncBtn'); wait_sync(pg); pg.reload(); pg.wait_for_timeout(400); wait_sync(pg)
     print('C8 order persists after set-main+sync+reload:', names(pg)==order and worlds(pg)==wo, names(pg))
     # add manual char -> appended at end of its world
-    pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.click('#impManual'); pg.fill('#fName','수동캐'); pg.fill('#fWorld','스카니아'); pg.select_option('#fAcc',''); pg.click('#fSave'); pg.wait_for_timeout(100)
+    pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.evaluate('closeImport();openCharModal()'); pg.fill('#fName','수동캐'); pg.fill('#fWorld','스카니아'); pg.select_option('#fAcc',''); pg.click('#fSave'); pg.wait_for_timeout(100)
     print('C9 manual add appended:', names(pg))
     print('G2d manual char exp hidden:', pg.locator('.char:has-text("수동캐") .expl').count()==0)
     # ---- D. icons

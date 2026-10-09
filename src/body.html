@@ -13,8 +13,7 @@
   </div>
   <nav class="tabs" id="tabs">
     <button data-tab="boss" class="on">보스 현황</button>
-    <button data-tab="summary">수익 요약</button>
-    <button data-tab="history">주간 기록</button>
+    <button data-tab="summary">캐릭터 별 기록</button>
     <button data-tab="total">총 수익</button>
     <span class="tabsep" aria-hidden="true"></span>
     <button data-tab="daily">일퀘 현황</button>
@@ -70,12 +69,12 @@
     <button class="ringx" id="impClose" aria-label="닫기">✕</button>
     <h3 id="addTitle">캐릭터 추가</h3>
     <section class="addsec">
-      <div class="addsec-h"><b>🔑 넥슨 API 키</b><span class="muted">넥슨 계정마다 하나씩 — 그 계정의 캐릭터만 불러올 수 있어요</span></div>
+      <div class="addsec-h"><b>🔑 넥슨 API 키</b></div>
       <div id="accList"></div>
       <div class="accadd"><input id="newAccLabel" class="pin" maxlength="12" placeholder="계정 이름" aria-label="계정 이름">
         <input id="newAccKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="live_… API 키 붙여넣기" aria-label="API 키">
         <button class="btn sm" id="newAccBtn">+ API 키 추가</button></div>
-      <div class="muted tiny">키 발급: <a href="https://openapi.nexon.com" target="_blank" rel="noopener">openapi.nexon.com</a> → 마이페이지 → 애플리케이션 상세에서 복사. 키는 이 브라우저와 (구글 로그인 시) 내 드라이브 앱 전용 숨김 폴더에만 저장됩니다.</div>
+      <div class="muted tiny">키 발급: <a href="https://openapi.nexon.com" target="_blank" rel="noopener">openapi.nexon.com</a> → 마이페이지 → 애플리케이션 상세에서 복사.</div>
       <div class="optlines compact" id="accOpts"></div>
     </section>
     <section class="addsec" id="impSec">
@@ -85,7 +84,6 @@
       <div class="imp-list" id="impList"></div>
       <div class="row"><span class="muted tiny" style="flex:1">처음 추가하면 레벨이 가장 높은 캐릭터가 본캐(★)가 됩니다. 추가 후 이미지·보스 클리어를 자동 동기화합니다.</span><button class="btn" id="impOk">선택 추가</button></div>
     </section>
-    <div class="addfoot muted">API 키 없이 추가하거나 다른 계정 캐릭터를 이름으로 찾으려면 → <button class="linkbtn" id="impManual">이름으로 직접 추가</button></div>
   </div>
 </div>
 

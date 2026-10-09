@@ -87,7 +87,7 @@ with sync_playwright() as p:
     print('T4c test button (key typed, no blur):', imp(pg)['items'], '| list calls so far for MULTI:', sum(1 for c in calls if c==('list','live_mock_MULTI')))
     close(pg)
     # 5. character modal picker
-    pg.click('#addCharBtn'); pg.click('#impManual'); pg.wait_for_timeout(400)
+    pg.click('#addCharBtn'); pg.evaluate('closeImport();openCharModal()'); pg.wait_for_timeout(400)
     print('T5 pick visible:', pg.is_visible('#fPickWrap'), pg.locator('#fPick .pick-item').count(), '| acc label:', pg.inner_text('#fPickAcc'))
     pg.fill('#fName','두번'); pg.wait_for_timeout(50); print('T5b filter:', pg.eval_on_selector_all('#fPick .pick-item b','e=>e.map(x=>x.textContent)'))
     pg.fill('#fName',''); pg.click('#fPick .pick-item:has-text("저렙법사")'); pg.wait_for_timeout(300)
@@ -97,10 +97,10 @@ with sync_playwright() as p:
     c=pg.evaluate("S.characters[0]"); print('T5d saved:', c['name'], c['ocid'], c['accId']==aid, c.get('exp'))
     pg.click('#syncBtn'); pg.wait_for_function("!syncing"); pg.wait_for_timeout(100)
     c=pg.evaluate("S.characters[0]"); print('T6 clear_flag scheduler → weekly:', c['weekly'], '| sync ok:', c['sync'].get('ok'))
-    pg.click('#addCharBtn'); pg.click('#impManual'); pg.wait_for_timeout(300); print('T5e dup disabled:', pg.locator('#fPick .pick-item:disabled').count()); pg.click('#fCancel')
+    pg.click('#addCharBtn'); pg.evaluate('closeImport();openCharModal()'); pg.wait_for_timeout(300); print('T5e dup disabled:', pg.locator('#fPick .pick-item:disabled').count()); pg.click('#fCancel')
     # 7. picker error in char modal
     setkey(pg,aid,'live_mock_429'); close(pg)
-    pg.click('#addCharBtn'); pg.click('#impManual'); pg.wait_for_timeout(500); print('T7 char modal error:', pg.inner_text('#fPick').replace('\n',' | ')[:200]); pg.click('#fCancel')
+    pg.click('#addCharBtn'); pg.evaluate('closeImport();openCharModal()'); pg.wait_for_timeout(500); print('T7 char modal error:', pg.inner_text('#fPick').replace('\n',' | ')[:200]); pg.click('#fCancel')
     # 8. unit: applyScheduler accepts boolean & complete_flag
     print('T8 flags:', pg.evaluate("[flagOn('true'),flagOn(true),flagOn('TRUE'),flagOn('false'),flagOn(undefined)]"))
     # 9. LIVE call with dummy key (no mock)

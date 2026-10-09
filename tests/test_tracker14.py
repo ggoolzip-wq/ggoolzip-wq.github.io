@@ -47,7 +47,7 @@ try:
     today=pg.evaluate('dayId()'); yday=pg.evaluate('dayId(Date.now()-864e5)')
     # 1) 탭 바: 총 수익 → ㅡ 구분선 → 일퀘 현황 → 길드 현황
     tabs=pg.eval_on_selector_all('#tabs > *',"e=>e.map(x=>x.tagName==='SPAN'?'|'+x.className:x.textContent.trim())")
-    check('tab order with divider', tabs==['보스 현황','수익 요약','주간 기록','총 수익','|tabsep','일퀘 현황','길드 현황'], tabs)
+    check('tab order with divider', tabs==['보스 현황','캐릭터 별 기록','총 수익','|tabsep','일퀘 현황','길드 현황'], tabs)
     sep=pg.evaluate("(()=>{const r=document.querySelector('#tabs .tabsep').getBoundingClientRect(),t=document.querySelector('[data-tab=total]').getBoundingClientRect();return {w:r.width,h:r.height,mid:Math.abs((r.top+r.bottom)/2-(t.top+t.bottom)/2)}})()")
     check('divider is a short horizontal line, vertically centered', 8<=sep['w']<=20 and 1<=sep['h']<=3 and sep['mid']<6, sep)
     check('no API calls before opening tabs', not sched_calls() and not guild_calls(), CALLS)
@@ -116,7 +116,7 @@ try:
     check('플래그 레이스 tile', '플래그 레이스' in tiles[1] and '4,000' in tiles[1] and '523위' in tiles[1], tiles)
     gt=pg.inner_text('.gcard'); check('guild level/master/date shown', 'Lv.30' in gt and '터래플' in gt and f'기준 {exp}' in gt and '봉사활동' in gt and '스카니아' in gt, gt)
     rows=pg.eval_on_selector_all('.grow-r','e=>e.map(x=>x.innerText.replace(/\\s+/g," ").trim())'); print(rows)
-    check('main characters only, with 지하 수로 score from scheduler', len(rows)==1 and '단풍용사' in rows[0] and '23,513' in rows[0] and '10,000' in rows[0] and '10/10' in rows[0], rows)
+    check('main characters only, with 지하 수로 score from scheduler', len(rows)==1 and '단풍용사' in rows[0] and '23,513' in rows[0] and '플래그' not in rows[0], rows)
     check('guild tab: no extra scheduler call for main (cached)', sched_calls()[n0:]==['ocid-alt1'], sched_calls()[n0:])
     pg.mouse.move(5,5); shot(pg,'tab_guild.png')
     # 랭킹 미준비 → 어제로 대체
@@ -129,9 +129,16 @@ try:
     # 본캐가 여러 명이어도 모두 표시 (현재 UI는 1명) / 없으면 안내
     pg.evaluate("S.characters.forEach(c=>c.isMain=false); renderGuild()"); check('no main → hint', '본캐로 지정된 캐릭터가 없습니다' in pg.inner_text('#view'))
     pg.evaluate("S.characters[0].isMain=true; save(); renderGuild()")
+    gr=pg.inner_text('#view .card:nth-child(2)')
+    check('본캐 지하 수로 row: only 지하 수로 score (no 플래그 / 주간 미션)', '지하 수로' in gr and '플래그' not in gr and '주간 미션' not in gr, gr)
+    pth=os.path.join(OUT,'guild_suro_only.png'); pg.locator('#view').screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
+    pg.click('[data-tab=daily]'); pg.wait_for_timeout(200)
+    check('일퀘 현황 heading has 심볼 선택권 icon', pg.locator('.dqtop h2 img.ric').count()==1)
+    pth=os.path.join(OUT,'daily_heading.png'); pg.locator('.dqtop').screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
+    pg.click('[data-tab=guild]'); pg.wait_for_timeout(150)
     # 6) 사이드바 캐릭터 클릭 → 보스 체크로 이동, 기존 탭 정상
     pg.click('#charList .char[data-id=c2]'); pg.wait_for_timeout(150); check('sidebar click → boss tab', pg.evaluate('tab')=='boss' and pg.evaluate('S.activeId')=='c2')
-    for t in ['summary','history','total','boss']: pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(80)
+    for t in ['summary','total','boss']: pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(80)
     check('existing tabs still render', pg.query_selector('#view .card') is not None)
     # 7) 모바일 375 / 320
     for w in (375,320):

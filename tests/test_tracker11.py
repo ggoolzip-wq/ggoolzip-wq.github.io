@@ -104,7 +104,7 @@ with sync_playwright() as p:
     check('C: 스우 lines solo', all('인 분배' not in t for _,b,t in v['boss'] if b=='스우'))
     pg.select_option('.boss:has-text("스우") select[data-party="lotus"]','3'); pg.select_option('.boss:has-text("선택받은 세렌") select[data-party="seren"]','3'); pg.wait_for_timeout(150)
     # undo
-    pg.click('.boss:has-text("선택받은 세렌") [data-dropdec="seren|r_white"]'); pg.wait_for_timeout(150)
+    pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|r_white"]'); pg.wait_for_timeout(150)
     v=consistency('D (undo latest 세렌 백옥)',['백옥의 보스 반지 상자 (3인 분배) ×3'])
     check('D: undo removed latest 꽝', any(b=='선택받은 세렌' and t.endswith('리4 · 꽝 · 미기록') for _,b,t in v['boss']), [x for x in v['boss'] if x[1]=='선택받은 세렌'])
     # backup

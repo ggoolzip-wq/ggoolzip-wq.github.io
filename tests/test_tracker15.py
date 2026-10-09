@@ -114,7 +114,7 @@ try:
     # 7) 모든 탭에서 카드 때문에 스크롤 안 생김 (1280x800, 1920x1080)
     for vw,vh in [(1280,800),(1920,1080)]:
         pg.set_viewport_size({'width':vw,'height':vh}); pg.wait_for_timeout(200)
-        for t in ['boss','summary','history','total','daily','guild']:
+        for t in ['boss','summary','total','daily','guild']:
             pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(250)
             c=pg.evaluate(CARD)
             pg.evaluate("document.querySelector('#feedCard').style.display='none'"); sh0=pg.evaluate('document.scrollingElement.scrollHeight')
@@ -124,7 +124,7 @@ try:
             bb=pg.evaluate("document.querySelector('#feedCard').getBoundingClientRect().bottom")
             check(f'{vw}x{vh} {t}: card stays inside viewport when scrolled', bb<=vh, bb); pg.evaluate('scrollTo(0,0)')
         print(vw,vh,'per',pg.evaluate('feed.per'))
-    pg.click('[data-tab=history]'); pg.wait_for_timeout(200)
+    pg.click('[data-tab=total]'); pg.wait_for_timeout(200)
     SIDE="(()=>{const s=document.querySelector('#sunCard');return document.querySelector('#feedCard').getBoundingClientRect().height+(s&&getComputedStyle(s).display!=='none'?s.getBoundingClientRect().height:0)})()"
     big=pg.evaluate(SIDE); pg.set_viewport_size({'width':1280,'height':800}); pg.wait_for_timeout(250); small=pg.evaluate(SIDE); pg.set_viewport_size({'width':1920,'height':1080}); pg.wait_for_timeout(250)
     # 썬데이 카드가 생긴 뒤로는 소식 줄 수 대신 왼쪽 아래(소식+썬데이) 전체 높이로 비교 (1920 에서는 썬데이가 2/3 를 차지)

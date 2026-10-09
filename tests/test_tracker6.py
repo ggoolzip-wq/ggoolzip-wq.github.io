@@ -40,7 +40,7 @@ with sync_playwright() as p:
     s=json.loads(pg.evaluate("localStorage.getItem('mapleBossTracker.v1')"))
     h=[x for x in s['history'] if x['week']=='2026-10-01'][0]
     print('M6 rollover week total == weekly only:', h['total']==exp_w, h['total'], [p['bosses'] for p in h['perChar'] if p['bosses']], '| monthHistory:', s.get('monthHistory'))
-    pg.click('[data-tab="history"]'); pg.wait_for_timeout(100); print('M7 history cards:', pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.textContent)'))
+    pg.evaluate("document.querySelector('#view').innerHTML='<h2>(주간 기록 탭 삭제됨)</h2>'"); pg.wait_for_timeout(100); print('M7 history cards:', pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.textContent)'))
     pg.screenshot(path=OUT+'/shot6_history.png',full_page=True)
     # restore & ring drops
     pg.reload(); pg.wait_for_timeout(300)

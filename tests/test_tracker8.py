@@ -22,7 +22,7 @@ with sync_playwright() as p:
     st={'version':5,'activeId':'c1','characters':chars,'history':hist,'monthHistory':[],'worldOrder':[],'settings':{'weeklyLimit':12,'monthlyLimit':1,'prices':{},'accounts':[],'apiMode':'direct','autoSync':False,'autoEnable':True,'lastSync':0},'period':per}
     pg.evaluate("s=>localStorage.setItem('mapleBossTracker.v1',s)",json.dumps(st)); pg.reload(); pg.wait_for_timeout(400)
     st_=lambda: pg.evaluate("activeChar()")
-    print('P0 legacy shows 미기록 (not 꽝):', pg.inner_text('.boss:has-text("선택받은 세렌") .ringouts'))
+    print('P0 legacy shows 미기록 (not 꽝):', pg.eval_on_selector_all('.boss:has-text("선택받은 세렌") .ringouts','e=>e.map(x=>x.innerText)'))
     rev0=pg.evaluate("allRevenue().total")
     # cancel paths
     for how in ['x','esc','backdrop']:
@@ -42,20 +42,22 @@ with sync_playwright() as p:
     pg.wait_for_timeout(2400); print('R4b auto-ended:', not pg.is_visible('#congrats.show'), not pg.evaluate("celebrate.running"))
     print('R4c stored:', st_()['drops'], st_()['dropOut'])
     # c4 on seren white (legacy 2) and x on kalos life; dismiss congrats by click
+    pg.evaluate("delete activeChar().drops['seren|r_white']; delete (activeChar().dropOut||{})['seren|r_white']; render()")  # 2026-10-10: 기간당 1개 — 다시 누르면 취소이므로 먼저 비움
     pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|r_white"]'); pg.click('#ringModal [data-ring="c4"]'); pg.wait_for_timeout(300); pg.click('#congrats'); pg.wait_for_timeout(100)
     print('C4 clicked-dismiss:', not pg.is_visible('#congrats.show'))
     pg.click('.boss:has-text("감시자 칼로스") [data-drop="kalos|r_life"]'); pg.click('#ringModal [data-ring="x"]'); pg.wait_for_timeout(150)
     print('X no congrats:', not pg.is_visible('#congrats.show'), '| toast:', pg.inner_text('#toast'))
+    pg.evaluate("delete activeChar().drops['kalos|r_life']; delete (activeChar().dropOut||{})['kalos|r_life']; render()")  # 2026-10-10: 기간당 1개 — 다시 누르면 취소이므로 먼저 비움
     pg.click('.boss:has-text("감시자 칼로스") [data-drop="kalos|r_life"]'); pg.click('#ringModal [data-ring="r4"]'); pg.wait_for_timeout(100); pg.keyboard.press('Escape'); pg.wait_for_timeout(100)
     print('Esc ends congrats:', not pg.is_visible('#congrats.show'))
     c=st_(); print('S stored drops:', c['drops'], '| outs:', c['dropOut'], '| revenue unchanged:', pg.evaluate("allRevenue().total")==rev0)
     print('S row texts:', pg.eval_on_selector_all('.ringouts','e=>e.map(x=>x.innerText.replace(/\\n/g," "))'))
     # undo latest: kalos had [x, r4] → − removes r4
-    pg.click('[data-dropdec="kalos|r_life"]'); pg.wait_for_timeout(80)
+    pg.click('[data-drop="kalos|r_life"]'); pg.wait_for_timeout(80)
     print('U undo:', st_()['drops'].get('kalos|r_life'), st_()['dropOut'].get('kalos|r_life'))
     # seren: legacy 2 + c4 → undo removes c4 → then 2 legacy remain, outs deleted
-    pg.click('[data-dropdec="seren|r_white"]'); pg.wait_for_timeout(80)
-    print('U2 undo seren:', st_()['drops'].get('seren|r_white'), st_()['dropOut'].get('seren|r_white'), '|', pg.inner_text('.boss:has-text("선택받은 세렌") .ringouts'))
+    pg.click('[data-drop="seren|r_white"]'); pg.wait_for_timeout(80)
+    print('U2 undo seren:', st_()['drops'].get('seren|r_white'), st_()['dropOut'].get('seren|r_white'), '|', pg.eval_on_selector_all('.boss:has-text("선택받은 세렌") .ringouts','e=>e.map(x=>x.innerText)'))
     pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|r_white"]'); pg.click('#ringModal [data-ring="c4"]'); pg.wait_for_timeout(100); pg.evaluate("endCelebrate()")
     # monthly boss ring box
     pg.click('[data-filter="monthly"]'); pg.click('[data-drop="blackmage|r_white"]'); pg.click('#ringModal [data-ring="x"]'); pg.wait_for_timeout(100)
@@ -66,7 +68,7 @@ with sync_playwright() as p:
     pg.evaluate("document.querySelector('#toast').classList.remove('show')")
     pg.screenshot(path=OUT+'screenshot.png',full_page=True)
     # history
-    pg.click('[data-tab="history"]'); pg.wait_for_timeout(100)
+    pg.evaluate("document.querySelector('#view').innerHTML='<h2>(주간 기록 탭 삭제됨)</h2>'"); pg.wait_for_timeout(100)
     print('H history:', pg.eval_on_selector_all('.htable .hitems','e=>e.map(x=>x.innerText.replace(/\\n/g," "))'))
     print('H monthly:', pg.eval_on_selector_all('#view .card:last-child .hitems','e=>e.map(x=>x.innerText.replace(/\\n/g," "))'))
     # totals
@@ -78,7 +80,7 @@ with sync_playwright() as p:
     # export
     ex=pg.evaluate('gdPayload().data'); print('B backup outs:', ex['characters'][0].get('dropOut'), ex['characters'][0].get('mdropOut'))
     # reset archive
-    pg.evaluate("S.history=S.history.filter(h=>h.week!=='2026-10-01'); S.period.week='2026-10-01'; S.period.month='2026-09'; checkResets(); render();")
+    pg.evaluate("pend=null; S.history=S.history.filter(h=>h.week!=='2026-10-01'); S.period.week='2026-10-01'; S.period.month='2026-09'; checkResets(); render();")
     s=json.loads(pg.evaluate("localStorage.getItem('mapleBossTracker.v1')"))
     a=[h for h in s['history'] if h['week']=='2026-10-01'][0]
     print('A week archived outcomes:', [(p['name'],p.get('items'),p.get('outcomes')) for p in a['perChar'] if p.get('items')])

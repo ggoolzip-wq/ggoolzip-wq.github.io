@@ -45,6 +45,9 @@ try:
     check('manual (no API) character: keeps saved bosses, read-only', pg.locator('.boss').count()==1 and pg.locator('#editModeBtn').count()==0)
     pg.evaluate("S.characters[1].bosses.lucid.enabled=false;save();render()"); pg.wait_for_timeout(100)
     check('manual char with no bosses → explains API needed', 'API' in pg.inner_text('.boss-list'), pg.inner_text('.boss-list'))
+    pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); t=pg.inner_text('#importModal')
+    check('+추가 modal: no scheduler auto-add option, no name-add, no removed texts', pg.locator('#sAutoEnable').count()==0 and pg.locator('#impManual').count()==0 and '넥슨 계정마다 하나씩' not in t and '숨김 폴더' not in t and '이름으로' not in t, t[:300])
+    pth=os.path.join(OUT,'add_modal.png'); pg.locator('#importModal .modal, #importModal > div').first.screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

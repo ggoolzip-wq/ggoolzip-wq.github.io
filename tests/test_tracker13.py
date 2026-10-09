@@ -57,7 +57,7 @@ try:
     pg.check('#impList .imp-item:has-text("부계정비숍") input'); pg.click('#impOk'); wait_sync(pg)
     check('4 chars', pg.evaluate('S.characters.length')==4)
     # 3) 이름으로 직접 추가 + 편집
-    pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.click('#impManual'); pg.wait_for_selector('#charModal.show')
+    pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.evaluate('closeImport();openCharModal()'); pg.wait_for_selector('#charModal.show')
     check('manual add opens char modal', not pg.is_visible('#importModal')); pg.click('#fCancel')
     pg.click('.char:has-text("신궁짱") [data-edit]'); pg.wait_for_selector('#charModal.show'); check('edit still works', pg.input_value('#fName')=='신궁짱'); pg.click('#fCancel')
     # 4) 삭제

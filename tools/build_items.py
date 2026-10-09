@@ -17,6 +17,8 @@ SRC={ # key: file
  'r_green':'ringicons/2028407.png','r_red':'ringicons/2028408.png','r_black':'ringicons/2028409.png','r_white':'ringicons/2028410.png','r_life':'ringicons/Use_Life_Boss_Ring_Box.png',
  'ring_restraint':'ringicons/Eqp_Ring_of_Restraint.png','ring_continuous':'ringicons/Eqp_Continuous_Ring.png',
  'ipc':'ringicons/4001928.png',  # 강렬한 힘의 결정 (주간), item 4001928 (maplestory.io GMS 255 game data = maplestorywiki 'Etc Intense Power Crystal (Weekly)')
+ 'meso':'ringicons/9000003.png',  # 메소 주머니, item 9000003 (maplestory.io GMS 255 game data)
+ 'symsel':'ringicons/2437750.png',  # 아케인심볼 선택권 (선택 아케인심볼 1개 교환권), item 2437750 (maplestory.io GMS 255 / KMS 389 game data)
  # 연마석: 생명 2539001 (maplestory.io KMS 389), 신념 2539003 (maplestory.io GMS 270 'Grindstone of Faith' — KMS 데이터에 아직 없음)
  'g_life':'itemicons/2539001.png','g_faith':'itemicons/2539003.png',
  # 소울 에테르 1~4단계 (2026-09-17 추가, maplestory.io 미수록) — maple.ai.kr 소울웨폰 개편 글의 게임 아이콘 이미지를 잘라 배경 제거

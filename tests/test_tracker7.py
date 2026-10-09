@@ -22,7 +22,7 @@ with sync_playwright() as p:
     for i in range(30,0,-1):
         w=(d0-datetime.timedelta(days=7*i)).isoformat(); t1=(900+i*13%250)*1_000_000; t2=(300+i*7%90)*1_000_000
         pc=[{'id':'c1','name':'단풍용사','meso':t1,'count':6,'bosses':[]},{'id':'c2','name':'불독메이지' if i>5 else '불독메이지','meso':t2,'count':3,'bosses':[]}]
-        if i%4==0: pc[0]['items']={'seren|daybreak':1}
+        if i%4==0: pc[0]['items']={'seren|mitra':1}
         if i%7==0: pc[1]['items']={'lotus|r_red':1,'slime|r_black':1}
         if i==20: pc.append({'name':'삭제된캐릭','meso':50_000_000,'count':1,'bosses':[]})
         hist.append({'week':w,'weeklyOnly':True,'total':sum(x['meso'] for x in pc),'cleared':9,'crystals':9,'perChar':pc})
@@ -34,11 +34,11 @@ with sync_playwright() as p:
     print('D0 startWeek persisted:', s0['startWeek'], '== earliest', hist[0]['week'], s0['startWeek']==hist[0]['week'])
     total_before=pg.evaluate("allRevenue().total")
     # drop clicks
-    pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|daybreak"]'); pg.wait_for_timeout(80)
-    pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|daybreak"]'); pg.wait_for_timeout(80)
+    pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|mitra"]'); pg.wait_for_timeout(80)
+    pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|mitra"]'); pg.wait_for_timeout(80)
     pg.click('.boss:has-text("스우") [data-drop="lotus|r_red"]'); pg.click('#ringModal [data-ring="x"]'); pg.wait_for_timeout(80)
-    print('D1 counts after clicks:', pg.evaluate("activeChar().drops"), '| chip text:', pg.inner_text('[data-drop="seren|daybreak"]'), '| got class:', pg.get_attribute('[data-drop="seren|daybreak"]','class'))
-    pg.click('[data-dropdec="seren|daybreak"]'); pg.wait_for_timeout(80)
+    print('D1 counts after clicks:', pg.evaluate("activeChar().drops"), '| chip text:', pg.inner_text('[data-drop="seren|mitra"]'), '| got class:', pg.get_attribute('[data-drop="seren|mitra"]','class'))
+    pg.click('[data-drop="seren|mitra"]'); pg.wait_for_timeout(80)
     pg.click('[data-drop="lotus|r_red"]', button='right'); pg.wait_for_timeout(80)
     print('D2 after −1 and right-click:', pg.evaluate("activeChar().drops"), '| revenue unchanged:', pg.evaluate("allRevenue().total")==total_before)
     # +N expand → hidden chip clickable
@@ -57,8 +57,7 @@ with sync_playwright() as p:
     pg.click('.char[data-id="c1"]'); pg.wait_for_timeout(80)
     pg.screenshot(path=OUT+'/shot7_boss.png',full_page=True)
     # history tab
-    pg.click('[data-tab="history"]'); pg.wait_for_timeout(100)
-    print('H1 history rows:', pg.locator('.htable tbody tr').count(), '| chart bars:', pg.locator('.chart rect').count(), '| this week items:', pg.inner_text('.htable tbody tr:first-child').replace('\n',' | ')[:220])
+    pg.evaluate("document.querySelector('#view').innerHTML='<h2>(주간 기록 탭 삭제됨)</h2>'"); pg.wait_for_timeout(100)
     pg.screenshot(path=OUT+'/shot7_history.png',full_page=True)
     # total tab
     pg.click('[data-tab="total"]'); pg.wait_for_timeout(150)
