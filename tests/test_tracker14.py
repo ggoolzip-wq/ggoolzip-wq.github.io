@@ -98,6 +98,7 @@ try:
     check('hidden card gone + footer note', pg.locator('.dqc[data-dqchar=c4]').count()==0 and '숨긴 캐릭터 1명' in pg.inner_text('.dqfoot'))
     check('count excludes hidden items (c1 4/6)', pg.inner_text('.dqc[data-dqchar=c1] .dqcnt')=='4/6', pg.inner_text('.dqc[data-dqchar=c1] .dqcnt'))
     # 4) 캐시·자동 갱신: 새로고침 후 10분 안이면 재호출 없음, 오래되면 그 캐릭터만
+    pg.evaluate("localStorage.setItem('mapleBossTracker.loadSyncAt',String(Date.now()))")  # 2026-10-10: 페이지 열 때 자동 동기화(3초 간격)는 test22 에서 — 여기서는 탭 캐시만 보려고 건너뛰게 함
     n0=len(sched_calls()); pg.reload(); pg.wait_for_timeout(400); pg.click('[data-tab=daily]'); wait_idle(pg)
     check('settings persisted after reload', pg.evaluate("S.dq.off.mp===1&&S.dq.hide.c4===1&&S.dq.charOff.c1.cer===1"))
     check('cached (no new scheduler calls within 10 min)', len(sched_calls())==n0 and pg.locator('.dqc').count()==3, sched_calls()[n0:])

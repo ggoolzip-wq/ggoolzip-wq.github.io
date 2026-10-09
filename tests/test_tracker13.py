@@ -2,7 +2,7 @@ import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-# 설정 탭 제거 + '+ 추가' 통합 모달 + 헤더 동기화/☁ 메뉴
+# 설정 탭 제거 + '+ 추가' 통합 모달 + 동기화 버튼(캐릭터 카드 제목 옆)/☁ 메뉴
 from playwright.sync_api import sync_playwright
 import json, subprocess, time, urllib.request, sys
 sys.argv=[sys.argv[0]]
@@ -39,7 +39,7 @@ try:
     for nm in ['단풍용사','불독메이지','신궁짱']: pg.check(f'#impList .imp-item:has-text("{nm}") input')
     pg.click('#impOk'); wait_sync(pg)
     check('3 chars added, modal closed', pg.evaluate('S.characters.length')==3 and not pg.is_visible('#importModal'))
-    check('header sync button: text only 동기화, last time in tooltip', pg.inner_text('#syncBtn').strip()=='동기화' and '마지막 동기화:' in pg.get_attribute('#syncBtn','title') and pg.query_selector('#syncBtn svg.rot') is not None, (pg.inner_text('#syncBtn'),pg.get_attribute('#syncBtn','title')))
+    check('sync button (character card header, 2026-10-10): icon only, aria-label, last time in title', pg.inner_text('#syncBtn').strip()=='' and '지금 동기화' in pg.get_attribute('#syncBtn','aria-label') and '마지막 동기화:' in pg.get_attribute('#syncBtn','title') and pg.query_selector('#syncBtn svg.rot') is not None and pg.query_selector('header #syncBtn') is None, (pg.inner_text('#syncBtn'),pg.get_attribute('#syncBtn','title')))
     # spin while syncing
     pg.evaluate("syncing=true; renderHeaderSync()"); check('icon spins while syncing', pg.evaluate("getComputedStyle(document.querySelector('#syncBtn .rot')).animationName")=='sbspin' and pg.is_disabled('#syncBtn'))
     pg.evaluate("syncing=false; renderHeaderSync()")

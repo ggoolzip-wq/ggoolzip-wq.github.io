@@ -7,7 +7,6 @@
       보스 캐릭터 관리 <span style="font-weight:500;opacity:.85;font-size:.8rem">KMS</span>
     </div>
     <div class="hspace"></div>
-    <button class="hbtn sbtn" id="syncBtn" hidden><span class="hl">동기화</span></button>
     <div class="gwrap"><button class="hbtn gbtn" id="gBtn" aria-haspopup="true" aria-expanded="false">☁ 구글 로그인</button>
       <div class="gmenu" id="gMenu" hidden role="dialog" aria-label="구글 드라이브 동기화"></div></div>
     <button class="hbtn" id="themeBtn" title="테마 전환">🌙 다크</button>
@@ -26,7 +25,7 @@
 <main>
   <aside class="side-sticky">
     <div class="card">
-      <h2>캐릭터 <span class="hspace"></span><button class="btn sm" id="addCharBtn">+ 추가</button></h2>
+      <h2 class="charh">캐릭터 <button class="ibtn sbtn" id="syncBtn" type="button" hidden aria-label="지금 동기화" title="지금 동기화"></button><span class="hspace"></span><button class="btn sm" id="addCharBtn">+ 추가</button></h2>
       <div class="wtabs" id="worldTabs"></div>
       <div class="chars" id="charList"></div>
     </div>

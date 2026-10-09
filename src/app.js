@@ -15,8 +15,8 @@ const CONFIG = {
   TZ_OFFSET_HOURS: 9,              // KST
   WEEKLY_RESET_DAY: 4,             // 0=일 ... 4=목 (목요일 00:00 KST)
   API_BASE: 'https://open.api.nexon.com',
-  API_DELAY_MS: 250,               // 호출 간 간격 (개발 단계 키: 초당 5건 제한)
-  AUTO_SYNC_MIN: 15                // 자동 동기화 주기(분)
+  API_DELAY_MS: 250               // 호출 간 간격 (개발 단계 키: 초당 5건 제한)
+  // (AUTO_SYNC_MIN: 15분마다 자동 동기화 — 2026-10-10 제거. 이제 페이지를 열 때 1회 + 🔄 버튼만)
 };
 
 /* 결정석 가격 (단위: 메소)
@@ -144,10 +144,13 @@ const fmtPct=v=>v>0?(Math.round(v*100)/100).toFixed(2)+'%':'없음';
 // 리스트레인트 링 4레벨(r4) / 컨티뉴어스 링 4레벨(c4) 확률 (%) — 반지 결과 버튼 r4/c4 와 같은 기준
 const ring4=k=>{ const b=BOX_INFO[k]; return b?{r4:b.r*b.lv4,c4:b.c*b.lv4}:null; };
 const CHAOS_BOX=['루즈 컨트롤 머신 마크 (얼굴장식)','마력이 깃든 안대 (눈장식)','몽환의 벨트 (벨트)','저주받은 마도서 선택 상자 (포켓)','거대한 공포 (반지)','커맨더 포스 이어링 (귀고리)','고통의 근원 (펜던트)'];
-function itemInfo(k){
-  const b=BOX_INFO[k]; if(b) return `${b.lv} 특수 스킬 반지 1개${b.extra?' '+b.extra:''}\n레벨 확률: ${b.p}\n나오는 반지 (${b.n}종): ${b.rings.join(', ')}\n리스트레인트·컨티뉴어스 각 ${b.r}% (넥슨 확률 공개)`;
-  if(k==='chaosbox') return `칠흑의 보스 세트 장신구 7종 중 1개 (무작위)\n${CHAOS_BOX.map(x=>'· '+x).join('\n')}`;
-  return '';
+/* 드롭 칩 툴팁 (2026-10-10 사용자 요청): 반지 상자(녹옥 제외)·혼돈의 칠흑 장신구 상자·에테르넬 칩에만. 그 외 칩(에르다 포함)은 툴팁·title 없음.
+ * 반지 상자 = 이름 + '리4: x%' + '컨4: y%' 만 / 칠흑 상자 = 이름 + 구성품. 난이도·'클릭: 획득 +1' 같은 안내 줄 없음. */
+function itemTip(k){
+  const it=ITEMS[k]; if(!it) return '';
+  if(k==='chaosbox') return `${it.n}\n칠흑 장신구 7종 중 1개 (무작위)\n${CHAOS_BOX.map(x=>'· '+x).join('\n')}`;
+  const r=BOX_INFO[k]&&BOX_INFO[k].lv4>0?ring4(k):null; // 녹옥(4레벨 없음): 툴팁 없음
+  return r?`${it.n}\n리4: ${fmtPct(r.r4)}\n컨4: ${fmtPct(r.c4)}`:'';
 }
 // 보스별 반지 상자 (정심심 블로그 2026-09-04 정리 · 나무위키 '특수 스킬 반지' · maple.ai.kr 보스 보상과 대조)
 const RING_DROPS = {
@@ -211,8 +214,8 @@ const ETERNAL = {
 };
 const eternalFor = (b,diff) => { const v=ETERNAL[b?.id]?.[diff]; return v?{k:v[0],n:v[1]}:null; };
 function eternalTip(k,n,diff){
-  const up=E_UP[k], main=up||k, it=ITEMS[k], party=['e_bellona','e_limbo','e_baldrix','e_jupiter'].includes(main)?'개인 보상':'단체 보상';
-  return `${it.n} ${n}개 확정 지급 (${D[diff]}, ${party})\n`+(up?`2개 → ${ITEMS[up].n} 1개로 교환\n${ITEMS[up].n} 10개 → `:`10개 → `)+`에테르넬 ${E_PART[main]} 중 1개 선택\n정보 표시 (기록·수익에 포함되지 않음)`;
+  const up=E_UP[k], main=up||k, it=ITEMS[k], party=['e_bellona','e_limbo','e_baldrix','e_jupiter'].includes(main)?'개인보상':'단체보상';
+  return `${it.n} ${n}개 (${party})\n`+(up?`2개 → ${ITEMS[up].n} 1개로 교환\n${ITEMS[up].n} 10개 → `:`10개 → `)+`에테르넬 ${E_PART[main]} 중 1개 선택`;
 }
 function itemIcon(k){
   const it=ITEMS[k], src=ITEM_ICONS[k];
@@ -222,12 +225,11 @@ const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
   const ks=dropsFor(b,diff), en=erdaFor(b,diff); if(!ks.length&&!en&&!eternalFor(b,diff)) return '';
   const et=eternalFor(b,diff);
-  const erda=(en?`<span class="drop erda" data-tip="${esc(`솔 에르다의 기운 ${en}개 확정 지급 (${D[diff]})\n정보 표시 (기록·수익에 포함되지 않음)`)}" aria-label="솔 에르다의 기운 ${en}개">${itemIcon('erda')}<b class="ecnt">${en}</b></span>`:'')
+  const erda=(en?`<span class="drop erda" aria-label="솔 에르다의 기운 ${en}개">${itemIcon('erda')}<b class="ecnt">${en}</b></span>`:'')
     +(et?`<span class="drop erda eter" data-tip="${esc(eternalTip(et.k,et.n,diff))}" aria-label="${esc(ITEMS[et.k].n)} ${et.n}개">${itemIcon(et.k)}<b class="ecnt">${et.n}</b></span>`:'');
-  const tip=k=>{const it=ITEMS[k], inf=itemInfo(k), r4=ring4(k); return `${r4?`리렌4 ${fmtPct(r4.r4)} · 컨티4 ${fmtPct(r4.c4)}\n`:''}${it.n} (${D[diff]})\n${inf||SET_LABEL[it.set]+(it.note?' · '+it.note:'')}`;};
   const cnt=k=>c?dropCount(c,b,k):0;
   const chip=k=>{const it=ITEMS[k], n=cnt(k);
-    return `<span class="drop s-${it.set} ${n?'got':''}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''} data-tip="${esc(tip(k))}${c?`\n클릭: 획득 +1${n?' · 우클릭/−: 가장 최근 1개 취소':''}`:''}">${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span>${n?`<b class="dcnt">×${n}</b><span class="ddec" data-dropdec="${b.id}|${k}" role="button" aria-label="1개 취소" title="1개 취소">−</span>`:''}</span>`;};
+    return `<span class="drop s-${it.set} ${n?'got':''}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span>${n?`<b class="dcnt">×${n}</b><span class="ddec" data-dropdec="${b.id}|${k}" role="button" aria-label="1개 취소">−</span>`:''}</span>`;};
   // 2026-10-10 사용자 요청: 아이템을 '+N' 묶음 칩으로 합치지 않음 — 생명/신념 연마석, 소울 에테르 1~4단계, 반지 상자 모두 각자 칩(각자 아이콘·클릭 +1), 넘치면 다음 줄로
   const shown=ks;
   // 아래 줄: 이 보스에서 획득한 아이템 (모든 화면과 같은 형식: 이름(N인 분배) ×개수 결과)
@@ -316,7 +318,7 @@ function untilText(ms){const h=Math.floor(ms/3600e3),m=Math.floor(ms%3600e3/60e3
  * ===================================================================== */
 function defaultSettings(){
   return {weeklyLimit:CONFIG.WEEKLY_BOSS_LIMIT, monthlyLimit:CONFIG.MONTHLY_BOSS_LIMIT,
-    prices:{}, accounts:[], autoSync:true, autoEnable:true, lastSync:0};
+    prices:{}, accounts:[], autoEnable:true, lastSync:0};
 }
 // 일퀘 현황 표시 설정: off{항목:1}=전체 숨김, charOff{캐릭터:{항목:1}}=캐릭터별 숨김, hide{캐릭터:1}=카드 숨김
 function defaultDq(){ return {off:{}, charOff:{}, hide:{}}; }
@@ -337,6 +339,7 @@ function normState(obj){
     S.settings.prices={}; delete S.settings.priceSource; // 가격 수동 수정 기능 제거: 가격은 공식 prices.json 자동 갱신 값만 사용
     delete S.settings.driveKeys; // 예전 '키도 드라이브에 저장' 선택 항목 (이제 항상 저장)
     delete S.settings.apiMode;
+    delete S.settings.autoSync; // 예전 '열려 있으면 15분마다 자동 동기화' 설정 (2026-10-10 제거 — 페이지를 열 때마다 자동 동기화로 대체)
     // ↑ 예전 연결 방식(로컬 프록시) 설정 — 이제 항상 open.api.nexon.com 직접 호출
     S.settings.weeklyLimit=CONFIG.WEEKLY_BOSS_LIMIT; S.settings.monthlyLimit=CONFIG.MONTHLY_BOSS_LIMIT; // 처치 한도는 고정값 (설정 화면 제거)
     delete S.settings.worldLimit; // 월드 결정석 판매 한도 기능 제거 (수익 = 클리어한 보스 합계, 상한 없음)
@@ -708,6 +711,7 @@ async function fetchBasic(c,key){
   c.sync=Object.assign(c.sync||{},{imgAt:Date.now()});
 }
 let syncing=false;
+const LOAD_SYNC_GAP_MS=3e3, LOAD_SYNC_KEY='mapleBossTracker.loadSyncAt'; // 페이지 열 때 자동 동기화 최소 간격 (아래 loadSyncDue)
 async function syncAll(opts={}){
   if(syncing) return; if(!hasApi()){ if(!opts.silent) toast('+ 추가에서 넥슨 API 키를 먼저 등록하세요'); return; }
   syncing=true; renderHeaderSync(); let total=0, errs=0, assigned=0; const badAcc=new Set(), accMsgs=[];
@@ -947,13 +951,13 @@ function applyTheme(){
 function render(){ if(!['boss','summary','history','total','daily','guild'].includes(tab)) tab='boss';
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   ({boss:renderBoss,summary:renderSummary,history:renderHistory,total:renderTotal,daily:renderDaily,guild:renderGuild})[tab](); renderResetInfo(); }
-/* 헤더: 🔄 지금 동기화 (API 키가 있을 때만) */
+/* 캐릭터 카드 제목 옆: 🔄 지금 동기화 아이콘 버튼 (API 키가 있을 때만, 넥슨 API 전용 — 구글 드라이브는 헤더 ☁ 버튼) */
 function renderHeaderSync(){
   const b=$('#syncBtn'); if(!b) return; const st=S.settings; b.hidden=!hasApi(); b.disabled=syncing;
   b.classList.toggle('busy',syncing); b.setAttribute('aria-busy',String(syncing));
-  b.innerHTML=`<svg class="rot" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="hl">동기화</span>`;
-  b.title=syncing?'동기화 중…':`지금 동기화 (보스 클리어 자동 체크)\n마지막 동기화: ${st.lastSync?hm(st.lastSync)+' KST':'없음'}${st.autoSync?`\n열려 있으면 ${CONFIG.AUTO_SYNC_MIN}분마다 자동`:''}`;
-  b.setAttribute('aria-label',`동기화 — 마지막 ${st.lastSync?hm(st.lastSync):'없음'}`);
+  if(!b.querySelector('svg')) b.innerHTML=`<svg class="rot" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`; // 아이콘만 (2026-10-10: 헤더 → 캐릭터 카드 제목 옆)
+  b.title=syncing?'동기화 중…':`지금 동기화 (보스 클리어 자동 체크)\n마지막 동기화: ${st.lastSync?hm(st.lastSync)+' KST':'없음'}\n페이지를 열거나 새로고침할 때 자동 (${LOAD_SYNC_GAP_MS/1e3}초 안에 다시 열면 건너뜀)`;
+  b.setAttribute('aria-label',syncing?'동기화 중':`지금 동기화 — 마지막 ${st.lastSync?hm(st.lastSync):'없음'}`);
 }
 
 /* ---------- 사용자 지정 순서 ----------
@@ -1444,8 +1448,7 @@ function renderAccList(){
       <span class="accbtns"><button class="btn sm ${a.id===impAccId?'':'ghost'}" data-acctest="${a.id}" ${a.key?'':'disabled'}>캐릭터 목록</button><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>`;
   }).join(''):'<div class="muted acc-empty">등록된 API 키가 없습니다. 아래에 키를 붙여넣고 <b>+ API 키 추가</b>를 누르면 바로 그 계정의 캐릭터 목록이 나와요.</div>';
   $('#newAccLabel').placeholder=accounts().length?`부계정${accounts().length}`:'본계정';
-  $('#accOpts').innerHTML=accounts().length?`<label class="checkline"><input type="checkbox" id="sAuto" ${S.settings.autoSync?'checked':''}> 열려 있으면 ${CONFIG.AUTO_SYNC_MIN}분마다 자동 동기화</label>
-    <label class="checkline"><input type="checkbox" id="sAutoEnable" ${S.settings.autoEnable?'checked':''}> 인게임 스케줄러에 등록된 보스를 자동으로 선택 목록에 추가</label>`:'';
+  $('#accOpts').innerHTML=accounts().length?`<label class="checkline"><input type="checkbox" id="sAutoEnable" ${S.settings.autoEnable?'checked':''}> 인게임 스케줄러에 등록된 보스를 자동으로 선택 목록에 추가</label>`:'';
 }
 function openAdd(){ openImport(); }
 async function openImport(accId){
@@ -1666,7 +1669,7 @@ async function gdWrite(keepalive){
  *   캐릭터·계정은 id, 주간/월간 기록은 week/month 로 짝지음. 한쪽 삭제 + 다른 쪽 수정 → 수정본 유지(데이터 안 잃음).
  *   API 로 다시 받는 값(레벨·직업·월드·ocid·계정 배정)과 지난 기록 요약은 충돌이어도 묻지 않음(이 PC 값 / 클리어 많은 쪽). */
 const GD_BASE_KEY='mapleBossTracker.gdbase';
-const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp)$|^settings\.accounts\[[^\]]*\]\.(key|status)$/;
+const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|autoSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp)$|^settings\.accounts\[[^\]]*\]\.(key|status)$/;
 const GD_SOFT_RE=/^characters\[[^\]]*\]\.(level|job|world|ocid|accId)$/;
 const GD_HIST_RE=/^(history|monthHistory)\[[^\]]*\]$/;
 const GD_KEYED={characters:'id',history:'week',monthHistory:'month','settings.accounts':'id'};
@@ -1979,7 +1982,8 @@ document.addEventListener('contextmenu',e=>{ const dc=e.target.closest('[data-dr
 let tipEl=null, tipFor=null, tipTimer=0, tipTouchAt=0;
 function tipShow(el){
   if(!tipEl){ tipEl=document.createElement('div'); tipEl.id='mbtTip'; tipEl.setAttribute('role','tooltip'); document.body.appendChild(tipEl); }
-  tipFor=el; tipEl.textContent=el.dataset.tip; tipEl.classList.add('show');
+  tipFor=el; const [h0,...rest]=String(el.dataset.tip).split('\n'); // 첫 줄 = 굵은 제목(아이템 이름)
+  tipEl.replaceChildren(Object.assign(document.createElement('b'),{className:'tth',textContent:h0}),...(rest.length?['\n'+rest.join('\n')]:[])); tipEl.classList.add('show');
   const r=el.getBoundingClientRect(), w=tipEl.offsetWidth, h=tipEl.offsetHeight, m=8;
   let x=Math.min(Math.max(m,r.left+r.width/2-w/2),innerWidth-w-m), y=r.top-h-8; if(y<m) y=Math.min(r.bottom+8,innerHeight-h-m);
   tipEl.style.left=x+'px'; tipEl.style.top=y+'px';
@@ -1998,7 +2002,6 @@ document.addEventListener('keydown',e=>{ const dc=e.target.closest?.('[data-drop
 document.addEventListener('change',e=>{
   const t=e.target; const c=activeChar();
   if(t.dataset.party && c){ const s=t.dataset.party; c.bosses[s].party=parseInt(t.value)||1; clampParty(c,s); save(); render(); }
-  if(t.id==='sAuto'){ S.settings.autoSync=t.checked; save(); render(); }
   if(t.id==='sAutoEnable'){ S.settings.autoEnable=t.checked; save(); }
   if(t.id==='impWorld') renderImportList();
   if(t.dataset.acclabel){ const a=accById(t.dataset.acclabel); if(a){ a.label=t.value.trim()||a.label; save(); render(); if(a.id===impAccId) $('#impTitle').textContent=`'${a.label}' 계정 캐릭터`; } }
@@ -2041,10 +2044,14 @@ $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
 load();
 if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
 checkResets(); loadOfficialPrices(); save(); applyTheme(); render();
-const autoDue=()=>hasApi() && S.settings.autoSync && S.characters.some(c=>c.ocid) && Date.now()-(S.settings.lastSync||0) > CONFIG.AUTO_SYNC_MIN*60e3;
-if(autoDue() || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))) syncAll({silent:true}); // 기존 데이터: 계정 자동 배정
-setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden && autoDue()) syncAll({silent:true}); else tabTick(); if(!document.hidden) gdPull(); }, 60e3);
-document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); return; } if(checkResets()) render(); if(autoDue()) syncAll({silent:true}); else tabTick(); gdPull(); });
+/* 페이지를 열거나 새로고침할 때마다 넥슨 API 동기화 1회 (2026-10-10 사용자 요청) — 🔄 버튼과 같은 syncAll(넥슨 API 전용, 구글 드라이브·로그인 창과 무관).
+ * 새로고침을 연달아 해도 API 호출량을 아끼도록: 마지막 동기화(완료) 또는 마지막 '열 때 동기화' 시작이 LOAD_SYNC_GAP_MS(3초, 사용자 결정) 안이면 건너뜀.
+ * 시작 시각을 따로 저장(LOAD_SYNC_KEY)하는 이유: 동기화 도중 새로고침하면 lastSync 가 안 바뀌어 매번 다시 시작되기 때문. */
+function loadSyncDue(){ if(!hasApi()||!S.characters.length) return false;
+  const last=Math.max(+S.settings.lastSync||0, +localStorage.getItem(LOAD_SYNC_KEY)||0); return Date.now()-last>=LOAD_SYNC_GAP_MS; }
+if(loadSyncDue() || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))){ try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(e){} syncAll({silent:true}); } // + 기존 데이터: 계정 자동 배정
+setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden) tabTick(); if(!document.hidden) gdPull(); }, 60e3);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); return; } if(checkResets()) render(); tabTick(); gdPull(); }); // (예전: 15분 지났으면 자동 동기화 — 2026-10-10 제거)
 window.addEventListener('pagehide',()=>{ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); });
 /* =====================================================================
  *  소식 피드 (왼쪽 아래 카드)
