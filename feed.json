@@ -1,33 +1,33 @@
 {
  "version": 1,
- "updatedAt": "2026-10-09T22:37:48+09:00",
+ "updatedAt": "2026-10-09T23:17:06+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-10-09T22:37:42+09:00",
-   "lastOkAt": "2026-10-09T22:37:42+09:00",
+   "checkedAt": "2026-10-09T23:16:47+09:00",
+   "lastOkAt": "2026-10-09T23:16:47+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-10-09T22:37:42+09:00",
-   "lastOkAt": "2026-10-09T22:37:42+09:00",
+   "checkedAt": "2026-10-09T23:16:49+09:00",
+   "lastOkAt": "2026-10-09T23:16:49+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
    "ok": true,
-   "checkedAt": "2026-10-09T22:37:43+09:00",
-   "lastOkAt": "2026-10-09T22:37:43+09:00",
+   "checkedAt": "2026-10-09T23:16:51+09:00",
+   "lastOkAt": "2026-10-09T23:16:51+09:00",
    "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-10-09T22:37:48+09:00",
-   "lastOkAt": "2026-10-09T22:37:48+09:00",
+   "checkedAt": "2026-10-09T23:17:06+09:00",
+   "lastOkAt": "2026-10-09T23:17:06+09:00",
    "error": ""
   }
  },
@@ -61,6 +61,13 @@
     "title": "클라이언트 1.2.419(5) 업데이트 안내",
     "url": "https://maplestory.nexon.com/news/update/814",
     "date": "2026-09-22T09:00:00+09:00"
+   },
+   {
+    "id": "minor:150200",
+    "title": "(연장)[패치완료] 9/22(화) ver1.2.419 마이너(5) 패치(6:00~9:00)",
+    "url": "https://maplestory.nexon.com/News/Notice/Notice/150200",
+    "date": "2026-09-21T18:11:00+09:00",
+    "src": "minor"
    }
   ],
   "test": [
