@@ -75,7 +75,7 @@ try:
     n=len(dialogs); login(pa,KB); ah_b=st(pa)['settings']['accounts'][0]['ah']
     check('B after logout: no question, B data empty, A untouched', len(dialogs)==n and st(pa)['characters']==[] and chars_of(ah_b) in (None,[]) and chars_of(ah_a)==['단풍용사','불독메이지'], (chars_of(ah_b),dialogs[n:]))
     # 3) 로그아웃 없이 사용자 바꿈 (세션 토큰만 사라진 경우) → 이 PC(B) 데이터를 A 에 합치지 않음
-    pa.evaluate("S.characters.push({...S.characters[0]||{},id:'cb',name:'B캐릭',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}});save()"); pa.wait_for_timeout(6500); wait_on(pa)
+    pa.evaluate("S.characters.push({...S.characters[0]||{},id:'cb',name:'B캐릭',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}});save();svSaveNow()"); pa.wait_for_timeout(1500); wait_on(pa)
     check('B saved its own char', chars_of(ah_b)==['B캐릭'], chars_of(ah_b))
     pa.evaluate("localStorage.removeItem('mapleBossTracker.svToken');gdMeta={};gdSaveMeta();gdSet('off');svGate()")
     n=len(dialogs); login(pa,KA)
@@ -85,6 +85,25 @@ try:
     cc,pc=mkctx(b); pc.goto(URL); pc.evaluate("([p,api])=>{localStorage.clear();p.characters=[{...p.characters[0],id:'z',name:'남의캐릭'}];localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pc.reload(); pc.wait_for_timeout(400)
     invite(pc); ANSWER[0]=False; n=len(dialogs); login(pc,KA); ANSWER[0]=True
     check('first login + cancel → local wiped, server A data only (no merge)', len(dialogs)==n+1 and '합칠까요' in dialogs[-1] and [c['name'] for c in st(pc)['characters']]==['단풍용사','불독메이지'] and chars_of(ah_a)==['단풍용사','불독메이지'], ([c['name'] for c in st(pc)['characters']],dialogs[n:]))
+    # 헤더: 로그인 중이면 [로그아웃]만, 저장 실패 시 작은 경고, 누르면 확인 없이 로그아웃 → 대표 키 화면
+    check('header shows only 로그아웃 when logged in', pc.text_content('#gBtn')=='로그아웃' and pc.locator('#svWarn:visible').count()==0, pc.text_content('#gBtn'))
+    pth=os.path.join(OUT,'header_logout.png'); pc.screenshot(path=pth,clip={'x':0,'y':0,'width':1280,'height':120}); SHOTDIR and shutil.copy(pth,SHOTDIR)
+    puts_n=len([x for x in puts if x[1].endswith('/api/state')])
+    pc.evaluate("S.characters[0].name='바뀐이름';save()"); pc.wait_for_timeout(6500)
+    check('no autosave in sync mode (no PUT), header still only 로그아웃', len([x for x in puts if x[1].endswith('/api/state')])==puts_n and pc.text_content('#gBtn')=='로그아웃' and pc.evaluate('svUnsaved()'))
+    check('beforeunload warns when unsaved', pc.evaluate("(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented})()"))
+    pc.click('#gBtn'); pc.wait_for_selector('#svAsk')
+    check('logout with unsaved changes → warning with 저장 후 로그아웃', '로그아웃하면 사라져요' in pc.inner_text('#svAsk') and pc.locator('#svAsk [data-k=save]').count()==1)
+    pth=os.path.join(OUT,'logout_unsaved.png'); pc.screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
+    pc.click('#svAsk [data-k=cancel]'); pc.wait_for_timeout(300); check('cancel keeps login + data', pc.evaluate('!!svTok()') and st(pc)['characters'][0]['name']=='바뀐이름')
+    pc.route(API+'/api/state',lambda r: r.fulfill(status=500,body='{"error":"server","message":"서버 오류"}') if r.request.method=='PUT' else r.continue_())
+    pc.click('#gBtn'); pc.click('#svAsk [data-k=save]'); pc.wait_for_timeout(2000)
+    check('save fails → stays logged in, small warning chip', pc.evaluate('!!svTok()') and pc.is_visible('#svWarn') and pc.text_content('#gBtn')=='로그아웃', pc.evaluate('gd.state'))
+    pc.unroute(API+'/api/state'); n=len(dialogs)
+    pc.click('#gBtn'); pc.click('#svAsk [data-k=save]'); pc.wait_for_selector('#svGate #svKey',timeout=8000)
+    check('저장 후 로그아웃 → server has the change, local cleared, main-key gate', chars_of(ah_a)[0]=='바뀐이름' and st(pc)['characters']==[], chars_of(ah_a))
+    login(pc,KA); n=len(dialogs); pc.click('#gBtn'); pc.wait_for_selector('#svGate #svKey',timeout=8000)
+    check('logout with nothing unsaved → no prompt', pc.locator('#svAsk').count()==0 and len(dialogs)==n)
     check('no google popup, no page errors', not popups and not errs, (popups,errs[:3]))
     b.close()
 finally:

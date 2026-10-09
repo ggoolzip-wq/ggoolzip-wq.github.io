@@ -62,7 +62,7 @@ try:
     check('server copy has no API key; account has ah', KA not in s[0]['data'] and d['settings']['accounts'][0].get('ah') and 'key' not in d['settings']['accounts'][0], d.get('settings'))
     check('A local keeps its key + ah', st(pa)['settings']['accounts'][0]['key']==KA and st(pa)['settings']['accounts'][0].get('ah'))
     check('no raw key in any PUT body (login POST carries it once)', all(KA not in body for m,u,body in puts if m=='PUT') and any(u.endswith('/api/login') and KA in body for m,u,body in puts))
-    check('A header shows saved state', '저장' in pa.text_content('#gBtn') or '동기화됨' in pa.text_content('#gBtn'), pa.text_content('#gBtn'))
+    check('A header shows only 로그아웃', pa.text_content('#gBtn')=='로그아웃', pa.text_content('#gBtn'))
     # 2) 기기 B (빈 PC): 키 입력 → 내려받기 + 그 키 자동 채움
     cb,pb=mkctx(b); pb.goto(URL)
     pb.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); pb.reload(); pb.wait_for_timeout(300)
@@ -70,8 +70,10 @@ try:
     sb=st(pb)
     check('B (empty PC) login → pulled 2 chars, key filled for that account', len(sb['characters'])==2 and sb['settings']['accounts'][0].get('key')==KA, [a.get('key','')[:8] for a in sb['settings']['accounts']])
     # 3) B 에서 바꿈 → 자동 저장(5초) → A 가 당겨옴
-    pb.evaluate("S.characters.find(c=>c.id==='c2').name='불독메이지B'; save()"); pb.wait_for_timeout(5600); wait_on(pb)
-    check('B edit auto-saved (rev 2)', server_state()[0]['rev']==2, server_state()[0]['rev'])
+    pb.evaluate("S.characters.find(c=>c.id==='c2').name='불독메이지B'; save()"); pb.wait_for_timeout(6000)
+    check('sync mode: NO autosave after a change (rev still 1, dirty)', server_state()[0]['rev']==1 and pb.evaluate("svUnsaved()"), server_state()[0]['rev'])
+    pb.evaluate("svSaveNow()"); pb.wait_for_timeout(800); wait_on(pb)
+    check('manual svSaveNow() saves (rev 2), not dirty', server_state()[0]['rev']==2 and not pb.evaluate("svUnsaved()"), server_state()[0]['rev'])
     pa.evaluate("gd.pulledAt=0; gdPull(true)"); pa.wait_for_timeout(1200); wait_on(pa)
     check('A pulls B change', [c['name'] for c in st(pa)['characters']]==['단풍용사','불독메이지B'], [c['name'] for c in st(pa)['characters']])
     # 4) 동시 수정: A·B 가 서로 다른 항목을 바꾸고 B 는 오래된 rev 로 저장 → 409 → 3-way 병합
@@ -96,7 +98,7 @@ try:
     # 7) 구글 드라이브에서 가져오기 (드라이브 함수는 가짜로 바꿔 끼움)
     pa.evaluate("""()=>{ window.driveToken=async()=> 'fake'; window.driveFind=async()=>({id:'f1'});
       window.driveRead=async()=>({app:'maple-boss-tracker',updatedAt:1,withKeys:true,data:{version:5,characters:[{id:'c9',name:'드라이브캐릭',level:270,job:'비숍',world:'스카니아',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}}],history:[],monthHistory:[],worldOrder:[],settings:{accounts:[{id:'a1',label:'본계정',key:'live_KEY_A_0123456789abcdef'}]}}}); }""")
-    pa.click('#gBtn'); pa.wait_for_selector('#svImportDrive', timeout=3000) if pa.evaluate("driveUsable()") else None
+    pa.evaluate('gdMenu(true)'); pa.wait_for_selector('#svImportDrive', timeout=3000) if pa.evaluate("driveUsable()") else None
     if pa.evaluate("driveUsable()"):
         pa.click('#svImportDrive'); pa.wait_for_timeout(1500); wait_on(pa)
         names=[c['name'] for c in json.loads(server_state()[0]['data'])['characters']]
@@ -104,7 +106,7 @@ try:
     else: check('drive import button needs a Google client id (skipped on this origin)', True)
     # 8) 로그아웃
     oldtok=pa.evaluate("svTok()")
-    pa.click('#gBtn') if pa.is_hidden('#gMenu') else None; pa.wait_for_selector('#gdLogout'); pa.click('#gdLogout'); pa.wait_for_timeout(800)
+    pa.evaluate('gdMenu(true)'); pa.wait_for_selector('#gdLogout'); pa.click('#gdLogout'); pa.wait_for_timeout(800)
     rq=urllib.request.Request(API+'/api/state',headers={'Authorization':'Bearer '+oldtok})
     try: urllib.request.urlopen(rq); code=200
     except urllib.error.HTTPError as e: code=e.code

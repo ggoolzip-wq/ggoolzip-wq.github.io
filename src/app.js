@@ -686,9 +686,14 @@ function applyScheduler(c, data){
       if(b.type==='weekly'){ if(!c.weekly[b.id]) checked++; c.weekly[b.id]=true; }
       else { if(!c.monthly[b.id]) checked++; c.monthly[b.id]=c.monthly[b.id]||S.period.week; }
       c.auto[b.id]=true;
-    } else if(reg && S.settings.autoEnable && !cfg){
-      seen[b.id]=true; c.bosses[b.id]={enabled:true,diff,party:1};
+    } else if(reg){ // 스케줄러에 등록된 보스 = 이 캐릭터의 보스 (난이도도 API 값, 파티 인원은 유지)
+      seen[b.id]=true; c.bosses[b.id]={enabled:true,diff,party:cfg?.party||1}; clampParty(c,b.id);
     }
+  }
+  // 보스 목록은 스케줄러만 따름: 응답에 보스 목록이 있으면, 거기 없는 보스는 끔 (이번 주/달 이미 체크한 건 유지, 파티 인원·드롭 기록은 남김)
+  if(Array.isArray(data?.boss_contents)&&data.boss_contents.length) for(const [id,cfg] of Object.entries(c.bosses||{})){
+    if(!cfg?.enabled||seen[id]) continue; const b=findBoss(id); if(!b) continue;
+    if(isDone(c,b)) continue; cfg.enabled=false;
   }
   c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:true,msg:'',clear:data?.weekly_boss_clear_count,limit:data?.weekly_boss_clear_limit_count,unmatched,date:d});
   if(data?.character_level) c.level=data.character_level;
@@ -1175,11 +1180,9 @@ function renderBoss(){
     <div class="toolbar" style="margin-bottom:10px">
       <div class="seg">${['weekly','monthly'].map(t=>`<button data-filter="${t}" class="${bossFilter===t?'on':''}">${TYPE_LABEL[t]} <span style="opacity:.8">${doneType(t)}/${cntType(t)}</span></button>`).join('')}</div>
       <span style="flex:1"></span>
-      <button class="btn sm ${editMode?'':'ghost'}" id="editModeBtn">${editMode?'✓ 선택 완료':'⚙ 보스 선택/난이도'}</button>
     </div>
-    ${editMode?`<div class="note" style="margin-bottom:10px">이 캐릭터가 도는 보스를 켜고 난이도를 고르세요. 보스는 한 주(월)에 한 난이도만 클리어할 수 있다고 가정합니다.</div>`:''}
     ${bossFilter==='monthly'?'<div class="muted" style="margin-bottom:8px">월간 보스(검은 마법사)는 매월 1일 00:00 초기화되며 월 1회만 처치 가능합니다. 주간 수익과 별도로 「이번 달 월간 보스」 수익으로 집계됩니다.</div>':''}
-    <div class="boss-list">${shown.length?shown.map(b=>bossRow(c,b)).join(''):`<div class="empty muted">선택된 ${TYPE_LABEL[bossFilter]}가 없습니다.<br><button class="btn sm" style="margin-top:8px" onclick="editMode=true;render()">보스 선택하기</button></div>`}</div>
+    <div class="boss-list">${shown.length?shown.map(b=>bossRow(c,b)).join(''):`<div class="empty muted">${c.ocid?`게임 스케줄러에 등록된 ${TYPE_LABEL[bossFilter]}가 없습니다.<br>게임에서 보스를 스케줄러에 등록한 뒤 동기화(↻)하면 자동으로 표시돼요.`:`넥슨 API로 불러온 캐릭터만 보스가 자동 표시돼요.<br>캐릭터 편집에서 API 키 계정에 연결해 주세요.`}</div>`}</div>
    </div></div><div class="rcol">${revPanel(a,c)}${priceCard()}<div class="card resetcard"><div class="muted" id="resetInfo"></div></div></div></div>`;
 }
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
@@ -1218,7 +1221,7 @@ function bossRow(c,b){
   const slot=b.id; const cfg=c.bosses[slot]||{enabled:false,diff:b.diffs[0],party:1};
   const diff=cfg.diff||b.diffs[0]; const done=isDone(c,b); const pmax=partyMax(b,diff); const party=Math.min(pmax,cfg.party||1);
   const p=price(b,diff); const cr=charCrystals(c).find(x=>x.slot===slot);
-  if(editMode){
+  if(false){ // (예전 ⚙ 보스 선택/난이도 화면 — 2026-10-10 제거: 보스·난이도는 넥슨 스케줄러 API로만)
     return `<div class="boss" style="${cfg.enabled?'':'opacity:.7'}">
       <label class="chk ${cfg.enabled?'on':''}" data-toggle="${slot}">${cfg.enabled?'✓':''}</label>
       <div class="grow"><div class="bn">${bossIcon(b)}${esc(b.name)}</div>
@@ -1230,7 +1233,6 @@ function bossRow(c,b){
     <div class="grow"><div class="bn">${bossIcon(b)}${esc(b.name)} <span class="pill">${D[diff]}</span>
       ${c.auto[slot]&&done?'<span class="pill api" title="넥슨 스케줄러 API에서 자동 체크됨">API 자동</span>':''}
       ${cr&&!cr.counted?'<span class="pill err">한도 초과</span>':''}</div>
-      ${b.diffs.length>1?`<div class="diffs">${b.diffs.map(d=>`<span class="diff ${d===diff?'sel':''} ${done&&d!==diff?'locked':''}" data-setdiff="${slot}|${d}">${D[d]}</span>`).join('')}</div>`:''}
       ${dropsHtml(b,diff,c)}
     </div>
     <div class="party">파티 <select data-party="${slot}" title="${pmax<CONFIG.MAX_PARTY?`${esc(b.name)} ${D[diff]}: 최대 ${pmax}인`:''}">${Array.from({length:pmax},(_,i)=>`<option ${party===i+1?'selected':''}>${i+1}</option>`).join('')}</select>인</div>
@@ -1416,7 +1418,7 @@ function saveChar(){
   if(editingId){ c=S.characters.find(x=>x.id===editingId); if(c.name!==name && !lookup){ c.ocid=''; c.image=''; delete c.exp; } Object.assign(c,{name,job,level,world}); toast('수정되었습니다'); }
   else{
     c={id:uid(),name,job,level,world,bosses:{},weekly:{},monthly:{},auto:{},sync:{}};
-    S.characters.push(c); S.activeId=c.id; tab='boss'; editMode=true; bossFilter='weekly';
+    S.characters.push(c); S.activeId=c.id; tab='boss'; editMode=false; bossFilter='weekly';
     toast('캐릭터 추가! 도는 보스를 선택하세요');
   }
   if(lookup){ c.ocid=lookup.ocid; c.image=lookup.image||''; c.sync={...c.sync,imgAt:Date.now()}; if(lookup.exp) c.exp=lookup.exp; }
@@ -1610,6 +1612,13 @@ function gdRender(){
     if(SV_ON){ L.off='☁ 로그인'; L.reconnect='☁ 다시 로그인'; }
     b.textContent=SV_ON?(L[gd.state]||'☁ 동기화'):!gcid()?'☁ 구글':!gdOriginOk()?'☁ 구글 (온라인 전용)':(L[gd.state]||'☁ 구글'); b.classList.toggle('warn',['reconnect','conflict','error'].includes(gd.state));
     b.title=gd.msg||(SV_ON?'동기화 (넥슨 API 키로 로그인)':'구글 드라이브 동기화');
+    // 서버 모드 로그인 중: 헤더는 [로그아웃]만 (저장은 뒤에서 조용히). 저장 실패만 작은 경고로 표시
+    const svIn=SV_ON&&!!svTok()&&gdMeta.on&&gd.state!=='conflict';
+    if(svIn){ b.textContent='로그아웃'; b.classList.remove('warn'); b.title='로그아웃 (이 PC의 데이터는 지워지고 서버에 남아요)'; b.setAttribute('aria-haspopup','false'); }
+    else b.setAttribute('aria-haspopup','true');
+    let w=$('#svWarn'); const bad=svIn&&['error','reconnect'].includes(gd.state);
+    if(bad&&!w){ w=document.createElement('button'); w.id='svWarn'; w.className='hbtn svwarn'; b.parentNode.insertBefore(w,b); }
+    if(w){ w.hidden=!bad; if(bad){ w.textContent='⚠ 저장 안 됨'; w.title=(gd.msg||'서버에 저장하지 못했습니다')+' — 눌러서 다시 저장'; } }
   }
   const st=$('#gdStatus'); if(st) st.innerHTML=gdStatusHtml();
 }
@@ -1667,6 +1676,7 @@ function gdMenu(open){
   m.hidden=!show; $('#gBtn').setAttribute('aria-expanded',String(show));
 }
 function gdHeaderClick(){ if(gd.state==='conflict'&&gd.pending){ gdMenu(false); return gdReask(); }
+  if(SV_ON&&svTok()&&gdMeta.on){ gdMenu(false); return gdLogout(); } // 서버 모드: 헤더 버튼 = 로그아웃
   if(!SV_ON&&gd.state==='reconnect'&&gdMeta.on&&gdUsable()){ gdMenu(false); return gdLogin(); } // [☁ 다시 연결] 한 번 누르면 바로 로그인 → 동기화
   gdMenu(); }
 function gdLoadLib(){
@@ -1954,12 +1964,14 @@ async function gdResolve(which){
   finally{ gd.ia=false; if(SV_ON) svAfterLogin(); }
 }
 function gdChanged(){
+  if(SV_ON){ gdRender(); return; } // 서버 모드: 자동 저장 없음 (svSaveNow / 로그아웃 창의 [저장 후 로그아웃]으로만 저장)
   if(!gdMeta.on||!gdUsable()||gd.state==='conflict') return;
   if(gd.state==='reconnect'&&!gdHasTok()){ gdRender(); return; } // 로그인 필요 상태: 이 PC 에만 저장, 다시 연결할 때 합쳐서 저장
   clearTimeout(gd.timer); gd.timer=setTimeout(()=>{ gd.timer=null; gdPush(); },GD.DEBOUNCE); gdRender();
 }
 // 다른 기기에서 바뀐 내용 확인 (탭으로 돌아올 때·1분마다, 메타데이터만 조회 → 바뀌었을 때만 내용 읽어서 합침)
 async function gdPull(force){
+  if(SV_ON&&gdLocalDirty()) return; // 저장 안 한 변경이 있으면 받아 오지 않음 (합친 뒤 자동 저장되는 것 방지)
   if(!gdMeta.on||!gdUsable()||gd.state!=='on'||gd.busy||gd.timer||!gd.fileId||!gdHasTok()) return; // 토큰 없으면 조용히 건너뜀(로그인 창 X)
   if(!force&&Date.now()-(gd.pulledAt||0)<55e3) return; gd.pulledAt=Date.now();
   gd.busy=true;
@@ -2119,9 +2131,23 @@ async function svImportDrive(){
   }catch(e){ const info=gdErrInfo(e); gdSet('on',info?info.short:e.message); if(info) gdHelpModal(info.html); }
   finally{ gd.ia=false; }
 }
+// 서버 모드: 저장 안 한 변경 (dirty) = 이 PC 수정 시각 ≠ 마지막으로 서버와 맞춘 시각
+const svUnsaved=()=>SV_ON&&!!svTok()&&gdMeta.on&&gdLocalDirty();
+// 수동 저장 (나중에 [저장] 버튼은 이것만 부르면 됨) → true/false
+async function svSaveNow(){ const ok=await gdPush({manual:true}); if(ok) toast('☁ 서버에 저장했습니다'); gdRender(); return ok; }
+function svAsk(msg,btns){ return new Promise(res=>{
+  const d=document.createElement('div'); d.id='svAsk'; d.className='svask';
+  d.innerHTML=`<div class="svaskbox"><div class="svaskmsg">${esc(msg)}</div><div class="svaskbtns">${btns.map(([k,t],i)=>`<button class="btn sm${i?' ghost':''}" data-k="${k}">${esc(t)}</button>`).join('')}</div></div>`;
+  d.addEventListener('click',e=>{ const b=e.target.closest('[data-k]'); if(b||e.target===d){ e.stopPropagation(); d.remove(); res(b?b.dataset.k:'cancel'); } });
+  document.body.appendChild(d); d.querySelector('[data-k]')?.focus();
+}); }
 async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그대로 둠 — PC방은 종료 시 자동 초기화)
   if(SV_ON){
-    if(gdMeta.on && gdLocalDirty() && svTok()){ const ok=await gdPush(); if(!ok && !confirm('서버에 최신 내용을 저장하지 못했습니다. 그래도 로그아웃할까요? (저장 안 된 변경은 사라집니다)')) return; }
+    if(svUnsaved()){
+      const c=await svAsk('저장하지 않은 변경이 있어요. 로그아웃하면 사라져요.',[['save','저장 후 로그아웃'],['drop','저장 안 하고 로그아웃'],['cancel','취소']]);
+      if(c==='cancel') return;
+      if(c==='save'&&!(await svSaveNow())){ toast('저장하지 못해서 로그아웃하지 않았어요'); return; }
+    }
     try{ if(svTok()) await svFetch('/api/logout',{method:'POST'}); }catch(e){}
     clearTimeout(gd.timer); gd.timer=null; gd.fileId=null; gd.remoteRev=undefined; localStorage.removeItem(SV_TOKEN_KEY); localStorage.removeItem(SV_SUBSIG_KEY);
     gdMeta={}; localStorage.removeItem(GD.META_KEY); localStorage.removeItem(GD_BASE_KEY);
@@ -2199,6 +2225,7 @@ document.addEventListener('click',e=>{
     case 'impClose': closeImport(); break;
     case 'gMenuClose': gdMenu(false); break;
     case 'gBtn': gdHeaderClick(); break;
+    case 'svWarn': svSaveNow(); break;
     case 'gdLogin': gdLogin(); break;
     case 'svSubBtn': svAddSub($('#svSubKey')?.value); break;
     case 'svInviteBtn': svInvite(($('#svGate #svInvite')||$('#svInvite'))?.value); break;
@@ -2290,8 +2317,9 @@ function loadSyncDue(){ if(!hasApi()||!S.characters.length) return false;
   const last=Math.max(+S.settings.lastSync||0, +localStorage.getItem(LOAD_SYNC_KEY)||0); return Date.now()-last>=LOAD_SYNC_GAP_MS; }
 if(loadSyncDue() || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))){ try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(e){} syncAll({silent:true}); } // + 기존 데이터: 계정 자동 배정
 setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden) tabTick(); if(!document.hidden) gdPull(); }, 60e3);
-document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); return; } if(checkResets()) render(); tabTick(); gdPull(); }); // (예전: 15분 지났으면 자동 동기화 — 2026-10-10 제거)
-window.addEventListener('pagehide',()=>{ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); return; } if(checkResets()) render(); tabTick(); gdPull(); }); // (예전: 15분 지났으면 자동 동기화 — 2026-10-10 제거)
+window.addEventListener('pagehide',()=>{ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); });
+window.addEventListener('beforeunload',e=>{ if(svUnsaved()){ e.preventDefault(); e.returnValue=''; } }); // 서버 모드: 저장 안 한 변경이 있으면 닫기 전에 경고
 /* =====================================================================
  *  소식 피드 (왼쪽 아래 카드)
  *  GitHub Actions(update-feed.yml, 5분마다)가 feed.json 을 갱신 → 사이트는 그 파일만 읽음.

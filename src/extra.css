@@ -529,3 +529,8 @@ html.gated body>*:not(#svGate):not(#toast){visibility:hidden}
 #svGate .svghelp ol{margin:8px 0 6px 18px;padding:0;line-height:1.6}
 #svGate .svghelp a{color:#ffb36b}
 #svGate .svghelp .muted{color:#9a9aa8}
+.svwarn{background:#7a2e1f!important;color:#ffd9cc!important;border-color:#b5482f!important;font-size:.78rem;margin-right:6px}
+.svask{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.svaskbox{background:var(--card,#1d1d23);color:var(--text,#ececf1);border:1px solid var(--line,#2e2e38);border-radius:14px;padding:20px;width:min(360px,100%)}
+.svaskmsg{font-weight:700;margin-bottom:14px;line-height:1.5}
+.svaskbtns{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}

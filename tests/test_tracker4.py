@@ -132,7 +132,7 @@ with sync_playwright() as p:
     print('C9 manual add appended:', names(pg))
     print('G2d manual char exp hidden:', pg.locator('.char:has-text("수동캐") .expl').count()==0)
     # ---- D. icons
-    pg.click('.char[data-id="c-ocid-main"]'); pg.click('[data-tab="boss"]'); pg.click('#editModeBtn'); pg.wait_for_timeout(100)
+    pg.click('.char[data-id="c-ocid-main"]'); pg.click('[data-tab="boss"]'); pg.evaluate('editMode=true;render()'); pg.wait_for_timeout(100)
     print('D1 weekly edit icons img/fallback:', pg.locator('.boss img.bicon').count(), pg.locator('.boss span.bicon.fb').count(), pg.eval_on_selector_all('.boss span.bicon.fb','e=>e.map(x=>x.textContent)'))
     nat=pg.evaluate("Promise.all([...document.querySelectorAll('img.bicon')].map(i=>i.decode().then(()=>i.naturalWidth).catch(()=>0)))")
     print('D2 all icons decode:', all(n==64 for n in nat), len(nat))

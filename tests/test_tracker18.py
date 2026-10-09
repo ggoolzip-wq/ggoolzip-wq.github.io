@@ -55,11 +55,11 @@ try:
     s=st()['characters'][0]['bosses']
     check('saved party values clamped after load+save', s['lotus']['party']==2 and s['adversary']['party']==3 and s['jupiter']['party']==3 and s['kaling']['party']==2 and s['seren']['party']==3, {k:v['party'] for k,v in s.items()})
     # 노말로 바꾸면 6인까지 선택 가능 (값은 2 유지)
-    pg.click('#editModeBtn'); pg.click('[data-setdiff="lotus|hard"]'); pg.click('#editModeBtn'); pg.wait_for_timeout(100)
+    pg.evaluate("S.characters[0].bosses.lotus.diff='hard';clampParty(S.characters[0],'lotus');save();render()"); pg.wait_for_timeout(100)
     o=pg.evaluate("(()=>{const e=document.querySelector('[data-party=\"lotus\"]');return [e.options.length,+e.value]})()")
     check('lotus hard: 6 options, value kept 2', o==[6,2], o)
     pg.select_option('[data-party="lotus"]','5'); pg.wait_for_timeout(100)
-    pg.click('[data-setdiff="lotus|extreme"]'); pg.wait_for_timeout(150)
+    pg.evaluate("S.characters[0].bosses.lotus.diff='extreme';clampParty(S.characters[0],'lotus');save();render()"); pg.wait_for_timeout(150)
     o=pg.evaluate("(()=>{const e=document.querySelector('[data-party=\"lotus\"]');return [e.options.length,+e.value]})()")
     check('switch to extreme clamps 5 -> 2', o==[2,2] and st()['characters'][0]['bosses']['lotus']['party']==2, o)
     # ---- E: 시즌 보스 제외 ----
