@@ -1555,7 +1555,7 @@ function loadOfficialPrices(){
  *   - 옮기기: 처음 로그인 때 서버가 비어 있으면 이 PC 데이터를 올림 / '구글 드라이브에서 가져오기' 버튼(한 번, 클릭 시 구글 로그인)
  * ===================================================================== */
 const SYNC_API_URL = ''; // 배포 후 예: 'https://ggoolzip-sync.<계정>.workers.dev' — 비우면 구글 드라이브
-const SYNC_TEST_URL = ''; // 배포한 서버 주소 — 주소 뒤에 ?sync=test 를 붙여 열면 이 브라우저만 서버 모드로 미리 써 보기, ?sync=off 로 되돌림
+const SYNC_TEST_URL = 'https://ggoolzip-sync.bossmaple.workers.dev'; // 배포한 서버 주소 — 주소 뒤에 ?sync=test 를 붙여 열면 이 브라우저만 서버 모드로 미리 써 보기, ?sync=off 로 되돌림
 const SV_ON = (()=>{ let u=SYNC_API_URL;
   try{
     const q=new URLSearchParams(location.search).get('sync');
