@@ -1,33 +1,33 @@
 {
  "version": 1,
- "updatedAt": "2026-10-09T23:17:06+09:00",
+ "updatedAt": "2026-10-09T23:18:16+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-10-09T23:16:47+09:00",
-   "lastOkAt": "2026-10-09T23:16:47+09:00",
+   "checkedAt": "2026-10-09T23:17:53+09:00",
+   "lastOkAt": "2026-10-09T23:17:53+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-10-09T23:16:49+09:00",
-   "lastOkAt": "2026-10-09T23:16:49+09:00",
+   "checkedAt": "2026-10-09T23:17:57+09:00",
+   "lastOkAt": "2026-10-09T23:17:57+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
    "ok": true,
-   "checkedAt": "2026-10-09T23:16:51+09:00",
-   "lastOkAt": "2026-10-09T23:16:51+09:00",
+   "checkedAt": "2026-10-09T23:17:58+09:00",
+   "lastOkAt": "2026-10-09T23:17:58+09:00",
    "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-10-09T23:17:06+09:00",
-   "lastOkAt": "2026-10-09T23:17:06+09:00",
+   "checkedAt": "2026-10-09T23:18:16+09:00",
+   "lastOkAt": "2026-10-09T23:18:16+09:00",
    "error": ""
   }
  },
@@ -67,6 +67,13 @@
     "title": "(연장)[패치완료] 9/22(화) ver1.2.419 마이너(5) 패치(6:00~9:00)",
     "url": "https://maplestory.nexon.com/News/Notice/Notice/150200",
     "date": "2026-09-21T18:11:00+09:00",
+    "src": "minor"
+   },
+   {
+    "id": "minor:149581",
+    "title": "[패치완료] 7/24(금) ver1.2.417 마이너(3) 패치(07:00~09:00)",
+    "url": "https://maplestory.nexon.com/News/Notice/All/149581",
+    "date": "2026-07-23T00:00:00+09:00",
     "src": "minor"
    }
   ],
