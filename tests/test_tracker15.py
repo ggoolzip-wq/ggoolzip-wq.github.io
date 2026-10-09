@@ -124,7 +124,10 @@ try:
             check(f'{vw}x{vh} {t}: card stays inside viewport when scrolled', bb<=vh, bb); pg.evaluate('scrollTo(0,0)')
         print(vw,vh,'per',pg.evaluate('feed.per'))
     pg.click('[data-tab=history]'); pg.wait_for_timeout(200)
-    check('1920x1080 shows more rows than 1280x800', pg.evaluate('feed.per')>per, (pg.evaluate('feed.per'),per))
+    SIDE="(()=>{const s=document.querySelector('#sunCard');return document.querySelector('#feedCard').getBoundingClientRect().height+(s&&getComputedStyle(s).display!=='none'?s.getBoundingClientRect().height:0)})()"
+    big=pg.evaluate(SIDE); pg.set_viewport_size({'width':1280,'height':800}); pg.wait_for_timeout(250); small=pg.evaluate(SIDE); pg.set_viewport_size({'width':1920,'height':1080}); pg.wait_for_timeout(250)
+    # 썬데이 카드가 생긴 뒤로는 소식 줄 수 대신 왼쪽 아래(소식+썬데이) 전체 높이로 비교 (1920 에서는 썬데이가 2/3 를 차지)
+    check('1920x1080 gives the bottom-left cards more room than 1280x800', big>small and pg.evaluate('feed.per')>=2, (big,small,pg.evaluate('feed.per'),per))
     # 8) 모바일: 본문 아래 자연스러운 흐름
     for vw,vh in [(390,844),(320,640)]:
         pg.set_viewport_size({'width':vw,'height':vh}); pg.wait_for_timeout(250)

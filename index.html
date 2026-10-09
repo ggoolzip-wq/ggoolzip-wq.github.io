@@ -517,7 +517,24 @@ nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius
 .fpg:hover:not(:disabled){color:var(--text);border-color:var(--line)}
 .fpg.on{color:var(--accent);border-color:var(--accent);font-weight:700}
 .fpg:disabled{opacity:.35;cursor:default}
+/* 썬데이 메이플 카드 (소식 카드 아래) — 높이는 feedFit 이 소식 카드와 1:2 로 나눔 */
+.stab{cursor:default}
+.stab:hover{color:var(--accent)}
+.sunico{width:15px;height:15px;flex:none;color:#f5c518;filter:drop-shadow(0 0 2px rgba(245,197,24,.45))}
+.sunbody{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:4px;padding-top:6px}
+.sunimg{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden;background:linear-gradient(180deg,rgba(245,197,24,.10),rgba(245,197,24,.03))}
+.sunimg img{width:100%;height:100%;object-fit:contain;display:block}
+.sunimg:hover{outline:2px solid rgba(245,197,24,.6);outline-offset:-2px}
+.suncap{flex:none;display:flex;gap:6px;align-items:center;font-size:.76rem;color:var(--muted);text-decoration:none;padding:0 2px}
+.suncap .ftt{color:var(--text);font-weight:600}
+.sunben{flex:none;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden;font-size:.8rem;padding:5px 8px;border-radius:8px;background:rgba(245,197,24,.14);color:var(--text)}
+.sunben b{flex:none;color:#d9a400;font-size:.72rem;font-weight:800}
+.sunben span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.sunempty{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted);font-size:.8rem;text-align:center;border:1px dashed var(--line);border-radius:8px;min-height:80px}
+.sunempty .sunico{width:30px;height:30px;opacity:.75}
 @media(max-width:820px){
+  #sunCard{order:3}
+  #sunCard .sunimg{height:min(70vh,520px);flex:none}
   /* 모바일: 피드는 본문 아래로 자연스럽게 */
   .side-sticky{display:contents}
   .side-sticky>.card{margin-top:0!important}
@@ -559,6 +576,7 @@ nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius
       <div class="muted" id="resetInfo"></div>
     </div>
     <div class="card feedcard" id="feedCard" style="margin-top:12px"></div>
+    <div class="card feedcard suncard" id="sunCard" style="margin-top:12px"></div>
   </aside>
   <section id="view"></section>
 </main>
@@ -2439,11 +2457,30 @@ function renderFeed(){
     const more=pages>5;
     pager=(more?`<button type="button" class="fpg fnav" data-fpage="${feed.page-1}"${feed.page<=1?' disabled':''} aria-label="이전">‹</button>`:'')+nums.join('')+(more?`<button type="button" class="fpg fnav" data-fpage="${feed.page+1}"${feed.page>=pages?' disabled':''} aria-label="다음">›</button>`:''); }
   c.innerHTML=`<div class="ftabs" role="tablist">${tabs}</div>${note}<div class="fbody">${body}</div><div class="fpager">${pager}</div>`;
+  const sc=$('#sunCard'), sid=JSON.stringify(feed.data&&feed.data.sunday||null);
+  if(sc&&(!sc.innerHTML||sc.dataset.sid!==sid||sc.dataset.loaded!==String(!!feed.data))){ renderSun(); sc.dataset.loaded=String(!!feed.data); }
+}
+/* 썬데이 메이플 카드 (feed.json 의 sunday) — 클릭하면 이벤트 글 */
+const SUN_SVG='<svg class="sunico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6" fill="currentColor"/><g stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.2v2.6M12 19.2v2.6M2.2 12h2.6M19.2 12h2.6M5.1 5.1l1.8 1.8M17.1 17.1l1.8 1.8M5.1 18.9l1.8-1.8M17.1 6.9l1.8-1.8"/></g></svg>';
+function renderSun(){
+  const c=$('#sunCard'); if(!c) return;
+  const s=feed.data&&feed.data.sunday;
+  let body;
+  if(s&&s.image&&s.url){
+    const when=s.start?fdShort(s.start)+(s.end&&fdShort(s.end)!==fdShort(s.start)?' ~ '+fdShort(s.end):''):fdShort(s.date||'');
+    const tip=`${s.title||'썬데이 메이플'}${s.start?`\n${fdFull(s.start)} ~ ${fdFull(s.end||s.start)}`:''}\n클릭하면 이벤트 글이 열립니다`;
+    body=`<a class="sunimg" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(tip)}"><img src="${esc(s.image)}" alt="${esc(s.title||'썬데이 메이플')}" loading="lazy" referrerpolicy="no-referrer"></a>`+
+      `<a class="suncap" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(tip)}"><span class="ftt">${esc(s.title||'썬데이 메이플')}</span><span class="fdt">${esc(when)}</span></a>`+
+      `<div class="sunben" title="${esc(s.benefit||s.title||'')}"><b>이번 주 혜택</b><span>${esc(s.benefit||s.title||'썬데이 메이플')}</span></div>`;
+  }else body=`<div class="sunempty">${SUN_SVG}<span>${feed.data||feed.err?'아직 썬데이 메이플 소식이 없어요':'불러오는 중…'}</span></div>`;
+  c.innerHTML=`<div class="ftabs"><span class="ftab on stab" role="heading" aria-level="2">${SUN_SVG}썬데이</span></div><div class="sunbody">${body}</div>`;
+  c.dataset.sid=JSON.stringify(s||null);
 }
 /* 카드 높이 = 남은 화면 높이 (페이지가 이 카드 때문에 스크롤되지 않게), 쪽당 글 수 = 그 높이에 들어가는 줄 수 */
 function feedFit(){
   const c=$('#feedCard'); if(!c) return; const old=feed.per;
-  if(matchMedia('(max-width:820px)').matches){ c.style.height=''; feed.per=FEED_MOBILE_ROWS; }
+  const sun=$('#sunCard');
+  if(matchMedia('(max-width:820px)').matches){ c.style.height=''; feed.per=FEED_MOBILE_ROWS; if(sun){ sun.style.height=''; sun.style.display=''; } }
   else{
     const aside=c.parentElement, main=aside.parentElement, ms=getComputedStyle(main), foot=$('.foot');
     const inner=c.getBoundingClientRect().top-aside.getBoundingClientRect().top;
@@ -2455,8 +2492,11 @@ function feedFit(){
     const hStatic=Math.max(innerHeight-topDoc-below, viewBot-topDoc);
     const hStick=innerHeight-stick-inner-16;                                                        // 따라 내려올 때도 화면 안
     const h=Math.floor(Math.min(hStatic,hStick))-1;
-    const minH=FEED_ROW*2+70;
-    c.style.height=Math.max(minH,h)+'px';
+    const minH=FEED_ROW*2+70, SUN_MIN=140, gap=12;
+    // 남은 높이를 소식 1/3 : 썬데이 2/3 로 나눔. 썬데이 칸이 너무 작아지면(SUN_MIN 미만) 썬데이를 숨기고 소식이 전부 사용
+    let fh=Math.max(minH,Math.round((h-gap)/3)), sh=h-gap-fh;
+    if(sun){ if(sh>=SUN_MIN){ sun.style.display=''; sun.style.height=sh+'px'; } else { sun.style.display='none'; fh=h; } }
+    c.style.height=Math.max(minH,fh)+'px';
     const fb=c.querySelector('.fbody'); const avail=fb?fb.clientHeight:0;
     feed.per=Math.min(20,Math.max(2,Math.floor(avail/FEED_ROW)));
   }
@@ -2470,7 +2510,7 @@ $('#feedCard').addEventListener('click',e=>{
 $('#feedCard').addEventListener('auxclick',e=>{ const a=e.target.closest('a[data-fid]'); if(a&&e.button===1&&!feedSeen.has(a.dataset.fid)){ feedSeen.add(a.dataset.fid); feedSaveSeen(); setTimeout(renderFeed,0); } });
 renderFeed(); feedFit();
 addEventListener('resize',feedFit);
-if(window.ResizeObserver){ const ro=new ResizeObserver(()=>feedFit()); document.querySelectorAll('.side-sticky>.card:not(#feedCard), .foot, header, #view').forEach(el=>ro.observe(el)); }
+if(window.ResizeObserver){ const ro=new ResizeObserver(()=>feedFit()); document.querySelectorAll('.side-sticky>.card:not(#feedCard):not(#sunCard), .foot, header, #view').forEach(el=>ro.observe(el)); }
 feedLoad().then(feedFit);
 setInterval(()=>{ if(!document.hidden) feedLoad(); },3e5);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&Date.now()-feed.at>3e5) feedLoad(); });

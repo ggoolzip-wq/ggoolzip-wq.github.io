@@ -60,15 +60,15 @@ check("title refreshed ([패치예정] → [패치완료])", pt[1]["title"].star
 check("patch source ok", feed["sources"]["patch"]["ok"] is True)
 check("no extra API calls for minor patches", calls == ["notice", "notice/detail", "notice-event", "notice-update"], calls)
 
-# 4) 새 마이너 패치가 올라옴 → 맨 위에 추가, 예전 글은 그대로(밀려 내려감)
-new_li = html.replace("/News/Notice/All/149386", "/News/Notice/All/149390").replace("마이너(7) 패치(19:21 적용)", "마이너버전(8) 패치(21:00 적용)").replace("PM 07:22", "PM 09:01")
-CUR["html"] = new_li
-F.main(); pt = load()["items"]["patch"]
-check("new minor patch added on top, all older items kept", [x["id"] for x in pt] == ["minor:149390", "minor:149386", "minor:149371", "update:814", "minor:149300"], [x["id"] for x in pt])
+# 4) 새 마이너 패치가 올라옴(1순위 = API /notice 목록) → 맨 위에 추가, 예전 글은 그대로. 이때 홈페이지 HTML 은 안 받음
+api_notice.insert(0, {"notice_id": 149390, "title": "[패치완료] 6/24(수) ver1.2.416 마이너버전(8) 패치(21:00 적용)", "url": "https://maplestory.nexon.com/News/Notice/Notice/149390", "date": "2026-06-24T21:01+09:00"})
+pages.clear(); F.main(); pt = load()["items"]["patch"]
+check("new minor patch (from API) added on top, all older items kept", [x["id"] for x in pt] == ["minor:149390", "minor:149386", "minor:149371", "update:814", "minor:149300"], [x["id"] for x in pt])
 check("watermark advanced", load()["state"]["watermarks"]["minor"] == 149390)
+check("API had the data → homepage HTML not fetched", not [u for u in pages if "News/Notice/All" in u], pages)
 # 5) 이미 본 예전 마이너 글(워터마크 이하)은 다시 채우지 않음 / 사라진 글이 있어도 지우지 않음
 CUR["html"] = html.replace("마이너(7) 패치", "정기 패치")  # 목록에서 149386 이 마이너 패치가 아니게 보여도
-api_notice[0]["title"] = "기타"
+api_notice[1]["title"] = "기타"
 F.main(); pt = load()["items"]["patch"]
 check("items never dropped, nothing re-added", [x["id"] for x in pt] == ["minor:149390", "minor:149386", "minor:149371", "update:814", "minor:149300"], [x["id"] for x in pt])
 # 6) HTML 차단 + API 에도 없음 → 패치 탭 OK, 글 유지

@@ -1793,11 +1793,30 @@ function renderFeed(){
     const more=pages>5;
     pager=(more?`<button type="button" class="fpg fnav" data-fpage="${feed.page-1}"${feed.page<=1?' disabled':''} aria-label="이전">‹</button>`:'')+nums.join('')+(more?`<button type="button" class="fpg fnav" data-fpage="${feed.page+1}"${feed.page>=pages?' disabled':''} aria-label="다음">›</button>`:''); }
   c.innerHTML=`<div class="ftabs" role="tablist">${tabs}</div>${note}<div class="fbody">${body}</div><div class="fpager">${pager}</div>`;
+  const sc=$('#sunCard'), sid=JSON.stringify(feed.data&&feed.data.sunday||null);
+  if(sc&&(!sc.innerHTML||sc.dataset.sid!==sid||sc.dataset.loaded!==String(!!feed.data))){ renderSun(); sc.dataset.loaded=String(!!feed.data); }
+}
+/* 썬데이 메이플 카드 (feed.json 의 sunday) — 클릭하면 이벤트 글 */
+const SUN_SVG='<svg class="sunico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6" fill="currentColor"/><g stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.2v2.6M12 19.2v2.6M2.2 12h2.6M19.2 12h2.6M5.1 5.1l1.8 1.8M17.1 17.1l1.8 1.8M5.1 18.9l1.8-1.8M17.1 6.9l1.8-1.8"/></g></svg>';
+function renderSun(){
+  const c=$('#sunCard'); if(!c) return;
+  const s=feed.data&&feed.data.sunday;
+  let body;
+  if(s&&s.image&&s.url){
+    const when=s.start?fdShort(s.start)+(s.end&&fdShort(s.end)!==fdShort(s.start)?' ~ '+fdShort(s.end):''):fdShort(s.date||'');
+    const tip=`${s.title||'썬데이 메이플'}${s.start?`\n${fdFull(s.start)} ~ ${fdFull(s.end||s.start)}`:''}\n클릭하면 이벤트 글이 열립니다`;
+    body=`<a class="sunimg" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(tip)}"><img src="${esc(s.image)}" alt="${esc(s.title||'썬데이 메이플')}" loading="lazy" referrerpolicy="no-referrer"></a>`+
+      `<a class="suncap" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(tip)}"><span class="ftt">${esc(s.title||'썬데이 메이플')}</span><span class="fdt">${esc(when)}</span></a>`+
+      `<div class="sunben" title="${esc(s.benefit||s.title||'')}"><b>이번 주 혜택</b><span>${esc(s.benefit||s.title||'썬데이 메이플')}</span></div>`;
+  }else body=`<div class="sunempty">${SUN_SVG}<span>${feed.data||feed.err?'아직 썬데이 메이플 소식이 없어요':'불러오는 중…'}</span></div>`;
+  c.innerHTML=`<div class="ftabs"><span class="ftab on stab" role="heading" aria-level="2">${SUN_SVG}썬데이</span></div><div class="sunbody">${body}</div>`;
+  c.dataset.sid=JSON.stringify(s||null);
 }
 /* 카드 높이 = 남은 화면 높이 (페이지가 이 카드 때문에 스크롤되지 않게), 쪽당 글 수 = 그 높이에 들어가는 줄 수 */
 function feedFit(){
   const c=$('#feedCard'); if(!c) return; const old=feed.per;
-  if(matchMedia('(max-width:820px)').matches){ c.style.height=''; feed.per=FEED_MOBILE_ROWS; }
+  const sun=$('#sunCard');
+  if(matchMedia('(max-width:820px)').matches){ c.style.height=''; feed.per=FEED_MOBILE_ROWS; if(sun){ sun.style.height=''; sun.style.display=''; } }
   else{
     const aside=c.parentElement, main=aside.parentElement, ms=getComputedStyle(main), foot=$('.foot');
     const inner=c.getBoundingClientRect().top-aside.getBoundingClientRect().top;
@@ -1809,8 +1828,11 @@ function feedFit(){
     const hStatic=Math.max(innerHeight-topDoc-below, viewBot-topDoc);
     const hStick=innerHeight-stick-inner-16;                                                        // 따라 내려올 때도 화면 안
     const h=Math.floor(Math.min(hStatic,hStick))-1;
-    const minH=FEED_ROW*2+70;
-    c.style.height=Math.max(minH,h)+'px';
+    const minH=FEED_ROW*2+70, SUN_MIN=140, gap=12;
+    // 남은 높이를 소식 1/3 : 썬데이 2/3 로 나눔. 썬데이 칸이 너무 작아지면(SUN_MIN 미만) 썬데이를 숨기고 소식이 전부 사용
+    let fh=Math.max(minH,Math.round((h-gap)/3)), sh=h-gap-fh;
+    if(sun){ if(sh>=SUN_MIN){ sun.style.display=''; sun.style.height=sh+'px'; } else { sun.style.display='none'; fh=h; } }
+    c.style.height=Math.max(minH,fh)+'px';
     const fb=c.querySelector('.fbody'); const avail=fb?fb.clientHeight:0;
     feed.per=Math.min(20,Math.max(2,Math.floor(avail/FEED_ROW)));
   }
@@ -1824,7 +1846,7 @@ $('#feedCard').addEventListener('click',e=>{
 $('#feedCard').addEventListener('auxclick',e=>{ const a=e.target.closest('a[data-fid]'); if(a&&e.button===1&&!feedSeen.has(a.dataset.fid)){ feedSeen.add(a.dataset.fid); feedSaveSeen(); setTimeout(renderFeed,0); } });
 renderFeed(); feedFit();
 addEventListener('resize',feedFit);
-if(window.ResizeObserver){ const ro=new ResizeObserver(()=>feedFit()); document.querySelectorAll('.side-sticky>.card:not(#feedCard), .foot, header, #view').forEach(el=>ro.observe(el)); }
+if(window.ResizeObserver){ const ro=new ResizeObserver(()=>feedFit()); document.querySelectorAll('.side-sticky>.card:not(#feedCard):not(#sunCard), .foot, header, #view').forEach(el=>ro.observe(el)); }
 feedLoad().then(feedFit);
 setInterval(()=>{ if(!document.hidden) feedLoad(); },3e5);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&Date.now()-feed.at>3e5) feedLoad(); });

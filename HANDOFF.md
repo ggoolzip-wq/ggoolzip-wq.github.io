@@ -18,7 +18,7 @@ README.md               사용자용 사용법 (한국어)
 HANDOFF.md              이 문서
 .nojekyll               Jekyll 처리 끔
 .github/workflows/update-prices.yml   매일 03:17 UTC 가격 갱신 + workflow_dispatch
-.github/workflows/update-feed.yml     5분마다 소식 수집(scripts/update_feed.py) + workflow_dispatch, secret NEXON_API_KEY 사용
+.github/workflows/update-feed.yml     5분마다 소식 수집(scripts/update_feed.py) + workflow_dispatch, secret NEXON_API_KEY(+ 예비 NEXON_API_KEY2) 사용
 scripts/update_feed.py  소식 수집기 4종(사료감지·패치내역·테섭·마빡도로시) → feed.json (표준 라이브러리만)
 scripts/nexon_prices.py 공식 업데이트 공지 HTML → 가격표 파서 (표준 라이브러리만)
 scripts/update_prices.py  위 파서로 prices.json 갱신 (실패 시 기존 파일 유지, exit 0)
@@ -44,6 +44,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - test_tracker4/5/6/7/8/10은 결과를 출력(PASS/값)하는 형식, 9/11/12/13은 `FAILS: []`·`ERRORS: []`로 판정. 모든 테스트에서 JS 오류(ERRORS) 0이어야 함.
   - test13 = 현재 UI 구조(＋추가 통합 모달, 헤더 동기화, ☁ 메뉴) 핵심 테스트.
   - test14 = 일퀘 현황·길드 현황 탭(탭 순서·ㅡ 구분선, 항목/상태/잠금, 완료 덮개·호버, 편집(전체/캐릭터별/카드 숨김)·저장, 10분 캐시·자동 갱신, 길드 랭킹 어제 대체, 본캐 수로, 375/320px). `MBT_SHOTDIR=폴더`면 tab_daily.png·tab_daily_hover.png·tab_guild.png 를 그 폴더에도 저장. mock_nexon.py에 실제 응답 이름 그대로의 daily/weekly_contents와 /ranking/guild 모의 응답, 호출 기록(CALLS)·GUILD_EMPTY 추가.
+  - test16 = 썬데이 카드(모의 feed.json·긴 세로 모의 이미지: 위치, '☀ 썬데이' 머리글·노란 아이콘, 링크, 혜택 줄(없으면 제목), 1280x800·1920x1080 세 탭에서 1/3:2/3·페이지 길이 그대로·화면 안·contain, 낮은 창, 390/320 모바일, 글 없음 안내, 새 글 교체·같은 데이터 재사용). 스크린샷 sun_*.png. test_feed_sunday.py = 수집기(API 우선·HTML 대체·혜택 추출, 네트워크 없음).
   - test15 = 소식 피드 카드(모의 feed.json, 패치 탭에 마이너 패치 2건 섞임: 위치, 탭·안 읽은 수, N 배지·읽음 유지, 사료 기한·만료 흐림, 한 줄 말줄임, 쪽 번호 5개+‹›, 탭 전환 시 1쪽, 수집 실패 표시, 1280x800·1920x1080 모든 탭에서 카드 때문에 페이지가 길어지지 않음·스크롤해도 화면 안, 390/320px 모바일). 스크린샷 feed_card*.png.
   - test12 = 12/12 완료 덮개(문구·두 줄 배치·카드 안 맞춤·호버/클릭/터치 통과). `MBT_SHOT=경로`를 주면 사이드바 스크린샷을 그 경로에도 저장.
   - 주의: 8787 포트를 다른 서버(예: 로컬 개발 사본 /workspace/maple-boss-tracker)가 이미 쓰고 있으면 테스트가 그쪽 파일을 엽니다 → 개발 사본도 같은 index.html로 맞춘 뒤 테스트.
@@ -90,18 +91,25 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 가격은 **보스당 한 줄, 수정 UI 없음**, 출처 라벨 없음. 오른쪽 '결정석 가격' 카드(강렬한 힘의 결정 (주간) 아이콘, 싼 순서)에 작게 '마지막 확인 날짜'.
 - 테스트 픽스처: `tests/fixtures/`(공식 공지 813 사본, 46행). 이 작업 박스에서는 nexon.com 접속이 막혀 실서버 확인 불가였음 — Action 실행 결과는 GitHub Actions 탭에서 확인.
 
-## 6-1. 소식 피드 (왼쪽 아래 카드, 2026-10-09 추가)
+## 6-1. 소식 피드 (왼쪽 아래 카드, 2026-10-09 추가) + 썬데이 메이플 카드
 - 구조: `.github/workflows/update-feed.yml`(cron `*/5 * * * *` + 수동 실행) → `scripts/update_feed.py`가 4개 출처를 확인해 **새 글만** `feed.json`에 추가 → 바뀐 게 있을 때만 커밋(`git pull --rebase -X theirs` 후 push, 최대 5회 재시도). 사이트는 `./feed.json?t=<5분 단위>`만 읽음(로드 시 + 5분마다 + 탭 복귀 시). **사용자 API 키 사용 안 함.** file:// 로 열면 https://ggoolzip-wq.github.io/feed.json 을 읽음(Pages는 CORS *).
 - GitHub cron은 실제로 5~15분 늦게 도는 일이 흔함(무료 러너 사정). 저장소에 60일간 커밋이 없으면 예약 실행이 꺼질 수 있지만 피드 커밋이 있어서 사실상 유지됨.
 - 출처(소스별 try/except, 하나가 실패해도 나머지는 계속):
   - **사료감지(saryo)**: 넥슨 Open API `/maplestory/v1/notice`(매회) + `/notice-event`(15분마다), 워터마크보다 큰 id만 `…/detail` 조회(회당 최대 10건). 규칙 = 본문에 '메이플 운영자' 또는 '운영자 NPC'가 있고, 그 앞 100자·뒤 70자 안에 수령/지급/받기 등이 있음. 제외: '수령 불가', '받을 수 없', '지급되지 않', 코인샵/상점, 소울 교환/조각, '교환하기/교환해 주/교환할 수'('교환 여부' 같은 안내 문구는 제외하지 않음 — 150276 본문에 있음). '수령 기간 … ~ M월 D일 (오전|오후) H시 M분'에서 마감 추출(없으면 23:59) → `end`. 만료된 글은 카드에서 흐리게.
-  - **패치내역(patch)**: `/notice-update`(10분마다) + **마이너 패치**(매회): 공식 공지사항 중 제목이 `MINOR_RE`(`마이너\s*(버전)?\s*(\(N\))?\s*패치` — '마이너패치'·'마이너 패치'·실제 형식 '[패치완료] 10/8(목) ver1.2.419 마이너버전(8) 패치'·'… 마이너(7) 패치(19:21 적용)') 에 맞는 글을 **다른 피드 글처럼 쌓음**(id `minor:<공지번호>`, src 'minor', 업데이트 공지와 날짜순으로 섞임): 처음 한 번(워터마크 `minor` 없을 때)만 최근 2개를 채우고(백필), 이후엔 워터마크보다 번호가 큰 새 글만 맨 위에 추가 — 예전 글은 지우지 않고 아래·다음 쪽으로 밀려남(탭당 200개 한도만). (2026-10-09 사용자 정정: '최신 2개만 유지'가 아님, 2개는 첫 백필 개수.) 출처 = 홈페이지 검색 HTML `https://maplestory.nexon.com/News/Notice/All?search=마이너`(API 할당량 안 씀, 보통 1쪽만 — 백필 때 2개를 못 모았거나 1쪽 글이 전부 워터마크보다 새로우면 `&page=2..5`까지, `parse_notice_list` — news_board 안 li, 오늘 글은 'PM 07:22'처럼 시각만 → 오늘 날짜로) ∪ 사료감지가 같은 회차에 받은 `/notice` 목록(추가 API 호출 없음, 날짜에 시각이 있어 우선). 이미 있는 글은 제목·날짜만 매번 갱신([패치예정]→[패치완료] 제목 변경 반영). HTML·API 둘 다 실패하면 경고만 남기고 기존 글 유지(패치 탭 실패로 표시 안 함). 테스트: `tests/test_feed_minor.py`(픽스처 `tests/fixtures/notice_all.html` = 공지사항 목록 웨이백 사본 2026-06-23).
+  - **패치내역(patch)**: `/notice-update`(10분마다) + **마이너 패치**(매회): 공식 공지사항 중 제목이 `MINOR_RE`(`마이너\s*(버전)?\s*(\(N\))?\s*패치` — '마이너패치'·'마이너 패치'·실제 형식 '[패치완료] 10/8(목) ver1.2.419 마이너버전(8) 패치'·'… 마이너(7) 패치(19:21 적용)') 에 맞는 글을 **다른 피드 글처럼 쌓음**(id `minor:<공지번호>`, src 'minor', 업데이트 공지와 날짜순으로 섞임): 처음 한 번(워터마크 `minor` 없을 때)만 최근 2개를 채우고(백필), 이후엔 워터마크보다 번호가 큰 새 글만 맨 위에 추가 — 예전 글은 지우지 않고 아래·다음 쪽으로 밀려남(탭당 200개 한도만). (2026-10-09 사용자 정정: '최신 2개만 유지'가 아님, 2개는 첫 백필 개수.) 출처 = **1순위 Open API** — 사료감지가 같은 회차에 받은 `/notice` 목록(최근 20건, 점검 분류 글 포함, 추가 API 호출 0, 날짜에 시각 있음). **대체(fallback)** = 홈페이지 검색 HTML `https://maplestory.nexon.com/News/Notice/All?search=마이너` — API 목록이 없을 때(실패) 또는 첫 백필인데 API 20건 안에 마이너 패치가 2개 미만일 때만(백필은 2개 모일 때까지, API 실패 대체는 1쪽 글이 전부 워터마크보다 새로우면 `&page=2..5`까지; `parse_notice_list` — news_board 안 li, 오늘 글은 'PM 07:22'처럼 시각만 → 오늘 날짜로). 이미 있는 글은 제목·날짜만 매번 갱신([패치예정]→[패치완료] 제목 변경 반영). API·HTML 둘 다 실패하면 경고만 남기고 기존 글 유지(패치 탭 실패로 표시 안 함). 테스트: `tests/test_feed_minor.py`(픽스처 `tests/fixtures/notice_all.html` = 공지사항 목록 웨이백 사본 2026-06-23).
   - **테섭(test)**: https://maplestory.nexon.com/Testworld/News/Update 목록 HTML 스크랩(`[수정N]` em 태그 제거).
   - **마빡도로시(mabbak)**: 인벤 닉네임 검색 `https://www.inven.co.kr/board/maple/{게시판}?name=nicname&keyword=마빡도로시`, 게시판 5974·2304·2314·2316·2587 각 1회(1.2초 간격, 회당 5요청 + 새 글당 본문 1요청). 새 글은 본문의 articleTitle/articleDate(연도·시각)로 기록. 게시판 첫 방문 땐 워터마크만 설정(공지 고정글·옛 글을 채우지 않음). 모든 게시판이 실패할 때만 소스 실패.
-- API 호출량(개발 키 1,000회/일): 5분 실행 288회 × /notice 1 + /notice-update 144 + /notice-event 96 ≈ 530회/일 + 새 공지 detail. (cron 지연 때문에 실제로는 더 적음.) 키는 저장소 secret `NEXON_API_KEY` (2026-10-09 설정, 개발 키). 할당량이 모자라면 실서비스 키로 교체: Settings → Secrets → Actions.
+- **썬데이 메이플(feed.json `sunday`, 탭 아님)**: 가장 최근 제목에 '썬데이 메이플'(`SUNDAY_RE`, 띄어쓰기 무관)이 있는 이벤트 글 1건 `{id, title, url(/News/Event/<id>), image, thumb, start, end, date, benefit, benefitSrc(text|summary), via(api|html)}`.
+  - **1순위 Open API**: 사료감지가 15분마다 받는 `/notice-event` 목록 재사용(추가 호출 0) → 번호가 바뀐 새 썬데이 글일 때만 `/notice-event/detail` **1회**(contents 의 gen_container 첫 이미지 = 대표 이미지, 절대 위치 작은 gif 제외) → 주 1회 정도 = **하루 평균 +0.15회**.
+  - **대체 HTML**: API 목록 실패 시(15분 회차) 또는 저장된 썬데이가 없는데 API(진행 중 이벤트)에 없을 때만 `/News/Event/Ongoing?search=썬데이`(+저장된 것 없으면 `/News/Event/Closed?search=썬데이`) → 이미지가 없으면 글 페이지 `/News/Event/<id>` HTML(`parse_event_page`, 기간 'YYYY년 MM월 DD일 HH시 MM분 ~ …').
+  - 이미지(lwi.nexon.com)는 **핫링크 가능**(Referer 무관 200, `Access-Control-Allow-Origin: *`) → 저장소에 내려받지 않고 URL 그대로 사용(img referrerpolicy=no-referrer). 실제 이미지는 876×3692 같은 아주 긴 세로 이미지라 카드에서는 contain 으로 작게 보임 — 클릭하면 글.
+  - 혜택 한 줄(`sunday_benefit`): ① 제목·본문 글자에서 키워드(미라클 타임, 샤이닝 스타포스, 스타포스 … 할인/감소, 몬스터파크 … N%, 룬, 심볼 N배, 경험치/메소 N%, 큐브 할인, 솔 에르다, 몬스터 컬렉션, 주문의 흔적) 최대 3개 ' · ' ② 없으면 본문의 짧은 문장(수정/안내/기간 문구 제외) ③ 없으면 빈 값 → 사이트가 글 제목 표시. **썬데이 공지는 보통 이미지뿐이라 대개 ③(제목)** — OCR 은 하지 않음(표준 라이브러리만, Actions 에 tesseract 설치 필요).
+  - 실패해도 다른 출처에 영향 없음(경고만). 테스트: `tests/test_feed_sunday.py`(픽스처 event_sunday_1317.html = 2026-05-10 스페셜 썬데이 글, event_closed.html, event_ongoing.html — 웨이백 사본).
+- API 호출량(개발 키 1,000회/일): 5분 실행 288회 × /notice 1 + /notice-update 144 + /notice-event 96 ≈ 530회/일 + 새 공지 detail. 마이너 패치는 추가 호출 0(/notice 재사용), 썬데이는 새 글일 때 detail 1회(주 1회 정도). (cron 지연 때문에 실제로는 더 적음.) 키는 저장소 secret `NEXON_API_KEY` (2026-10-09 설정, 개발 키). **두 번째 키** secret `NEXON_API_KEY2`(2026-10-09 설정)도 update-feed.yml 에 전달 — `nx()`가 1번 키에서 HTTP 429·401·403 또는 오류 코드 OPENAPI00007(호출량 초과)·OPENAPI00005(유효하지 않은 키)·OPENAPI00001/00002를 받으면 같은 요청을 2번 키로 다시 보내고, 이번 실행 동안 1번 키는 건너뜀(다른 오류는 전환 안 함). 둘 다 막히면 원래처럼 출처 실패 표시. 테스트 `tests/test_feed_keys.py`. (update-prices 는 Open API 를 안 써서 키 불필요.) 결과적으로 하루 한도는 사실상 키 2개분(2,000회). 할당량이 모자라면 실서비스 키로 교체: Settings → Secrets → Actions.
 - 처음 실행/워터마크 없는 출처는 '지금 있는 글 = 이미 본 것'으로 처리(예전 글을 채우지 않음). 시드(2026-10-09): 사료 150276 '(추가) 리워드 드롭 관련 오류 안내'(~2026-10-21 23:59), 패치 814 '클라이언트 1.2.419(5) 업데이트 안내', 테섭 199·198, 마빡도로시 인벤 5974/7258005 '10월 테섭(라방) 일정 / 2026 한글날 이벤트 요약'(2026-09-30 02:36).
-- feed.json 형식: `{version:1, updatedAt, sources:{saryo|patch|test|mabbak:{label, ok, checkedAt, lastOkAt, error}}, state:{watermarks:{notice, notice-event, notice-update, minor, test, inven:<게시판>}}, items:{saryo|patch|test|mabbak:[{id, title, url, date(ISO KST), end?, src?, board?}]}}` — id로 중복 제거, 최신순, 탭당 최대 200개. 저장 조건 = 새 글 / 출처 성공·실패 바뀜 / 워터마크 바뀜 / 3시간 하트비트(상태 시각 갱신). `GITHUB_OUTPUT`에 changed=true|false.
+- feed.json 형식: `{version:1, updatedAt, sunday?:{…위 썬데이}, sources:{saryo|patch|test|mabbak:{label, ok, checkedAt, lastOkAt, error}}, state:{watermarks:{notice, notice-event, notice-update, minor, test, inven:<게시판>}}, items:{saryo|patch|test|mabbak:[{id, title, url, date(ISO KST), end?, src?, board?}]}}` — id로 중복 제거, 최신순, 탭당 최대 200개. 저장 조건 = 새 글 / 출처 성공·실패 바뀜 / 워터마크 바뀜 / 3시간 하트비트(상태 시각 갱신). `GITHUB_OUTPUT`에 changed=true|false.
 - 로컬 실행: `NEXON_API_KEY=… python3 scripts/update_feed.py` (옵션 `FEED_ALL=1` 모든 출처 강제, `FEED_OUT=경로`, `FEED_PROXY=http://…` nexon.com·인벤 요청에만 프록시).
+- 썬데이 카드(src/app.js renderSun(), extra.css .suncard/.sun*): 소식 카드 바로 아래 `#sunCard`. 머리글 = 소식 탭과 같은 모양의 탭 하나 '☀ 썬데이'(인라인 SVG 해, #f5c518). 본문 = 이미지(object-fit:contain, 클릭 = 새 탭으로 글) → 제목·기간 한 줄 → 맨 아래 노란 띠 '이번 주 혜택 <benefit 또는 제목>'(한 줄 말줄임). 글이 없으면 점선 상자 + 해 아이콘 + '아직 썬데이 메이플 소식이 없어요'. 데스크톱 높이: feedFit 이 남은 높이(예전 소식 카드 높이) h 를 **소식 1/3 : 썬데이 2/3**(사이 12px)로 나눔 — 소식은 최소 2줄 높이(132px) 보장, 썬데이 칸이 140px 미만이면 썬데이를 숨기고 소식이 전부 사용(페이지가 길어지지 않게). 모바일(≤820px)은 소식 다음 순서(order 3), 이미지 높이 min(70vh, 520px). 같은 데이터면 다시 그리지 않음(이미지 재요청 없음).
 - 카드 UI(src/app.js renderFeed()/feedFit(), extra.css .feedcard/.ftab/.fit/.fpg): 탭 4개 + 안 읽은 수, 글 = N 배지·한 줄 제목(말줄임)·날짜(올해가 아니면 yy.mm.dd)·사료는 ~마감일, 클릭 = 새 탭 + 읽음. 안쪽 스크롤 없음 — 쪽 번호(최대 5개, 6쪽 이상이면 ‹ ›), 탭 바꾸면 1쪽. 카드 높이 = 남은 화면 높이(본문이 더 길면 본문 끝까지, 짧으면 화면 끝 − 아래 안내문, 따라 내려올 때도 화면 안), 쪽당 줄 수 = 그 높이 ÷ 31px(최소 2, 최대 20). 820px 이하 모바일은 본문 아래로(사이드바 display:contents + order) 고정 6줄. 출처 실패면 탭 안에 작게 '⚠ 수집 실패 · 마지막 성공 …'(오류는 툴팁). 새로고침 버튼 없음.
 
 ## 7. 구글 OAuth
@@ -111,6 +119,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - https 또는 localhost에서만 로그인 가능(file://에서는 ☁ 메뉴에 안내).
 
 ## 8. 사용자가 정한 동작·취향 (변경 시 사용자 확인 필요)
+- 데이터 출처는 **넥슨 Open API 우선**, 홈페이지 HTML 스크랩은 API 실패/자료 없음일 때만 대체(2026-10-09 사용자 요청). 호출 수는 하루 한도(개발 키 1,000회) 안에서 — 이미 받은 목록 재사용.
+- 썬데이 카드: 소식 카드 아래, 소식 1/3 : 썬데이 2/3, 이미지는 contain(페이지 길어지면 안 됨), '☀ 썬데이' 탭 머리글(노란 해), 맨 아래 이번 주 혜택 한 줄(글자에서 못 찾으면 글 제목).
 - **단순한 UI** 선호. 설정 탭 없음. JSON 백업(내보내기/가져오기) 없음. 로컬 프록시(serve.py) 없음.
 - 일일 보스 없음. 처치 한도 고정: 캐릭터당 **주간 12 / 월간 1**(UI 없음). 월드 판매 한도 계산 없음.
 - **주간 수익에서 월간 보스(검은 마법사) 제외**, '이번 달 월간 보스'로 따로 표시·월간 기록에 보관.
@@ -152,6 +162,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - **테스트 서버 공지의 가격을 '다음 패치 예정 가격'으로 표시** — 사용자 결정 대기 중(아직 구현 안 함).
 
 ## 11. 변경 기록
+- 2026-10-09: **썬데이 메이플 카드** 추가(소식 카드 아래, 소식 1/3 : 썬데이 2/3, '☀ 썬데이' 탭 머리글, 이미지 클릭 = 글, 맨 아래 '이번 주 혜택'). update_feed.py src_sunday(API /notice-event 재사용 + 새 글 detail 1회, HTML 대체). 마이너 패치도 **API(/notice) 우선, 홈페이지 검색은 대체**로 변경(사용자 요청: 가능한 곳은 넥슨 Open API 우선). test16·test_feed_sunday 추가, test_feed_minor 갱신. 예비 넥슨 키 secret NEXON_API_KEY2 + 자동 전환(호출량 초과·잘못된 키), test_feed_keys 추가.
 - 2026-10-09: 마이너 패치를 '최신 2개만 유지'에서 **누적**으로 변경(사용자 정정) — 처음 2개 백필 후 새 글은 맨 위에 추가, 예전 글 삭제 안 함(탭당 200개). 워터마크 `minor`. test_feed_minor 갱신(백필·새 글 추가·삭제 안 함·재채움 없음·쪽 넘김).
 - 2026-10-09: 소식 카드 **패치내역** 탭에 공지사항 '마이너 패치' 추가(6-1장, 처음엔 최신 2개만 표시하는 방식이었음 — 위 항목에서 누적으로 바뀜). scripts/update_feed.py(MINOR_RE, parse_notice_list, src_minor, apply_minor), test_feed_minor.py + 픽스처 notice_all.html, test15 모의 feed에 minor 2건(탭 수 16, 날짜순 확인), run_all에 포함. 사이트(src/index.html) 변경 없음.
 - 2026-10-09: **소식 피드 카드** 추가(왼쪽 아래, 사료감지·패치내역·테섭·마빡도로시). update-feed.yml(5분 cron) + scripts/update_feed.py + feed.json(시드), secret NEXON_API_KEY(개발 키) 설정. 카드 높이 자동 맞춤·쪽 번호·N 배지/안 읽은 수(localStorage feedSeen)·수집 실패 표시. test15 추가(run_all에 15). 자세한 내용은 6-1장.

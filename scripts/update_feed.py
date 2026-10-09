@@ -4,7 +4,7 @@
 탭(소스)                 가져오는 곳
 - saryo  사료감지         넥슨 Open API /notice, /notice-event (+detail) 중 '메이플 운영자' NPC 에게서 보상을 받는 공지
 - patch  패치내역         넥슨 Open API /notice-update  (= maplestory.nexon.com/News/Update)
-                          + 공지사항 중 '마이너 패치' (처음 최신 2개 백필, 이후 새 글 누적) (홈페이지 공지 검색 HTML + /notice 목록 재사용)
+                          + 공지사항 중 '마이너 패치' (처음 최신 2개 백필, 이후 새 글 누적) (/notice 목록 재사용, 홈페이지 검색은 대체용)
 - test   테섭             maplestory.nexon.com/Testworld/News/Update 목록 페이지 (Open API 에 없음)
 - mabbak 마빡도로시        인벤 메이플 게시판(5974, 2304, 2314, 2316, 2587) 닉네임 검색 + 글 페이지(articleDate)
 
@@ -16,7 +16,8 @@
   (GITHUB_OUTPUT 에 changed=true|false)
 - API 호출 절약(개발 키 하루 1,000회): /notice 는 매번, /notice-update 는 10분에 한 번, /notice-event 는 15분에 한 번(수동 실행·FEED_ALL=1 이면 전부).
   detail 은 워터마크보다 새 공지에만 호출.
-환경 변수: NEXON_API_KEY(필수, 저장소 secret), FEED_PROXY(선택, 박스 테스트용 http 프록시 — nexon.com/인벤 요청에만), FEED_ALL=1, FEED_OUT(출력 경로)
+- sunday 썬데이 메이플(탭 아님) 최신 이벤트 글 1건 + 대표 이미지 → feed.json 의 sunday {id,title,url,image,start,end}
+환경 변수: NEXON_API_KEY(필수, 저장소 secret), NEXON_API_KEY2(선택 — 1번 키가 호출량 초과·잘못된 키일 때 대신 사용), FEED_PROXY(선택, 박스 테스트용 http 프록시 — nexon.com/인벤 요청에만), FEED_ALL=1, FEED_OUT(출력 경로)
 """
 import datetime, html, json, os, re, sys, time, urllib.parse, urllib.request
 
@@ -38,7 +39,8 @@ def log(*a):
     print(*a, flush=True)
 
 class FetchError(Exception):
-    pass
+    def __init__(self, msg, status=None, body=""):
+        super().__init__(msg); self.status = status; self.body = body
 
 def http_get(url, headers=None, proxy=False, timeout=25):
     h = {"User-Agent": UA, "Accept-Language": "ko-KR,ko;q=0.9"}
@@ -51,17 +53,46 @@ def http_get(url, headers=None, proxy=False, timeout=25):
             return r.status, r.read().decode("utf-8", "ignore")
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "ignore")[:300]
-        raise FetchError(f"HTTP {e.code} {url.split('?')[0]} {body[:160]}")
+        raise FetchError(f"HTTP {e.code} {url.split('?')[0]} {body[:160]}", e.code, body)
     except Exception as e:
         raise FetchError(f"{type(e).__name__}: {e} ({url.split('?')[0]})")
 
+# 넥슨 키 2개: NEXON_API_KEY(1순위) → 호출량 초과/잘못된 키면 NEXON_API_KEY2 로 다시 시도. 한 번 막힌 키는 이번 실행 동안 건너뜀.
+#   전환 조건: HTTP 429, 또는 응답 오류 코드 OPENAPI00007(호출량 초과)·OPENAPI00005(유효하지 않은 키)·OPENAPI00001/00002(인증/권한), HTTP 401/403.
+KEY_SWITCH_CODES = ("OPENAPI00007", "OPENAPI00005", "OPENAPI00001", "OPENAPI00002")
+_BAD_KEYS = set()
+
+def api_keys():
+    ks = []
+    for name in ("NEXON_API_KEY", "NEXON_API_KEY2"):
+        k = os.environ.get(name, "").strip()
+        if k and k not in ks:
+            ks.append(k)
+    return ks
+
+def key_problem(e):
+    return isinstance(e, FetchError) and (e.status in (401, 403, 429) or any(c in (e.body or "") for c in KEY_SWITCH_CODES))
+
 def nx(path, **q):
-    key = os.environ.get("NEXON_API_KEY", "").strip()
-    if not key:
+    keys = api_keys()
+    if not keys:
         raise FetchError("NEXON_API_KEY secret 없음")
     url = f"{API}/{path}" + ("?" + urllib.parse.urlencode(q) if q else "")
-    _, body = http_get(url, {"x-nxopen-api-key": key, "Accept": "application/json"})
-    return json.loads(body)
+    last = None
+    for i, key in enumerate(keys):
+        if key in _BAD_KEYS and i < len(keys) - 1:
+            continue
+        try:
+            _, body = http_get(url, {"x-nxopen-api-key": key, "Accept": "application/json"})
+            return json.loads(body)
+        except FetchError as e:
+            last = e
+            if not key_problem(e):
+                raise
+            if key not in _BAD_KEYS:
+                _BAD_KEYS.add(key)
+                log(f"::warning::넥슨 키 {i + 1} 사용 불가({e.status}, {(e.body or '')[:80]}) → " + ("키 2로 다시 시도" if i < len(keys) - 1 else "남은 키 없음"))
+    raise last
 
 def plain(h):
     return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", h or ""))).strip()
@@ -117,6 +148,8 @@ def src_saryo(st, wm, run_all, minute):
         items = nx(path).get(key) or []
         if path == "notice":
             _API_NOTICES[:] = items  # 패치내역(마이너 패치)에서 재사용
+        else:
+            _API_EVENTS[:] = items   # 썬데이 메이플에서 재사용
         if path not in wm:  # 처음: 지금 있는 공지는 이미 본 것으로 (예전 글 채우지 않음)
             wm[path] = max([0] + [int(x.get("notice_id") or 0) for x in items]); continue
         w = wm[path]
@@ -139,8 +172,8 @@ def src_saryo(st, wm, run_all, minute):
 # (2) 마이너 패치: 공식 홈페이지 공지사항(/News/Notice) 중 제목에 '마이너 패치'가 들어간 글의 처음 한 번 최신 2개를 채우고(백필), 이후 새 글은 계속 쌓임(다른 피드 글과 같음).
 #     실제 제목 예: '[패치완료] 10/8(목) ver1.2.419 마이너버전(8) 패치', '… 마이너(7) 패치', '마이너패치', '마이너 패치'.
 #     같은 글의 제목이 [패치예정]→[패치완료] 로 바뀌므로 매번 제목·날짜를 다시 맞춤. 예전 글은 지우지 않음(탭당 200개 한도만).
-#     가져오는 곳: 홈페이지 공지 검색 HTML(/News/Notice/All?search=마이너, API 할당량 사용 안 함) +
-#                 사료감지가 이번 회차에 이미 받은 Open API /notice 목록(추가 호출 없음). 둘 중 하나만 되어도 OK.
+#     가져오는 곳: 1순위 Open API /notice 목록(사료감지가 이번 회차에 이미 받은 것 — 추가 호출 없음, 점검 분류 글 포함).
+#                 대체: 홈페이지 공지 검색 HTML(/News/Notice/All?search=마이너) — API 실패 또는 첫 백필 때 API 에 2개 미만일 때만.
 MINOR_RE = re.compile(r"마이너\s*(?:버전\s*)?(?:\(\s*\d+\s*\)\s*)?패치")
 MINOR_KEEP = 2  # 처음 한 번 채우는(백필) 개수 — 이후엔 새 글이 계속 쌓임
 NOTICE_SEARCH_URL = "https://maplestory.nexon.com/News/Notice/All?search=" + urllib.parse.quote("마이너")
@@ -187,42 +220,44 @@ def minor_candidates(html_rows, api_items):
                     "date": iso_from_api(x.get("date")) or prev.get("date", ""), "src": "minor"}
     return c
 
-MINOR_MAX_PAGES = 5  # 보통은 1쪽만. 백필 때 2개를 못 모았거나, 1쪽이 전부 새 글일 때만 다음 쪽까지
+MINOR_MAX_PAGES = 5  # HTML 대체를 쓸 때: 백필 때 2개를 못 모았거나, 1쪽이 전부 새 글일 때만 다음 쪽까지
 _HAVE_MINOR = set()   # main() 이 넣어 줌: feed.json 에 이미 있는 minor 글 번호
 
 def src_minor(wm):
-    """마이너 패치 후보 {n: item} (홈페이지 검색 HTML + 이번 회차 /notice 목록). 둘 다 실패면 오류."""
+    """마이너 패치 후보 {n: item}.
+    1순위 = Open API /notice 목록(사료감지가 이번 회차에 이미 받은 것, 추가 호출 0).
+    홈페이지 검색 HTML 은 대체용 — API 목록이 없을 때(실패) 또는 처음 백필인데 API 최근 20건에 마이너 패치가 2개 미만일 때만."""
+    api_c = minor_candidates([], _API_NOTICES)
+    need_html = (not _API_NOTICES) or ("minor" not in wm and len(api_c) < MINOR_KEEP)
     rows, err = [], ""
-    for page in range(1, MINOR_MAX_PAGES + 1):
-        try:
-            _, s = http_get(NOTICE_SEARCH_URL + (f"&page={page}" if page > 1 else ""), proxy=True)
-            got = parse_notice_list(s)
-            if not got:
+    if need_html:
+        for page in range(1, MINOR_MAX_PAGES + 1):
+            try:
+                _, s = http_get(NOTICE_SEARCH_URL + (f"&page={page}" if page > 1 else ""), proxy=True)
+                got = parse_notice_list(s)
+                if not got:
+                    if page == 1:
+                        err = f"공지 검색 목록을 읽지 못함({len(s)} bytes)"
+                    break
+                rows += got
+            except Exception as e:
                 if page == 1:
-                    err = f"공지 검색 목록을 읽지 못함({len(s)} bytes)"
+                    err = str(e)
                 break
-            if page == 1:
-                log("  공지 검색 1쪽:", " | ".join(r["title"][:40] for r in got))
-            rows += got
-        except Exception as e:
-            if page == 1:
-                err = str(e)
-            break
-        if "minor" in wm:  # 평소: 이 쪽의 글이 전부 워터마크보다 새로울 때만 다음 쪽(놓친 글 방지)
-            if not got or min(r["n"] for r in got) <= wm["minor"]:
-                break
-        else:              # 처음(백필): 최근 2개를 모을 때까지
-            found = {r["n"] for r in rows if MINOR_RE.search(r["title"])} | _HAVE_MINOR
-            found |= {int(x.get("notice_id") or 0) for x in _API_NOTICES if MINOR_RE.search(x.get("title", ""))}
-            if len(found) >= MINOR_KEEP:
-                break
-        time.sleep(1)
-    if err:
-        log("  마이너 패치 HTML 실패:", err, "— Open API /notice 목록만 사용" if _API_NOTICES else "")
-        if not _API_NOTICES:
-            raise FetchError("마이너 패치: " + err)
+            if "minor" in wm:  # API 실패 대체: 이 쪽 글이 전부 워터마크보다 새로울 때만 다음 쪽
+                if min(r["n"] for r in got) <= wm["minor"]:
+                    break
+            else:              # 백필: 최근 2개를 모을 때까지
+                found = {r["n"] for r in rows if MINOR_RE.search(r["title"])} | set(api_c) | _HAVE_MINOR
+                if len(found) >= MINOR_KEEP:
+                    break
+            time.sleep(1)
+        if err:
+            log("  마이너 패치 HTML(대체) 실패:", err)
+            if not _API_NOTICES:
+                raise FetchError("마이너 패치: API /notice 없음, HTML 대체도 실패: " + err)
     c = minor_candidates(rows, _API_NOTICES)
-    log(f"  마이너 패치 후보 {len(c)}개 (HTML {len(rows)}행, API {len(_API_NOTICES)}건)")
+    log(f"  마이너 패치 후보 {len(c)}개 (API {len(_API_NOTICES)}건{', HTML 대체 ' + str(len(rows)) + '행' if need_html else ''})")
     return c
 
 def apply_minor(lst, cands, wm):
@@ -354,6 +389,158 @@ def src_mabbak(st, wm, run_all, minute):
         log("  일부 게시판 실패:", errs)
     return new
 
+# ---------------- 썬데이 메이플 (탭이 아니라 feed.json 의 "sunday" 한 건) ----------------
+# 가장 최근 '썬데이 메이플' 이벤트 글 1건 + 본문 대표 이미지(lwi.nexon.com, 핫링크 가능·CORS *).
+# 1순위 Open API: 사료감지가 15분마다 받는 /notice-event 목록(추가 호출 0) → 새 썬데이 글이면 /notice-event/detail 1회(주 1회 ≈ +1회/주).
+# 대체 HTML: API 목록 실패 시, 또는 저장된 썬데이가 없는데 API(진행 중 이벤트)에 없을 때만 — 이벤트 검색(진행 중/종료) + 글 페이지.
+SUNDAY_RE = re.compile(r"썬\s*데\s*이\s*메\s*이\s*플")
+EVENT_BASE = "https://maplestory.nexon.com/News/Event"
+_API_EVENTS = []
+
+def parse_event_list(s):
+    """이벤트 목록/사이드 목록 HTML → {n: {title, start, end}} (/News/Event[/Ongoing|/Closed]/<n> 링크)"""
+    out = {}
+    for m in re.finditer(r'<a href="/News/Event/(?:Ongoing/|Closed/)?(\d+)"[^>]*>(.*?)</a>', s, re.S | re.I):
+        n = int(m.group(1)); t = re.sub(r"^(?:수정\d*\s+)+", "", plain(m.group(2)))
+        if not t or re.match(r"^\d{4}\.", t):
+            continue
+        out.setdefault(n, {"title": t})
+    return out
+
+def parse_event_page(s):
+    """이벤트 글 HTML → (대표 이미지 URL, 시작 ISO, 끝 ISO, 제목)"""
+    img = ""
+    body = s[s.find("gen_container"):] if "gen_container" in s else s
+    for m in re.finditer(r"<img\b([^>]*)>", body, re.I):
+        a = m.group(1)
+        src = re.search(r'src="(https?://[^"]+)"', a)
+        if not src or "position: absolute" in a or "position:absolute" in a:
+            continue
+        u = html.unescape(src.group(1))
+        if re.search(r"lwi\.nexon\.com|file\.nexon\.com", u) and not re.search(r"/common/|ssl\.nexon\.com", u):
+            img = u; break
+    rng = re.search(r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(\d{1,2})시\s*(\d{1,2})분\s*~\s*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(\d{1,2})시\s*(\d{1,2})분", plain(s))
+    start = end = ""
+    if rng:
+        g = [int(x) for x in rng.groups()]
+        start = datetime.datetime(g[0], g[1], g[2], g[3], g[4], tzinfo=KST).isoformat()
+        end = datetime.datetime(g[5], g[6], g[7], g[8], g[9], tzinfo=KST).isoformat()
+    tt = re.search(r'<p class="qs_title">(.*?)</p>', s, re.S) or re.search(r"<title>(.*?)</title>", s, re.S)
+    title = plain(tt.group(1)) if tt else ""
+    title = re.sub(r"^(?:수정\d*\s+)+", "", re.sub(r"\s*\|.*$", "", title))
+    return img, start, end, title
+
+BENEFIT_RE = re.compile(
+    r"(미라클\s*타임|샤이닝\s*스타포스|스타포스[^.!\n]{0,24}?(?:할인|감소|성공|\d+\s*%)|"
+    r"(?:익스트림\s*)?몬스터\s*파크[^.!\n]{0,24}?(?:\d+\s*%|\d+\s*배)|룬[^.!\n]{0,20}?(?:\d+\s*%|\d+\s*배|지속)|"
+    r"(?:아케인|어센틱|그랜드\s*어센틱)\s*심볼[^.!\n]{0,20}?(?:\d+\s*배|\d+\s*%)|"
+    r"(?:추가\s*)?경험치[^.!\n]{0,16}?(?:\d+\s*%|\d+\s*배)|메소\s*획득[^.!\n]{0,16}?(?:\d+\s*%|\d+\s*배)|"
+    r"(?:명장의|레드|블랙|에디셔널|화이트\s*에디셔널)?\s*큐브[^.!\n]{0,20}?(?:할인|\d+\s*%)|"
+    r"솔\s*에르다[^.!\n]{0,20}?(?:\d+\s*%|\d+\s*배)|몬스터\s*컬렉션[^.!\n]{0,20}?(?:\d+\s*%|\d+\s*배)|주문의\s*흔적[^.!\n]{0,16}?(?:할인|\d+\s*%))")
+
+def sunday_benefit(title, text):
+    """썬데이 혜택 한 줄: ① 제목·본문 글자에서 혜택 키워드(미라클 타임 등) ② 본문의 짧은 요약 문장 ③ 없으면 ''(사이트가 제목 표시).
+    썬데이 공지는 보통 이미지뿐이라 ①②가 비는 경우가 많음."""
+    t = re.sub(r"\s+", " ", f"{title} {text}")
+    found = []
+    for m in BENEFIT_RE.finditer(t):
+        v = re.sub(r"\s+", " ", m.group(1)).strip()
+        tail = re.match(r"\s*(할인|감소|증가|추가|적용)", t[m.end():])
+        if tail and not v.endswith(tail.group(1)):
+            v += " " + tail.group(1)
+        v = re.sub(r"\s*(\d+)\s*%", r" \1%", v).strip()
+        if v and not any(v in f or f in v for f in found):
+            found.append(v)
+    if found:
+        return " · ".join(found[:3])[:60], "text"
+    for sent in re.split(r"(?<=[.!?])\s+|\n", text or ""):
+        sent = sent.strip(" -·*※")
+        if 6 <= len(sent) <= 60 and not re.search(r"수정|문의|유의|참고|안내|기간|\d{4}\s*년|^\(", sent):
+            return sent, "summary"
+    return "", ""
+
+def _sunday_detail_api(n):
+    """/notice-event/detail (1회) → (이미지, 시작, 끝, 본문 글자, 썸네일)"""
+    d = nx("notice-event/detail", notice_id=n)
+    contents = d.get("contents") or ""
+    img, s2, e2, _ = parse_event_page(contents)
+    return img, iso_from_api(d.get("date_event_start")) or s2, iso_from_api(d.get("date_event_end")) or e2, plain(contents), d.get("thumbnail_url") or ""
+
+def _sunday_detail_html(n):
+    """대체: 공식 홈페이지 이벤트 글 HTML → (이미지, 시작, 끝, 본문 글자)"""
+    _, s = http_get(f"{EVENT_BASE}/{n}", proxy=True)
+    img, st, en, _ = parse_event_page(s)
+    i = s.find("gen_container"); body = plain(s[i:i + 20000]) if i >= 0 else ""
+    body = body.split("$(document)")[0]
+    return img, st, en, body
+
+def src_sunday(feed, run_all, minute):
+    """feed['sunday'] 갱신(바뀌었으면 True).
+    1순위 Open API: 사료감지가 받은 /notice-event 목록(15분마다, 추가 호출 0) → 새 썬데이 글이면 /notice-event/detail 1회(주 1회 정도).
+    대체 HTML: API 목록을 못 받았을 때(실패) 또는 저장된 썬데이가 하나도 없는데 API 목록(진행 중 이벤트)에 없을 때만 홈페이지 이벤트 검색."""
+    cur = feed.get("sunday") or {}
+    api_ok = bool(_API_EVENTS)
+    if not api_ok and cur.get("image") and not run_all and (minute // 5) % 3 != 0:
+        return False
+    cands = {}
+    for x in _API_EVENTS:
+        n = int(x.get("notice_id") or 0)
+        if n and SUNDAY_RE.search(x.get("title", "")):
+            cands[n] = {"title": x.get("title", ""), "start": iso_from_api(x.get("date_event_start")), "end": iso_from_api(x.get("date_event_end")),
+                        "thumb": x.get("thumbnail_url") or "", "date": iso_from_api(x.get("date")), "via": "api"}
+    if not api_ok or (not cands and not cur.get("id")):
+        if not api_ok and cur.get("id") and (minute // 5) % 3 != 0 and not run_all:
+            return False
+        errs = []
+        pages = [f"{EVENT_BASE}/Ongoing?search=" + urllib.parse.quote("썬데이")]
+        if not cur.get("id"):
+            pages.append(f"{EVENT_BASE}/Closed?search=" + urllib.parse.quote("썬데이"))
+        for u in pages:
+            try:
+                _, s = http_get(u, proxy=True)
+                for n, v in parse_event_list(s).items():
+                    if SUNDAY_RE.search(v["title"]):
+                        cands.setdefault(n, dict(v, via="html"))
+            except Exception as e:
+                errs.append(str(e))
+        log(f"  썬데이 HTML 대체: 후보 {sorted(cands)[-3:]} 오류 {len(errs)}")
+        if not cands and errs and not cur:
+            raise FetchError("썬데이: " + "; ".join(errs)[:300])
+    if not cands:
+        return False
+    n = max(cands); c = cands[n]
+    if cur.get("id") == n and cur.get("image"):
+        new = dict(cur, title=c.get("title") or cur.get("title"))
+        for k in ("start", "end", "thumb"):
+            if c.get(k): new[k] = c[k]
+        if not new.get("benefit"):
+            b, how = sunday_benefit(new.get("title", ""), "")
+            if b: new["benefit"], new["benefitSrc"] = b, how
+    else:
+        img = start = end = text = thumb = ""; via = ""
+        if os.environ.get("NEXON_API_KEY"):
+            try:
+                img, start, end, text, thumb = _sunday_detail_api(n); via = "api"
+            except Exception as e:
+                log("  썬데이 /notice-event/detail 실패:", e)
+        if not img:
+            try:
+                img, s2, e2, text2 = _sunday_detail_html(n); via = via or "html"
+                start, end, text = start or s2, end or e2, text or text2
+            except Exception as e:
+                log("  썬데이 글 HTML(대체) 실패:", e)
+        title = c.get("title", "")
+        b, how = sunday_benefit(title, text)
+        new = {"id": n, "title": title, "url": f"{EVENT_BASE}/{n}", "image": img or c.get("thumb") or thumb,
+               "thumb": c.get("thumb") or thumb, "start": c.get("start") or start, "end": c.get("end") or end, "date": c.get("date", ""),
+               "benefit": b, "benefitSrc": how, "via": via or c.get("via", "")}
+        log("  썬데이 메이플:", title, new["image"], "혜택:", b or "(제목 표시)")
+    new = {k: v for k, v in new.items() if v not in (None, "")}
+    if new != cur:
+        feed["sunday"] = new
+        return True
+    return False
+
 SOURCES = [("saryo", src_saryo), ("patch", src_patch), ("test", src_test), ("mabbak", src_mabbak)]
 
 def load():
@@ -377,6 +564,7 @@ def main():
     feed.setdefault("version", 1)
     items = feed.setdefault("items", {}); srcs = feed.setdefault("sources", {})
     wm = feed.setdefault("state", {}).setdefault("watermarks", {})
+    _API_NOTICES.clear(); _API_EVENTS.clear()
     _HAVE_MINOR.clear(); _HAVE_MINOR.update(int(x["id"].split(":")[1]) for x in items.get("patch", []) if str(x.get("id", "")).startswith("minor:"))
     run_all = os.environ.get("FEED_ALL") == "1" or os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
     minute = datetime.datetime.now(datetime.timezone.utc).minute
@@ -400,6 +588,11 @@ def main():
         if bool(prev.get("ok", True)) != s["ok"] or (not prev):
             flipped = True
         srcs[k] = s
+    sun_changed = False
+    try:
+        sun_changed = src_sunday(feed, run_all, minute)
+    except Exception as e:
+        log(f"::warning::[sunday] 실패: {e}")
     last = feed.get("updatedAt") or ""
     stale = True
     try:
@@ -407,7 +600,7 @@ def main():
     except Exception:
         pass
     wm_changed = (old.get("state", {}).get("watermarks") != wm)
-    changed = bool(added or flipped or stale or wm_changed)  # 워터마크 저장 안 하면 같은 공지 detail 을 매번 다시 호출하게 됨
+    changed = bool(added or flipped or stale or wm_changed or sun_changed)  # 워터마크 저장 안 하면 같은 공지 detail 을 매번 다시 호출하게 됨
     if changed:
         feed["updatedAt"] = now_iso()
         with open(OUT, "w", encoding="utf-8") as f:
