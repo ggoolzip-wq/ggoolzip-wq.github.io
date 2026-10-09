@@ -7,7 +7,7 @@ for n in 4 5 6 7 8 9 10 11 12 13 14 15 16; do
   echo "== test_tracker$n"; python3 tests/test_tracker$n.py > tests/out/r$n.log 2>&1 || fail=1
   grep -E 'FAIL|ERRORS|Error' tests/out/r$n.log | tail -3
 done
-for t in feed_minor feed_sunday feed_keys sunday_ocr; do
+for t in feed_minor feed_sunday feed_keys sunday_ocr sunday_watch; do
   echo "== test_$t"; python3 tests/test_$t.py > tests/out/r_$t.log 2>&1 || fail=1
   grep -E 'FAIL' tests/out/r_$t.log | tail -3
 done

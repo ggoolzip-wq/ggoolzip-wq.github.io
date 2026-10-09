@@ -1,0 +1,70 @@
+name: Sunday watch
+
+# 매일 10:00~10:20 KST 에 썬데이 메이플 새 글을 5초마다 확인(최대 240회/일) (GitHub 예약 실행은 몇 분 늦을 수 있어 09:45/09:50 KST 두 번 예약,
+# 같은 그룹이라 동시에 하나만 — 두 번째는 첫 번째가 끝난 뒤 시간이 지났거나 이미 찾았으면 바로 끝남)
+on:
+  schedule:
+    - cron: '45 0 * * *'   # 09:45 KST
+    - cron: '50 0 * * *'   # 09:50 KST (예비)
+  workflow_dispatch:
+    inputs:
+      test_minutes:
+        description: '테스트: 지금부터 N분만 확인 (0 = 평소대로 10:00~10:20 KST)'
+        default: '0'
+      pretend_new:
+        description: '테스트: 이미 저장된 썬데이도 새 글처럼 다시 처리(OCR·자르기 포함)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sunday-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Watch for a new Sunday Maple post
+        id: watch
+        env:
+          NEXON_API_KEY: ${{ secrets.NEXON_API_KEY }}
+          NEXON_API_KEY2: ${{ secrets.NEXON_API_KEY2 }}
+          WATCH_TEST_MINUTES: ${{ github.event.inputs.test_minutes || '0' }}
+          WATCH_PRETEND_NEW: ${{ github.event.inputs.pretend_new || 'false' }}
+        run: python3 scripts/sunday_watch.py
+      - name: Sunday OCR
+        id: ocr
+        if: steps.watch.outputs.sunday_ocr == 'true'
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq || true
+          sudo apt-get install -y -qq tesseract-ocr tesseract-ocr-kor > /dev/null || true
+          pip install -q pillow || true
+          python3 scripts/sunday_ocr.py
+      - name: Commit (sunday only, merged onto latest main)
+        if: steps.watch.outputs.found == 'true'
+        run: |
+          # update-feed(5분)와 충돌하지 않게: 최신 main 을 받은 뒤 feed.json 의 sunday 만 덮어써서 커밋
+          python3 scripts/sunday_watch.py --save "$RUNNER_TEMP/sunday.json"
+          [ -f sunday.png ] && cp sunday.png "$RUNNER_TEMP/sunday.png"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for i in 1 2 3 4 5; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            python3 scripts/sunday_watch.py --apply "$RUNNER_TEMP/sunday.json"
+            [ -f "$RUNNER_TEMP/sunday.png" ] && cp "$RUNNER_TEMP/sunday.png" sunday.png
+            git add feed.json sunday.png 2>/dev/null || git add feed.json
+            git diff --cached --quiet && exit 0
+            git commit -q -m "sunday: $(python3 -c "import json;s=json.load(open('feed.json')).get('sunday',{});print(s.get('id'),s.get('title'))") ($(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M') KST)"
+            git push origin HEAD:main && exit 0
+            sleep $((i*3))
+          done
+          exit 1
