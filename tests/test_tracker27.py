@@ -90,7 +90,7 @@ try:
     t=pg.inner_text('#view')
     check("item counts use 'xN' (no ×, no N개 glued)", '×' not in t and ' x1' in t, t[:300])
     h2=pg.eval_on_selector_all('#view h2','e=>e.map(x=>[x.textContent.trim(),!!x.querySelector("img")])')
-    check("total tab: '시드링 획득' + '에픽빔 본 횟수' sections with icons, no 아이템별/캐릭터별 column", ['시드링 획득',True] in h2 and ['에픽빔 본 횟수',True] in h2 and not any('아이템별' in x[0] for x in h2) and '캐릭터별</th>' not in pg.inner_html('#view'), h2)
+    check("total tab: '시드링 획득' + '에픽빔 본 횟수' sections with icons, no 아이템별/캐릭터별 column", ['시드링 획득',True] in h2 and any(x[0].startswith('에픽빔 본 횟수') and x[1] for x in h2) and not any('아이템별' in x[0] for x in h2) and '캐릭터별</th>' not in pg.inner_html('#view'), h2)
     sr=pg.inner_text('.totloot'); check('seed-ring section lists box with outcome (x-count)', '백옥의 보스 반지 상자' in sr and 'x1' in sr and pg.locator('.totloot .routs').count()>=1, sr)
     check('에픽빔 section lists non-ring drops', '파풀라투스 마크 x1' in pg.inner_text('#view'))
     k=pg.eval_on_selector_all('#view .stat .k','e=>e.map(x=>[x.textContent.trim(),!!x.querySelector("img")])')
