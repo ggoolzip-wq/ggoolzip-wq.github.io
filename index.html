@@ -2293,7 +2293,7 @@ function loadOfficialPrices(){
  *  같은 동기화 흐름(gdConnect/gdSync 3-way 병합/gdPush/gdPull)을 그대로 쓰고 저장소만 서버로 바뀜:
  *   - 로그인 = 넥슨 Open API 키 (서버가 넥슨에 확인 → 계정 식별, 원본 키는 서버에 저장 안 함) → 세션 토큰(localStorage)
  *   - 저장 = PUT /api/state (rev 로 동시 저장 감지, 409 → 받아온 내용과 3-way 병합 후 다시 저장). API 키는 보내지 않음(backupData(false))
- *   - 다른 기기에 내려받을 때 키: 로그인에 쓴 키만 자동으로 채움(계정의 ah = 서버가 준 계정 해시로 짝지음), 다른 계정 키는 그 기기에서 다시 입력
+ *   - 다른 기기에 내려받을 때 키: 로그인에 쓴 키만 자동으로 채움(계정의 ah = 서버가 준 계정 해시로 짝지음), 부계정 키는 대표 키(HKDF)로 AES-GCM 암호화해 서버 keyvault 에 보관 → 대표 키로 로그인하면 복원 (server/worker.js)
  *   - 옮기기: 처음 로그인 때 서버가 비어 있으면 이 PC 데이터를 올림 / '구글 드라이브에서 가져오기' 버튼(한 번, 클릭 시 구글 로그인)
  * ===================================================================== */
 const SYNC_API_URL = ''; // 배포 후 예: 'https://ggoolzip-sync.<계정>.workers.dev' — 비우면 구글 드라이브
@@ -2306,7 +2306,7 @@ const SV_ON = (()=>{ let u=SYNC_API_URL;
     if(q){ const url=new URL(location.href); url.searchParams.delete('sync'); history.replaceState(null,'',url.pathname+url.search+url.hash); }
     u=localStorage.getItem('mapleBossTracker.syncApi')||u;
   }catch(e){} return String(u||'').replace(/\/+$/,''); })();
-const SV_TOKEN_KEY='mapleBossTracker.svToken', SV_DEVICE_KEY='mapleBossTracker.svDevice'; // svDevice = 초대 비밀번호를 통과한 기기 표 (로그아웃해도 유지)
+const SV_TOKEN_KEY='mapleBossTracker.svToken', SV_DEVICE_KEY='mapleBossTracker.svDevice', SV_SUBSIG_KEY='mapleBossTracker.svSubSig'; // svDevice = 초대 비밀번호를 통과한 기기 표 (로그아웃해도 유지)
 const svDev=()=>{ try{ return localStorage.getItem(SV_DEVICE_KEY)||''; }catch(e){ return ''; } };
 const svTok=()=>{ try{ return localStorage.getItem(SV_TOKEN_KEY)||''; }catch(e){ return ''; } };
 const SV_NEED_LOGIN='로그인이 필요해요 — 상단 ☁ 버튼에서 넥슨 API 키로 로그인하면 이어서 동기화돼요 (바꾼 내용은 이 PC에 그대로 있어요)';
@@ -2358,11 +2358,16 @@ function svLoginHtml(){ // 서버 모드 로그인: (기기당 한 번) 초대 �
   if(!svDev()) return `<div class="svlogin"><div class="muted tiny" style="margin:0 0 6px">친구 초대 전용이에요. <b>초대 비밀번호</b>를 넣어 주세요 (이 기기에서 한 번만).</div>
     <div class="row" style="display:flex;gap:6px"><input class="pin" id="svInvite" type="password" autocomplete="off" placeholder="초대 비밀번호" style="flex:1;min-width:0;text-align:left"><button class="btn sm" id="svInviteBtn">확인</button></div>
     ${gd.svErr?`<div class="impmsg warn" style="margin-top:6px">${esc(gd.svErr)}</div>`:''}</div>`;
-  const ks=accounts().filter(a=>a.key);
-  return `<div class="svlogin"><div class="muted tiny" style="margin:0 0 6px">넥슨 Open API 키로 로그인하면 이 데이터가 서버에 저장되어 다른 기기에서도 이어서 쓸 수 있어요. <b>키 자체는 서버에 저장되지 않아요</b> (넥슨에 확인만 하고 계정 식별값만 보관).</div>
-    ${ks.length?`<div class="toolbar">${ks.map(a=>`<button class="btn sm" data-svlogin="${a.id}">${esc(a.label)} 키로 로그인</button>`).join('')}</div>`:''}
-    <div class="row" style="display:flex;gap:6px;margin-top:6px"><input class="pin" id="svKey" type="password" autocomplete="off" placeholder="${ks.length?'다른 ':''}API 키 붙여넣기" style="flex:1;min-width:0;text-align:left"><button class="btn sm" id="svLoginBtn">로그인</button></div>
+  const ks=accounts().filter(a=>a.key).sort((x,y)=>(y.main?1:0)-(x.main?1:0));
+  return `<div class="svlogin"><div class="muted tiny" style="margin:0 0 6px"><b>대표 키</b>(본계정 넥슨 Open API 키)로 로그인하세요. 다른 기기에서도 대표 키만 넣으면 데이터와 등록한 <b>부계정 키</b>가 그대로 돌아와요. 대표 키 자체는 서버에 저장되지 않아요.</div>
+    ${ks.length?`<div class="toolbar">${ks.map(a=>`<button class="btn sm" data-svlogin="${a.id}">${esc(a.label)} 키를 대표 키로 로그인</button>`).join('')}</div>`:''}
+    <div class="row" style="display:flex;gap:6px;margin-top:6px"><input class="pin" id="svKey" type="password" autocomplete="off" placeholder="대표 키 (넥슨 API 키) 붙여넣기" style="flex:1;min-width:0;text-align:left"><button class="btn sm" id="svLoginBtn">대표 키로 로그인</button></div>
     ${gd.svErr?`<div class="impmsg warn" style="margin-top:6px">${esc(gd.svErr)}</div>`:''}</div>`;
+}
+function svSubHtml(){ // 로그인 후: 대표 키 / 부계정 키 추가 (부계정 키는 대표 키로 암호화해 서버 보관)
+  const m=svMain(), subs=accounts().filter(a=>a.key&&a!==m&&(!m||a.key!==m.key));
+  return `<div class="svsub" style="margin-top:8px"><div class="muted tiny">대표 키: <b>${m?esc(m.label):'이 기기에 없음'}</b> · 부계정 키 ${subs.length}개${subs.length?` (${subs.map(a=>esc(a.label)).join(', ')})`:''}${m?' — 대표 키로 암호화해 서버에 보관':' — 대표 키로 로그인해야 서버에 보관돼요'}</div>
+    <div class="row" style="display:flex;gap:6px;margin-top:4px"><input class="pin" id="svSubKey" type="password" autocomplete="off" placeholder="부계정 넥슨 API 키" style="flex:1;min-width:0;text-align:left"><button class="btn sm" id="svSubBtn">부계정 키 추가</button></div></div>`;
 }
 function gdStatusHtml(){
   const on=gdMeta.on&&gd.state!=='off';
@@ -2374,6 +2379,7 @@ function gdStatusHtml(){
       ${logged?`<div class="muted" style="font-size:.8rem">마지막 저장: ${gdTime(gdMeta.lastSave)} · 마지막 불러오기: ${gdTime(gdMeta.lastLoad)}</div>
       <div class="toolbar" style="margin-top:8px">${gd.state==='error'?'':'<button class="btn sm" id="gdSaveNow">지금 저장</button>'}<button class="btn sm ghost" id="gdLogout">로그아웃</button>
       ${gd.state==='conflict'?'<button class="btn sm" id="gBtn2" onclick="gdReask()">선택하기</button>':''}</div>
+      ${svSubHtml()}
       ${driveUsable()?`<div class="toolbar" style="margin-top:6px"><button class="btn sm ghost" id="svImportDrive" title="예전 구글 드라이브 저장본을 이 PC 데이터와 합친 뒤 서버에 저장 (구글 로그인 창이 한 번 뜸)">구글 드라이브에서 가져오기 (한 번)</button></div>`:''}`
       :svLoginHtml()}`;
   }
@@ -2392,8 +2398,8 @@ function gdMenuHtml(){
   if(!gcid()) inner=`<div class="impmsg warn"><b>구글 연결 준비 중</b><div>나머지 기능은 모두 정상 동작합니다.</div></div>`;
   else if(!gdOriginOk()) inner=`<div class="impmsg warn"><b>구글 동기화는 온라인 주소에서만 됩니다</b><div>파일(file://)로 연 페이지에서는 구글 로그인이 되지 않습니다. 온라인 주소 <a href="${GD.ONLINE}" target="_blank" rel="noopener">${GD.ONLINE}</a> 에서 사용하세요.</div></div>`;
   else inner=`<div id="gdStatus">${gdStatusHtml()}</div>
-    <p class="muted tiny">${SV_ON?'🔑 API 키는 서버에 저장되지 않아요 — 다른 기기에서는 로그인한 키만 자동으로 채워지고, 다른 계정 키는 그 기기에서 다시 입력해요. 변경 후 약 5초 뒤·창을 닫을 때 자동 저장.':'🔑 API 키도 함께 저장돼요 (내 드라이브 앱 전용 숨김 폴더). 변경 후 약 5초 뒤·창을 닫을 때 자동 저장.'}</p>`;
-  if(SV_ON) inner=`<div id="gdStatus">${gdStatusHtml()}</div><p class="muted tiny">🔑 API 키는 서버에 저장되지 않아요 — 다른 기기에서는 로그인한 키만 자동으로 채워지고, 다른 계정 키는 그 기기에서 다시 입력해요. 변경 후 약 5초 뒤·창을 닫을 때 자동 저장.</p>`;
+    <p class="muted tiny">${SV_ON?'🔑 대표 키는 서버에 저장되지 않아요. 부계정 키는 대표 키로 암호화해 보관해서, 다른 기기에서 대표 키로 로그인하면 함께 돌아와요. 변경 후 약 5초 뒤·창을 닫을 때 자동 저장.':'🔑 API 키도 함께 저장돼요 (내 드라이브 앱 전용 숨김 폴더). 변경 후 약 5초 뒤·창을 닫을 때 자동 저장.'}</p>`;
+  if(SV_ON) inner=`<div id="gdStatus">${gdStatusHtml()}</div><p class="muted tiny">🔑 대표 키는 서버에 저장되지 않아요. 부계정 키는 대표 키로 암호화해 보관해서, 다른 기기에서 대표 키로 로그인하면 함께 돌아와요. 변경 후 약 5초 뒤·창을 닫을 때 자동 저장.</p>`;
   return `<div class="gm-h"><b>${SV_ON?'☁️ 동기화':'☁️ 구글 드라이브 동기화'}</b><button class="ringx" id="gMenuClose" aria-label="닫기">✕</button></div>${inner}`;
 }
 function gdMenu(open){
@@ -2603,7 +2609,7 @@ async function gdConnect(interactive){
   }catch(e){ gdFail(e,interactive); }
   finally{ gd.ia=false; }
 }
-const GD_RES_MSG={same:'',pushed:'이 PC의 변경 사항을 드라이브에 저장했습니다',pulled:'다른 기기에서 바뀐 데이터를 불러왔습니다',merged:'다른 기기의 변경과 자동으로 합쳤습니다',loaded:'드라이브 데이터를 불러왔습니다'};
+const GD_RES_MSG={same:'',pushed:SV_ON?'이 PC의 변경 사항을 서버에 저장했습니다':'이 PC의 변경 사항을 드라이브에 저장했습니다',pulled:'다른 기기에서 바뀐 데이터를 불러왔습니다',merged:'다른 기기의 변경과 자동으로 합쳤습니다',loaded:SV_ON?'서버 데이터를 불러왔습니다':'드라이브 데이터를 불러왔습니다'};
 /* 드라이브 파일과 이 PC 데이터를 맞춤 → 'same'|'pushed'|'pulled'|'merged'|'loaded'|'ask'
  *  - 이 PC 가 비어 있음 → 드라이브 불러오기
  *  - base(마지막으로 맞춘 내용)가 있으면 3-way 병합, 진짜 충돌(같은 항목을 양쪽에서 다르게 수정)일 때만 한 번 질문
@@ -2712,7 +2718,7 @@ async function gdPush(opts={}){
   gd.busy=true; gdSet('saving'); gd.ia=!!opts.manual;
   try{
     if(!opts.quick){
-      if(SV_ON) await svLinkNewKeys();
+      if(SV_ON) await svSyncSubKeys();
       if(!gd.fileId) gd.fileId=(await gdFind())?.id||null;
       else{ // 다른 PC에서 그 사이 저장했는지 확인 (덮어쓰기 방지)
         try{
@@ -2733,9 +2739,9 @@ async function svLogin(key,accId){
   try{
     const b=await svFetch('/api/login',{method:'POST',noAuth:true,body:{key,device:svDev(),label:(navigator.userAgentData?.platform||navigator.platform||'').slice(0,30)}});
     localStorage.setItem(SV_TOKEN_KEY,b.token);
-    gd.login={key,accId:accId||'',hashes:b.accounts||[]};
+    gd.login={key,accId:accId||'',hashes:b.accounts||[],vault:b.vault||'none',subs:b.subKeys||[]};
     const la=accId&&accById(accId); // 등록된 키로 로그인: 첫 저장 전에 계정 해시(ah)를 붙여 둠 → 다른 기기에서 키 짝짓기
-    if(la&&b.accounts?.[0]&&!(b.accounts||[]).includes(la.ah)){ la.ah=b.accounts[0]; save(); clearTimeout(gd.timer); gd.timer=null; }
+    if(la&&((b.accounts?.[0]&&!(b.accounts||[]).includes(la.ah))||(b.vault!=='locked'&&!la.main))){ if(b.accounts?.[0]&&!(b.accounts||[]).includes(la.ah)) la.ah=b.accounts[0]; if(b.vault!=='locked'){ accounts().forEach(x=>delete x.main); la.main=true; } save(); clearTimeout(gd.timer); gd.timer=null; }
     gdMeta={on:true}; gdSaveMeta(); localStorage.removeItem(GD_BASE_KEY); gd.remoteRev=undefined; gd.fileId=null;
     await gdConnect(true);
     svAfterLogin();
@@ -2757,7 +2763,40 @@ function svAfterLogin(){
   if(!a){ a={id:'a'+Date.now().toString(36),label:acc.length?`계정${acc.length+1}`:'본계정',key:L.key}; S.settings.accounts=[...acc,a]; ch=true; }
   if(!a.key){ a.key=L.key; ch=true; }
   if(L.hashes[0]&&a.ah!==L.hashes[0]&&!hs.has(a.ah)){ a.ah=L.hashes[0]; ch=true; }
+  if(L.vault!=='locked'){ for(const x of accounts()) if(!!x.main!==(x===a)){ x.main=x===a||undefined; if(!x.main) delete x.main; ch=true; } } // 대표 키 = 로그인에 쓴 키 (부계정 키로 로그인하면 그대로)
+  let back=0;
+  for(const sub of L.subs||[]){ // 대표 키로 로그인 → 서버가 풀어 준 부계정 키 채우기
+    if(!sub?.key||sub.key===a.key) continue;
+    const ac=accounts(), x=ac.find(y=>y.key===sub.key)||ac.find(y=>!y.key&&sub.ah&&y.ah===sub.ah);
+    if(x){ if(!x.key){ x.key=sub.key; ch=true; back++; } if(sub.ah&&!x.ah){ x.ah=sub.ah; ch=true; } }
+    else { S.settings.accounts=[...ac,{id:'a'+Date.now().toString(36)+ac.length,label:sub.label||`부계정${ac.length}`,key:sub.key,...(sub.ah?{ah:sub.ah}:{})}]; ch=true; back++; }
+  }
+  if(back) toast(`부계정 키 ${back}개를 불러왔습니다`);
+  if(L.vault==='open'&&!back) localStorage.setItem(SV_SUBSIG_KEY,svSubSig()); // 서버 금고와 같으면 다시 올리지 않음
   if(ch){ save(); render(); }
+  if(svMain()&&svSubSig()!==localStorage.getItem(SV_SUBSIG_KEY)) svSyncSubKeys().then(()=>gdRender()).catch(()=>{});
+}
+const svMain=()=>accounts().find(a=>a.main&&a.key)||null;
+const svSubSig=()=>{ const m=svMain(); return m?JSON.stringify([m.key,...accounts().filter(a=>a.key&&a!==m&&a.key!==m.key).map(a=>[a.key,a.label])]):''; };
+// 부계정 키를 서버 금고에 (대표 키로 암호화) — 바뀌었을 때만. 대표 키가 이 기기에 없으면 예전처럼 연결만.
+async function svSyncSubKeys(){
+  const m=svMain(); if(!m) return svLinkNewKeys();
+  const sig=svSubSig(); if(sig===localStorage.getItem(SV_SUBSIG_KEY)) return svLinkNewKeys();
+  const subs=accounts().filter(a=>a.key&&a!==m&&a.key!==m.key);
+  if(!subs.length&&!localStorage.getItem(SV_SUBSIG_KEY)){ localStorage.setItem(SV_SUBSIG_KEY,sig); return; } // 부계정 키가 처음부터 없으면 서버에 올릴 것 없음
+  try{
+    const r=await svFetch('/api/subkeys',{method:'PUT',body:{main:m.key,subs:subs.map(a=>({key:a.key,label:a.label}))}});
+    let ch=false; (r.subs||[]).forEach((x,i)=>{ const a=subs[i]; if(a&&x.ah&&a.ah!==x.ah){ a.ah=x.ah; ch=true; } });
+    localStorage.setItem(SV_SUBSIG_KEY,sig);
+    if(ch){ S.updatedAt=Date.now(); lastSig=contentSig(S); lastBody=bodyOf(); localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); }
+  }catch(e){ if(e.type==='interaction_required') throw e; toast('부계정 키 보관: '+e.message); localStorage.setItem(SV_SUBSIG_KEY,sig); }
+}
+async function svAddSub(key){
+  key=String(key||'').trim(); if(!key) return toast('부계정 API 키를 넣어 주세요');
+  const ac=accounts(); if(ac.some(a=>a.key===key)) return toast('이미 등록된 키입니다');
+  const ex=ac.find(a=>!a.key&&!a.main);
+  if(ex) ex.key=key; else S.settings.accounts=[...ac,{id:'a'+Date.now().toString(36),label:`부계정${ac.filter(a=>!a.main).length+1}`,key}];
+  save(); render(); gdMenu(true); await gdPush({manual:true}); gdMenu(true);
 }
 // 로그인한 상태에서 새로 등록한 다른 넥슨 계정 키를 같은 데이터에 연결 (그 키로 로그인해도 이 데이터가 열리게)
 async function svLinkNewKeys(){
@@ -2794,7 +2833,7 @@ async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그
   if(SV_ON){
     if(gdMeta.on && gdLocalDirty() && svTok()){ const ok=await gdPush(); if(!ok && !confirm('서버에 최신 내용을 저장하지 못했습니다. 그래도 로그아웃할까요? (이 PC에는 그대로 남아 있고, 다음 로그인 때 다시 맞춥니다)')) return; }
     try{ if(svTok()) await svFetch('/api/logout',{method:'POST'}); }catch(e){}
-    clearTimeout(gd.timer); gd.timer=null; gd.fileId=null; gd.remoteRev=undefined; localStorage.removeItem(SV_TOKEN_KEY);
+    clearTimeout(gd.timer); gd.timer=null; gd.fileId=null; gd.remoteRev=undefined; localStorage.removeItem(SV_TOKEN_KEY); localStorage.removeItem(SV_SUBSIG_KEY);
     gdMeta={}; localStorage.removeItem(GD.META_KEY); localStorage.removeItem(GD_BASE_KEY);
     gdSet('off'); render(); toast('로그아웃했습니다 (이 PC 데이터는 그대로 있어요)'); return;
   }
@@ -2872,6 +2911,7 @@ document.addEventListener('click',e=>{
     case 'gBtn': gdHeaderClick(); break;
     case 'gdLogin': gdLogin(); break;
     case 'svLoginBtn': svLogin($('#svKey')?.value); break;
+    case 'svSubBtn': svAddSub($('#svSubKey')?.value); break;
     case 'svInviteBtn': svInvite($('#svInvite')?.value); break;
     case 'svImportDrive': gdMenu(false); svImportDrive(); break;
     case 'gdLogout': gdLogout(false); break;
@@ -2902,7 +2942,7 @@ document.addEventListener('pointerdown',e=>{ const t=e.target.closest?.('[data-t
   if(e.pointerType==='touch'){ tipTouchAt=t?Date.now():0; if(t){ tipShow(t); clearTimeout(tipTimer); tipTimer=setTimeout(tipHide,3000); } else tipHide(); } },true);
 let tipKbd=false; // 키보드(Tab)로 칩에 왔을 때만 포커스로 표시/숨김 — 클릭·터치 뒤 다시 그려질 때 툴팁이 사라지지 않게
 document.addEventListener('keydown',e=>{ if(e.key==='Tab') tipKbd=true; },true);
-document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='svKey'){ e.preventDefault(); svLogin(e.target.value); } if(e.key==='Enter'&&e.target.id==='svInvite'){ e.preventDefault(); svInvite(e.target.value); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='svKey'){ e.preventDefault(); svLogin(e.target.value); } if(e.key==='Enter'&&e.target.id==='svSubKey'){ e.preventDefault(); svAddSub(e.target.value); } if(e.key==='Enter'&&e.target.id==='svInvite'){ e.preventDefault(); svInvite(e.target.value); } });
 document.addEventListener('pointerdown',()=>{ tipKbd=false; },true);
 document.addEventListener('focusin',e=>{ if(!tipKbd) return; const t=e.target.closest?.('[data-tip]'); if(t) tipShow(t); });
 document.addEventListener('focusout',()=>{ if(tipKbd) tipHide(); });
@@ -2934,7 +2974,7 @@ $('#themeBtn').onclick=()=>{ const dark=document.documentElement.dataset.theme==
 // 드라이브 저장용 직렬화 (withKeys=true: API 키 포함 / false: 비교용, 키 제외)
 function backupData(withKeys){
   const data=JSON.parse(JSON.stringify(S)); delete data.settings.apiKey;
-  data.settings.accounts=(data.settings.accounts||[]).map(a=>({id:a.id,label:a.label,...(a.ah?{ah:a.ah}:{}),...(withKeys?{key:a.key||''}:{})})); // ah: 동기화 서버 계정 해시(키 아님)
+  data.settings.accounts=(data.settings.accounts||[]).map(a=>({id:a.id,label:a.label,...(a.ah?{ah:a.ah}:{}),...(a.main?{main:true}:{}),...(withKeys?{key:a.key||''}:{})})); // ah: 동기화 서버 계정 해시(키 아님)
   return data;
 }
 // 드라이브 데이터 적용: 데이터에 키가 없으면 이 브라우저의 키를 계정 id 기준으로 다시 연결하고, 없는 계정은 유지

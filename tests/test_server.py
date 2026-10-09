@@ -70,6 +70,20 @@ try:
     s,b,_=req('POST','/api/link',{'device':DEV,'key':KB},tok=TA); check('link B (owned by another user) → 409', s==409 and b['error']=='linked_elsewhere', b)
     s,ac,_=req('POST','/api/login',{'device':DEV,'key':KAC}); check('key with accounts A+C → A data, C auto-linked', ac['user']==a1['user'] and len(ac['accounts'])==2, ac)
     s,me,_=req('GET','/api/me',tok=TA); check('me: 3 linked accounts, ≥4 sessions', len(me['accounts'])==3 and me['sessions']>=4 and me['rev']==2, me)
+    # 부계정 키 금고: 대표 키(A)로 암호화 보관 → 다른 기기에서 대표 키만으로 로그인하면 되돌아옴
+    KF,KG='live_KEY_F_0123456789abcdef','live_KEY_G_0123456789abcdef'
+    s,b,_=req('PUT','/api/subkeys',{'main':KB,'subs':[{'key':KF,'label':'부1'}]},tok=TA); check('subkeys with a main key not of this data → 403', s==403 and b['error']=='not_main', b)
+    s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KB,'label':'x'}]},tok=TA); check('sub key owned by another user → 409', s==409 and b['error']=='linked_elsewhere', b)
+    s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KF,'label':'부1'},{'key':KG,'label':'부2'},{'key':KA,'label':'dup main'}]},tok=TA)
+    check('store 2 sub keys (main key skipped) → ah returned, linked', s==200 and [x['label'] for x in b['subs']]==['부1','부2'] and len(b['accounts'])==5, b)
+    vrows=json.dumps(dev.sql("SELECT * FROM keyvault")); dump=vrows+json.dumps(dev.sql("SELECT data FROM state"))+json.dumps(dev.sql("SELECT * FROM accounts"))
+    check('vault holds only ciphertext (no raw main/sub keys)', '"ct"' in vrows and all(k not in dump for k in (KA,KF,KG)) and '부1' not in vrows)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KA}); check('new device, main key only → sub keys come back', v['vault']=='open' and sorted(x['key'] for x in v['subKeys'])==sorted([KF,KG]) and {x['label'] for x in v['subKeys']}=={'부1','부2'} and all(x['ah'] for x in v['subKeys']), v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KF}); check('login with a sub key → same data, vault locked, no keys', v['user']==a1['user'] and v['vault']=='locked' and v['subKeys']==[], v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KAC}); check('different key (also on acc-A) cannot open vault', v['vault']=='locked' and v['subKeys']==[], v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KB}); check('other user: vault none', v['vault']=='none' and v['subKeys']==[], v)
+    s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KG,'label':'부2'}]},tok=TA); s,v,_=req('POST','/api/login',{'device':DEV,'key':KA})
+    check('removing a sub key updates the vault', [x['key'] for x in v['subKeys']]==[KG], v)
     # 로그아웃
     s,b,_=req('POST','/api/logout',tok=TA2); s2,b2,_=req('GET','/api/state',tok=TA2); s3,_,_=req('GET','/api/state',tok=TA)
     check('logout kills only that session', s==200 and s2==401 and s3==200, (s,s2,s3))

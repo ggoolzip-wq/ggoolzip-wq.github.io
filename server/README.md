@@ -43,3 +43,12 @@ Workers 요청 10만/일, D1 저장 5GB · 읽기 500만 행/일 · 쓰기 10만
 
 ## 나중 단계 (아직 구현 안 함)
 매일 18:00 KST(09:00 UTC) cron 으로 maplescouter 헥사환산 가져오기 — 캐릭터 1명으로 먼저 시험.
+
+## 대표 키 / 부계정 키 (2026-10-10)
+- 순서: 초대 비밀번호(기기당 1번) → **대표 키**(본계정 넥슨 API 키)로 로그인 → 필요하면 **부계정 키 추가**.
+- 부계정 키는 `PUT /api/subkeys {main, subs}` 로 서버 `keyvault` 테이블에 **AES-GCM-256 암호문**으로만 저장.
+  암호 키 = HKDF-SHA256(ikm=대표 키, salt=sha256('ggoolzip-vault-salt:'+ID_PEPPER), info='ggoolzip-subkeys:v1:'+user_id), AAD=user_id.
+  대표 키 원본은 어디에도 저장하지 않으므로, DB(+ID_PEPPER)를 가진 사람도 대표 키 없이는 풀 수 없음.
+- 다른 기기에서 대표 키로 `/api/login` → 서버가 그 요청 안에서만 복호화해 `subKeys` 로 돌려줌(`vault: open`). 부계정 키나 다른 키로 로그인하면 데이터는 열리지만 `vault: locked`, 키는 안 돌아옴.
+- 대표 키를 넥슨에서 재발급하면 예전 금고는 못 풀림 → 새 대표 키로 로그인한 기기에서 부계정 키가 다시 올라가 덮어씀.
+- 기존 DB에 테이블 추가: `npx wrangler d1 execute ggoolzip-sync --remote --file schema.sql` (IF NOT EXISTS 라 반복 실행 안전).

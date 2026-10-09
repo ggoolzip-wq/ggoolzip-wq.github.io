@@ -54,7 +54,7 @@ try:
     check('wrong invite → error shown, still asking', pa.locator('#svInvite').count()==1 and '맞지 않' in pa.inner_text('#gMenu'), pa.inner_text('#gMenu')[:200])
     pa.fill('#svInvite',cf_dev.TEST_PASS); pa.click('#svInviteBtn'); pa.wait_for_selector('#gMenu:not([hidden]) [data-svlogin="a1"]')
     check('invite ok → device ticket stored, key login shown', bool(pa.evaluate("svDev()")))
-    check('menu: login with stored key button, key not shown', '본계정 키로 로그인' in pa.inner_text('#gMenu') and KA not in pa.inner_text('#gMenu') and KA not in pa.content().split('<script')[0])
+    check('menu: login with stored key button, key not shown', '본계정 키를 대표 키로 로그인' in pa.inner_text('#gMenu') and KA not in pa.inner_text('#gMenu') and KA not in pa.content().split('<script')[0])
     shot_path=os.path.join(OUT,'sv_login_menu.png'); pa.locator('#gMenu').screenshot(path=shot_path)
     if SHOTDIR: shutil.copy(shot_path,SHOTDIR)
     pa.click('[data-svlogin="a1"]'); wait_on(pa)

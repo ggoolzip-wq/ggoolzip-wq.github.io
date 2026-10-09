@@ -52,3 +52,11 @@ CREATE TABLE IF NOT EXISTS devices (
   expires_at  INTEGER NOT NULL,
   pass_ver    TEXT NOT NULL
 );
+
+-- 부계정 넥슨 키: 대표 키에서 HKDF 로 만든 AES-GCM 키로 암호화한 것만 보관 (worker.js 참고)
+CREATE TABLE IF NOT EXISTS keyvault (
+  user_id    TEXT PRIMARY KEY,
+  iv         TEXT NOT NULL,
+  ct         TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
