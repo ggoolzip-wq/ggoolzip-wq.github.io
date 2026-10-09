@@ -24,6 +24,7 @@ src/body.html           <body> 마크업 (헤더, 모달들)
 src/style_v1.css, src/extra.css   스타일 (extra.css가 뒤에 붙음)
 src/icons.json          보스 아이콘 base64 (미리 생성됨)
 src/itemicons.json      드롭 아이템 아이콘 32px base64 (tools/build_items.py로 생성)
+src/dqicons.json        일퀘 현황 칸 아이콘 40px base64 (tools/build_dqicons.py로 src/assets/dqicons/*.png에서 생성, build.py가 /*__DQ_ICONS__*/ 자리에 넣음)
 src/logo.json           주황버섯 16/32/64px data URI (tools/build_logo.py로 생성)
 src/assets/             아이템·반지·주황버섯 원본 PNG
 tools/build.py          src/ → index.html
@@ -34,7 +35,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~14), mock_nexo
 
 ## 3. 빌드 · 테스트 · 배포
 - 빌드: `python3 tools/build.py` → 루트 `index.html` 갱신. (빌드는 표준 라이브러리만 사용)
-- 아이콘 재생성(필요할 때만): `pip install pillow` 후 `python3 tools/build_items.py`, `python3 tools/build_logo.py src/assets/orange_mushroom_1210102.png src/logo.json .`
+- 아이콘 재생성(필요할 때만): `pip install pillow` 후 `python3 tools/build_dqicons.py`(일퀘 아이콘), `python3 tools/build_items.py`, `python3 tools/build_logo.py src/assets/orange_mushroom_1210102.png src/logo.json .`
 - 테스트: `pip install playwright && python -m playwright install chromium` → `bash tests/run_all.sh` (크롬 지정: `CHROME=/usr/bin/google-chrome`). 결과/스크린샷은 `tests/out/`.
   - 테스트는 `python -m http.server 8787`로 루트를 띄우거나 file:// 로 엽니다. 넥슨 API·구글(GIS/Drive)은 전부 모의(mock) 응답 — 실제 키·개인 데이터 없음.
   - test_tracker4/5/6/7/8/10은 결과를 출력(PASS/값)하는 형식, 9/11/12/13은 `FAILS: []`·`ERRORS: []`로 판정. 모든 테스트에서 JS 오류(ERRORS) 0이어야 함.
@@ -109,6 +110,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~14), mock_nexo
 - **'로그아웃 후 이 PC 데이터 지우기' 버튼 없음**(사용자 결정: PC방 PC는 종료 시 자동 초기화). ☁ 메뉴엔 일반 로그인/로그아웃만.
 - 사이트 이름 '보스 캐릭터 관리'. 주소는 루트(ggoolzip-wq.github.io).
 - 상단 탭: 보스 체크 · 수익 요약 · 주간 기록 · 총 수익 · **ㅡ(짧은 가로 구분선)** · **일퀘 현황** · **길드 현황**. 사이드바 캐릭터를 누르면 보스 체크 탭으로 이동(주간 기록·총 수익과 같음).
+- 일퀘 칸 아이콘(이름 왼쪽 20px, 모바일 18px, 완료 덮개 안에도 18px로 살짝 어둡게): 세르니움~카르시온 = 넥슨 Open API `/character/symbol-equipment`의 어센틱심볼 symbol_icon(터래플), 탈라하트/기어드락 = maplestory.io GMS/270 item 1714000/1714001(그랜드 어센틱심볼, JMS/444와 픽셀 동일 — KMS 389 데이터엔 아직 없음), 몬스터파크 = maplestory.io KMS/389 item 4001864(몬스터파크 REBORN 무료 이용권), 익스트림 몬파 = maplestory.io KMS/389 NPC 9071000 '슈피겔만'(몬스터파크 맵 951000000, 흰 호랑이 버전) 얼굴·모자만 잘라냄(원본 src/assets/dqicons/xmp_src_npc9071000.png).
+- 일퀘 칸은 **모든 상태에서 가운데 정렬**(아이콘+지역명, 상태 줄). **완료 칸은 항상 덮개**(편집 중 캐릭터별로 숨김 처리한 완료 칸 포함) — test14가 '완료'로 보이는 모든 칸에 덮개가 보이는지 확인.
 - 일퀘 현황: 설정 탭 없이 탭 안 **편집** 토글 하나로 표시 항목(전체 칩)·캐릭터별 항목(칸 클릭)·캐릭터 카드 숨김(👁) 설정. 완료 칸 = 보스 완료 덮개와 같은 rgba(0,0,0,.55) 덮개 + 지역명/✓ 완료, 마우스를 올리면 사라짐(밑글자는 덮개가 있을 때 숨김). 코드: src/app.js renderDaily()/dqCell(), extra.css .dq*.
 - 길드 현황: 길드/월드는 고정값(설정 없음, 사용자가 바꿔 달라고 하면 GUILD 상수 수정). 본캐 목록 = isMain 캐릭터(현재 UI는 본캐 1명만 지정 가능).
 
@@ -117,7 +120,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~14), mock_nexo
 - 공식 공지 HTML 구조가 바뀌면 파서가 0행 → Action은 기존 prices.json 유지(경고만). 이때 scripts/nexon_prices.py 수정 필요.
 - 공지 표에 없는 보스 가격은 내장 기본값(src/app.js PRICE_CONFIG) 사용.
 - GitHub 무료 계정: 60일간 커밋이 없으면 예약 Action이 자동 비활성화될 수 있음(Actions 탭에서 다시 켜기).
-- index.html은 아이콘 base64 때문에 약 365KB.
+- index.html은 아이콘 base64 때문에 약 395KB.
 - 몬스터파크 now_count가 캐릭터 기준인지 월드 기준인지 API 문서에 없음(실측 두 캐릭터 모두 0이라 미확인). 앱은 캐릭터 기준으로 보고 7회 이상이면 완료 처리.
 - 스케줄러 일퀘·몬파 정보는 넥슨이 '접속 중·접속 종료 시'에만 갱신 → 게임 안에서 막 끝낸 퀘스트는 접속을 끊기 전엔 반영이 늦을 수 있음.
 - 320px 화면에서 API 키가 있으면(동기화 버튼 표시) 헤더 버튼이 약 20px 넘침 — 이번 작업 전부터 있던 현상(헤더는 손대지 않음).
@@ -127,5 +130,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~14), mock_nexo
 - **테스트 서버 공지의 가격을 '다음 패치 예정 가격'으로 표시** — 사용자 결정 대기 중(아직 구현 안 함).
 
 ## 11. 변경 기록
+- 2026-10-09: 일퀘 칸 지역 아이콘 추가(어센틱/그랜드 어센틱심볼 8종, 몬스터파크 이용권, 익몬 = 몬스터파크 NPC 슈피겔만 얼굴; 출처는 8장). 칸 내용 모든 상태 가운데 정렬. tools/build_dqicons.py·src/dqicons.json 추가, build.py에 DQ_ICONS 치환.
+- 2026-10-09: 완료 덮개 확인 — 미리보기 사진에서 단풍용사 '아르크스' 칸에 덮개가 없던 것은 미리보기 스크립트가 그 칸에 마우스를 올린 채 찍었기 때문(버그 아님). 다만 편집 중 '캐릭터별 숨김'으로 표시된 완료 칸에는 덮개가 빠지던 불일치가 있어 고침(완료면 항상 덮개). test14에 '완료로 보이는 모든 칸에 덮개(불투명도 1, rgba .55)' 확인, 아이콘·가운데 정렬 확인 추가.
 - 2026-10-09: 상단 탭에 ㅡ 구분선 + **일퀘 현황**·**길드 현황** 탭 추가. 스케줄러 호출을 fetchSched()로 통일(동기화·탭 공용, 요약 캐시 mapleBossTracker.sched). 일퀘: 그란디스 8지역 일퀘·몬파·익몬(주간), 완료 덮개·호버, 레벨 잠금 줄, 편집(전체/캐릭터별/카드 숨김 → S.dq), 10분 자동 갱신. 길드: 봉사활동(스카니아) 지하 수로·플래그 레이스 점수·순위·레벨·마스터(오늘→어제 대체), 본캐 이번 주 지하 수로·플래그·주간 미션. test14 추가, mock 확장, run_all에 14 포함.
 - 2026-10-09: 완료 덮개 경고를 둘째 줄로 분리 — 1줄 '★ 이번 주 보스 완료', 2줄 빨간 (!) '검마 격파 필요'(괄호 제거). 글씨 .82rem/.74rem, (!) 13px. test12 갱신(문구, 두 줄·가운데·카드 안 맞춤 데스크톱/375/320px, 터치 탭 통과).

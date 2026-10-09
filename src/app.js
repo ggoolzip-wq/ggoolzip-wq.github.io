@@ -654,7 +654,7 @@ const DQ_ITEMS = [ // lv: 일일 퀘스트 수행 가능 레벨 (그란디스 �
   {id:'mp',   label:'몬스터파크', kind:'mp',  lv:0,   col:'#4caf50'},
   {id:'xmp',  label:'익스트림 몬파', kind:'xmp', lv:260, col:'#1f9e74', weekly:true},
 ];
-const DQ_ICONS = /*__DQ_ICONS__*/{}; // 지역 아이콘 data URI (어센틱/그랜드 어센틱심볼, 몬스터파크 이용권) — src/dqicons.json
+const DQ_ICONS = /*__DQ_ICONS__*/{}; // 지역 아이콘 data URI (어센틱/그랜드 어센틱심볼, 몬스터파크 이용권, 익몬=몬스터파크 NPC 슈피겔만 얼굴) — src/dqicons.json
 const dqIco = (it,cls='dqico') => DQ_ICONS[it.id]?`<img class="${cls}" src="${DQ_ICONS[it.id]}" alt="" width="20" height="20" decoding="async">`:'';
 const DQ_TTL_MS = 10*60e3;      // 일퀘 탭: 캐릭터별 스케줄러 10분마다 (접속 중/접속 종료 시에만 넥슨이 갱신)
 const GUILD_TTL_MS = 30*60e3;   // 길드 랭킹: 하루 1번(09:30경) 갱신 데이터라 30분 캐시
@@ -760,7 +760,7 @@ function dqCell(c, it, x, st, off){
   const tip = (x?.name||it.label)+(it.weekly?' (주간)':'')+(it.kind==='mp'?` · 오늘 ${x?.now??0}회 (캐릭터당 하루 ${MP_CHAR_DAILY}회, 스케줄러 최대 ${x?.max??'-'})`:'')+(dqEdit?'\n클릭: 이 캐릭터에서 '+(off?'다시 표시':'숨기기'):'');
   return `<div class="dqi s-${st}${off?' off':''}" style="--c:${it.col}" data-dqi="${it.id}" ${dqEdit?`data-dqc="${c.id}|${it.id}" role="button" tabindex="0"`:''} title="${esc(tip)}">
     <b class="dqn">${dqIco(it)}<span>${esc(it.label)}</span></b><span class="dqs">${esc(txt)}${cnt?`${txt?' ':''}<em>${cnt}</em>`:''}</span>
-    ${st==='done'&&!off?`<div class="dqov" aria-hidden="true"><span class="dqov-n">${dqIco(it,'dqico ov')}${esc(it.label)}</span><span class="dqov-t"><b>✓</b> 완료</span></div>`:''}</div>`;
+    ${st==='done'?`<div class="dqov" aria-hidden="true"><span class="dqov-n">${dqIco(it,'dqico ov')}${esc(it.label)}</span><span class="dqov-t"><b>✓</b> 완료</span></div>`:''}</div>`;
 }
 function renderDaily(){
   const v=$('#view'); const D=S.dq, all=dqChars(), today=dayId();

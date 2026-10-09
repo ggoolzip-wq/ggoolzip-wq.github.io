@@ -63,6 +63,15 @@ try:
     check('counts shown (진행 0/100, 몬파 7/7회, 익몬 5/5)', st['car'][2]=='진행 0/100' and st['mp'][2]=='완료 7/7회' and st['xmp'][2]=='완료 5/5', m)
     check('done cells have overlay, others not', all(x[3]==(x[1]=='s-done') for x in m))
     check('locked line for Lv.290/295', '탈라하트 Lv.290' in pg.inner_text('.dqc[data-dqchar=c1] .dqlock') and '기어드락 Lv.295' in pg.inner_text('.dqc[data-dqchar=c1] .dqlock'))
+    pg.mouse.move(2,2); pg.wait_for_timeout(250)
+    DONEALL="[...document.querySelectorAll('.dqi')].filter(e=>e.querySelector('.dqs').textContent.trim().startsWith('완료')).map(e=>{const o=e.querySelector('.dqov');return [e.closest('.dqc').dataset.dqchar+'/'+e.dataset.dqi,e.classList.contains('s-done'),!!o,o?getComputedStyle(o).opacity:null,o?getComputedStyle(o).backgroundColor:null]})"
+    d=pg.evaluate(DONEALL); check('every cell shown as 완료 has the overlay (visible, rgba .55) when mouse is away', len(d)>=8 and all(x[1] and x[2] and x[3]=='1' and x[4]=='rgba(0, 0, 0, 0.55)' for x in d), d)
+    ICONS="[...document.querySelectorAll('.dqi')].map(e=>{const i=e.querySelector('.dqn img.dqico'),l=e.querySelector('.dqn span'),r=i&&i.getBoundingClientRect(),lr=l.getBoundingClientRect(),c=e.getBoundingClientRect();return {id:e.dataset.dqi,ok:!!i&&i.src.startsWith('data:image/png')&&i.complete&&i.naturalWidth>0,w:r&&Math.round(r.width),h:r&&Math.round(r.height),left:!!r&&r.right<=lr.left+0.5&&r.left>=c.left,ov:!e.querySelector('.dqov')||!!e.querySelector('.dqov img.dqico.ov')}})"
+    ic=pg.evaluate(ICONS); check('every daily cell has its region icon (20px, left of name, also inside overlay)', ic and all(x['ok'] and x['w']==20 and x['h']==20 and x['left'] and x['ov'] for x in ic), [x for x in ic if not (x['ok'] and x['w']==20 and x['left'] and x['ov'])])
+    CEN="[...document.querySelectorAll('.dqi')].map(e=>{const c=e.getBoundingClientRect(),cs=getComputedStyle(e),L=c.left+parseFloat(cs.paddingLeft)+parseFloat(cs.borderLeftWidth),R=c.right-parseFloat(cs.paddingRight)-parseFloat(cs.borderRightWidth),mid=(L+R)/2; const i=e.querySelector('.dqn img'),t=e.querySelector('.dqn span'),q=e.querySelector('.dqs');const rng=document.createRange();rng.selectNodeContents(q);const qr=rng.getBoundingClientRect(),ir=i.getBoundingClientRect(),tr=t.getBoundingClientRect(); return [e.dataset.dqi,[...e.classList].find(x=>x.startsWith('s-')),Math.round(((ir.left+tr.right)/2-mid)*10)/10,Math.round(((qr.left+qr.right)/2-mid)*10)/10]})"
+    cen=pg.evaluate(CEN); check('all states: icon+name and status line centered in cell', len({x[1] for x in cen})>=3 and all(abs(x[2])<=2 and abs(x[3])<=2 for x in cen), [x for x in cen if abs(x[2])>2 or abs(x[3])>2] or cen[:4])
+    di=pg.evaluate("Object.fromEntries(Object.entries(DQ_ICONS).map(([k,v])=>[k,v.length]))"); check('10 distinct embedded icons', sorted(di)==sorted(['cer','arcs','odium','dow','art','car','tal','gear','mp','xmp']) and len(set(pg.evaluate("Object.values(DQ_ICONS)")))==10, di)
+    ics=pg.evaluate("[...document.querySelectorAll('.dqc[data-dqchar=c1] .dqi')].map(e=>[e.dataset.dqi,e.querySelector('img.dqico').src===DQ_ICONS[e.dataset.dqi]])"); check('icon matches its item', all(x[1] for x in ics), ics)
     check('done count 6/8', pg.inner_text('.dqc[data-dqchar=c1] .dqcnt')=='6/8', pg.inner_text('.dqc[data-dqchar=c1] .dqcnt'))
     m2=pg.evaluate(CELLS,'c2'); check('c2 Lv.272: 세르니움·아르크스·오디움 + 몬파·익몬 only', [x[0] for x in m2]==['cer','arcs','odium','mp','xmp'] and [x[1] for x in m2]==['s-done','s-prog','s-idle','s-prog','s-prog'], m2)
     check('c2 texts (진행 0/100, 미수락, 몬파 3/7회, 익몬 주간 2/5)', [x[2] for x in m2[1:]]==['진행 0/100','미수락','3/7회','주간 2/5'], m2)
@@ -82,6 +91,7 @@ try:
     pg.click('#dqEditBtn'); check('edit shows 10 item chips', pg.locator('.dqchip.on').count()==10 and pg.inner_text('#dqEditBtn')=='완료')
     pg.click('.dqchip[data-dqg=mp]'); check('global off: 몬스터파크 removed from every card', pg.locator('.dqi[data-dqi=mp]').count()==0 and pg.evaluate('S.dq.off.mp')==1)
     pg.click('.dqc[data-dqchar=c1] .dqi[data-dqi=cer]'); check('per-character off (edit shows it struck through)', pg.evaluate("S.dq.charOff.c1&&S.dq.charOff.c1.cer")==1 and pg.locator('.dqc[data-dqchar=c1] .dqi[data-dqi=cer].off').count()==1)
+    pg.mouse.move(2,2); pg.wait_for_timeout(250); d=pg.evaluate(DONEALL); check('edit mode: completed cells (incl. per-character hidden) keep overlay', all(x[2] and x[3]=='1' for x in d) and any(x[0]=='c1/cer' for x in d), d)
     pg.click('.dqc[data-dqchar=c4] [data-dqhide]'); check('hide character card', pg.evaluate("S.dq.hide.c4")==1 and 'hid' in pg.get_attribute('.dqc[data-dqchar=c4]','class'))
     pg.click('#dqEditBtn')
     check('after edit: c1 without 세르니움, c2 keeps it', pg.locator('.dqc[data-dqchar=c1] .dqi[data-dqi=cer]').count()==0 and pg.locator('.dqc[data-dqchar=c2] .dqi[data-dqi=cer]').count()==1)
@@ -131,6 +141,9 @@ try:
         fit=pg.evaluate("[...document.querySelectorAll('.dqi')].every(e=>{const n=e.querySelector('.dqn'),r=e.getBoundingClientRect(),q=n.getBoundingClientRect();const d=e.querySelector('.dqs').getBoundingClientRect();return n.scrollWidth<=n.clientWidth+1&&q.right<=r.right+0.5&&d.right<=r.right+0.5&&e.scrollHeight<=e.clientHeight+1})")
         check(f'{w}px daily: item names/status not clipped', fit, pg.evaluate("[...document.querySelectorAll('.dqi')].filter(e=>{const n=e.querySelector('.dqn'),r=e.getBoundingClientRect(),q=n.getBoundingClientRect();return !(n.scrollWidth<=n.clientWidth+1&&q.right<=r.right+0.5&&e.scrollHeight<=e.clientHeight+1)}).map(e=>e.innerText)"))
         tabsOK=pg.evaluate("(()=>{const n=document.querySelector('#tabs');return getComputedStyle(n).overflowX==='auto'})()"); check(f'{w}px tabs scrollable', tabsOK)
+        ic=pg.evaluate(ICONS); check(f'{w}px icons 18px and present', all(x['ok'] and x['w']==18 and x['left'] for x in ic), ic[:3])
+        cen=pg.evaluate(CEN); check(f'{w}px cells centered', all(abs(x[2])<=2 and abs(x[3])<=2 for x in cen), [x for x in cen if abs(x[2])>2 or abs(x[3])>2])
+        pg.mouse.move(1,1); pg.wait_for_timeout(200); d=pg.evaluate(DONEALL); check(f'{w}px every 완료 cell has overlay', all(x[2] and x[3]=='1' for x in d), d)
         if w==375: shot(pg,'tab_daily_mobile.png',full_page=True)
         pg.click('[data-tab=guild]'); wait_idle(pg); pg.wait_for_timeout(150)
         check(f'{w}px guild: no horizontal overflow', pg.evaluate(NOOVF), pg.evaluate(OVFD))

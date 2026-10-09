@@ -344,8 +344,8 @@ nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius
 .dqov-t{font-size:.72rem}
 .dqov-t b{color:#7dffb0}
 /* 덮개가 있을 때는 원래 글자를 숨겨 겹치지 않게 (마우스를 올리면 덮개가 사라지고 원래 칸이 보임) */
-.dqi.s-done:not(.off)>.dqn,.dqi.s-done:not(.off)>.dqs{opacity:0;transition:opacity .15s ease}
-@media(hover:hover){.dqi:hover .dqov{opacity:0}.dqi.s-done:not(.off):hover>.dqn,.dqi.s-done:not(.off):hover>.dqs{opacity:1}}
+.dqi.s-done>.dqn,.dqi.s-done>.dqs{opacity:0;transition:opacity .15s ease}
+@media(hover:hover){.dqi:hover .dqov{opacity:0}.dqi.s-done:hover>.dqn,.dqi.s-done:hover>.dqs{opacity:1}}
 .dqlock{font-size:.74rem;margin-top:8px}
 .dqmsg{font-size:.84rem;padding:6px 2px}
 .dqfoot{margin:10px 2px 0}
@@ -380,3 +380,7 @@ nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius
 .dqov-n .dqico.ov{width:18px;height:18px;opacity:.85}
 .dqi{padding-left:9px}
 @media(max-width:520px){.dqico{width:18px;height:18px}.dqn{gap:3px}}
+/* 일퀘 칸: 모든 상태에서 아이콘+지역명·상태 줄 가운데 정렬 (완료 덮개와 같은 정렬) */
+.dqi{align-items:center;text-align:center;padding:7px 6px 6px 9px}
+.dqn{justify-content:center;max-width:100%}
+.dqs{text-align:center}
