@@ -80,8 +80,8 @@ try:
     check('during burst: overlay+particles pointer-events:none, page clickable', all(x=='none' for x in pe) and hit and pg.locator('#congrats.show').count()==1, (pe,hit))
     shot(pg.locator('body'),'b30_burst_click.png') if False else None
     pg.screenshot(path='/workspace/shots/b30.png') if SHOTDIR else None
-    pg.click('[data-tab="daily"]',timeout=1500); pg.wait_for_timeout(100); check('click a tab during burst works', pg.evaluate("tab")=='daily' if False else pg.locator('[data-tab="daily"].on, [data-tab="daily"].active, [data-tab="daily"][aria-selected="true"]').count()==1)
-    pg.click('[data-tab="boss"]'); pg.wait_for_timeout(200)
+    pg.click('#pendCancel',timeout=1500); pg.wait_for_timeout(150); check('click a button during burst works', '변경사항을 취소하시겠습니까?' in pg.inner_text('body'))
+    pg.click('.svaskbtns button:has-text("아니오")'); pg.wait_for_timeout(150)
     pg.wait_for_timeout(2300); check('burst cleaned up after ~2s', pg.locator('#iconBurst').count()==0)
     pg.click(f'[data-drop="seren|{k0}"]'); pg.wait_for_timeout(200); check('un-click → no burst', pg.locator('#iconBurst').count()==0)
     # 8,9,10
@@ -97,15 +97,15 @@ try:
     pg.evaluate("S.characters[0].drops['seren|mitra']=1; S.characters[0].drops['zakum|papmark']=1; save(); render()"); pg.wait_for_timeout(200)
     exp=pg.evaluate("(()=>{let n=0;for(const c of S.characters) for(const m of [c.drops||{},c.mdrops||{}]) for(const [k,v] of Object.entries(m)){const it=parseIK(k).it; if(ITEMS[it]&&!isRing(it)) n+=+v;} return n})()")
     sm=pg.inner_text('.epsum'); items=pg.eval_on_selector_all('.card:has(.epsum) .totloot .lx',"e=>e.map(x=>[x.textContent,getComputedStyle(x).color,getComputedStyle(x).backgroundClip])")
-    check('에픽빔 heading sum = stored non-ring drops, glowing sky-blue', sm==f'x{exp}' and exp==3 and pg.evaluate("getComputedStyle(document.querySelector('.epsum')).color")=='rgb(127, 224, 255)' and 'rgb' in pg.evaluate("getComputedStyle(document.querySelector('.epsum')).textShadow"), (sm,exp))
+    check('에픽빔 heading sum = stored non-ring drops, shimmering sky-blue gradient + glow + shine', sm==f'x{exp}' and exp==3 and pg.evaluate("(e=>getComputedStyle(e).backgroundClip==='text'&&getComputedStyle(e).filter.includes('drop-shadow')&&getComputedStyle(e).animationName==='epshine')(document.querySelector('.epsum'))"), (sm,exp))
     check('per-item counts crimson, no gradient, sum matches', all(c=='rgb(224, 17, 95)' and bc!='text' for _,c,bc in items) and sum(int(t[1:]) for t,_,_ in items)==exp, items)
     pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b29_epic.png') if SHOTDIR else None
     # b31
     pg.evaluate("S.characters[0].drops['kaling|r_white']=1; S.characters[0].dropOut['kaling|r_white']=['r4']; S.history.push({week:'2026-10-01',weeklyOnly:true,total:0,perChar:[{id:'c1',name:'단풍용사',meso:0,bosses:['카링(하드)'],items:{'kaling|chaosbox':1,'seren|mitra':1},outcomes:{'kaling|chaosbox':['cb:sos']}}]}); save(); render()"); pg.wait_for_timeout(200)
     h=pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.textContent.trim())')
-    check('renamed headings', any(x.startswith('📈 주별 누적 결정석 메소') for x in h) and any(x.endswith('캐릭터별 누적 결정석 메소') for x in h) and pg.locator('#view h2:has-text("캐릭터별 누적") .avatar').count()==1, h)
-    order=[x for x in h if x.startswith('에픽빔') or x.endswith('보스 별 누적 아이템 드랍') or x.endswith('총 아이템 획득량')]
-    check('new sections below 에픽빔 in order', len(order)==3 and order[0].startswith('에픽빔') and order[1].endswith('드랍') and order[2].endswith('획득량'), order)
+    check('renamed headings', any(x.startswith('📈 주별 누적 결정석 메소') for x in h) and any(x.endswith('캐릭터별 누적 결정석 메소 ＆ 누적 획득 아이템') for x in h) and pg.locator('#view h2:has-text("캐릭터별 누적") .avatar').count()==1, h)
+    order=[x for x in h if x.startswith('에픽빔') or x.endswith('보스 별 누적 획득 아이템') or x.endswith('총 아이템 획득량')]
+    check('new sections below 에픽빔 in order', len(order)==3 and order[0].startswith('에픽빔') and order[1].endswith('획득 아이템') and order[2].endswith('획득량'), order)
     rows=pg.eval_on_selector_all('.bossloot .blrow','e=>e.map(x=>x.innerText.split(String.fromCharCode(10)).join(" "))')
     kal=[r for r in rows if r.startswith('카링')]
     check('per boss+difficulty rows (카링 하드 from history tag / 카링 노멀 current), chaos as accessory, ring box as box', any('하드' in r and '고통의 근원 x1' in r for r in kal) and any('노말' in r and '마력이 깃든 안대 x1' in r and '백옥의 보스 반지 상자 x1' in r for r in kal) and any(r.startswith('선택받은 세렌') and '미트라의 분노 선택 상자 x2' in r for r in rows) and pg.locator('.bossloot .blrow .bicon').count()>=2, rows)
@@ -114,6 +114,30 @@ try:
     check('총 아이템 획득량: icon+name+qty only, ring outcome counted, box too, chaos→accessory, no 0', '리스트레인트 링 4레벨 x1' in tot and '백옥의 보스 반지 상자 x1' in tot and '미트라의 분노 선택 상자 x2' in tot and '고통의 근원 x1' in tot and '마력이 깃든 안대 x1' in tot and '혼돈의 칠흑' not in tot and 'x0' not in tot and '컨티뉴어스' not in tot and '카링' not in tot and '단풍' not in tot and pg.locator('.itemtot .loot img').count()==pg.locator('.itemtot .loot').count(), tot)
     check('counts crimson', col==['rgb(224, 17, 95)'], col)
     pg.locator('#view').screenshot(path='/workspace/shots/b31.png') if SHOTDIR else None
+    # b32
+    th=pg.eval_on_selector_all('#view .card:has(h2:has-text("캐릭터별 누적")) th','e=>e.map(x=>x.textContent)')
+    check('character table labels renamed', th==['캐릭터','누적 주간 보스 메소량','누적 월간 보스 메소량','누적 합계','누적 획득 아이템'], th)
+    rs=pg.inner_text('.ringsum')
+    exp4=pg.evaluate("(()=>{const p=ring4('r_white');return [(p.r4/100).toFixed(2),(p.c4/100).toFixed(2)]})()")
+    check('시드링: no (결과를 기록한 N회 기준), shows 기댓값 = boxes × official prob', '결과를 기록한' not in rs and f'기댓값 리4 {exp4[0]}개 · 컨4 {exp4[1]}개' in rs, (rs,exp4))
+    pg.locator('.card:has(.ringsum)').screenshot(path='/workspace/shots/b32_seedring.png') if SHOTDIR else None
+    pg.locator('.card:has(.epsum) h2').screenshot(path='/workspace/shots/b32_epic.png') if SHOTDIR else None
+    pg.locator('.card:has(h2:has-text("캐릭터별 누적"))').screenshot(path='/workspace/shots/b32_chartable.png') if SHOTDIR else None
+    # 탭 이동 시 저장 묻기
+    pg.evaluate('pend=null;save()'); pg.click('[data-tab="boss"]'); pg.wait_for_timeout(200)
+    pg.click('[data-drop="seren|mitra"]'); pg.wait_for_timeout(150); pg.evaluate("endCelebrate()")
+    check('drop click toast has no 저장 hint', '저장을' not in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    pg.click('[data-tab="daily"]'); pg.wait_for_timeout(200)
+    check('switch tab with pending → modal 변경사항을 저장하시겠습니까?', '변경사항을 저장하시겠습니까?' in pg.inner_text('body') and pg.locator('[data-tab="boss"].on').count()==1)
+    pg.screenshot(path='/workspace/shots/b32_tabmodal.png') if SHOTDIR else None
+    pg.click('.svaskbtns button:has-text("아니오")'); pg.wait_for_timeout(250)
+    check('아니오 → discarded to snapshot, switched', pg.locator('[data-tab="daily"].on').count()==1 and pg.evaluate("!pend") and pg.evaluate("S.characters[0].drops['seren|mitra']")==1)
+    pg.click('[data-tab="boss"]'); pg.wait_for_timeout(200)
+    pg.click('[data-drop="seren|mitra"]'); pg.wait_for_timeout(150)
+    pg.click('[data-tab="total"]'); pg.wait_for_timeout(200); pg.click('.svaskbtns button:has-text("예")'); pg.wait_for_timeout(300)
+    check('예 → saved, switched', pg.locator('[data-tab="total"].on').count()==1 and pg.evaluate("!pend") and not pg.evaluate("S.characters[0].drops['seren|mitra']") and not json.loads(pg.evaluate("localStorage.getItem('mapleBossTracker.v1')"))['characters'][0]['drops'].get('seren|mitra'))
+    pg.click('[data-tab="boss"]'); pg.wait_for_timeout(150); pg.click('[data-tab="daily"]'); pg.wait_for_timeout(150)
+    check('no pending → switch without modal', pg.locator('[data-tab="daily"].on').count()==1 and pg.locator('.svask').count()==0)
     # 12 썬데이 라벨 (mocked clock)
     lab=lambda now: pg.evaluate("n=>sunLabel(feed.data.sunday,n)",now)
     ms=lambda s: pg.evaluate("s=>Date.parse(s)",s)

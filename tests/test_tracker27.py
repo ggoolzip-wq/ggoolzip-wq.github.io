@@ -85,7 +85,7 @@ try:
     check('캐릭터 별 기록 tab deleted', pg.locator('[data-tab="summary"]').count()==0)
     # 개수 표기: '리4 x1' (붙어서 '리41개'로 읽히지 않게), 0개는 숨김
     pg.evaluate("S.characters[0].drops['kaling|r_white']=1; S.characters[0].dropOut={'kaling|r_white':['r4']}; save(); tab='total'; render()"); pg.wait_for_timeout(200)
-    rs=' | '.join(pg.eval_on_selector_all('.ringsum','e=>e.map(x=>x.textContent)'))
+    rs=' | '.join(pg.eval_on_selector_all('.ringsum','e=>e.map(x=>{const c=x.cloneNode(true);c.querySelectorAll(".ringexp").forEach(z=>z.remove());return c.textContent})'))
     check("ring summary uses '리4 x1', hides 컨4 x0, no '개'", '리4 x1' in rs and '컨4' not in rs and '리41' not in rs, rs)
     t=pg.inner_text('#view')
     check("item counts use 'xN' (no ×, no N개 glued)", '×' not in t and ' x1' in t, t[:300])

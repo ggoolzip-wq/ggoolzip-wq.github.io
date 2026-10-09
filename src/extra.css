@@ -604,3 +604,13 @@ select.impworld option{color:#111}
 .bossloot .blb{flex:none;min-width:150px;display:inline-flex;align-items:center;gap:6px}
 .bossloot .blb .bicon{width:24px;height:24px}
 .bossloot .loots,.itemtot .loots{flex:1}
+/* b32 */
+.ringexp{margin-left:6px;color:#9ad8ff;font-weight:600}
+.eph .ept{font-family:"Jua","Gaegu","Nanum Gothic","Apple SD Gothic Neo",system-ui,sans-serif;font-weight:500;letter-spacing:.02em;border-radius:8px}
+.lx.aur.epsum{font-family:ui-rounded,"SF Pro Rounded","Jua","Nunito",system-ui,sans-serif;font-weight:700;font-size:1.15rem;
+  background:linear-gradient(100deg,#7fe0ff 0%,#b8f3ff 25%,#5ccfff 45%,#e6fbff 55%,#7fe0ff 75%,#a8e9ff 100%);background-size:220% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent;
+  text-shadow:none;filter:drop-shadow(0 0 4px rgba(127,224,255,.8)) drop-shadow(0 0 10px rgba(127,224,255,.45));animation:epshine 3.2s ease-in-out infinite}
+@keyframes epshine{0%{background-position:100% 0}50%{background-position:0 0}100%{background-position:100% 0}}
+@media (prefers-reduced-motion: reduce){.lx.aur.epsum{animation:none}}
+.svaskbtns [data-k=no]{background:transparent;color:var(--text,#ececf1);border-color:var(--line,#3a3a46)}

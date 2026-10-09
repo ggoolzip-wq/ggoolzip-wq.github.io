@@ -43,7 +43,7 @@ with sync_playwright() as p:
     print('R4c stored:', st_()['drops'], st_()['dropOut'])
     # c4 on seren white (legacy 2) and x on kalos life; dismiss congrats by click
     pg.evaluate("delete activeChar().drops['seren|r_white']; delete (activeChar().dropOut||{})['seren|r_white']; render()")  # 2026-10-10: 기간당 1개 — 다시 누르면 취소이므로 먼저 비움
-    pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|r_white"]'); pg.click('#ringModal [data-ring="c4"]'); pg.wait_for_timeout(300); pg.click('#congrats'); pg.wait_for_timeout(100)
+    pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|r_white"]'); pg.click('#ringModal [data-ring="c4"]'); pg.wait_for_timeout(300); pg.evaluate('endCelebrate()'); pg.wait_for_timeout(100)
     print('C4 clicked-dismiss:', not pg.is_visible('#congrats.show'))
     pg.click('.boss:has-text("감시자 칼로스") [data-drop="kalos|r_life"]'); pg.click('#ringModal [data-ring="x"]'); pg.wait_for_timeout(150)
     print('X no congrats:', not pg.is_visible('#congrats.show'), '| toast:', pg.inner_text('#toast'))
@@ -72,7 +72,7 @@ with sync_playwright() as p:
     print('H history:', pg.eval_on_selector_all('.htable .hitems','e=>e.map(x=>x.innerText.replace(/\\n/g," "))'))
     print('H monthly:', pg.eval_on_selector_all('#view .card:last-child .hitems','e=>e.map(x=>x.innerText.replace(/\\n/g," "))'))
     # totals
-    pg.click('[data-tab="total"]'); pg.wait_for_timeout(100)
+    pg.evaluate('pend&&pendSave()'); pg.click('[data-tab="total"]'); pg.wait_for_timeout(100)
     print('T ring summary:', pg.inner_text('.ringsum'))
     print('T ring tally:', pg.evaluate("totalData().ring"))
     print('T per item:', pg.eval_on_selector_all('#view table tbody tr','e=>e.map(x=>x.innerText.replace(/\\s+/g," ")).filter(t=>t.includes("반지"))'))
