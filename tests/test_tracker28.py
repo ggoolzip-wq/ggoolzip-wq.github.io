@@ -75,6 +75,13 @@ try:
     pg.click(f'[data-drop="seren|{k0}"]'); pg.wait_for_timeout(450)
     check('plain drop acquire → dozens of own-icon copies burst', pg.locator('#iconBurst img').count()>=30 and pg.evaluate("k=>[...document.querySelectorAll('#iconBurst img')].every(i=>i.getAttribute('src')===ITEM_ICONS[k])",k0))
     pg.screenshot(path=os.path.join(OUT,'b28_icon_burst.png')); SHOTDIR and shutil.copy(os.path.join(OUT,'b28_icon_burst.png'),SHOTDIR)
+    pe=pg.evaluate("['#congrats','#fx','#iconBurst','#iconBurst img'].map(s=>{const e=document.querySelector(s);return e?getComputedStyle(e).pointerEvents:'none'})")
+    hit=pg.evaluate("(()=>{const t=document.querySelector('[data-tab=\"daily\"]').getBoundingClientRect();const e=document.elementFromPoint(t.x+t.width/2,t.y+t.height/2);return !!e.closest('[data-tab]')})()")
+    check('during burst: overlay+particles pointer-events:none, page clickable', all(x=='none' for x in pe) and hit and pg.locator('#congrats.show').count()==1, (pe,hit))
+    shot(pg.locator('body'),'b30_burst_click.png') if False else None
+    pg.screenshot(path='/workspace/shots/b30.png') if SHOTDIR else None
+    pg.click('[data-tab="daily"]',timeout=1500); pg.wait_for_timeout(100); check('click a tab during burst works', pg.evaluate("tab")=='daily' if False else pg.locator('[data-tab="daily"].on, [data-tab="daily"].active, [data-tab="daily"][aria-selected="true"]').count()==1)
+    pg.click('[data-tab="boss"]'); pg.wait_for_timeout(200)
     pg.wait_for_timeout(2300); check('burst cleaned up after ~2s', pg.locator('#iconBurst').count()==0)
     pg.click(f'[data-drop="seren|{k0}"]'); pg.wait_for_timeout(200); check('un-click → no burst', pg.locator('#iconBurst').count()==0)
     # 8,9,10
@@ -84,13 +91,13 @@ try:
     av=pg.evaluate("(()=>{const a=document.querySelector('#view h2 .avatar');const l=document.querySelector('#charList .avatar');return a&&l?[a.getBoundingClientRect().width,l.getBoundingClientRect().width]:null})()")
     check('main portrait in 캐릭터별 누적 same size as left list', av and abs(av[0]-av[1])<1, av)
     t=pg.inner_text('#view')
-    check("'에픽빔 본 횟수' with chosen item + aurora x-count", '에픽빔 본 횟수' in t and '물욕' not in t and '마력이 깃든 안대' in t and pg.evaluate("[...document.querySelectorAll('.lx.aur')].every(e=>getComputedStyle(e).backgroundClip==='text'||getComputedStyle(e).webkitBackgroundClip==='text')") and pg.locator('.lx.aur').count()>=1)
+    check("'에픽빔 본 횟수' with chosen item + heading sum", '에픽빔 본 횟수' in t and '물욕' not in t and '마력이 깃든 안대' in t and pg.locator('.epsum').count()==1)
     shot(pg.locator('#view'),'b28_total.png')
     # b29: 에픽빔 — 제목 옆 합계(오로라), 목록 개수는 선홍색, 저장 데이터와 일치
     pg.evaluate("S.characters[0].drops['seren|mitra']=1; S.characters[0].drops['zakum|papmark']=1; save(); render()"); pg.wait_for_timeout(200)
     exp=pg.evaluate("(()=>{let n=0;for(const c of S.characters) for(const m of [c.drops||{},c.mdrops||{}]) for(const [k,v] of Object.entries(m)){const it=parseIK(k).it; if(ITEMS[it]&&!isRing(it)) n+=+v;} return n})()")
     sm=pg.inner_text('.epsum'); items=pg.eval_on_selector_all('.card:has(.epsum) .totloot .lx',"e=>e.map(x=>[x.textContent,getComputedStyle(x).color,getComputedStyle(x).backgroundClip])")
-    check('에픽빔 heading sum = stored non-ring drops, aurora', sm==f'x{exp}' and exp==3 and pg.evaluate("getComputedStyle(document.querySelector('.epsum')).backgroundClip")=='text', (sm,exp))
+    check('에픽빔 heading sum = stored non-ring drops, glowing sky-blue', sm==f'x{exp}' and exp==3 and pg.evaluate("getComputedStyle(document.querySelector('.epsum')).color")=='rgb(127, 224, 255)' and 'rgb' in pg.evaluate("getComputedStyle(document.querySelector('.epsum')).textShadow"), (sm,exp))
     check('per-item counts crimson, no gradient, sum matches', all(c=='rgb(224, 17, 95)' and bc!='text' for _,c,bc in items) and sum(int(t[1:]) for t,_,_ in items)==exp, items)
     pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b29_epic.png') if SHOTDIR else None
     # 12 썬데이 라벨 (mocked clock)
