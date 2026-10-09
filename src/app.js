@@ -2116,7 +2116,7 @@ function svGate(){ // 서버 모드 입장 화면: ① 초대 비밀번호 → �
   let g=$('#svGate');
   if(!SV_ON||(svTok()&&gdMeta.on)){ if(g){ g.remove(); document.documentElement.classList.remove('gated'); } return; }
   if(!g){ g=document.createElement('div'); g.id='svGate'; document.body.appendChild(g); document.documentElement.classList.add('gated'); }
-  const err=gd.svErr?`<div class="impmsg warn" style="margin-top:10px">${esc(gd.svErr)}</div>`:'';
+  const err=gd.svErr?`<div class="svgerr" role="alert">${esc(gd.svErr)}</div>`:'';
   const step=svDev()?2:1, busy=gd.state==='connecting';
   g.innerHTML=`<div class="svgbox" data-step="${step}"><div class="svgt">보스 캐릭터 관리</div>${step===1
     ?`<div class="svgd"><b>초대 비밀번호</b>를 넣어 주세요.<br><span class="muted">이 기기에서 한 번만 물어봐요.</span></div>
