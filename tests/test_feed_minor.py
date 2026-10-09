@@ -24,11 +24,10 @@ check("2 minor patches found in real list", [r["n"] for r in mi] == [149386, 149
 check("today's time-only date → today + PM time", mi[0]["date"] == "2026-06-23T19:22:00+09:00", mi[0]["date"])
 check("older date → yyyy-mm-dd", mi[1]["date"] == "2026-06-22T00:00:00+09:00", mi[1]["date"])
 
-# 3) main() 전체: 기존 feed + HTML/API 모의 → 최신 2개만, API 날짜 우선, 제목 갱신, 예전 마이너 글 제거
+# 3) main() 전체 — 처음(워터마크 없음): 최신 2개 백필, 기존 글 유지, API 날짜 우선, 제목 갱신
 tmp = tempfile.mkdtemp(); out = os.path.join(tmp, "feed.json")
-old = {"version": 1, "updatedAt": "2026-06-23T10:00:00+09:00", "sources": {},
-       "state": {"watermarks": {"notice": 149380, "notice-event": 1, "notice-update": 814, "test": 199,
-                                **{f"inven:{b}": 1 for b in F.INVEN_BOARDS}}},
+WM = {"notice": 149380, "notice-event": 1, "notice-update": 814, "test": 199, **{f"inven:{b}": 1 for b in F.INVEN_BOARDS}}
+old = {"version": 1, "updatedAt": "2026-06-23T10:00:00+09:00", "sources": {}, "state": {"watermarks": dict(WM)},
        "items": {"patch": [{"id": "update:814", "title": "클라이언트 1.2.419(5) 업데이트 안내", "url": "u", "date": "2026-06-20T09:00:00+09:00"},
                            {"id": "minor:149300", "title": "6/1 마이너 패치", "url": "x", "date": "2026-06-01T00:00:00+09:00", "src": "minor"},
                            {"id": "minor:149371", "title": "[패치예정] 6/22(월) ver1.2.416 마이너(6) 패치", "url": "y", "date": "2026-06-22T00:00:00+09:00", "src": "minor"}]}}
@@ -41,43 +40,54 @@ def nx(path, **q):
     calls.append(path)
     if path.endswith("/detail"): return {"contents": "<p>공지 본문</p>"}
     return {"notice": {"notice": api_notice}, "notice-event": {"event_notice": []}, "notice-update": {"update_notice": []}}[path]
+pages = []
+CUR = {"html": html}
 def http_get(url, headers=None, proxy=False, timeout=25):
-    if "News/Notice/All" in url: return 200, html
+    pages.append(url)
+    if "News/Notice/All" in url: return 200, CUR["html"] if "page=" not in url else CUR.get("p2", "<html></html>")
     raise F.FetchError("blocked in test")
 F.nx, F.http_get = nx, http_get
 F.time.sleep = lambda s: None
 os.environ["FEED_ALL"] = "1"; os.environ.pop("GITHUB_OUTPUT", None)
+load = lambda: json.load(open(out, encoding="utf-8"))
 F.main()
-feed = json.load(open(out, encoding="utf-8"))
-pt = feed["items"]["patch"]; print(json.dumps(pt, ensure_ascii=False, indent=1))
+feed = load(); pt = feed["items"]["patch"]
 ids = [x["id"] for x in pt]
-check("patch tab = 2 latest minor + update, sorted by date", ids == ["minor:149386", "minor:149371", "update:814"], ids)
+check("backfill: 2 latest added, older existing minor kept, sorted by date", ids == ["minor:149386", "minor:149371", "update:814", "minor:149300"], ids)
+check("watermark set to newest minor", feed["state"]["watermarks"].get("minor") == 149386, feed["state"]["watermarks"].get("minor"))
 check("API date (with time) preferred", pt[0]["date"] == "2026-06-23T19:22:00+09:00", pt[0]["date"])
 check("title refreshed ([패치예정] → [패치완료])", pt[1]["title"].startswith("[패치완료] 6/22"), pt[1]["title"])
 check("patch source ok", feed["sources"]["patch"]["ok"] is True)
-check("no extra API calls for minor patches (only saryo's /notice + detail, /notice-event, /notice-update)", calls == ["notice", "notice/detail", "notice-event", "notice-update"], calls)
+check("no extra API calls for minor patches", calls == ["notice", "notice/detail", "notice-event", "notice-update"], calls)
 
-# 4) HTML 실패 → API 목록만으로도 유지/갱신, 기존 2개 유지
+# 4) 새 마이너 패치가 올라옴 → 맨 위에 추가, 예전 글은 그대로(밀려 내려감)
+new_li = html.replace("/News/Notice/All/149386", "/News/Notice/All/149390").replace("마이너(7) 패치(19:21 적용)", "마이너버전(8) 패치(21:00 적용)").replace("PM 07:22", "PM 09:01")
+CUR["html"] = new_li
+F.main(); pt = load()["items"]["patch"]
+check("new minor patch added on top, all older items kept", [x["id"] for x in pt] == ["minor:149390", "minor:149386", "minor:149371", "update:814", "minor:149300"], [x["id"] for x in pt])
+check("watermark advanced", load()["state"]["watermarks"]["minor"] == 149390)
+# 5) 이미 본 예전 마이너 글(워터마크 이하)은 다시 채우지 않음 / 사라진 글이 있어도 지우지 않음
+CUR["html"] = html.replace("마이너(7) 패치", "정기 패치")  # 목록에서 149386 이 마이너 패치가 아니게 보여도
+api_notice[0]["title"] = "기타"
+F.main(); pt = load()["items"]["patch"]
+check("items never dropped, nothing re-added", [x["id"] for x in pt] == ["minor:149390", "minor:149386", "minor:149371", "update:814", "minor:149300"], [x["id"] for x in pt])
+# 6) HTML 차단 + API 에도 없음 → 패치 탭 OK, 글 유지
 def http_fail(url, **k): raise F.FetchError("HTTP 403")
-F.http_get = http_fail; F.main()
-pt2 = json.load(open(out, encoding="utf-8"))["items"]["patch"]
-check("HTML blocked: keeps 2 minor items", [x["id"] for x in pt2] == ids, [x["id"] for x in pt2])
-# 5) 둘 다 실패 → 패치 탭은 OK(업데이트 공지) + 기존 마이너 글 유지
-api_notice.clear(); F.main()
-pt3 = json.load(open(out, encoding="utf-8"))["items"]["patch"]
-check("HTML + API minor both unavailable: items kept", [x["id"] for x in pt3] == ids, [x["id"] for x in pt3])
-# 6) 1쪽에 마이너 패치가 1개뿐이면 다음 쪽까지 (최대 5쪽), 2개 모이면 멈춤
-p1 = html.replace("마이너(6) 패치", "정기 패치")
-p2 = html.replace("/News/Notice/All/1493", "/News/Notice/All/1492")
-pages = []
-def http_pages(url, **k):
-    pages.append(url)
-    return 200, (p2 if "page=2" in url else p1 if "page=" not in url else "<html></html>")
-F.http_get = http_pages
-fresh = {"version": 1, "updatedAt": "2026-06-23T10:00:00+09:00", "state": {"watermarks": old["state"]["watermarks"]}, "items": {}}
-json.dump(fresh, open(out, "w"), ensure_ascii=False); F.main()
-pt4 = json.load(open(out, encoding="utf-8"))["items"]["patch"]
-check("paging: 2nd minor found on page 2, stops there", [x["id"] for x in pt4] == ["minor:149386", "minor:149286"] and len([u for u in pages if "News/Notice/All" in u]) == 2, ([x["id"] for x in pt4], pages))
+F.http_get = http_fail; api_notice.clear(); F.main(); feed = load()
+check("HTML + API unavailable: items kept, patch ok", len(feed["items"]["patch"]) == 5 and feed["sources"]["patch"]["ok"], [x["id"] for x in feed["items"]["patch"]])
+F.http_get = http_get
+
+# 7) 백필 때 1쪽에 마이너 패치가 1개뿐이면 다음 쪽까지(최대 5쪽), 2개 모이면 멈춤
+CUR["html"] = html.replace("마이너(6) 패치", "정기 패치")
+CUR["p2"] = html.replace("/News/Notice/All/1493", "/News/Notice/All/1492")
+fresh = {"version": 1, "updatedAt": "2026-06-23T10:00:00+09:00", "state": {"watermarks": dict(WM)}, "items": {}}
+json.dump(fresh, open(out, "w"), ensure_ascii=False); pages.clear(); F.main()
+pt = load()["items"]["patch"]
+check("backfill paging: 2nd minor found on page 2", [x["id"] for x in pt] == ["minor:149386", "minor:149286"] and len([u for u in pages if "News/Notice/All" in u]) == 2, ([x["id"] for x in pt], pages))
 pages.clear(); F.main()
-check("steady state (2 known): only page 1 fetched", len([u for u in pages if "News/Notice/All" in u]) == 1, pages)
+check("steady state: only page 1 fetched", len([u for u in pages if "News/Notice/All" in u]) == 1, pages)
+# 8) 평소: 1쪽 글이 전부 워터마크보다 새로우면 2쪽도 확인(놓친 글 방지)
+d = load(); d["state"]["watermarks"]["minor"] = 149000; json.dump(d, open(out, "w"), ensure_ascii=False)
+pages.clear(); F.main()
+check("page 1 all newer than watermark → page 2 checked", len([u for u in pages if "News/Notice/All" in u]) >= 2, pages)
 print("FAILS", fails); sys.exit(1 if fails else 0)

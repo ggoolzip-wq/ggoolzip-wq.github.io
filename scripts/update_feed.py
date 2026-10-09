@@ -4,7 +4,7 @@
 탭(소스)                 가져오는 곳
 - saryo  사료감지         넥슨 Open API /notice, /notice-event (+detail) 중 '메이플 운영자' NPC 에게서 보상을 받는 공지
 - patch  패치내역         넥슨 Open API /notice-update  (= maplestory.nexon.com/News/Update)
-                          + 공지사항 중 '마이너 패치' 최신 2개 (홈페이지 공지 검색 HTML + /notice 목록 재사용)
+                          + 공지사항 중 '마이너 패치' (처음 최신 2개 백필, 이후 새 글 누적) (홈페이지 공지 검색 HTML + /notice 목록 재사용)
 - test   테섭             maplestory.nexon.com/Testworld/News/Update 목록 페이지 (Open API 에 없음)
 - mabbak 마빡도로시        인벤 메이플 게시판(5974, 2304, 2314, 2316, 2587) 닉네임 검색 + 글 페이지(articleDate)
 
@@ -136,13 +136,13 @@ def src_saryo(st, wm, run_all, minute):
 
 # ---------------- 패치내역 ----------------
 # (1) 업데이트 공지: Open API /notice-update (10분에 한 번)
-# (2) 마이너 패치: 공식 홈페이지 공지사항(/News/Notice) 중 제목에 '마이너 패치'가 들어간 글의 최신 2개를 항상 표시.
+# (2) 마이너 패치: 공식 홈페이지 공지사항(/News/Notice) 중 제목에 '마이너 패치'가 들어간 글의 처음 한 번 최신 2개를 채우고(백필), 이후 새 글은 계속 쌓임(다른 피드 글과 같음).
 #     실제 제목 예: '[패치완료] 10/8(목) ver1.2.419 마이너버전(8) 패치', '… 마이너(7) 패치', '마이너패치', '마이너 패치'.
-#     같은 글의 제목이 [패치예정]→[패치완료] 로 바뀌므로 매번 제목·날짜를 다시 맞춤. 예전 마이너 패치 글은 빠짐(최신 2개만).
+#     같은 글의 제목이 [패치예정]→[패치완료] 로 바뀌므로 매번 제목·날짜를 다시 맞춤. 예전 글은 지우지 않음(탭당 200개 한도만).
 #     가져오는 곳: 홈페이지 공지 검색 HTML(/News/Notice/All?search=마이너, API 할당량 사용 안 함) +
 #                 사료감지가 이번 회차에 이미 받은 Open API /notice 목록(추가 호출 없음). 둘 중 하나만 되어도 OK.
 MINOR_RE = re.compile(r"마이너\s*(?:버전\s*)?(?:\(\s*\d+\s*\)\s*)?패치")
-MINOR_KEEP = 2
+MINOR_KEEP = 2  # 처음 한 번 채우는(백필) 개수 — 이후엔 새 글이 계속 쌓임
 NOTICE_SEARCH_URL = "https://maplestory.nexon.com/News/Notice/All?search=" + urllib.parse.quote("마이너")
 _API_NOTICES = []  # src_saryo 가 받은 /notice 목록 (같은 회차에 재사용)
 
@@ -187,7 +187,7 @@ def minor_candidates(html_rows, api_items):
                     "date": iso_from_api(x.get("date")) or prev.get("date", ""), "src": "minor"}
     return c
 
-MINOR_MAX_PAGES = 5  # 최신 2개를 아직 못 모았을 때만 다음 쪽까지 (보통은 1쪽만)
+MINOR_MAX_PAGES = 5  # 보통은 1쪽만. 백필 때 2개를 못 모았거나, 1쪽이 전부 새 글일 때만 다음 쪽까지
 _HAVE_MINOR = set()   # main() 이 넣어 줌: feed.json 에 이미 있는 minor 글 번호
 
 def src_minor(wm):
@@ -208,10 +208,14 @@ def src_minor(wm):
             if page == 1:
                 err = str(e)
             break
-        found = {r["n"] for r in rows if MINOR_RE.search(r["title"])} | _HAVE_MINOR
-        found |= {int(x.get("notice_id") or 0) for x in _API_NOTICES if MINOR_RE.search(x.get("title", ""))}
-        if len(found) >= MINOR_KEEP:
-            break
+        if "minor" in wm:  # 평소: 이 쪽의 글이 전부 워터마크보다 새로울 때만 다음 쪽(놓친 글 방지)
+            if not got or min(r["n"] for r in got) <= wm["minor"]:
+                break
+        else:              # 처음(백필): 최근 2개를 모을 때까지
+            found = {r["n"] for r in rows if MINOR_RE.search(r["title"])} | _HAVE_MINOR
+            found |= {int(x.get("notice_id") or 0) for x in _API_NOTICES if MINOR_RE.search(x.get("title", ""))}
+            if len(found) >= MINOR_KEEP:
+                break
         time.sleep(1)
     if err:
         log("  마이너 패치 HTML 실패:", err, "— Open API /notice 목록만 사용" if _API_NOTICES else "")
@@ -221,28 +225,34 @@ def src_minor(wm):
     log(f"  마이너 패치 후보 {len(c)}개 (HTML {len(rows)}행, API {len(_API_NOTICES)}건)")
     return c
 
-def apply_minor(lst, cands):
-    """패치 탭의 minor:* = (기존 minor 글 ∪ 새 후보) 중 글 번호가 큰 최신 2개. 제목·날짜는 새 값으로 갱신. 바뀐 개수 반환"""
+def apply_minor(lst, cands, wm):
+    """마이너 패치 글을 패치 탭에 '쌓기'(다른 글과 같은 피드 방식).
+    - 처음(워터마크 wm['minor'] 없음): 가장 최근 MINOR_KEEP(2)개만 채움(백필) → 워터마크 = 그중 가장 큰 번호.
+    - 이후: 워터마크보다 번호가 큰 새 글만 추가(맨 위로, 날짜순). 예전 글은 지우지 않음(탭당 CAP=200 은 merge 가 처리).
+    - 이미 있는 글은 제목·날짜만 갱신([패치예정]→[패치완료]).
+    바뀐 개수 반환"""
     if cands is None:
         return 0
-    pool = {int(x["id"].split(":")[1]): dict(x) for x in lst if x["id"].startswith("minor:")}
-    for n, w in cands.items():
-        cur = pool.get(n, {})
-        cur.update({k: v for k, v in w.items() if v})
-        pool[n] = cur
-    want = {pool[n]["id"]: pool[n] for n in sorted(pool, reverse=True)[:MINOR_KEEP]}
+    have = {x["id"]: x for x in lst if x["id"].startswith("minor:")}
     changed = 0
-    for x in list(lst):
-        if x["id"].startswith("minor:") and x["id"] not in want:
-            lst.remove(x); changed += 1
-    for x in lst:
-        if x["id"] in want:
-            w = want.pop(x["id"])
+    for n, w in cands.items():  # 제목·날짜 갱신
+        x = have.get(w["id"])
+        if x:
             for k in ("title", "url", "date"):
                 if w.get(k) and x.get(k) != w[k]:
                     x[k] = w[k]; changed += 1
-    for w in want.values():
-        lst.append(w); changed += 1
+    if "minor" not in wm:
+        known = [int(i.split(":")[1]) for i in have]
+        add = [cands[n] for n in sorted(cands, reverse=True)[:MINOR_KEEP]]
+        wm["minor"] = max([0] + known + [int(x["id"].split(":")[1]) for x in add])
+    else:
+        add = [cands[n] for n in sorted(cands) if n > wm["minor"]]
+        if add:
+            wm["minor"] = max(int(x["id"].split(":")[1]) for x in add)
+    new = [x for x in add if x["id"] not in have]
+    if new:
+        log("  마이너 패치 새 글:", [x["title"] for x in new])
+    changed += merge(lst, new)
     lst.sort(key=lambda x: (x.get("date") or "", x["id"]), reverse=True)
     return changed
 
@@ -380,8 +390,7 @@ def main():
                 log(f"[{k}] 이번 회차 건너뜀"); continue
             n = merge(lst, new)
             if k == "patch":
-                m = apply_minor(lst, _MINOR); n += m
-                if m: log(f"  마이너 패치 반영: {[x['title'] for x in lst if x['id'].startswith('minor:')]}")
+                m = apply_minor(lst, _MINOR, wm); n += m
             added += n
             s.update(ok=True, checkedAt=now_iso(), lastOkAt=now_iso(), error="")
             log(f"[{k}] OK, 새 글 {n}개")
