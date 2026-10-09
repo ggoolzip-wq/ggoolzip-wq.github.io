@@ -262,21 +262,30 @@ function defaultState(){
 /* character: {id,name,job,level,world,ocid,image,isMain, bosses:{slot:{enabled,diff,party}},
  *   weekly:{slot:true}, monthly:{slot:weekId}, auto:{slot:true}, sync:{at,ok,msg,clear,limit,unmatched,imgAt}} */
 let S;
+// 저장된 상태 객체를 현재 형식으로 정리 (load·드라이브 병합 공용; obj 를 직접 고치므로 복사본을 넘길 것)
+function normState(obj){
+  const keep=S;
+  try{
+    S=Object.assign(defaultState(),obj&&typeof obj==='object'?obj:{});
+    S.settings=Object.assign(defaultSettings(),S.settings||{});
+    migrate();
+    S.settings.prices={}; delete S.settings.priceSource; // 가격 수동 수정 기능 제거: 가격은 공식 prices.json 자동 갱신 값만 사용
+    delete S.settings.driveKeys; // 예전 '키도 드라이브에 저장' 선택 항목 (이제 항상 저장)
+    delete S.settings.apiMode;
+    // ↑ 예전 연결 방식(로컬 프록시) 설정 — 이제 항상 open.api.nexon.com 직접 호출
+    S.settings.weeklyLimit=CONFIG.WEEKLY_BOSS_LIMIT; S.settings.monthlyLimit=CONFIG.MONTHLY_BOSS_LIMIT; // 처치 한도는 고정값 (설정 화면 제거)
+    delete S.settings.worldLimit; // 월드 결정석 판매 한도 기능 제거 (수익 = 클리어한 보스 합계, 상한 없음)
+    S.characters.forEach(normChar);
+    S.dq=Object.assign(defaultDq(),S.dq&&typeof S.dq==='object'?S.dq:{}); ['off','charOff','hide'].forEach(k=>{ if(!S.dq[k]||typeof S.dq[k]!=='object') S.dq[k]={}; });
+    if(typeof S.updatedAt!=='number') S.updatedAt=0;
+    return S;
+  } finally { S=keep; }
+}
 function load(){
-  try{ const raw=localStorage.getItem(CONFIG.STORAGE_KEY); S = raw?Object.assign(defaultState(),JSON.parse(raw)):defaultState(); }
-  catch(e){ console.warn(e); S=defaultState(); }
-  S.settings=Object.assign(defaultSettings(),S.settings||{});
-  migrate();
-  S.settings.prices={}; delete S.settings.priceSource; // 가격 수동 수정 기능 제거: 가격은 공식 prices.json 자동 갱신 값만 사용
-  delete S.settings.driveKeys; // 예전 '키도 드라이브에 저장' 선택 항목 (이제 항상 저장)
-  delete S.settings.apiMode;
-  // ↑ 예전 연결 방식(로컬 프록시) 설정 — 이제 항상 open.api.nexon.com 직접 호출
-  S.settings.weeklyLimit=CONFIG.WEEKLY_BOSS_LIMIT; S.settings.monthlyLimit=CONFIG.MONTHLY_BOSS_LIMIT; // 처치 한도는 고정값 (설정 화면 제거)
-  delete S.settings.worldLimit; // 월드 결정석 판매 한도 기능 제거 (수익 = 클리어한 보스 합계, 상한 없음)
-  S.characters.forEach(normChar);
-  S.dq=Object.assign(defaultDq(),S.dq&&typeof S.dq==='object'?S.dq:{}); ['off','charOff','hide'].forEach(k=>{ if(!S.dq[k]||typeof S.dq[k]!=='object') S.dq[k]={}; });
-  if(typeof S.updatedAt!=='number') S.updatedAt=0;
-  lastBody=bodyOf();
+  let o=null;
+  try{ const raw=localStorage.getItem(CONFIG.STORAGE_KEY); o=raw?JSON.parse(raw):null; }catch(e){ console.warn(e); }
+  S=normState(o);
+  lastBody=bodyOf(); lastSig=contentSig(S);
 }
 function migrate(){
   if((S.version||1)<2){
@@ -324,12 +333,15 @@ function migrate(){
   }
 }
 function normChar(c){ ['bosses','weekly','monthly','auto','sync','drops','mdrops','dropOut','mdropOut'].forEach(k=>c[k]=c[k]||{}); delete c.dropParty; delete c.mdropParty; c.world=c.world||''; }
-// updatedAt: 데이터 내용이 실제로 바뀐 시각 (구글 드라이브 동기화에서 어느 쪽이 최신인지 비교)
-let lastBody=null;
+// updatedAt: 데이터 내용이 '실제로' 바뀐 시각 (구글 드라이브 동기화에서 어느 쪽이 최신인지 비교)
+// — 기기마다 다른 값·자동으로 계속 바뀌는 값(테마, 선택한 캐릭터, 날짜(period), 마지막 동기화 시각, 캐릭터 sync/이미지/EXP, 계정 상태)은
+//   contentSig 에서 빠지므로 updatedAt 을 바꾸지 않고 드라이브 저장도 하지 않음 (2026-10-10: 이것 때문에 '어느 데이터를 쓸까요?'가 반복됐음)
+let lastBody=null, lastSig=null;
 function bodyOf(){ const u=S.updatedAt; S.updatedAt=0; const b=JSON.stringify(S); S.updatedAt=u; return b; }
 function save(){
-  const b=bodyOf(), changed=b!==lastBody;
-  if(changed){ S.updatedAt=Date.now(); lastBody=b; }
+  const sig=contentSig(S), changed=sig!==lastSig;
+  if(changed){ S.updatedAt=Date.now(); lastSig=sig; }
+  lastBody=bodyOf();
   localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(S));
   if(changed) gdChanged();
 }
@@ -339,7 +351,7 @@ const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36).
 const worldOf = c => c.world || '월드 미지정';
 
 /* ---------- 리셋 처리 ---------- */
-function checkResets(){
+function resetCore(){
   const now={week:weekId(),day:dayId(),month:monthId()}; let changed=false; const msgs=[];
   if(S.period.week!==now.week){
     const sum=weekSummary(S.period.week);
@@ -353,9 +365,13 @@ function checkResets(){
     S.monthHistory.sort((a,b)=>a.month<b.month?-1:1);
     S.characters.forEach(c=>{c.monthly={}; c.mdrops={}; c.mdropOut={}; for(const k in c.auto) if(findBoss(k)?.type==='monthly') delete c.auto[k];}); msgs.push('월간 보스 초기화'); changed=true; }
   if(S.period.day!==now.day) changed=true;
-  if(changed){ S.period=now; save(); if(msgs.length) toast(msgs.join(' · ')); }
-  return changed;
+  if(changed) S.period=now;
+  return {changed,msgs};
 }
+
+function checkResets(){ const r=resetCore(); if(r.changed){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
+// 다른 상태 객체(드라이브 데이터 등)도 지금 주·월로 넘김 (지난 주 체크 → 기록으로 보관 후 초기화) — 병합 전에 양쪽 기준을 맞춤
+function rollPeriod(x){ const keep=S; try{ S=x; resetCore(); } finally{ S=keep; } return x; }
 
 /* ---------- 클리어 수 / 수익 계산 ---------- */
 const weeklyCount = c => Object.keys(c.weekly).filter(s=>findBoss(s)?.type==='weekly').length;
@@ -1403,7 +1419,7 @@ const gcid=()=>GOOGLE_CLIENT_ID||window.__MBT_GCID||'';
 const gdOriginOk=()=>location.protocol==='https:'||/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const gdUsable=()=>!!gcid()&&gdOriginOk();
 let gd={state:'off',msg:'',token:null,exp:0,fileId:null,timer:null,busy:false,again:false,client:null,onTok:null,onErr:null,pending:null};
-let gdMeta=(()=>{ try{ return JSON.parse(localStorage.getItem(GD.META_KEY))||{}; }catch(e){ return {}; } })(); // {on, base, fileId, lastSave, lastLoad}
+let gdMeta=(()=>{ try{ return JSON.parse(localStorage.getItem(GD.META_KEY))||{}; }catch(e){ return {}; } })(); // {on, base(이 PC updatedAt), rU(드라이브 updatedAt), fileId, lastSave, lastLoad} — 맞춘 시점 내용은 GD_BASE_KEY
 const gdSaveMeta=()=>localStorage.setItem(GD.META_KEY,JSON.stringify(gdMeta));
 try{ const t=JSON.parse(sessionStorage.getItem(GD.TOKEN_KEY)||'null'); if(t&&t.e>Date.now()+60e3){ gd.token=t.t; gd.exp=t.e; } }catch(e){}
 const gdLocalDirty=()=>gdMeta.on && (S.updatedAt||0)!==(gdMeta.base||0);
@@ -1428,7 +1444,7 @@ function gdStatusHtml(){
     <div class="toolbar" style="margin-top:8px">${['reconnect','error'].includes(gd.state)?'<button class="btn sm" id="gdLogin">다시 연결</button>':''}${on
       ? `${['reconnect','error'].includes(gd.state)?'':'<button class="btn sm" id="gdSaveNow">지금 저장</button>'}<button class="btn sm ghost" id="gdLogout">로그아웃</button>`
       : `<button class="btn sm" id="gdLogin">구글 로그인</button>`}
-      ${gd.state==='conflict'?'<button class="btn sm" id="gBtn2" onclick="gdAsk(gd.pending)">선택하기</button>':''}</div>`;
+      ${gd.state==='conflict'?'<button class="btn sm" id="gBtn2" onclick="gdReask()">선택하기</button>':''}</div>`;
 }
 /* 헤더 ☁ 버튼의 작은 드롭다운: 드라이브 동기화 상태 · 로그인/로그아웃 */
 function gdMenuHtml(){
@@ -1444,7 +1460,7 @@ function gdMenu(open){
   if(show) m.innerHTML=gdMenuHtml();
   m.hidden=!show; $('#gBtn').setAttribute('aria-expanded',String(show));
 }
-function gdHeaderClick(){ if(gd.state==='conflict'&&gd.pending){ gdMenu(false); return gdAsk(gd.pending); } gdMenu(); }
+function gdHeaderClick(){ if(gd.state==='conflict'&&gd.pending){ gdMenu(false); return gdReask(); } gdMenu(); }
 function gdLoadLib(){
   return new Promise((res,rej)=>{
     if(window.google?.accounts?.oauth2) return res();
@@ -1496,12 +1512,62 @@ async function gdWrite(keepalive){
     const r=await gdFetch(gd.fileId?`${GD.UP}/files/${gd.fileId}?uploadType=multipart&fields=id`:`${GD.UP}/files?uploadType=multipart&fields=id`,opt);
     gd.fileId=(await r.json()).id||gd.fileId;
   }catch(e){ if(e.status===404&&gd.fileId){ gd.fileId=null; return gdWrite(keepalive); } throw e; }
-  gdMeta.fileId=gd.fileId; gdMeta.base=S.updatedAt||0; gdMeta.lastSave=Date.now(); gdSaveMeta();
+  gdMeta.fileId=gd.fileId; gdMeta.lastSave=Date.now(); gdMarkSynced(S.updatedAt||0);
 }
-// 비교용: 키·자동 동기화 시각 등 기기마다 다른 값은 빼고 비교
+/* ---- 동기화 비교·병합 (2026-10-10) ----
+ * 비교(contentSig)에서 빼는 값 = GD_LOCAL_RE: 기기 전용(테마·선택 캐릭터·날짜 period·마지막 동기화 시각) + 자동 갱신 값(캐릭터 sync/이미지/EXP, 계정 상태·키).
+ *   이 값들은 병합할 때도 '이 PC 값'을 씀(키는 이 PC 에 없으면 드라이브 값).
+ * 병합 = 3-way: 마지막으로 맞춘 내용(base, localStorage GD_BASE_KEY) 기준으로 한쪽만 바뀐 항목은 그쪽 값, 양쪽이 같은 항목을 다르게 바꾼 경우만 '충돌'.
+ *   캐릭터·계정은 id, 주간/월간 기록은 week/month 로 짝지음. 한쪽 삭제 + 다른 쪽 수정 → 수정본 유지(데이터 안 잃음).
+ *   API 로 다시 받는 값(레벨·직업·월드·ocid·계정 배정)과 지난 기록 요약은 충돌이어도 묻지 않음(이 PC 값 / 클리어 많은 쪽). */
+const GD_BASE_KEY='mapleBossTracker.gdbase';
+const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp)$|^settings\.accounts\[[^\]]*\]\.(key|status)$/;
+const GD_SOFT_RE=/^characters\[[^\]]*\]\.(level|job|world|ocid|accId)$/;
+const GD_HIST_RE=/^(history|monthHistory)\[[^\]]*\]$/;
+const GD_KEYED={characters:'id',history:'week',monthHistory:'month','settings.accounts':'id'};
 const stable=v=>Array.isArray(v)?'['+v.map(stable).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}':JSON.stringify(v);
-function gdNorm(d){ const x=JSON.parse(JSON.stringify(d||{})); delete x.updatedAt; delete x.period; x.settings=x.settings||{};
-  x.settings.accounts=(x.settings.accounts||[]).map(a=>({id:a.id,label:a.label})); delete x.settings.lastSync; delete x.settings.apiKey; delete x.settings.driveKeys; delete x.theme; return stable(x); }
+const gdIsObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
+const gdP=(p,k)=>p?p+'.'+k:k;
+const gdSame=(a,b)=>stable(a)===stable(b);
+function gdStrip(v,p=''){
+  if(Array.isArray(v)){ const kf=GD_KEYED[p]; return v.map(x=>gdStrip(x,kf&&gdIsObj(x)?`${p}[${x[kf]}]`:p+'[]')); }
+  if(gdIsObj(v)){ const o={}; for(const k of Object.keys(v)){ const q=gdP(p,k); if(!GD_LOCAL_RE.test(q)) o[k]=gdStrip(v[k],q); } return o; }
+  return v;
+}
+const gdSig=d=>stable(gdStrip(d));
+const keysOf=d=>((d&&d.settings&&d.settings.accounts)||[]).map(a=>a.id+':'+(a.key||'')).join(',');
+function contentSig(d){ return gdSig(d)+'|'+keysOf(d); } // 키가 바뀌어도 저장은 필요 (비교 화면에는 안 씀)
+const gdPrep=d=>rollPeriod(normState(JSON.parse(JSON.stringify(d||{}))));
+function gdMerge(b,l,r,ctx,p=''){
+  if(p&&GD_LOCAL_RE.test(p)) return l!==undefined&&l!==''&&l!==null?l:r;
+  if(gdSame(l,r)) return l;
+  if(ctx.base){ if(gdSame(b,l)) return r; if(gdSame(b,r)) return l; }
+  if(l===undefined) return r; if(r===undefined) return l; // 한쪽에만 있음(새로 추가 / 삭제 vs 수정) → 있는 쪽 유지
+  const kf=GD_KEYED[p];
+  if(kf&&Array.isArray(l)&&Array.isArray(r)) return gdMergeKeyed(b,l,r,kf,ctx,p);
+  if(GD_HIST_RE.test(p)) return ((r.cleared||0)>(l.cleared||0)||((r.cleared||0)===(l.cleared||0)&&(r.total||0)>(l.total||0)))?r:l;
+  if(gdIsObj(l)&&gdIsObj(r)){ const o={};
+    for(const k of new Set([...Object.keys(l),...Object.keys(r)])){ const v=gdMerge(gdIsObj(b)?b[k]:undefined,l[k],r[k],ctx,gdP(p,k)); if(v!==undefined) o[k]=v; }
+    return o; }
+  if(GD_SOFT_RE.test(p)) return ctx.prefer==='r'?r:l;
+  ctx.conf.push(p); return ctx.prefer==='r'?r:l;
+}
+function gdMergeKeyed(b,l,r,kf,ctx,p){
+  const list=a=>(Array.isArray(a)?a:[]).filter(x=>gdIsObj(x)&&x[kf]!=null), ids=a=>list(a).map(x=>String(x[kf]));
+  const map=a=>new Map(list(a).map(x=>[String(x[kf]),x]));
+  const B=map(b), L=map(l), R=map(r), lo=ids(l), ro=ids(r);
+  // 순서: 이 PC 순서가 base 그대로면 드라이브 순서, 아니면 이 PC 순서 (+ 다른 쪽에만 있는 것은 뒤에)
+  const first=ctx.base?(gdSame(lo,ids(b).filter(i=>L.has(i)))?ro:lo):(ctx.prefer==='r'?ro:lo);
+  const order=[...new Set([...first,...lo,...ro])], out=[];
+  for(const id of order){ const v=gdMerge(B.get(id),L.get(id),R.get(id),ctx,`${p}[${id}]`); if(v!==undefined) out.push(v); }
+  return out;
+}
+function gdBaseData(){ try{ return JSON.parse(localStorage.getItem(GD_BASE_KEY)||'null'); }catch(e){ return null; } }
+// 드라이브와 이 PC 가 같은 내용이 된 시점 기록: base(이 PC updatedAt) · rU(드라이브 updatedAt) · 그때 내용(키 제외)
+function gdMarkSynced(rU){
+  gdMeta.base=S.updatedAt||0; gdMeta.rU=rU||S.updatedAt||0; gdSaveMeta();
+  try{ localStorage.setItem(GD_BASE_KEY,JSON.stringify(backupData(false))); }catch(e){ console.warn('gdbase',e); }
+}
 const gdLocalEmpty=()=>!S.characters.length && !(S.history||[]).length && !(S.monthHistory||[]).length;
 
 const GD_TEST_USER_HELP='구글 로그인 창에 <b>"액세스 차단됨: … Google 인증 절차를 완료하지 않았습니다"</b>(오류 403: access_denied)가 보였다면, 이 앱이 아직 <b>테스트 모드</b>라서 등록된 계정만 로그인할 수 있기 때문입니다. '
@@ -1546,47 +1612,111 @@ async function gdConnect(interactive){
     const f=await gdFind(); gd.fileId=f?.id||null;
     if(!f){ if(gdLocalEmpty()){ gdSet('on','드라이브에 아직 데이터가 없습니다. 캐릭터를 추가하면 자동 저장됩니다'); return; }
       await gdWrite(); gdSet('on','이 PC 데이터를 드라이브에 처음 저장했습니다'); return; }
-    const remote=await gdRead(f.id);
-    if(!remote?.data || !Array.isArray(remote.data.characters)) throw new Error('드라이브 파일 형식이 올바르지 않습니다');
-    const rU=+remote.updatedAt||0, lU=S.updatedAt||0, base=gdMeta.base||0;
-    if(gdLocalEmpty()) return gdApply(remote,'드라이브 데이터를 불러왔습니다');
-    if((base && rU===base && lU===base) || gdNorm(remote.data)===gdNorm(backupData(false))){ gdMeta.base=lU; gdMeta.lastLoad=Date.now(); gdSaveMeta();
-      const kd=gdKeyDiff(remote.data); if(kd.pulled) save(); // 드라이브에만 있는 키 → 이 PC로 (save 가 자동 저장도 예약)
-      if(kd.push || rU!==lU || !remote.withKeys) await gdWrite(); gdSet('on'); return; }
-    if(base && rU===base && lU!==base){ await gdWrite(); gdSet('on','이 PC의 변경 사항을 드라이브에 저장했습니다'); return; }
-    if(base && lU===base && rU!==base) return gdApply(remote,'다른 PC에서 바뀐 데이터를 불러왔습니다');
-    gdAsk(remote);
+    gd.busy=true; let res;
+    try{ res=await gdSync(await gdRead(f.id)); } finally{ gd.busy=false; }
+    if(res!=='ask'){ gdSet('on',GD_RES_MSG[res]||''); if(res==='loaded') toast('☁ '+GD_RES_MSG.loaded); }
+    if(gd.again){ gd.again=false; gdChanged(); }
   }catch(e){ clearTimeout(slow); gdFail(e,interactive); }
 }
-function gdApply(remote,msg){
-  const d=remote.data; d.updatedAt=+remote.updatedAt||Date.now();
-  applyData(d); // load() 로 updatedAt 이 드라이브 값 그대로 유지됨 (드라이브의 API 키도 함께 복원)
-  gdMeta.base=S.updatedAt; gdMeta.lastLoad=Date.now(); gdSaveMeta();
-  if(gdKeyDiff(d).push || !remote.withKeys) gdPush(); // 이 PC에만 있던 키를 드라이브에도 저장
-  gdSet('on',msg); toast('☁ '+msg);
+const GD_RES_MSG={same:'',pushed:'이 PC의 변경 사항을 드라이브에 저장했습니다',pulled:'다른 기기에서 바뀐 데이터를 불러왔습니다',merged:'다른 기기의 변경과 자동으로 합쳤습니다',loaded:'드라이브 데이터를 불러왔습니다'};
+/* 드라이브 파일과 이 PC 데이터를 맞춤 → 'same'|'pushed'|'pulled'|'merged'|'loaded'|'ask'
+ *  - 이 PC 가 비어 있음 → 드라이브 불러오기
+ *  - base(마지막으로 맞춘 내용)가 있으면 3-way 병합, 진짜 충돌(같은 항목을 양쪽에서 다르게 수정)일 때만 한 번 질문
+ *  - 예전 버전 메타(시각만 있음): 한쪽만 바뀌었으면 그쪽, 둘 다면 묻지 않고 합침(겹치는 값은 최근 수정한 쪽)
+ *  - 이 PC 에서 처음 연결 + 내용이 다름 → 한 번 질문(통째로 고르기) */
+async function gdSync(remote){
+  if(!remote?.data || !Array.isArray(remote.data.characters)) throw new Error('드라이브 파일 형식이 올바르지 않습니다');
+  if(gdLocalEmpty()){ gdApply(remote,null); return 'loaded'; }
+  const rU=+remote.updatedAt||0, lU=S.updatedAt||0;
+  const rd=gdPrep(remote.data), ld=gdPrep(backupData(true));
+  let bd=gdBaseData(); bd=bd?gdPrep(bd):null;
+  if(!bd&&gdMeta.base){ if(rU===gdMeta.base) bd=rd; else if(lU===gdMeta.base) bd=ld; }
+  const legacy=!bd&&!!gdMeta.base;
+  if(!bd&&!legacy&&gdSig(rd)!==gdSig(ld)) return gdAsk(remote,{mode:'whole'});
+  const ctx={base:!!bd,prefer:legacy?(lU>=rU?'l':'r'):'l',conf:[]};
+  const m=gdMerge(bd,ld,rd,ctx);
+  if(ctx.conf.length&&!legacy) return gdAsk(remote,{mode:'merge',conf:ctx.conf,base:bd});
+  return gdCommit(m,remote);
 }
-function gdAsk(remote){
-  if(!remote) return; gd.pending=remote; gdSet('conflict');
+// 병합 결과 m 을 이 PC 에 적용(달라졌으면)하고 드라이브에 저장(달라졌으면)
+async function gdCommit(m,remote){
+  const rU=+remote.updatedAt||0, rd=gdPrep(remote.data);
+  ['history','monthHistory'].forEach(k=>{ if(Array.isArray(m[k])) m[k].sort((a,b)=>String(a.week||a.month)<String(b.week||b.month)?-1:1); });
+  const mS=contentSig(m), toLocal=mS!==contentSig(gdPrep(backupData(true))), toRemote=mS!==contentSig(rd)||!remote.withKeys;
+  if(toLocal){ m.updatedAt=gdSig(m)===gdSig(rd)&&!toRemote?rU:Date.now(); gdLoad(m); }
+  if(toRemote){ await gdWrite(); }
+  else { if((S.updatedAt||0)!==rU){ S.updatedAt=rU; localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); } gdMeta.lastLoad=Date.now(); gdMarkSynced(rU); }
+  if(toLocal) toast('☁ '+(toRemote?GD_RES_MSG.merged:GD_RES_MSG.pulled));
+  return toLocal&&toRemote?'merged':toLocal?'pulled':toRemote?'pushed':'same';
+}
+function gdLoad(m){ localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(m)); load(); checkResets(); localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); applyTheme(); render(); }
+// 드라이브 데이터를 통째로 사용 (이 PC 가 비었을 때 / 처음 연결 질문에서 '드라이브' 선택)
+function gdApply(remote,msg){
+  const d=JSON.parse(JSON.stringify(remote.data)); d.updatedAt=+remote.updatedAt||Date.now();
+  applyData(d); // load() 로 updatedAt 이 드라이브 값 그대로 유지됨 (드라이브의 API 키도 함께 복원)
+  gdMeta.lastLoad=Date.now(); gdMarkSynced(+remote.updatedAt||0);
+  if(gdKeyDiff(d).push || !remote.withKeys) gdPush(); // 이 PC에만 있던 키를 드라이브에도 저장
+  if(msg){ gdSet('on',msg); toast('☁ '+msg); }
+}
+const GD_FIELD={name:'이름',bosses:'보스 설정',weekly:'주간 체크',monthly:'월간 체크',auto:'자동 체크',drops:'획득 아이템',mdrops:'월간 획득 아이템',dropOut:'반지 결과',mdropOut:'반지 결과',isMain:'본캐 지정',
+  worldOrder:'월드 순서',dq:'일퀘 표시 설정',settings:'설정',label:'계정 이름'};
+function gdConfLabel(p,d){
+  const m=/^characters\[([^\]]*)\]\.?([^.\[]*)/.exec(p);
+  if(m){ const c=(d.characters||[]).find(x=>String(x.id)===m[1])||S.characters.find(x=>String(x.id)===m[1]); return `${c?c.name:'캐릭터'} · ${GD_FIELD[m[2]]||m[2]||'캐릭터'}`; }
+  const a=/^settings\.accounts\[([^\]]*)\]/.exec(p); if(a) return '넥슨 계정 이름';
+  return GD_FIELD[p.split(/[.\[]/)[0]]||p;
+}
+function gdAsk(remote,opt={}){
+  if(!remote) return 'ask'; gd.pending={...opt,remote}; gdSet('conflict');
   const rU=+remote.updatedAt||0, lU=S.updatedAt||0, d=remote.data;
   const card=(t,ic,u,chars,weeks,newer,id,btn)=>`<div class="gdside ${newer?'newer':''}"><div class="gdt">${ic} ${t} ${newer?'<span class="pill">최근 수정</span>':''}</div>
     <div>마지막 수정: <b>${u?hm(u):'알 수 없음'}</b></div><div>캐릭터 <b>${chars}</b>명 · 주간 기록 ${weeks}주</div>
     <button class="btn ${newer?'':'ghost'}" id="${id}">${btn}</button></div>`;
   $('#gdTitle').textContent='☁️ 어느 데이터를 쓸까요?';
-  $('#gdBody').innerHTML=`<p class="muted" style="margin-top:0">구글 드라이브와 이 PC의 데이터가 서로 다릅니다. 어느 쪽을 쓸지 한 번만 골라 주세요. 고르지 않은 쪽은 덮어써집니다.</p>
+  if(opt.mode==='merge'){
+    const labels=[...new Set((opt.conf||[]).map(p=>gdConfLabel(p,d)))];
+    $('#gdBody').innerHTML=`<p class="muted" style="margin-top:0">구글 드라이브(다른 기기)와 이 PC에서 <b>같은 항목을 서로 다르게</b> 바꿨어요. 겹치는 항목만 어느 쪽 값을 쓸지 골라 주세요. <b>나머지 변경은 양쪽 모두 자동으로 합쳐집니다.</b></p>
+      <ul class="gdconf">${labels.slice(0,5).map(t=>`<li>${esc(t)}</li>`).join('')}${labels.length>5?`<li>외 ${labels.length-5}곳</li>`:''}</ul>
+      <div class="gdsides">${card('구글 드라이브','☁️',rU,d.characters.length,(d.history||[]).length,rU>lU,'gdUseDrive','드라이브 쪽 값으로')}
+      ${card('이 PC','💻',lU,S.characters.length,(S.history||[]).length,lU>=rU,'gdUseLocal','이 PC 쪽 값으로')}</div>`;
+  } else {
+    $('#gdBody').innerHTML=`<p class="muted" style="margin-top:0">이 PC에서 처음 연결했는데 구글 드라이브와 이 PC의 데이터가 서로 다릅니다. 어느 쪽을 쓸지 한 번만 골라 주세요. 고르지 않은 쪽은 덮어써집니다.</p>
     <div class="gdsides">${card('구글 드라이브','☁️',rU,d.characters.length,(d.history||[]).length,rU>lU,'gdUseDrive','드라이브 데이터 불러오기')}
     ${card('이 PC','💻',lU,S.characters.length,(S.history||[]).length,lU>=rU,'gdUseLocal','이 PC 데이터로 덮어쓰기')}</div>`;
+  }
   $('#driveModal').classList.add('show');
+  return 'ask';
 }
+function gdReask(){ const P=gd.pending; if(P) gdAsk(P.remote,P); }
 async function gdResolve(which){
-  const remote=gd.pending; $('#driveModal').classList.remove('show'); if(!remote) return; gd.pending=null;
+  const P=gd.pending; $('#driveModal').classList.remove('show'); if(!P) return; gd.pending=null;
+  const remote=P.remote;
   try{
-    if(which==='drive') gdApply(remote,'드라이브 데이터를 불러왔습니다');
-    else { gdSet('saving'); if(!gd.fileId) gd.fileId=(await gdFind())?.id||null; await gdWrite(); gdSet('on','이 PC 데이터로 드라이브를 덮어썼습니다'); toast('☁ 이 PC 데이터로 드라이브를 덮어썼습니다'); }
+    gdSet('saving');
+    if(P.mode==='merge'){
+      const ctx={base:true,prefer:which==='drive'?'r':'l',conf:[]};
+      const m=gdMerge(P.base,gdPrep(backupData(true)),gdPrep(remote.data),ctx);
+      await gdCommit(m,remote); const msg=`겹치는 항목은 ${which==='drive'?'드라이브':'이 PC'} 값으로, 나머지는 합쳤습니다`; gdSet('on',msg); toast('☁ '+msg);
+    }
+    else if(which==='drive') gdApply(remote,'드라이브 데이터를 불러왔습니다');
+    else { if(!gd.fileId) gd.fileId=(await gdFind())?.id||null; await gdWrite(); gdSet('on','이 PC 데이터로 드라이브를 덮어썼습니다'); toast('☁ 이 PC 데이터로 드라이브를 덮어썼습니다'); }
   }catch(e){ gdFail(e); }
 }
 function gdChanged(){
   if(!gdMeta.on||!gdUsable()||gd.state==='conflict') return;
   clearTimeout(gd.timer); gd.timer=setTimeout(()=>{ gd.timer=null; gdPush(); },GD.DEBOUNCE); gdRender();
+}
+// 다른 기기에서 바뀐 내용 확인 (탭으로 돌아올 때·1분마다, 메타데이터만 조회 → 바뀌었을 때만 내용 읽어서 합침)
+async function gdPull(force){
+  if(!gdMeta.on||!gdUsable()||gd.state!=='on'||gd.busy||gd.timer||!gd.fileId||!(gd.token&&Date.now()<gd.exp-60e3)) return;
+  if(!force&&Date.now()-(gd.pulledAt||0)<55e3) return; gd.pulledAt=Date.now();
+  gd.busy=true;
+  try{
+    const m=await (await gdFetch(`${GD.API}/files/${gd.fileId}?fields=id,appProperties`)).json();
+    const rU=+(m.appProperties?.updatedAt||0), seen=gdMeta.rU||gdMeta.base;
+    if(rU && rU!==seen && rU!==(S.updatedAt||0)){ const res=await gdSync(await gdRead(gd.fileId)); if(res!=='ask') gdSet('on',GD_RES_MSG[res]||''); }
+  }catch(e){ console.warn('drive pull',e); }
+  finally{ gd.busy=false; if(gd.again){ gd.again=false; gdChanged(); } }
 }
 async function gdPush(opts={}){
   clearTimeout(gd.timer); gd.timer=null;
@@ -1599,8 +1729,9 @@ async function gdPush(opts={}){
       if(!gd.fileId) gd.fileId=(await gdFind())?.id||null;
       else{ // 다른 PC에서 그 사이 저장했는지 확인 (덮어쓰기 방지)
         try{ const m=await (await gdFetch(`${GD.API}/files/${gd.fileId}?fields=id,appProperties`)).json();
-          const rU=+(m.appProperties?.updatedAt||0);
-          if(gdMeta.base && rU && rU!==gdMeta.base && rU!==(S.updatedAt||0)){ gd.busy=false; gdAsk(await gdRead(gd.fileId)); return false; }
+          const rU=+(m.appProperties?.updatedAt||0), seen=gdMeta.rU||gdMeta.base;
+          if(seen && rU && rU!==seen && rU!==(S.updatedAt||0)){ // 다른 기기가 그 사이 저장 → 합친 뒤 저장 (진짜 충돌일 때만 질문)
+            const res=await gdSync(await gdRead(gd.fileId)); if(res==='ask') return false; gdSet('on',GD_RES_MSG[res]||''); return true; }
         }catch(e){ if(e.status===404) gd.fileId=null; else throw e; }
       }
     }
@@ -1616,7 +1747,7 @@ async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그
   }
   try{ if(gd.token&&window.google?.accounts?.oauth2?.revoke) google.accounts.oauth2.revoke(gd.token,()=>{}); }catch(e){}
   clearTimeout(gd.timer); gd.timer=null; gd.token=null; gd.exp=0; gd.fileId=null; sessionStorage.removeItem(GD.TOKEN_KEY);
-  gdMeta={}; localStorage.removeItem(GD.META_KEY);
+  gdMeta={}; localStorage.removeItem(GD.META_KEY); localStorage.removeItem(GD_BASE_KEY);
   gdSet('off'); render(); toast('구글 드라이브에서 로그아웃했습니다');
 }
 
@@ -1739,8 +1870,8 @@ if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
 checkResets(); loadOfficialPrices(); save(); applyTheme(); render();
 const autoDue=()=>hasApi() && S.settings.autoSync && S.characters.some(c=>c.ocid) && Date.now()-(S.settings.lastSync||0) > CONFIG.AUTO_SYNC_MIN*60e3;
 if(autoDue() || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))) syncAll({silent:true}); // 기존 데이터: 계정 자동 배정
-setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden && autoDue()) syncAll({silent:true}); else tabTick(); }, 60e3);
-document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); return; } if(checkResets()) render(); if(autoDue()) syncAll({silent:true}); else tabTick(); });
+setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden && autoDue()) syncAll({silent:true}); else tabTick(); if(!document.hidden) gdPull(); }, 60e3);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); return; } if(checkResets()) render(); if(autoDue()) syncAll({silent:true}); else tabTick(); gdPull(); });
 window.addEventListener('pagehide',()=>{ if(gd.timer||gdLocalDirty()) gdPush({quick:true}); });
 /* =====================================================================
  *  소식 피드 (왼쪽 아래 카드)

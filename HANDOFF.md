@@ -62,14 +62,22 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - `mapleBossTracker.sched` — 캐릭터별 스케줄러 요약 캐시 `{charId:{date, level, items{cer…xmp:{st,now,max,reg,name}}, guild{suro,flag,mission}, at, ok, msg, errAt}}` (일퀘·길드 탭용, 드라이브 동기화 안 함)
   - `mapleBossTracker.guild` — 길드 랭킹 캐시 `{date, t1, t2(랭킹 행), at, ok, msg}`
   - `mapleBossTracker.feedSeen` — 소식 카드에서 읽은(클릭한) 글 id 배열 (feed.json에 남아 있는 것만 보관, 드라이브 동기화 안 함)
-  - `mapleBossTracker.gdrive` — 드라이브 동기화 메타 `{on, base, fileId, lastSave, lastLoad}`
+  - `mapleBossTracker.gdrive` — 드라이브 동기화 메타 `{on, base(맞춘 시점 이 PC updatedAt), rU(맞춘 시점 드라이브 updatedAt), fileId, lastSave, lastLoad}`
+  - `mapleBossTracker.gdbase` — 마지막으로 드라이브와 맞춘 시점의 내용(키 제외) = 3-way 병합 기준 (2026-10-10 추가, 로그아웃 시 삭제)
   - sessionStorage `mapleBossTracker.gtoken` — 구글 액세스 토큰(탭 세션 동안만)
   - 키 이름·드라이브 파일명은 기존 데이터 호환을 위해 **바꾸지 말 것** (예전 이름 maple-boss-tracker 그대로).
 - S 구조(요약): `characters[]`(id, name, job, level, world, ocid, accId, isMain, image, exp, `bosses{slot:{enabled,diff,party}}`, `weekly{slot:true}`, `monthly{slot:week}`, `auto`, `sync`, `drops{'slot|item':n}`, `mdrops`, `dropOut{'slot|item':['r4'|'c4'|'x']}`, `mdropOut`), `history[]`(주간 기록: week,total,cleared,crystals,items,perChar[{id,name,meso,count,bosses,items{'slot|item#N':n},outcomes}]), `monthHistory[]`, `startWeek`, `period{week,day,month}`, `worldOrder`, `dq{off{항목:1}, charOff{charId:{항목:1}}, hide{charId:1}}`(일퀘 현황 표시 설정, load()에서 기본값 보정), `activeId`, `theme`, `updatedAt`, `settings{accounts[{id,label,key,status}], autoSync, autoEnable, lastSync, weeklyLimit:12, monthlyLimit:1, prices:{}}`.
 - 초기화: 주간 = 목요일 00:00 KST, 월간 = 1일 00:00 KST. `checkResets()`가 지난 기간을 history/monthHistory로 보관(그 시점 파티 인원으로 라벨 고정, 키 `item#N`).
 - 마이그레이션은 `load()/migrate()/normChar()`에서 처리(예전 필드 삭제: apiMode, driveKeys, worldLimit, dropParty, priceSource, 수동 가격 등). 새 기능은 항상 기존 데이터가 깨지지 않게 추가.
 - 구글 드라이브: 파일 `maple-boss-tracker.json` (appDataFolder, 범위 `drive.appdata`). 내용 `{app, format:1, savedAt, updatedAt, characters(개수), withKeys:true, data:S(API 키 포함)}`.
-  - 로그인 시: 드라이브만 있음→불러오기, 이 PC만→업로드, 둘 다 다르면 시각·캐릭터 수를 보여 주고 한 번 질문(드라이브 불러오기 / 이 PC로 덮어쓰기). 이후 변경 5초 뒤·페이지 숨김 시 자동 저장, 저장 전 원격 updatedAt 확인으로 덮어쓰기 방지.
+  - **동기화 방식 (2026-10-10 개편 — '어느 데이터를 쓸까요?'가 계속 뜨던 버그 수정)**
+    - 원인이었던 것: ① `save()`가 S 의 **아무 값**이나 바뀌어도 updatedAt 을 갱신 → 자동 동기화(5분마다 lastSync·캐릭터 sync 시각·이미지·EXP), 캐릭터 탭 클릭(activeId), 테마, 자정 period 변경만으로도 '수정됨'이 되어 드라이브에 저장. ② 비교(gdNorm)에 캐릭터 sync/image/exp·activeId 가 남아 있어 두 기기 내용이 항상 '다름'. ③ 판단이 시각(updatedAt vs base)뿐이라 두 기기가 모두 열려 있거나(집 PC 켜 둔 채 PC방) 시작할 때 자동 동기화가 먼저 돌면 매번 '둘 다 바뀜'→질문. 고른 뒤에도 다음 자동 동기화에서 또 같은 상황 → 반복.
+    - 이제: `contentSig(d)` = `gdStrip`(GD_LOCAL_RE 경로 제외) + 키. 제외 = **기기 전용**(theme, activeId, period, updatedAt, version, startWeek, settings.lastSync/prices…) + **자동 갱신 값**(characters[].sync/image/exp, settings.accounts[].key/status). `save()`는 contentSig 가 바뀔 때만 updatedAt 갱신·드라이브 저장 예약(localStorage 는 항상 저장).
+    - `gdSync(remote)`(연결 시·저장 전 원격이 바뀌었을 때·탭 복귀/1분마다 `gdPull`(메타데이터만 조회)): 이 PC 비었으면 드라이브 불러오기. `GD_BASE_KEY` 의 base 가 있으면 **3-way 병합 `gdMerge`**: 한쪽만 바꾼 항목은 그쪽 값, 캐릭터·계정은 id / 기록은 week·month 로 짝지음, 추가·삭제 반영(삭제 vs 수정이면 수정본 유지), 기기 전용·자동 갱신 값은 이 PC 값(키는 이 PC 에 없으면 드라이브 값). API 값(level/job/world/ocid/accId)·지난 기록 요약은 충돌이어도 묻지 않음. 병합 전 양쪽을 `rollPeriod`로 이번 주·월로 넘겨서 지난 주 체크가 이번 주로 섞이지 않게 함.
+    - **질문은 진짜 충돌(같은 항목을 양쪽에서 다르게 수정)일 때만** — 충돌 항목 이름(예: '부캐 · 이름')을 보여 주고 '드라이브 쪽 값으로 / 이 PC 쪽 값으로'; 나머지 변경은 그대로 합쳐짐. 고르면 결과를 저장하고 base 갱신 → 다시 안 물음. '나중에'(✕)로 닫으면 헤더 [☁ 선택 필요]로 다시 열기(그동안 자동 저장 멈춤).
+    - base 가 없는 경우: 예전 버전 메타(base 시각만)면 한쪽만 바뀐 경우 그쪽, 둘 다면 **묻지 않고 합침**(겹치는 값은 최근 수정한 쪽, 한쪽에만 있는 캐릭터·체크는 유지 — 다른 PC 에서 지운 캐릭터가 한 번 되살아날 수는 있음). 메타도 없는 처음 연결 + 내용이 다르면 예전처럼 한 번 '통째로 고르기'.
+    - 저장(`gdPush`) 전 원격 updatedAt 이 rU 와 다르면(다른 기기가 저장함) 덮어쓰지 않고 gdSync 로 합친 뒤 저장. 페이지 숨김 시 빠른 저장(keepalive)은 확인 없이 저장하지만, 다른 기기는 다음 저장/복귀 때 base 기준으로 합치므로 잃지 않음.
+    - 테스트: test10(기존 시나리오 + 다른 항목 동시 수정 → 자동 병합, 같은 항목 → 질문·나중에·헤더로 다시 열기), **test17**(두 기기 집/PC방 모의 드라이브: 자동 갱신 값만 바뀜 → 저장 안 함, 서로 다른 수정·추가·삭제 자동 병합, 진짜 충돌 1회 질문 후 재발 없음, 새로고침 후 질문 없음, 예전 메타 자동 병합, 지난 주 체크 롤오버).
 
 ## 5. 넥슨 Open API (https://openapi.nexon.com)
 - 브라우저에서 `https://open.api.nexon.com` **직접 호출**(헤더 `x-nxopen-api-key`). 프록시 없음.
@@ -174,6 +182,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - **테스트 서버 공지의 가격을 '다음 패치 예정 가격'으로 표시** — 사용자 결정 대기 중(아직 구현 안 함).
 
 ## 11. 변경 기록
+- 2026-10-10: **구글 드라이브 '어느 데이터를 쓸까요?' 반복 수정** — 자동 갱신·기기 전용 값은 비교/저장 대상에서 제외(updatedAt 안 바뀜), 마지막으로 맞춘 내용 기준 3-way 자동 병합, 진짜 충돌일 때만 한 번 질문(충돌 항목만 선택, 나머지는 합침), 탭 복귀·1분마다 다른 기기 변경 확인(gdPull). 예전 메타는 묻지 않고 합침. test17 추가, test10 갱신.
 - 2026-10-10: **sunday-watch.yml** 추가 — 매일 10:00~10:20 KST 5초마다 썬데이 새 글 확인(API 우선·홈페이지 대체), 찾으면 즉시 처리(OCR·sunday.png)·커밋(최신 main 에 sunday 만 병합). 최대 +241 API 호출/일. scripts/sunday_watch.py, test_sunday_watch.py.
 - 2026-10-10: 썬데이 **OCR 혜택**(실제 혜택 글자, 여러 줄) + **자동 자르기 sunday.png**(이벤트 기간~혜택 상자) + **라이트박스**(이미지 클릭 시 크게 보기, 공식 사이트 대신; '공지 보기' 링크). update-feed.yml 에 조건부 OCR 단계, scripts/sunday_ocr.py, test_sunday_ocr.py(+픽스처 sunday_1397.jpg), test16 갱신. NEXON_API_KEY2 를 workflow 에 전달(workflow 권한 받은 뒤 푸시). tests/mock_nexon.py 스케줄러 응답 날짜를 오늘(KST)로(고정 10-09 라 다음 날 test14 가 깨지던 것).
 - 2026-10-09: **썬데이 메이플 카드** 추가(소식 카드 아래, 소식 1/3 : 썬데이 2/3, '☀ 썬데이' 탭 머리글, 이미지 클릭 = 글, 맨 아래 '이번 주 혜택'). update_feed.py src_sunday(API /notice-event 재사용 + 새 글 detail 1회, HTML 대체). 마이너 패치도 **API(/notice) 우선, 홈페이지 검색은 대체**로 변경(사용자 요청: 가능한 곳은 넥슨 Open API 우선). test16·test_feed_sunday 추가, test_feed_minor 갱신. 예비 넥슨 키 secret NEXON_API_KEY2 + 자동 전환(호출량 초과·잘못된 키), test_feed_keys 추가.

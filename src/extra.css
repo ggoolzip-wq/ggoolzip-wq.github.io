@@ -206,6 +206,7 @@ img.ric{width:16px;height:16px;object-fit:contain;image-rendering:pixelated}
 .hbtn.gbtn{margin-right:6px;white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis}
 .hbtn.gbtn.warn{background:#fff;color:var(--warn);border-color:#fff;font-weight:700}
 .gdline{margin-bottom:2px}
+.gdconf{margin:4px 0 8px;padding-left:18px;font-size:.85rem}.gdconf li{margin:2px 0}
 .gdsides{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
 .gdside{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px;background:var(--panel2)}
 .gdside.newer{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}

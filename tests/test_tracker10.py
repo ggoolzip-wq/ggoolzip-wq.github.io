@@ -116,13 +116,19 @@ with sync_playwright() as p:
     up0=len(d.uploads()); pg.evaluate("()=>{S.characters[0].level=300; save(); Object.defineProperty(document,'hidden',{configurable:true,get:()=>true}); document.dispatchEvent(new Event('visibilitychange'));}"); pg.wait_for_timeout(500)
     print('H1 hide → immediate upload:',len(d.uploads())-up0,'| drive level:',d.file['content']['data']['characters'][0]['level'])
     pg.evaluate("Object.defineProperty(document,'hidden',{configurable:true,get:()=>false})")
-    # 3e. other PC saved meanwhile → push detects conflict
+    # 3e. other PC saved meanwhile (different field) → auto-merged without asking (2026-10-10)
     other=json.loads(json.dumps(d.file['content'])); other['updatedAt']=int(time.time()*1000)+9000; other['data']['characters'][0]['name']='다른PC'
     d.file['content']=other; d.file['appProperties']['updatedAt']=str(other['updatedAt'])
     pg.evaluate("()=>{S.characters[0].level=301; save();}"); pg.wait_for_timeout(5800)
-    print('C0 concurrent edit → modal:',pg.is_visible('#driveModal'),'| state',pg.evaluate('gd.state'),'| drive not overwritten:',d.file['content']['data']['characters'][0]['name']=='다른PC')
-    pg.click('#gdClose'); print('C0 later → btn:',gbtn(pg)); pg.click('#gBtn'); print('C0 header reopens modal:',pg.is_visible('#driveModal')); pg.click('#gdUseDrive'); pg.wait_for_timeout(300)
-    print('C0 use drive → names',names(pg),'| state',pg.evaluate('gd.state'))
+    dc0=d.file['content']['data']['characters'][0]
+    print('C0 concurrent edit (other field) → modal:',pg.is_visible('#driveModal'),'| state',pg.evaluate('gd.state'),'| merged drive:',dc0['name'],dc0['level'],'| local:',names(pg),pg.evaluate('S.characters[0].level'))
+    # 3e2. genuine conflict (same field on both) → one prompt; 나중에 → header reopens
+    other=json.loads(json.dumps(d.file['content'])); other['updatedAt']=int(time.time()*1000)+19000; other['data']['characters'][0]['name']='다른PC2'
+    d.file['content']=other; d.file['appProperties']['updatedAt']=str(other['updatedAt'])
+    pg.evaluate("()=>{S.characters[0].name='이PC이름'; save();}"); pg.wait_for_timeout(5800)
+    print('C1 same-field conflict → modal:',pg.is_visible('#driveModal'),'| state',pg.evaluate('gd.state'),'| drive not overwritten:',d.file['content']['data']['characters'][0]['name']=='다른PC2')
+    pg.click('#gdClose'); print('C1 later → btn:',gbtn(pg)); pg.click('#gBtn'); print('C1 header reopens modal:',pg.is_visible('#driveModal')); pg.click('#gdUseDrive'); pg.wait_for_timeout(500)
+    print('C1 use drive → names',names(pg),'| state',pg.evaluate('gd.state'),'| level kept:',pg.evaluate('S.characters[0].level'))
     # 3f. wipe
     print('W0 no wipe button:', pg.query_selector('#gdWipe') is None and '지우기' not in pg.inner_text('#gMenu') if not pg.is_hidden('#gMenu') else pg.query_selector('#gdWipe') is None)
     rv=pg.evaluate('__g.revoked'); menu(pg); pg.click('#gMenu #gdLogout'); pg.wait_for_timeout(1500)
