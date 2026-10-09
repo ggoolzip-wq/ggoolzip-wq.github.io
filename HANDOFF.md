@@ -33,7 +33,7 @@ src/assets/             아이템·반지·주황버섯 원본 PNG
 tools/build.py          src/ → index.html
 tools/build_items.py    src/assets → src/itemicons.json (Pillow 필요)
 tools/build_logo.py     주황버섯 PNG → logo.json, favicon.png, apple-touch-icon.png
-tests/                  Playwright 회귀 테스트(test_tracker4~15), mock_nexon.py, fixtures/(공지 HTML 사본), run_all.sh
+tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed_minor.py(피드 수집기 마이너 패치, 네트워크 없음), mock_nexon.py, fixtures/(공지 HTML 사본), run_all.sh
 ```
 
 ## 3. 빌드 · 테스트 · 배포
@@ -44,7 +44,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), mock_nexo
   - test_tracker4/5/6/7/8/10은 결과를 출력(PASS/값)하는 형식, 9/11/12/13은 `FAILS: []`·`ERRORS: []`로 판정. 모든 테스트에서 JS 오류(ERRORS) 0이어야 함.
   - test13 = 현재 UI 구조(＋추가 통합 모달, 헤더 동기화, ☁ 메뉴) 핵심 테스트.
   - test14 = 일퀘 현황·길드 현황 탭(탭 순서·ㅡ 구분선, 항목/상태/잠금, 완료 덮개·호버, 편집(전체/캐릭터별/카드 숨김)·저장, 10분 캐시·자동 갱신, 길드 랭킹 어제 대체, 본캐 수로, 375/320px). `MBT_SHOTDIR=폴더`면 tab_daily.png·tab_daily_hover.png·tab_guild.png 를 그 폴더에도 저장. mock_nexon.py에 실제 응답 이름 그대로의 daily/weekly_contents와 /ranking/guild 모의 응답, 호출 기록(CALLS)·GUILD_EMPTY 추가.
-  - test15 = 소식 피드 카드(모의 feed.json: 위치, 탭·안 읽은 수, N 배지·읽음 유지, 사료 기한·만료 흐림, 한 줄 말줄임, 쪽 번호 5개+‹›, 탭 전환 시 1쪽, 수집 실패 표시, 1280x800·1920x1080 모든 탭에서 카드 때문에 페이지가 길어지지 않음·스크롤해도 화면 안, 390/320px 모바일). 스크린샷 feed_card*.png.
+  - test15 = 소식 피드 카드(모의 feed.json, 패치 탭에 마이너 패치 2건 섞임: 위치, 탭·안 읽은 수, N 배지·읽음 유지, 사료 기한·만료 흐림, 한 줄 말줄임, 쪽 번호 5개+‹›, 탭 전환 시 1쪽, 수집 실패 표시, 1280x800·1920x1080 모든 탭에서 카드 때문에 페이지가 길어지지 않음·스크롤해도 화면 안, 390/320px 모바일). 스크린샷 feed_card*.png.
   - test12 = 12/12 완료 덮개(문구·두 줄 배치·카드 안 맞춤·호버/클릭/터치 통과). `MBT_SHOT=경로`를 주면 사이드바 스크린샷을 그 경로에도 저장.
   - 주의: 8787 포트를 다른 서버(예: 로컬 개발 사본 /workspace/maple-boss-tracker)가 이미 쓰고 있으면 테스트가 그쪽 파일을 엽니다 → 개발 사본도 같은 index.html로 맞춘 뒤 테스트.
 - 배포: `main`에 일반 push(강제 push 금지) → Pages가 1분 내 반영. 확인: `curl -s https://ggoolzip-wq.github.io/ | grep '<title>'`.
@@ -95,7 +95,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), mock_nexo
 - GitHub cron은 실제로 5~15분 늦게 도는 일이 흔함(무료 러너 사정). 저장소에 60일간 커밋이 없으면 예약 실행이 꺼질 수 있지만 피드 커밋이 있어서 사실상 유지됨.
 - 출처(소스별 try/except, 하나가 실패해도 나머지는 계속):
   - **사료감지(saryo)**: 넥슨 Open API `/maplestory/v1/notice`(매회) + `/notice-event`(15분마다), 워터마크보다 큰 id만 `…/detail` 조회(회당 최대 10건). 규칙 = 본문에 '메이플 운영자' 또는 '운영자 NPC'가 있고, 그 앞 100자·뒤 70자 안에 수령/지급/받기 등이 있음. 제외: '수령 불가', '받을 수 없', '지급되지 않', 코인샵/상점, 소울 교환/조각, '교환하기/교환해 주/교환할 수'('교환 여부' 같은 안내 문구는 제외하지 않음 — 150276 본문에 있음). '수령 기간 … ~ M월 D일 (오전|오후) H시 M분'에서 마감 추출(없으면 23:59) → `end`. 만료된 글은 카드에서 흐리게.
-  - **패치내역(patch)**: `/notice-update`(10분마다).
+  - **패치내역(patch)**: `/notice-update`(10분마다) + **마이너 패치**(매회): 공식 공지사항 중 제목이 `MINOR_RE`(`마이너\s*(\(N\))?\s*패치` — '마이너패치'·'마이너 패치'·실제 형식 '[패치완료] 6/23(화) ver1.2.416 마이너(7) 패치(19:21 적용)') 에 맞는 글의 **최신 2개를 항상** 표시(id `minor:<공지번호>`, src 'minor', 업데이트 공지와 날짜순으로 섞임). 출처 = 홈페이지 검색 HTML `https://maplestory.nexon.com/News/Notice/All?search=마이너`(API 할당량 안 씀, `parse_notice_list` — news_board 안 li, 오늘 글은 'PM 07:22'처럼 시각만 → 오늘 날짜로) ∪ 사료감지가 같은 회차에 받은 `/notice` 목록(추가 API 호출 없음, 날짜에 시각이 있어 우선). 기존 minor 글 ∪ 새 후보 중 번호 큰 2개만 남기고 제목·날짜는 매번 갱신([패치예정]→[패치완료] 제목 변경 반영). HTML·API 둘 다 실패하면 경고만 남기고 기존 2개 유지(패치 탭 실패로 표시 안 함). 테스트: `tests/test_feed_minor.py`(픽스처 `tests/fixtures/notice_all.html` = 공지사항 목록 웨이백 사본 2026-06-23).
   - **테섭(test)**: https://maplestory.nexon.com/Testworld/News/Update 목록 HTML 스크랩(`[수정N]` em 태그 제거).
   - **마빡도로시(mabbak)**: 인벤 닉네임 검색 `https://www.inven.co.kr/board/maple/{게시판}?name=nicname&keyword=마빡도로시`, 게시판 5974·2304·2314·2316·2587 각 1회(1.2초 간격, 회당 5요청 + 새 글당 본문 1요청). 새 글은 본문의 articleTitle/articleDate(연도·시각)로 기록. 게시판 첫 방문 땐 워터마크만 설정(공지 고정글·옛 글을 채우지 않음). 모든 게시판이 실패할 때만 소스 실패.
 - API 호출량(개발 키 1,000회/일): 5분 실행 288회 × /notice 1 + /notice-update 144 + /notice-event 96 ≈ 530회/일 + 새 공지 detail. (cron 지연 때문에 실제로는 더 적음.) 키는 저장소 secret `NEXON_API_KEY` (2026-10-09 설정, 개발 키). 할당량이 모자라면 실서비스 키로 교체: Settings → Secrets → Actions.
@@ -152,6 +152,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), mock_nexo
 - **테스트 서버 공지의 가격을 '다음 패치 예정 가격'으로 표시** — 사용자 결정 대기 중(아직 구현 안 함).
 
 ## 11. 변경 기록
+- 2026-10-09: 소식 카드 **패치내역** 탭에 공지사항 '마이너 패치' 최신 2개 추가(6-1장). scripts/update_feed.py(MINOR_RE, parse_notice_list, src_minor, apply_minor), test_feed_minor.py + 픽스처 notice_all.html, test15 모의 feed에 minor 2건(탭 수 16, 날짜순 확인), run_all에 포함. 사이트(src/index.html) 변경 없음.
 - 2026-10-09: **소식 피드 카드** 추가(왼쪽 아래, 사료감지·패치내역·테섭·마빡도로시). update-feed.yml(5분 cron) + scripts/update_feed.py + feed.json(시드), secret NEXON_API_KEY(개발 키) 설정. 카드 높이 자동 맞춤·쪽 번호·N 배지/안 읽은 수(localStorage feedSeen)·수집 실패 표시. test15 추가(run_all에 15). 자세한 내용은 6-1장.
 - 2026-10-09: 일퀘 칸 지역 아이콘 추가(어센틱/그랜드 어센틱심볼 8종, 몬스터파크 이용권, 익몬 = 몬스터파크 NPC 슈피겔만 얼굴; 출처는 8장). 칸 내용 모든 상태 가운데 정렬. tools/build_dqicons.py·src/dqicons.json 추가, build.py에 DQ_ICONS 치환.
 - 2026-10-09: 완료 덮개 확인 — 미리보기 사진에서 단풍용사 '아르크스' 칸에 덮개가 없던 것은 미리보기 스크립트가 그 칸에 마우스를 올린 채 찍었기 때문(버그 아님). 다만 편집 중 '캐릭터별 숨김'으로 표시된 완료 칸에는 덮개가 빠지던 불일치가 있어 고침(완료면 항상 덮개). test14에 '완료로 보이는 모든 칸에 덮개(불투명도 1, rgba .55)' 확인, 아이콘·가운데 정렬 확인 추가.

@@ -30,14 +30,17 @@ PRESET={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':[],
   'settings':{'accounts':[{'id':'a1','label':'본계정','key':KM},{'id':'a2','label':'부계정','key':KA}],'autoSync':False,'lastSync':int(time.time()*1000)}}
 def src(label,ok=True,err=''):
     return {'label':label,'ok':ok,'checkedAt':iso(now),'lastOkAt':iso(now-datetime.timedelta(hours=0 if ok else 5)),'error':err}
-FEED={'version':1,'updatedAt':iso(now),
+FEED_={'version':1,'updatedAt':iso(now),
  'sources':{'saryo':src('사료감지'),'patch':src('패치내역'),'test':src('테섭'),'mabbak':src('마빡도로시',False,'5974: HTTPError 403')},
  'items':{
   'saryo':[{'id':'notice:900002','title':'(추가) 리워드 드롭 관련 오류 안내 — 메이플 운영자 NPC 에서 사과의 마음 수령','url':'https://maplestory.nexon.com/News/Notice/Notice/900002','date':iso(now-datetime.timedelta(days=1)),'end':iso(now+datetime.timedelta(days=12)),'src':'notice'},
            {'id':'notice:900001','title':'지난 점검 연장 보상 안내','url':'https://maplestory.nexon.com/News/Notice/Notice/900001','date':iso(now-datetime.timedelta(days=20)),'end':iso(now-datetime.timedelta(days=6)),'src':'notice'}],
-  'patch':[{'id':f'update:{800+i}','title':f'클라이언트 1.2.{400+i} 업데이트 안내','url':f'https://maplestory.nexon.com/news/update/{800+i}','date':iso(now-datetime.timedelta(days=30-i))} for i in range(14,0,-1)],
+  'patch':[{'id':f'update:{800+i}','title':f'클라이언트 1.2.{400+i} 업데이트 안내','url':f'https://maplestory.nexon.com/news/update/{800+i}','date':iso(now-datetime.timedelta(days=30-i))} for i in range(14,0,-1)]
+          +[{'id':'minor:900020','title':'[패치완료] 10/8(수) ver1.2.419 마이너(6) 패치(16:40 적용)','url':'https://maplestory.nexon.com/News/Notice/Notice/900020','date':iso(now-datetime.timedelta(days=1)),'src':'minor'},
+            {'id':'minor:900010','title':'[패치완료] 9/25(목) ver1.2.419 마이너패치(15:10 적용)','url':'https://maplestory.nexon.com/News/Notice/Notice/900010','date':iso(now-datetime.timedelta(days=17,hours=12)),'src':'minor'}],
   'test':[{'id':f'test:{150+i}','title':f'클라이언트 1.2.{150+i} 릴리즈(이벤트, 컨텐츠, 개선사항 및 오류 수정) 아주 긴 제목 테스트','url':f'https://maplestory.nexon.com/Testworld/News/Update/{150+i}','date':iso(now-datetime.timedelta(days=60-i))} for i in range(49,0,-1)],
   'mabbak':[{'id':'inven:5974:7258005','title':'10월 테섭(라방) 일정 / 2026 한글날 이벤트 요약','url':'https://www.inven.co.kr/board/maple/5974/7258005','date':'2025-09-30T02:36:00+09:00','board':'5974'}]}}
+FEED=FEED_; FEED['items']['patch'].sort(key=lambda x:x['date'],reverse=True)  # update_feed.py 와 같이 날짜순
 feed_hits=[]
 def feed_route(route):
     feed_hits.append(route.request.url)
@@ -58,7 +61,7 @@ try:
     pos=pg.evaluate("(()=>{const f=document.querySelector('#feedCard'),r=document.querySelector('#resetInfo').closest('.card');return {inAside:!!f.closest('aside.side-sticky'),after:r.nextElementSibling===f,below:f.getBoundingClientRect().top>=r.getBoundingClientRect().bottom,left:f.getBoundingClientRect().left<400}})()")
     check('card in left sidebar right below the reset card', all(pos.values()), pos)
     tabs=pg.eval_on_selector_all('#feedCard .ftab',"e=>e.map(x=>[x.dataset.ftab,x.childNodes[0].textContent,(x.querySelector('.fcnt')||{}).textContent||''])")
-    check('4 tabs with unseen counts', tabs==[['saryo','사료감지','2'],['patch','패치내역','14'],['test','테섭','49'],['mabbak','마빡도로시','1']], tabs)
+    check('4 tabs with unseen counts', tabs==[['saryo','사료감지','2'],['patch','패치내역','16'],['test','테섭','49'],['mabbak','마빡도로시','1']], tabs)
     check('tabs fit on one line', pg.evaluate("(()=>{const t=[...document.querySelectorAll('#feedCard .ftab')].map(e=>e.getBoundingClientRect().top);return Math.max(...t)-Math.min(...t)<1 && document.querySelector('#feedCard .ftabs').scrollWidth<=document.querySelector('#feedCard .ftabs').clientWidth})()"))
     # 2) 사료: N 배지, 기한, 만료 흐리게
     it=pg.eval_on_selector_all('#feedCard .fit',"e=>e.map(x=>({n:!!x.querySelector('.fnew'),exp:x.classList.contains('exp'),op:getComputedStyle(x).opacity,end:(x.querySelector('.fend')||{}).textContent,dt:x.querySelector('.fdt').textContent,tgt:x.target,rel:x.rel,ell:getComputedStyle(x.querySelector('.ftt')).textOverflow,ws:getComputedStyle(x.querySelector('.ftt')).whiteSpace,h:x.getBoundingClientRect().height}))")
@@ -70,6 +73,10 @@ try:
     shot(pg,'feed_card.png'); shot(pg.locator('#feedCard'),'feed_card_saryo.png')
     for t in ['patch','test','mabbak']:
         pg.click(f'[data-ftab={t}]'); pg.mouse.move(700,500); pg.wait_for_timeout(60); shot(pg.locator('#feedCard'),f'feed_card_{t}.png')
+    pg.click('[data-ftab=patch]'); pg.wait_for_timeout(60)
+    first=pg.inner_text('#feedCard .fit .ftt >> nth=0'); ids=pg.evaluate("feedItems('patch').map(x=>x.id)")
+    check('patch tab: newest minor patch shown first', first.startswith('[패치완료] 10/8(수)'), first)
+    check('patch tab: minor patches merged among updates by date', ids[0]=='minor:900020' and ids[1:4]==['update:814','update:813','minor:900010'], ids[:5])
     pg.click('[data-ftab=saryo]')
     # 3) 클릭 → 읽음
     with ctx.expect_page() as np: pg.click('#feedCard .fit >> nth=0')
@@ -93,7 +100,7 @@ try:
     pg.evaluate(f"feed.page={pages};renderFeed()"); r=pgr(); check('last page: next disabled', r[-1]=='x›' and pg.locator('#feedCard .flist li').count()==49-(pages-1)*per, r)
     tt=pg.evaluate("(()=>{const e=document.querySelector('#feedCard .ftt');return e.scrollWidth>e.clientWidth})()"); check('long title truncated', tt)
     pg.click('[data-ftab=patch]'); r=pgr(); check('switching tab resets to page 1', '1*' in r and pg.evaluate('feed.page')==1, r)
-    if 14>per: check('≤5 pages → no prev/next', not any('‹' in x or '›' in x for x in r), r)
+    if 16>per: check('≤5 pages → no prev/next', not any('‹' in x or '›' in x for x in r), r)
     pg.click('[data-ftab=test]'); check('back to test tab → page 1 again', pg.evaluate('feed.page')==1)
     # 5) 수집 실패 표시
     pg.click('[data-ftab=mabbak]'); note=pg.locator('#feedCard .fnote')

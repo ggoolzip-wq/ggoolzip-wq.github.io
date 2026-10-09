@@ -4,6 +4,7 @@
 탭(소스)                 가져오는 곳
 - saryo  사료감지         넥슨 Open API /notice, /notice-event (+detail) 중 '메이플 운영자' NPC 에게서 보상을 받는 공지
 - patch  패치내역         넥슨 Open API /notice-update  (= maplestory.nexon.com/News/Update)
+                          + 공지사항 중 '마이너 패치' 최신 2개 (홈페이지 공지 검색 HTML + /notice 목록 재사용)
 - test   테섭             maplestory.nexon.com/Testworld/News/Update 목록 페이지 (Open API 에 없음)
 - mabbak 마빡도로시        인벤 메이플 게시판(5974, 2304, 2314, 2316, 2587) 닉네임 검색 + 글 페이지(articleDate)
 
@@ -114,6 +115,8 @@ def src_saryo(st, wm, run_all, minute):
         lists.append(("notice-event", "event_notice", "notice-event/detail"))
     for path, key, det in lists:
         items = nx(path).get(key) or []
+        if path == "notice":
+            _API_NOTICES[:] = items  # 패치내역(마이너 패치)에서 재사용
         if path not in wm:  # 처음: 지금 있는 공지는 이미 본 것으로 (예전 글 채우지 않음)
             wm[path] = max([0] + [int(x.get("notice_id") or 0) for x in items]); continue
         w = wm[path]
@@ -132,19 +135,123 @@ def src_saryo(st, wm, run_all, minute):
     return new
 
 # ---------------- 패치내역 ----------------
+# (1) 업데이트 공지: Open API /notice-update (10분에 한 번)
+# (2) 마이너 패치: 공식 홈페이지 공지사항(/News/Notice) 중 제목에 '마이너 패치'가 들어간 글의 최신 2개를 항상 표시.
+#     실제 제목 예: '[패치완료] 6/23(화) ver1.2.416 마이너(7) 패치(19:21 적용)', '마이너패치', '마이너 패치'.
+#     같은 글의 제목이 [패치예정]→[패치완료] 로 바뀌므로 매번 제목·날짜를 다시 맞춤. 예전 마이너 패치 글은 빠짐(최신 2개만).
+#     가져오는 곳: 홈페이지 공지 검색 HTML(/News/Notice/All?search=마이너, API 할당량 사용 안 함) +
+#                 사료감지가 이번 회차에 이미 받은 Open API /notice 목록(추가 호출 없음). 둘 중 하나만 되어도 OK.
+MINOR_RE = re.compile(r"마이너\s*(?:\(\s*\d+\s*\)\s*)?패치")
+MINOR_KEEP = 2
+NOTICE_SEARCH_URL = "https://maplestory.nexon.com/News/Notice/All?search=" + urllib.parse.quote("마이너")
+_API_NOTICES = []  # src_saryo 가 받은 /notice 목록 (같은 회차에 재사용)
+
+def parse_notice_list(s, today=None):
+    """공식 공지사항 목록 HTML → [{n, title, url, date}] (news_board 안의 글만)"""
+    i = s.find('class="news_board"')
+    if i < 0:
+        return []
+    s = s[i:]
+    j = s.find('class="page_numb')
+    if j > 0:
+        s = s[:j]
+    today = today or datetime.datetime.now(KST).date()
+    out = []
+    for m in re.finditer(r'<a href="(/News/Notice/(?:All|Notice|Inspection|Event|Update)/(\d+))[^"]*"[^>]*>(.*?)</a>(.*?)</li>', s, re.S | re.I):
+        sp = re.search(r"<span[^>]*>(.*?)</span>\s*(?:<img|$)", m.group(3), re.S) or re.search(r"<span[^>]*>(.*)</span>", m.group(3), re.S)
+        title = plain(sp.group(1) if sp else m.group(3))
+        dd = re.search(r"<dd>\s*(.*?)\s*</dd>", m.group(4), re.S)
+        d = plain(dd.group(1)) if dd else ""
+        date = ""
+        dm = re.match(r"(\d{4})\.(\d{1,2})\.(\d{1,2})", d)
+        tm = re.match(r"(AM|PM|오전|오후)\s*(\d{1,2}):(\d{2})", d, re.I)
+        if dm:
+            date = f"{int(dm.group(1)):04d}-{int(dm.group(2)):02d}-{int(dm.group(3)):02d}T00:00:00+09:00"
+        elif tm:  # 오늘 글은 시각만 표시됨
+            hh = int(tm.group(2)) % 12 + (12 if tm.group(1).upper() in ("PM", "오후") else 0)
+            date = datetime.datetime(today.year, today.month, today.day, hh, int(tm.group(3)), tzinfo=KST).isoformat()
+        out.append({"n": int(m.group(2)), "title": title, "url": "https://maplestory.nexon.com" + m.group(1), "date": date})
+    return out
+
+def minor_candidates(html_rows, api_items):
+    """두 출처를 합쳐 마이너 패치 글 {n: item}. 같은 글이면 API 의 날짜(시각 포함)를 우선."""
+    c = {}
+    for r in html_rows:
+        if MINOR_RE.search(r["title"]):
+            c[r["n"]] = {"id": f"minor:{r['n']}", "title": r["title"], "url": r["url"], "date": r["date"], "src": "minor"}
+    for x in api_items:
+        n = int(x.get("notice_id") or 0); t = x.get("title", "")
+        if n and MINOR_RE.search(t):
+            prev = c.get(n, {})
+            c[n] = {"id": f"minor:{n}", "title": t or prev.get("title", ""), "url": x.get("url") or prev.get("url", ""),
+                    "date": iso_from_api(x.get("date")) or prev.get("date", ""), "src": "minor"}
+    return c
+
+def src_minor(wm):
+    """마이너 패치 후보 {n: item} (홈페이지 검색 HTML + 이번 회차 /notice 목록). 둘 다 실패면 오류."""
+    rows, err = [], ""
+    try:
+        _, s = http_get(NOTICE_SEARCH_URL, proxy=True)
+        rows = parse_notice_list(s)
+        if not rows:
+            err = f"공지 검색 목록을 읽지 못함({len(s)} bytes)"
+    except Exception as e:
+        err = str(e)
+    if err:
+        log("  마이너 패치 HTML 실패:", err, "— Open API /notice 목록만 사용" if _API_NOTICES else "")
+        if not _API_NOTICES:
+            raise FetchError("마이너 패치: " + err)
+    c = minor_candidates(rows, _API_NOTICES)
+    log(f"  마이너 패치 후보 {len(c)}개 (HTML {len(rows)}행, API {len(_API_NOTICES)}건)")
+    return c
+
+def apply_minor(lst, cands):
+    """패치 탭의 minor:* = (기존 minor 글 ∪ 새 후보) 중 글 번호가 큰 최신 2개. 제목·날짜는 새 값으로 갱신. 바뀐 개수 반환"""
+    if cands is None:
+        return 0
+    pool = {int(x["id"].split(":")[1]): dict(x) for x in lst if x["id"].startswith("minor:")}
+    for n, w in cands.items():
+        cur = pool.get(n, {})
+        cur.update({k: v for k, v in w.items() if v})
+        pool[n] = cur
+    want = {pool[n]["id"]: pool[n] for n in sorted(pool, reverse=True)[:MINOR_KEEP]}
+    changed = 0
+    for x in list(lst):
+        if x["id"].startswith("minor:") and x["id"] not in want:
+            lst.remove(x); changed += 1
+    for x in lst:
+        if x["id"] in want:
+            w = want.pop(x["id"])
+            for k in ("title", "url", "date"):
+                if w.get(k) and x.get(k) != w[k]:
+                    x[k] = w[k]; changed += 1
+    for w in want.values():
+        lst.append(w); changed += 1
+    lst.sort(key=lambda x: (x.get("date") or "", x["id"]), reverse=True)
+    return changed
+
 def src_patch(st, wm, run_all, minute):
-    if not (run_all or (minute // 5) % 2 == 0):
-        return None  # 이번 회차는 건너뜀(호출 절약)
-    items = nx("notice-update").get("update_notice") or []
-    if "notice-update" not in wm:
-        wm["notice-update"] = max([0] + [int(x.get("notice_id") or 0) for x in items]); return []
-    w = wm["notice-update"]; new = []
-    for x in items:
-        if int(x.get("notice_id") or 0) > w:
-            new.append({"id": f"update:{x['notice_id']}", "title": x.get("title", ""), "url": x.get("url", ""), "date": iso_from_api(x.get("date"))})
-    if items:
-        wm["notice-update"] = max([w] + [int(x.get("notice_id") or 0) for x in items])
+    new = []
+    if run_all or (minute // 5) % 2 == 0:  # 업데이트 공지는 10분에 한 번(호출 절약)
+        items = nx("notice-update").get("update_notice") or []
+        if "notice-update" not in wm:
+            wm["notice-update"] = max([0] + [int(x.get("notice_id") or 0) for x in items])
+        else:
+            w = wm["notice-update"]
+            for x in items:
+                if int(x.get("notice_id") or 0) > w:
+                    new.append({"id": f"update:{x['notice_id']}", "title": x.get("title", ""), "url": x.get("url", ""), "date": iso_from_api(x.get("date"))})
+            if items:
+                wm["notice-update"] = max([w] + [int(x.get("notice_id") or 0) for x in items])
+    global _MINOR
+    _MINOR = None
+    try:
+        _MINOR = src_minor(wm)  # 매 회차 (HTML 은 API 할당량을 쓰지 않음)
+    except Exception as e:  # 마이너 패치만 실패 → 업데이트 공지는 그대로, 기존 마이너 글 유지
+        log(f"::warning::[patch] 마이너 패치 확인 실패: {e}")
     return new
+
+_MINOR = None
 
 # ---------------- 테섭 ----------------
 TEST_URL = "https://maplestory.nexon.com/Testworld/News/Update"
@@ -254,7 +361,11 @@ def main():
             new = fn(srcs, wm, run_all, minute)
             if new is None:
                 log(f"[{k}] 이번 회차 건너뜀"); continue
-            n = merge(lst, new); added += n
+            n = merge(lst, new)
+            if k == "patch":
+                m = apply_minor(lst, _MINOR); n += m
+                if m: log(f"  마이너 패치 반영: {[x['title'] for x in lst if x['id'].startswith('minor:')]}")
+            added += n
             s.update(ok=True, checkedAt=now_iso(), lastOkAt=now_iso(), error="")
             log(f"[{k}] OK, 새 글 {n}개")
         except Exception as e:
