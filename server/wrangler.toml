@@ -1,0 +1,25 @@
+# 보스 캐릭터 관리 — 동기화 서버 (Cloudflare Workers + D1, 무료 플랜)
+# 배포 전 할 일 (server/README.md 참고):
+#   1) npx wrangler login
+#   2) npx wrangler d1 create ggoolzip-sync   → 출력된 database_id 를 아래에 붙여넣기
+#   3) npx wrangler d1 execute ggoolzip-sync --remote --file=schema.sql
+#   4) npx wrangler secret put ID_PEPPER      (아무 긴 무작위 문자열)
+#   5) npx wrangler deploy
+name = "ggoolzip-sync"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ggoolzip-sync"
+database_id = "00000000-0000-0000-0000-000000000000"   # ← wrangler d1 create 후 실제 값으로 교체
+
+[vars]
+ALLOWED_ORIGINS = "https://ggoolzip-wq.github.io"
+ALLOW_LOCALHOST = "1"          # http://localhost:* / http://127.0.0.1:* 허용 (테스트용)
+NEXON_BASE = "https://open.api.nexon.com"
+
+# 나중 단계(아직 구현 안 함): 매일 18:00 KST(= 09:00 UTC) maplescouter 헥사환산 가져오기
+# [triggers]
+# crons = ["0 9 * * *"]

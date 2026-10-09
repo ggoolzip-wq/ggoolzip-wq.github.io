@@ -2288,18 +2288,47 @@ function loadOfficialPrices(){
 }
 
 /* =====================================================================
+ *  동기화 서버 (Cloudflare Workers + D1, server/ 폴더) — 기능 플래그 (2026-10-10, 아직 꺼 둠)
+ *  SYNC_API_URL 이 비어 있으면 지금처럼 구글 드라이브 동기화. 값이 있으면(또는 테스트용 localStorage 'mapleBossTracker.syncApi')
+ *  같은 동기화 흐름(gdConnect/gdSync 3-way 병합/gdPush/gdPull)을 그대로 쓰고 저장소만 서버로 바뀜:
+ *   - 로그인 = 넥슨 Open API 키 (서버가 넥슨에 확인 → 계정 식별, 원본 키는 서버에 저장 안 함) → 세션 토큰(localStorage)
+ *   - 저장 = PUT /api/state (rev 로 동시 저장 감지, 409 → 받아온 내용과 3-way 병합 후 다시 저장). API 키는 보내지 않음(backupData(false))
+ *   - 다른 기기에 내려받을 때 키: 로그인에 쓴 키만 자동으로 채움(계정의 ah = 서버가 준 계정 해시로 짝지음), 다른 계정 키는 그 기기에서 다시 입력
+ *   - 옮기기: 처음 로그인 때 서버가 비어 있으면 이 PC 데이터를 올림 / '구글 드라이브에서 가져오기' 버튼(한 번, 클릭 시 구글 로그인)
+ * ===================================================================== */
+const SYNC_API_URL = ''; // 배포 후 예: 'https://ggoolzip-sync.<계정>.workers.dev' — 비우면 구글 드라이브
+const SV_ON = (()=>{ let u=SYNC_API_URL; try{ u=localStorage.getItem('mapleBossTracker.syncApi')||u; }catch(e){} return String(u||'').replace(/\/+$/,''); })();
+const SV_TOKEN_KEY='mapleBossTracker.svToken';
+const svTok=()=>{ try{ return localStorage.getItem(SV_TOKEN_KEY)||''; }catch(e){ return ''; } };
+const SV_NEED_LOGIN='로그인이 필요해요 — 상단 ☁ 버튼에서 넥슨 API 키로 로그인하면 이어서 동기화돼요 (바꾼 내용은 이 PC에 그대로 있어요)';
+async function svFetch(path,opt={}){
+  const tok=svTok(); if(!tok&&!opt.noAuth) throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'});
+  let r;
+  try{ r=await fetch(SV_ON+path,{method:opt.method||'GET',keepalive:!!opt.keepalive,headers:{'Content-Type':'application/json',...(opt.noAuth?{}:{Authorization:'Bearer '+tok})},body:opt.body===undefined?undefined:JSON.stringify(opt.body)}); }
+  catch(e){ throw Object.assign(new Error('동기화 서버에 연결하지 못했습니다 (인터넷 연결 확인)'),{type:'network'}); }
+  let b=null; try{ b=await r.json(); }catch(e){}
+  if(r.status===401&&!opt.noAuth){ localStorage.removeItem(SV_TOKEN_KEY); throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'}); }
+  if(r.status===409&&opt.allow409) return {conflict:true,...b};
+  if(!r.ok) throw Object.assign(new Error((b&&b.message)||`동기화 서버 오류 (HTTP ${r.status})`),{status:r.status,code:b&&b.error});
+  return b;
+}
+const svRemote=b=>({app:'maple-boss-tracker',format:1,updatedAt:+b.updatedAt||0,withKeys:true,rev:+b.rev||0,data:b.data}); // 서버에는 키가 원래 없음(withKeys: 다시 저장할 필요 없음 표시)
+
+/* =====================================================================
  *  구글 드라이브 동기화 — Google Identity Services(토큰 모델) + Drive REST v3, 범위 drive.appdata
  *  (내 드라이브의 숨겨진 '앱 데이터' 폴더에 maple-boss-tracker.json 하나만 저장. 다른 파일은 보거나 건드리지 않음)
  * ===================================================================== */
 const GD={ SCOPE:'https://www.googleapis.com/auth/drive.appdata', FILE:'maple-boss-tracker.json',
-  META_KEY:'mapleBossTracker.gdrive', TOKEN_KEY:'mapleBossTracker.gtoken',
+  META_KEY:SV_ON?'mapleBossTracker.svmeta':'mapleBossTracker.gdrive', TOKEN_KEY:'mapleBossTracker.gtoken',
   API:'https://www.googleapis.com/drive/v3', UP:'https://www.googleapis.com/upload/drive/v3',
   ONLINE:'https://ggoolzip-wq.github.io/', DEBOUNCE:5000 };
 const gcid=()=>GOOGLE_CLIENT_ID||window.__MBT_GCID||'';
 const gdOriginOk=()=>location.protocol==='https:'||/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-const gdUsable=()=>!!gcid()&&gdOriginOk();
+const driveUsable=()=>!!gcid()&&gdOriginOk();
+const gdUsable=()=>SV_ON?true:driveUsable();
 let gd={state:'off',msg:'',token:null,exp:0,ia:false,fileId:null,timer:null,busy:false,again:false,client:null,onTok:null,onErr:null,pending:null};
-let gdMeta=(()=>{ try{ return JSON.parse(localStorage.getItem(GD.META_KEY))||{}; }catch(e){ return {}; } })(); // {on, base(이 PC updatedAt), rU(드라이브 updatedAt), fileId, lastSave, lastLoad} — 맞춘 시점 내용은 GD_BASE_KEY
+let gdMeta=(()=>{ // 서버 모드: rev(마지막으로 맞춘 서버 저장 번호)도 보관
+   try{ return JSON.parse(localStorage.getItem(GD.META_KEY))||{}; }catch(e){ return {}; } })(); // {on, base(이 PC updatedAt), rU(드라이브 updatedAt), fileId, lastSave, lastLoad} — 맞춘 시점 내용은 GD_BASE_KEY
 const gdSaveMeta=()=>localStorage.setItem(GD.META_KEY,JSON.stringify(gdMeta));
 try{ const t=JSON.parse(sessionStorage.getItem(GD.TOKEN_KEY)||'null'); if(t&&t.e>Date.now()+60e3){ gd.token=t.t; gd.exp=t.e; } }catch(e){}
 const gdLocalDirty=()=>gdMeta.on && (S.updatedAt||0)!==(gdMeta.base||0);
@@ -2310,13 +2339,32 @@ function gdRender(){
   const b=$('#gBtn'); if(b){
     const L={off:'☁ 구글 로그인',connecting:'☁ 연결 중…',saving:'☁ 저장 중…',reconnect:'☁ 다시 연결',conflict:'☁ 선택 필요',error:'☁ 동기화 오류',
       on: gd.timer||gdLocalDirty() ? '☁ 저장 대기' : (gdMeta.lastSave||gdMeta.lastLoad ? `☁ ${hm(Math.max(gdMeta.lastSave||0,gdMeta.lastLoad||0)).split(' ')[1]} 저장됨` : '☁ 동기화됨')};
-    b.textContent=!gcid()?'☁ 구글':!gdOriginOk()?'☁ 구글 (온라인 전용)':(L[gd.state]||'☁ 구글'); b.classList.toggle('warn',['reconnect','conflict','error'].includes(gd.state));
-    b.title=gd.msg||'구글 드라이브 동기화';
+    if(SV_ON){ L.off='☁ 로그인'; L.reconnect='☁ 다시 로그인'; }
+    b.textContent=SV_ON?(L[gd.state]||'☁ 동기화'):!gcid()?'☁ 구글':!gdOriginOk()?'☁ 구글 (온라인 전용)':(L[gd.state]||'☁ 구글'); b.classList.toggle('warn',['reconnect','conflict','error'].includes(gd.state));
+    b.title=gd.msg||(SV_ON?'동기화 (넥슨 API 키로 로그인)':'구글 드라이브 동기화');
   }
   const st=$('#gdStatus'); if(st) st.innerHTML=gdStatusHtml();
 }
+function svLoginHtml(){ // 서버 모드 로그인: 이 PC 에 등록된 키로 / 새 키 입력 (키는 화면에 표시하지 않음)
+  const ks=accounts().filter(a=>a.key);
+  return `<div class="svlogin"><div class="muted tiny" style="margin:0 0 6px">넥슨 Open API 키로 로그인하면 이 데이터가 서버에 저장되어 다른 기기에서도 이어서 쓸 수 있어요. <b>키 자체는 서버에 저장되지 않아요</b> (넥슨에 확인만 하고 계정 식별값만 보관).</div>
+    ${ks.length?`<div class="toolbar">${ks.map(a=>`<button class="btn sm" data-svlogin="${a.id}">${esc(a.label)} 키로 로그인</button>`).join('')}</div>`:''}
+    <div class="row" style="display:flex;gap:6px;margin-top:6px"><input class="pin" id="svKey" type="password" autocomplete="off" placeholder="${ks.length?'다른 ':''}API 키 붙여넣기" style="flex:1;min-width:0;text-align:left"><button class="btn sm" id="svLoginBtn">로그인</button></div>
+    ${gd.svErr?`<div class="impmsg warn" style="margin-top:6px">${esc(gd.svErr)}</div>`:''}</div>`;
+}
 function gdStatusHtml(){
   const on=gdMeta.on&&gd.state!=='off';
+  if(SV_ON){
+    const head={off:'로그인하지 않음',connecting:'연결 중…',saving:'저장 중…',on:gdLocalDirty()||gd.timer?'변경 사항 저장 대기 (약 5초 후 자동 저장)':'✓ 동기화됨',
+      reconnect:'다시 로그인 필요',conflict:'어느 데이터를 쓸지 선택이 필요합니다',error:'오류'}[gd.state];
+    const logged=!!svTok()&&on;
+    return `<div class="gdline"><b>${head}</b>${gd.msg?` <span class="muted">— ${esc(gd.msg)}</span>`:''}</div>
+      ${logged?`<div class="muted" style="font-size:.8rem">마지막 저장: ${gdTime(gdMeta.lastSave)} · 마지막 불러오기: ${gdTime(gdMeta.lastLoad)}</div>
+      <div class="toolbar" style="margin-top:8px">${gd.state==='error'?'':'<button class="btn sm" id="gdSaveNow">지금 저장</button>'}<button class="btn sm ghost" id="gdLogout">로그아웃</button>
+      ${gd.state==='conflict'?'<button class="btn sm" id="gBtn2" onclick="gdReask()">선택하기</button>':''}</div>
+      ${driveUsable()?`<div class="toolbar" style="margin-top:6px"><button class="btn sm ghost" id="svImportDrive" title="예전 구글 드라이브 저장본을 이 PC 데이터와 합친 뒤 서버에 저장 (구글 로그인 창이 한 번 뜸)">구글 드라이브에서 가져오기 (한 번)</button></div>`:''}`
+      :svLoginHtml()}`;
+  }
   const head={off:'로그인하지 않음',connecting:'연결 중…',saving:'저장 중…',on:gdLocalDirty()||gd.timer?'변경 사항 저장 대기 (약 5초 후 자동 저장)':'✓ 동기화됨',
     reconnect:'다시 연결 필요',conflict:'어느 데이터를 쓸지 선택이 필요합니다',error:'오류'}[gd.state];
   return `<div class="gdline"><b>${head}</b>${gd.msg?` <span class="muted">— ${esc(gd.msg)}</span>`:''}</div>
@@ -2332,8 +2380,9 @@ function gdMenuHtml(){
   if(!gcid()) inner=`<div class="impmsg warn"><b>구글 연결 준비 중</b><div>나머지 기능은 모두 정상 동작합니다.</div></div>`;
   else if(!gdOriginOk()) inner=`<div class="impmsg warn"><b>구글 동기화는 온라인 주소에서만 됩니다</b><div>파일(file://)로 연 페이지에서는 구글 로그인이 되지 않습니다. 온라인 주소 <a href="${GD.ONLINE}" target="_blank" rel="noopener">${GD.ONLINE}</a> 에서 사용하세요.</div></div>`;
   else inner=`<div id="gdStatus">${gdStatusHtml()}</div>
-    <p class="muted tiny">🔑 API 키도 함께 저장돼요 (내 드라이브 앱 전용 숨김 폴더). 변경 후 약 5초 뒤·창을 닫을 때 자동 저장.</p>`;
-  return `<div class="gm-h"><b>☁️ 구글 드라이브 동기화</b><button class="ringx" id="gMenuClose" aria-label="닫기">✕</button></div>${inner}`;
+    <p class="muted tiny">${SV_ON?'🔑 API 키는 서버에 저장되지 않아요 — 다른 기기에서는 로그인한 키만 자동으로 채워지고, 다른 계정 키는 그 기기에서 다시 입력해요. 변경 후 약 5초 뒤·창을 닫을 때 자동 저장.':'🔑 API 키도 함께 저장돼요 (내 드라이브 앱 전용 숨김 폴더). 변경 후 약 5초 뒤·창을 닫을 때 자동 저장.'}</p>`;
+  if(SV_ON) inner=`<div id="gdStatus">${gdStatusHtml()}</div><p class="muted tiny">🔑 API 키는 서버에 저장되지 않아요 — 다른 기기에서는 로그인한 키만 자동으로 채워지고, 다른 계정 키는 그 기기에서 다시 입력해요. 변경 후 약 5초 뒤·창을 닫을 때 자동 저장.</p>`;
+  return `<div class="gm-h"><b>${SV_ON?'☁️ 동기화':'☁️ 구글 드라이브 동기화'}</b><button class="ringx" id="gMenuClose" aria-label="닫기">✕</button></div>${inner}`;
 }
 function gdMenu(open){
   const m=$('#gMenu'); if(!m) return; const show=open??m.hidden;
@@ -2341,7 +2390,7 @@ function gdMenu(open){
   m.hidden=!show; $('#gBtn').setAttribute('aria-expanded',String(show));
 }
 function gdHeaderClick(){ if(gd.state==='conflict'&&gd.pending){ gdMenu(false); return gdReask(); }
-  if(gd.state==='reconnect'&&gdMeta.on&&gdUsable()){ gdMenu(false); return gdLogin(); } // [☁ 다시 연결] 한 번 누르면 바로 로그인 → 동기화
+  if(!SV_ON&&gd.state==='reconnect'&&gdMeta.on&&gdUsable()){ gdMenu(false); return gdLogin(); } // [☁ 다시 연결] 한 번 누르면 바로 로그인 → 동기화
   gdMenu(); }
 function gdLoadLib(){
   return new Promise((res,rej)=>{
@@ -2354,10 +2403,15 @@ function gdLoadLib(){
 /* 로그인 창(구글 팝업)은 사용자가 직접 누른 동작(☁ 로그인/다시 연결·지금 저장·충돌 선택)에서만 띄움 — gd.ia.
  * 자동 동작(페이지 열기·탭 복귀·1분마다 확인·자동 저장)은 남아 있는 토큰(1시간, 탭 sessionStorage)만 쓰고,
  * 토큰이 없거나 만료되면 팝업 없이 헤더를 [☁ 다시 연결]로 바꿈(변경 내용은 이 PC 에 그대로 → 다시 연결하면 합쳐서 저장). 2026-10-10 */
-function gdHasTok(){ return !!(gd.token&&Date.now()<gd.exp-60e3); }
+function gdHasTok(){ return SV_ON?!!svTok():driveHasTok(); }
+function driveHasTok(){ return !!(gd.token&&Date.now()<gd.exp-60e3); }
 const GD_NEED_LOGIN='구글 로그인 시간(1시간)이 끝났어요 — [☁ 다시 연결]을 한 번 누르면 이어서 동기화돼요 (바꾼 내용은 이 PC에 그대로 있어요)';
 async function gdToken(interactive=gd.ia){
-  if(gdHasTok()) return gd.token;
+  if(SV_ON){ const t=svTok(); if(t) return t; throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'}); } // 서버 로그인은 ☁ 메뉴의 키 입력으로만
+  return driveToken(interactive);
+}
+async function driveToken(interactive=gd.ia){
+  if(driveHasTok()) return gd.token;
   if(!interactive) throw Object.assign(new Error(GD_NEED_LOGIN),{type:'interaction_required'});
   gd.ia=false; // 한 번의 클릭에 팝업은 최대 한 번
   await gdLoadLib();
@@ -2375,8 +2429,8 @@ async function gdToken(interactive=gd.ia){
     gd.client.requestAccessToken({prompt:''}); // 이미 동의했다면 창이 잠깐 떴다가 바로 닫힘
   });
 }
-async function gdFetch(url,opt={},retry=true){
-  const tok=await gdToken();
+async function gdFetch(url,opt={},retry=true){ // 구글 드라이브 전용
+  const tok=await driveToken();
   const r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+tok}});
   if(r.status===401){ gd.token=null; gd.exp=0; sessionStorage.removeItem(GD.TOKEN_KEY); if(retry&&gd.ia) return gdFetch(url,opt,false);
     throw Object.assign(new Error(GD_NEED_LOGIN),{type:'interaction_required'}); }
@@ -2385,13 +2439,39 @@ async function gdFetch(url,opt={},retry=true){
   return r;
 }
 async function gdFind(){
+  if(SV_ON){ const m=await svFetch('/api/state/meta'); return m.rev>0?{id:'sv',rev:m.rev,updatedAt:m.updatedAt}:null; }
+  return driveFind();
+}
+async function gdRead(id){
+  if(SV_ON){ const b=await svFetch('/api/state'); gd.remoteRev=+b.rev||0; return svRemote(b); }
+  return driveRead(id);
+}
+async function driveFind(){
   const q=encodeURIComponent(`name='${GD.FILE}' and trashed=false`);
   const r=await gdFetch(`${GD.API}/files?spaces=appDataFolder&q=${q}&orderBy=modifiedTime%20desc&pageSize=10&fields=files(id,modifiedTime,appProperties)`);
   return ((await r.json()).files||[])[0]||null;
 }
-async function gdRead(id){ return (await gdFetch(`${GD.API}/files/${id}?alt=media`)).json(); }
+async function driveRead(id){ return (await gdFetch(`${GD.API}/files/${id}?alt=media`)).json(); }
 function gdPayload(){ return {app:'maple-boss-tracker',format:1,savedAt:Date.now(),updatedAt:S.updatedAt||0,characters:S.characters.length,withKeys:true,data:backupData(true)}; }
+async function svWrite(keepalive,depth=0){
+  const r=await svFetch('/api/state',{method:'PUT',allow409:true,keepalive:!!keepalive,body:{baseRev:gd.remoteRev??gdMeta.rev??0,updatedAt:S.updatedAt||0,data:backupData(false)}});
+  if(r.conflict){ // 그 사이 다른 기기가 저장 → 받은 내용과 3-way 병합 후 다시 저장 (gdCommit → gdWrite)
+    if(depth>=3||keepalive) throw new Error('다른 기기와 동시에 저장되고 있어요 — 잠시 후 다시 시도해 주세요');
+    gd.remoteRev=+r.rev||0; gd.w409=depth+1;
+    try{ await gdSync(svRemote(r)); } finally{ gd.w409=0; }
+    return;
+  }
+  gd.remoteRev=+r.rev||0; gd.fileId='sv'; gdMeta.lastSave=Date.now(); gdMarkSynced(S.updatedAt||0);
+}
+// 다른 기기가 마지막으로 맞춘 뒤 저장했는지 (탭 복귀·1분마다·저장 직전 확인)
+async function gdRemoteChanged(needSeen){
+  if(SV_ON){ const m=await svFetch('/api/state/meta'); return m.rev>0&&m.rev!==(gdMeta.rev||0); }
+  const m=await (await gdFetch(`${GD.API}/files/${gd.fileId}?fields=id,appProperties`)).json();
+  const rU=+(m.appProperties?.updatedAt||0), seen=gdMeta.rU||gdMeta.base;
+  return !!((!needSeen||seen) && rU && rU!==seen && rU!==(S.updatedAt||0));
+}
 async function gdWrite(keepalive){
+  if(SV_ON) return svWrite(keepalive,gd.w409||0);
   const body=JSON.stringify(gdPayload());
   const meta={appProperties:{updatedAt:String(S.updatedAt||0),characters:String(S.characters.length)}};
   if(!gd.fileId){ meta.name=GD.FILE; meta.parents=['appDataFolder']; meta.mimeType='application/json'; }
@@ -2410,7 +2490,7 @@ async function gdWrite(keepalive){
  * 병합 = 3-way: 마지막으로 맞춘 내용(base, localStorage GD_BASE_KEY) 기준으로 한쪽만 바뀐 항목은 그쪽 값, 양쪽이 같은 항목을 다르게 바꾼 경우만 '충돌'.
  *   캐릭터·계정은 id, 주간/월간 기록은 week/month 로 짝지음. 한쪽 삭제 + 다른 쪽 수정 → 수정본 유지(데이터 안 잃음).
  *   API 로 다시 받는 값(레벨·직업·월드·ocid·계정 배정)과 지난 기록 요약은 충돌이어도 묻지 않음(이 PC 값 / 클리어 많은 쪽). */
-const GD_BASE_KEY='mapleBossTracker.gdbase';
+const GD_BASE_KEY=SV_ON?'mapleBossTracker.svbase':'mapleBossTracker.gdbase';
 const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|autoSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp)$|^settings\.accounts\[[^\]]*\]\.(key|status)$/;
 const GD_SOFT_RE=/^characters\[[^\]]*\]\.(level|job|world|ocid|accId)$/;
 const GD_HIST_RE=/^(history|monthHistory)\[[^\]]*\]$/;
@@ -2425,7 +2505,7 @@ function gdStrip(v,p=''){
   return v;
 }
 const gdSig=d=>stable(gdStrip(d));
-const keysOf=d=>((d&&d.settings&&d.settings.accounts)||[]).map(a=>a.id+':'+(a.key||'')).join(',');
+const keysOf=d=>SV_ON?'':((d&&d.settings&&d.settings.accounts)||[]).map(a=>a.id+':'+(a.key||'')).join(',');
 function contentSig(d){ return gdSig(d)+'|'+keysOf(d); } // 키가 바뀌어도 저장은 필요 (비교 화면에는 안 씀)
 const gdPrep=d=>rollPeriod(normState(JSON.parse(JSON.stringify(d||{}))));
 function gdMerge(b,l,r,ctx,p=''){
@@ -2455,7 +2535,7 @@ function gdMergeKeyed(b,l,r,kf,ctx,p){
 function gdBaseData(){ try{ return JSON.parse(localStorage.getItem(GD_BASE_KEY)||'null'); }catch(e){ return null; } }
 // 드라이브와 이 PC 가 같은 내용이 된 시점 기록: base(이 PC updatedAt) · rU(드라이브 updatedAt) · 그때 내용(키 제외)
 function gdMarkSynced(rU){
-  gdMeta.base=S.updatedAt||0; gdMeta.rU=rU||S.updatedAt||0; gdSaveMeta();
+  gdMeta.base=S.updatedAt||0; gdMeta.rU=rU||S.updatedAt||0; if(SV_ON) gdMeta.rev=gd.remoteRev??gdMeta.rev??0; gdSaveMeta();
   try{ localStorage.setItem(GD_BASE_KEY,JSON.stringify(backupData(false))); }catch(e){ console.warn('gdbase',e); }
 }
 const gdLocalEmpty=()=>!S.characters.length && !(S.history||[]).length && !(S.monthHistory||[]).length;
@@ -2476,7 +2556,7 @@ function gdFail(e,interactive){
   console.warn('drive',e);
   const info=gdErrInfo(e);
   if(info||['immediate_failed','interaction_required'].includes(e.type)){
-    gdSet('reconnect',info?info.short:(e.message||'')+' — 상단의 [☁ 다시 연결]을 한 번 눌러 주세요');
+    gdSet('reconnect',info?info.short:SV_ON?(e.message||SV_NEED_LOGIN):(e.message||'')+' — 상단의 [☁ 다시 연결]을 한 번 눌러 주세요');
     if(info&&interactive) gdHelpModal(info.html);
   } else gdSet('error',e.message||String(e));
 }
@@ -2493,18 +2573,19 @@ function gdKeyDiff(d){
   return {pulled, push};
 }
 async function gdConnect(interactive){
-  if(!interactive && !gdHasTok()){ gdSet('reconnect',GD_NEED_LOGIN); return; } // 페이지를 열 때 로그인 창을 자동으로 띄우지 않음
-  gdSet('connecting', interactive&&!gdHasTok()?'구글 로그인 창에서 계정을 선택하고 허용해 주세요 ("확인하지 않은 앱" 화면이면 [계속])':'드라이브 확인 중…');
+  if(!interactive && !gdHasTok()){ gdSet('reconnect',SV_ON?SV_NEED_LOGIN:GD_NEED_LOGIN); return; } // 페이지를 열 때 로그인 창을 자동으로 띄우지 않음
+  gdSet('connecting', SV_ON?'서버 확인 중…':interactive&&!gdHasTok()?'구글 로그인 창에서 계정을 선택하고 허용해 주세요 ("확인하지 않은 앱" 화면이면 [계속])':'드라이브 확인 중…');
   gd.ia=!!interactive;
   try{
     await gdToken(!!interactive);
-    gdSet('connecting','드라이브 확인 중…');
+    gdSet('connecting',SV_ON?'서버 확인 중…':'드라이브 확인 중…');
     gdMeta.on=true; gdSaveMeta();
     const f=await gdFind(); gd.fileId=f?.id||null;
-    if(!f){ if(gdLocalEmpty()){ gdSet('on','드라이브에 아직 데이터가 없습니다. 캐릭터를 추가하면 자동 저장됩니다'); return; }
-      await gdWrite(); gdSet('on','이 PC 데이터를 드라이브에 처음 저장했습니다'); return; }
+    if(!f){ if(SV_ON){ gd.remoteRev=0; gdMeta.rev=0; }
+      if(gdLocalEmpty()){ gdSet('on',(SV_ON?'서버':'드라이브')+'에 아직 데이터가 없습니다. 캐릭터를 추가하면 자동 저장됩니다'); return; }
+      await gdWrite(); gdSet('on','이 PC 데이터를 '+(SV_ON?'서버':'드라이브')+'에 처음 저장했습니다'); return; }
     gd.busy=true; let res;
-    try{ res=await gdSync(await gdRead(f.id)); } finally{ gd.busy=false; }
+    try{ res=await gdSync(await gdRead(f.id)); if(SV_ON) svAfterLogin(); } finally{ gd.busy=false; }
     if(res!=='ask'){ gdSet('on',GD_RES_MSG[res]||''); if(res==='loaded') toast('☁ '+GD_RES_MSG.loaded); }
     if(gd.again){ gd.again=false; gdChanged(); }
   }catch(e){ gdFail(e,interactive); }
@@ -2547,7 +2628,7 @@ function gdApply(remote,msg){
   const d=JSON.parse(JSON.stringify(remote.data)); d.updatedAt=+remote.updatedAt||Date.now();
   applyData(d); // load() 로 updatedAt 이 드라이브 값 그대로 유지됨 (드라이브의 API 키도 함께 복원)
   gdMeta.lastLoad=Date.now(); gdMarkSynced(+remote.updatedAt||0);
-  if(gdKeyDiff(d).push || !remote.withKeys) gdPush(); // 이 PC에만 있던 키를 드라이브에도 저장
+  if(!SV_ON && (gdKeyDiff(d).push || !remote.withKeys)) gdPush(); // 이 PC에만 있던 키를 드라이브에도 저장 (서버 모드는 키를 저장하지 않음)
   if(msg){ gdSet('on',msg); toast('☁ '+msg); }
 }
 const GD_FIELD={name:'이름',bosses:'보스 설정',weekly:'주간 체크',monthly:'월간 체크',auto:'자동 체크',drops:'획득 아이템',mdrops:'월간 획득 아이템',dropOut:'반지 결과',mdropOut:'반지 결과',isMain:'본캐 지정',
@@ -2567,13 +2648,13 @@ function gdAsk(remote,opt={}){
   $('#gdTitle').textContent='☁️ 어느 데이터를 쓸까요?';
   if(opt.mode==='merge'){
     const labels=[...new Set((opt.conf||[]).map(p=>gdConfLabel(p,d)))];
-    $('#gdBody').innerHTML=`<p class="muted" style="margin-top:0">구글 드라이브(다른 기기)와 이 PC에서 <b>같은 항목을 서로 다르게</b> 바꿨어요. 겹치는 항목만 어느 쪽 값을 쓸지 골라 주세요. <b>나머지 변경은 양쪽 모두 자동으로 합쳐집니다.</b></p>
+    $('#gdBody').innerHTML=`<p class="muted" style="margin-top:0">${SV_ON?'서버(다른 기기)':'구글 드라이브(다른 기기)'}와 이 PC에서 <b>같은 항목을 서로 다르게</b> 바꿨어요. 겹치는 항목만 어느 쪽 값을 쓸지 골라 주세요. <b>나머지 변경은 양쪽 모두 자동으로 합쳐집니다.</b></p>
       <ul class="gdconf">${labels.slice(0,5).map(t=>`<li>${esc(t)}</li>`).join('')}${labels.length>5?`<li>외 ${labels.length-5}곳</li>`:''}</ul>
-      <div class="gdsides">${card('구글 드라이브','☁️',rU,d.characters.length,(d.history||[]).length,rU>lU,'gdUseDrive','드라이브 쪽 값으로')}
+      <div class="gdsides">${card(SV_ON?'서버 (다른 기기)':'구글 드라이브','☁️',rU,d.characters.length,(d.history||[]).length,rU>lU,'gdUseDrive',SV_ON?'서버 쪽 값으로':'드라이브 쪽 값으로')}
       ${card('이 PC','💻',lU,S.characters.length,(S.history||[]).length,lU>=rU,'gdUseLocal','이 PC 쪽 값으로')}</div>`;
   } else {
-    $('#gdBody').innerHTML=`<p class="muted" style="margin-top:0">이 PC에서 처음 연결했는데 구글 드라이브와 이 PC의 데이터가 서로 다릅니다. 어느 쪽을 쓸지 한 번만 골라 주세요. 고르지 않은 쪽은 덮어써집니다.</p>
-    <div class="gdsides">${card('구글 드라이브','☁️',rU,d.characters.length,(d.history||[]).length,rU>lU,'gdUseDrive','드라이브 데이터 불러오기')}
+    $('#gdBody').innerHTML=`<p class="muted" style="margin-top:0">이 PC에서 처음 연결했는데 ${SV_ON?'서버':'구글 드라이브'}와 이 PC의 데이터가 서로 다릅니다. 어느 쪽을 쓸지 한 번만 골라 주세요. 고르지 않은 쪽은 덮어써집니다.</p>
+    <div class="gdsides">${card(SV_ON?'서버 (다른 기기)':'구글 드라이브','☁️',rU,d.characters.length,(d.history||[]).length,rU>lU,'gdUseDrive',SV_ON?'서버 데이터 불러오기':'드라이브 데이터 불러오기')}
     ${card('이 PC','💻',lU,S.characters.length,(S.history||[]).length,lU>=rU,'gdUseLocal','이 PC 데이터로 덮어쓰기')}</div>`;
   }
   $('#driveModal').classList.add('show');
@@ -2593,7 +2674,7 @@ async function gdResolve(which){
     else if(which==='drive') gdApply(remote,'드라이브 데이터를 불러왔습니다');
     else { if(!gd.fileId) gd.fileId=(await gdFind())?.id||null; await gdWrite(); gdSet('on','이 PC 데이터로 드라이브를 덮어썼습니다'); toast('☁ 이 PC 데이터로 드라이브를 덮어썼습니다'); }
   }catch(e){ gdFail(e); }
-  finally{ gd.ia=false; }
+  finally{ gd.ia=false; if(SV_ON) svAfterLogin(); }
 }
 function gdChanged(){
   if(!gdMeta.on||!gdUsable()||gd.state==='conflict') return;
@@ -2606,10 +2687,8 @@ async function gdPull(force){
   if(!force&&Date.now()-(gd.pulledAt||0)<55e3) return; gd.pulledAt=Date.now();
   gd.busy=true;
   try{
-    const m=await (await gdFetch(`${GD.API}/files/${gd.fileId}?fields=id,appProperties`)).json();
-    const rU=+(m.appProperties?.updatedAt||0), seen=gdMeta.rU||gdMeta.base;
-    if(rU && rU!==seen && rU!==(S.updatedAt||0)){ const res=await gdSync(await gdRead(gd.fileId)); if(res!=='ask') gdSet('on',GD_RES_MSG[res]||''); }
-  }catch(e){ console.warn('drive pull',e); if(e.type==='interaction_required') gdSet('reconnect',GD_NEED_LOGIN); }
+    if(await gdRemoteChanged(false)){ const res=await gdSync(await gdRead(gd.fileId)); if(res!=='ask') gdSet('on',GD_RES_MSG[res]||''); }
+  }catch(e){ console.warn('sync pull',e); if(e.type==='interaction_required') gdSet('reconnect',SV_ON?SV_NEED_LOGIN:GD_NEED_LOGIN); }
   finally{ gd.busy=false; if(gd.again){ gd.again=false; gdChanged(); } }
 }
 async function gdPush(opts={}){
@@ -2617,15 +2696,15 @@ async function gdPush(opts={}){
   if(!gdMeta.on||!gdUsable()||gd.state==='conflict') return false;
   if(opts.quick && !gdHasTok()) return false; // 창을 닫는 중에는 로그인 창을 띄울 수 없음
   if(gd.busy){ gd.again=true; return false; }
-  if(!opts.manual && !gdHasTok()){ gdSet('reconnect',GD_NEED_LOGIN); return false; } // 자동 저장은 로그인 창을 띄우지 않음
+  if(!opts.manual && !gdHasTok()){ gdSet('reconnect',SV_ON?SV_NEED_LOGIN:GD_NEED_LOGIN); return false; } // 자동 저장은 로그인 창을 띄우지 않음
   gd.busy=true; gdSet('saving'); gd.ia=!!opts.manual;
   try{
     if(!opts.quick){
+      if(SV_ON) await svLinkNewKeys();
       if(!gd.fileId) gd.fileId=(await gdFind())?.id||null;
       else{ // 다른 PC에서 그 사이 저장했는지 확인 (덮어쓰기 방지)
-        try{ const m=await (await gdFetch(`${GD.API}/files/${gd.fileId}?fields=id,appProperties`)).json();
-          const rU=+(m.appProperties?.updatedAt||0), seen=gdMeta.rU||gdMeta.base;
-          if(seen && rU && rU!==seen && rU!==(S.updatedAt||0)){ // 다른 기기가 그 사이 저장 → 합친 뒤 저장 (진짜 충돌일 때만 질문)
+        try{
+          if(await gdRemoteChanged(true)){ // 다른 기기가 그 사이 저장 → 합친 뒤 저장 (진짜 충돌일 때만 질문)
             const res=await gdSync(await gdRead(gd.fileId)); if(res==='ask') return false; gdSet('on',GD_RES_MSG[res]||''); return true; }
         }catch(e){ if(e.status===404) gd.fileId=null; else throw e; }
       }
@@ -2634,8 +2713,72 @@ async function gdPush(opts={}){
   }catch(e){ gdFail(e,opts.manual); return false; }
   finally{ gd.ia=false; gd.busy=false; if(gd.again){ gd.again=false; gdChanged(); } }
 }
-function gdLogin(){ $('#driveModal').classList.remove('show'); gdConnect(true); }
+function gdLogin(){ $('#driveModal').classList.remove('show'); if(SV_ON){ gdMenu(true); setTimeout(()=>$('#svKey')?.focus(),0); return; } gdConnect(true); }
+/* ---- 서버 모드: 로그인 · 키 연결 · 드라이브에서 가져오기 ---- */
+async function svLogin(key,accId){
+  key=String(key||'').trim(); if(!key){ gd.svErr='API 키를 넣어 주세요'; return gdRender(); }
+  gd.svErr=''; gdSet('connecting','넥슨 API 키 확인 중…');
+  try{
+    const b=await svFetch('/api/login',{method:'POST',noAuth:true,body:{key,label:(navigator.userAgentData?.platform||navigator.platform||'').slice(0,30)}});
+    localStorage.setItem(SV_TOKEN_KEY,b.token);
+    gd.login={key,accId:accId||'',hashes:b.accounts||[]};
+    const la=accId&&accById(accId); // 등록된 키로 로그인: 첫 저장 전에 계정 해시(ah)를 붙여 둠 → 다른 기기에서 키 짝짓기
+    if(la&&b.accounts?.[0]&&!(b.accounts||[]).includes(la.ah)){ la.ah=b.accounts[0]; save(); clearTimeout(gd.timer); gd.timer=null; }
+    gdMeta={on:true}; gdSaveMeta(); localStorage.removeItem(GD_BASE_KEY); gd.remoteRev=undefined; gd.fileId=null;
+    await gdConnect(true);
+    svAfterLogin();
+    if(gd.state==='on') toast('☁ 로그인했습니다'+(b.newUser?' — 이 데이터를 서버에 저장합니다':''));
+  }catch(e){ gd.svErr=e.message; gdSet('off'); gdMenu(true); }
+}
+// 로그인에 쓴 키를 계정에 연결: 그 계정의 ah(서버 계정 해시) 기록 / 내려받은 데이터에서 같은 ah 계정에 키 채움 / 없으면 새 계정
+function svAfterLogin(){
+  const L=gd.login; if(!L||gd.state==='conflict') return; gd.login=null; let ch=false; // 질문 화면이면 고른 뒤(gdResolve)에 다시
+  const hs=new Set(L.hashes), acc=accounts();
+  let a=(L.accId&&acc.find(x=>x.id===L.accId))||acc.find(x=>x.key===L.key)||acc.find(x=>!x.key&&hs.has(x.ah));
+  if(!a){ a={id:'a'+Date.now().toString(36),label:acc.length?`계정${acc.length+1}`:'본계정',key:L.key}; S.settings.accounts=[...acc,a]; ch=true; }
+  if(!a.key){ a.key=L.key; ch=true; }
+  if(L.hashes[0]&&a.ah!==L.hashes[0]&&!hs.has(a.ah)){ a.ah=L.hashes[0]; ch=true; }
+  if(ch){ save(); render(); }
+}
+// 로그인한 상태에서 새로 등록한 다른 넥슨 계정 키를 같은 데이터에 연결 (그 키로 로그인해도 이 데이터가 열리게)
+async function svLinkNewKeys(){
+  gd.linkTried=gd.linkTried||new Set(); let ch=false;
+  for(const a of accounts()){
+    if(!a.key||a.ah||gd.linkTried.has(a.id+':'+a.key)) continue; gd.linkTried.add(a.id+':'+a.key);
+    try{ const r=await svFetch('/api/link',{method:'POST',body:{key:a.key}}); if(r.accounts?.[0]){ a.ah=r.accounts[0]; ch=true; } }
+    catch(e){ if(e.type==='interaction_required') throw e; toast(`'${a.label}' 키 연결: ${e.message}`); }
+  }
+  if(ch){ S.updatedAt=Date.now(); lastSig=contentSig(S); lastBody=bodyOf(); localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); }
+}
+// 예전 구글 드라이브 저장본을 한 번 가져와 이 PC 데이터와 합침 → 서버에 저장 (클릭 시 구글 로그인 창 1번)
+async function svImportDrive(){
+  gd.ia=true;
+  try{
+    gdSet('saving','구글 드라이브 저장본 확인 중… (구글 로그인 창에서 허용)');
+    await driveToken(true);
+    const f=await driveFind(); if(!f){ gdSet('on','구글 드라이브에 저장본이 없습니다'); toast('구글 드라이브에 저장본이 없습니다'); return; }
+    const remote=await driveRead(f.id);
+    if(!remote?.data||!Array.isArray(remote.data.characters)) throw new Error('드라이브 파일 형식이 올바르지 않습니다');
+    const rU=+remote.updatedAt||0, lU=S.updatedAt||0;
+    let m;
+    if(gdLocalEmpty()) m=gdPrep(remote.data);
+    else { const ctx={base:false,prefer:rU>lU?'r':'l',conf:[]}; m=gdMerge(null,gdPrep(backupData(true)),gdPrep(remote.data),ctx); } // 겹치는 값은 최근 수정한 쪽
+    m.updatedAt=Date.now(); gdLoad(m); lastSig=contentSig(S);
+    await gdPush({manual:true});
+    const msg=`구글 드라이브 저장본(캐릭터 ${remote.data.characters.length}명)을 합쳐 서버에 저장했습니다`; gdSet('on',msg); toast('☁ '+msg);
+    try{ if(gd.token&&window.google?.accounts?.oauth2?.revoke) google.accounts.oauth2.revoke(gd.token,()=>{}); }catch(e){}
+    gd.token=null; gd.exp=0; sessionStorage.removeItem(GD.TOKEN_KEY);
+  }catch(e){ const info=gdErrInfo(e); gdSet('on',info?info.short:e.message); if(info) gdHelpModal(info.html); }
+  finally{ gd.ia=false; }
+}
 async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그대로 둠 — PC방은 종료 시 자동 초기화)
+  if(SV_ON){
+    if(gdMeta.on && gdLocalDirty() && svTok()){ const ok=await gdPush(); if(!ok && !confirm('서버에 최신 내용을 저장하지 못했습니다. 그래도 로그아웃할까요? (이 PC에는 그대로 남아 있고, 다음 로그인 때 다시 맞춥니다)')) return; }
+    try{ if(svTok()) await svFetch('/api/logout',{method:'POST'}); }catch(e){}
+    clearTimeout(gd.timer); gd.timer=null; gd.fileId=null; gd.remoteRev=undefined; localStorage.removeItem(SV_TOKEN_KEY);
+    gdMeta={}; localStorage.removeItem(GD.META_KEY); localStorage.removeItem(GD_BASE_KEY);
+    gdSet('off'); render(); toast('로그아웃했습니다 (이 PC 데이터는 그대로 있어요)'); return;
+  }
   if(gdMeta.on && gdLocalDirty()){
     const ok=gdHasTok() ? await gdPush() : false;
     if(!ok && !confirm('드라이브에 최신 내용을 저장하지 못했습니다. 그래도 로그아웃할까요? (이 PC에는 그대로 남아 있고, 다음 로그인 때 다시 맞춥니다)')) return;
@@ -2660,6 +2803,7 @@ document.addEventListener('click',e=>{
   const dm=e.target.closest('[data-dropmore]'); if(dm){ const id=dm.dataset.dropmore; dropOpen.has(id)?dropOpen.delete(id):dropOpen.add(id); render(); return; }
   const dc=e.target.closest('[data-drop]'); if(dc){ changeDrop(dc.dataset.drop,+1); return; }
   if(e.target.closest('.drop.erda')) return; // 솔 에르다의 기운: 정보 표시 전용 (클릭해도 아무 일 없음)
+  const svl=e.target.closest('[data-svlogin]'); if(svl){ const a=accById(svl.dataset.svlogin); if(a&&a.key) svLogin(a.key,a.id); return; }
   const t=e.target.closest('[data-tab],[data-dqg],[data-dqc],[data-dqhide],[data-move],[data-wmove],[data-id],[data-edit],[data-filter],[data-check],[data-toggle],[data-setdiff],[data-delhist],[data-acctest],[data-accdel],button[id]');
   if(!t) return;
   const c=activeChar();
@@ -2708,6 +2852,8 @@ document.addEventListener('click',e=>{
     case 'gMenuClose': gdMenu(false); break;
     case 'gBtn': gdHeaderClick(); break;
     case 'gdLogin': gdLogin(); break;
+    case 'svLoginBtn': svLogin($('#svKey')?.value); break;
+    case 'svImportDrive': gdMenu(false); svImportDrive(); break;
     case 'gdLogout': gdLogout(false); break;
     case 'gdSaveNow': gdPush({manual:true}); break;
     case 'gdUseDrive': gdResolve('drive'); break;
@@ -2736,6 +2882,7 @@ document.addEventListener('pointerdown',e=>{ const t=e.target.closest?.('[data-t
   if(e.pointerType==='touch'){ tipTouchAt=t?Date.now():0; if(t){ tipShow(t); clearTimeout(tipTimer); tipTimer=setTimeout(tipHide,3000); } else tipHide(); } },true);
 let tipKbd=false; // 키보드(Tab)로 칩에 왔을 때만 포커스로 표시/숨김 — 클릭·터치 뒤 다시 그려질 때 툴팁이 사라지지 않게
 document.addEventListener('keydown',e=>{ if(e.key==='Tab') tipKbd=true; },true);
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='svKey'){ e.preventDefault(); svLogin(e.target.value); } });
 document.addEventListener('pointerdown',()=>{ tipKbd=false; },true);
 document.addEventListener('focusin',e=>{ if(!tipKbd) return; const t=e.target.closest?.('[data-tip]'); if(t) tipShow(t); });
 document.addEventListener('focusout',()=>{ if(tipKbd) tipHide(); });
@@ -2767,7 +2914,7 @@ $('#themeBtn').onclick=()=>{ const dark=document.documentElement.dataset.theme==
 // 드라이브 저장용 직렬화 (withKeys=true: API 키 포함 / false: 비교용, 키 제외)
 function backupData(withKeys){
   const data=JSON.parse(JSON.stringify(S)); delete data.settings.apiKey;
-  data.settings.accounts=(data.settings.accounts||[]).map(a=>withKeys?{id:a.id,label:a.label,key:a.key||''}:{id:a.id,label:a.label});
+  data.settings.accounts=(data.settings.accounts||[]).map(a=>({id:a.id,label:a.label,...(a.ah?{ah:a.ah}:{}),...(withKeys?{key:a.key||''}:{})})); // ah: 동기화 서버 계정 해시(키 아님)
   return data;
 }
 // 드라이브 데이터 적용: 데이터에 키가 없으면 이 브라우저의 키를 계정 id 기준으로 다시 연결하고, 없는 계정은 유지
@@ -2932,7 +3079,8 @@ feedLoad().then(feedFit);
 setInterval(()=>{ if(!document.hidden) feedLoad(); },3e5);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&Date.now()-feed.at>3e5) feedLoad(); });
 gdRender();
-if(gdUsable()){ gdLoadLib().catch(()=>{}); if(gdMeta.on) gdConnect(false); }
+if(SV_ON){ if(gdMeta.on&&svTok()) gdConnect(false); else gdRender(); } // 서버 모드: 남은 세션 토큰으로만 (없으면 ☁ 로그인)
+else if(gdUsable()){ gdLoadLib().catch(()=>{}); if(gdMeta.on) gdConnect(false); }
 </script>
 </body>
 </html>

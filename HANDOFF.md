@@ -138,6 +138,15 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 동의 화면은 **테스트 모드**일 가능성 → 사용할 구글 계정을 'Google 인증 플랫폼 > 대상 > 테스트 사용자'에 추가해야 함. '확인되지 않은 앱' 화면은 '계속'으로 진행. access_denied/popup_closed 등은 한국어 안내 모달.
 - https 또는 localhost에서만 로그인 가능(file://에서는 ☁ 메뉴에 안내).
 
+## 7-1. 동기화 서버 (Cloudflare Workers + D1) — 준비만, 아직 꺼 둠 (2026-10-10)
+- 사용자 승인한 새 계획: 구글 드라이브 동기화를 무료 Cloudflare Workers + D1 서버로 바꿈. **1단계(코드·테스트)만 완료, 배포 안 함, 사이트 동작 변화 없음.**
+- 서버: `server/` (worker.js · schema.sql · wrangler.toml · README.md, `npm install` 로 wrangler 4 — Node 22 필요, 박스에는 /home/box/.local/node22). 자세한 API·배포 순서는 server/README.md.
+- 로그인 = 넥슨 Open API 키 → 서버가 넥슨 /maplestory/v1/character/list 로 확인 → account_id 해시(sha256(ID_PEPPER:id))로 사용자 찾기/만들기 → 세션 토큰(브라우저 localStorage `mapleBossTracker.svToken`, 서버는 토큰 해시만, 365일). 원본 키는 서버에 저장 안 함(저장 데이터에서도 서버가 키 필드 삭제). 한 사용자에 넥슨 계정 여러 개 연결(/api/link — 로그인 중 새 키를 등록하면 저장 전에 자동 연결).
+- 데이터 = 사용자별 JSON 1개 + rev. PUT 할 때 baseRev 가 다르면 409 + 서버 내용 → 브라우저가 기존 3-way 병합(gdSync/gdMerge, 마지막으로 맞춘 내용 = localStorage `mapleBossTracker.svbase`) 후 다시 저장. 최근 10개 저장본 보관(state_history). 로그인 시도 IP별 30회/10분.
+- 클라이언트: src/app.js `SYNC_API_URL`(지금 '') — 비면 구글 드라이브 그대로. 값 또는 localStorage `mapleBossTracker.syncApi`(미리 써 보기용)가 있으면 서버 모드: 같은 gd* 흐름(gdConnect/gdSync/gdPush/gdPull/gdAsk)에서 저장소 함수만 바뀜(gdFind/gdRead/gdWrite/gdRemoteChanged/gdToken → sv*; 드라이브 전용은 driveToken/driveFind/driveRead). 메타 `mapleBossTracker.svmeta`(rev 포함). ☁ 메뉴 = '본계정 키로 로그인' 버튼 + 키 입력칸 / 로그인 후 지금 저장·로그아웃·'구글 드라이브에서 가져오기 (한 번)'(구글 로그인 창 1번 → 드라이브 저장본을 이 PC 와 합쳐 서버 저장). 처음 로그인 때 서버가 비어 있으면 이 PC 데이터를 올림. 키는 서버로 안 보냄(backupData(false), 계정에는 키 대신 ah = 서버 계정 해시) → 다른 기기에서는 로그인한 키만 자동으로 채워지고 다른 계정 키는 다시 입력. 로그인 창 자동으로 안 띄움(토큰 없으면 ☁ 로그인/다시 로그인).
+- 테스트: tests/test_server.py(API·보안·CORS) · tests/test_tracker23.py(브라우저 2대: 로그인·업로드·내려받기·자동 저장·당겨오기·409 병합·진짜 충돌 질문·새로고침·드라이브 가져오기·로그아웃). 둘 다 wrangler dev(로컬 D1)+넥슨 모의(tests/mock_nexon_list.py, cf_dev.py)를 스스로 띄움, wrangler 없으면 SKIP.
+- 남은 일: 사용자 Cloudflare 가입 → `npx wrangler login --device`(또는 API 토큰) → d1 create · schema · ID_PEPPER · deploy → 미리 써 보기 → SYNC_API_URL 켜기. 나중 단계(미구현): 매일 18:00 KST cron 으로 maplescouter 헥사환산(캐릭터 1명으로 먼저 시험).
+
 ## 8. 사용자가 정한 동작·취향 (변경 시 사용자 확인 필요)
 - 썬데이 새 글 감시: 매일 10:00~10:20 KST, **5초 간격**(사용자 결정, 최대 240회/일).
 - 데이터 출처는 **넥슨 Open API 우선**, 홈페이지 HTML 스크랩은 API 실패/자료 없음일 때만 대체(2026-10-09 사용자 요청). 호출 수는 하루 한도(개발 키 1,000회) 안에서 — 이미 받은 목록 재사용.
@@ -196,6 +205,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - **테스트 서버 공지의 가격을 '다음 패치 예정 가격'으로 표시** — 사용자 결정 대기 중(아직 구현 안 함).
 
 ## 11. 변경 기록
+- 2026-10-10 (3): **동기화 서버 준비**(server/ Cloudflare Workers + D1, 기능 플래그 SYNC_API_URL — 꺼 둠, 배포 안 함) · test_server · test23.
 - 2026-10-10 (2): 드롭 칩 툴팁을 반지 상자(녹옥 제외)·칠흑 상자·에테르넬에만, 반지 상자 = 이름 + 리4/컨4 · 🔄 동기화 버튼을 캐릭터 카드 제목 옆 아이콘으로 · **페이지 열 때 자동 동기화(3초 간격)**, 15분 자동 동기화 설정/타이머 제거(autoSync 삭제) · test22, test13/21 갱신.
 - 2026-10-10: **구글 로그인 창 자동으로 안 띄움**(7장) · **결정석 가격 카드 높이**(오른쪽 열 높이 고정, 16줄 목표) · **드롭 '+N' 묶음 삭제**(모든 아이템 각자 칩) · **에테르넬 장비 조각 정보 칩** · **드롭 칩 툴팁(마우스·터치)** + 반지 상자 리렌4/컨티4 확률(넥슨 확률 공개) · 칠흑 상자 구성품. test20·test21 추가, test9/10/17/18 갱신, tools/build_items.py 에 e_* 아이콘.
 - 2026-10-10: **레이아웃** — 캐릭터 목록 8줄 + 안쪽 스크롤, '초기화까지' 카드를 오른쪽 열 맨 아래로(화면 안 고정), 소식 카드가 위로. **캐릭터 정렬**(기본순/보스 미완료순, 밑줄 링크). **월드 탭**(공식 월드 아이콘, 탭 끌어 놓기로 월드 순서) — 예전 월드 머리글·▲▼ 대체. tools/build_worlds.py·src/worldicons.json, build.py 에 WORLD_ICONS 치환. 소식 카드 최소 높이에서 내용이 넘치면 그만큼 키우고 썬데이에서 뺌(test15 1280x800). test19 추가, test4/mock 의 월드 헬퍼 갱신, test6 드롭 칩 선택자에서 에르다 칩 제외.
