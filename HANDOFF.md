@@ -251,4 +251,4 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 에픽빔 합계: 하늘색 그라데이션 + drop-shadow 글로우 + epshine 애니메이션(모션 줄이기 시 정지), 제목 `.ept` 부드럽게. '보스 별 누적 획득 아이템'.
 
 ## b36
-- 에픽빔 합계 숫자: `.epbeam` 래퍼의 ::before(보라색 세로 빛기둥, epbpulse 맥동) + ::after(위로 올라가는 반짝이, epbrise). 절대 위치·pointer-events:none → 레이아웃 영향 없음, 모션 줄이기 시 정지. 제목은 기본 스타일.
+- 에픽빔 합계 숫자 (b37): `.epbeam` ::before = conic-gradient 대각선 4방향 프리즘 광선(epray), ::after = 흰·청록 코어 글로우(epcore). 절대 위치·pointer-events:none, 모션 줄이기 시 정지. 푸터의 localStorage/드라이브 저장 문구 삭제.

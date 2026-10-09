@@ -721,20 +721,30 @@ select.impworld option{color:#111}
 @media (prefers-reduced-motion: reduce){.lx.aur.epsum{animation:none}}
 .svaskbtns [data-k=no]{background:transparent;color:var(--text,#ececf1);border-color:var(--line,#3a3a46)}
 #svGate .svgerr{margin-top:10px;padding:6px 2px;background:transparent;border:0;color:#ff5a5a;font-weight:600;font-size:.9rem;opacity:1}
-/* b36: 합계 숫자 뒤 '에픽빔' — 보라색 세로 빛기둥 + 위로 올라가는 반짝이 + 은은한 맥동 (CSS만, 레이아웃 영향 없음) */
+/* b37: 합계 숫자에서 대각선(X) 4방향으로 뻗는 하늘색 프리즘 광선 + 흰·청록 코어 글로우 (CSS만, 레이아웃 영향 없음) */
 .epbeam{position:relative;display:inline-block;margin-left:6px;vertical-align:baseline;isolation:isolate}
 .epbeam .epsum{position:relative;z-index:2;margin-left:0}
-.epbeam::before,.epbeam::after{content:"";position:absolute;left:50%;bottom:-6px;pointer-events:none;z-index:1;transform:translateX(-50%)}
-.epbeam::before{width:30px;height:46px;border-radius:50% 50% 40% 40%/20% 20% 80% 80%;
-  background:radial-gradient(ellipse 60% 18% at 50% 92%,rgba(214,160,255,.95),rgba(160,90,255,.55) 45%,transparent 75%),
-             linear-gradient(to top,rgba(170,90,255,.75) 0%,rgba(150,80,255,.45) 35%,rgba(190,140,255,.18) 70%,transparent 100%);
-  filter:blur(2px);mix-blend-mode:screen;animation:epbpulse 2.4s ease-in-out infinite;will-change:transform,opacity}
-.epbeam::after{width:26px;height:46px;
-  background-image:radial-gradient(1.6px 1.6px at 20% 80%,#f3e6ff 60%,transparent),radial-gradient(1.2px 1.2px at 70% 60%,#e2c8ff 60%,transparent),
-    radial-gradient(1.4px 1.4px at 45% 30%,#fff 60%,transparent),radial-gradient(1px 1px at 85% 90%,#d9b8ff 60%,transparent),radial-gradient(1.2px 1.2px at 30% 10%,#f3e6ff 60%,transparent);
-  background-size:26px 46px;background-repeat:repeat-y;animation:epbrise 2.2s linear infinite;opacity:.9;will-change:background-position}
-@keyframes epbpulse{0%,100%{opacity:.75;transform:translateX(-50%) scaleX(.85)}50%{opacity:1;transform:translateX(-50%) scaleX(1.12)}}
-@keyframes epbrise{from{background-position:0 0}to{background-position:0 -46px}}
+.epbeam::before,.epbeam::after{content:"";position:absolute;left:50%;top:50%;pointer-events:none;z-index:1;border-radius:50%}
+/* 광선: 45°/135°/225°/315° 가는 스파이크 (가장자리 무지개빛) + 희미한 상하좌우 */
+.epbeam::before{width:96px;height:96px;margin:-48px 0 0 -48px;
+  background:conic-gradient(from 0deg,
+    rgba(255,255,255,.25) 0deg,transparent 2deg,transparent 41deg,
+    rgba(255,120,220,.55) 42.5deg,#bff6ff 44deg,#ffffff 45deg,#bff6ff 46deg,rgba(120,255,180,.55) 47.5deg,transparent 49deg,
+    transparent 88deg,rgba(200,245,255,.22) 90deg,transparent 92deg,
+    transparent 131deg,rgba(255,120,220,.55) 132.5deg,#bff6ff 134deg,#ffffff 135deg,#bff6ff 136deg,rgba(120,255,180,.55) 137.5deg,transparent 139deg,
+    transparent 178deg,rgba(200,245,255,.22) 180deg,transparent 182deg,
+    transparent 221deg,rgba(255,120,220,.55) 222.5deg,#bff6ff 224deg,#ffffff 225deg,#bff6ff 226deg,rgba(120,255,180,.55) 227.5deg,transparent 229deg,
+    transparent 268deg,rgba(200,245,255,.22) 270deg,transparent 272deg,
+    transparent 311deg,rgba(255,120,220,.55) 312.5deg,#bff6ff 314deg,#ffffff 315deg,#bff6ff 316deg,rgba(120,255,180,.55) 317.5deg,transparent 319deg,
+    transparent 358deg,rgba(255,255,255,.25) 360deg);
+  -webkit-mask:radial-gradient(circle,#000 0,#000 18%,rgba(0,0,0,.55) 42%,transparent 70%);mask:radial-gradient(circle,#000 0,#000 18%,rgba(0,0,0,.55) 42%,transparent 70%);
+  filter:drop-shadow(0 0 3px rgba(127,224,255,.9));mix-blend-mode:screen;animation:epray 2.2s ease-in-out infinite;will-change:transform,opacity}
+/* 코어: 흰·청록 글로우 */
+.epbeam::after{width:34px;height:26px;margin:-13px 0 0 -17px;
+  background:radial-gradient(ellipse at center,rgba(255,255,255,.85) 0,rgba(170,240,255,.7) 30%,rgba(90,200,255,.35) 55%,transparent 75%);
+  filter:blur(3px);mix-blend-mode:screen;animation:epcore 2.2s ease-in-out infinite;will-change:transform,opacity}
+@keyframes epray{0%,100%{opacity:.7;transform:scale(.72) rotate(0deg)}50%{opacity:1;transform:scale(1.08) rotate(4deg)}}
+@keyframes epcore{0%,100%{opacity:.65;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
 @media (prefers-reduced-motion: reduce){.epbeam::before,.epbeam::after{animation:none}}
 </style>
 </head>
@@ -771,7 +781,7 @@ select.impworld option{color:#111}
   </aside>
   <section id="view"></section>
 </main>
-<div class="foot">결정석 가격은 공식 패치 노트 기준으로 자동 갱신됩니다. 데이터와 API 키는 이 브라우저(localStorage)에 저장되고, 구글 로그인 시 내 드라이브(앱 전용 숨김 폴더)에도 저장됩니다. Data based on NEXON Open API.</div>
+<div class="foot">결정석 가격은 공식 패치 노트 기준으로 자동 갱신됩니다. Data based on NEXON Open API.</div>
 
 <div class="modal-bg" id="charModal">
   <div class="modal">

@@ -124,9 +124,9 @@ try:
     check('시드링: no (결과를 기록한 N회 기준), shows 기댓값 = boxes × official prob', '결과를 기록한' not in rs and f'기댓값 리4 {exp4[0]}개 · 컨4 {exp4[1]}개' in rs, (rs,exp4))
     pg.locator('.card:has(.ringsum)').screenshot(path='/workspace/shots/b32_seedring.png') if SHOTDIR else None
     pg.locator('.card:has(.epsum) h2').screenshot(path='/workspace/shots/b32_epic.png') if SHOTDIR else None
-    pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b36_epic.png') if SHOTDIR else None
-    bm=pg.evaluate("(()=>{const w=document.querySelector('.epbeam'),b=getComputedStyle(w,'::before'),a=getComputedStyle(w,'::after'),h=document.querySelector('.eph'),o=document.querySelector('#view .card h2:not(.eph)');return {pos:b.position,anim:b.animationName+'|'+a.animationName,pe:b.pointerEvents,hh:h.getBoundingClientRect().height,oh:o.getBoundingClientRect().height,col:b.backgroundImage.includes('rgba(170, 90, 255')}})()")
-    check('epic beam: purple pillar + rising sparkles + pulse, absolute (no layout shift)', bm['pos']=='absolute' and 'epbpulse' in bm['anim'] and 'epbrise' in bm['anim'] and bm['pe']=='none' and bm['col'] and abs(bm['hh']-bm['oh'])<=2, bm)
+    pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b37_epic.png') if SHOTDIR else None
+    bm=pg.evaluate("(()=>{const w=document.querySelector('.epbeam'),b=getComputedStyle(w,'::before'),a=getComputedStyle(w,'::after'),h=document.querySelector('.eph'),o=document.querySelector('#view .card h2:not(.eph)');return {pos:b.position,anim:b.animationName+'|'+a.animationName,pe:b.pointerEvents,hh:h.getBoundingClientRect().height,oh:o.getBoundingClientRect().height,col:b.backgroundImage.includes('conic-gradient')&&a.backgroundImage.includes('radial-gradient')}})()")
+    check('epic beam: diagonal prism rays (conic) + core glow, pulsing, absolute (no layout shift)', bm['pos']=='absolute' and 'epray' in bm['anim'] and 'epcore' in bm['anim'] and bm['pe']=='none' and bm['col'] and abs(bm['hh']-bm['oh'])<=2, bm)
     tst=pg.evaluate("(()=>{const t=getComputedStyle(document.querySelector('.eph .ept')),h=getComputedStyle(document.querySelector('.eph')),o=getComputedStyle(document.querySelector('#view .card h2:not(.eph)')),a=getComputedStyle(document.querySelector('.eph'),'::after'),n=getComputedStyle(document.querySelector('.epsum')),r=getComputedStyle(document.querySelector('.totloot .lx'));return {clip:t.backgroundClip,filter:t.filter,anim:t.animationName,after:a.content,font:h.fontFamily===o.fontFamily&&t.fontFamily===o.fontFamily&&t.fontWeight===h.fontWeight,nfont:n.fontFamily===r.fontFamily&&n.fontWeight===r.fontWeight}})()")
     check('에픽빔 title plain like other headings (no glow/gradient/✦); number uses page number font', tst['clip']!='text' and tst['filter']=='none' and tst['anim']=='none' and tst['after'] in ('none','normal') and tst['font'] and tst['nfont'], tst)
     pg.locator('.card:has(h2:has-text("캐릭터별 누적"))').screenshot(path='/workspace/shots/b32_chartable.png') if SHOTDIR else None
@@ -156,6 +156,7 @@ try:
     pg.evaluate("feed.data.sunday.date='2026-10-08T10:00:00+09:00'; renderSun()")
     pg.clock.install(time=ms('2026-10-12T00:00:30+09:00')) if False else None
     cur=pg.inner_text('#sunCard .sunben b'); check('rendered label uses real clock', cur in ('이번 주 혜택','저번 주 혜택'), cur)
+    check('footer: localStorage/drive sentence removed', 'localStorage)에 저장' not in pg.inner_text('body') and 'Data based on NEXON Open API' in pg.inner_text('.foot'))
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:
