@@ -593,3 +593,5 @@ select.impworld option{color:#111}
 #iconBurst img{position:absolute;left:-16px;top:-16px;width:32px;height:32px;opacity:0;will-change:transform,opacity;animation:ib 1.8s cubic-bezier(.15,.7,.3,1) forwards}
 @keyframes ib{0%{transform:translate(0,0) scale(.2) rotate(0);opacity:1}70%{opacity:1}100%{transform:translate(var(--x),var(--y)) scale(var(--s)) rotate(var(--r));opacity:0}}
 .expinc{white-space:normal!important;max-width:100%;overflow-wrap:anywhere}.expinc small{display:inline-block}
+.totloot .lx{color:#e0115f;font-weight:800}
+.epsum{font-size:1.05rem;margin-left:6px}

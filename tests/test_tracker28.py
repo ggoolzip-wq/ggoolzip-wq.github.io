@@ -86,6 +86,13 @@ try:
     t=pg.inner_text('#view')
     check("'에픽빔 본 횟수' with chosen item + aurora x-count", '에픽빔 본 횟수' in t and '물욕' not in t and '마력이 깃든 안대' in t and pg.evaluate("[...document.querySelectorAll('.lx.aur')].every(e=>getComputedStyle(e).backgroundClip==='text'||getComputedStyle(e).webkitBackgroundClip==='text')") and pg.locator('.lx.aur').count()>=1)
     shot(pg.locator('#view'),'b28_total.png')
+    # b29: 에픽빔 — 제목 옆 합계(오로라), 목록 개수는 선홍색, 저장 데이터와 일치
+    pg.evaluate("S.characters[0].drops['seren|mitra']=1; S.characters[0].drops['zakum|papmark']=1; save(); render()"); pg.wait_for_timeout(200)
+    exp=pg.evaluate("(()=>{let n=0;for(const c of S.characters) for(const m of [c.drops||{},c.mdrops||{}]) for(const [k,v] of Object.entries(m)){const it=parseIK(k).it; if(ITEMS[it]&&!isRing(it)) n+=+v;} return n})()")
+    sm=pg.inner_text('.epsum'); items=pg.eval_on_selector_all('.card:has(.epsum) .totloot .lx',"e=>e.map(x=>[x.textContent,getComputedStyle(x).color,getComputedStyle(x).backgroundClip])")
+    check('에픽빔 heading sum = stored non-ring drops, aurora', sm==f'x{exp}' and exp==3 and pg.evaluate("getComputedStyle(document.querySelector('.epsum')).backgroundClip")=='text', (sm,exp))
+    check('per-item counts crimson, no gradient, sum matches', all(c=='rgb(224, 17, 95)' and bc!='text' for _,c,bc in items) and sum(int(t[1:]) for t,_,_ in items)==exp, items)
+    pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b29_epic.png') if SHOTDIR else None
     # 12 썬데이 라벨 (mocked clock)
     lab=lambda now: pg.evaluate("n=>sunLabel(feed.data.sunday,n)",now)
     ms=lambda s: pg.evaluate("s=>Date.parse(s)",s)
