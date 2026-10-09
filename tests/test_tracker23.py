@@ -24,7 +24,7 @@ def ch(id,name):
 PRESET={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':[],'monthHistory':[],'characters':[ch('c1','단풍용사'),ch('c2','불독메이지')],
   'settings':{'accounts':[{'id':'a1','label':'본계정','key':KA}],'lastSync':int(time.time()*1000)}}
 ms=MN.start(NP); dev=cf_dev.Dev(WP,NP)
-puts=[]; popups=[]
+puts=[]; popups=[]; dialogs=[]
 def mkctx(b):
     ctx=b.new_context(viewport={'width':1280,'height':800},locale='ko-KR')
     ctx.route('https://open.api.nexon.com/**',lambda r:r.abort()); ctx.route('https://accounts.google.com/**',lambda r:r.abort())
@@ -32,7 +32,7 @@ def mkctx(b):
     def onreq(rq):
         if rq.url.startswith(API+'/api/') and rq.method in ('PUT','POST'): puts.append((rq.method,rq.url,rq.post_data or ''))
     ctx.on('request',onreq)
-    pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('popup',lambda p:popups.append(p.url))
+    pg=ctx.new_page(); pg.on('dialog',lambda d:(dialogs.append(d.message),d.accept())); pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('popup',lambda p:popups.append(p.url))
     pg.on('console',lambda m:errs.append('console:'+m.text) if m.type=='error' and 'Failed to load resource' not in m.text and 'net::' not in m.text else None)
     return ctx,pg
 st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1'))")
@@ -47,27 +47,26 @@ try:
     # 1) 기기 A: 등록된 키로 로그인 → 이 PC 데이터 첫 저장
     ca,pa=mkctx(b); pa.goto(URL)
     pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
-    check('flag on: header ☁ 로그인, no auto login, no popup', pa.inner_text('#gBtn')=='☁ 로그인' and not popups and not pa.evaluate("svTok()"), pa.inner_text('#gBtn'))
-    pa.click('#gBtn'); pa.wait_for_selector('#gMenu:not([hidden]) #svInvite')
+    check('flag on: header ☁ 로그인, no auto login, no popup', pa.text_content('#gBtn')=='☁ 로그인' and not popups and not pa.evaluate("svTok()"), pa.text_content('#gBtn'))
+    check('entry gate: invite screen covers the page on open', pa.is_visible('#svGate #svInvite') and pa.evaluate("getComputedStyle(document.querySelector('#svGate')).position")=='fixed')
     check('first: invite password asked (no key buttons yet)', pa.locator('[data-svlogin]').count()==0)
-    pa.fill('#svInvite','wrong'); pa.press('#svInvite','Enter'); pa.wait_for_timeout(800)
-    check('wrong invite → error shown, still asking', pa.locator('#svInvite').count()==1 and '맞지 않' in pa.inner_text('#gMenu'), pa.inner_text('#gMenu')[:200])
-    pa.fill('#svInvite',cf_dev.TEST_PASS); pa.click('#svInviteBtn'); pa.wait_for_selector('#gMenu:not([hidden]) [data-svlogin="a1"]')
-    check('invite ok → device ticket stored, key login shown', bool(pa.evaluate("svDev()")))
-    check('menu: login with stored key button, key not shown', '본계정 키를 대표 키로 로그인' in pa.inner_text('#gMenu') and KA not in pa.inner_text('#gMenu') and KA not in pa.content().split('<script')[0])
-    shot_path=os.path.join(OUT,'sv_login_menu.png'); pa.locator('#gMenu').screenshot(path=shot_path)
-    if SHOTDIR: shutil.copy(shot_path,SHOTDIR)
-    pa.click('[data-svlogin="a1"]'); wait_on(pa)
+    pa.fill('#svGate #svInvite','wrong'); pa.press('#svGate #svInvite','Enter'); pa.wait_for_timeout(800)
+    check('wrong invite → error shown, still asking', pa.is_visible('#svGate #svInvite') and '맞지 않' in pa.inner_text('#svGate'), pa.inner_text('#svGate')[:200])
+    pa.fill('#svGate #svInvite',cf_dev.TEST_PASS); pa.click('#svGate #svInviteBtn'); pa.wait_for_selector('#svGate #svKey')
+    check('invite ok → device ticket stored, gate step 2 asks 대표 키, content still hidden', bool(pa.evaluate("svDev()")) and '대표 키' in pa.inner_text('#svGate') and pa.evaluate("document.documentElement.classList.contains('gated')"))
+    check('key not shown anywhere', KA not in pa.inner_text('body') and KA not in pa.content().split('<script')[0])
+    pa.fill('#svGate #svKey',KA); pa.click('#svGate #svLoginBtn'); wait_on(pa)
+    check('after main-key login: gate gone, site visible', pa.locator('#svGate').count()==0 and not pa.evaluate("document.documentElement.classList.contains('gated')"))
     s=server_state(); d=json.loads(s[0]['data']) if s else {}
     check('A login → local data uploaded (rev 1, 2 chars)', s and s[0]['rev']==1 and len(d.get('characters',[]))==2, s and s[0]['rev'])
     check('server copy has no API key; account has ah', KA not in s[0]['data'] and d['settings']['accounts'][0].get('ah') and 'key' not in d['settings']['accounts'][0], d.get('settings'))
     check('A local keeps its key + ah', st(pa)['settings']['accounts'][0]['key']==KA and st(pa)['settings']['accounts'][0].get('ah'))
     check('no raw key in any PUT body (login POST carries it once)', all(KA not in body for m,u,body in puts if m=='PUT') and any(u.endswith('/api/login') and KA in body for m,u,body in puts))
-    check('A header shows saved state', '저장' in pa.inner_text('#gBtn') or '동기화됨' in pa.inner_text('#gBtn'), pa.inner_text('#gBtn'))
+    check('A header shows saved state', '저장' in pa.text_content('#gBtn') or '동기화됨' in pa.text_content('#gBtn'), pa.text_content('#gBtn'))
     # 2) 기기 B (빈 PC): 키 입력 → 내려받기 + 그 키 자동 채움
     cb,pb=mkctx(b); pb.goto(URL)
     pb.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); pb.reload(); pb.wait_for_timeout(300)
-    pb.click('#gBtn'); pb.wait_for_selector('#svInvite'); pb.fill('#svInvite',cf_dev.TEST_PASS); pb.press('#svInvite','Enter'); pb.wait_for_selector('#svKey'); pb.fill('#svKey',KA); pb.press('#svKey','Enter'); wait_on(pb)
+    pb.wait_for_selector('#svGate #svInvite'); pb.fill('#svGate #svInvite',cf_dev.TEST_PASS); pb.press('#svGate #svInvite','Enter'); pb.wait_for_selector('#svGate #svKey'); pb.fill('#svGate #svKey',KA); pb.press('#svGate #svKey','Enter'); wait_on(pb)
     sb=st(pb)
     check('B (empty PC) login → pulled 2 chars, key filled for that account', len(sb['characters'])==2 and sb['settings']['accounts'][0].get('key')==KA, [a.get('key','')[:8] for a in sb['settings']['accounts']])
     # 3) B 에서 바꿈 → 자동 저장(5초) → A 가 당겨옴
@@ -109,10 +108,11 @@ try:
     rq=urllib.request.Request(API+'/api/state',headers={'Authorization':'Bearer '+oldtok})
     try: urllib.request.urlopen(rq); code=200
     except urllib.error.HTTPError as e: code=e.code
-    check('logout: token removed, server session dead, local data kept, header ☁ 로그인', not pa.evaluate("svTok()") and code==401 and len(st(pa)['characters'])>=2 and pa.inner_text('#gBtn')=='☁ 로그인', (code,pa.inner_text('#gBtn')))
+    check('logout: token removed, server session dead, local data CLEARED, header ☁ 로그인', not pa.evaluate("svTok()") and code==401 and len(st(pa)['characters'])==0 and not st(pa)['settings'].get('accounts') and pa.text_content('#gBtn')=='☁ 로그인', (code,pa.text_content('#gBtn')))
     check('B still logged in (other device unaffected)', pb.evaluate("!!svTok()"))
-    pa.click('#gBtn') if pa.is_hidden('#gMenu') else None; pa.wait_for_timeout(200)
-    check('after logout: device ticket kept → key login directly (no invite again)', pa.locator('#gMenu [data-svlogin]').count()>0 and pa.locator('#svInvite').count()==0)
+    pa.wait_for_timeout(200)
+    check('after logout: gate back at step 2 (대표 키, no invite again)', pa.locator('#svGate #svKey').count()>0 and pa.locator('#svInvite').count()==0)
+    check('first login with local data asked before uploading', any('이 PC 데이터를 이 계정으로 올릴까요' in m for m in dialogs), dialogs)
     check('never opened a popup', not popups, popups)
     b.close()
 except Exception as e:

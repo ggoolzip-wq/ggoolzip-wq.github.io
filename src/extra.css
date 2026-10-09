@@ -514,3 +514,18 @@ h2.charh{display:flex;align-items:center;gap:6px}
 .ibtn.sbtn.busy .rot{animation:sbspin .9s linear infinite}
 .ibtn[hidden]{display:none!important}
 @media(max-width:820px){.ibtn.sbtn{width:32px;height:32px}.ibtn.sbtn .rot{width:16px;height:16px}}
+
+/* 서버 모드 입장 화면: 빈 화면 + 가운데 상자 (초대 비밀번호 → 대표 키) */
+html.gated body>*:not(#svGate):not(#toast){visibility:hidden}
+#svGate{position:fixed;inset:0;z-index:9999;background:#121216;display:flex;align-items:center;justify-content:center;padding:16px;color:#ececf1}
+#svGate .svgbox{width:min(380px,100%);background:#1d1d23;border:1px solid #2e2e38;border-radius:16px;padding:24px;box-shadow:0 12px 48px rgba(0,0,0,.5)}
+#svGate .svgt{font-weight:800;font-size:1.2rem;margin-bottom:10px}
+#svGate .svgd{font-size:.85rem;line-height:1.5;margin-bottom:14px}
+#svGate .svgd .muted{color:#9a9aa8;font-size:.78rem}
+#svGate .svgr{display:flex;gap:6px}
+#svGate .svgr input{flex:1;min-width:0;text-align:left;background:#121216;color:#ececf1;border:1px solid #3a3a46}
+#svGate .svghelp{margin-top:14px;font-size:.78rem;color:#c8c8d2}
+#svGate .svghelp summary{cursor:pointer;color:#ffb36b}
+#svGate .svghelp ol{margin:8px 0 6px 18px;padding:0;line-height:1.6}
+#svGate .svghelp a{color:#ffb36b}
+#svGate .svghelp .muted{color:#9a9aa8}
