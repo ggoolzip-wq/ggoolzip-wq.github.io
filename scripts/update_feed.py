@@ -137,11 +137,11 @@ def src_saryo(st, wm, run_all, minute):
 # ---------------- 패치내역 ----------------
 # (1) 업데이트 공지: Open API /notice-update (10분에 한 번)
 # (2) 마이너 패치: 공식 홈페이지 공지사항(/News/Notice) 중 제목에 '마이너 패치'가 들어간 글의 최신 2개를 항상 표시.
-#     실제 제목 예: '[패치완료] 6/23(화) ver1.2.416 마이너(7) 패치(19:21 적용)', '마이너패치', '마이너 패치'.
+#     실제 제목 예: '[패치완료] 10/8(목) ver1.2.419 마이너버전(8) 패치', '… 마이너(7) 패치', '마이너패치', '마이너 패치'.
 #     같은 글의 제목이 [패치예정]→[패치완료] 로 바뀌므로 매번 제목·날짜를 다시 맞춤. 예전 마이너 패치 글은 빠짐(최신 2개만).
 #     가져오는 곳: 홈페이지 공지 검색 HTML(/News/Notice/All?search=마이너, API 할당량 사용 안 함) +
 #                 사료감지가 이번 회차에 이미 받은 Open API /notice 목록(추가 호출 없음). 둘 중 하나만 되어도 OK.
-MINOR_RE = re.compile(r"마이너\s*(?:\(\s*\d+\s*\)\s*)?패치")
+MINOR_RE = re.compile(r"마이너\s*(?:버전\s*)?(?:\(\s*\d+\s*\)\s*)?패치")
 MINOR_KEEP = 2
 NOTICE_SEARCH_URL = "https://maplestory.nexon.com/News/Notice/All?search=" + urllib.parse.quote("마이너")
 _API_NOTICES = []  # src_saryo 가 받은 /notice 목록 (같은 회차에 재사용)
