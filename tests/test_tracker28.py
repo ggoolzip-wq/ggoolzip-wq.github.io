@@ -124,8 +124,9 @@ try:
     check('시드링: no (결과를 기록한 N회 기준), shows 기댓값 = boxes × official prob', '결과를 기록한' not in rs and f'기댓값 리4 {exp4[0]}개 · 컨4 {exp4[1]}개' in rs, (rs,exp4))
     pg.locator('.card:has(.ringsum)').screenshot(path='/workspace/shots/b32_seedring.png') if SHOTDIR else None
     pg.locator('.card:has(.epsum) h2').screenshot(path='/workspace/shots/b32_epic.png') if SHOTDIR else None
-    pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b33_epic.png') if SHOTDIR else None
-    check('에픽빔 title glow + reduced-motion rule', pg.evaluate("(e=>getComputedStyle(e).backgroundClip==='text'&&getComputedStyle(e).filter.includes('drop-shadow'))(document.querySelector('.eph .ept'))"))
+    pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b34_epic.png') if SHOTDIR else None
+    tst=pg.evaluate("(()=>{const t=getComputedStyle(document.querySelector('.eph .ept')),h=getComputedStyle(document.querySelector('.eph')),o=getComputedStyle(document.querySelector('#view .card h2:not(.eph)')),a=getComputedStyle(document.querySelector('.eph'),'::after'),n=getComputedStyle(document.querySelector('.epsum')),r=getComputedStyle(document.querySelector('.totloot .lx'));return {clip:t.backgroundClip,filter:t.filter,anim:t.animationName,after:a.content,font:h.fontFamily===o.fontFamily&&t.fontFamily===o.fontFamily&&t.fontWeight===h.fontWeight,nfont:n.fontFamily===r.fontFamily&&n.fontWeight===r.fontWeight}})()")
+    check('에픽빔 title plain like other headings (no glow/gradient/✦); number uses page number font', tst['clip']!='text' and tst['filter']=='none' and tst['anim']=='none' and tst['after'] in ('none','normal') and tst['font'] and tst['nfont'], tst)
     pg.locator('.card:has(h2:has-text("캐릭터별 누적"))').screenshot(path='/workspace/shots/b32_chartable.png') if SHOTDIR else None
     # 탭 이동 시 저장 묻기
     pg.evaluate('pend=null;save()'); pg.click('[data-tab="boss"]'); pg.wait_for_timeout(200)
