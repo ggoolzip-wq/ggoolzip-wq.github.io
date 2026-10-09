@@ -187,16 +187,32 @@ def minor_candidates(html_rows, api_items):
                     "date": iso_from_api(x.get("date")) or prev.get("date", ""), "src": "minor"}
     return c
 
+MINOR_MAX_PAGES = 5  # 최신 2개를 아직 못 모았을 때만 다음 쪽까지 (보통은 1쪽만)
+_HAVE_MINOR = set()   # main() 이 넣어 줌: feed.json 에 이미 있는 minor 글 번호
+
 def src_minor(wm):
     """마이너 패치 후보 {n: item} (홈페이지 검색 HTML + 이번 회차 /notice 목록). 둘 다 실패면 오류."""
     rows, err = [], ""
-    try:
-        _, s = http_get(NOTICE_SEARCH_URL, proxy=True)
-        rows = parse_notice_list(s)
-        if not rows:
-            err = f"공지 검색 목록을 읽지 못함({len(s)} bytes)"
-    except Exception as e:
-        err = str(e)
+    for page in range(1, MINOR_MAX_PAGES + 1):
+        try:
+            _, s = http_get(NOTICE_SEARCH_URL + (f"&page={page}" if page > 1 else ""), proxy=True)
+            got = parse_notice_list(s)
+            if not got:
+                if page == 1:
+                    err = f"공지 검색 목록을 읽지 못함({len(s)} bytes)"
+                break
+            if page == 1:
+                log("  공지 검색 1쪽:", " | ".join(r["title"][:40] for r in got))
+            rows += got
+        except Exception as e:
+            if page == 1:
+                err = str(e)
+            break
+        found = {r["n"] for r in rows if MINOR_RE.search(r["title"])} | _HAVE_MINOR
+        found |= {int(x.get("notice_id") or 0) for x in _API_NOTICES if MINOR_RE.search(x.get("title", ""))}
+        if len(found) >= MINOR_KEEP:
+            break
+        time.sleep(1)
     if err:
         log("  마이너 패치 HTML 실패:", err, "— Open API /notice 목록만 사용" if _API_NOTICES else "")
         if not _API_NOTICES:
@@ -351,6 +367,7 @@ def main():
     feed.setdefault("version", 1)
     items = feed.setdefault("items", {}); srcs = feed.setdefault("sources", {})
     wm = feed.setdefault("state", {}).setdefault("watermarks", {})
+    _HAVE_MINOR.clear(); _HAVE_MINOR.update(int(x["id"].split(":")[1]) for x in items.get("patch", []) if str(x.get("id", "")).startswith("minor:"))
     run_all = os.environ.get("FEED_ALL") == "1" or os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
     minute = datetime.datetime.now(datetime.timezone.utc).minute
     added = 0; flipped = False

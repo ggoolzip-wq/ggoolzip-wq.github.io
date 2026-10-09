@@ -66,4 +66,18 @@ check("HTML blocked: keeps 2 minor items", [x["id"] for x in pt2] == ids, [x["id
 api_notice.clear(); F.main()
 pt3 = json.load(open(out, encoding="utf-8"))["items"]["patch"]
 check("HTML + API minor both unavailable: items kept", [x["id"] for x in pt3] == ids, [x["id"] for x in pt3])
+# 6) 1쪽에 마이너 패치가 1개뿐이면 다음 쪽까지 (최대 5쪽), 2개 모이면 멈춤
+p1 = html.replace("마이너(6) 패치", "정기 패치")
+p2 = html.replace("/News/Notice/All/1493", "/News/Notice/All/1492")
+pages = []
+def http_pages(url, **k):
+    pages.append(url)
+    return 200, (p2 if "page=2" in url else p1 if "page=" not in url else "<html></html>")
+F.http_get = http_pages
+fresh = {"version": 1, "updatedAt": "2026-06-23T10:00:00+09:00", "state": {"watermarks": old["state"]["watermarks"]}, "items": {}}
+json.dump(fresh, open(out, "w"), ensure_ascii=False); F.main()
+pt4 = json.load(open(out, encoding="utf-8"))["items"]["patch"]
+check("paging: 2nd minor found on page 2, stops there", [x["id"] for x in pt4] == ["minor:149386", "minor:149286"] and len([u for u in pages if "News/Notice/All" in u]) == 2, ([x["id"] for x in pt4], pages))
+pages.clear(); F.main()
+check("steady state (2 known): only page 1 fetched", len([u for u in pages if "News/Notice/All" in u]) == 1, pages)
 print("FAILS", fails); sys.exit(1 if fails else 0)
