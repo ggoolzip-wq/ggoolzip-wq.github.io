@@ -2371,7 +2371,7 @@ function gdRender(){
   const st=$('#gdStatus'); if(st) st.innerHTML=gdStatusHtml();
 }
 function svLoginHtml(){ // 서버 모드 로그인: (기기당 한 번) 초대 비밀번호 → 이 PC 에 등록된 키로 / 새 키 입력 (키는 화면에 표시하지 않음)
-  if(!svDev()) return `<div class="svlogin"><div class="muted tiny" style="margin:0 0 6px">친구 초대 전용이에요. <b>초대 비밀번호</b>를 넣어 주세요 (이 기기에서 한 번만).</div>
+  if(!svDev()) return `<div class="svlogin"><div class="muted tiny" style="margin:0 0 6px"><b>초대 비밀번호</b>를 넣어 주세요 (이 기기에서 한 번만).</div>
     <div class="row" style="display:flex;gap:6px"><input class="pin" id="svInvite" type="password" autocomplete="off" placeholder="초대 비밀번호" style="flex:1;min-width:0;text-align:left"><button class="btn sm" id="svInviteBtn">확인</button></div>
     ${gd.svErr?`<div class="impmsg warn" style="margin-top:6px">${esc(gd.svErr)}</div>`:''}</div>`;
   const ks=accounts().filter(a=>a.key).sort((x,y)=>(y.main?1:0)-(x.main?1:0));
@@ -2781,7 +2781,7 @@ function svGate(){ // 서버 모드 입장 화면: ① 초대 비밀번호 → �
   const err=gd.svErr?`<div class="impmsg warn" style="margin-top:10px">${esc(gd.svErr)}</div>`:'';
   const step=svDev()?2:1, busy=gd.state==='connecting';
   g.innerHTML=`<div class="svgbox" data-step="${step}"><div class="svgt">보스 캐릭터 관리</div>${step===1
-    ?`<div class="svgd">친구 초대 전용이에요. <b>초대 비밀번호</b>를 넣어 주세요.<br><span class="muted">이 기기에서 한 번만 물어봐요.</span></div>
+    ?`<div class="svgd"><b>초대 비밀번호</b>를 넣어 주세요.<br><span class="muted">이 기기에서 한 번만 물어봐요.</span></div>
       <div class="svgr"><input class="pin" id="svInvite" type="password" autocomplete="off" placeholder="초대 비밀번호"><button class="btn sm" id="svInviteBtn">확인</button></div>`
     :`<div class="svgd"><b>대표 키</b>(본계정 넥슨 Open API 키)로 로그인하세요.<br><span class="muted">대표 키는 서버에 저장되지 않아요. 등록한 부계정 키는 다른 기기에서도 대표 키만 넣으면 돌아와요.</span></div>
       <div class="svgr"><input class="pin" id="svKey" type="password" autocomplete="off" placeholder="대표 키 붙여넣기"${busy?' disabled':''}><button class="btn sm" id="svLoginBtn"${busy?' disabled':''}>${busy?'확인 중…':'로그인'}</button></div>
