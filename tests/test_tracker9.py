@@ -33,7 +33,7 @@ try:
     check('46 official rows applied', pg.evaluate('officialInfo.applied')==46 and not pg.evaluate('officialInfo.pending.length'))
     wk=pg.evaluate("priceRows('weekly').map(r=>r.p)"); shown=pg.eval_on_selector_all('.pricecard .pc-list > .pc-row','e=>e.length')
     check('card rows sorted ascending', wk==sorted(wk) and shown==len(wk)+2, (shown,len(wk)))
-    check('card list scrolls (max height)', pg.evaluate("(()=>{const l=document.querySelector('.pc-list');return l.scrollHeight>l.clientHeight&&l.clientHeight<=270})()"))
+    check('card list scrolls inside, tall enough (2026-10-10: ~16 rows when space)', pg.evaluate("(()=>{const l=document.querySelector('.pc-list');return l.scrollHeight>l.clientHeight&&l.clientHeight>=200})()"))
     check('no settings tab / price editing / update button', pg.query_selector('[data-tab="settings"]') is None and pg.query_selector('input[data-price]') is None and pg.query_selector('#priceUpdBtn') is None and pg.query_selector('#priceModal') is None)
     mod=json.loads(json.dumps(base)); mod['checkedAt']='2026-10-15'
     for r in mod['rows']:

@@ -118,8 +118,37 @@ const ITEMS = {
   r_red:{n:'홍옥의 보스 반지 상자',s:'홍옥 반지 상자',set:'반지',note:'1~4레벨 특수 스킬 반지'},
   r_black:{n:'흑옥의 보스 반지 상자',s:'흑옥 반지 상자',set:'반지',note:'1~4레벨 특수 스킬 반지'},
   r_white:{n:'백옥의 보스 반지 상자',s:'백옥 반지 상자',set:'반지',note:'3~4레벨 특수 스킬 반지'},
-  r_life:{n:'생명의 보스 반지 상자',s:'생명 반지 상자',set:'반지',note:'3~4레벨 특수 스킬 반지 또는 생명의 연마석'}
+  r_life:{n:'생명의 보스 반지 상자',s:'생명 반지 상자',set:'반지',note:'3~4레벨 특수 스킬 반지 또는 생명의 연마석'},
+  // 에테르넬 방어구 교환 재료 — 확정 지급, 정보 칩 전용(클릭·기록·수익 없음). ETERNAL 참고
+  e_kalos_f:{n:'남겨진 칼로스의 의지 조각',set:'에테르넬'}, e_kalos:{n:'남겨진 칼로스의 의지',set:'에테르넬'},
+  e_adv_f:{n:'이어진 고대의 결의 조각',set:'에테르넬'}, e_adv:{n:'이어진 고대의 결의',set:'에테르넬'},
+  e_kaling_f:{n:'뒤엉킨 흉수의 고리 조각',set:'에테르넬'}, e_kaling:{n:'뒤엉킨 흉수의 고리',set:'에테르넬'},
+  e_star_f:{n:'황홀한 환상의 단편 조각',set:'에테르넬'}, e_star:{n:'황홀한 환상의 단편',set:'에테르넬'},
+  e_bellona:{n:'저주받은 원혼의 잔재',set:'에테르넬'}, e_limbo:{n:'왜곡된 욕망의 결정',set:'에테르넬'},
+  e_baldrix:{n:'영원한 충성의 흔적',set:'에테르넬'}, e_jupiter:{n:'뒤틀린 갈망의 편린',set:'에테르넬'}
 };
+/* 마우스 올림/터치 툴팁에 쓰는 구성품 (2026-10-10).
+ * 반지 상자: 넥슨 공식 확률 공개 maplestory.nexon.com/Guide/OtherProbability/bossRingBox/ringBox{Green,Red,Black,White,Life}Jade (2026-10-10 열람)
+ *   — 레벨 확률(lv) · 반지별 획득 확률(r = 리스트레인트, c = 컨티뉴어스, %). 4레벨 확률 = 반지 확률 × 4레벨 확률 (반지 종류와 레벨은 따로 정해짐).
+ * 혼돈의 칠흑 장신구 상자: 나무위키 '칠흑의 보스 세트' 5.11 (2025-08-21 추가, 미트라·컴플리트 언더컨트롤·창세의 뱃지 제외). */
+const RING_TOP=['리스트레인트 링','컨티뉴어스 링','웨폰퍼프-S/I/L/D 링 (4종)','얼티메이덤 링','리스크테이커 링','링 오브 썸','크리데미지 링','크라이시스-HM 링'];
+const RING_ALL=[...RING_TOP,'버든리프트 링','오버패스 링','레벨퍼프-S/I/L/D 링 (4종)','헬스컷 링','크리디펜스 링','리밋 링','듀라빌리티 링','리커버디펜스 링','실드스와프 링','마나컷 링','크라이시스-H 링','크라이시스-M 링','크리쉬프트 링','스탠스쉬프트 링','리커버스탠스 링','스위프트 링','리플렉티브 링'];
+const BOX_INFO={
+  r_green:{lv:'1~3레벨',p:'1레벨 50% · 2레벨 41% · 3레벨 9%',lv4:0,r:2.11268,c:2.11268,n:31,rings:RING_ALL},
+  r_red:{lv:'1~4레벨',p:'1레벨 40% · 2레벨 30% · 3레벨 20% · 4레벨 10%',lv4:.10,r:6.92308,c:6.92308,n:31,rings:RING_ALL},
+  r_black:{lv:'1~4레벨',p:'1레벨 25% · 2레벨 25% · 3레벨 30% · 4레벨 20%',lv4:.20,r:12.5,c:12.5,n:11,rings:RING_TOP},
+  r_white:{lv:'3~4레벨',p:'3레벨 65% · 4레벨 35%',lv4:.35,r:14.28571,c:14.28571,n:11,rings:RING_TOP},
+  r_life:{lv:'3~4레벨',p:'3레벨 30% · 4레벨 70%',lv4:.70,r:14.51613,c:14.51613,n:9,rings:RING_TOP.filter(r=>!/얼티메이덤|크라이시스/.test(r)),extra:'또는 생명의 연마석 (14.51613%)'}
+};
+const fmtPct=v=>v>0?(Math.round(v*100)/100).toFixed(2)+'%':'없음';
+// 리스트레인트 링 4레벨(r4) / 컨티뉴어스 링 4레벨(c4) 확률 (%) — 반지 결과 버튼 r4/c4 와 같은 기준
+const ring4=k=>{ const b=BOX_INFO[k]; return b?{r4:b.r*b.lv4,c4:b.c*b.lv4}:null; };
+const CHAOS_BOX=['루즈 컨트롤 머신 마크 (얼굴장식)','마력이 깃든 안대 (눈장식)','몽환의 벨트 (벨트)','저주받은 마도서 선택 상자 (포켓)','거대한 공포 (반지)','커맨더 포스 이어링 (귀고리)','고통의 근원 (펜던트)'];
+function itemInfo(k){
+  const b=BOX_INFO[k]; if(b) return `${b.lv} 특수 스킬 반지 1개${b.extra?' '+b.extra:''}\n레벨 확률: ${b.p}\n나오는 반지 (${b.n}종): ${b.rings.join(', ')}\n리스트레인트·컨티뉴어스 각 ${b.r}% (넥슨 확률 공개)`;
+  if(k==='chaosbox') return `칠흑의 보스 세트 장신구 7종 중 1개 (무작위)\n${CHAOS_BOX.map(x=>'· '+x).join('\n')}`;
+  return '';
+}
 // 보스별 반지 상자 (정심심 블로그 2026-09-04 정리 · 나무위키 '특수 스킬 반지' · maple.ai.kr 보스 보상과 대조)
 const RING_DROPS = {
   r_green:{lotus:['normal'],damien:['normal'],slime:['normal'],lucid:['easy','normal'],will:['easy','normal'],dusk:['normal'],dunkel:['normal']},
@@ -155,7 +184,7 @@ const DROPS = {
 };
 const dropsFor = (b,diff) => [...(DROPS[b.id]||[]).filter(([,ds])=>ds.includes(diff)).map(([k])=>k),
   ...Object.entries(RING_DROPS).filter(([,m])=>(m[b.id]||[]).includes(diff)).map(([k])=>k)];
-const DROP_MAX = 3; // 한 줄 유지: 넘치면 +N
+const DROP_MAX = 99; // (예전: 3개 넘으면 +N 묶음) — 이제 묶지 않고 모두 표시
 /* 확정 지급 솔 에르다의 기운 개수 (정보 표시 전용: 클릭·집계·수익 기록 없음).
  * 출처: 나무위키 각 보스 문서 '보상' 표 (namu.moe 미러, 2026-10-10 열람) — 하드 스우부터 지급. 발드릭스·유피테르는 mitemprice.kr 과 대조. */
 const ERDA = {
@@ -166,25 +195,45 @@ const ERDA = {
   baldrix:{normal:450,hard:650}, bellona:{easy:200,normal:290,hard:590}, jupiter:{normal:450,hard:750}
 };
 const erdaFor = (b,diff) => +(ERDA[b?.id]?.[diff])||0;
+/* 확정 지급 에테르넬 방어구 교환 재료 (정보 표시 전용: 클릭·집계·수익 기록 없음). [아이템 키, 개수]
+ * 출처: 나무위키 '에테르넬 세트' 3. 획득처 표 (namu.moe 미러, 2026-10-10 열람) — 칼로스·대적자·카링·흉성 = 단체 보상, 벨로나·림보·발드릭스·유피테르 = 개인 보상.
+ * 이지/노멀의 '○○ 조각'(파편) 2개 = 상위 재료 1개, 상위 재료 10개 = 에테르넬 방어구 1개(부위 선택). 아이콘: maplestory.io(KMST 1170·GMS 270) / 나무위키 파일. */
+const E_UP={e_kalos_f:'e_kalos',e_adv_f:'e_adv',e_kaling_f:'e_kaling',e_star_f:'e_star'};
+const E_PART={e_kalos:'모자·상의·하의·어깨장식',e_adv:'모자·상의·하의·어깨장식',e_kaling:'모자·상의·하의·어깨장식',e_star:'모자·상의·하의·어깨장식',
+  e_bellona:'장갑·신발·망토',e_limbo:'장갑·신발·망토',e_baldrix:'장갑·신발·망토',e_jupiter:'장갑·신발·망토'};
+const ETERNAL = {
+  kalos:{normal:['e_kalos_f',3],chaos:['e_kalos',5],extreme:['e_kalos',14]},
+  adversary:{normal:['e_adv_f',4],hard:['e_adv',6],extreme:['e_adv',16]},
+  kaling:{easy:['e_kaling_f',1],normal:['e_kaling_f',5],hard:['e_kaling',7],extreme:['e_kaling',18]},
+  star:{normal:['e_star_f',6],hard:['e_star',18]},
+  bellona:{normal:['e_bellona',1],hard:['e_bellona',2]}, limbo:{normal:['e_limbo',1],hard:['e_limbo',2]},
+  baldrix:{normal:['e_baldrix',1],hard:['e_baldrix',2]}, jupiter:{normal:['e_jupiter',1],hard:['e_jupiter',2]}
+};
+const eternalFor = (b,diff) => { const v=ETERNAL[b?.id]?.[diff]; return v?{k:v[0],n:v[1]}:null; };
+function eternalTip(k,n,diff){
+  const up=E_UP[k], main=up||k, it=ITEMS[k], party=['e_bellona','e_limbo','e_baldrix','e_jupiter'].includes(main)?'개인 보상':'단체 보상';
+  return `${it.n} ${n}개 확정 지급 (${D[diff]}, ${party})\n`+(up?`2개 → ${ITEMS[up].n} 1개로 교환\n${ITEMS[up].n} 10개 → `:`10개 → `)+`에테르넬 ${E_PART[main]} 중 1개 선택\n정보 표시 (기록·수익에 포함되지 않음)`;
+}
 function itemIcon(k){
   const it=ITEMS[k], src=ITEM_ICONS[k];
   return src?`<img src="${src}" alt="" aria-hidden="true">`:`<span class="ifb" aria-hidden="true">${esc((it?.n||'?').slice(0,1))}</span>`;
 }
 const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
-  const ks=dropsFor(b,diff), en=erdaFor(b,diff); if(!ks.length&&!en) return '';
-  const erda=en?`<span class="drop erda" title="${esc(`솔 에르다의 기운 ${en}개 확정 지급 (${D[diff]}) — 정보 표시 (기록·수익에 포함되지 않음)`)}" aria-label="솔 에르다의 기운 ${en}개">${itemIcon('erda')}<b class="ecnt">${en}</b></span>`:'';
-  const tip=k=>{const it=ITEMS[k]; return `${it.n} — ${SET_LABEL[it.set]}${it.note?' · '+it.note:''} (${D[diff]})`;};
+  const ks=dropsFor(b,diff), en=erdaFor(b,diff); if(!ks.length&&!en&&!eternalFor(b,diff)) return '';
+  const et=eternalFor(b,diff);
+  const erda=(en?`<span class="drop erda" data-tip="${esc(`솔 에르다의 기운 ${en}개 확정 지급 (${D[diff]})\n정보 표시 (기록·수익에 포함되지 않음)`)}" aria-label="솔 에르다의 기운 ${en}개">${itemIcon('erda')}<b class="ecnt">${en}</b></span>`:'')
+    +(et?`<span class="drop erda eter" data-tip="${esc(eternalTip(et.k,et.n,diff))}" aria-label="${esc(ITEMS[et.k].n)} ${et.n}개">${itemIcon(et.k)}<b class="ecnt">${et.n}</b></span>`:'');
+  const tip=k=>{const it=ITEMS[k], inf=itemInfo(k), r4=ring4(k); return `${r4?`리렌4 ${fmtPct(r4.r4)} · 컨티4 ${fmtPct(r4.c4)}\n`:''}${it.n} (${D[diff]})\n${inf||SET_LABEL[it.set]+(it.note?' · '+it.note:'')}`;};
   const cnt=k=>c?dropCount(c,b,k):0;
   const chip=k=>{const it=ITEMS[k], n=cnt(k);
-    return `<span class="drop s-${it.set} ${n?'got':''}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''} title="${esc(tip(k))}${c?`\n클릭: 획득 +1${n?' · 우클릭/−: 가장 최근 1개 취소':''}`:''}">${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span>${n?`<b class="dcnt">×${n}</b><span class="ddec" data-dropdec="${b.id}|${k}" role="button" aria-label="1개 취소" title="1개 취소">−</span>`:''}</span>`;};
-  const open=c&&dropOpen.has(b.id);
-  const shown=(!open&&ks.length>DROP_MAX)?ks.slice(0,DROP_MAX-1):ks, rest=ks.slice(shown.length);
-  const restGot=rest.reduce((s,k)=>s+cnt(k),0);
+    return `<span class="drop s-${it.set} ${n?'got':''}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''} data-tip="${esc(tip(k))}${c?`\n클릭: 획득 +1${n?' · 우클릭/−: 가장 최근 1개 취소':''}`:''}">${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span>${n?`<b class="dcnt">×${n}</b><span class="ddec" data-dropdec="${b.id}|${k}" role="button" aria-label="1개 취소" title="1개 취소">−</span>`:''}</span>`;};
+  // 2026-10-10 사용자 요청: 아이템을 '+N' 묶음 칩으로 합치지 않음 — 생명/신념 연마석, 소울 에테르 1~4단계, 반지 상자 모두 각자 칩(각자 아이콘·클릭 +1), 넘치면 다음 줄로
+  const shown=ks;
   // 아래 줄: 이 보스에서 획득한 아이템 (모든 화면과 같은 형식: 이름(N인 분배) ×개수 결과)
   const mine=c?(d=>({items:Object.fromEntries(Object.entries(d.items).filter(([k])=>k.split('|')[0]===b.id)),outcomes:d.outcomes}))(charDrops(c,b.type)):null;
   const ringLine=mine?itemsInline(mine.items,{outs:mine.outcomes}):'';
-  return `<div class="drops ${open?'open':''}" aria-label="주요 희귀 드롭">${erda}${shown.map(chip).join('')}${rest.length?`<span class="drop more ${restGot?'got':''}" ${c?`data-dropmore="${b.id}" role="button"`:''} title="${esc(rest.map(tip).join('\n'))}">${rest.map(k=>itemIcon(k)).join('')}<span class="dn">+${rest.length}</span>${restGot?`<b class="dcnt">×${restGot}</b>`:''}</span>`:''}${open&&ks.length>DROP_MAX?`<span class="drop more" data-dropmore="${b.id}" role="button" title="접기"><span class="dn">접기</span></span>`:''}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
+  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${shown.map(chip).join('')}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
 }
 function changeDrop(key, delta){
   const c=activeChar(); if(!c) return; const [slot,item]=key.split('|'); const b=findBoss(slot); if(!b||!ITEMS[item]) return;
@@ -1504,7 +1553,7 @@ const GD={ SCOPE:'https://www.googleapis.com/auth/drive.appdata', FILE:'maple-bo
 const gcid=()=>GOOGLE_CLIENT_ID||window.__MBT_GCID||'';
 const gdOriginOk=()=>location.protocol==='https:'||/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const gdUsable=()=>!!gcid()&&gdOriginOk();
-let gd={state:'off',msg:'',token:null,exp:0,fileId:null,timer:null,busy:false,again:false,client:null,onTok:null,onErr:null,pending:null};
+let gd={state:'off',msg:'',token:null,exp:0,ia:false,fileId:null,timer:null,busy:false,again:false,client:null,onTok:null,onErr:null,pending:null};
 let gdMeta=(()=>{ try{ return JSON.parse(localStorage.getItem(GD.META_KEY))||{}; }catch(e){ return {}; } })(); // {on, base(이 PC updatedAt), rU(드라이브 updatedAt), fileId, lastSave, lastLoad} — 맞춘 시점 내용은 GD_BASE_KEY
 const gdSaveMeta=()=>localStorage.setItem(GD.META_KEY,JSON.stringify(gdMeta));
 try{ const t=JSON.parse(sessionStorage.getItem(GD.TOKEN_KEY)||'null'); if(t&&t.e>Date.now()+60e3){ gd.token=t.t; gd.exp=t.e; } }catch(e){}
@@ -1546,7 +1595,9 @@ function gdMenu(open){
   if(show) m.innerHTML=gdMenuHtml();
   m.hidden=!show; $('#gBtn').setAttribute('aria-expanded',String(show));
 }
-function gdHeaderClick(){ if(gd.state==='conflict'&&gd.pending){ gdMenu(false); return gdReask(); } gdMenu(); }
+function gdHeaderClick(){ if(gd.state==='conflict'&&gd.pending){ gdMenu(false); return gdReask(); }
+  if(gd.state==='reconnect'&&gdMeta.on&&gdUsable()){ gdMenu(false); return gdLogin(); } // [☁ 다시 연결] 한 번 누르면 바로 로그인 → 동기화
+  gdMenu(); }
 function gdLoadLib(){
   return new Promise((res,rej)=>{
     if(window.google?.accounts?.oauth2) return res();
@@ -1555,8 +1606,15 @@ function gdLoadLib(){
     sc.addEventListener('load',()=>res()); sc.addEventListener('error',()=>{ sc.remove(); rej(new Error('구글 로그인 스크립트를 불러오지 못했습니다 (인터넷 연결이나 광고 차단 확장 프로그램 확인)')); });
   });
 }
-async function gdToken(){
-  if(gd.token && Date.now()<gd.exp-60e3) return gd.token;
+/* 로그인 창(구글 팝업)은 사용자가 직접 누른 동작(☁ 로그인/다시 연결·지금 저장·충돌 선택)에서만 띄움 — gd.ia.
+ * 자동 동작(페이지 열기·탭 복귀·1분마다 확인·자동 저장)은 남아 있는 토큰(1시간, 탭 sessionStorage)만 쓰고,
+ * 토큰이 없거나 만료되면 팝업 없이 헤더를 [☁ 다시 연결]로 바꿈(변경 내용은 이 PC 에 그대로 → 다시 연결하면 합쳐서 저장). 2026-10-10 */
+function gdHasTok(){ return !!(gd.token&&Date.now()<gd.exp-60e3); }
+const GD_NEED_LOGIN='구글 로그인 시간(1시간)이 끝났어요 — [☁ 다시 연결]을 한 번 누르면 이어서 동기화돼요 (바꾼 내용은 이 PC에 그대로 있어요)';
+async function gdToken(interactive=gd.ia){
+  if(gdHasTok()) return gd.token;
+  if(!interactive) throw Object.assign(new Error(GD_NEED_LOGIN),{type:'interaction_required'});
+  gd.ia=false; // 한 번의 클릭에 팝업은 최대 한 번
   await gdLoadLib();
   if(!gd.client) gd.client=google.accounts.oauth2.initTokenClient({client_id:gcid(),scope:GD.SCOPE,
     callback:r=>gd.onTok&&gd.onTok(r), error_callback:e=>gd.onErr&&gd.onErr(e)});
@@ -1575,7 +1633,8 @@ async function gdToken(){
 async function gdFetch(url,opt={},retry=true){
   const tok=await gdToken();
   const r=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+tok}});
-  if(r.status===401&&retry){ gd.token=null; sessionStorage.removeItem(GD.TOKEN_KEY); return gdFetch(url,opt,false); }
+  if(r.status===401){ gd.token=null; gd.exp=0; sessionStorage.removeItem(GD.TOKEN_KEY); if(retry&&gd.ia) return gdFetch(url,opt,false);
+    throw Object.assign(new Error(GD_NEED_LOGIN),{type:'interaction_required'}); }
   if(!r.ok){ let m=''; try{ m=(await r.json()).error?.message||''; }catch(e){}
     throw Object.assign(new Error(`드라이브 오류 (HTTP ${r.status})${m?' — '+m:''}`),{status:r.status}); }
   return r;
@@ -1689,10 +1748,11 @@ function gdKeyDiff(d){
   return {pulled, push};
 }
 async function gdConnect(interactive){
-  gdSet('connecting', interactive?'구글 로그인 창에서 계정을 선택하고 허용해 주세요 ("확인하지 않은 앱" 화면이면 [계속])':'드라이브 확인 중…');
-  let slow=null; if(!interactive && !gd.token) slow=setTimeout(()=>{ if(gd.state==='connecting') gdSet('reconnect','상단의 [☁ 다시 연결]을 한 번 눌러 주세요'); },15000);
+  if(!interactive && !gdHasTok()){ gdSet('reconnect',GD_NEED_LOGIN); return; } // 페이지를 열 때 로그인 창을 자동으로 띄우지 않음
+  gdSet('connecting', interactive&&!gdHasTok()?'구글 로그인 창에서 계정을 선택하고 허용해 주세요 ("확인하지 않은 앱" 화면이면 [계속])':'드라이브 확인 중…');
+  gd.ia=!!interactive;
   try{
-    await gdToken(); clearTimeout(slow);
+    await gdToken(!!interactive);
     gdSet('connecting','드라이브 확인 중…');
     gdMeta.on=true; gdSaveMeta();
     const f=await gdFind(); gd.fileId=f?.id||null;
@@ -1702,7 +1762,8 @@ async function gdConnect(interactive){
     try{ res=await gdSync(await gdRead(f.id)); } finally{ gd.busy=false; }
     if(res!=='ask'){ gdSet('on',GD_RES_MSG[res]||''); if(res==='loaded') toast('☁ '+GD_RES_MSG.loaded); }
     if(gd.again){ gd.again=false; gdChanged(); }
-  }catch(e){ clearTimeout(slow); gdFail(e,interactive); }
+  }catch(e){ gdFail(e,interactive); }
+  finally{ gd.ia=false; }
 }
 const GD_RES_MSG={same:'',pushed:'이 PC의 변경 사항을 드라이브에 저장했습니다',pulled:'다른 기기에서 바뀐 데이터를 불러왔습니다',merged:'다른 기기의 변경과 자동으로 합쳤습니다',loaded:'드라이브 데이터를 불러왔습니다'};
 /* 드라이브 파일과 이 PC 데이터를 맞춤 → 'same'|'pushed'|'pulled'|'merged'|'loaded'|'ask'
@@ -1776,7 +1837,7 @@ function gdAsk(remote,opt={}){
 function gdReask(){ const P=gd.pending; if(P) gdAsk(P.remote,P); }
 async function gdResolve(which){
   const P=gd.pending; $('#driveModal').classList.remove('show'); if(!P) return; gd.pending=null;
-  const remote=P.remote;
+  const remote=P.remote; gd.ia=true; // 사용자가 직접 고름 → 토큰이 만료됐으면 로그인 창 한 번 허용
   try{
     gdSet('saving');
     if(P.mode==='merge'){
@@ -1787,29 +1848,32 @@ async function gdResolve(which){
     else if(which==='drive') gdApply(remote,'드라이브 데이터를 불러왔습니다');
     else { if(!gd.fileId) gd.fileId=(await gdFind())?.id||null; await gdWrite(); gdSet('on','이 PC 데이터로 드라이브를 덮어썼습니다'); toast('☁ 이 PC 데이터로 드라이브를 덮어썼습니다'); }
   }catch(e){ gdFail(e); }
+  finally{ gd.ia=false; }
 }
 function gdChanged(){
   if(!gdMeta.on||!gdUsable()||gd.state==='conflict') return;
+  if(gd.state==='reconnect'&&!gdHasTok()){ gdRender(); return; } // 로그인 필요 상태: 이 PC 에만 저장, 다시 연결할 때 합쳐서 저장
   clearTimeout(gd.timer); gd.timer=setTimeout(()=>{ gd.timer=null; gdPush(); },GD.DEBOUNCE); gdRender();
 }
 // 다른 기기에서 바뀐 내용 확인 (탭으로 돌아올 때·1분마다, 메타데이터만 조회 → 바뀌었을 때만 내용 읽어서 합침)
 async function gdPull(force){
-  if(!gdMeta.on||!gdUsable()||gd.state!=='on'||gd.busy||gd.timer||!gd.fileId||!(gd.token&&Date.now()<gd.exp-60e3)) return;
+  if(!gdMeta.on||!gdUsable()||gd.state!=='on'||gd.busy||gd.timer||!gd.fileId||!gdHasTok()) return; // 토큰 없으면 조용히 건너뜀(로그인 창 X)
   if(!force&&Date.now()-(gd.pulledAt||0)<55e3) return; gd.pulledAt=Date.now();
   gd.busy=true;
   try{
     const m=await (await gdFetch(`${GD.API}/files/${gd.fileId}?fields=id,appProperties`)).json();
     const rU=+(m.appProperties?.updatedAt||0), seen=gdMeta.rU||gdMeta.base;
     if(rU && rU!==seen && rU!==(S.updatedAt||0)){ const res=await gdSync(await gdRead(gd.fileId)); if(res!=='ask') gdSet('on',GD_RES_MSG[res]||''); }
-  }catch(e){ console.warn('drive pull',e); }
+  }catch(e){ console.warn('drive pull',e); if(e.type==='interaction_required') gdSet('reconnect',GD_NEED_LOGIN); }
   finally{ gd.busy=false; if(gd.again){ gd.again=false; gdChanged(); } }
 }
 async function gdPush(opts={}){
   clearTimeout(gd.timer); gd.timer=null;
   if(!gdMeta.on||!gdUsable()||gd.state==='conflict') return false;
-  if(opts.quick && !(gd.token&&Date.now()<gd.exp-60e3)) return false; // 창을 닫는 중에는 로그인 창을 띄울 수 없음
+  if(opts.quick && !gdHasTok()) return false; // 창을 닫는 중에는 로그인 창을 띄울 수 없음
   if(gd.busy){ gd.again=true; return false; }
-  gd.busy=true; gdSet('saving');
+  if(!opts.manual && !gdHasTok()){ gdSet('reconnect',GD_NEED_LOGIN); return false; } // 자동 저장은 로그인 창을 띄우지 않음
+  gd.busy=true; gdSet('saving'); gd.ia=!!opts.manual;
   try{
     if(!opts.quick){
       if(!gd.fileId) gd.fileId=(await gdFind())?.id||null;
@@ -1822,13 +1886,13 @@ async function gdPush(opts={}){
       }
     }
     await gdWrite(opts.quick); gdSet('on'); return true;
-  }catch(e){ gdFail(e); return false; }
-  finally{ gd.busy=false; if(gd.again){ gd.again=false; gdChanged(); } }
+  }catch(e){ gdFail(e,opts.manual); return false; }
+  finally{ gd.ia=false; gd.busy=false; if(gd.again){ gd.again=false; gdChanged(); } }
 }
 function gdLogin(){ $('#driveModal').classList.remove('show'); gdConnect(true); }
 async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그대로 둠 — PC방은 종료 시 자동 초기화)
   if(gdMeta.on && gdLocalDirty()){
-    const ok=gd.token&&Date.now()<gd.exp-60e3 ? await gdPush() : false;
+    const ok=gdHasTok() ? await gdPush() : false;
     if(!ok && !confirm('드라이브에 최신 내용을 저장하지 못했습니다. 그래도 로그아웃할까요? (이 PC에는 그대로 남아 있고, 다음 로그인 때 다시 맞춥니다)')) return;
   }
   try{ if(gd.token&&window.google?.accounts?.oauth2?.revoke) google.accounts.oauth2.revoke(gd.token,()=>{}); }catch(e){}
@@ -1900,7 +1964,7 @@ document.addEventListener('click',e=>{
     case 'gBtn': gdHeaderClick(); break;
     case 'gdLogin': gdLogin(); break;
     case 'gdLogout': gdLogout(false); break;
-    case 'gdSaveNow': gdPush(); break;
+    case 'gdSaveNow': gdPush({manual:true}); break;
     case 'gdUseDrive': gdResolve('drive'); break;
     case 'gdUseLocal': gdResolve('local'); break;
     case 'gdClose': $('#driveModal').classList.remove('show'); break;
@@ -1910,7 +1974,26 @@ function dqToggleChar(v){ const [id,k]=v.split('|'); const o=S.dq.charOff[id]||(
 document.addEventListener('keydown',e=>{ const q=(e.key==='Enter'||e.key===' ')&&e.target.closest?.('[data-dqc]'); if(q){ e.preventDefault(); dqToggleChar(q.dataset.dqc); } });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('#ringModal').classList.contains('show')) closeRing(); if(celebrate.running) endCelebrate(); if($('#importModal').classList.contains('show')&&!$('#charModal').classList.contains('show')) closeImport(); gdMenu(false); } });
 document.addEventListener('keydown',e=>{ const wt=e.target.closest?.('[data-wtab]'); if(wt&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); if(wt.dataset.wtab!==worldTab) setWorldTab(wt.dataset.wtab); } });
-document.addEventListener('contextmenu',e=>{ const dc=e.target.closest('[data-drop]'); if(!dc) return; e.preventDefault(); changeDrop(dc.dataset.drop,-1); });
+document.addEventListener('contextmenu',e=>{ const dc=e.target.closest('[data-drop]'); if(!dc) return; e.preventDefault(); if(tipTouchAt&&Date.now()-tipTouchAt<1500) return; /* 터치 길게 누르기 = 툴팁 보기 (취소는 − 버튼) */ changeDrop(dc.dataset.drop,-1); });
+/* 드롭 칩 툴팁 (마우스 올림 + 터치): [data-tip] — 터치는 누르는 순간 표시(클릭 동작은 그대로), 3초 뒤·다른 곳 터치 시 닫힘 */
+let tipEl=null, tipFor=null, tipTimer=0, tipTouchAt=0;
+function tipShow(el){
+  if(!tipEl){ tipEl=document.createElement('div'); tipEl.id='mbtTip'; tipEl.setAttribute('role','tooltip'); document.body.appendChild(tipEl); }
+  tipFor=el; tipEl.textContent=el.dataset.tip; tipEl.classList.add('show');
+  const r=el.getBoundingClientRect(), w=tipEl.offsetWidth, h=tipEl.offsetHeight, m=8;
+  let x=Math.min(Math.max(m,r.left+r.width/2-w/2),innerWidth-w-m), y=r.top-h-8; if(y<m) y=Math.min(r.bottom+8,innerHeight-h-m);
+  tipEl.style.left=x+'px'; tipEl.style.top=y+'px';
+}
+function tipHide(){ clearTimeout(tipTimer); tipFor=null; if(tipEl) tipEl.classList.remove('show'); }
+document.addEventListener('pointerover',e=>{ if(e.pointerType==='touch') return; const t=e.target.closest?.('[data-tip]'); if(t&&(t!==tipFor||!tipEl?.classList.contains('show'))) tipShow(t); else if(!t&&tipFor) tipHide(); });
+document.addEventListener('pointerdown',e=>{ const t=e.target.closest?.('[data-tip]');
+  if(e.pointerType==='touch'){ tipTouchAt=t?Date.now():0; if(t){ tipShow(t); clearTimeout(tipTimer); tipTimer=setTimeout(tipHide,3000); } else tipHide(); } },true);
+let tipKbd=false; // 키보드(Tab)로 칩에 왔을 때만 포커스로 표시/숨김 — 클릭·터치 뒤 다시 그려질 때 툴팁이 사라지지 않게
+document.addEventListener('keydown',e=>{ if(e.key==='Tab') tipKbd=true; },true);
+document.addEventListener('pointerdown',()=>{ tipKbd=false; },true);
+document.addEventListener('focusin',e=>{ if(!tipKbd) return; const t=e.target.closest?.('[data-tip]'); if(t) tipShow(t); });
+document.addEventListener('focusout',()=>{ if(tipKbd) tipHide(); });
+addEventListener('scroll',()=>{ if(tipFor&&tipFor.isConnected&&tipEl.classList.contains('show')) tipShow(tipFor); },true); // 스크롤하면 위치만 다시 맞춤
 document.addEventListener('keydown',e=>{ const dc=e.target.closest?.('[data-drop]'); if(!dc) return; if(e.key==='Enter'||e.key===' '){ e.preventDefault(); changeDrop(dc.dataset.drop,+1); } else if(e.key==='Backspace'||e.key==='Delete'||e.key==='-'){ e.preventDefault(); changeDrop(dc.dataset.drop,-1); } });
 document.addEventListener('change',e=>{
   const t=e.target; const c=activeChar();

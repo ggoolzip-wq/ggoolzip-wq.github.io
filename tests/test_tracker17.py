@@ -31,6 +31,8 @@ with sync_playwright() as p:
         if local is not None: pg.evaluate("s=>localStorage.setItem('mapleBossTracker.v1',s)",json.dumps(local))
         if meta is not None: pg.evaluate("s=>localStorage.setItem('mapleBossTracker.gdrive',s)",json.dumps(meta))
         if base is not None: pg.evaluate("s=>localStorage.setItem('mapleBossTracker.gdbase',s)",json.dumps(base))
+        # 1시간 안에 같은 탭을 다시 연 경우(토큰 남음) — 토큰이 없으면 2026-10-10 부터 로그인 창을 자동으로 띄우지 않으므로
+        if meta is not None: pg.evaluate("sessionStorage.setItem('mapleBossTracker.gtoken',JSON.stringify({t:'tokS',e:Date.now()+3500e3}))")
         if local is not None or meta is not None: pg.reload(); pg.wait_for_timeout(400)
         return ctx,pg
     def login(pg):

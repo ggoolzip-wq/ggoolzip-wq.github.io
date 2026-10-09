@@ -77,7 +77,9 @@ try:
     after=st()['characters'][0]; 
     check('clicking erda records nothing', json.dumps(after.get('drops'),sort_keys=True)==before and not after['weekly'].get('kaling'), after.get('drops'))
     check('existing saved drop counts kept', after['drops'].get('kaling|chaosbox')==2 and after['drops'].get('kaling|h_ear')==1, after['drops'])
-    pg.click('[data-dropmore="kaling"]'); pg.wait_for_timeout(150)
+    check('no grouped +N chip anywhere (each item its own chip)', pg.locator('[data-dropmore], .drop.more').count()==0)
+    icons=pg.evaluate("[...document.querySelector('[data-party=\"kaling\"]').closest('.boss').querySelectorAll('[data-drop]')].map(e=>[e.dataset.drop,e.querySelectorAll('img').length,e.getBoundingClientRect().height])")
+    check('every kaling drop chip has exactly one icon, visible', all(i[1]==1 and i[2]>0 for i in icons), icons)
     ks=pg.evaluate("[...document.querySelector('[data-party=\"kaling\"]').closest('.boss').querySelectorAll('[data-drop]')].map(e=>e.dataset.drop.split('|')[1])")
     check('kaling hard drops include 신념 연마석 + 소울 에테르 1, not 생명', 'g_faith' in ks and 'se1' in ks and 'g_life' not in ks, ks)
     ex=pg.evaluate("""(()=>{const g=(id,d)=>dropsFor(findBoss(id),d), e=(id,d)=>erdaFor(findBoss(id),d);

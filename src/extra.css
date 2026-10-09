@@ -58,9 +58,9 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 /* 보스 체크 탭: 본문 + 오른쪽 수익 패널 */
 main{max-width:1480px}
 .bosslay{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:16px;align-items:start}
-.rcol{position:sticky;top:110px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 124px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.rcol{position:sticky;top:110px;display:flex;flex-direction:column;gap:12px;height:calc(100vh - 172px);max-height:calc(100vh - 172px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .rcol>.card{margin:0}
-@media(max-width:1180px){.bosslay{grid-template-columns:1fr}.rcol{position:static;max-height:none;overflow:visible}}
+@media(max-width:1180px){.bosslay{grid-template-columns:1fr}.rcol{position:static;height:auto;max-height:none;overflow:visible}}
 .rp-total{font-size:1.5rem;font-weight:800;color:var(--accent);margin:6px 0 2px;line-height:1.2}
 .rp-total small{font-size:.8rem;font-weight:600;color:var(--muted)}
 .rp-sec{font-size:.78rem;font-weight:700;margin:14px 0 6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -464,7 +464,9 @@ html.sunlb-open{overflow:hidden}
 .expinc small{color:var(--muted);font-size:.7rem}
 
 /* 오른쪽 열: 수익 · 결정석 가격 · 초기화까지(맨 아래). 화면 높이 안에 맞추고 넘치면 가격 목록(그다음 수익 패널)이 안에서 스크롤 → 초기화 카드는 항상 보임 */
-.rcol>.revpanel{flex:0 0 auto;max-height:calc((100vh - 124px)*.46);overflow-y:auto;scrollbar-width:thin}
+/* 오른쪽 열 = 화면 높이 고정(sticky, 100vh − 위 108px − 아래 안내문/여백 58px − 6px → 내용이 짧아도 페이지 스크롤 안 생김): 수익 패널(위) · 결정석 가격(남는 높이 전부, 안에서 스크롤) · 초기화까지(맨 아래).
+ * 결정석 가격 목록이 약 16줄(카드 ≈ 440px)을 먼저 확보하도록 수익 패널 최대 높이 = 남은 높이 − 440px − 초기화 카드·간격(≈124px), 최소 170px → 1920x1080 17줄, 1280x800 11줄 (2026-10-10 사용자 요청: 가격 카드가 2줄만 보이던 것) */
+.rcol>.revpanel{flex:0 0 auto;max-height:max(170px,calc(100vh - 172px - 564px));overflow-y:auto;scrollbar-width:thin}
 .rcol>.pricecard{flex:1 1 0;min-height:110px;display:flex;flex-direction:column}
 .rcol>.pricecard .pc-list{flex:1 1 auto;min-height:40px;max-height:none}
 .rcol>.resetcard{flex:none;margin-top:auto;padding:10px 14px;font-size:.82rem;line-height:1.5}
@@ -493,3 +495,9 @@ html.sunlb-open{overflow:hidden}
 .wtab.dragging{opacity:.4}
 .wtab.drop-before{box-shadow:-2px 0 0 var(--accent)}
 .wtab.drop-after{box-shadow:2px 0 0 var(--accent)}
+
+/* 드롭 칩 툴팁 (2026-10-10, 마우스 올림 + 터치) */
+#mbtTip{position:fixed;z-index:9999;max-width:min(340px,calc(100vw - 16px));padding:8px 10px;border-radius:8px;background:#15171c;color:#eef0f4;border:1px solid #3a3f4a;box-shadow:0 6px 18px rgba(0,0,0,.45);font-size:.75rem;line-height:1.45;white-space:pre-line;pointer-events:none;opacity:0;transition:opacity .1s;left:-9999px;top:0}
+#mbtTip.show{opacity:1}
+.drop.eter{background:color-mix(in srgb,#b58cff 8%,var(--panel))}
+.drop.eter .ecnt{background:#7d5bd6}

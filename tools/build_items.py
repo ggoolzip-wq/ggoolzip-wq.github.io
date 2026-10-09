@@ -21,7 +21,13 @@ SRC={ # key: file
  'g_life':'itemicons/2539001.png','g_faith':'itemicons/2539003.png',
  # 소울 에테르 1~4단계 (2026-09-17 추가, maplestory.io 미수록) — maple.ai.kr 소울웨폰 개편 글의 게임 아이콘 이미지를 잘라 배경 제거
  'se1':'itemicons/soul_ether_1.png','se2':'itemicons/soul_ether_2.png','se3':'itemicons/soul_ether_3.png','se4':'itemicons/soul_ether_4.png',
- 'erda':'itemicons/2636421.png'}  # 솔 에르다의 기운 2636421 (maplestory.io KMS 389) — 정보 표시 전용  # 강렬한 힘의 결정 (주간), item 4001928 (maplestory.io GMS 255 game data = maplestorywiki 'Etc Intense Power Crystal (Weekly)')
+ 'erda':'itemicons/2636421.png',
+ # 에테르넬 방어구 교환 재료 (정보 칩): 칼로스·카링 = maplestory.io KMST 1170 (2636606/2634472/2636607/2635747), 림보 2638063·발드릭스 2639252 = maplestory.io GMS 270,
+ # 대적자·흉성·벨로나·유피테르 = 나무위키 '에테르넬 세트' 문서의 게임 아이콘 파일(i.namu.wiki, 2026-10-10)
+ 'e_kalos_f':'itemicons/2636606.png','e_kalos':'itemicons/2634472.png','e_kaling_f':'itemicons/2636607.png','e_kaling':'itemicons/2635747.png',
+ 'e_limbo':'itemicons/2638063.png','e_baldrix':'itemicons/2639252.png',
+ 'e_adv_f':'itemicons/eternal_adv_f.png','e_adv':'itemicons/eternal_adv.png','e_star_f':'itemicons/eternal_star_f.png','e_star':'itemicons/eternal_star.png',
+ 'e_bellona':'itemicons/eternal_bellona.png','e_jupiter':'itemicons/eternal_jupiter.png'}  # 솔 에르다의 기운 2636421 (maplestory.io KMS 389) — 정보 표시 전용  # 강렬한 힘의 결정 (주간), item 4001928 (maplestory.io GMS 255 game data = maplestorywiki 'Etc Intense Power Crystal (Weekly)')
 out={}; S=32
 for k,f in SRC.items():
     im=Image.open(f).convert('RGBA'); bb=im.getbbox(); im=im.crop(bb) if bb else im

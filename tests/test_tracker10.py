@@ -56,7 +56,7 @@ def state(names,upd,key=''):
             'settings':{'weeklyLimit':12,'monthlyLimit':1,'prices':{},'accounts':[{'id':'a1','label':'본계정','key':key}],'apiMode':'direct','autoSync':False,'autoEnable':True,'lastSync':0}}
 with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
-    def newpage(drive,local=None,meta=None,gcid=True,w=1280):
+    def newpage(drive,local=None,meta=None,gcid=True,w=1280,tok=True):
         ctx=b.new_context(viewport={'width':w,'height':900},locale='ko-KR',accept_downloads=True)
         if gcid: ctx.add_init_script(INIT)
         ctx.route('https://www.googleapis.com/**',drive.handle)
@@ -67,10 +67,14 @@ with sync_playwright() as p:
         if local is not None or meta is not None:
             if local is not None: pg.evaluate("s=>localStorage.setItem('mapleBossTracker.v1',s)",json.dumps(local))
             if meta is not None: pg.evaluate("s=>localStorage.setItem('mapleBossTracker.gdrive',s)",json.dumps(meta))
+            # 같은 탭에서 1시간 안에 다시 연 경우 = sessionStorage 에 토큰이 남아 있음 (2026-10-10: 토큰 없이 열면 로그인 창을 자동으로 띄우지 않음)
+            if meta is not None and tok: pg.evaluate("sessionStorage.setItem('mapleBossTracker.gtoken',JSON.stringify({t:'tokS',e:Date.now()+3500e3}))")
             pg.reload(); pg.wait_for_timeout(300)
         return ctx,pg
     gbtn=lambda pg: pg.inner_text('#gBtn')
-    def login(pg): pg.click('#gBtn'); pg.wait_for_selector('#gMenu #gdLogin'); pg.click('#gMenu #gdLogin')
+    def login(pg):
+        if pg.evaluate("gd.state")=='reconnect' and pg.evaluate("!!gdMeta.on"): pg.click('#gBtn'); return  # [☁ 다시 연결] 한 번 = 바로 로그인
+        pg.click('#gBtn'); pg.wait_for_selector('#gMenu #gdLogin'); pg.click('#gMenu #gdLogin')
     def menu(pg): pg.click('#gBtn') if pg.is_hidden('#gMenu') else None; pg.wait_for_timeout(100)
     names=lambda pg: pg.evaluate("S.characters.map(c=>c.name)")
     # 1. both empty + debounce
@@ -166,8 +170,8 @@ with sync_playwright() as p:
     # 5. reopen without session token + popup blocked → reconnect, then click works
     d=Drive(); d.seed(state(['A'],1760000000000),1760000000000)
     ctx,pg=newpage(d,local=state(['A'],1760000000000),meta={'on':True,'base':1760000000000,'fileId':'F1'})
-    pg.evaluate("localStorage.setItem('__gfail','popup_failed_to_open'); sessionStorage.removeItem('mapleBossTracker.gtoken')"); pg.reload(); pg.wait_for_timeout(600)
-    print('P1 auto re-auth blocked → state',pg.evaluate('gd.state'),'| btn:',gbtn(pg),'| prompt used:',pg.evaluate('__g.prompts'))
+    pg.evaluate("sessionStorage.removeItem('mapleBossTracker.gtoken')"); pg.reload(); pg.wait_for_timeout(600)
+    print('P1 reopen without token → no popup (prompts must be []), state',pg.evaluate('gd.state'),'| btn:',gbtn(pg),'| prompt used:',pg.evaluate('__g.prompts'))
     pg.evaluate("localStorage.removeItem('__gfail')"); login(pg); pg.wait_for_timeout(500)
     print('P2 one click → state',pg.evaluate('gd.state'),'| btn:',gbtn(pg))
     ctx.close()
@@ -184,7 +188,9 @@ with sync_playwright() as p:
     d=Drive(); d.seed(state(['A'],1760000000000),1760000000000)
     ctx,pg=newpage(d,local=state(['A'],1760000000000),meta={'on':True,'base':1760000000000,'fileId':'F1'})
     pg.wait_for_timeout(400); pg.evaluate("()=>{gd.token='expired-token'; gd.exp=Date.now()+3600e3; S.characters[0].level=250; save();}"); pg.wait_for_timeout(5800)
-    print('T1 401 → re-token + saved:',d.file['content']['data']['characters'][0]['level']==250,'| state',pg.evaluate('gd.state'))
+    print('T1 401 in autosave → no popup:',pg.evaluate('__g.req')==0,'| state',pg.evaluate('gd.state'),'| not yet saved:',d.file['content']['data']['characters'][0]['level']!=250)
+    login(pg); pg.wait_for_timeout(600)
+    print('T1 one click → re-token + saved:',d.file['content']['data']['characters'][0]['level']==250,'| state',pg.evaluate('gd.state'),'| popups:',pg.evaluate('__g.req'))
     ctx.close()
     # 7. no client id / file:// / mobile
     d=Drive(); ctx,pg=newpage(d,gcid=False); menu(pg)

@@ -100,7 +100,8 @@ try:
     pg.evaluate(f"feed.page={pages};renderFeed()"); r=pgr(); check('last page: next disabled', r[-1]=='x›' and pg.locator('#feedCard .flist li').count()==49-(pages-1)*per, r)
     tt=pg.evaluate("(()=>{const e=document.querySelector('#feedCard .ftt');return e.scrollWidth>e.clientWidth})()"); check('long title truncated', tt)
     pg.click('[data-ftab=patch]'); r=pgr(); check('switching tab resets to page 1', '1*' in r and pg.evaluate('feed.page')==1, r)
-    if 16>per: check('≤5 pages → no prev/next', not any('‹' in x or '›' in x for x in r), r)
+    if -(-16//per)<=5: check('≤5 pages → no prev/next'  # 패치 16개가 5쪽 이하일 때만 (2026-10-10: 오른쪽 열 높이 고정으로 내용이 짧은 모의 화면에서는 소식 카드가 최소 2줄이 될 수 있음)
+         , not any('‹' in x or '›' in x for x in r), r)
     pg.click('[data-ftab=test]'); check('back to test tab → page 1 again', pg.evaluate('feed.page')==1)
     # 5) 수집 실패 표시
     pg.click('[data-ftab=mabbak]'); note=pg.locator('#feedCard .fnote')
