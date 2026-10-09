@@ -705,12 +705,12 @@ function expLine(c){
   return `<div class="expl" title="${esc(tip)}"><span class="expbar" role="progressbar" aria-label="경험치" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.toFixed(2)}"><i style="width:${p.toFixed(2)}%"></i></span><span class="exppct">${p.toFixed(2)}%</span></div>`;
 }
 /* 사이드바 카드: 이번 주 주간 보스 12/12면 반투명 검정 덮개 + '★ 이번 주 보스 완료'
- * (월간 보스를 선택해 두었는데 이번 달 아직 안 잡았으면 빨간 (!) '(검마 격파 안함)' 추가). 마우스를 올리면 사라짐, 클릭은 통과 */
+ * (월간 보스를 선택해 두었는데 이번 달 아직 안 잡았으면 그 아래 줄에 빨간 (!) '검마 격파 필요' 추가). 마우스를 올리면 사라짐, 클릭은 통과 */
 function monthlyPending(c){ return BOSSES.filter(b=>b.type==='monthly'&&c.bosses?.[b.id]?.enabled&&!c.monthly?.[b.id]); }
 function doneOverlay(c,r){
   if(r.weekly<S.settings.weeklyLimit) return '';
   const pend=monthlyPending(c);
-  const warn=pend.length?`<span class="dov-warn"><i class="dov-ex" aria-hidden="true">!</i>(${pend.map(b=>esc(b.aliases?.[0]||b.name)).join('·')} 격파 안함)</span>`:'';
+  const warn=pend.length?`<span class="dov-warn"><i class="dov-ex" aria-hidden="true">!</i>${pend.map(b=>esc(b.aliases?.[0]||b.name)).join('·')} 격파 필요</span>`:'';
   return `<div class="dov" aria-hidden="true"><div class="dov-t"><span class="dov-ok"><b class="dov-star">★</b> 이번 주 보스 완료</span>${warn}</div></div>`;
 }
 function renderChars(){

@@ -248,12 +248,12 @@ img.ric{width:16px;height:16px;object-fit:contain;image-rendering:pixelated}
 /* 주간 보스 12/12 완료 덮개 (마우스를 올리면 사라짐, 클릭·드래그는 통과) */
 .char .dov{position:absolute;inset:0;border-radius:inherit;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
   pointer-events:none;z-index:3;opacity:1;transition:opacity .15s ease;padding:4px 8px}
-.char .dov-t{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;column-gap:8px;row-gap:2px;text-align:center;line-height:1.25;
-  color:#fff;font-weight:800;font-size:.84rem;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.char .dov-t{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;line-height:1.2;max-width:100%;
+  color:#fff;font-weight:800;font-size:.82rem;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .char .dov-ok,.char .dov-warn{white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
 .char .dov-star{color:#ffd23f;font-weight:900}
-.char .dov-warn{color:#ff5a5a;font-size:.8rem}
-.char .dov-ex{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border:1.6px solid #ff5a5a;border-radius:50%;
+.char .dov-warn{color:#ff5a5a;font-size:.74rem}
+.char .dov-ex{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border:1.6px solid #ff5a5a;border-radius:50%;
   font-style:normal;font-size:10px;font-weight:900;line-height:1;box-sizing:border-box}
 @media(hover:hover){.char:hover .dov{opacity:0}}
 .optlines{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
