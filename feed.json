@@ -1,33 +1,33 @@
 {
  "version": 1,
- "updatedAt": "2026-10-09T23:30:09+09:00",
+ "updatedAt": "2026-10-09T23:55:46+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-10-09T23:29:44+09:00",
-   "lastOkAt": "2026-10-09T23:29:44+09:00",
+   "checkedAt": "2026-10-09T23:55:21+09:00",
+   "lastOkAt": "2026-10-09T23:55:21+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-10-09T23:29:46+09:00",
-   "lastOkAt": "2026-10-09T23:29:46+09:00",
+   "checkedAt": "2026-10-09T23:55:21+09:00",
+   "lastOkAt": "2026-10-09T23:55:21+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
    "ok": true,
-   "checkedAt": "2026-10-09T23:29:47+09:00",
-   "lastOkAt": "2026-10-09T23:29:47+09:00",
+   "checkedAt": "2026-10-09T23:55:23+09:00",
+   "lastOkAt": "2026-10-09T23:55:23+09:00",
    "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-10-09T23:30:09+09:00",
-   "lastOkAt": "2026-10-09T23:30:09+09:00",
+   "checkedAt": "2026-10-09T23:55:45+09:00",
+   "lastOkAt": "2026-10-09T23:55:45+09:00",
    "error": ""
   }
  },
@@ -101,5 +101,16 @@
     "board": "5974"
    }
   ]
+ },
+ "sunday": {
+  "id": 1397,
+  "title": "썬데이 메이플",
+  "url": "https://maplestory.nexon.com/News/Event/1397",
+  "image": "https://lwi.nexon.com/maplestory/2026/0917_sundaymaple/260917_314E6BBB49668935.png",
+  "thumb": "https://file.nexon.com/NxFile/download/FileDownloader.aspx?oidFile=4836958612175717160",
+  "start": "2026-10-11T00:00:00+09:00",
+  "end": "2026-10-11T23:59:00+09:00",
+  "date": "2026-10-08T10:00:00+09:00",
+  "via": "api"
  }
 }
