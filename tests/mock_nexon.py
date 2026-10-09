@@ -40,6 +40,10 @@ def sched_extra(o):
 GUILD_EMPTY=set()   # 이 날짜(YYYY-MM-DD)는 랭킹이 아직 비어 있음 → 앱이 어제로 대체하는지 확인
 CALLS=[]            # (path, query) 호출 기록
 GUILD_ROWS={1:(4000,523),2:(137591,532)}
+import datetime as _dt
+def _today_kst():  # 스케줄러 응답 날짜 = 오늘(KST) — 고정 날짜면 다음 날부터 앱이 '지난 자료'로 봄
+    return (_dt.datetime.now(_dt.timezone.utc)+_dt.timedelta(hours=9)).strftime('%Y-%m-%d')
+
 def handle(route):
     u=urllib.parse.urlparse(route.request.url); q=dict(urllib.parse.parse_qsl(u.query)); p=u.path
     if '/static/maplestory/character/look/' in p:
@@ -68,7 +72,7 @@ def handle(route):
     if p.endswith('/scheduler/character-state'):
         if q['ocid'] not in own or q['ocid'] not in SCHED: return route.fulfill(status=400,json={'error':{'name':'OPENAPI00003','message':'Please input valid id'}})
         c=ALL[q['ocid']]; bs,cl=SCHED[q['ocid']]
-        return route.fulfill(json={'date':'2026-10-09T00:00+09:00','character_name':c[1],'world_name':c[2],'character_level':c[4],'character_class':c[3],'daily_contents':sched_extra(q['ocid'])[0],'weekly_contents':sched_extra(q['ocid'])[1],
+        return route.fulfill(json={'date':_today_kst()+'T00:00+09:00','character_name':c[1],'world_name':c[2],'character_level':c[4],'character_class':c[3],'daily_contents':sched_extra(q['ocid'])[0],'weekly_contents':sched_extra(q['ocid'])[1],
           'boss_contents':[{'content_name':n,'difficulty':d,'cycle':'bossMonthly' if n=='검은 마법사' else 'bossWeekly','list_order_no':i,'registration_flag':'true','complete_flag':'true' if f else 'false'} for i,(n,d,f) in enumerate(bs)],
           'weekly_boss_clear_count':cl,'weekly_boss_clear_limit_count':12})
     return route.fulfill(status=400,json={'error':{'name':'OPENAPI00006','message':'invalid path'}})

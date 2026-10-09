@@ -541,6 +541,15 @@ def src_sunday(feed, run_all, minute):
         return True
     return False
 
+def sunday_needs_ocr(sd):
+    """새 썬데이 이미지(아직 OCR 안 함) 또는 OCR 이 실패했고 3번 미만 시도 → True (글 하나당 한 번만 성공하면 끝)"""
+    if not sd.get("image"):
+        return False
+    o = sd.get("ocr") or {}
+    if o.get("image") != sd["image"]:
+        return True
+    return not o.get("ok") and int(o.get("tries") or 0) < 3
+
 SOURCES = [("saryo", src_saryo), ("patch", src_patch), ("test", src_test), ("mabbak", src_mabbak)]
 
 def load():
@@ -607,10 +616,14 @@ def main():
             json.dump(feed, f, ensure_ascii=False, indent=1)
             f.write("\n")
     log(f"새 글 {added}개, 상태 변경 {flipped}, 하트비트 {stale} → {'저장' if changed else '변경 없음'}")
+    need_ocr = sunday_needs_ocr(feed.get("sunday") or {})
+    if need_ocr:
+        log("썬데이 이미지 OCR 필요 → 다음 단계(scripts/sunday_ocr.py)")
     go = os.environ.get("GITHUB_OUTPUT")
     if go:
         with open(go, "a") as f:
             f.write(f"changed={'true' if changed else 'false'}\n")
+            f.write(f"sunday_ocr={'true' if need_ocr else 'false'}\n")
     return 0
 
 if __name__ == "__main__":

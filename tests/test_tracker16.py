@@ -28,7 +28,7 @@ PRESET={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':[],
   'characters':[ch('c1','단풍용사',287,'히어로','ocid-main','a1',True),ch('c2','불독메이지',272,'아크메이지(불,독)','ocid-alt1','a1')],
   'settings':{'accounts':[{'id':'a1','label':'본계정','key':KM}],'autoSync':False,'lastSync':int(time.time()*1000)}}
 IMG='https://lwi.nexon.com/maplestory/2026/1009_board/SUNDAYTEST.png'
-SUN={'id':1399,'title':'스페셜 썬데이 메이플','url':'https://maplestory.nexon.com/News/Event/1399','image':IMG,'benefit':'미라클 타임 · 몬스터파크 경험치 +250%',
+SUN={'id':1399,'title':'스페셜 썬데이 메이플','url':'https://maplestory.nexon.com/News/Event/1399','image':IMG,'benefit':'어빌리티 재설정 명성치 비용 50% 할인 · 21성 이하 스타포스 파괴 확률 30% 감소','benefitSrc':'ocr','crop':'sunday.png?v=1399',
      'start':iso(now+datetime.timedelta(days=2)),'end':iso(now+datetime.timedelta(days=2,hours=23,minutes=59))}
 def mkfeed(sun):
     f={'version':1,'updatedAt':iso(now),'sources':{k:{'label':k,'ok':True,'checkedAt':iso(now),'lastOkAt':iso(now),'error':''} for k in ['saryo','patch','test','mabbak']},
@@ -38,7 +38,7 @@ def mkfeed(sun):
 STATE={'feed':mkfeed(SUN)}
 SVG='<svg xmlns="http://www.w3.org/2000/svg" width="876" height="3692"><rect width="876" height="3692" fill="#ffe27a"/><circle cx="438" cy="400" r="250" fill="#f5c518"/><text x="438" y="1200" font-size="120" text-anchor="middle">SUNDAY</text></svg>'
 def img_route(r): r.fulfill(status=200,content_type='image/svg+xml',body=SVG)
-CARDS="(()=>{const f=document.querySelector('#feedCard').getBoundingClientRect(),s=document.querySelector('#sunCard'),r=s.getBoundingClientRect(),im=s.querySelector('img'),bn=s.querySelector('.sunben');return {fh:f.height,fbot:f.bottom,sh:r.height,stop:r.top,sbot:r.bottom,sdisp:getComputedStyle(s).display,ih:innerHeight,doc:document.scrollingElement.scrollHeight,sw:document.scrollingElement.scrollWidth,ben:bn?{bot:bn.getBoundingClientRect().bottom,last:bn===s.querySelector('.sunbody').lastElementChild,ws:getComputedStyle(bn).whiteSpace}:null,img:im?{fit:getComputedStyle(im).objectFit,nw:im.naturalWidth,h:im.getBoundingClientRect().height,bot:im.getBoundingClientRect().bottom}:null}})()"
+CARDS="(()=>{const f=document.querySelector('#feedCard').getBoundingClientRect(),s=document.querySelector('#sunCard'),r=s.getBoundingClientRect(),im=s.querySelector('img'),bn=s.querySelector('.sunben');return {fh:f.height,fbot:f.bottom,sh:r.height,stop:r.top,sbot:r.bottom,sdisp:getComputedStyle(s).display,ih:innerHeight,doc:document.scrollingElement.scrollHeight,sw:document.scrollingElement.scrollWidth,ben:bn?{bot:bn.getBoundingClientRect().bottom,last:bn===s.querySelector('.sunbody').lastElementChild,ws:getComputedStyle(bn.querySelector('li')).whiteSpace}:null,img:im?{fit:getComputedStyle(im).objectFit,nw:im.naturalWidth,h:im.getBoundingClientRect().height,bot:im.getBoundingClientRect().bottom}:null}})()"
 NOSIDE="(()=>{const a=document.querySelector('#feedCard'),b=document.querySelector('#sunCard');a.style.display='none';const bd=b.style.display;b.style.display='none';const h=document.scrollingElement.scrollHeight;a.style.display='';b.style.display=bd;return h})()"
 try:
   with sync_playwright() as p:
@@ -47,6 +47,9 @@ try:
     ctx.route('https://accounts.google.com/**',lambda r:r.abort())
     ctx.route('**/feed.json*',lambda r:r.fulfill(status=200,content_type='application/json',body=json.dumps(STATE['feed'],ensure_ascii=False)))
     ctx.route('https://lwi.nexon.com/**',img_route)
+    crop_hits=[]
+    CROPSVG='<svg xmlns="http://www.w3.org/2000/svg" width="876" height="633"><rect width="876" height="633" fill="#5b2ea6"/></svg>'
+    ctx.route('**/sunday.png*',lambda r:(crop_hits.append(r.request.url),r.fulfill(status=200,content_type='image/svg+xml',body=CROPSVG)))
     ctx.route(lambda u: 'maplestory.nexon.com' in u, lambda r:r.fulfill(status=200,content_type='text/html',body='<p>ok</p>'))
     pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.on('console',lambda m:errs.append('console:'+m.text) if m.type=='error' and 'Failed to load resource' not in m.text and 'gsi' not in m.text else None)
@@ -56,10 +59,25 @@ try:
     check('sun card right below feed card in left sidebar', all(pos.values()), pos)
     hd=pg.evaluate("(()=>{const t=document.querySelector('#sunCard .ftabs .ftab');const sv=t.querySelector('svg.sunico');return {txt:t.textContent.trim(),on:t.classList.contains('on'),svgFirst:t.firstElementChild===sv,color:sv?getComputedStyle(sv).color:'',w:sv?sv.getBoundingClientRect().width:0}})()")
     check("tab-style header '썬데이' with yellow sun icon before text", hd['txt']=='썬데이' and hd['on'] and hd['svgFirst'] and hd['color']=='rgb(245, 197, 24)' and 12<=hd['w']<=18, hd)
-    lk=pg.evaluate("(()=>{const a=document.querySelector('#sunCard a.sunimg');return {href:a.href,tgt:a.target,rel:a.rel,src:a.querySelector('img').getAttribute('src')}})()")
-    check('image links to the event post (new tab) and uses feed image URL', lk['href']==SUN['url'] and lk['tgt']=='_blank' and 'noopener' in lk['rel'] and lk['src']==IMG, lk)
+    cimg=pg.get_attribute('#sunCard .sunimg img','src')
+    check('card shows the cropped image (sunday.png) when available', cimg.startswith('./sunday.png?v=1399') and crop_hits, cimg)
+    check('image is a button (no link to the official site on the card)', pg.locator('#sunCard a').count()==0 and pg.locator('#sunCard button.sunimg').count()==1)
     cap=pg.inner_text('#sunCard .suncap'); check('caption: title + date', '스페셜 썬데이 메이플' in cap and '.' in cap, cap)
-    ben=pg.inner_text('#sunCard .sunben'); check('benefit line at the bottom shows benefit text', '미라클 타임' in ben, ben)
+    bl=pg.eval_on_selector_all('#sunCard .sunben li',"e=>e.map(x=>x.textContent)")
+    check('benefit lines: each benefit on its own short line', bl==['어빌리티 재설정 명성치 비용 50% 할인','21성 이하 스타포스 파괴 확률 30% 감소'], bl)
+    # 라이트박스
+    pages_before=len(ctx.pages)
+    pg.click('#sunCard .sunimg'); pg.wait_for_selector('#sunLb img'); pg.wait_for_function("document.querySelector('#sunLb img').complete"); pg.wait_for_timeout(150)
+    lb=pg.evaluate("(()=>{const l=document.querySelector('#sunLb'),i=l.querySelector('img').getBoundingClientRect(),inn=l.querySelector('.sunlb-in').getBoundingClientRect(),a=l.querySelector('.sunlb-bar a');return {src:l.querySelector('img').getAttribute('src'),bg:getComputedStyle(l).backgroundColor,pos:getComputedStyle(l).position,cx:(inn.left+inn.right)/2,cy:(inn.top+inn.bottom)/2,iw:innerWidth,ih:innerHeight,ib:i.bottom,it:i.top,ir:i.right,il:i.left,href:a&&a.href,tgt:a&&a.target,txt:a&&a.textContent,focus:document.activeElement.className,lock:document.documentElement.classList.contains('sunlb-open')}})()")
+    check('click → lightbox (no new tab), full original image', len(ctx.pages)==pages_before and lb['src']==IMG and lb['pos']=='fixed' and 'rgba(0, 0, 0, 0.8)' in lb['bg'], lb)
+    check('lightbox centered and image fits the viewport', abs(lb['cx']-lb['iw']/2)<3 and abs(lb['cy']-lb['ih']/2)<3 and lb['it']>=0 and lb['ib']<=lb['ih'] and lb['il']>=0 and lb['ir']<=lb['iw'], lb)
+    check("'공지 보기' link to the post (new tab), focus on ✕, page scroll locked", lb['href']==SUN['url'] and lb['tgt']=='_blank' and '공지 보기' in lb['txt'] and 'sunlb-x' in lb['focus'] and lb['lock'], lb)
+    shot(pg,'sun_lightbox_1280.png')
+    pg.click('#sunLb img'); check('click image → zoom (original width, scroll)', pg.evaluate("document.querySelector('#sunLb').classList.contains('zoom')"))
+    pg.keyboard.press('Escape'); pg.wait_for_timeout(100)
+    check('Esc closes, focus back on the image button', pg.locator('#sunLb').count()==0 and pg.evaluate("document.activeElement.classList.contains('sunimg')") and not pg.evaluate("document.documentElement.classList.contains('sunlb-open')"))
+    pg.click('#sunCard .sunimg'); pg.wait_for_selector('#sunLb'); pg.click('#sunLb .sunlb-x'); check('✕ closes', pg.locator('#sunLb').count()==0)
+    pg.click('#sunCard .sunimg'); pg.wait_for_selector('#sunLb'); pg.mouse.click(5,5); check('click outside (backdrop) closes', pg.locator('#sunLb').count()==0)
     for vw,vh in [(1280,800),(1920,1080)]:
         pg.set_viewport_size({'width':vw,'height':vh}); pg.wait_for_timeout(300)
         for t in ['boss','summary','daily']:
@@ -84,14 +102,19 @@ try:
         c['sw']=c['sw']-max(0,sw0-vw)  # 320px 헤더 넘침(기존 알려진 현상)은 빼고
         check(f'mobile {vw}: sun card below feed, no horizontal overflow, image 100..520px, benefit shown', c['stop']>=c['fbot'] and c['sdisp']!='none' and c['sw']<=vw and 100<=c['img']['h']<=520 and c['ben'] and c['ben']['bot']<=c['sbot'], c)
     pg.locator('#sunCard').scroll_into_view_if_needed(); shot(pg.locator('#sunCard'),'sun_card_mobile.png')
+    pg.click('#sunCard .sunimg'); pg.wait_for_selector('#sunLb img'); pg.wait_for_function("document.querySelector('#sunLb img').complete"); pg.wait_for_timeout(150)
+    m=pg.evaluate("(()=>{const l=document.querySelector('#sunLb'),i=l.querySelector('img').getBoundingClientRect(),x=l.querySelector('.sunlb-x').getBoundingClientRect();return {it:i.top,ib:i.bottom,il:i.left,ir:i.right,xr:x.right,xt:x.top,iw:innerWidth,ih:innerHeight}})()")
+    check('mobile 320: lightbox image and ✕ inside the screen', m['it']>=0 and m['ib']<=m['ih'] and m['il']>=0 and m['ir']<=m['iw'] and m['xr']<=m['iw'] and m['xt']>=0, m)
+    shot(pg,'sun_lightbox_mobile.png'); pg.keyboard.press('Escape')
     pg.set_viewport_size({'width':1280,'height':800})
-    STATE['feed']=mkfeed(dict(SUN,benefit='')); pg.evaluate('feedLoad()'); pg.wait_for_timeout(400)
-    check('no benefit text → falls back to post title', pg.inner_text('#sunCard .sunben').endswith('스페셜 썬데이 메이플'), pg.inner_text('#sunCard .sunben'))
+    STATE['feed']=mkfeed({k:v for k,v in SUN.items() if k not in ('benefit','crop')}); pg.evaluate('feedLoad()'); pg.wait_for_timeout(400)
+    check('no benefit text → falls back to post title', pg.inner_text('#sunCard .sunben li')=='스페셜 썬데이 메이플', pg.inner_text('#sunCard .sunben'))
+    check('no crop → original image in the card', pg.get_attribute('#sunCard .sunimg img','src')==IMG)
     STATE['feed']=mkfeed(None); pg.evaluate('feedLoad()'); pg.wait_for_timeout(400)
     em=pg.locator('#sunCard .sunempty'); check('no sunday → tidy placeholder with sun icon', em.count()==1 and '썬데이 메이플' in em.inner_text() and pg.locator('#sunCard .sunempty svg.sunico').count()==1 and pg.locator('#sunCard img').count()==0)
     shot(pg.locator('#sunCard'),'sun_card_empty.png')
     STATE['feed']=mkfeed(dict(SUN,id=1400,title='썬데이 메이플',url='https://maplestory.nexon.com/News/Event/1400')); pg.evaluate('feedLoad()'); pg.wait_for_timeout(400)
-    check('new sunday post replaces card', pg.get_attribute('#sunCard a.sunimg','href').endswith('/1400'))
+    check('new sunday post replaces card', pg.inner_text('#sunCard .suncap .ftt')=='썬데이 메이플')
     pg.evaluate("window.__im=document.querySelector('#sunCard img')"); pg.evaluate('feedLoad()'); pg.wait_for_timeout(300)
     check('same data → image element kept (no reload)', pg.evaluate("window.__im===document.querySelector('#sunCard img')"))
     pg.close(); b.close()

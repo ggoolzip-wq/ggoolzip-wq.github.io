@@ -15,7 +15,7 @@ concurrency:
 jobs:
   feed:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,12 +28,23 @@ jobs:
           NEXON_API_KEY2: ${{ secrets.NEXON_API_KEY2 }}
           FEED_ALL: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: python3 scripts/update_feed.py
+      - name: Sunday OCR (new Sunday Maple image only, once per post)
+        id: ocr
+        if: steps.feed.outputs.sunday_ocr == 'true'
+        continue-on-error: true
+        run: |
+          # 설치가 실패해도 sunday_ocr.py 는 실행 → 실패를 feed.json 에 기록(tries), 3번 실패하면 그 글은 더 시도 안 함
+          sudo apt-get update -qq || true
+          sudo apt-get install -y -qq tesseract-ocr tesseract-ocr-kor > /dev/null || true
+          pip install -q pillow || true
+          python3 scripts/sunday_ocr.py
       - name: Commit if changed
-        if: steps.feed.outputs.changed == 'true'
+        if: steps.feed.outputs.changed == 'true' || steps.ocr.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add feed.json
+          [ -f sunday.png ] && git add sunday.png
           git diff --cached --quiet && exit 0
           git commit -m "feed: update $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M') KST"
           for i in 1 2 3 4 5; do

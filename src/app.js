@@ -1798,20 +1798,43 @@ function renderFeed(){
 }
 /* 썬데이 메이플 카드 (feed.json 의 sunday) — 클릭하면 이벤트 글 */
 const SUN_SVG='<svg class="sunico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6" fill="currentColor"/><g stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.2v2.6M12 19.2v2.6M2.2 12h2.6M19.2 12h2.6M5.1 5.1l1.8 1.8M17.1 17.1l1.8 1.8M5.1 18.9l1.8-1.8M17.1 6.9l1.8-1.8"/></g></svg>';
+const sunCropUrl=s=>s&&s.crop?(location.protocol==='file:'?FEED_LIVE.replace(/feed\.json$/,''):'./')+s.crop:'';
 function renderSun(){
   const c=$('#sunCard'); if(!c) return;
   const s=feed.data&&feed.data.sunday;
   let body;
-  if(s&&s.image&&s.url){
+  const src=s&&(sunCropUrl(s)||s.image);
+  if(s&&src){
     const when=s.start?fdShort(s.start)+(s.end&&fdShort(s.end)!==fdShort(s.start)?' ~ '+fdShort(s.end):''):fdShort(s.date||'');
-    const tip=`${s.title||'썬데이 메이플'}${s.start?`\n${fdFull(s.start)} ~ ${fdFull(s.end||s.start)}`:''}\n클릭하면 이벤트 글이 열립니다`;
-    body=`<a class="sunimg" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(tip)}"><img src="${esc(s.image)}" alt="${esc(s.title||'썬데이 메이플')}" loading="lazy" referrerpolicy="no-referrer"></a>`+
-      `<a class="suncap" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(tip)}"><span class="ftt">${esc(s.title||'썬데이 메이플')}</span><span class="fdt">${esc(when)}</span></a>`+
-      `<div class="sunben" title="${esc(s.benefit||s.title||'')}"><b>이번 주 혜택</b><span>${esc(s.benefit||s.title||'썬데이 메이플')}</span></div>`;
+    const bens=(s.benefit?String(s.benefit).split(/\s*·\s*/).filter(Boolean):[]).slice(0,3);
+    const lines=bens.length?bens:[s.title||'썬데이 메이플'];
+    body=`<button type="button" class="sunimg" data-sunopen title="크게 보기"><img src="${esc(src)}" alt="${esc(s.title||'썬데이 메이플')}" loading="lazy" referrerpolicy="no-referrer"></button>`+
+      `<div class="suncap"><span class="ftt">${esc(s.title||'썬데이 메이플')}</span><span class="fdt">${esc(when)}</span></div>`+
+      `<div class="sunben"><b>이번 주 혜택</b><ul>${lines.map(t=>`<li title="${esc(t)}">${esc(t)}</li>`).join('')}</ul></div>`;
   }else body=`<div class="sunempty">${SUN_SVG}<span>${feed.data||feed.err?'아직 썬데이 메이플 소식이 없어요':'불러오는 중…'}</span></div>`;
   c.innerHTML=`<div class="ftabs"><span class="ftab on stab" role="heading" aria-level="2">${SUN_SVG}썬데이</span></div><div class="sunbody">${body}</div>`;
   c.dataset.sid=JSON.stringify(s||null);
 }
+/* 썬데이 이미지 크게 보기 (라이트박스): 바깥 클릭·✕·Esc 로 닫기, 이미지를 누르면 원본 폭으로 확대(스크롤) */
+let sunLbPrev=null;
+function sunLightbox(){
+  const s=feed.data&&feed.data.sunday; if(!s) return;
+  const full=s.image||sunCropUrl(s); if(!full) return;
+  sunLbPrev=document.activeElement;
+  const when=s.start?fdFull(s.start)+(s.end?' ~ '+fdFull(s.end):''):'';
+  const lb=document.createElement('div'); lb.className='sunlb'; lb.id='sunLb'; lb.setAttribute('role','dialog'); lb.setAttribute('aria-modal','true'); lb.setAttribute('aria-label','썬데이 메이플 이미지');
+  lb.innerHTML=`<div class="sunlb-in"><button type="button" class="sunlb-x" aria-label="닫기">✕</button><div class="sunlb-sc"><img src="${esc(full)}" alt="${esc(s.title||'썬데이 메이플')}" referrerpolicy="no-referrer" title="눌러서 확대/축소"></div>`+
+    `<div class="sunlb-bar"><span class="sunlb-t">${SUN_SVG}${esc(s.title||'썬데이 메이플')}${when?` <small>${esc(when)}</small>`:''}</span>${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">공지 보기 ↗</a>`:''}</div></div>`;
+  document.body.appendChild(lb); document.documentElement.classList.add('sunlb-open');
+  lb.addEventListener('click',e=>{
+    if(e.target.closest('.sunlb-x')||!e.target.closest('.sunlb-in')) return sunLbClose();
+    if(e.target.tagName==='IMG') lb.classList.toggle('zoom');
+  });
+  lb.querySelector('.sunlb-x').focus();
+}
+function sunLbClose(){ const lb=$('#sunLb'); if(!lb) return; lb.remove(); document.documentElement.classList.remove('sunlb-open'); if(sunLbPrev&&sunLbPrev.focus) sunLbPrev.focus(); sunLbPrev=null; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('#sunLb')){ e.preventDefault(); e.stopPropagation(); sunLbClose(); } },true);
+$('#sunCard').addEventListener('click',e=>{ if(e.target.closest('[data-sunopen]')) sunLightbox(); });
 /* 카드 높이 = 남은 화면 높이 (페이지가 이 카드 때문에 스크롤되지 않게), 쪽당 글 수 = 그 높이에 들어가는 줄 수 */
 function feedFit(){
   const c=$('#feedCard'); if(!c) return; const old=feed.per;
@@ -1831,7 +1854,7 @@ function feedFit(){
     const minH=FEED_ROW*2+70, SUN_MIN=140, gap=12;
     // 남은 높이를 소식 1/3 : 썬데이 2/3 로 나눔. 썬데이 칸이 너무 작아지면(SUN_MIN 미만) 썬데이를 숨기고 소식이 전부 사용
     let fh=Math.max(minH,Math.round((h-gap)/3)), sh=h-gap-fh;
-    if(sun){ if(sh>=SUN_MIN){ sun.style.display=''; sun.style.height=sh+'px'; } else { sun.style.display='none'; fh=h; } }
+    if(sun){ if(sh>=SUN_MIN){ sun.style.display=''; sun.style.height=sh+'px'; sun.classList.toggle('tight',sh<230); } else { sun.style.display='none'; fh=h; } }
     c.style.height=Math.max(minH,fh)+'px';
     const fb=c.querySelector('.fbody'); const avail=fb?fb.clientHeight:0;
     feed.per=Math.min(20,Math.max(2,Math.floor(avail/FEED_ROW)));
