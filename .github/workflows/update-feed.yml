@@ -25,6 +25,7 @@ jobs:
         id: feed
         env:
           NEXON_API_KEY: ${{ secrets.NEXON_API_KEY }}
+          NEXON_API_KEY2: ${{ secrets.NEXON_API_KEY2 }}
           FEED_ALL: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: python3 scripts/update_feed.py
       - name: Commit if changed
