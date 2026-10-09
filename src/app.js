@@ -704,6 +704,15 @@ function expLine(c){
   const tip=`EXP ${p.toFixed(3)}%`+(e.exp?` (${Number(e.exp).toLocaleString()})`:'')+(e.date?` · 기준 ${String(e.date).slice(0,10)}`:'');
   return `<div class="expl" title="${esc(tip)}"><span class="expbar" role="progressbar" aria-label="경험치" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.toFixed(2)}"><i style="width:${p.toFixed(2)}%"></i></span><span class="exppct">${p.toFixed(2)}%</span></div>`;
 }
+/* 사이드바 카드: 이번 주 주간 보스 12/12면 반투명 검정 덮개 + '★ 이번 주 보스 완료'
+ * (월간 보스를 선택해 두었는데 이번 달 아직 안 잡았으면 빨간 (!) '(검마 격파 안함)' 추가). 마우스를 올리면 사라짐, 클릭은 통과 */
+function monthlyPending(c){ return BOSSES.filter(b=>b.type==='monthly'&&c.bosses?.[b.id]?.enabled&&!c.monthly?.[b.id]); }
+function doneOverlay(c,r){
+  if(r.weekly<S.settings.weeklyLimit) return '';
+  const pend=monthlyPending(c);
+  const warn=pend.length?`<span class="dov-warn"><i class="dov-ex" aria-hidden="true">!</i>(${pend.map(b=>esc(b.aliases?.[0]||b.name)).join('·')} 격파 안함)</span>`:'';
+  return `<div class="dov" aria-hidden="true"><div class="dov-t"><span class="dov-ok"><b class="dov-star">★</b> 이번 주 보스 완료</span>${warn}</div></div>`;
+}
 function renderChars(){
   if(dnd) return; // 드래그 중에는 다시 그리지 않음
   const el=$('#charList');
@@ -716,7 +725,7 @@ function renderChars(){
         ${multi?`<button class="ord" data-wmove="${esc(w)}|-1" ${wi===0?'disabled':''} title="월드 위로" aria-label="월드 위로">▲</button><button class="ord" data-wmove="${esc(w)}|1" ${wi===worlds.length-1?'disabled':''} title="월드 아래로" aria-label="월드 아래로">▼</button>`:''}</div>` : '';
     return head + cs.map((c,ci)=>{const r=charRevenue(c);return `
     <div class="char ${c.id===S.activeId?'on':''}${r.weekly>=S.settings.weeklyLimit?' alldone':''}" data-id="${c.id}" data-world="${esc(w)}" draggable="true">
-      ${r.weekly>=S.settings.weeklyLimit?`<span class="donestamp" title="이번 주 주간 보스 ${r.weekly}/${S.settings.weeklyLimit} 완료" aria-label="주간 보스 완료">완</span>`:''}
+      ${doneOverlay(c,r)}
       <span class="drag-h" title="드래그해서 순서 변경">⠿</span>
       ${avatar(c)}
       <div class="grow"><div class="nm">${esc(c.name)}${c.isMain?'<span class="mainbadge">★ 본캐</span>':''}</div><div class="meta lvrow"><span class="lv">Lv.${esc(c.level||'?')}</span><span class="job">${esc(c.job||'직업 미설정')}</span></div>${expLine(c)}</div>

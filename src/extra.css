@@ -245,13 +245,17 @@ img.ric{width:16px;height:16px;object-fit:contain;image-rendering:pixelated}
 .pc-sep{font-size:.68rem;font-weight:700;color:var(--muted);margin:6px 0 2px}
 .pc-foot{font-size:.64rem;margin-top:6px}
 .pc-head h2 .ric{width:22px;height:22px;vertical-align:-5px;margin-right:2px}
-/* 주간 보스 12/12 완료 도장 */
-.char .donestamp{position:absolute;top:3px;left:3px;width:24px;height:24px;border:2px solid #d62828;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;color:#d62828;font-weight:900;font-size:12px;line-height:1;
-  transform:rotate(-14deg);opacity:.82;pointer-events:none;z-index:2;background:rgba(255,255,255,.18);
-  box-shadow:inset 0 0 0 1px rgba(214,40,40,.35),0 0 1px rgba(214,40,40,.6);text-shadow:0 0 1px rgba(214,40,40,.5);
-  font-family:"Noto Serif KR","Batang",serif;letter-spacing:0;mix-blend-mode:multiply}
-[data-theme="dark"] .char .donestamp{color:#ff5a5a;border-color:#ff5a5a;mix-blend-mode:normal;background:rgba(0,0,0,.15)}
+/* 주간 보스 12/12 완료 덮개 (마우스를 올리면 사라짐, 클릭·드래그는 통과) */
+.char .dov{position:absolute;inset:0;border-radius:inherit;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:3;opacity:1;transition:opacity .15s ease;padding:4px 8px}
+.char .dov-t{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;column-gap:8px;row-gap:2px;text-align:center;line-height:1.25;
+  color:#fff;font-weight:800;font-size:.84rem;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.char .dov-ok,.char .dov-warn{white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.char .dov-star{color:#ffd23f;font-weight:900}
+.char .dov-warn{color:#ff5a5a;font-size:.8rem}
+.char .dov-ex{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border:1.6px solid #ff5a5a;border-radius:50%;
+  font-style:normal;font-size:10px;font-weight:900;line-height:1;box-sizing:border-box}
+@media(hover:hover){.char:hover .dov{opacity:0}}
 .optlines{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
 .dangerzone{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-size:.88rem}
 .dangerzone .muted{font-size:.78rem;margin-top:2px}

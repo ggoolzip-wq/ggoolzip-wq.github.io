@@ -67,11 +67,11 @@ try:
     pg.keyboard.press('Escape'); pg.wait_for_timeout(100); check('Esc closes modal', not pg.is_visible('#importModal'))
     # re-add 부계정 for screenshots
     pg.evaluate(f"S.settings.accounts.push({{id:'a2',label:'부계정',key:'{KA}'}}); S.characters.forEach(c=>{{if(c.name==='부계정비숍') c.accId='a2'}}); save(); render();")
-    # 5) main screen: 12/12 stamp on main
+    # 5) main screen: 12/12 overlay on main
     pg.evaluate("""(()=>{const c=S.characters.find(c=>c.name==='단풍용사'); const wk=BOSSES.filter(b=>b.type==='weekly'); let n=Object.keys(c.weekly).length;
       for(const b of wk.slice().reverse()){ if(n>=12) break; if(!c.weekly[b.id]){ c.bosses[b.id]=c.bosses[b.id]||{enabled:true,diff:b.diffs[b.diffs.length-1],party:1}; c.bosses[b.id].enabled=true; c.weekly[b.id]=true; n++; } }
       S.activeId=c.id; save(); render(); })()""")
-    pg.wait_for_timeout(300); check('stamp on 12/12 char', pg.query_selector('.char:has-text("단풍용사") .donestamp') is not None)
+    pg.wait_for_timeout(300); check('overlay on 12/12 char', pg.query_selector('.char:has-text("단풍용사") .dov') is not None)
     pg.evaluate("window.scrollTo(0,0);document.querySelector('#toast').classList.remove('show')"); pg.wait_for_timeout(300)
     pg.screenshot(path=''+OUT+'/main.png')
     # 6) ☁ menu (show signed-in look)
