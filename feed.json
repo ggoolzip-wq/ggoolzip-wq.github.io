@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-10T00:15:40+09:00",
+ "updatedAt": "2026-10-10T00:23:32+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
@@ -118,7 +118,7 @@
   "ocr": {
    "image": "https://lwi.nexon.com/maplestory/2026/0917_sundaymaple/260917_314E6BBB49668935.png",
    "ok": true,
-   "at": "2026-10-10T00:15:35+09:00",
+   "at": "2026-10-10T00:23:28+09:00",
    "tries": 1,
    "lines": [
     ".",
