@@ -721,6 +721,23 @@ select.impworld option{color:#111}
 @keyframes epshine{0%{background-position:100% 0}50%{background-position:0 0}100%{background-position:100% 0}}
 @media (prefers-reduced-motion: reduce){.lx.aur.epsum{animation:none}}
 .svaskbtns [data-k=no]{background:transparent;color:var(--text,#ececf1);border-color:var(--line,#3a3a46)}
+/* b33: 에픽빔 제목·합계 — 빛나는 글로우 + 그라데이션 스윕 + 은은한 후광 */
+.eph{position:relative}
+.eph .ept,.lx.aur.epsum{
+  background:linear-gradient(100deg,#8ff0ff 0%,#ffffff 18%,#7fe0ff 34%,#c9a8ff 50%,#ffffff 62%,#7fe0ff 78%,#b8f3ff 100%);background-size:250% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 2px rgba(255,255,255,.9)) drop-shadow(0 0 6px rgba(127,224,255,.85)) drop-shadow(0 0 14px rgba(160,120,255,.55));
+  animation:epshine 3.6s ease-in-out infinite,ephalo 2.8s ease-in-out infinite}
+.eph .ept{font-weight:700;letter-spacing:.03em}
+.eph::after{content:"✦";position:absolute;margin-left:4px;font-size:.75rem;color:#e9fbff;text-shadow:0 0 6px #7fe0ff,0 0 12px #c9a8ff;animation:epspark 2.2s ease-in-out infinite;pointer-events:none}
+@keyframes ephalo{0%,100%{filter:drop-shadow(0 0 2px rgba(255,255,255,.9)) drop-shadow(0 0 6px rgba(127,224,255,.8)) drop-shadow(0 0 12px rgba(160,120,255,.45))}50%{filter:drop-shadow(0 0 3px rgba(255,255,255,1)) drop-shadow(0 0 10px rgba(127,224,255,1)) drop-shadow(0 0 20px rgba(160,120,255,.7))}}
+@keyframes epspark{0%,100%{opacity:.25;transform:scale(.7) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(25deg)}}
+@media (prefers-reduced-motion: reduce){.eph .ept,.lx.aur.epsum,.eph::after{animation:none}}
+.eph .ept{background:linear-gradient(100deg,#bff4ff 0%,#ffffff 30%,#9fe6ff 50%,#e0d0ff 70%,#bff4ff 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;
+  filter:drop-shadow(0 0 1px rgba(255,255,255,.7)) drop-shadow(0 0 5px rgba(127,224,255,.55));animation:epshine 3.6s ease-in-out infinite,ephalo2 2.8s ease-in-out infinite}
+@keyframes ephalo2{0%,100%{filter:drop-shadow(0 0 1px rgba(255,255,255,.7)) drop-shadow(0 0 4px rgba(127,224,255,.5))}50%{filter:drop-shadow(0 0 2px rgba(255,255,255,.9)) drop-shadow(0 0 8px rgba(150,170,255,.7))}}
+@media (prefers-reduced-motion: reduce){.eph .ept{animation:none}}
+.eph .ept,.lx.aur.epsum{display:inline-block;line-height:1.3;padding:0 2px}
 </style>
 </head>
 <body>
@@ -1089,7 +1106,7 @@ function changeDrop(key, delta){
   const pty=curParty(c,slot);
   if(delta<0 && hasOut(item)){ const om=outMap(c,b.type); const l=om[key]; if(l&&l.length) l.pop(); if(!n||(l&&!l.length)) delete om[key]; } // 가장 최근 획득(결과 포함) 취소
   save(); render(); if(delta>0&&n) celebrate(null,item);
-  toast(`${ITEMS[item].n}${delta>0?partyTxt(pty):''} ${delta>0?'획득':'획득 취소'}`);
+  // (선택/취소 알림 문구 없음 — 2026-10-10)
 }
 /* 반지 상자 결과 선택 모달 (닫기 = 기록 안 함) */
 let ringPending=null;
@@ -1111,7 +1128,7 @@ function chooseRing(o){
   const om=outMap(c,b.type); const l=om[p.key]||(om[p.key]=[]);
   // 기능 도입 전 획득분(결과 없음)은 '개수 − 결과 수' = 미기록으로 표시
   l.push(o); save(); render();
-  if(o==='x') toast(`${ITEMS[item].s}${partyTxt(pty)} — 꽝 기록 (${c.name} 이번 ${b.type==='monthly'?'달':'주'} ${m[p.key]}개)`); else celebrate(o);
+  if(o!=='x') celebrate(o);
 }
 /* 축하 연출: 캔버스 불꽃놀이 + 꽃가루 (~2.6초, 외부 라이브러리 없음) */
 // 아이콘 불꽃: 같은 아이콘 수십 개가 가운데서 사방으로 (CSS transform, 약 2초 후 제거, 모션 줄이기 존중)

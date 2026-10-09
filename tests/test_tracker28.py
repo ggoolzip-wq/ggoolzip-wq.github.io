@@ -59,12 +59,14 @@ try:
     opts=pg.eval_on_selector_all('#chaosModal .cbopt',"e=>e.map(x=>x.textContent.trim())")
     check('chaos modal: title + 7 options in order with icons + cancel', pg.inner_text('#chaosModal h3')=='어떤 장신구를 획득하셨나요?' and opts==['루즈 컨트롤 머신 마크','마력이 깃든 안대','몽환의 벨트','저주받은 마도서 선택 상자','거대한 공포','커맨더 포스 이어링','고통의 근원'] and pg.locator('#chaosModal .cbopt img').count()==7 and pg.locator('#chaosModal .cbcancel').count()==1, opts)
     shot(pg.locator('#chaosModal .cbbox'),'b28_chaos_modal.png')
+    pg.evaluate("document.querySelector('#toast').classList.remove('show')")
     pg.click('#chaosModal .cbcancel'); pg.wait_for_timeout(100)
     check('cancel → nothing recorded, buttons disabled', not pg.evaluate("S.characters[0].drops['kaling|chaosbox']") and pg.evaluate("!pend"))
     pg.click('[data-drop="kaling|chaosbox"]'); pg.click('#chaosModal [data-cbpick="eye"]'); pg.wait_for_timeout(400)
     check("choose → '축하드립니다!' with item", '축하드립니다' in pg.inner_text('#congrats') and '마력이 깃든 안대' in pg.inner_text('#congrats'))
     pg.screenshot(path=os.path.join(OUT,'b28_chaos_congrats.png')); SHOTDIR and shutil.copy(os.path.join(OUT,'b28_chaos_congrats.png'),SHOTDIR)
     pg.evaluate("endCelebrate()")
+    check('chaos pick: no toast', pg.locator('#toast.show').count()==0)
     check('stored like ring outcomes, pending', pg.evaluate("S.characters[0].dropOut['kaling|chaosbox']")==['cb:eye'] and pg.evaluate("!!pend"))
     pg.click('[data-drop="kaling|chaosbox"]'); pg.wait_for_timeout(100)
     check('click again → canceled, back to snapshot', not pg.evaluate("S.characters[0].drops['kaling|chaosbox']") and not pg.evaluate("(S.characters[0].dropOut||{})['kaling|chaosbox']") and pg.evaluate("!pend"))
@@ -83,7 +85,7 @@ try:
     pg.click('#pendCancel',timeout=1500); pg.wait_for_timeout(150); check('click a button during burst works', '변경사항을 취소하시겠습니까?' in pg.inner_text('body'))
     pg.click('.svaskbtns button:has-text("아니오")'); pg.wait_for_timeout(150)
     pg.wait_for_timeout(2300); check('burst cleaned up after ~2s', pg.locator('#iconBurst').count()==0)
-    pg.click(f'[data-drop="seren|{k0}"]'); pg.wait_for_timeout(200); check('un-click → no burst', pg.locator('#iconBurst').count()==0)
+    pg.click(f'[data-drop="seren|{k0}"]'); pg.wait_for_timeout(200); check('un-click → no toast', pg.locator('#toast.show').count()==0); check('un-click → no burst', pg.locator('#iconBurst').count()==0)
     # 8,9,10
     tabs=pg.eval_on_selector_all('[data-tab]',"e=>e.map(x=>x.textContent.trim())")
     check("tabs: no 캐릭터 별 기록, '수익 분석'", '캐릭터 별 기록' not in tabs and '수익 분석' in tabs and '총 수익' not in tabs, tabs)
@@ -97,7 +99,7 @@ try:
     pg.evaluate("S.characters[0].drops['seren|mitra']=1; S.characters[0].drops['zakum|papmark']=1; save(); render()"); pg.wait_for_timeout(200)
     exp=pg.evaluate("(()=>{let n=0;for(const c of S.characters) for(const m of [c.drops||{},c.mdrops||{}]) for(const [k,v] of Object.entries(m)){const it=parseIK(k).it; if(ITEMS[it]&&!isRing(it)) n+=+v;} return n})()")
     sm=pg.inner_text('.epsum'); items=pg.eval_on_selector_all('.card:has(.epsum) .totloot .lx',"e=>e.map(x=>[x.textContent,getComputedStyle(x).color,getComputedStyle(x).backgroundClip])")
-    check('에픽빔 heading sum = stored non-ring drops, shimmering sky-blue gradient + glow + shine', sm==f'x{exp}' and exp==3 and pg.evaluate("(e=>getComputedStyle(e).backgroundClip==='text'&&getComputedStyle(e).filter.includes('drop-shadow')&&getComputedStyle(e).animationName==='epshine')(document.querySelector('.epsum'))"), (sm,exp))
+    check('에픽빔 heading sum = stored non-ring drops, shimmering sky-blue gradient + glow + shine', sm==f'x{exp}' and exp==3 and pg.evaluate("(e=>getComputedStyle(e).backgroundClip==='text'&&getComputedStyle(e).filter.includes('drop-shadow')&&getComputedStyle(e).animationName.includes('epshine'))(document.querySelector('.epsum'))"), (sm,exp))
     check('per-item counts crimson, no gradient, sum matches', all(c=='rgb(224, 17, 95)' and bc!='text' for _,c,bc in items) and sum(int(t[1:]) for t,_,_ in items)==exp, items)
     pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b29_epic.png') if SHOTDIR else None
     # b31
@@ -122,11 +124,13 @@ try:
     check('시드링: no (결과를 기록한 N회 기준), shows 기댓값 = boxes × official prob', '결과를 기록한' not in rs and f'기댓값 리4 {exp4[0]}개 · 컨4 {exp4[1]}개' in rs, (rs,exp4))
     pg.locator('.card:has(.ringsum)').screenshot(path='/workspace/shots/b32_seedring.png') if SHOTDIR else None
     pg.locator('.card:has(.epsum) h2').screenshot(path='/workspace/shots/b32_epic.png') if SHOTDIR else None
+    pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b33_epic.png') if SHOTDIR else None
+    check('에픽빔 title glow + reduced-motion rule', pg.evaluate("(e=>getComputedStyle(e).backgroundClip==='text'&&getComputedStyle(e).filter.includes('drop-shadow'))(document.querySelector('.eph .ept'))"))
     pg.locator('.card:has(h2:has-text("캐릭터별 누적"))').screenshot(path='/workspace/shots/b32_chartable.png') if SHOTDIR else None
     # 탭 이동 시 저장 묻기
     pg.evaluate('pend=null;save()'); pg.click('[data-tab="boss"]'); pg.wait_for_timeout(200)
     pg.click('[data-drop="seren|mitra"]'); pg.wait_for_timeout(150); pg.evaluate("endCelebrate()")
-    check('drop click toast has no 저장 hint', '저장을' not in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    check('drop click shows no toast', pg.locator('#toast.show').count()==0, pg.inner_text('#toast'))
     pg.click('[data-tab="daily"]'); pg.wait_for_timeout(200)
     check('switch tab with pending → modal 변경사항을 저장하시겠습니까?', '변경사항을 저장하시겠습니까?' in pg.inner_text('body') and pg.locator('[data-tab="boss"].on').count()==1)
     pg.screenshot(path='/workspace/shots/b32_tabmodal.png') if SHOTDIR else None

@@ -250,7 +250,7 @@ function changeDrop(key, delta){
   const pty=curParty(c,slot);
   if(delta<0 && hasOut(item)){ const om=outMap(c,b.type); const l=om[key]; if(l&&l.length) l.pop(); if(!n||(l&&!l.length)) delete om[key]; } // 가장 최근 획득(결과 포함) 취소
   save(); render(); if(delta>0&&n) celebrate(null,item);
-  toast(`${ITEMS[item].n}${delta>0?partyTxt(pty):''} ${delta>0?'획득':'획득 취소'}`);
+  // (선택/취소 알림 문구 없음 — 2026-10-10)
 }
 /* 반지 상자 결과 선택 모달 (닫기 = 기록 안 함) */
 let ringPending=null;
@@ -272,7 +272,7 @@ function chooseRing(o){
   const om=outMap(c,b.type); const l=om[p.key]||(om[p.key]=[]);
   // 기능 도입 전 획득분(결과 없음)은 '개수 − 결과 수' = 미기록으로 표시
   l.push(o); save(); render();
-  if(o==='x') toast(`${ITEMS[item].s}${partyTxt(pty)} — 꽝 기록 (${c.name} 이번 ${b.type==='monthly'?'달':'주'} ${m[p.key]}개)`); else celebrate(o);
+  if(o!=='x') celebrate(o);
 }
 /* 축하 연출: 캔버스 불꽃놀이 + 꽃가루 (~2.6초, 외부 라이브러리 없음) */
 // 아이콘 불꽃: 같은 아이콘 수십 개가 가운데서 사방으로 (CSS transform, 약 2초 후 제거, 모션 줄이기 존중)
