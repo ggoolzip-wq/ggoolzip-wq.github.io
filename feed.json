@@ -1,33 +1,33 @@
 {
  "version": 1,
- "updatedAt": "2026-10-09T23:18:16+09:00",
+ "updatedAt": "2026-10-09T23:19:09+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-10-09T23:17:53+09:00",
-   "lastOkAt": "2026-10-09T23:17:53+09:00",
+   "checkedAt": "2026-10-09T23:18:48+09:00",
+   "lastOkAt": "2026-10-09T23:18:48+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-10-09T23:17:57+09:00",
-   "lastOkAt": "2026-10-09T23:17:57+09:00",
+   "checkedAt": "2026-10-09T23:18:50+09:00",
+   "lastOkAt": "2026-10-09T23:18:50+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
    "ok": true,
-   "checkedAt": "2026-10-09T23:17:58+09:00",
-   "lastOkAt": "2026-10-09T23:17:58+09:00",
+   "checkedAt": "2026-10-09T23:18:51+09:00",
+   "lastOkAt": "2026-10-09T23:18:51+09:00",
    "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-10-09T23:18:16+09:00",
-   "lastOkAt": "2026-10-09T23:18:16+09:00",
+   "checkedAt": "2026-10-09T23:19:09+09:00",
+   "lastOkAt": "2026-10-09T23:19:09+09:00",
    "error": ""
   }
  },
@@ -57,24 +57,24 @@
   ],
   "patch": [
    {
+    "id": "minor:150275",
+    "title": "[패치완료] 10/8(목) ver1.2.419 마이너버전(8) 패치 (18:10 적용)",
+    "url": "https://maplestory.nexon.com/News/Notice/Notice/150275",
+    "date": "2026-10-08T18:11:00+09:00",
+    "src": "minor"
+   },
+   {
+    "id": "minor:150249",
+    "title": "[패치완료] 10/2(금) ver1.2.419 마이너버전(7) 패치(15:01 적용)",
+    "url": "https://maplestory.nexon.com/News/Notice/Notice/150249",
+    "date": "2026-10-02T15:02:00+09:00",
+    "src": "minor"
+   },
+   {
     "id": "update:814",
     "title": "클라이언트 1.2.419(5) 업데이트 안내",
     "url": "https://maplestory.nexon.com/news/update/814",
     "date": "2026-09-22T09:00:00+09:00"
-   },
-   {
-    "id": "minor:150200",
-    "title": "(연장)[패치완료] 9/22(화) ver1.2.419 마이너(5) 패치(6:00~9:00)",
-    "url": "https://maplestory.nexon.com/News/Notice/Notice/150200",
-    "date": "2026-09-21T18:11:00+09:00",
-    "src": "minor"
-   },
-   {
-    "id": "minor:149581",
-    "title": "[패치완료] 7/24(금) ver1.2.417 마이너(3) 패치(07:00~09:00)",
-    "url": "https://maplestory.nexon.com/News/Notice/All/149581",
-    "date": "2026-07-23T00:00:00+09:00",
-    "src": "minor"
    }
   ],
   "test": [
