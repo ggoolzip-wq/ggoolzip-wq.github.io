@@ -1423,7 +1423,7 @@ function renderTotal(){
   <div class="card">${(()=>{ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(isRing(it)) return; if(it==='chaosbox'){ let u=I.n; (I.outs||[]).forEach(o=>{ if(/^cb:/.test(o)&&ITEMS[o.slice(3)]){ R[o]=(R[o]||0)+1; u--; } }); if(u>0) R[it]=(R[it]||0)+u; return; } R[it]=(R[it]||0)+I.n; });
       const oi=k=>/^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*CHAOS_PICK.indexOf(k.slice(3)):Object.keys(ITEMS).indexOf(k);
       const ks=Object.keys(R).sort((x,y)=>oi(x)-oi(y));
-      const tot=Object.values(R).reduce((x,y)=>x+y,0); const hd=`<h2 class="eph">${miniIcon('sos')} <span class="ept">에픽빔 본 횟수</span>${tot?` <b class="lx aur epsum">${xN(tot)}</b>`:''}</h2>`;
+      const tot=Object.values(R).reduce((x,y)=>x+y,0); const hd=`<h2 class="eph">${miniIcon('sos')} <span class="ept">에픽빔 본 횟수</span>${tot?` <span class="epbeam" aria-hidden="false"><b class="lx aur epsum">${xN(tot)}</b></span>`:''}</h2>`;
       return hd+(ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${/^cb:/.test(k)?`${miniIcon('chaosbox')} - ${itemIcon(k.slice(3))}<span class="ln">${esc(ITEMS[k.slice(3)].n)}</span>`:`${itemIcon(k)}<span class="ln">${esc(ITEMS[k].n)}</span>`} <b class="lx">${xN(R[k])}</b></span></div>`).join('')}</div>`:'<p class="muted">아직 기록한 아이템이 없습니다. 보스 현황 탭에서 보스 행의 아이템을 누르고 저장하면 기록됩니다.</p>'); })()}</div>
   ${bossLootHtml(T)}${itemTotalsHtml(T)}
   <div class="card"><h2>🗓 전체 주 목록</h2><div style="overflow-x:auto"><table><thead><tr><th>주차</th><th class="num">클리어</th><th class="num">아이템</th><th class="num">주간 수익</th><th class="num">누적</th></tr></thead><tbody>

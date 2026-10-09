@@ -614,3 +614,18 @@ select.impworld option{color:#111}
 @media (prefers-reduced-motion: reduce){.lx.aur.epsum{animation:none}}
 .svaskbtns [data-k=no]{background:transparent;color:var(--text,#ececf1);border-color:var(--line,#3a3a46)}
 #svGate .svgerr{margin-top:10px;padding:6px 2px;background:transparent;border:0;color:#ff5a5a;font-weight:600;font-size:.9rem;opacity:1}
+/* b36: 합계 숫자 뒤 '에픽빔' — 보라색 세로 빛기둥 + 위로 올라가는 반짝이 + 은은한 맥동 (CSS만, 레이아웃 영향 없음) */
+.epbeam{position:relative;display:inline-block;margin-left:6px;vertical-align:baseline;isolation:isolate}
+.epbeam .epsum{position:relative;z-index:2;margin-left:0}
+.epbeam::before,.epbeam::after{content:"";position:absolute;left:50%;bottom:-6px;pointer-events:none;z-index:1;transform:translateX(-50%)}
+.epbeam::before{width:30px;height:46px;border-radius:50% 50% 40% 40%/20% 20% 80% 80%;
+  background:radial-gradient(ellipse 60% 18% at 50% 92%,rgba(214,160,255,.95),rgba(160,90,255,.55) 45%,transparent 75%),
+             linear-gradient(to top,rgba(170,90,255,.75) 0%,rgba(150,80,255,.45) 35%,rgba(190,140,255,.18) 70%,transparent 100%);
+  filter:blur(2px);mix-blend-mode:screen;animation:epbpulse 2.4s ease-in-out infinite;will-change:transform,opacity}
+.epbeam::after{width:26px;height:46px;
+  background-image:radial-gradient(1.6px 1.6px at 20% 80%,#f3e6ff 60%,transparent),radial-gradient(1.2px 1.2px at 70% 60%,#e2c8ff 60%,transparent),
+    radial-gradient(1.4px 1.4px at 45% 30%,#fff 60%,transparent),radial-gradient(1px 1px at 85% 90%,#d9b8ff 60%,transparent),radial-gradient(1.2px 1.2px at 30% 10%,#f3e6ff 60%,transparent);
+  background-size:26px 46px;background-repeat:repeat-y;animation:epbrise 2.2s linear infinite;opacity:.9;will-change:background-position}
+@keyframes epbpulse{0%,100%{opacity:.75;transform:translateX(-50%) scaleX(.85)}50%{opacity:1;transform:translateX(-50%) scaleX(1.12)}}
+@keyframes epbrise{from{background-position:0 0}to{background-position:0 -46px}}
+@media (prefers-reduced-motion: reduce){.epbeam::before,.epbeam::after{animation:none}}
