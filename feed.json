@@ -1,34 +1,34 @@
 {
  "version": 1,
- "updatedAt": "2026-10-11T01:50:16+09:00",
+ "updatedAt": "2026-10-11T04:11:07+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-10-11T01:49:49+09:00",
-   "lastOkAt": "2026-10-11T01:49:49+09:00",
+   "checkedAt": "2026-10-11T04:08:51+09:00",
+   "lastOkAt": "2026-10-11T04:08:51+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-10-11T01:49:49+09:00",
-   "lastOkAt": "2026-10-11T01:49:49+09:00",
+   "checkedAt": "2026-10-11T04:08:51+09:00",
+   "lastOkAt": "2026-10-11T04:08:51+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
    "ok": true,
-   "checkedAt": "2026-10-11T01:49:51+09:00",
-   "lastOkAt": "2026-10-11T01:49:51+09:00",
+   "checkedAt": "2026-10-11T04:08:53+09:00",
+   "lastOkAt": "2026-10-11T04:08:53+09:00",
    "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
-   "ok": true,
-   "checkedAt": "2026-10-11T01:50:16+09:00",
+   "ok": false,
+   "checkedAt": "2026-10-11T04:11:07+09:00",
    "lastOkAt": "2026-10-11T01:50:16+09:00",
-   "error": ""
+   "error": "5974: URLError: <urlopen error timed out> (https://www.inven.co.kr/board/maple/5974); 2304: URLError: <urlopen error timed out> (https://www.inven.co.kr/board/maple/2304); 2314: URLError: <urlopen error timed out> (https://www.inven.co.kr/board/maple/2314); 2316: URLError: <urlopen error timed out> (https://www.inven.co.kr/board/maple/2316); 2587: URLError: <urlopen error timed out> (https://www.i"
   }
  },
  "state": {
