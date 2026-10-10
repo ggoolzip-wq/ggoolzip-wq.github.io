@@ -71,6 +71,9 @@ def main():
     if old and old.get("rows") == new["rows"] and old.get("source") == new["source"]:
         print("가격 변경 없음")
         return touch(old, today)
+    # changedAt: 실제 가격(rows)이 바뀐 공지의 날짜 = 지금 가격이 적용된 날 (가격이 같으면 유지)
+    sd = (res["source"].get("date") or "").replace(".", "-")[:10]
+    new["changedAt"] = (old or {}).get("changedAt") if old and old.get("rows") == new["rows"] else (sd or today)
     write(new)
     print(f"prices.json 갱신: {new['source']['title']} ({len(rows)}개)")
     return 0

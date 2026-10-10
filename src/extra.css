@@ -696,3 +696,14 @@ tr.md-gold td,tr.md-silver td,tr.md-bronze td{font-weight:700}
 .blk.split .bk-a{clip-path:polygon(0 0,95% 0,0 95%)}
 .blk.split .bk-b{clip-path:polygon(100% 5%,100% 100%,5% 100%);filter:grayscale(1) brightness(.85)}
 .bbtbl td{padding:4px 10px}
+
+/* b53 */
+.score{color:#ff2d55;font-weight:800;text-shadow:0 0 5px rgba(255,45,85,.55)}
+tr.rkpad td{border-color:transparent}
+.ranktbl tbody tr{height:48px}
+.ranktbl tbody td{padding-top:4px;padding-bottom:4px;height:48px;box-sizing:border-box}
+.ranktbl .loots{display:inline-flex;flex-wrap:wrap}
+.bbpart+.bbpart{border-top:1px solid var(--line,rgba(255,255,255,.18));margin-top:12px;padding-top:10px}
+.drop.got{position:relative}
+.drop.got::after{content:"";position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%233fb96f' fill-opacity='.9'/%3E%3Cpath d='M6.5 12.5l3.5 3.5 7.5-8' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}

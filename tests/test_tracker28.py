@@ -92,20 +92,20 @@ try:
     pg.click('[data-tab="total"]'); pg.wait_for_timeout(300)
     av=pg.evaluate("(()=>{const a=document.querySelector('#mesoKing .rkname .avatar');const l=document.querySelector('#charList .avatar');return a&&l?[a.getBoundingClientRect().width,l.getBoundingClientRect().width]:null})()")
     check('1st place portrait in 메소왕 present (b52)', av and av[0]>=30 or abs(av[0]-av[1])<1, av)
-    t=pg.inner_text('#view')
-    check("'에픽빔 본 횟수' with chosen item + heading sum", '에픽빔 본 횟수' in t and '물욕' not in t and '마력이 깃든 안대' in t and pg.locator('.epsum').count()==1)
+    t=pg.inner_text('#epicCard')
+    check("'에픽빔 본 횟수' with chosen item + heading sum", '에픽빔 본 횟수' in t and '물욕' not in t and '혼돈의 칠흑 장신구 상자' in t and pg.locator('.epsum').count()==1)
     shot(pg.locator('#view'),'b28_total.png')
     # b29: 에픽빔 — 제목 옆 합계(오로라), 목록 개수는 선홍색, 저장 데이터와 일치
     pg.evaluate("S.characters[0].drops['seren|mitra']=1; S.characters[0].drops['zakum|papmark']=1; save(); render()"); pg.wait_for_timeout(200)
     exp=pg.evaluate("(()=>{let n=0;for(const c of S.characters) for(const m of [c.drops||{},c.mdrops||{}]) for(const [k,v] of Object.entries(m)){const it=parseIK(k).it; if(ITEMS[it]&&!isRing(it)) n+=+v;} return n})()")
     sm=pg.inner_text('.epsum'); items=pg.eval_on_selector_all('.card:has(.epsum) .totloot .lx',"e=>e.map(x=>[x.textContent,getComputedStyle(x).color,getComputedStyle(x).backgroundClip])")
-    check('에픽빔 heading sum = stored non-ring drops, shimmering sky-blue gradient + glow + shine', sm==f'x{exp}' and exp==3 and pg.evaluate("(e=>getComputedStyle(e).backgroundClip==='text'&&getComputedStyle(e).filter.includes('drop-shadow')&&getComputedStyle(e).animationName.includes('eppearl'))(document.querySelector('.epsum'))"), (sm,exp))
+    check('에픽빔 heading sum = stored non-ring drops, shimmering sky-blue gradient + glow + shine', sm==f'{exp}' and exp==3 and pg.evaluate("(e=>getComputedStyle(e).backgroundClip==='text'&&getComputedStyle(e).filter.includes('drop-shadow')&&getComputedStyle(e).animationName.includes('eppearl'))(document.querySelector('.epsum'))"), (sm,exp))
     check('per-item counts crimson, no gradient, sum matches', all(c=='rgb(224, 17, 95)' and bc!='text' for _,c,bc in items) and sum(int(t[1:]) for t,_,_ in items)==exp, items)
     pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b29_epic.png') if SHOTDIR else None
     # b31
     pg.evaluate("S.characters[0].drops['kaling|r_white']=1; S.characters[0].dropOut['kaling|r_white']=['r4']; S.history.push({week:'2026-10-01',weeklyOnly:true,total:0,perChar:[{id:'c1',name:'단풍용사',meso:0,bosses:['카링(하드)'],items:{'kaling|chaosbox':1,'seren|mitra':1},outcomes:{'kaling|chaosbox':['cb:sos']}}]}); save(); render()"); pg.wait_for_timeout(200)
     h=pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.textContent.trim())')
-    check('renamed headings', any(x.startswith('📈 주별 누적 결정석 메소') for x in h) and '메소왕' in h and '득템왕' in h, h)
+    check('renamed headings', any(x.startswith('📈 주별 누적 결정석 메소') for x in h) and '메소왕' in h and any(x.startswith('득템왕') for x in h), h)
     order=[x for x in h if x.startswith('에픽빔') or x.endswith('보스 별 누적 획득 아이템') or x.endswith('총 아이템 획득량')]
     check('new sections below 에픽빔 in order', len(order)==3 and order[0].startswith('에픽빔') and order[1].endswith('획득 아이템') and order[2].endswith('획득량'), order)
     rows=pg.eval_on_selector_all('.bossloot .blrow','e=>e.map(x=>x.innerText.split(String.fromCharCode(10)).join(" "))')

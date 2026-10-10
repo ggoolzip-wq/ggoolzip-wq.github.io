@@ -290,8 +290,9 @@ function chooseRing(o){
   const c=S.characters.find(x=>x.id===p.cid); if(!c) return; const [slot,item]=p.key.split('|'); const b=findBoss(slot);
   pendStart(); const m=dropMap(c,b.type);
   if(o==='x'){ m[p.key]=1; const om=outMap(c,b.type); (om[p.key]||(om[p.key]=[])).push('x'); modeMap(c,b.type)[p.key]='n'; save(); render(); return; } // 꽝: 블빵 창 없이 1인처럼 (라벨 없음)
-  askBbang(c,b,p.key,()=>{ m[p.key]=1; const om=outMap(c,b.type); (om[p.key]||(om[p.key]=[])).push(o); },
-    ()=>{ if(o==='gl') celebrate(null,'g_life'); else if(o!=='x') celebrate(o); },
+  m[p.key]=1; (outMap(c,b.type)[p.key]||(outMap(c,b.type)[p.key]=[])).push(o); if(curParty(c,b.id)>1) modeMap(c,b.type)[p.key]='s'; save(); render(); // 반지 상자: 블빵 창 없이 항상 분배
+  if(o==='gl') celebrate(null,'g_life'); else celebrate(o); return;
+  askBbang(c,b,p.key,()=>{},()=>{},
     o==='gl'?{ico:itemIcon('g_life'),name:ITEMS.g_life.n}:o==='x'?{ico:itemIcon(item),name:ITEMS[item].n+' · 꽝'}:{ico:outIcon(o),name:OUT_NAME[o]});
 }
 /* 축하 연출: 캔버스 불꽃놀이 + 꽃가루 (~2.6초, 외부 라이브러리 없음) */
@@ -1280,7 +1281,7 @@ function revPanel(a,cur){
   return `<aside class="revpanel card" aria-label="이번 주 수익 요약">
     <h2>${miniIcon('meso')} 이번 주 수익</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
-    <div class="rp-total">${meso(a.total)}<small> 메소</small></div>
+    <div class="rp-total">${(a.total/1e8).toFixed(1)}억<small> 메소</small></div>
     <div class="muted" style="font-size:.75rem">${a.total.toLocaleString()} · 주간 보스 결정석 ${a.count}개</div>
     ${a.monthTotal||S.characters.some(c=>c.bosses.blackmage?.enabled)?`<div class="rp-month"><span><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="rpm-t">${+S.period.month.slice(5)}월 월간 보스<small class="muted">(따로 합산)</small></span></span><b>${a.monthTotal?meso(a.monthTotal):'-'}</b></div>`:''}
     ${(()=>{const n=S.characters.reduce((s,c)=>s+itemSum(c.drops),0); return `<div class="rp-items-n muted">${miniIcon('chaosbox')} 이번 주 획득 아이템 ${n}개</div>`;})()}
@@ -1293,7 +1294,7 @@ function revPanel(a,cur){
 }
 // 보스+난이도별 가격 행 (싼 순서) — 보스 체크 탭 가격 카드
 const priceRows = g => BOSSES.filter(b=>b.type===g).flatMap(b=>b.diffs.map(d=>({b,d,k:priceKey(b,d),p:price(b,d)}))).sort((x,y)=>x.p-y.p);
-const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신\n(마지막 확인 ${officialInfo.checkedAt||'-'})${Object.keys(officialInfo.upcoming||{}).length?`\n테섭 예정 가격: ${officialInfo.upSource?.title||'테스트 서버 공지'}`:''}${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
+const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신\n(가격 변동일 ${officialInfo.changedAt||'-'}, 마지막 확인 ${officialInfo.checkedAt||'-'})${Object.keys(officialInfo.upcoming||{}).length?`\n테섭 예정 가격: ${officialInfo.upSource?.title||'테스트 서버 공지'}`:''}${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
 /* 보스 체크 탭 오른쪽: 결정석 가격 (읽기 전용, prices.json 자동 갱신) */
 // 테섭 예정 가격이 있을 때만: 캐릭터별 예상 주간 수익(주간 상위 12 + 월간) 현재 가격 vs 패치 후
 let pcTab='price';
@@ -1321,7 +1322,7 @@ function priceCard(){
   return `<aside class="card pricecard" aria-label="결정석 가격">
     <div class="pc-head"><h2>${miniIcon('ipc')||'💎'} 결정석 가격</h2></div>
     ${Object.keys(up).length?`<div class="pc-tabs" role="tablist"><button type="button" role="tab" data-pctab="price" class="${pcTab==='price'?'on':''}">가격</button><button type="button" role="tab" data-pctab="after" class="${pcTab==='after'?'on':''}">패치 후 예상 주간 수익</button></div>`:''}
-    ${Object.keys(up).length&&pcTab==='after'?afterPatchHtml():`<div class="pc-list">${priceRows('weekly').map(row).join('')}<div class="pc-sep">🌙 월간 보스</div>${priceRows('monthly').map(row).join('')}</div>`}
+    ${Object.keys(up).length&&pcTab==='after'?afterPatchHtml():`<div class="pc-list">${priceRows('weekly').map(row).join('')}<div class="pc-sep">📅 월간 보스</div>${priceRows('monthly').map(row).join('')}</div>`}
     <div class="pc-foot muted">${esc(priceAutoText())}</div>
   </aside>`;
 }
@@ -1411,7 +1412,7 @@ const lootIco0 = k => /^cb:/.test(k)?itemIcon(k.slice(3)) : k==='ring:r4'?miniIc
 const lootOrd = k => /^x:/.test(k)?Object.keys(ITEMS).indexOf(k.slice(2))+.5:lootOrd0(lootBase(k))+({w:.001,l:.002}[lootSf(k)]||0);
 const lootOrd0 = k => /^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*(1+CHAOS_PICK.indexOf(k.slice(3))) : /^ring:/.test(k)?-1+(k==='ring:c4'?.5:0) : Object.keys(ITEMS).indexOf(k);
 const modeTag = k => lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:'';
-const lootChips = m => `<span class="loots">${Object.keys(m).filter(k=>m[k]>0).sort((a,b)=>lootOrd(a)-lootOrd(b)).map(k=>`<span class="loot${lootSf(k)?' md-'+lootSf(k):''}">${lootIco(k)}<span class="ln">${esc(lootName(k))}${lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:''}</span> <b class="lx">${xN(m[k])}</b></span>`).join('')}</span>`;
+const lootChips = m => `<span class="loots">${Object.keys(m).filter(k=>m[k]>0).sort((a,b)=>lootOrd(a)-lootOrd(b)).map(k=>`<span class="loot${lootSf(k)?' md-'+lootSf(k):''}">${/^cb:/.test(k)?miniIcon('chaosbox')+' - ':''}${lootIco(k)}<span class="ln">${esc(lootName(k))}${lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:''}</span> <b class="lx">${xN(m[k])}</b></span>`).join('')}</span>`;
 // 시드링 기댓값: 상자 종류별 (획득 상자 수 × 상자 1개의 리4/컨4 확률) 합. 확률 = BOX_INFO (넥슨 공식 확률 공개, 툴팁과 같은 값)
 function ringExp(T){ const e={r4:0,c4:0}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); const p=ring4(it); if(p){ e.r4+=I.n*p.r4/100; e.c4+=I.n*p.c4/100; } }); return e; }
 const fmtExp=v=>(Math.round(v*100)/100).toFixed(2);
@@ -1419,7 +1420,7 @@ const ringExpHtml=T=>{ const e=ringExp(T); return `<span class="ringexp">기댓�
 function bossLootHtml(T){
   const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; };
   const rows=Object.values(T.byBoss||{}).filter(o=>Object.values(o.items).some(n=>n>0)).sort((a,b)=>bi(a.slot)-bi(b.slot)||a.dl.localeCompare(b.dl));
-  return `<div class="card bossloot"><h2>${miniIcon('chaosbox')} 보스 별 누적 획득 아이템</h2>${rows.length?rows.map(o=>{ const b=findBoss(o.slot);
+  return `<div class="card bossloot"><h2><span class="hbi">${bossIcon(findBoss('zakum'))}</span> 보스 별 누적 획득 아이템</h2>${rows.length?rows.map(o=>{ const b=findBoss(o.slot);
     return `<div class="blrow"><span class="blb"><span class="hbi">${bossIcon(b)}</span><b>${esc(b.name)}</b>${o.dl?` <span class="muted">${esc(o.dl)}</span>`:''}</span>${lootChips(o.items)}</div>`; }).join(''):'<p class="muted">아직 저장된 드랍 기록이 없습니다.</p>'}</div>`;
 }
 // 총 아이템 획득량: 반지 상자는 상자 자체 + 기록된 결과(리4·컨4)를 시드링 아이템으로 따로 (꽝은 아이템이 아님), 칠흑 상자는 고른 장신구로
@@ -1458,6 +1459,7 @@ function rankName(o,r){ const c=S.characters.find(x=>x.id===o.id); const m=medal
 const rankNo = r => `<span class="rkno ${medal(r)?'md-'+medal(r):''}">${r===1?crown:''}${r}</span>`;
 function rankPager(kind,n){ const pages=Math.ceil(n/RANK_PER); if(pages<=1) return ''; const cur=Math.min(rankPage[kind],pages);
   return `<div class="cpager rkpager">${Array.from({length:pages},(_,i)=>`<button type="button" class="cpg${i+1===cur?' on':''}" data-rkpage="${kind}|${i+1}"${i+1===cur?' aria-current="page"':''}>${i+1}</button>`).join('')}</div>`; }
+const rankPad = (n,total,cols) => total>RANK_PER&&n<RANK_PER ? Array.from({length:RANK_PER-n},()=>`<tr class="rkpad" aria-hidden="true">${'<td>&nbsp;</td>'.repeat(cols)}</tr>`).join('') : '';
 const rankSlice = (kind,rows) => { const pages=Math.max(1,Math.ceil(rows.length/RANK_PER)); rankPage[kind]=Math.min(Math.max(1,rankPage[kind]),pages); const st=(rankPage[kind]-1)*RANK_PER; return rows.slice(st,st+RANK_PER).map((o,i)=>[o,st+i+1]); };
 /* 기록 → 아이템 칩 키: 반지 상자는 결과(리4·컨4·생명의 연마석), 꽝 상자는 '꽝'(득템에서 제외), 칠흑은 고른 장신구, 결과 미기록 상자는 상자 그대로 */
 function lootOf(items,outs,want){ const m={};
@@ -1468,13 +1470,14 @@ function lootOf(items,outs,want){ const m={};
   return m; }
 const noBust = m => Object.fromEntries(Object.entries(m).filter(([k])=>!/^x:/.test(k))); // 꽝 제외
 function kingHtml(T){
-  const mr=T.chars.slice().sort((a,b)=>(b.week+b.month)-(a.week+a.month)||a.name.localeCompare(b.name));
-  const lr=T.chars.map(o=>{ const m=noBust(lootOf(o.items,o.outs,md=>md!=='l')); return {...o,loot:m,ln:Object.values(m).reduce((x,y)=>x+y,0)}; }).filter(o=>o.ln>0).sort((a,b)=>b.ln-a.ln||a.name.localeCompare(b.name));
+  const ord=orderedChars().map(c=>c.id), oi=o=>{ const i=ord.indexOf(o.id); return i<0?1e6:i; }, tb=(a,b)=>oi(a)-oi(b)||a.name.localeCompare(b.name);
+  const mr=T.chars.slice().sort((a,b)=>(b.week+b.month)-(a.week+a.month)||tb(a,b));
+  const lr=T.chars.map(o=>{ const m=noBust(lootOf(o.items,o.outs,md=>md!=='l')); return {...o,loot:m,ln:Object.values(m).reduce((x,y)=>x+y,0)}; }).filter(o=>o.ln>0).sort((a,b)=>b.ln-a.ln||tb(a,b));
   return `<div class="card kingcard" id="mesoKing"><h2>${miniIcon('meso')} 메소왕</h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="num">누적 주간 보스메소량</th><th class="num">누적 월간 보스메소량</th><th class="num">누적 합계</th></tr></thead><tbody>
-    ${rankSlice('meso',mr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)}</td><td class="num">${meso(o.week)}</td><td class="num">${o.month?meso(o.month):'-'}</td><td class="num"><b>${meso(o.week+o.month)}</b></td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}
+    ${rankSlice('meso',mr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)}</td><td class="num">${meso(o.week)}</td><td class="num">${o.month?meso(o.month):'-'}</td><td class="num"><b>${meso(o.week+o.month)}</b></td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('meso',mr).length,mr.length,5)}
     </tbody></table></div>${rankPager('meso',mr.length)}</div>
-  <div class="card kingcard" id="lootKing"><h2>${itemIcon('oath')} 득템왕</h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th>누적 획득 아이템</th></tr></thead><tbody>
-    ${rankSlice('loot',lr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)} <span class="muted tiny">${xN(o.ln)}</span></td><td>${lootChips(o.loot)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">기록 없음</td></tr>'}
+  <div class="card kingcard" id="lootKing"><h2>${itemIcon('oath')} 득템왕 <span class="muted" style="font-weight:500">(아이템 1개 당 1점)</span></h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th>누적 획득 아이템</th></tr></thead><tbody>
+    ${rankSlice('loot',lr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)} <span class="score">(${o.ln}점)</span></td><td>${lootChips(o.loot)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('loot',lr).length,lr.length,3)}
     </tbody></table></div>${rankPager('loot',lr.length)}</div>`;
 }
 function bbangStats(T){ const p={}; for(const o of T.chars) for(const [a,n] of Object.entries(o.items||{})){ const {party,mode}=parseIK(a); if(mode!=='w'&&mode!=='l') continue; const q=p[party]||(p[party]={w:0,l:0}); q[mode]+=+n||0; } return p; }
@@ -1483,10 +1486,10 @@ function bbangHtml(T){
   const st=bbangStats(T), rows=[2,3,4,5,6].filter(k=>st[k]&&(st[k].w+st[k].l));
   const won={}, lost={}; for(const o of T.chars){ const w=lootOf(o.items,o.outs,m=>m==='w'), l=lootOf(o.items,o.outs,m=>m==='l');
     for(const [k,n] of Object.entries(w)) won[k]=(won[k]||0)+n; for(const [k,n] of Object.entries(l)) lost[k]=(lost[k]||0)+n; }
-  return `<div class="card" id="bbRate"><h2><span class="blk split" aria-hidden="true"><span class="bk-a">${miniIcon('blink')}</span><span class="bk-b">${miniIcon('blink')}</span></span> 블빵 승률</h2>
+  return `<div class="card bbcard" id="bbCard"><div class="bbpart" id="bbRate"><h2><span class="blk split" aria-hidden="true"><span class="bk-a">${miniIcon('blink')}</span><span class="bk-b">${miniIcon('blink')}</span></span> 물욕 블빵 승률</h2>
     ${rows.length?`<table class="bbtbl"><tbody>${rows.map(k=>{ const q=st[k], t=q.w+q.l; return `<tr data-party="${k}"><td>${k}인</td><td class="num"><b>${(q.w/t*100).toFixed(1)}%</b></td><td class="muted">${q.w}승 ${q.l}패</td></tr>`; }).join('')}</tbody></table>`:'<p class="muted">아직 블빵 기록이 없어요</p>'}</div>
-  <div class="card" id="bbWon"><h2>${blinkIco()} 블빵 이겨서 얻은 아이템들</h2>${Object.keys(won).length?lootChips(won):'<p class="muted">아직 없어요</p>'}</div>
-  <div class="card" id="bbLost"><h2>${blinkIco('gray')} 블빵 져서 잃은 아이템들</h2>${Object.keys(lost).length?lootChips(lost):'<p class="muted">아직 없어요</p>'}</div>`;
+  <div class="bbpart" id="bbWon"><h2>${blinkIco()} 블빵 이겨서 얻은 아이템들</h2>${Object.keys(won).length?lootChips(won):'<p class="muted">아직 없어요</p>'}</div>
+  <div class="bbpart" id="bbLost"><h2>${blinkIco('gray')} 블빵 져서 잃은 아이템들</h2>${Object.keys(lost).length?lootChips(lost):'<p class="muted">아직 없어요</p>'}</div></div>`;
 }
 function renderTotal(){
   const v=$('#view'); const T=totalData();
@@ -1504,11 +1507,12 @@ function renderTotal(){
   </div>
   <div class="card"><h2>📈 주별 누적 결정석 메소 <span class="muted" style="font-weight:500">막대: 주간 결정석 수익 · 파란 선: 누적</span></h2>${weekChart(T.weeks,{cum:true,minBar:22})}</div>
   ${kingHtml(T)}
-  <div class="card">${(()=>{ const R={}; T.items.forEach(([a,I])=>{ const {it,mode}=parseIK(a); if(isRing(it)) return; const sf=mode?'@'+mode:''; if(it==='chaosbox'){ let u=I.n; (I.outs||[]).forEach(o=>{ if(/^cb:/.test(o)&&ITEMS[o.slice(3)]){ R[o+sf]=(R[o+sf]||0)+1; u--; } }); if(u>0) R[it+sf]=(R[it+sf]||0)+u; return; } R[it+sf]=(R[it+sf]||0)+I.n; });
-      const oi=k=>lootOrd(k); const oi_=k=>/^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*CHAOS_PICK.indexOf(k.slice(3)):Object.keys(ITEMS).indexOf(k);
-      const ks=Object.keys(R).sort((x,y)=>oi(x)-oi(y));
-      const tot=Object.values(R).reduce((x,y)=>x+y,0); const hd=`<h2 class="eph" id="epicH">${miniIcon('sos')} <span class="ept">에픽빔 본 횟수</span>${tot?` <b class="lx aur epsum">${xN(tot)}</b>`:''}</h2>`;
-      return hd+(ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${/^cb:/.test(k)?`${miniIcon('chaosbox')} - ${lootIco(k)}<span class="ln">${esc(lootName(k))}${modeTag(k)}</span>`:`${lootIco(k)}<span class="ln">${esc(lootName(k))}${modeTag(k)}</span>`} <b class="lx">${xN(R[k])}</b></span></div>`).join('')}</div>`:'<p class="muted">아직 기록한 아이템이 없습니다. 보스 현황 탭에서 보스 행의 아이템을 누르고 저장하면 기록됩니다.</p>'); })()}</div>
+  <div class="card">${(()=>{ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(isRing(it)) return; R[it]=(R[it]||0)+I.n; });
+      const ks=Object.keys(R).sort((x,y)=>lootOrd(x)-lootOrd(y)); const tot=Object.values(R).reduce((x,y)=>x+y,0);
+      const hd=`<h2 class="eph" id="epicH">${miniIcon('sos')} <span class="ept">에픽빔 본 횟수</span>${tot?` <b class="lx aur epsum">${tot}</b>`:''}</h2>`;
+      return `<div id="epicCard">`+hd+(ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${lootIco(k)}<span class="ln">${esc(lootName(k))}</span> <b class="lx">${xN(R[k])}</b></span></div>`).join('')}</div>`:'<p class="muted">아직 기록한 아이템이 없습니다. 보스 현황 탭에서 보스 행의 아이템을 누르고 저장하면 기록됩니다.</p>')+'</div>'; })()}</div>
+  ${(()=>{ const C=Object.fromEntries(CHAOS_PICK.map(k=>[k,0])); T.items.forEach(([a,I])=>{ if(parseIK(a).it!=='chaosbox') return; (I.outs||[]).forEach(o=>{ const k=String(o).slice(3); if(/^cb:/.test(o)&&k in C) C[k]++; }); });
+      return `<div class="card" id="chaosCard"><h2>${miniIcon('chaosbox')} 혼돈의 칠흑 장신구 상자깡</h2><div class="totloot">${CHAOS_PICK.map(k=>`<div class="tl"><span class="loot">${itemIcon(k)}<span class="ln">${esc(ITEMS[k].n)}</span> <b class="lx">${xN(C[k])}</b></span></div>`).join('')}</div></div>`; })()}
   ${bbangHtml(T)}
   ${bossLootHtml(T)}
   <div class="card ringcard"><h2>${miniIcon('ring_restraint')} 시드링 획득 타율</h2>
@@ -1740,7 +1744,7 @@ function applyOfficialPrices(pj){
   }
   // 테섭 예정 가격 (pj.upcoming): 실서버 가격은 그대로, 다른 값만 '테섭 예정 → N' 표시
   const upcoming={}; for(const r of (pj.upcoming&&pj.upcoming.rows)||[]){ const m=parseBossLabel(r.boss); const v=Math.round(+r.new); if(m&&v>0){ const k=priceKey(m.b,m.d); if(PRICE_CONFIG[k]!==v) upcoming[k]=v; } }
-  officialInfo={checkedAt:pj.checkedAt||'', source:pj.source||{}, applied, pending, upcoming, upSource:(pj.upcoming&&pj.upcoming.source)||null};
+  officialInfo={checkedAt:pj.checkedAt||'', changedAt:pj.changedAt||'', source:pj.source||{}, applied, pending, upcoming, upSource:(pj.upcoming&&pj.upcoming.source)||null};
   return changed;
 }
 function loadOfficialPrices(){
