@@ -829,7 +829,7 @@ const DQ_ITEMS = [ // lv: 일일 퀘스트 수행 가능 레벨 (그란디스 �
 ];
 const DQ_ICONS = /*__DQ_ICONS__*/{}; // 지역 아이콘 data URI (어센틱/그랜드 어센틱심볼, 몬스터파크 이용권, 익몬=몬스터파크 NPC 슈피겔만 얼굴) — src/dqicons.json
 const dqIco = (it,cls='dqico') => DQ_ICONS[it.id]?`<img class="${cls}" src="${DQ_ICONS[it.id]}" alt="" width="20" height="20" decoding="async">`:'';
-const DQ_TTL_MS = 10*60e3;      // 일퀘 탭: 캐릭터별 스케줄러 10분마다 (접속 중/접속 종료 시에만 넥슨이 갱신)
+const DQ_TTL_MS = 10*60e3;      // 스케줄러 캐시 기본 수명 (길드 탭 등). 일퀘 탭은 자동 갱신 없음: 페이지 열 때 + 🔄 버튼
 const GUILD_TTL_MS = 30*60e3;   // 길드 랭킹: 하루 1번(09:30경) 갱신 데이터라 30분 캐시
 const MP_CHAR_DAILY = 7;        // 몬스터파크: 캐릭터당 하루 7회 (스케줄러 max_count 14 = 월드 기준)
 const GUILD = {name:'봉사활동', world:'스카니아'}; // 고정값 (사용자 요청 시 변경)
@@ -908,8 +908,8 @@ async function refreshGuild(force){
 /* 60초 타이머·탭 열기·화면 복귀 시 호출: 열려 있는 탭만 갱신 */
 function tabTick(){
   if(document.hidden) return;
-  if(tab==='daily') refreshSched(dqChars().filter(c=>!S.dq.hide[c.id]));
-  else if(tab==='guild'){ refreshGuild(); refreshSched(S.characters.filter(c=>c.isMain)); }
+  // 일퀘 탭: 자동 갱신 없음 (2026-10-10) — 페이지 열 때 동기화(syncAll, 3초 규칙)가 같은 스케줄러 응답을 저장 + 🔄 버튼
+  if(tab==='guild'){ refreshGuild(); refreshSched(S.characters.filter(c=>c.isMain)); }
 }
 function renderTabView(){ if(tab==='daily') renderDaily(); else if(tab==='guild') renderGuild(); }
 const hhmm = t => { const d=kst(t); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
@@ -941,7 +941,7 @@ function renderDaily(){
   const shown=all.filter(c=>dqEdit||!D.hide[c.id]), hidden=all.length-all.filter(c=>!D.hide[c.id]).length;
   const items=DQ_ITEMS.filter(it=>!D.off[it.id]);
   const newest=Math.max(0,...all.map(c=>schedC[c.id]?.at||0));
-  const status=dqBusy?'<span class="dqspin" aria-hidden="true"></span>갱신 중…':newest?`갱신 ${hhmm(newest)} · 10분마다 자동`:'';
+  const status=dqBusy?'<span class="dqspin" aria-hidden="true"></span>갱신 중…':newest?`갱신 ${hhmm(newest)}`:'';
   const chips=dqEdit?`<div class="dqedit"><span class="muted tiny">표시 항목 (전체 캐릭터)</span><div class="dqchips">${DQ_ITEMS.map(it=>`<button class="dqchip${D.off[it.id]?'':' on'}" data-dqg="${it.id}" style="--c:${it.col}" aria-pressed="${!D.off[it.id]}">${esc(it.label)}</button>`).join('')}</div>
     <div class="muted tiny">카드의 항목을 누르면 그 캐릭터에서만 숨기거나 다시 표시 · 카드의 👁 로 캐릭터 숨기기</div></div>`:'';
   const card=c=>{
@@ -968,7 +968,7 @@ function renderDaily(){
       ${tot?`<span class="dqcnt${done===tot?' full':''}">${done}/${tot}</span>`:''}${dqEdit?`<button class="btn sm plain dqeye" data-dqhide="${c.id}" title="${hid?'이 캐릭터 다시 표시':'이 캐릭터 숨기기'}" aria-label="${hid?'다시 표시':'숨기기'}">${hid?'숨김':'👁'}</button>`:''}</div>
       ${body}</div>`;
   };
-  v.innerHTML=`<div class="card dqtop"><h2>${miniIcon('symsel')} 일퀘 현황 <span class="muted" style="font-weight:500">${esc(today)}</span><span class="hspace"></span><span class="muted tiny dqstat">${status}</span>
+  v.innerHTML=`<div class="card dqtop"><h2>${miniIcon('symsel')} 일퀘 현황 <span class="muted" style="font-weight:500">${esc(today)}</span><span class="hspace"></span><span class="muted tiny dqstat">${status}</span><button class="ibtn sbtn dqsync${dqBusy||syncing?' busy':''}" id="dqSync" type="button" ${dqBusy||syncing?'disabled aria-busy="true"':''} aria-label="일퀘 현황 지금 갱신" title="일퀘 현황 지금 갱신 (넥슨 스케줄러)">${SYNC_SVG}</button>
       <button class="btn sm ${dqEdit?'':'plain'}" id="dqEditBtn" aria-pressed="${dqEdit}">${dqEdit?'완료':'편집'}</button></h2>${chips}
     ${!hasApi()?'<div class="note">넥슨 API 키를 등록하면 메이플 스케줄러에서 일퀘 진행 상황을 실시간으로 불러옵니다. 사이드바 <b>+ 추가</b>에서 계정별 API 키를 등록하세요.</div>':''}</div>
     ${shown.length?`<div class="dqgrid">${shown.map(card).join('')}</div>`:(hasApi()?'<div class="card muted">표시할 캐릭터가 없습니다.</div>':'')}
@@ -1021,10 +1021,11 @@ function render(){ if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   ({boss:renderBoss,total:()=>COMMITTED(renderTotal),daily:renderDaily,guild:renderGuild})[tab](); renderResetInfo(); }
 /* 캐릭터 카드 제목 옆: 🔄 지금 동기화 아이콘 버튼 (API 키가 있을 때만, 넥슨 API 전용 — 구글 드라이브는 헤더 ☁ 버튼) */
+const SYNC_SVG=`<svg class="rot" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 function renderHeaderSync(){
   const b=$('#syncBtn'); if(!b) return; const st=S.settings; b.hidden=!hasApi(); b.disabled=syncing;
   b.classList.toggle('busy',syncing); b.setAttribute('aria-busy',String(syncing));
-  if(!b.querySelector('svg')) b.innerHTML=`<svg class="rot" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`; // 아이콘만 (2026-10-10: 헤더 → 캐릭터 카드 제목 옆)
+  if(!b.querySelector('svg')) b.innerHTML=SYNC_SVG; // 아이콘만 (2026-10-10: 헤더 → 캐릭터 카드 제목 옆)
   b.title=syncing?'동기화 중…':`지금 동기화 (보스 클리어 자동 체크)\n마지막 동기화: ${st.lastSync?hm(st.lastSync)+' KST':'없음'}\n페이지를 열거나 새로고침할 때 자동 (${LOAD_SYNC_GAP_MS/1e3}초 안에 다시 열면 건너뜀)`;
   b.setAttribute('aria-label',syncing?'동기화 중':`지금 동기화 — 마지막 ${st.lastSync?hm(st.lastSync):'없음'}`);
 }
@@ -1306,6 +1307,7 @@ function afterPatchHtml(){
     <div class="pa-total"><span>합계</span><b>${meso(sum('next'))}${dlt(sum('next')-sum('now'),sum('now'))}</b></div>
     <div class="pa-note muted">주간 상위 ${S.settings.weeklyLimit}개 + 월간 보스, 테섭 예정 가격으로 계산</div>`;
 }
+document.addEventListener('click',e=>{ const b=e.target.closest('#dqSync'); if(b&&!b.disabled) refreshSched(dqChars().filter(c=>!S.dq.hide[c.id]),0); }); // 일퀘 🔄 (ttl 0 = 강제)
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]'); if(!t) return; pcTab=t.dataset.pctab; const el=document.querySelector('.pricecard'); if(el) el.outerHTML=priceCard(); });
 function priceCard(){
   const up=(officialInfo&&officialInfo.upcoming)||{};

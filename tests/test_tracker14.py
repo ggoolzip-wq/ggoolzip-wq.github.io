@@ -52,8 +52,8 @@ try:
     check('divider is a short horizontal line, vertically centered', 8<=sep['w']<=20 and 1<=sep['h']<=3 and sep['mid']<6, sep)
     check('no API calls before opening tabs', not sched_calls() and not guild_calls(), CALLS)
     # 2) 일퀘 현황
-    pg.click('[data-tab=daily]'); pg.wait_for_selector('.dqc'); wait_idle(pg)
-    sc=sched_calls(); check('daily tab fetched scheduler once per keyed character', sorted(sc)==['ocid-alt1','ocid-alt2','ocid-b1','ocid-main'], sc)
+    pg.click('[data-tab=daily]'); pg.wait_for_selector('.dqc'); check('opening daily tab → no API call (b42)', not sched_calls(), CALLS); pg.click('#dqSync'); wait_idle(pg)
+    sc=sched_calls(); check('daily 🔄 fetched scheduler once per keyed character', sorted(sc)==['ocid-alt1','ocid-alt2','ocid-b1','ocid-main'], sc)
     cards=pg.eval_on_selector_all('.dqc','e=>e.map(x=>x.dataset.dqchar)'); check('cards in sidebar order, no-key char excluded', cards==['c1','c2','c3','c4'], cards)
     check('footer mentions no-key char', 'API 키가 연결되지 않은 캐릭터 1명' in pg.inner_text('.dqfoot'))
     m=pg.evaluate(CELLS,'c1'); print('c1',m)
@@ -103,9 +103,9 @@ try:
     check('settings persisted after reload', pg.evaluate("S.dq.off.mp===1&&S.dq.hide.c4===1&&S.dq.charOff.c1.cer===1"))
     check('cached (no new scheduler calls within 10 min)', len(sched_calls())==n0 and pg.locator('.dqc').count()==3, sched_calls()[n0:])
     pg.evaluate("schedC.c2.at-=11*60e3; tabTick()"); wait_idle(pg)
-    check('auto refresh only stale char', sched_calls()[n0:]==['ocid-alt1'], sched_calls()[n0:])
-    pg.evaluate("schedC.c4.at-=11*60e3; tabTick()"); wait_idle(pg)
-    check('hidden char not refreshed', sched_calls()[n0:]==['ocid-alt1'], sched_calls()[n0:])
+    check('daily: no timer auto refresh (b42)', sched_calls()[n0:]==[], sched_calls()[n0:])
+    h4=pg.evaluate("S.characters.find(c=>c.id==='c4').ocid"); pg.click('#dqSync'); wait_idle(pg); n1=len(sched_calls())
+    check('🔄 refreshes shown chars only (hidden not refreshed)', len(sched_calls()[n0:])==3 and h4 not in sched_calls()[n0:], sched_calls()[n0:])
     # 5) 길드 현황
     pg.click('[data-tab=guild]'); pg.wait_for_selector('.gtile'); wait_idle(pg)
     gc=guild_calls(); print('guild calls',gc)
@@ -117,7 +117,7 @@ try:
     gt=pg.inner_text('.gcard'); check('guild level/master/date shown', 'Lv.30' in gt and '터래플' in gt and f'기준 {exp}' in gt and '봉사활동' in gt and '스카니아' in gt, gt)
     rows=pg.eval_on_selector_all('.grow-r','e=>e.map(x=>x.innerText.replace(/\\s+/g," ").trim())'); print(rows)
     check('main characters only, with 지하 수로 score from scheduler', len(rows)==1 and '단풍용사' in rows[0] and '23,513' in rows[0] and '플래그' not in rows[0], rows)
-    check('guild tab: no extra scheduler call for main (cached)', sched_calls()[n0:]==['ocid-alt1'], sched_calls()[n0:])
+    check('guild tab: no extra scheduler call for main (cached)', len(sched_calls())==n1, sched_calls()[n1:])
     pg.mouse.move(5,5); shot(pg,'tab_guild.png')
     # 랭킹 미준비 → 어제로 대체
     GUILD_EMPTY.add(today); g0=len(guild_calls())
