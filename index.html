@@ -765,7 +765,7 @@ select.impworld option{color:#111}
 .drop.got{border-color:#3fb96f;background:rgba(63,185,111,.24);box-shadow:0 0 0 1px #3fb96f inset}
 .drop.got .dn{color:#e8fff0}
 .dqtop .dqsync{margin-left:6px;vertical-align:middle}
-.hexastat .hxat{font-size:.66rem;margin-top:2px}
+.cpstat .cpsub{font-size:.64rem;margin-top:1px;line-height:1.3}
 </style>
 </head>
 <body>
@@ -1689,7 +1689,7 @@ async function syncAll(opts={}){
     S.settings.lastSync=Date.now(); save();
     if(!opts.silent || total || assigned || accMsgs.length) toast(`동기화 완료 — 새로 체크된 보스 ${total}개`+(assigned?` · 계정 자동 연결 ${assigned}명`:'')+(errs?` · 일부 캐릭터 실패 ${errs}`:'')+(accMsgs.length?` · 계정 오류: ${accMsgs.join(', ')}`:''));
   }catch(e){ if(!opts.silent) toast('동기화 실패: '+e.message); save(); }
-  finally{ syncing=false; render(); }
+  finally{ syncing=false; render(); cpRefresh(); }
 }
 
 /* =====================================================================
@@ -2142,7 +2142,7 @@ function renderBoss(){
       <div class="stat"><div class="k">이번 주 주간 보스 수익 (이 캐릭터)</div><div class="v acc">${meso(r.meso)}</div></div>
       <div class="stat"><div class="k">주간 보스 처치</div><div class="v">${r.weekly} / ${lim}</div><div class="bar ${r.weekly>lim?'over':''}"><i style="width:${Math.min(100,r.weekly/lim*100)}%"></i></div></div>
       <div class="stat"><div class="k">이번 달 월간 보스</div><div class="v">${monthlyCount(c)} / ${S.settings.monthlyLimit}${r.monthMeso?` <span class="mmeso">${meso(r.monthMeso)}</span>`:''}</div><div class="bar"><i style="width:${Math.min(100,monthlyCount(c)/S.settings.monthlyLimit*100)}%"></i></div></div>
-      ${hexaStat(c)}
+      ${cpStat(c)}
     </div>
    </div>
    <div class="card">
@@ -2551,13 +2551,26 @@ function applyOfficialPrices(pj){
   officialInfo={checkedAt:pj.checkedAt||'', source:pj.source||{}, applied, pending, upcoming, upSource:(pj.upcoming&&pj.upcoming.source)||null};
   return changed;
 }
-/* 헥사 환산: 저장소의 hexa.json {캐릭터이름: {value, updatedAt, snapshot}} — scripts/set_hexa.py 로 갱신 (maplescouter 자동 수집 없음) */
-let hexaData={};
-function loadHexa(){ if(!/^https?:$/.test(location.protocol)) return;
-  fetch('./hexa.json?t='+Math.floor(Date.now()/6e4),{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&typeof j==='object'){ hexaData=j.characters||j; if(tab==='boss') render(); } }).catch(()=>{}); }
-function hexaStat(c){ const h=hexaData[c.name]; const v=h&&h.value!=null&&h.value!==''?h.value:null;
-  const at=v!==null&&h.updatedAt?String(h.updatedAt).replace('T',' ').slice(0,16)+' 갱신':'';
-  return `<div class="stat hexastat"><div class="k">헥사 환산</div><div class="v acc">${v===null?'—':esc(typeof v==='number'?v.toLocaleString():String(v))}</div>${at?`<div class="hxat muted">${esc(at)}</div>`:''}</div>`; }
+/* 최고 전투력: 동기화 서버(Worker, server/cp.js)가 넥슨 Open API 로 프리셋 조합(장비×하이퍼×어빌리티×링크) 최대값을 계산해 D1 에 저장.
+ * 사이트: 로그인(동기화 모드)일 때 GET /api/cp 로 읽고, 캐릭터 동기화가 끝나면 오늘(KST) 아직 계산 안 한 캐릭터만 POST /api/cp (캐릭터당 하루 1번, 서버도 같은 제한). */
+let cpData={}; const CP_CACHE='mapleBossTracker.cp';
+try{ cpData=JSON.parse(localStorage.getItem(CP_CACHE)||'{}')||{}; }catch(e){}
+const kstDay = t => new Date(+t+9*3600e3).toISOString().slice(0,10);
+async function cpLoad(){ if(!SV_ON||!svTok()) return; try{ const r=await svFetch('/api/cp'); cpData=r.items||{}; localStorage.setItem(CP_CACHE,JSON.stringify(cpData)); if(tab==='boss') render(); }catch(e){} }
+let cpBusy=false;
+async function cpRefresh(){ if(cpBusy||!SV_ON||!svTok()) return; cpBusy=true; const today=kstDay(Date.now());
+  try{ for(const c of S.characters){ const a=accOf(c); if(!c.ocid||!a?.key) continue; const x=cpData[c.ocid]; if(x&&kstDay(x.at)===today) continue;
+      try{ const r=await svFetch('/api/cp',{method:'POST',body:{ocid:c.ocid,name:c.name,key:a.key}}); cpData[c.ocid]=r; localStorage.setItem(CP_CACHE,JSON.stringify(cpData)); if(tab==='boss'&&S.activeId===c.id) render(); }
+      catch(e){ if(e.status===429||e.type==='network'||e.type==='interaction_required') break; } } }
+  finally{ cpBusy=false; } }
+const CP_NAMES={equip:'장비',hyper:'하이퍼',ability:'어빌',link:'링크'};
+function cpStat(c){ const x=c.ocid&&cpData[c.ocid]; const v=x&&+x.value>0?+x.value:null;
+  const combo=v?Object.entries(CP_NAMES).filter(([k])=>x.combo&&x.combo[k]).map(([k,n])=>`${n} ${x.combo[k]}`).join(' · '):'';
+  const at=v&&x.at?(d=>`${d.toISOString().slice(0,10)} ${d.toISOString().slice(11,16)} 갱신`)(new Date(+x.at+9*3600e3)):'';
+  const tip=v?`최고 전투력 (추정) — 프리셋 조합 중 최대
+현재 프리셋 전투력(넥슨 API): ${x.apiCP?Number(x.apiCP).toLocaleString():'-'}
+${combo}`:'동기화 서버 로그인 후 캐릭터 동기화 때 계산 (하루 1번)';
+  return `<div class="stat cpstat" title="${esc(tip)}"><div class="k">최고 전투력</div><div class="v acc">${v===null?'—':meso(v)}</div>${v?`<div class="cpsub muted">${esc(combo)}</div><div class="cpsub muted">${esc(at)}</div>`:''}</div>`; }
 function loadOfficialPrices(){
   try{ const c=JSON.parse(localStorage.getItem(PRICES_CACHE_KEY)||'null'); if(c) applyOfficialPrices(c); }catch(e){}
   if(!/^https?:$/.test(location.protocol)) return; // 파일로 연 경우: 내장 기본값 사용
@@ -3047,7 +3060,7 @@ async function svLogin(key,accId){
   }catch(e){ if(e.code==='need_invite') localStorage.removeItem(SV_DEVICE_KEY); gd.svErr=e.message; gdSet('off'); if($('#svGate')) svGate(); else gdMenu(true); }
 }
 function svWipeLocal(){ // 이 브라우저의 보스 데이터 비우기 (테마·기기 표·서버 주소는 유지)
-  const th=S.theme; clearTimeout(gd.timer); gd.timer=null; localStorage.removeItem(GD_BASE_KEY); localStorage.removeItem(SV_SUBSIG_KEY);
+  const th=S.theme; clearTimeout(gd.timer); gd.timer=null; localStorage.removeItem(GD_BASE_KEY); localStorage.removeItem(SV_SUBSIG_KEY); localStorage.removeItem(CP_CACHE); cpData={};
   const d=defaultState(); d.theme=th; gdLoad(d); lastSig=contentSig(S);
 }
 function svGate(){ // 서버 모드 입장 화면: ① 초대 비밀번호 → ② 대표 키 → ③ 로그인 성공 후에만 사이트 내용 (세션이 있으면 바로 사이트)
@@ -3330,7 +3343,7 @@ $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
 load();
 if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
-checkResets(); loadOfficialPrices(); loadHexa(); save(); applyTheme(); render();
+checkResets(); loadOfficialPrices(); cpLoad(); save(); applyTheme(); render();
 /* 페이지를 열거나 새로고침할 때마다 넥슨 API 동기화 1회 (2026-10-10 사용자 요청) — 🔄 버튼과 같은 syncAll(넥슨 API 전용, 구글 드라이브·로그인 창과 무관).
  * 새로고침을 연달아 해도 API 호출량을 아끼도록: 마지막 동기화(완료) 또는 마지막 '열 때 동기화' 시작이 LOAD_SYNC_GAP_MS(3초, 사용자 결정) 안이면 건너뜀.
  * 시작 시각을 따로 저장(LOAD_SYNC_KEY)하는 이유: 동기화 도중 새로고침하면 lastSync 가 안 바뀌어 매번 다시 시작되기 때문. */

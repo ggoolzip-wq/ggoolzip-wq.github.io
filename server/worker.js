@@ -1,3 +1,4 @@
+import { bestCP, fetchCPData } from './cp.js';
 /* 보스 캐릭터 관리 — 동기화 서버 (Cloudflare Workers + D1)
  *
  * 로그인: 넥슨 Open API 키 → 서버가 넥슨 /maplestory/v1/character/list 로 키를 확인하고 account_id 를 얻음
@@ -27,6 +28,8 @@
  *   GET    /api/state                              (인증) → {rev, updatedAt, savedAt, data|null}
  *   PUT    /api/state         {baseRev, updatedAt, data} (인증) → {rev, savedAt} | 409 {rev, updatedAt, savedAt, data}
  *   DELETE /api/account                            (인증) 내 데이터·세션·계정 연결 전부 삭제
+ *   POST   /api/cp            {ocid, name, key, force?} (인증) 최고 전투력 계산 → D1 cp 표 (캐릭터당 하루 1번, KST 날짜 기준; 키는 이 요청에만 쓰고 저장 안 함)
+ *   GET    /api/cp                                 (인증) → {items:{ocid:{name,value,combo,apiCP,k,at}}}
  *   GET    /api/health
  */
 const SESSION_DAYS = 365;
@@ -41,6 +44,7 @@ const LIMITS = {                                               // 세션별·사
   link:  { n: 10, windowMs: 10 * 60e3 },
 };
 const DEVICE_DAYS = 365;
+const CP_LIMIT = { n: 60, windowMs: 10 * 60e3 };              // 최고 전투력 계산 (세션별)
 const DAY = 86400e3;
 
 const enc = new TextEncoder();
@@ -260,6 +264,26 @@ async function route(req, env) {
       .bind(me.userId, sealed.iv, sealed.ct, now).run();
     return json(200, { subs: out.map(({ ah, label }) => ({ ah, label })), accounts: await acctList(env, me.userId) });
   }
+  if (p === '/api/cp' && M === 'GET') {
+    const rows = (await env.DB.prepare('SELECT ocid,name,value,combo,api_cp,k,at FROM cp WHERE user_id=?').bind(me.userId).all()).results;
+    return json(200, { items: Object.fromEntries(rows.map(r => [r.ocid, { name: r.name, value: r.value, combo: JSON.parse(r.combo || '{}'), apiCP: r.api_cp, k: r.k, at: r.at }])) });
+  }
+  if (p === '/api/cp' && M === 'POST') {
+    const b = await readBody(req);
+    const ocid = String(b.ocid || '').trim(), key = String(b.key || '').trim();
+    if (!ocid || !key) throw new HttpError(400, 'bad_cp', 'ocid·key 필요');
+    const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+    const old = await env.DB.prepare('SELECT name,value,combo,api_cp,k,at,day FROM cp WHERE user_id=? AND ocid=?').bind(me.userId, ocid).first();
+    const out = r => ({ ocid, name: r.name, value: r.value, combo: typeof r.combo === 'string' ? JSON.parse(r.combo || '{}') : r.combo, apiCP: r.api_cp, k: r.k, at: r.at });
+    if (old && old.day === day && !b.force) return json(200, { ...out(old), cached: true });
+    await limit(env, 'cp:' + sk, CP_LIMIT, '전투력 계산 요청이 너무 많습니다 — 잠시 뒤 다시 시도하세요');
+    let r;
+    try { r = bestCP(await fetchCPData(ocid, key)); } catch (e) { throw new HttpError(502, 'nexon_failed', '넥슨 API 조회 실패: ' + String(e.message || e).slice(0, 120)); }
+    const row = { name: String(b.name || '').slice(0, 40), value: r.best, combo: JSON.stringify(r.combo), api_cp: r.apiCP, k: r.k, at: Date.now() };
+    await env.DB.prepare('INSERT INTO cp (user_id,ocid,name,value,combo,api_cp,k,at,day) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id,ocid) DO UPDATE SET name=excluded.name,value=excluded.value,combo=excluded.combo,api_cp=excluded.api_cp,k=excluded.k,at=excluded.at,day=excluded.day')
+      .bind(me.userId, ocid, row.name, row.value, row.combo, row.api_cp, row.k, row.at, day).run();
+    return json(200, out(row));
+  }
   if (p === '/api/logout' && M === 'POST') { await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(me.th).run(); return json(200, { ok: true }); }
   if (p === '/api/logout-all' && M === 'POST') { const r = await env.DB.prepare('DELETE FROM sessions WHERE user_id=?').bind(me.userId).run(); return json(200, { ok: true, removed: r.meta?.changes || 0 }); }
   if (p === '/api/me' && M === 'GET') {
@@ -287,7 +311,7 @@ async function route(req, env) {
     return json(200, { rev, savedAt: now, updatedAt: upd });
   }
   if (p === '/api/account' && M === 'DELETE') {
-    await env.DB.batch(['state', 'state_history', 'sessions', 'accounts', 'keyvault'].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(me.userId))
+    await env.DB.batch(['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'cp'].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(me.userId))
       .concat(env.DB.prepare('DELETE FROM users WHERE id=?').bind(me.userId)));
     return json(200, { ok: true });
   }

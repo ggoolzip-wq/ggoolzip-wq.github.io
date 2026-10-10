@@ -60,3 +60,17 @@ CREATE TABLE IF NOT EXISTS keyvault (
   ct         TEXT NOT NULL,
   updated_at INTEGER NOT NULL
 );
+
+-- 최고 전투력 (넥슨 Open API 로 서버에서 계산, cp.js). 캐릭터(ocid)당 하루 1번 갱신. 키는 저장하지 않음
+CREATE TABLE IF NOT EXISTS cp (
+  user_id  TEXT NOT NULL,
+  ocid     TEXT NOT NULL,
+  name     TEXT,
+  value    INTEGER NOT NULL,          -- 최고 전투력 (추정)
+  combo    TEXT,                      -- {"equip":2,"hyper":3,"ability":1,"link":1}
+  api_cp   INTEGER,                   -- 계산 시점 넥슨 API 전투력 (현재 프리셋)
+  k        REAL,                      -- 보정 계수
+  at       INTEGER NOT NULL,
+  day      TEXT NOT NULL,             -- KST 날짜 (하루 1번 제한)
+  PRIMARY KEY (user_id, ocid)
+);

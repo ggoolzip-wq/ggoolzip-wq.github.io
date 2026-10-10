@@ -278,6 +278,13 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 캐릭터 정렬은 목록 왼쪽 아래(#charFoot, 쪽 버튼과 한 줄): 기본순 / 보스 미완료순 / 검마 정렬순(이번 달 검은 마법사 미처치 먼저, c.monthly.blackmage; 완료 캐릭터는 흐리게 + '★이번 달 검마 완료' 덮개). 기본순 외에는 순서 바꾸기 잠금.
 - 버그 수정: update_prices.py 가 가격이 같으면 7일마다만 checkedAt 를 바꿔 '변경 없음'으로 끝나던 문제 → 확인 성공 때마다 checkedAt=오늘(바뀌면 커밋). 피드 작업의 테섭 '결정석 변경 없음' 경로도 checkedAt=오늘.
 - b42: 일퀘 현황 10분 자동 갱신(탭 열기·60초 타이머·화면 복귀) 삭제, '10분마다 자동' 문구 삭제 → 제목 옆 🔄(#dqSync, 캐릭터 동기화와 같은 SYNC_SVG·.ibtn.sbtn; 누르면 보이는 캐릭터 스케줄러 강제 갱신). 페이지 열 때는 보스 동기화(syncAll, 3초 규칙, 넥슨 API 전용·로그인 창 없음)가 같은 스케줄러 응답으로 일퀘 캐시도 채움. 길드 탭 자동 갱신은 그대로. test_tracker33.
-- 헥사 환산 (maplescouter 자동 수집 없음): 캐릭터 정보 칸의 '전체 캐릭터 주간 합계' → '헥사 환산' 값 + 작은 글씨 'YYYY-MM-DD HH:MM 갱신', 자료 없으면 '—'. 자료는 저장소 hexa.json {"characters": {이름: {value, updatedAt, snapshot}}} (pages_dist.sh 에 포함, 사이트가 no-cache 로 읽음).
-  - 기록: `NEXON_API_KEY=… python3 scripts/set_hexa.py 림강혼망 123456` (현재 KST 시각 + 넥슨 API 스냅샷: level, equipment 해시, hexa 해시(코어+스탯), combatPower). 키 없으면 경고 후 값만, `--no-snapshot` 으로 생략. 이후 commit/push.
-  - 변경 확인: `NEXON_API_KEY=… python3 scripts/check_hexa.py [이름…]` → 'SAME 이름' / 'CHANGED 이름 level,equipment,…', 종료 코드 0=모두 같음, 1=바뀐 것 있음, 2=오류. 바뀐 캐릭터만 브라우저에서 환산 확인 후 set_hexa.py. tests/test_hexa.py, test_tracker34.
+
+## 2026-10-10 b43 — 최고 전투력 (헥사 환산·hexa.json·set_hexa/check_hexa 삭제)
+- 캐릭터 정보 칸: '최고 전투력' 값(억/만) + 작은 글씨 조합('장비 2 · 하이퍼 3 · 어빌 1 · 링크 1') + 'YYYY-MM-DD HH:MM 갱신'. 자료 없으면 '—'. 툴팁에 현재 프리셋 전투력(API).
+- 계산: Worker server/cp.js (넥슨 Open API 만). 엔드포인트 POST /api/cp {ocid,name,key} → D1 `cp` 표(user_id, ocid PK), GET /api/cp. 키는 그 요청에만 쓰고 저장 안 함. 캐릭터당 KST 하루 1번(서버가 day 로 막음, 같은 날은 저장값 반환), 세션당 10분 60회 제한.
+  - 호출 API(캐릭터당 7회): character/basic, stat, hyper-stat(프리셋 1~3), item-equipment(프리셋 1~3), ability(프리셋), link-skill(프리셋), set-effect.
+  - 모델: (4×주+부)/100 × 공(마) × (1+(뎀+보공)/100) × (1.35+크뎀/100). 보정 계수 k = API 전투력/모델(현재) → 현재 조합은 API 값과 정확히 같음. 프리셋 조합 81개(장비×하이퍼×어빌×링크)는 현재 대비 변화량만 반영하고 최대값.
+  - 근사(정확한 교체가 어려운 부분): 스탯 %적용 기본값·스탯%·공% 는 알 수 있는 원천(장비·어빌·링크·세트·AP)으로 추정, 하이퍼 스탯 수치는 %미적용, 설명 안 되는 나머지는 고정 · 세트는 칠흑/에테르넬/마이스터만 이름으로 다시 셈(그 외 세트 개수 유지) · 조건부 효과(N초 동안·전투 돌입 시 등) 제외 · 최종뎀·방무·유니온(프리셋 없음)·심볼·펫·캐시는 프리셋 무관이라 고정.
+  - 림강혼망(렌, 2026-10-10 실제 API 응답으로 로컬 계산): 현재(장비1·하이퍼1·어빌3·링크2) API 226,966,178 = 모델 재현(보정 k=0.7654) → 최고 433,060,423 (장비 2 · 하이퍼 3 · 어빌 1 · 링크 1). k 가 1과 23% 차이 = 공식에 안 들어간 직업/숨은 값 → 프리셋 간 비율은 맞지만 절대값은 추정.
+  - 스케줄(cron)은 안 씀: 서버는 사용자 키를 저장하지 않으므로(대표 키 원본 저장 금지 원칙) 사용자 키로 서버 혼자 조회할 수 없음 → 사이트에서 캐릭터 동기화가 끝날 때(syncAll finally → cpRefresh) 오늘 아직 계산 안 한 캐릭터만 요청. 동기화 서버 로그인(bossmaple / ?sync=test) 때만, github.io(드라이브 모드)는 '—'.
+  - 테스트: tests/test_cp.mjs (node), test_tracker34. D1 표는 원격에 CREATE TABLE IF NOT EXISTS 로 추가함.
