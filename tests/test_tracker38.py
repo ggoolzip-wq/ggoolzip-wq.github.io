@@ -27,7 +27,7 @@ try:
     pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900)
     hs=[h.replace('\n',' ').strip() for h in pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.innerText.trim())')]
     def idx(t): return next((i for i,h in enumerate(hs) if t in h),-1)
-    order=['메소왕','득템왕','에픽빔 본 횟수','물욕 블빵 승률','블빵 이겨서 얻은 아이템들','블빵 져서 잃은 아이템들','보스 별 누적 획득 아이템','시드링 획득 타율','총 아이템 획득량']
+    order=['메소왕','득템왕','에픽빔왕','물욕 블빵 승률','블빵 이겨서 얻은 아이템들','블빵 져서 잃은 아이템들','보스 별 누적 획득 아이템','시드링 획득 타율','총 아이템 획득량']
     ii=[idx(t) for t in order]
     check('섹션 순서 (메소왕→득템왕→에픽빔→블빵 승률→이긴→진→보스별→시드링 획득 타율→총 아이템)', all(x>=0 for x in ii) and ii==sorted(ii) and ii[-2]+1==ii[-1] and '캐릭터별 누적' not in ' '.join(hs), list(zip(order,ii)))
     check("시드링: '대박 확률' 없음", '대박 확률' not in pg.inner_text('#view'))
@@ -45,7 +45,7 @@ try:
     r2=pg.eval_on_selector_all('#mesoKing tbody tr:not(.rkpad)','e=>e.map(x=>x.children[0].innerText.trim()+" "+x.children[1].innerText.trim())')
     check('2쪽 = 11~12위', r2==['11 캐릭02','12 캐릭01'], r2)
     lk=pg.eval_on_selector_all('#lootKing tbody tr','e=>e.map(x=>x.children[1].innerText.replace(/\\s+/g," ").trim())')
-    check('득템왕: 승리·분배·1인만 셈, 패배·꽝 제외 (c3=3, c5=2, c9=1, c7 없음)', [x.split(' (')[0].split()[-1] for x in lk]==['캐릭03','캐릭05','캐릭09'] and lk[0].endswith('(3점)') and lk[1].endswith('(2점)'), lk)
+    check('득템왕: 승리·분배·1인만 셈, 패배·꽝 제외 (c3=3, c5=2, c9=1, c7 없음)', [x.split('(')[0].split()[-1] for x in lk]==['캐릭03','캐릭05','캐릭09'] and lk[0].endswith('(3회)') and lk[1].endswith('(2회)'), lk)
     ch=pg.inner_text('#lootKing'); check('득템왕 아이템 칩 xN (리4 결과로, 꽝/패배 없음)', '리스트레인트 링 4레벨' in ch and '죽음의 맹세' not in ch and '꽝' not in ch and pg.locator('#lootKing h2 img').count()==1, ch)
     pg.locator('#lootKing').screenshot(path='/workspace/shots/b52_loot.png')
     st=pg.evaluate("bbangStats(totalData())")

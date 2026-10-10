@@ -714,3 +714,22 @@ tr.rkpad td{border-color:transparent}
 .pc-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .pc-mine{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none}
 .pc-mine input{margin:0;cursor:pointer}
+
+/* b55 */
+.spk{position:relative}
+.spk::before,.spk::after{content:"✦";position:absolute;color:currentColor;font-size:.62em;pointer-events:none;animation:spk 1.8s ease-in-out infinite;text-shadow:0 0 6px currentColor}
+.spk::before{left:-.75em;top:-.35em}
+.spk::after{right:-.8em;bottom:-.2em;animation-delay:.9s}
+@keyframes spk{0%,100%{opacity:0;transform:scale(.4) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(45deg)}}
+.rkico{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;flex:none}
+.rkico img{max-width:30px;max-height:30px}
+.bdn{color:#fff}
+.dlv-easy{color:#4db8ff}.dlv-normal{color:#7ed957}.dlv-hard{color:#ff4d4d}.dlv-extreme{color:#ff6a00}.dlv-chaos{color:#c9a6ff}
+.md-gold .bdn,.md-silver .bdn,.md-bronze .bdn{color:#fff}
+.epline{font-size:.85rem;margin:-4px 0 8px}
+.epgold{font-size:1.3rem;font-weight:900;background:linear-gradient(100deg,#b8860b,#ffd54a 30%,#fff6c2 45%,#ffd54a 60%,#b8860b);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 6px rgba(255,200,60,.7));animation:epg 2.4s linear infinite}
+@keyframes epg{to{background-position:-250% 0}}
+.misstbl td{vertical-align:middle}
+#missItems .gray img,#missItems h2 .gray .ric{filter:grayscale(1)}
+#bossKing .spk{color:#fff}
+.rknm{display:inline-flex;align-items:baseline;gap:5px}

@@ -93,21 +93,21 @@ try:
     av=pg.evaluate("(()=>{const a=document.querySelector('#mesoKing .rkname .avatar');const l=document.querySelector('#charList .avatar');return a&&l?[a.getBoundingClientRect().width,l.getBoundingClientRect().width]:null})()")
     check('1st place portrait in 메소왕 present (b52)', av and av[0]>=30 or abs(av[0]-av[1])<1, av)
     t=pg.inner_text('#epicCard')
-    check("'에픽빔 본 횟수' with chosen item + heading sum", '에픽빔 본 횟수' in t and '물욕' not in t and '혼돈의 칠흑 장신구 상자' in t and pg.locator('.epsum').count()==1)
+    check("b55 '에픽빔왕' + 누적 횟수 + chosen item", '에픽빔왕' in t and '혼돈의 칠흑 장신구 상자' in t and pg.locator('.epgold').count()==1)
     shot(pg.locator('#view'),'b28_total.png')
     # b29: 에픽빔 — 제목 옆 합계(오로라), 목록 개수는 선홍색, 저장 데이터와 일치
     pg.evaluate("S.characters[0].drops['seren|mitra']=1; S.characters[0].drops['zakum|papmark']=1; save(); render()"); pg.wait_for_timeout(200)
     exp=pg.evaluate("(()=>{let n=0;for(const c of S.characters) for(const m of [c.drops||{},c.mdrops||{}]) for(const [k,v] of Object.entries(m)){const it=parseIK(k).it; if(ITEMS[it]&&!isRing(it)) n+=+v;} return n})()")
-    sm=pg.inner_text('.epsum'); items=pg.eval_on_selector_all('.card:has(.epsum) .totloot .lx',"e=>e.map(x=>[x.textContent,getComputedStyle(x).color,getComputedStyle(x).backgroundClip])")
-    check('에픽빔 heading sum = stored non-ring drops, shimmering sky-blue gradient + glow + shine', sm==f'{exp}' and exp==3 and pg.evaluate("(e=>getComputedStyle(e).backgroundClip==='text'&&getComputedStyle(e).filter.includes('drop-shadow')&&getComputedStyle(e).animationName.includes('eppearl'))(document.querySelector('.epsum'))"), (sm,exp))
-    check('per-item counts crimson, no gradient, sum matches', all(c=='rgb(224, 17, 95)' and bc!='text' for _,c,bc in items) and sum(int(t[1:]) for t,_,_ in items)==exp, items)
-    pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b29_epic.png') if SHOTDIR else None
+    sm=pg.inner_text('.epgold')
+    check('에픽빔 누적 횟수 = stored non-ring drops (b55 gold)', sm==f'{exp}' and exp==3, (sm,exp))
+    pass
+    pass
     # b31
     pg.evaluate("S.characters[0].drops['kaling|r_white']=1; S.characters[0].dropOut['kaling|r_white']=['r4']; S.history.push({week:'2026-10-01',weeklyOnly:true,total:0,perChar:[{id:'c1',name:'단풍용사',meso:0,bosses:['카링(하드)'],items:{'kaling|chaosbox':1,'seren|mitra':1},outcomes:{'kaling|chaosbox':['cb:sos']}}]}); save(); render()"); pg.wait_for_timeout(200)
     h=pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.textContent.trim())')
     check('renamed headings', any(x.startswith('📈 주별 누적 결정석 메소') for x in h) and '메소왕' in h and any(x.startswith('득템왕') for x in h), h)
-    order=[x for x in h if x.startswith('에픽빔') or x.endswith('보스 별 누적 획득 아이템') or x.endswith('총 아이템 획득량')]
-    check('new sections below 에픽빔 in order', len(order)==3 and order[0].startswith('에픽빔') and order[1].endswith('획득 아이템') and order[2].endswith('획득량'), order)
+    order=[x for x in h if x.endswith('에픽빔왕') or x.endswith('보스 별 누적 획득 아이템') or x.endswith('총 아이템 획득량')]
+    check('new sections below 에픽빔 in order', len(order)==3 and order[0].endswith('에픽빔왕') and order[1].endswith('획득 아이템') and order[2].endswith('획득량'), order)
     rows=pg.eval_on_selector_all('.bossloot .blrow','e=>e.map(x=>x.innerText.split(String.fromCharCode(10)).join(" "))')
     kal=[r for r in rows if r.startswith('카링')]
     check('per boss+difficulty rows (카링 하드 from history tag / 카링 노멀 current), chaos as accessory, ring box as box', any('하드' in r and '고통의 근원 x1' in r for r in kal) and any('노말' in r and '마력이 깃든 안대 x1' in r and '백옥의 보스 반지 상자 x1' in r for r in kal) and any(r.startswith('선택받은 세렌') and '미트라의 분노 선택 상자 x2' in r for r in rows) and pg.locator('.bossloot .blrow .bicon').count()>=2, rows)
@@ -123,12 +123,12 @@ try:
     exp4=pg.evaluate("(()=>{const p=ring4('r_white');return [(p.r4/100).toFixed(2),(p.c4/100).toFixed(2)]})()")
     check('시드링: no (결과를 기록한 N회 기준), shows 기댓값 = boxes × official prob', '결과를 기록한' not in rs and f'기댓값 리4 {exp4[0]}개 · 컨4 {exp4[1]}개' in rs, (rs,exp4))
     pg.locator('.card:has(.ringsum)').screenshot(path='/workspace/shots/b32_seedring.png') if SHOTDIR else None
-    pg.locator('.card:has(.epsum) h2').screenshot(path='/workspace/shots/b32_epic.png') if SHOTDIR else None
-    pg.locator('.card:has(.epsum)').screenshot(path='/workspace/shots/b39_epic.png') if SHOTDIR else None
-    bm=pg.evaluate("(()=>{const e=document.querySelector('.epsum'),s=getComputedStyle(e),n=document.querySelector('.eph .ept');return {rays:!!document.querySelector('.epbeam'),bg:s.backgroundImage,clip:s.webkitBackgroundClip||s.backgroundClip,anim:s.animationName,filt:s.filter,ff:s.fontFamily==getComputedStyle(n).fontFamily}})()")
-    check('epic sum: pearl gradient (white→sky→violet) + glow + shimmer, no rays, same font', not bm['rays'] and 'linear-gradient' in bm['bg'] and 'text' in bm['clip'] and 'eppearl' in bm['anim'] and 'drop-shadow' in bm['filt'] and bm['ff'], bm)
-    tst=pg.evaluate("(()=>{const t=getComputedStyle(document.querySelector('.eph .ept')),h=getComputedStyle(document.querySelector('.eph')),o=getComputedStyle(document.querySelector('#view .card h2:not(.eph)')),a=getComputedStyle(document.querySelector('.eph'),'::after'),n=getComputedStyle(document.querySelector('.epsum')),r=getComputedStyle(document.querySelector('.totloot .lx'));return {clip:t.backgroundClip,filter:t.filter,anim:t.animationName,after:a.content,font:h.fontFamily===o.fontFamily&&t.fontFamily===o.fontFamily&&t.fontWeight===h.fontWeight,nfont:n.fontFamily===r.fontFamily&&n.fontWeight===r.fontWeight}})()")
-    check('에픽빔 title plain like other headings (no glow/gradient/✦); number uses page number font', tst['clip']!='text' and tst['filter']=='none' and tst['anim']=='none' and tst['after'] in ('none','normal') and tst['font'] and tst['nfont'], tst)
+    pass  # b55: 예전 에픽빔 합계 스타일 검사 삭제
+    pass  # b55: 예전 에픽빔 합계 스타일 검사 삭제
+    pass  # b55: 예전 에픽빔 합계 스타일 검사 삭제
+    pass  # b55: 예전 에픽빔 합계 스타일 검사 삭제
+    pass  # b55: 예전 에픽빔 합계 스타일 검사 삭제
+    pass  # b55: 예전 에픽빔 합계 스타일 검사 삭제
     pg.locator('.card:has(h2:has-text("캐릭터별 누적"))').screenshot(path='/workspace/shots/b32_chartable.png') if SHOTDIR else None
     # 탭 이동 시 저장 묻기
     pg.evaluate('pend=null;save()'); pg.click('[data-tab="boss"]'); pg.wait_for_timeout(200)

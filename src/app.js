@@ -654,13 +654,13 @@ function outHtml(list, n, compact){
 // 주간 기록: 주간 보스 결정석 수익 + 주간 보스 획득 아이템 (월간 보스는 monthSummary 로 따로)
 function weekSummary(wid){
   const a=allRevenue();
-  const perChar=a.per.map(p=>({id:p.c.id, name:p.c.name, job:p.c.job, world:p.c.world, meso:p.r.meso, count:p.r.wlist.length, bosses:p.r.wlist.map(bossTag), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes)}))(charDrops(p.c,'weekly'))}));
+  const perChar=a.per.map(p=>({id:p.c.id, name:p.c.name, job:p.c.job, world:p.c.world, meso:p.r.meso, count:p.r.wlist.length, bosses:p.r.wlist.map(bossTag), bvals:p.r.wlist.map(x=>x.counted?x.value:0), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes)}))(charDrops(p.c,'weekly'))}));
   return {week:wid, weeklyOnly:true, total:a.total, cleared:a.per.reduce((s,p)=>s+p.r.wlist.length,0), crystals:a.count, items:perChar.reduce((s,p)=>s+itemSum(p.items),0), perChar};
 }
 function monthSummary(mid){
   const a=allRevenue();
   return {month:mid, total:a.monthTotal, cleared:a.per.reduce((s,p)=>s+p.r.mlist.length,0),
-    perChar:a.per.filter(p=>p.r.mlist.length||itemSum(cleanItems(p.c.mdrops))).map(p=>({id:p.c.id, name:p.c.name, meso:p.r.monthMeso, bosses:p.r.mlist.map(bossTag), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes)}))(charDrops(p.c,'monthly'))}))};
+    perChar:a.per.filter(p=>p.r.mlist.length||itemSum(cleanItems(p.c.mdrops))).map(p=>({id:p.c.id, name:p.c.name, meso:p.r.monthMeso, bosses:p.r.mlist.map(bossTag), bvals:p.r.mlist.map(x=>x.counted?x.value:0), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes)}))(charDrops(p.c,'monthly'))}))};
 }
 /* 획득 아이템 줄 (모든 화면 공통 형식): [아이콘] 아이템 이름 (N인 분배) ×개수 · 반지 상자는 결과 집계(리4·컨4·꽝·미기록)
  * byBoss: 보스별로 따로 (보스 이름 표시) / 기본: 아이템 + 인원별 합계 */
@@ -1417,7 +1417,7 @@ const lootIco0 = k => /^cb:/.test(k)?itemIcon(k.slice(3)) : k==='ring:r4'?miniIc
 const lootOrd = k => /^x:/.test(k)?Object.keys(ITEMS).indexOf(k.slice(2))+.5:lootOrd0(lootBase(k))+({w:.001,l:.002}[lootSf(k)]||0);
 const lootOrd0 = k => /^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*(1+CHAOS_PICK.indexOf(k.slice(3))) : /^ring:/.test(k)?-1+(k==='ring:c4'?.5:0) : Object.keys(ITEMS).indexOf(k);
 const modeTag = k => lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:'';
-const lootChips = m => `<span class="loots">${Object.keys(m).filter(k=>m[k]>0).sort((a,b)=>lootOrd(a)-lootOrd(b)).map(k=>`<span class="loot${lootSf(k)?' md-'+lootSf(k):''}">${/^cb:/.test(k)?miniIcon('chaosbox')+' - ':''}${lootIco(k)}<span class="ln">${esc(lootName(k))}${lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:''}</span> <b class="lx">${xN(m[k])}</b></span>`).join('')}</span>`;
+const lootChips = m => `<span class="loots">${Object.keys(m).filter(k=>m[k]>0).sort((a,b)=>itemCmp(a,b)).map(k=>`<span class="loot${lootSf(k)?' md-'+lootSf(k):''}">${/^cb:/.test(k)?miniIcon('chaosbox')+' - ':''}${lootIco(k)}<span class="ln">${esc(lootName(k))}${lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:''}</span> <b class="lx">${xN(m[k])}</b></span>`).join('')}</span>`;
 // 시드링 기댓값: 상자 종류별 (획득 상자 수 × 상자 1개의 리4/컨4 확률) 합. 확률 = BOX_INFO (넥슨 공식 확률 공개, 툴팁과 같은 값)
 function ringExp(T){ const e={r4:0,c4:0}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); const p=ring4(it); if(p){ e.r4+=I.n*p.r4/100; e.c4+=I.n*p.c4/100; } }); return e; }
 const fmtExp=v=>(Math.round(v*100)/100).toFixed(2);
@@ -1459,8 +1459,8 @@ const perCharItems = list => (list||[]).filter(p=>itemSum(p.items)).map(p=>`<div
 let rankPage={meso:1,loot:1}; const RANK_PER=10;
 const medal = r => r===1?'gold':r===2?'silver':r===3?'bronze':'';
 const crown = '<span class="crown" aria-hidden="true">👑</span>';
-function rankName(o,r){ const c=S.characters.find(x=>x.id===o.id); const m=medal(r);
-  return `<span class="rkname ${m?'md-'+m:''}">${m&&c?avatar(c,'rkav'):''}${r===1?crown:''}<b>${esc(o.name)}</b></span>`; }
+function rankName(o,r,extra){ const c=S.characters.find(x=>x.id===o.id); const m=medal(r);
+  return `<span class="rkname ${m?'md-'+m:''}">${m&&c?avatar(c,'rkav'):''}${r===1?crown:''}<span class="rknm"><b class="${m?'spk':''}">${esc(o.name)}</b>${extra?`<b class="rkcnt">${extra}</b>`:''}</span></span>`; }
 const rankNo = r => `<span class="rkno ${medal(r)?'md-'+medal(r):''}">${r===1?crown:''}${r}</span>`;
 function rankPager(kind,n){ const pages=Math.ceil(n/RANK_PER); if(pages<=1) return ''; const cur=Math.min(rankPage[kind],pages);
   return `<div class="cpager rkpager">${Array.from({length:pages},(_,i)=>`<button type="button" class="cpg${i+1===cur?' on':''}" data-rkpage="${kind}|${i+1}"${i+1===cur?' aria-current="page"':''}>${i+1}</button>`).join('')}</div>`; }
@@ -1481,10 +1481,54 @@ function kingHtml(T){
   return `<div class="card kingcard" id="mesoKing"><h2>${miniIcon('meso')} 메소왕</h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="num">누적 주간 보스메소량</th><th class="num">누적 월간 보스메소량</th><th class="num">누적 합계</th></tr></thead><tbody>
     ${rankSlice('meso',mr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)}</td><td class="num">${meso(o.week)}</td><td class="num">${o.month?meso(o.month):'-'}</td><td class="num"><b>${meso(o.week+o.month)}</b></td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('meso',mr).length,mr.length,5)}
     </tbody></table></div>${rankPager('meso',mr.length)}</div>
-  <div class="card kingcard" id="lootKing"><h2>${itemIcon('oath')} 득템왕 <span class="muted" style="font-weight:500">(아이템 1개 당 1점)</span></h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th>누적 획득 아이템</th></tr></thead><tbody>
-    ${rankSlice('loot',lr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)} <span class="score">(${o.ln}점)</span></td><td>${lootChips(o.loot)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('loot',lr).length,lr.length,3)}
+  <div class="card kingcard" id="lootKing"><h2>${itemIcon('oath')} 득템왕</h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th>누적 획득 아이템</th></tr></thead><tbody>
+    ${rankSlice('loot',lr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r,`(${o.ln}회)`)}</td><td>${lootChips(o.loot)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('loot',lr).length,lr.length,3)}
     </tbody></table></div>${rankPager('loot',lr.length)}</div>`;
 }
+/* ---------- b55: 순위 표 공통 · 보스왕 · 에픽빔왕 · 상자깡 · 못 가진 아이템 ---------- */
+// 아이템 우선순위 (동점·목록 정렬): 1 광휘 · 2 신념 연마석/칠흑(루컨마·커포 제외) · 3 생명 연마석/리4/컨4/생명 상자 · 4 소울 에테르 4→1, 백옥 상자 · 5 흑옥 상자 · 6 나머지
+function itemPri(k){ const b=String(k).replace(/^cb:/,'').replace(/@[wl]$/,''); const I=ITEMS[b];
+  if(I&&I.set==='광휘') return 1;
+  if(b==='g_faith'||(I&&I.set==='칠흑'&&b!=='lcm'&&b!=='cfe')) return 2;
+  if(['g_life','ring:r4','ring:c4','r_life'].includes(b)) return 3;
+  if(/^se[1-4]$/.test(b)) return 4+(4-+b[2])*.1; if(b==='r_white') return 4.5;
+  if(b==='r_black') return 5; return 6; }
+const itemCmp = (a,b) => itemPri(a)-itemPri(b)||lootOrd(a)-lootOrd(b);
+const DIFF_CLS = {easy:'easy',normal:'normal',hard:'hard',extreme:'extreme',chaos:'chaos'};
+const DK = Object.fromEntries(Object.entries(D).map(([k,v])=>[v,k]));
+const bossDiffHtml = (b,d) => `<span class="bdn">${esc(b.name)}</span> <span class="dlv dlv-${DIFF_CLS[d]||''}">(${D[d]||d})</span>`;
+/* 공통 순위 표: rows=[{ico, name, cells:[...]}] (정렬된 상태). 1~3위 메달 색·반짝임·아이콘, 10개씩 고정 크기 */
+function rankTable(kind,id,title,heads,rows,opt={}){
+  const sl=rankSlice(kind,rows), n=heads.length;
+  return `<div class="card kingcard" id="${id}"><h2>${title}</h2>${opt.sub||''}<div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th>${heads.map((h,i)=>`<th${i?' class="num"':''}>${h}</th>`).join('')}</tr></thead><tbody>
+    ${sl.map(([o,r])=>{ const m=medal(r); return `<tr class="rk${r}${m?' md-'+m:''}"><td>${rankNo(r)}</td><td><span class="rkname ${m?'md-'+m:''}">${m&&o.ico?`<span class="rkico">${o.ico}</span>`:''}<span class="${m?'spk':''}">${o.name}</span></span></td>${o.cells.map(c=>`<td class="num">${c}</td>`).join('')}</tr>`; }).join('')||`<tr><td colspan="${n+1}" class="muted">기록 없음</td></tr>`}${rankPad(sl.length,rows.length,n+1)}
+    </tbody></table></div>${rankPager(kind,rows.length)}</div>`; }
+rankPage.boss=1; rankPage.epic=1; rankPage.chaos=1; rankPage.miss=1;
+function bossKills(T){ const R={};
+  const go=p=>{ (p.bosses||[]).forEach((t,i)=>{ const m=/^(.+?)\((.+?)\)(?:\/(\d+)인)?/.exec(t); if(!m) return; const b=BOSSES.find(x=>x.name===m[1]); const d=DK[m[2]]; if(!b||!d) return;
+    const k=b.id+'|'+d, o=R[k]||(R[k]={b,d,n:0,meso:0}); o.n++; const v=p.bvals&&p.bvals[i]!=null?+p.bvals[i]:Math.floor(price(b,d)/Math.max(1,+m[3]||1)); o.meso+=v||0; }); };
+  T.weeks.forEach(w=>(w.perChar||[]).forEach(go)); T.months.forEach(m=>(m.perChar||[]).forEach(go));
+  return Object.values(R).sort((a,b)=>b.n-a.n||price(b.b,b.d)-price(a.b,a.d)); }
+function bossKingHtml(T){ const R=bossKills(T);
+  return rankTable('boss','bossKing',`${R[0]?`<span class="hbi">${bossIcon(R[0].b)}</span>`:miniIcon('meso')} 보스왕`,['보스','처치 당한 횟수','쌓아준 누적 메소량'],
+    R.map(o=>({ico:bossIcon(o.b),name:bossDiffHtml(o.b,o.d),cells:[`<b>${o.n}회</b>`,meso(o.meso)]}))); }
+function epicCounts(T){ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(isRing(it)) return; R[it]=(R[it]||0)+I.n; }); return R; } // 반지 상자와 상자에서 나온 것(리4·컨4·연마석)은 제외, 보스가 직접 준 생명의 연마석은 포함
+function chaosCounts(T){ const C=Object.fromEntries(CHAOS_PICK.map(k=>[k,0])); T.items.forEach(([a,I])=>{ if(parseIK(a).it!=='chaosbox') return; (I.outs||[]).forEach(o=>{ const k=String(o).slice(3); if(/^cb:/.test(o)&&k in C) C[k]++; }); }); return C; }
+function epicKingHtml(T){ const R=epicCounts(T), tot=Object.values(R).reduce((x,y)=>x+y,0);
+  const ks=Object.keys(R).sort((a,b)=>R[b]-R[a]||itemCmp(a,b)), C=chaosCounts(T), cs=CHAOS_PICK.slice().sort((a,b)=>C[b]-C[a]||itemCmp(a,b));
+  return rankTable('epic','epicCard',`${miniIcon('sos')} <span class="ept">에픽빔왕</span>`,['아이템','횟수'],ks.map(k=>({ico:lootIco(k),name:esc(lootName(k)),cells:[xN(R[k])]})),
+      {sub:`<div class="epline">에픽빔 누적 횟수 <b class="epgold">${tot}</b></div>`})
+    +rankTable('chaos','chaosCard',`${miniIcon('chaosbox')} 혼돈의 칠흑 장신구 상자깡`,['아이템','횟수'],cs.map(k=>({ico:itemIcon(k),name:esc(ITEMS[k].n),cells:[xN(C[k])]}))); }
+/* 못 가진 아이템: 모든 보스 드롭 표의 누를 수 있는 아이템 중 한 번도 못 얻은 것 (블빵패배 제외, 분배·블빵승리·1인 = 얻음).
+ * 칠흑 상자에서 고른 장신구 = 그 장신구 얻음. 반지 상자: 상자를 얻었으면(결과 무관) 그 상자는 얻음, 상자 결과 생명의 연마석 = 생명의 연마석 얻음. 리4·컨4는 드롭 표 칩이 아니라 목록에 없음.
+ * 아이템마다 1줄: 결정석이 가장 싼 보스(난이도)로 표시 */
+function missingItems(T){ const got=new Set();
+  T.chars.forEach(o=>{ for(const [a,n] of Object.entries(o.items||{})){ const {it,mode}=parseIK(a); if(mode==='l'||!(+n>0)) continue; got.add(it); ((o.outs||{})[a]||[]).forEach(q=>{ if(/^cb:/.test(q)) got.add(q.slice(3)); if(q==='gl') got.add('g_life'); }); } });
+  const src={}; BOSSES.forEach(b=>b.diffs.forEach(d=>dropsFor(b,d).forEach(k=>{ if(got.has(k)) return; const p=price(b,d); if(!src[k]||p<src[k].p) src[k]={b,d,p}; })));
+  return Object.keys(src).sort((a,b)=>itemPri(a)-itemPri(b)||src[a].p-src[b].p||lootOrd(a)-lootOrd(b)).map(k=>({k,...src[k]})); }
+function missingHtml(T){ const L=missingItems(T), sl=rankSlice('miss',L);
+  return `<div class="card" id="missItems"><h2>${L[0]?`<span class="gray">${itemIcon(L[0].k)}</span>`:miniIcon('chaosbox')} 내가 가지지 못한 아이템 목록</h2>
+    ${L.length?`<table class="ranktbl misstbl"><tbody>${sl.map(([o])=>`<tr><td><span class="hbi">${bossIcon(o.b)}</span> ${bossDiffHtml(o.b,o.d)}</td><td>${itemIcon(o.k)}</td><td>${esc(ITEMS[o.k].n)}</td></tr>`).join('')}${rankPad(sl.length,L.length,3)}</tbody></table>${rankPager('miss',L.length)}`:'<p class="muted">모든 아이템을 가졌어요!</p>'}</div>`; }
 function bbangStats(T){ const p={}; for(const o of T.chars) for(const [a,n] of Object.entries(o.items||{})){ const {party,mode}=parseIK(a); if(mode!=='w'&&mode!=='l') continue; const q=p[party]||(p[party]={w:0,l:0}); q[mode]+=+n||0; } return p; }
 const blinkIco = cls => `<span class="blk ${cls||''}" aria-hidden="true">${miniIcon('blink')}</span>`;
 function bbangHtml(T){
@@ -1503,21 +1547,18 @@ function renderTotal(){
   v.innerHTML=`<div class="grid"><div class="card">
     <h2>${miniIcon('ipc')} 총 수익 <span class="muted" style="font-weight:500">${fmtWeek(S.startWeek).split(' ~')[0]}부터 · ${nW}주</span></h2>
     <div class="stats s4">
-      <div class="stat"><div class="k">${miniIcon('meso')}총 수익</div><div class="v acc">${meso(T.grand)}</div><div class="muted">${T.grand.toLocaleString()} 메소</div></div>
-      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('kaling'))}</span>주간 보스 누적</div><div class="v">${meso(T.wTotal)}</div><div class="muted">주 평균 ${meso(avg)}</div></div>
-      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span>월간 보스 누적</div><div class="v">${T.mTotal?meso(T.mTotal):'-'}</div><div class="muted">${T.months.filter(m=>m.total).length}개월</div></div>
-      <div class="stat"><div class="k">${miniIcon('bliss')}획득 아이템 누적</div><div class="v">${itemsN}개</div><div class="muted">${T.items.length}종</div></div>
+      <div class="stat"><div class="k">${miniIcon('meso')}총 수익</div><div class="v acc">${(n=>(n/1e8).toFixed(1)+'억')(T.grand)}</div><div class="muted">${T.grand.toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('kaling'))}</span>주간 보스 누적</div><div class="v">${(n=>(n/1e8).toFixed(1)+'억')(T.wTotal)}</div><div class="muted">주 평균 ${avg.toLocaleString()}메소</div></div>
+      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span>월간 보스 누적</div><div class="v">${T.mTotal?(n=>(n/1e8).toFixed(1)+'억')(T.mTotal):'-'}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()}메소</div></div>
+      <div class="stat"><div class="k">${miniIcon('bliss')}획득 아이템 누적</div><div class="v">${itemsN}개</div></div>
     </div>
     <p class="muted" style="margin:8px 0 0;font-size:.78rem">수익은 결정석 판매 금액만 합산합니다(드롭 아이템은 개수만 기록).</p>
   </div>
   <div class="card"><h2>📈 주별 누적 결정석 메소 <span class="muted" style="font-weight:500">막대: 주간 결정석 수익 · 파란 선: 누적</span></h2>${weekChart(T.weeks,{cum:true,minBar:22})}</div>
   ${kingHtml(T)}
-  <div class="card">${(()=>{ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(isRing(it)) return; R[it]=(R[it]||0)+I.n; });
-      const ks=Object.keys(R).sort((x,y)=>lootOrd(x)-lootOrd(y)); const tot=Object.values(R).reduce((x,y)=>x+y,0);
-      const hd=`<h2 class="eph" id="epicH">${miniIcon('sos')} <span class="ept">에픽빔 본 횟수</span>${tot?` <b class="lx aur epsum">${tot}</b>`:''}</h2>`;
-      return `<div id="epicCard">`+hd+(ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${lootIco(k)}<span class="ln">${esc(lootName(k))}</span> <b class="lx">${xN(R[k])}</b></span></div>`).join('')}</div>`:'<p class="muted">아직 기록한 아이템이 없습니다. 보스 현황 탭에서 보스 행의 아이템을 누르고 저장하면 기록됩니다.</p>')+'</div>'; })()}</div>
-  ${(()=>{ const C=Object.fromEntries(CHAOS_PICK.map(k=>[k,0])); T.items.forEach(([a,I])=>{ if(parseIK(a).it!=='chaosbox') return; (I.outs||[]).forEach(o=>{ const k=String(o).slice(3); if(/^cb:/.test(o)&&k in C) C[k]++; }); });
-      return `<div class="card" id="chaosCard"><h2>${miniIcon('chaosbox')} 혼돈의 칠흑 장신구 상자깡</h2><div class="totloot">${CHAOS_PICK.map(k=>`<div class="tl"><span class="loot">${itemIcon(k)}<span class="ln">${esc(ITEMS[k].n)}</span> <b class="lx">${xN(C[k])}</b></span></div>`).join('')}</div></div>`; })()}
+  ${bossKingHtml(T)}
+  ${epicKingHtml(T)}
+  ${missingHtml(T)}
   ${bbangHtml(T)}
   ${bossLootHtml(T)}
   <div class="card ringcard"><h2>${miniIcon('ring_restraint')} 시드링 획득 타율</h2>
