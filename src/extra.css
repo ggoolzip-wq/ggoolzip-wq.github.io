@@ -707,3 +707,10 @@ tr.rkpad td{border-color:transparent}
 .drop.got{position:relative}
 .drop.got::after{content:"";position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);pointer-events:none;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%233fb96f' fill-opacity='.9'/%3E%3Cpath d='M6.5 12.5l3.5 3.5 7.5-8' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+
+/* b54 */
+.cg-boss{display:inline-flex;vertical-align:middle;margin-right:10px}
+.cg-boss img{width:1.1em;height:1.1em;border-radius:8px}
+.pc-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pc-mine{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;color:var(--muted);cursor:pointer;white-space:nowrap;user-select:none}
+.pc-mine input{margin:0;cursor:pointer}
