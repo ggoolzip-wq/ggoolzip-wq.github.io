@@ -12,6 +12,8 @@
 - 획득 축하: 모든 드롭 획득 시 `celebrate(null,item)` + `iconBurst(src)` (아이콘 42개 CSS transform, 2.1초 후 제거, reduced-motion 이면 생략). 반지=결과 아이콘, 칠흑=고른 장신구.
 - 썬데이: `sunLabel()` — 게시일(`sunday.date`) < 이번 주 월요일 00:00 KST 이면 '저번 주 혜택' (1분마다 재확인).
 
+- **b45 (2026-10-10)**: '최고 전투력' 패널·Worker /api/cp·클라이언트 호출 삭제(D1 cp 테이블은 미사용으로 남김), 정보 패널 3칸 균등. 캐릭터 목록의 주황 ★본캐 뱃지 제거(닉네임 전체 표시). 오른쪽 열 340px(≤1500: 310, ≤1360: 290 + 작은 글씨), main max-width 1640 가운데 정렬. 결정석 가격 줄이 안 들어가면 `fitPriceCard()`가 글자를 줄임(자르지 않음). test_tracker34 가 1920/1600/1280 검사.
+
 ## 1. 개요
 - 목적: 메이플스토리(KMS) 본캐·부캐의 **주간/월간 보스 클리어 체크 → 강렬한 힘의 결정 판매 수익 계산**, 보스 드롭(반지 상자 등) 획득 **개수** 기록, 주간·누적 기록.
 - 라이브 주소: **https://ggoolzip-wq.github.io/** (GitHub Pages, `main` 브랜치 루트). 예전 주소 `https://ggoolzip-wq.github.io/maple-boss-tracker/` 는 새 주소로 리디렉트(저장소 `ggoolzip-wq/maple-boss-tracker`의 index.html).

@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS keyvault (
   updated_at INTEGER NOT NULL
 );
 
--- 최고 전투력 (넥슨 Open API 로 서버에서 계산, cp.js). 캐릭터(ocid)당 하루 1번 갱신. 키는 저장하지 않음
+-- (사용 안 함, 2026-10-10 최고 전투력 기능 삭제 — 원격 D1 에 남아 있는 빈 표)
 CREATE TABLE IF NOT EXISTS cp (
   user_id  TEXT NOT NULL,
   ocid     TEXT NOT NULL,

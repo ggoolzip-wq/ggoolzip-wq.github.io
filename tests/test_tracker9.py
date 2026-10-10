@@ -27,7 +27,7 @@ try:
     pg.evaluate("s=>localStorage.setItem('mapleBossTracker.v1',s)",json.dumps(st)); pg.reload(); pg.wait_for_timeout(800)
     pr=lambda b,d: pg.evaluate(f"price(findBoss('{b}'),'{d}')")
     check('old manual overrides cleared', pg.evaluate("Object.keys(S.settings.prices).length")==0 and pr('seren','hard')==base_price('선택받은 세렌 (하드)'), pr('seren','hard'))
-    foot=pg.inner_text('.pricecard .pc-foot'); check('card foot auto line', foot.replace('\n',' ').startswith('공식 패치 노트 기준 자동 갱신 (마지막 확인 2026-10-09)'), foot)
+    foot=pg.inner_text('.pricecard .pc-foot'); check('card foot auto line', foot.startswith('공식 패치 노트 기준 자동 갱신\n(마지막 확인 20'), foot)
     check('card title has crystal icon', pg.query_selector('.pricecard .pc-head h2 img.ric') is not None)
     check('no 수정 link in card', pg.query_selector('.pricecard [data-tab]') is None)
     check('46 official rows applied', pg.evaluate('officialInfo.applied')==46 and not pg.evaluate('officialInfo.pending.length'))
