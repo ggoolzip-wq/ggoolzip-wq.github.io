@@ -776,6 +776,9 @@ main{max-width:1760px;margin-left:auto;margin-right:auto}
 .dl.cbl>.ptx{margin-left:0}
 .rp-items .dls{display:flex;flex-direction:row;flex-wrap:wrap;gap:3px 10px;justify-content:flex-start}
 .rp-items .dl{font-size:.74rem}
+.bbbox .bbico{display:flex;justify-content:center;margin:2px 0 6px}
+.bbbox .bbico img,.bbbox .bbico .ifb{width:64px;height:64px;object-fit:contain;image-rendering:auto}
+.bbbox .bbname{text-align:center;font-weight:800;font-size:1rem;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -1137,14 +1140,14 @@ function dropsHtml(b,diff,c){
 /* 파티(2인 이상) 드롭: 블빵승리 / 블빵패배 / 분배 고르기 (결정석 수익은 항상 1/n — 이 선택은 아이템 기록만 바꿈)
  * c.dmode / c.mdmode = {'보스|아이템': 'w'(블빵승리)|'l'(블빵패배)|'s'(분배)} — 없으면 예전 기록(분배와 같게 표시) */
 const modeMap = (c,type) => type==='monthly' ? (c.mdmode||(c.mdmode={})) : (c.dmode||(c.dmode={}));
-function askBbang(c,b,key,apply,cel){
+function askBbang(c,b,key,apply,cel,disp){
   const pty=curParty(c,b.id);
   const done=m=>{ apply(); const mm=modeMap(c,b.type); if(m) mm[key]=m; else delete mm[key]; save(); render(); if(m!=='l'&&cel) cel(); };
   if(pty<=1) return done('');
   document.querySelector('#bbModal')?.remove();
   const el=document.createElement('div'); el.id='bbModal'; el.className='modal-bg show cbmodal'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
-  const it=ITEMS[key.split('|')[1]];
-  el.innerHTML=`<div class="modal cbbox bbbox"><h3>${pty}인 파티 — 어떻게 되었나요?</h3><div class="muted tiny" style="margin:-4px 0 10px">${esc(it?.n||'')} · 결정석은 그대로 ${pty}인 분배</div><div class="cblist">
+  const ik=key.split('|')[1], d=disp||{ico:itemIcon(ik), name:ITEMS[ik]?.n||''}; // 반지 상자·칠흑: 고른 결과/장신구
+  el.innerHTML=`<div class="modal cbbox bbbox"><div class="bbico">${d.ico}</div><div class="bbname">${esc(d.name)}</div><div class="cblist">
     <button class="cbopt" data-bb="w">${miniIcon('blink')}<span>블빵승리</span></button>
     <button class="cbopt" data-bb="l"><span class="gray">${miniIcon('blink')}</span><span>블빵패배</span></button>
     <button class="cbopt" data-bb="s">${miniIcon('meso')}<span>분배</span></button></div><button class="btn ghost cbcancel" data-bb="">취소</button></div>`;
@@ -1184,7 +1187,8 @@ function chooseRing(o){
   const c=S.characters.find(x=>x.id===p.cid); if(!c) return; const [slot,item]=p.key.split('|'); const b=findBoss(slot);
   pendStart(); const m=dropMap(c,b.type);
   askBbang(c,b,p.key,()=>{ m[p.key]=1; const om=outMap(c,b.type); (om[p.key]||(om[p.key]=[])).push(o); },
-    ()=>{ if(o==='gl') celebrate(null,'g_life'); else if(o!=='x') celebrate(o); });
+    ()=>{ if(o==='gl') celebrate(null,'g_life'); else if(o!=='x') celebrate(o); },
+    o==='gl'?{ico:itemIcon('g_life'),name:ITEMS.g_life.n}:o==='x'?{ico:itemIcon(item),name:ITEMS[item].n+' · 꽝'}:{ico:outIcon(o),name:OUT_NAME[o]});
 }
 /* 축하 연출: 캔버스 불꽃놀이 + 꽃가루 (~2.6초, 외부 라이브러리 없음) */
 // 아이콘 불꽃: 같은 아이콘 수십 개가 가운데서 사방으로 (CSS transform, 약 2초 후 제거, 모션 줄이기 존중)
@@ -1525,7 +1529,7 @@ function openChaos(key){
   el.onclick=e=>{ const t=e.target.closest('[data-cbpick]'); if(!t&&e.target!==el) return; el.remove(); const k=t?t.dataset.cbpick:'';
     if(!k){ if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; render(); return; }
     const cc=S.characters.find(x=>x.id===c.id); const b=findBoss(key.split('|')[0]); if(!cc||!b) return;
-    pendStart(); askBbang(cc,b,key,()=>{ dropMap(cc,b.type)[key]=1; outMap(cc,b.type)[key]=['cb:'+k]; },()=>celebrate(null,k)); };
+    pendStart(); askBbang(cc,b,key,()=>{ dropMap(cc,b.type)[key]=1; outMap(cc,b.type)[key]=['cb:'+k]; },()=>celebrate(null,k),{ico:itemIcon(k),name:ITEMS[k].n}); };
 }
 const OUT_NAME = {r4:'리스트레인트 링 4레벨', c4:'컨티뉴어스 링 4레벨'};
 const miniIcon = k => ITEM_ICONS[k] ? `<img class="ric" src="${ITEM_ICONS[k]}" alt="" aria-hidden="true">` : '';

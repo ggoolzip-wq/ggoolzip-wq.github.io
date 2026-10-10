@@ -669,3 +669,6 @@ main{max-width:1760px;margin-left:auto;margin-right:auto}
 .dl.cbl>.ptx{margin-left:0}
 .rp-items .dls{display:flex;flex-direction:row;flex-wrap:wrap;gap:3px 10px;justify-content:flex-start}
 .rp-items .dl{font-size:.74rem}
+.bbbox .bbico{display:flex;justify-content:center;margin:2px 0 6px}
+.bbbox .bbico img,.bbbox .bbico .ifb{width:64px;height:64px;object-fit:contain;image-rendering:auto}
+.bbbox .bbname{text-align:center;font-weight:800;font-size:1rem;margin-bottom:12px}
