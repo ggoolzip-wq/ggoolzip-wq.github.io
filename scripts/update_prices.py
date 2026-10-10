@@ -13,6 +13,8 @@ import datetime, json, os, re, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nexon_prices as parser  # noqa: E402  (공지 가격표 파서)
+import upcoming  # noqa: E402  (테섭 예정 가격)
+_OLD_UP = None
 
 OUT = os.path.join(ROOT, "prices.json")
 MIN_ROWS = 20          # 이보다 적으면 파싱이 잘못된 것으로 보고 저장하지 않음
@@ -37,6 +39,8 @@ def main():
                 old = json.load(f)
         except Exception as e:
             warn(f"기존 prices.json 을 읽지 못함: {e}")
+    global _OLD_UP
+    _OLD_UP = (old or {}).get("upcoming")
     today = datetime.datetime.now(KST).strftime("%Y-%m-%d")
     try:
         res = parser.nexon_prices(posts=int(os.environ.get("MBT_POSTS", "15")))
@@ -73,6 +77,9 @@ def main():
 
 
 def touch(old, today):
+    if upcoming.reconcile(old):
+        write(old)
+        print("본섭 가격이 테섭 예정 가격과 같아져 예정 표시 삭제")
     last = old.get("checkedAt") or "1970-01-01"
     if (datetime.date.fromisoformat(today) - datetime.date.fromisoformat(last)).days >= HEARTBEAT_DAYS:
         old["checkedAt"] = today
@@ -82,6 +89,10 @@ def touch(old, today):
 
 
 def write(obj):
+    # 테섭 예정 가격(upcoming)은 유지하되, 실서버 가격과 같아진 줄은 지움
+    if "upcoming" not in obj and _OLD_UP:
+        obj["upcoming"] = _OLD_UP
+    upcoming.reconcile(obj)
     tmp = OUT + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, indent=1)

@@ -219,7 +219,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 솔 에르다의 기운 개수는 나무위키 각 보스 문서(2026-10-10 열람) 기준 — 패치로 바뀐 적 있음(림보·발드릭스 상향). 바뀌면 ERDA 상수만 고치면 됨.
 
 ## 10. 보류 중인 아이디어
-- **테스트 서버 공지의 가격을 '다음 패치 예정 가격'으로 표시** — 사용자 결정 대기 중(아직 구현 안 함).
+- ~~테스트 서버 공지의 가격을 '다음 패치 예정 가격'으로 표시~~ → 2026-10-10 구현 (아래 b38).
 
 ## 11. 변경 기록
 - 2026-10-10 (3): **동기화 서버 준비**(server/ Cloudflare Workers + D1, 기능 플래그 SYNC_API_URL — 꺼 둠, 배포 안 함) · test_server · test23.
@@ -254,3 +254,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 에픽빔 합계 숫자 (b37): `.epbeam` ::before = conic-gradient 대각선 4방향 프리즘 광선(epray), ::after = 흰·청록 코어 글로우(epcore). 절대 위치·pointer-events:none, 모션 줄이기 시 정지. 푸터의 localStorage/드라이브 저장 문구 삭제.
 - 캐릭터 목록 (b37): 스크롤 대신 8명씩 페이지 (`CHAR_PER_PAGE`, `#charPager`). 월드 탭·정렬 변경 → 1쪽, 인원 감소 → 마지막 쪽으로, 1쪽뿐이면 숨김. `fitCharList()` 는 높이 제한 없이 즉시 반환.
 - 결정석 가격 하단: (마지막 확인 …) 은 다음 줄.
+
+## 2026-10-10 b37–b38
+- 에픽빔 합계 광선: 짧고 약하게(46px, 불투명도 낮춤), ::before 가 `rotate` 360° 회전(`--epdur` = 접속마다 4~10초 무작위, EP_DUR). 모션 줄이기 시 정지.
+- 칠흑 모달이 왼쪽에 붙던 원인: 바깥 막에 `.modal`(상자용: width 100%, max-width 420px) 클래스를 써서 화면 왼쪽 420px 짜리 막이 됨 → 바깥 `.modal-bg`, 상자 `.modal`. test30 에서 1920·1280·375 폭 가운데 확인(칠흑·축하·저장 묻기).
+- 생명 반지 상자 결과에 '생명의 연마석'(gl, 아이콘 g_life) — 반지 결과처럼 dropOut 에 저장, 불꽃은 연마석 아이콘, 수익 분석 보스별·총 아이템에 생명의 연마석으로 합산, 시드링 요약에 표시.
+- 불꽃 아이콘 42px(1.3배). 캐릭터 목록 페이지 마지막 쪽도 8줄 높이(min-height) 유지. 동기화 줄 'HH:MM KST 동기화' → '갱신완료'(시각은 title). 마지막 상단 탭 복원(localStorage mapleBossTracker.tab, 없으면 보스 현황). 수익 분석·로그인 메뉴의 드라이브 저장 안내 문구 삭제.
+- **테섭 예정 결정석 가격 (b38)**: update_feed.py 가 테섭 새 글(src_test 의 새 항목)마다 본문을 받아 nexon_prices.parse_post 로 가격표를 찾고, 있으면 prices.json 의 `upcoming`{source,rows,detectedAt} 에 저장(scripts/upcoming.py add_upcoming, 실서버와 같은 줄은 넣지 않음). 실서버 rows 는 그대로. update_prices.py(본섭 12:17) 는 upcoming 을 유지하고 같은 가격이 적용된 줄을 지움(reconcile, 모두 적용되면 upcoming 삭제). update-feed.yml 이 prices_changed 일 때 prices.json 도 커밋. 사이트: 가격 카드 각 줄에 '테섭 예정 → N', 예상 결정석 수익 옆에도 '테섭 예정 → N'(예정 가격으로 다시 계산, withUpcoming), 카드 아래에 테섭 글 제목. tests/test_upcoming.py(공지 픽스처를 테섭 본문으로 사용, 10% 인하 시나리오), test_tracker31(로컬 데모, 실서버에는 데모 데이터 없음).

@@ -337,6 +337,34 @@ def src_test(st, wm, run_all, minute):
     wm["test"] = max([w] + [r["n"] for r in rows])
     return new
 
+# 테섭 새 글 본문에서 결정석 가격 변경 찾기 → prices.json 의 upcoming (실서버 가격은 그대로)
+_TEST_NEW = []
+PRICES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prices.json")
+def test_prices(new_items, fetch=None):
+    if not new_items:
+        return False
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import nexon_prices, upcoming
+    fetch = fetch or (lambda u: http_get(u, proxy=True)[1])
+    try:
+        with open(PRICES, encoding="utf-8") as f:
+            prices = json.load(f)
+    except Exception:
+        return False
+    changed = False
+    for it in sorted(new_items, key=lambda x: int(str(x["id"]).split(":")[1])):
+        try:
+            info = nexon_prices.parse_post(fetch(it["url"]))
+        except Exception as e:
+            log(f"::warning::[test-prices] {it['url']} 본문 실패: {e}"); continue
+        log(f"[test-prices] {it['title'][:40]} → 가격 줄 {len(info['rows'])}개")
+        if info["rows"] and upcoming.add_upcoming(prices, {"url": it["url"], "title": info["title"] or it["title"], "date": (it.get("date") or "")[:10]}, info["rows"]):
+            changed = True
+    if changed:
+        with open(PRICES, "w", encoding="utf-8") as f:
+            json.dump(prices, f, ensure_ascii=False, indent=1); f.write("\n")
+    return changed
+
 # ---------------- 마빡도로시 (인벤) ----------------
 def inven_rows(s):
     out = []
@@ -585,6 +613,8 @@ def main():
             new = fn(srcs, wm, run_all, minute)
             if new is None:
                 log(f"[{k}] 이번 회차 건너뜀"); continue
+            if k == "test":
+                _TEST_NEW[:] = new
             n = merge(lst, new)
             if k == "patch":
                 m = apply_minor(lst, _MINOR, wm); n += m
@@ -597,6 +627,11 @@ def main():
         if bool(prev.get("ok", True)) != s["ok"] or (not prev):
             flipped = True
         srcs[k] = s
+    prices_changed = False
+    try:
+        prices_changed = test_prices(_TEST_NEW)
+    except Exception as e:
+        log(f"::warning::[test-prices] 실패: {e}")
     sun_changed = False
     try:
         sun_changed = src_sunday(feed, run_all, minute)
@@ -624,6 +659,7 @@ def main():
         with open(go, "a") as f:
             f.write(f"changed={'true' if changed else 'false'}\n")
             f.write(f"sunday_ocr={'true' if need_ocr else 'false'}\n")
+            f.write(f"prices_changed={'true' if prices_changed else 'false'}\n")
     return 0
 
 if __name__ == "__main__":
