@@ -78,7 +78,7 @@ try:
     pg.evaluate("gdMeta.on=true; gdMeta.lastSave=Date.now()-90e3; gdMeta.lastLoad=Date.now()-3600e3; gdMeta.base=S.updatedAt; gd.state='on'; gdRender();")
     pg.click('#gBtn'); pg.wait_for_selector('#gMenu:not([hidden])')
     txt=pg.inner_text('#gMenu')
-    check('cloud menu: status, logout, key note, no wipe', all(w in txt for w in ['동기화됨','로그아웃','API 키도 함께 저장돼요']) and '지우기' not in txt and pg.query_selector('#gdWipe') is None, txt[:200])
+    check('cloud menu: status, logout, key note, no wipe', all(w in txt for w in ['동기화됨','로그아웃']) and 'API 키도 함께' not in txt and '지우기' not in txt and pg.query_selector('#gdWipe') is None, txt[:200])
     pg.screenshot(path=''+OUT+'/cloud_menu.png')
     pg.mouse.click(600,600); pg.wait_for_timeout(100); check('outside click closes menu', pg.is_hidden('#gMenu'))
     # 7) mobile
