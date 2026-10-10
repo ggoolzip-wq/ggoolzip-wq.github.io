@@ -37,6 +37,8 @@ with sync_playwright() as p:
     pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|mitra"]'); pg.wait_for_timeout(80)
     pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|mitra"]'); pg.wait_for_timeout(80)
     pg.click('.boss:has-text("스우") [data-drop="lotus|r_red"]'); pg.click('#ringModal [data-ring="x"]'); pg.wait_for_timeout(80)
+    pg.wait_for_timeout(250)
+    while pg.locator('#bbModal').count(): pg.click('#bbModal [data-bb=s]'); pg.wait_for_timeout(150)  # b49: 2인 이상 블빵 3지선다 → 분배
     print('D1 counts after clicks:', pg.evaluate("activeChar().drops"), '| chip text:', pg.inner_text('[data-drop="seren|mitra"]'), '| got class:', pg.get_attribute('[data-drop="seren|mitra"]','class'))
     pg.click('[data-drop="seren|mitra"]'); pg.wait_for_timeout(80)
     pg.click('[data-drop="lotus|r_red"]', button='right'); pg.wait_for_timeout(80)
@@ -47,12 +49,18 @@ with sync_playwright() as p:
     if more.count(): more.first.click(); pg.wait_for_timeout(80)
     print('D3b after expand:', pg.eval_on_selector_all('.boss:has-text("선택받은 세렌") .drop .dn','e=>e.map(x=>x.textContent)'))
     pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|r_white"]'); pg.click('#ringModal [data-ring="x"]'); pg.wait_for_timeout(80)
+    pg.wait_for_timeout(250)
+    while pg.locator('#bbModal').count(): pg.click('#bbModal [data-bb=s]'); pg.wait_for_timeout(150)  # b49: 2인 이상 블빵 3지선다 → 분배
     # monthly boss drop
     pg.click('[data-filter="monthly"]'); pg.wait_for_timeout(80); pg.click('[data-drop="blackmage|genesis"]'); pg.wait_for_timeout(80)
+    pg.wait_for_timeout(250)
+    while pg.locator('#bbModal').count(): pg.click('#bbModal [data-bb=s]'); pg.wait_for_timeout(150)  # b49: 2인 이상 블빵 3지선다 → 분배
     print('D4 monthly drop stored in mdrops:', pg.evaluate("activeChar().mdrops"), '| weekly drops:', pg.evaluate("activeChar().drops"))
     pg.click('[data-filter="weekly"]'); pg.wait_for_timeout(80)
     # second char drop
     pg.click('.char[data-id="c2"]'); pg.wait_for_timeout(80); pg.click('[data-drop="slime|r_black"]'); pg.click('#ringModal [data-ring="x"]'); pg.wait_for_timeout(80)
+    pg.wait_for_timeout(250)
+    while pg.locator('#bbModal').count(): pg.click('#bbModal [data-bb=s]'); pg.wait_for_timeout(150)  # b49: 2인 이상 블빵 3지선다 → 분배
     print('D5 right panel items:', pg.eval_on_selector_all('.revpanel .rp-char','e=>e.map(x=>[x.querySelector(".rp-nm").textContent.trim(), [...x.querySelectorAll(".iti")].map(i=>i.title)])'), '|', pg.inner_text('.revpanel').split('\n')[-1])
     pg.click('.char[data-id="c1"]'); pg.wait_for_timeout(80)
     pg.screenshot(path=OUT+'/shot7_boss.png',full_page=True)
