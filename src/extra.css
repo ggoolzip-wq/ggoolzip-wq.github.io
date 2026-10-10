@@ -638,7 +638,8 @@ main{max-width:1760px;margin-left:auto;margin-right:auto}
 .pricecard[style*='--pcfs'] .pc-row{font-size:var(--pcfs)}
 .pricecard[style*='--pcfs'] .pc-up{font-size:calc(var(--pcfs) - 1px)}
 /* b46: 빠뜨린 보스메소 */
-.missic{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#f2c94c;color:#1b1b1b;font-weight:900;font-size:.8rem;vertical-align:-3px}
+.missic{display:inline-block;background:none;color:#f2c94c;font-weight:900;font-size:1.15em;line-height:1;margin-right:2px}
+.missic.red{color:#ff4d4d}
 .misschart .mpt{cursor:default}
 .misschart text{fill:var(--muted)}
 /* b46: 아이템 항목은 끊기지 않는 한 덩어리 — 안 들어가면 첫 아이콘부터 다음 줄로 */
@@ -675,3 +676,23 @@ main{max-width:1760px;margin-left:auto;margin-right:auto}
 .bbbox .bbico img,.bbbox .bbico .ifb{width:64px;height:64px;object-fit:contain;image-rendering:auto}
 .bbbox .bbname{text-align:center;font-weight:800;font-size:1rem;margin-bottom:12px}
 .cg-sub .cg-emo.sm{width:1.2em;height:1.2em;vertical-align:-.25em}
+
+/* b52: 메소왕/득템왕 */
+.ranktbl td{vertical-align:middle}
+.rkno{font-weight:800;display:inline-flex;align-items:center;gap:2px;min-width:2.2em}
+.rkname{display:inline-flex;align-items:center;gap:6px}
+.rkname .rkav{width:36px;height:36px;flex:none}
+.crown{font-size:.95em;line-height:1}
+.md-gold{color:#ffd54a;text-shadow:0 0 6px rgba(255,213,74,.75),0 0 14px rgba(255,180,0,.45)}
+.md-silver{color:#e6ebf2;text-shadow:0 0 6px rgba(230,235,242,.7),0 0 14px rgba(170,185,205,.45)}
+.md-bronze{color:#e3a06a;text-shadow:0 0 6px rgba(227,160,106,.7),0 0 14px rgba(190,110,50,.45)}
+tr.md-gold td,tr.md-silver td,tr.md-bronze td{font-weight:700}
+.rkpager{margin-top:8px}
+/* b52: 블빵 */
+.blk{display:inline-block;width:20px;height:20px;position:relative;vertical-align:-4px}
+.blk .ric{width:20px;height:20px;display:block}
+.blk.gray .ric{filter:grayscale(1) brightness(.85)}
+.blk.split>span{position:absolute;inset:0}
+.blk.split .bk-a{clip-path:polygon(0 0,95% 0,0 95%)}
+.blk.split .bk-b{clip-path:polygon(100% 5%,100% 100%,5% 100%);filter:grayscale(1) brightness(.85)}
+.bbtbl td{padding:4px 10px}

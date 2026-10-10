@@ -69,7 +69,7 @@ try:
     tot=pg.inner_text('.itemtot'); bl=pg.inner_text('.bossloot')
     check('수익 분석 총 아이템 획득량: 승리/패배 따로', '(블빵승리)' in tot and '(블빵패배)' in tot and pg.locator('.itemtot .loot.md-w').count()>=1 and pg.locator('.itemtot .loot.md-l').count()>=1, tot)
     ring=pg.evaluate("totalData().ring"); check('패배한 반지 상자의 결과는 내 시드링(리4) 집계에서 제외', ring['r4']==0, ring)
-    check('캐릭터별 표에도 (2인 블빵승리)/(2인 블빵패배)', '(2인 블빵승리)' in pg.inner_text('#view') and '(2인 블빵패배)' in pg.inner_text('#view'))
+    check('b52: 블빵 이긴/진 아이템 표에 각각', '신념의 연마석' in pg.inner_text('#bbWon') and '리스트레인트 링 4레벨' in pg.inner_text('#bbLost'))
     pg.evaluate("endCelebrate(); document.querySelector('#iconBurst')?.remove()"); pg.locator('.bossloot').screenshot(path='/workspace/shots/b49_total.png')
     # 예전 기록(선택 없음)은 그대로 (n인 분배)
     pg.evaluate("delete S.characters[0].dmode; save(); render()"); pg.click('[data-tab=boss]'); pg.wait_for_timeout(300)
