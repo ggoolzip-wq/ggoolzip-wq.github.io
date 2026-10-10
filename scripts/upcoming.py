@@ -11,6 +11,11 @@ def bkey(s):
     return re.sub(r"\s+", "", str(s or "")).replace("（", "(").replace("）", ")")
 
 
+def is_demo(prices):
+    """upcoming.demo = True → 데모(무작위) 예정 가격. 실서버 가격 갱신에 절대 쓰지 않음"""
+    return bool((prices.get("upcoming") or {}).get("demo"))
+
+
 def reconcile(prices):
     """실서버 가격과 같아진 예정 줄 삭제. 바뀌었으면 True"""
     up = prices.get("upcoming")
@@ -29,6 +34,8 @@ def reconcile(prices):
 
 def add_upcoming(prices, source, rows, now=None):
     """테섭 글의 가격 줄을 예정 가격으로 (같은 보스는 새 글이 덮어씀). 실서버와 같은 줄은 넣지 않음. 바뀌었으면 True"""
+    if is_demo(prices):  # 데모 예정 가격은 진짜 테섭 글이 오면 통째로 버림 (섞지 않음)
+        prices.pop("upcoming", None)
     live = {bkey(r.get("boss")): r.get("new") for r in prices.get("rows", [])}
     cur = {bkey(r["boss"]): r for r in (prices.get("upcoming") or {}).get("rows", [])}
     before = dict(cur)

@@ -232,7 +232,7 @@ function dropsHtml(b,diff,c){
     +(et?`<span class="drop erda eter" data-tip="${esc(eternalTip(et.k,et.n,diff))}" aria-label="${esc(ITEMS[et.k].n)} ${et.n}개">${itemIcon(et.k)}<b class="ecnt">${et.n}</b></span>`:'');
   const cnt=k=>c?dropCount(c,b,k):0;
   const chip=k=>{const it=ITEMS[k], n=cnt(k);
-    return `<span class="drop s-${it.set} ${n?'got':''}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span>${n?`<b class="dcnt">✓</b>`:''}</span>`;};
+    return `<span class="drop s-${it.set} ${n?'got':''}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span></span>`;};
   // 2026-10-10 사용자 요청: 아이템을 '+N' 묶음 칩으로 합치지 않음 — 생명/신념 연마석, 소울 에테르 1~4단계, 반지 상자 모두 각자 칩(각자 아이콘·클릭 +1), 넘치면 다음 줄로
   const shown=ks;
   // 아래 줄: 이 보스에서 획득한 아이템 (모든 화면과 같은 형식: 이름(N인 분배) ×개수 결과)
@@ -1081,9 +1081,11 @@ function doneOverlay(c,r){
 /* 사이드바 캐릭터 정렬 보기: 'base' = 기본순(저장된 순서) / 'undone' = 보스 미완료순(이번 주 12/12 안 된 캐릭터 먼저, 각 무리 안은 기본순 유지).
  * 보기 방식만 바꾸고 저장된 순서는 건드리지 않음. 기기별 표시 설정이라 localStorage(드라이브 동기화 안 함). */
 const CHAR_SORT_KEY='mapleBossTracker.charSort';
-let charSort=(()=>{ try{ return localStorage.getItem(CHAR_SORT_KEY)==='undone'?'undone':'base'; }catch(e){ return 'base'; } })();
-const sortedChars = cs => charSort!=='undone' ? cs : [...cs.filter(c=>weeklyCount(c)<S.settings.weeklyLimit), ...cs.filter(c=>weeklyCount(c)>=S.settings.weeklyLimit)];
-function setCharSort(v){ charSort=v==='undone'?'undone':'base'; try{ localStorage.setItem(CHAR_SORT_KEY,charSort); }catch(e){} render(); }
+const CSORTS=['base','undone','gm']; // gm = 검마 정렬순: 이번 달 검은 마법사 안 잡은 캐릭터 먼저 (각 무리 안은 기본순)
+let charSort=(()=>{ try{ const v=localStorage.getItem(CHAR_SORT_KEY); return CSORTS.includes(v)?v:'base'; }catch(e){ return 'base'; } })();
+const gmDone = c => !!c.monthly?.blackmage;
+const sortedChars = cs => charSort==='gm' ? [...cs.filter(c=>!gmDone(c)), ...cs.filter(gmDone)] : charSort!=='undone' ? cs : [...cs.filter(c=>weeklyCount(c)<S.settings.weeklyLimit), ...cs.filter(c=>weeklyCount(c)>=S.settings.weeklyLimit)];
+function setCharSort(v){ charSort=CSORTS.includes(v)?v:'base'; try{ localStorage.setItem(CHAR_SORT_KEY,charSort); }catch(e){} render(); }
 /* 캐릭터 목록: 8명까지 보이고 넘으면 목록 안에서 스크롤 (페이지는 안 늘어남).
  * 데스크톱에서 화면이 낮아 8줄 + 소식 카드 최소 높이가 안 들어가면 들어가는 만큼만(최소 4줄) 보여 줌 → 사이드바 때문에 페이지가 길어지지 않음. */
 const CHAR_ROWS=8, CHAR_ROWS_MIN=4, SIDE_FEED_MIN=31*2+70+12; // 소식 카드 최소 높이(feedFit 의 minH) + 카드 간격
@@ -1122,7 +1124,7 @@ const CHAR_PER_PAGE=8; let charPage=1, charPageKey='';
 function renderChars(){
   if(dnd) return; // 드래그 중에는 다시 그리지 않음
   const el=$('#charList'), tabsEl=$('#worldTabs');
-  const fixed=charSort==='undone'; // 미완료순 보기에서는 순서 바꾸기(드래그·▲▼) 잠금 — 기본순에서만
+  const fixed=charSort!=='base'; // 미완료순 보기에서는 순서 바꾸기(드래그·▲▼) 잠금 — 기본순에서만
   el.classList.toggle('sorted',fixed);
   if(!S.characters.length){ if(tabsEl) tabsEl.innerHTML=''; if($('#charPager')) $('#charPager').hidden=true; el.innerHTML='<div class="muted" style="padding:8px 2px">아직 캐릭터가 없습니다.<br><b>+ 추가</b> 또는 아래 <b>넥슨 API</b>로 불러오세요.</div>'; fitCharList(); return; }
   const groups=worldGroups(); const worlds=[...groups.keys()];
@@ -1132,20 +1134,22 @@ function renderChars(){
   else if(S.activeId!==seenActive){ seenActive=S.activeId; if(act&&worldOf(act)!==worldTab){ worldTab=worldOf(act); try{ localStorage.setItem(WORLD_TAB_KEY,worldTab); }catch(e){} } }
   if(!groups.has(worldTab)) worldTab=(act&&groups.has(worldOf(act)))?worldOf(act):worlds[0];
   const multi=worlds.length>1;
-  const sortCtl=`<span class="charsort" role="group" aria-label="캐릭터 정렬 (보기만 바뀌고 저장된 순서는 그대로)">${[['base','기본순','내가 정한 순서'],['undone','보스 미완료순','이번 주 주간 보스 12개를 아직 다 안 잡은 캐릭터 먼저 (각 무리 안은 기본순)']].map(([k,l,t])=>`<button type="button" class="sortlink${charSort===k?' on':''}" data-csort="${k}" aria-pressed="${charSort===k}" title="${t}">${l}</button>`).join('')}</span>`;
+  const sortCtl=`<span class="charsort" role="group" aria-label="캐릭터 정렬 (보기만 바뀌고 저장된 순서는 그대로)">${[['base','기본순','내가 정한 순서'],['undone','보스 미완료순','이번 주 주간 보스 12개를 아직 다 안 잡은 캐릭터 먼저 (각 무리 안은 기본순)'],['gm','검마 정렬순','이번 달 검은 마법사를 아직 안 잡은 캐릭터 먼저 (각 무리 안은 기본순)']].map(([k,l,t])=>`<button type="button" class="sortlink${charSort===k?' on':''}" data-csort="${k}" aria-pressed="${charSort===k}" title="${t}">${l}</button>`).join('')}</span>`;
   if(tabsEl) tabsEl.innerHTML=`<span class="wtablist" role="tablist" aria-label="월드">${worlds.map((w,i)=>(i?'<span class="wdiv" aria-hidden="true">ㅣ</span>':'')+
-      `<span role="tab" tabindex="0" class="wtab${w===worldTab?' on':''}" aria-selected="${w===worldTab}" data-wtab="${esc(w)}" data-world="${esc(w)}" draggable="${multi}" title="${esc(w)} 캐릭터 ${groups.get(w).length}명${multi?' · 끌어서 월드 순서 변경':''}">${worldIcon(w)}<span class="wnm">${esc(w)}</span> <span class="cnt">(${groups.get(w).length})</span></span>`).join('')}</span>${sortCtl}`;
+      `<span role="tab" tabindex="0" class="wtab${w===worldTab?' on':''}" aria-selected="${w===worldTab}" data-wtab="${esc(w)}" data-world="${esc(w)}" draggable="${multi}" title="${esc(w)} 캐릭터 ${groups.get(w).length}명${multi?' · 끌어서 월드 순서 변경':''}">${worldIcon(w)}<span class="wnm">${esc(w)}</span> <span class="cnt">(${groups.get(w).length})</span></span>`).join('')}</span>`;
   const list=sortedChars(groups.get(worldTab)||[]), w=worldTab;
   // 페이지: 8명씩. 월드 탭·정렬이 바뀌면 1쪽, 인원이 줄면 마지막 쪽으로
   const pk=worldTab+'|'+charSort; if(pk!==charPageKey){ charPageKey=pk; charPage=1; }
   const pages=Math.max(1,Math.ceil(list.length/CHAR_PER_PAGE)); charPage=Math.min(Math.max(1,charPage),pages);
   const p0=(charPage-1)*CHAR_PER_PAGE;
-  let pg=$('#charPager'); if(!pg){ pg=document.createElement('div'); pg.id='charPager'; pg.className='cpager'; el.after(pg); }
+  let ft=$('#charFoot'); if(!ft){ ft=document.createElement('div'); ft.id='charFoot'; ft.className='cfoot'; el.after(ft); }
+  let pg=$('#charPager'); if(!pg){ pg=document.createElement('div'); pg.id='charPager'; pg.className='cpager'; }
+  ft.innerHTML=sortCtl; ft.appendChild(pg); // 정렬(왼쪽 아래) + 쪽 버튼
   pg.innerHTML=pages>1?Array.from({length:pages},(_,i)=>`<button type="button" class="cpg${i+1===charPage?' on':''}" data-cpage="${i+1}"${i+1===charPage?' aria-current="page"':''}>${i+1}</button>`).join(''):'';
   pg.hidden=pages<=1;
   el.innerHTML=list.slice(p0,p0+CHAR_PER_PAGE).map((c,cj)=>{const ci=p0+cj; const r=cRev(c);return `
-    <div class="char ${c.id===S.activeId?'on':''}${r.weekly>=S.settings.weeklyLimit?' alldone':''}" data-id="${c.id}" data-world="${esc(w)}" draggable="${fixed?'false':'true'}">
-      ${doneOverlay(c,r)}
+    <div class="char ${c.id===S.activeId?'on':''}${charSort==='gm'?(gmDone(c)?' gmdone':''):r.weekly>=S.settings.weeklyLimit?' alldone':''}" data-id="${c.id}" data-world="${esc(w)}" draggable="${fixed?'false':'true'}">
+      ${charSort==='gm'?(gmDone(c)?'<div class="dov gmov" aria-hidden="true"><div class="dov-t"><span class="dov-ok"><b class="dov-star">★</b>이번 달 검마 완료</span></div></div>':''):doneOverlay(c,r)}
       <span class="drag-h" title="드래그해서 순서 변경">⠿</span>
       ${avatar(c)}
       <div class="grow"><div class="nm">${esc(c.name)}${c.isMain?'<span class="mainbadge">★ 본캐</span>':''}</div><div class="meta lvrow"><span class="lv">Lv.${esc(c.level||'?')}</span><span class="job">${esc(c.job||'직업 미설정')}</span></div>${expLine(c)}</div>
@@ -1202,7 +1206,7 @@ charList.addEventListener('pointerdown',e=>{
   const wt=e.target.closest('.wtab[draggable="true"]'); if(wt){ wPend={el:wt,x:e.clientX,y:e.clientY,id:e.pointerId}; return; }
   const h=e.target.closest('.drag-h'); if(!h) return;
   const row=h.closest('.char[data-id]'); if(!row) return;
-  if(charSort==='undone') return; // 미완료순 보기에서는 캐릭터 순서 잠금
+  if(charSort!=='base') return; // 미완료순·검마순 보기에서는 캐릭터 순서 잠금
   e.preventDefault();
   dndStart('char',row.dataset.id,row);
   dnd.pointerId=e.pointerId; dnd.last=null;
@@ -1240,7 +1244,7 @@ function renderBoss(){
   const acc=accOf(c);
   const syncLine = needAssign(c) ? `<span class="pill err">계정 미지정</span> <span class="muted">이 캐릭터의 넥슨 계정을 선택해야 자동 체크가 됩니다.</span> <button class="btn sm ghost" data-edit="${c.id}">계정 선택</button>`
     : c.ocid ? (sy.ok===false ? `<span class="pill err">API 실패</span> <span class="muted">${esc(sy.msg)}</span>`
-      : sy.at ? `<span class="muted">게임 내 주간 보스 처치 <b>${sy.clear??'?'} / ${sy.limit||lim}</b> · <span title="${hm(sy.at)} KST">갱신완료</span>${(um=>um.length?` · 매칭 안 된 보스: ${esc(um.join(', '))}`:'')((sy.unmatched||[]).filter(x=>!isSeasonBoss(x)))}</span>` : '<span class="muted">API 연결 캐릭터 — 아직 동기화 전</span>')
+      : sy.at ? `<span class="muted">게임 내 주간 보스 처치 <b>${sy.clear??'?'} / ${sy.limit||lim}</b> · <span title="${hm(sy.at)} KST">갱신완료 ${(d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'))(new Date(sy.at))}</span>${(um=>um.length?` · 매칭 안 된 보스: ${esc(um.join(', '))}`:'')((sy.unmatched||[]).filter(x=>!isSeasonBoss(x)))}</span>` : '<span class="muted">API 연결 캐릭터 — 아직 동기화 전</span>')
     : '<span class="muted">수동 캐릭터 (API 미연결)</span>';
   v.innerHTML=`<div class="bosslay"><div class="grid">
    <div class="card">
@@ -1296,9 +1300,10 @@ function fullExpected(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit)
 function afterPatchHtml(){
   const rows=S.characters.map(c=>({c,now:fullExpected(c),next:withUpcoming(()=>fullExpected(c))})).filter(r=>r.now||r.next);
   const sum=k=>rows.reduce((s,r)=>s+(r[k]||0),0);
-  const dlt=d=>`<span class="pa-d ${d<0?'dn':d>0?'upx':''}">${d>0?'+':d<0?'−':'±'}${meso(Math.abs(d))}</span>`;
-  return `<div class="pc-list pa-list">${rows.map(r=>`<div class="pc-row pa-row" title="${esc(r.c.name)} — 현재 가격 ${meso(r.now)} → 패치 후 ${meso(r.next)}">${avatar(r.c,'sm')}<span class="pc-nm">${esc(r.c.name)}</span><b>${meso(r.next)}${dlt(r.next-r.now)}</b></div>`).join('')||'<div class="muted">캐릭터가 없어요</div>'}</div>
-    <div class="pa-total"><span>합계</span><b>${meso(sum('next'))}${dlt(sum('next')-sum('now'))}</b></div>
+  const pct=(d,b)=>b?` (${d>0?'+':d<0?'−':''}${Math.abs(d/b*100).toFixed(1)}%)`:'';
+  const dlt=(d,b)=>`<span class="pa-d ${d<0?'dn':d>0?'upx':''}">${d>0?'+':d<0?'−':'±'}${meso(Math.abs(d))}${pct(d,b)}</span>`;
+  return `<div class="pc-list pa-list">${rows.map(r=>`<div class="pc-row pa-row" title="${esc(r.c.name)} — 현재 가격 ${meso(r.now)} → 패치 후 ${meso(r.next)}">${avatar(r.c,'sm')}<span class="pc-nm">${esc(r.c.name)}</span><b>${meso(r.next)}${dlt(r.next-r.now,r.now)}</b></div>`).join('')||'<div class="muted">캐릭터가 없어요</div>'}</div>
+    <div class="pa-total"><span>합계</span><b>${meso(sum('next'))}${dlt(sum('next')-sum('now'),sum('now'))}</b></div>
     <div class="pa-note muted">주간 상위 ${S.settings.weeklyLimit}개 + 월간 보스, 테섭 예정 가격으로 계산</div>`;
 }
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]'); if(!t) return; pcTab=t.dataset.pctab; const el=document.querySelector('.pricecard'); if(el) el.outerHTML=priceCard(); });

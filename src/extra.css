@@ -646,3 +646,14 @@ select.impworld option{color:#111}
   animation:eppearl 3.2s linear infinite}
 @keyframes eppearl{from{background-position:120% 0}to{background-position:-100% 0}}
 @media (prefers-reduced-motion: reduce){.lx.aur.epsum{animation:none;background-position:50% 0}}
+
+/* b40: 정렬은 캐릭터 목록 왼쪽 아래(쪽 버튼 옆) */
+.cfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:6px}
+.cfoot .charsort{margin-left:0;padding-left:0;flex-wrap:wrap}
+.cfoot .cpager{margin:0}
+/* 검마 정렬순: 이번 달 검마 완료 캐릭터는 흐리게 */
+.char.gmdone{opacity:.5}
+.char.gmdone:hover{opacity:.85}
+/* 드롭 칩 선택 = 초록 배경 + 테두리 (체크 표시 없음, 크기 그대로) */
+.drop.got{border-color:#3fb96f;background:rgba(63,185,111,.24);box-shadow:0 0 0 1px #3fb96f inset}
+.drop.got .dn{color:#e8fff0}

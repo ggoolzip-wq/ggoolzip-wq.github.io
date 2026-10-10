@@ -9,7 +9,7 @@ def check(n,c,d=''):
 html=open(os.path.join(ROOT,'tests','fixtures','update_813.html'),encoding='utf-8').read()  # 테섭 공지도 같은 본문 형식 (가격표 있는 실제 공지)
 info=nexon_prices.parse_post(html)
 check('parser finds crystal table in post body', len(info['rows'])>=20, len(info['rows']))
-live=json.load(open(os.path.join(ROOT,'prices.json'),encoding='utf-8'))
+live=json.load(open(os.path.join(ROOT,'prices.json'),encoding='utf-8')); live.pop('upcoming',None)
 tmp=tempfile.mkdtemp(); P=os.path.join(tmp,'prices.json')
 # 1) 실서버와 같은 표 → 예정 없음
 json.dump(live,open(P,'w'),ensure_ascii=False); update_feed.PRICES=P
@@ -49,4 +49,14 @@ check('patch with no table → unchanged', update_feed.patch_prices(new_patch,fe
 ch=update_feed.patch_prices(new_patch,fetch=lambda u: low); w=json.load(open(P))
 lowmap={upcoming.bkey(r['boss']):r['new'] for r in pj['upcoming']['rows']}
 check('patch applies → live = 테섭 prices, upcoming cleared, source=patch', ch and 'upcoming' not in w and w['source']['url'].endswith('/999') and all(lowmap.get(upcoming.bkey(r['boss']),r['new'])==r['new'] for r in w['rows']))
+# 8) 데모 예정 가격: 본섭 패치가 와도 무시, 진짜 테섭 글이 오면 데모를 통째로 교체
+demo=dict(live,upcoming={'demo':True,'source':{'title':'[데모]'},'rows':[{'boss':'선택받은 세렌 (하드)','new':1}]})
+json.dump(demo,open(P,'w'),ensure_ascii=False)
+check('demo upcoming → patch logic ignores it (no fetch, live untouched)', update_feed.patch_prices(new_patch,fetch=lambda u: 1/0)==False and json.load(open(P))['rows']==live['rows'])
+ch=update_feed.test_prices([{'id':'test:903','title':'진짜 테섭','url':'https://x/Testworld/News/Update/903','date':''}],fetch=lambda u: low); w=json.load(open(P))
+check('real 테섭 post replaces demo entirely (prices from post, not random)', ch and not w['upcoming'].get('demo') and w['upcoming']['source']['url'].endswith('/903') and all(r['new']!=1 for r in w['upcoming']['rows']))
+# 9) 주간 작업: 가격이 같아도 확인 성공 시 checkedAt = 오늘
+update_prices.OUT=P; update_prices._OLD_UP=None
+o=dict(live,checkedAt='2026-10-09'); json.dump(o,open(P,'w'),ensure_ascii=False)
+update_prices.touch(o,'2026-10-10'); check('update_prices touch: unchanged prices → checkedAt today', json.load(open(P))['checkedAt']=='2026-10-10')
 print('FAILS:',fails); sys.exit(1 if fails else 0)

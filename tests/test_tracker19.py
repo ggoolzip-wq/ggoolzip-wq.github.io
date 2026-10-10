@@ -66,8 +66,8 @@ try:
       if vw==1280:
         base=pg.evaluate(ORDER)
         check('default order', base==[f'c{i}' for i in range(1,12)], base)
-        ctl=pg.evaluate("(()=>{const s=document.querySelector('.charsort'),w=s.closest('#worldTabs');return {inWorld:!!w,txt:w&&w.innerText,on:document.querySelector('.sortlink.on').dataset.csort,deco:getComputedStyle(document.querySelector('.sortlink')).textDecorationLine,fw:[...document.querySelectorAll('.sortlink')].map(e=>getComputedStyle(e).fontWeight)}})()")
-        check('sort control next to world tabs', ctl['inWorld'] and '스카니아' in ctl['txt'] and '기본순' in ctl['txt'], ctl)
+        ctl=pg.evaluate("(()=>{const s=document.querySelector('.charsort'),w=s.closest('#charFoot');return {inWorld:!!w,txt:w&&w.innerText,on:document.querySelector('.sortlink.on').dataset.csort,deco:getComputedStyle(document.querySelector('.sortlink')).textDecorationLine,fw:[...document.querySelectorAll('.sortlink')].map(e=>getComputedStyle(e).fontWeight)}})()")
+        check('sort control in bottom foot (b40)', ctl['inWorld'] and '기본순' in ctl['txt'] and '검마 정렬순' in ctl['txt'], ctl)
         check('link style underline, active bold', ctl['deco']=='underline' and ctl['on']=='base' and int(ctl['fw'][0])>int(ctl['fw'][1]), ctl)
         pg.hover('[data-csort="undone"]'); pg.wait_for_timeout(100)
         col=pg.evaluate("getComputedStyle(document.querySelector('[data-csort=\"undone\"]')).color")

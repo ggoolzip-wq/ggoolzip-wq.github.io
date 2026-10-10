@@ -4,7 +4,7 @@
 maplestory.nexon.com 업데이트 공지 목록을 최신순으로 확인해 '강렬한 힘의 결정' 가격표가 있는
 가장 최근 공지를 찾고(scripts/nexon_prices.py 파서), 사이트 루트의 prices.json 을 갱신합니다.
 
-- 가격표가 바뀌었을 때만 파일을 바꿉니다. 같으면 일주일에 한 번만 checkedAt(마지막 확인)을 갱신합니다.
+- 가격표가 바뀌었을 때만 파일을 바꿉니다. 같아도 확인에 성공할 때마다 checkedAt(마지막 확인)을 오늘로 갱신합니다.
 - 접속 실패·형식 변경 등으로 읽지 못하면 기존 prices.json 을 그대로 두고 경고만 남깁니다(종료 코드 0).
 - 이전 공지(현재 prices.json 보다 오래된 공지)의 표로 되돌리지 않습니다.
 """
@@ -80,8 +80,7 @@ def touch(old, today):
     if upcoming.reconcile(old):
         write(old)
         print("본섭 가격이 테섭 예정 가격과 같아져 예정 표시 삭제")
-    last = old.get("checkedAt") or "1970-01-01"
-    if (datetime.date.fromisoformat(today) - datetime.date.fromisoformat(last)).days >= HEARTBEAT_DAYS:
+    if old.get("checkedAt") != today:  # 확인에 성공하면 가격이 같아도 매번 '마지막 확인' 날짜 갱신
         old["checkedAt"] = today
         write(old)
         print("마지막 확인 날짜 갱신:", today)

@@ -380,6 +380,8 @@ def patch_prices(new_items, fetch=None):
             prices = json.load(f)
     except Exception:
         return False
+    if (prices.get("upcoming") or {}).get("demo"):
+        return False  # 데모 예정 가격 → 본섭 공지 본문을 받지 않음 (데모가 실서버 가격 갱신을 일으키지 않게)
     if not new_items or not (prices.get("upcoming") or {}).get("rows"):
         return False  # 예정 가격이 없으면 본문을 받지 않음(비용 절약; 주 1회 update-prices.yml 이 대비)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

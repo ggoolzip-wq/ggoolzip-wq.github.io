@@ -16,7 +16,7 @@ for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
 URL=f'http://localhost:{PORT}/index.html'
-live=json.load(open(os.path.join(ROOT,'prices.json'),encoding='utf-8'))
+live=json.load(open(os.path.join(ROOT,'prices.json'),encoding='utf-8')); live.pop('upcoming',None)  # 라이브 데모 예정 가격 제외
 demo=json.loads(json.dumps(live)); demo['checkedAt']='2099-01-01'
 demo['upcoming']={'source':{'url':'https://maplestory.nexon.com/Testworld/News/Update/999','title':'[데모] 테스트 서버 업데이트 안내','date':'2026-10-10'},
   'rows':[{'boss':r['boss'],'old':r['new'],'new':int(r['new']*0.9)} for r in live['rows']],'detectedAt':'2026-10-10T09:00:00+09:00'}
