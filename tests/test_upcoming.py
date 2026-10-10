@@ -37,4 +37,16 @@ import update_prices
 update_prices.OUT=P; update_prices._OLD_UP=pj['upcoming']
 new=copy.deepcopy(live); update_prices.write(new); w=json.load(open(P))
 check('update_prices keeps upcoming when prices unchanged', 'upcoming' in w and len(w['upcoming']['rows'])==len(pj['upcoming']['rows']))
+# 6) 테섭 새 글에 결정석 변경 없음 → 가격 그대로, '마지막 확인'만 오늘로
+json.dump(dict(live,checkedAt='2026-01-01'),open(P,'w'),ensure_ascii=False)
+ch=update_feed.test_prices([{'id':'test:902','title':'테섭 일반','url':'https://x/Testworld/News/Update/902','date':''}],fetch=lambda u: '<html><title>x</title><body>버그 수정</body></html>')
+w=json.load(open(P)); check('no crystal change → only checkedAt updated', ch and w['checkedAt']==update_feed.today_kst() and w['rows']==live['rows'] and 'upcoming' not in w)
+# 7) 본섭 패치: 예정 없으면 본문 안 받음 / 예정 있으면 그 공지 가격으로 실서버 갱신 + 예정 삭제
+new_patch=[{'id':'update:999','title':'본섭 업데이트','url':'https://maplestory.nexon.com/News/Update/999','date':'2026-10-16T10:00:00+09:00'}]
+check('patch without pending upcoming → no fetch', update_feed.patch_prices(new_patch,fetch=lambda u: 1/0)==False)
+json.dump(pj,open(P,'w'),ensure_ascii=False)
+check('patch with no table → unchanged', update_feed.patch_prices(new_patch,fetch=lambda u:'<html><body>점검</body></html>')==False and 'upcoming' in json.load(open(P)))
+ch=update_feed.patch_prices(new_patch,fetch=lambda u: low); w=json.load(open(P))
+lowmap={upcoming.bkey(r['boss']):r['new'] for r in pj['upcoming']['rows']}
+check('patch applies → live = 테섭 prices, upcoming cleared, source=patch', ch and 'upcoming' not in w and w['source']['url'].endswith('/999') and all(lowmap.get(upcoming.bkey(r['boss']),r['new'])==r['new'] for r in w['rows']))
 print('FAILS:',fails); sys.exit(1 if fails else 0)

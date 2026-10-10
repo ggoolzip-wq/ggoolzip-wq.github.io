@@ -261,3 +261,9 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 생명 반지 상자 결과에 '생명의 연마석'(gl, 아이콘 g_life) — 반지 결과처럼 dropOut 에 저장, 불꽃은 연마석 아이콘, 수익 분석 보스별·총 아이템에 생명의 연마석으로 합산, 시드링 요약에 표시.
 - 불꽃 아이콘 42px(1.3배). 캐릭터 목록 페이지 마지막 쪽도 8줄 높이(min-height) 유지. 동기화 줄 'HH:MM KST 동기화' → '갱신완료'(시각은 title). 마지막 상단 탭 복원(localStorage mapleBossTracker.tab, 없으면 보스 현황). 수익 분석·로그인 메뉴의 드라이브 저장 안내 문구 삭제.
 - **테섭 예정 결정석 가격 (b38)**: update_feed.py 가 테섭 새 글(src_test 의 새 항목)마다 본문을 받아 nexon_prices.parse_post 로 가격표를 찾고, 있으면 prices.json 의 `upcoming`{source,rows,detectedAt} 에 저장(scripts/upcoming.py add_upcoming, 실서버와 같은 줄은 넣지 않음). 실서버 rows 는 그대로. update_prices.py(본섭 12:17) 는 upcoming 을 유지하고 같은 가격이 적용된 줄을 지움(reconcile, 모두 적용되면 upcoming 삭제). update-feed.yml 이 prices_changed 일 때 prices.json 도 커밋. 사이트: 가격 카드 각 줄에 '테섭 예정 → N', 예상 결정석 수익 옆에도 '테섭 예정 → N'(예정 가격으로 다시 계산, withUpcoming), 카드 아래에 테섭 글 제목. tests/test_upcoming.py(공지 픽스처를 테섭 본문으로 사용, 10% 인하 시나리오), test_tracker31(로컬 데모, 실서버에는 데모 데이터 없음).
+
+## 2026-10-10 b39 — 결정석 가격 갱신 방식 (비용 절약)
+- **5분 피드 작업(update_feed.py)이 주 경로**: 테섭 새 글 → 본문 전체에서 결정석 표 찾기(test_prices). 있으면 prices.json `upcoming` 에 1회 저장, 없으면 `checkedAt`(마지막 확인)만 오늘(KST)로. 실서버 가격은 그대로.
+- **본섭 적용(patch_prices)**: 패치내역 소스(notice-update)에 새 `update:` 글이 나오고 `upcoming` 이 있을 때만 그 공지 본문을 받아 가격표(20줄 이상, 값 정상)로 실서버 rows/source 갱신 + `upcoming` 삭제. 예정 가격이 없으면 본문을 받지 않음.
+- **update-prices.yml**: 매일 → 주 1회(금 12:17 KST) 대비용으로 축소. 지우지 않은 이유: 테섭을 거치지 않고 본섭에 바로 들어간 가격 변경·피드 작업이 놓친 경우(실패/차단)를 일주일 안에 잡아 주고, 7일 하트비트로 '마지막 확인'도 유지. 금요일 = 목요일 정기 패치 다음 날.
+- **사이트**: `upcoming` 이 있으면 결정석 가격 카드에 탭 '가격 / 패치 후 예상 주간 수익'. 후자는 캐릭터별 주간 상위 12개 + 월간 보스(fullExpected)를 예정 가격으로 다시 계산(withUpcoming)하고 현재 가격 대비 증감(+초록/−빨강)과 합계. upcoming 이 없어지면 탭 자동으로 사라짐. 테스트: test_upcoming.py(6·7), test_tracker31(로컬 10% 데모, 스크린샷 b39_*).

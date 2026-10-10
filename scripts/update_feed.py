@@ -358,12 +358,49 @@ def test_prices(new_items, fetch=None):
         except Exception as e:
             log(f"::warning::[test-prices] {it['url']} 본문 실패: {e}"); continue
         log(f"[test-prices] {it['title'][:40]} → 가격 줄 {len(info['rows'])}개")
-        if info["rows"] and upcoming.add_upcoming(prices, {"url": it["url"], "title": info["title"] or it["title"], "date": (it.get("date") or "")[:10]}, info["rows"]):
-            changed = True
+        if info["rows"]:
+            if upcoming.add_upcoming(prices, {"url": it["url"], "title": info["title"] or it["title"], "date": (it.get("date") or "")[:10]}, info["rows"]):
+                changed = True
+        elif prices.get("checkedAt") != today_kst():  # 결정석 변경 없음 → '마지막 확인' 날짜만
+            prices["checkedAt"] = today_kst(); changed = True
     if changed:
         with open(PRICES, "w", encoding="utf-8") as f:
             json.dump(prices, f, ensure_ascii=False, indent=1); f.write("\n")
     return changed
+
+def today_kst():
+    return datetime.datetime.now(KST).strftime("%Y-%m-%d")
+
+# 본섭 업데이트 공지(패치내역 새 글) + 테섭 예정 가격이 있을 때만: 그 공지의 가격표로 실서버 가격 갱신, 예정 표시 삭제
+_PATCH_NEW = []
+PATCH_MIN_ROWS = 20
+def patch_prices(new_items, fetch=None):
+    try:
+        with open(PRICES, encoding="utf-8") as f:
+            prices = json.load(f)
+    except Exception:
+        return False
+    if not new_items or not (prices.get("upcoming") or {}).get("rows"):
+        return False  # 예정 가격이 없으면 본문을 받지 않음(비용 절약; 주 1회 update-prices.yml 이 대비)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import nexon_prices, upcoming
+    fetch = fetch or (lambda u: http_get(u, proxy=True)[1])
+    for it in sorted(new_items, key=lambda x: int(re.sub(r"\D", "", str(x["id"])) or 0), reverse=True):
+        try:
+            info = nexon_prices.parse_post(fetch(it["url"]))
+        except Exception as e:
+            log(f"::warning::[patch-prices] {it['url']} 본문 실패: {e}"); continue
+        rows = [{k: r[k] for k in ("boss", "old", "new", "effective", "effective_note") if k in r} for r in info["rows"]]
+        log(f"[patch-prices] {it['title'][:40]} → 가격 줄 {len(rows)}개")
+        if len(rows) < PATCH_MIN_ROWS or any(not isinstance(r.get("new"), int) or r["new"] <= 0 for r in rows):
+            continue
+        prices.update(source={"url": it["url"], "title": info.get("title") or it["title"], "date": (it.get("date") or "")[:10]},
+                      rows=rows, notes=info.get("notes", prices.get("notes", [])), checkedAt=today_kst(), fetchedAt=now_iso())
+        prices.pop("upcoming", None)  # 본섭 적용 → 테섭 예정 표시 삭제
+        with open(PRICES, "w", encoding="utf-8") as f:
+            json.dump(prices, f, ensure_ascii=False, indent=1); f.write("\n")
+        return True
+    return False
 
 # ---------------- 마빡도로시 (인벤) ----------------
 def inven_rows(s):
@@ -615,6 +652,8 @@ def main():
                 log(f"[{k}] 이번 회차 건너뜀"); continue
             if k == "test":
                 _TEST_NEW[:] = new
+            if k == "patch":
+                _PATCH_NEW[:] = [x for x in new if str(x["id"]).startswith("update:")]
             n = merge(lst, new)
             if k == "patch":
                 m = apply_minor(lst, _MINOR, wm); n += m
@@ -630,6 +669,10 @@ def main():
     prices_changed = False
     try:
         prices_changed = test_prices(_TEST_NEW)
+    except Exception as e:
+        log(f"::warning::[test-prices] 실패: {e}")
+    try:
+        prices_changed = patch_prices(_PATCH_NEW) or prices_changed
     except Exception as e:
         log(f"::warning::[test-prices] 실패: {e}")
     sun_changed = False

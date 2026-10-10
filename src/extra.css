@@ -657,3 +657,15 @@ select.impworld option{color:#111}
 @keyframes epray2{0%,100%{opacity:.4;transform:scale(.85)}50%{opacity:.65;transform:scale(1)}}
 @keyframes epspin{from{rotate:0deg}to{rotate:360deg}}
 @media (prefers-reduced-motion: reduce){.epbeam::before,.epbeam::after{animation:none}}
+
+/* 결정석 가격 카드: 테섭 예정 가격이 있을 때 '패치 후 예상 주간 수익' 탭 */
+.pc-tabs{display:flex;gap:4px;margin:0 0 6px}
+.pc-tabs button{flex:1;font:inherit;font-size:.7rem;padding:4px 6px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.pc-tabs button.on{color:var(--accent);border-color:var(--accent);font-weight:700}
+.pa-row .avatar{width:22px;height:22px;flex:none}
+.pa-d{display:block;font-size:.66rem;font-weight:600;text-align:right}
+.pa-d.dn{color:#ff7a7a}.pa-d.upx{color:#6fd39a}
+.pa-row b{text-align:right}
+.pa-total{display:flex;justify-content:space-between;align-items:flex-start;font-size:.78rem;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+.pa-total b{text-align:right}
+.pa-note{font-size:.62rem;margin-top:4px}

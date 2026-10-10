@@ -1288,12 +1288,27 @@ function revPanel(a,cur){
 const priceRows = g => BOSSES.filter(b=>b.type===g).flatMap(b=>b.diffs.map(d=>({b,d,k:priceKey(b,d),p:price(b,d)}))).sort((x,y)=>x.p-y.p);
 const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신\n(마지막 확인 ${officialInfo.checkedAt||'-'})${Object.keys(officialInfo.upcoming||{}).length?`\n테섭 예정 가격: ${officialInfo.upSource?.title||'테스트 서버 공지'}`:''}${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
 /* 보스 체크 탭 오른쪽: 결정석 가격 (읽기 전용, prices.json 자동 갱신) */
+// 테섭 예정 가격이 있을 때만: 캐릭터별 예상 주간 수익(주간 상위 12 + 월간) 현재 가격 vs 패치 후
+let pcTab='price';
+function fullExpected(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit).reduce((s,x)=>s+x.value,0);
+  const m=BOSSES.filter(b=>b.type==='monthly'&&c.bosses[b.id]?.enabled).reduce((s,b)=>{ const cfg=c.bosses[b.id], d=b.diffs.includes(cfg.diff)?cfg.diff:b.diffs[0]; return s+Math.floor(price(b,d)/curParty(c,b.id)); },0);
+  return w+m; }
+function afterPatchHtml(){
+  const rows=S.characters.map(c=>({c,now:fullExpected(c),next:withUpcoming(()=>fullExpected(c))})).filter(r=>r.now||r.next);
+  const sum=k=>rows.reduce((s,r)=>s+(r[k]||0),0);
+  const dlt=d=>`<span class="pa-d ${d<0?'dn':d>0?'upx':''}">${d>0?'+':d<0?'−':'±'}${meso(Math.abs(d))}</span>`;
+  return `<div class="pc-list pa-list">${rows.map(r=>`<div class="pc-row pa-row" title="${esc(r.c.name)} — 현재 가격 ${meso(r.now)} → 패치 후 ${meso(r.next)}">${avatar(r.c,'sm')}<span class="pc-nm">${esc(r.c.name)}</span><b>${meso(r.next)}${dlt(r.next-r.now)}</b></div>`).join('')||'<div class="muted">캐릭터가 없어요</div>'}</div>
+    <div class="pa-total"><span>합계</span><b>${meso(sum('next'))}${dlt(sum('next')-sum('now'))}</b></div>
+    <div class="pa-note muted">주간 상위 ${S.settings.weeklyLimit}개 + 월간 보스, 테섭 예정 가격으로 계산</div>`;
+}
+document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]'); if(!t) return; pcTab=t.dataset.pctab; const el=document.querySelector('.pricecard'); if(el) el.outerHTML=priceCard(); });
 function priceCard(){
   const up=(officialInfo&&officialInfo.upcoming)||{};
   const row=r=>{ const u=up[r.k]; return `<div class="pc-row${u?' has-up':''}" title="${esc(r.b.name)} ${D[r.d]} — ${r.p.toLocaleString()} 메소${u?` · 테섭 예정 ${u.toLocaleString()} 메소`:''}">${bossIcon(r.b)}<span class="pc-nm">${esc(r.b.name)} <span class="muted">${D[r.d]}</span></span><b>${meso(r.p)}${u?`<span class="pc-up">테섭 예정 → ${meso(u)}</span>`:''}</b></div>`; };
   return `<aside class="card pricecard" aria-label="결정석 가격">
     <div class="pc-head"><h2>${miniIcon('ipc')||'💎'} 결정석 가격</h2></div>
-    <div class="pc-list">${priceRows('weekly').map(row).join('')}<div class="pc-sep">🌙 월간 보스</div>${priceRows('monthly').map(row).join('')}</div>
+    ${Object.keys(up).length?`<div class="pc-tabs" role="tablist"><button type="button" role="tab" data-pctab="price" class="${pcTab==='price'?'on':''}">가격</button><button type="button" role="tab" data-pctab="after" class="${pcTab==='after'?'on':''}">패치 후 예상 주간 수익</button></div>`:''}
+    ${Object.keys(up).length&&pcTab==='after'?afterPatchHtml():`<div class="pc-list">${priceRows('weekly').map(row).join('')}<div class="pc-sep">🌙 월간 보스</div>${priceRows('monthly').map(row).join('')}</div>`}
     <div class="pc-foot muted">${esc(priceAutoText())}</div>
   </aside>`;
 }
