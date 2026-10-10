@@ -614,31 +614,6 @@ select.impworld option{color:#111}
 @media (prefers-reduced-motion: reduce){.lx.aur.epsum{animation:none}}
 .svaskbtns [data-k=no]{background:transparent;color:var(--text,#ececf1);border-color:var(--line,#3a3a46)}
 #svGate .svgerr{margin-top:10px;padding:6px 2px;background:transparent;border:0;color:#ff5a5a;font-weight:600;font-size:.9rem;opacity:1}
-/* b37: 합계 숫자에서 대각선(X) 4방향으로 뻗는 하늘색 프리즘 광선 + 흰·청록 코어 글로우 (CSS만, 레이아웃 영향 없음) */
-.epbeam{position:relative;display:inline-block;margin-left:6px;vertical-align:baseline;isolation:isolate}
-.epbeam .epsum{position:relative;z-index:2;margin-left:0}
-.epbeam::before,.epbeam::after{content:"";position:absolute;left:50%;top:50%;pointer-events:none;z-index:1;border-radius:50%}
-/* 광선: 45°/135°/225°/315° 가는 스파이크 (가장자리 무지개빛) + 희미한 상하좌우 */
-.epbeam::before{width:96px;height:96px;margin:-48px 0 0 -48px;
-  background:conic-gradient(from 0deg,
-    rgba(255,255,255,.25) 0deg,transparent 2deg,transparent 41deg,
-    rgba(255,120,220,.55) 42.5deg,#bff6ff 44deg,#ffffff 45deg,#bff6ff 46deg,rgba(120,255,180,.55) 47.5deg,transparent 49deg,
-    transparent 88deg,rgba(200,245,255,.22) 90deg,transparent 92deg,
-    transparent 131deg,rgba(255,120,220,.55) 132.5deg,#bff6ff 134deg,#ffffff 135deg,#bff6ff 136deg,rgba(120,255,180,.55) 137.5deg,transparent 139deg,
-    transparent 178deg,rgba(200,245,255,.22) 180deg,transparent 182deg,
-    transparent 221deg,rgba(255,120,220,.55) 222.5deg,#bff6ff 224deg,#ffffff 225deg,#bff6ff 226deg,rgba(120,255,180,.55) 227.5deg,transparent 229deg,
-    transparent 268deg,rgba(200,245,255,.22) 270deg,transparent 272deg,
-    transparent 311deg,rgba(255,120,220,.55) 312.5deg,#bff6ff 314deg,#ffffff 315deg,#bff6ff 316deg,rgba(120,255,180,.55) 317.5deg,transparent 319deg,
-    transparent 358deg,rgba(255,255,255,.25) 360deg);
-  -webkit-mask:radial-gradient(circle,#000 0,#000 18%,rgba(0,0,0,.55) 42%,transparent 70%);mask:radial-gradient(circle,#000 0,#000 18%,rgba(0,0,0,.55) 42%,transparent 70%);
-  filter:drop-shadow(0 0 3px rgba(127,224,255,.9));mix-blend-mode:screen;animation:epray 2.2s ease-in-out infinite;will-change:transform,opacity}
-/* 코어: 흰·청록 글로우 */
-.epbeam::after{width:34px;height:26px;margin:-13px 0 0 -17px;
-  background:radial-gradient(ellipse at center,rgba(255,255,255,.85) 0,rgba(170,240,255,.7) 30%,rgba(90,200,255,.35) 55%,transparent 75%);
-  filter:blur(3px);mix-blend-mode:screen;animation:epcore 2.2s ease-in-out infinite;will-change:transform,opacity}
-@keyframes epray{0%,100%{opacity:.7;transform:scale(.72) rotate(0deg)}50%{opacity:1;transform:scale(1.08) rotate(4deg)}}
-@keyframes epcore{0%,100%{opacity:.65;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
-@media (prefers-reduced-motion: reduce){.epbeam::before,.epbeam::after{animation:none}}
 .pc-foot{white-space:pre-line}
 .cpager{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin-top:8px}
 .cpager[hidden]{display:none}
@@ -650,13 +625,6 @@ select.impworld option{color:#111}
 .cbmodal{position:fixed;inset:0;display:flex!important;align-items:center;justify-content:center;max-width:none;width:auto;padding:16px}.cbbox{width:auto;max-width:min(420px,92vw)}
 #iconBurst img{left:-21px;top:-21px;width:42px;height:42px}
 .ringc[hidden]{display:none}
-/* 프리즘 광선: 짧고 약하게 + 360° 회전(속도 무작위 --epdur) */
-.epbeam::before{width:46px;height:46px;margin:-23px 0 0 -23px;opacity:.55;filter:drop-shadow(0 0 1.5px rgba(127,224,255,.5));
-  animation:epray2 2.4s ease-in-out infinite,epspin var(--epdur,7s) linear infinite}
-.epbeam::after{opacity:.6}
-@keyframes epray2{0%,100%{opacity:.4;transform:scale(.85)}50%{opacity:.65;transform:scale(1)}}
-@keyframes epspin{from{rotate:0deg}to{rotate:360deg}}
-@media (prefers-reduced-motion: reduce){.epbeam::before,.epbeam::after{animation:none}}
 
 /* 결정석 가격 카드: 테섭 예정 가격이 있을 때 '패치 후 예상 주간 수익' 탭 */
 .pc-tabs{display:flex;gap:4px;margin:0 0 6px}
@@ -669,3 +637,12 @@ select.impworld option{color:#111}
 .pa-total{display:flex;justify-content:space-between;align-items:flex-start;font-size:.78rem;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
 .pa-total b{text-align:right}
 .pa-note{font-size:.62rem;margin-top:4px}
+
+/* b39: 에픽빔 합계 숫자 — 진주빛(흰→하늘→연보라) 그라데이션 + 선명한 글로우 + 은은한 반짝임 (광선 없음) */
+.lx.aur.epsum{font-family:inherit;font-weight:800;margin-left:6px;
+  background:linear-gradient(100deg,#ffffff 0%,#c9f3ff 22%,#7fe0ff 40%,#ffffff 50%,#d9c8ff 62%,#a8e8ff 80%,#ffffff 100%);
+  background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent;
+  text-shadow:none;filter:drop-shadow(0 0 1px rgba(255,255,255,.95)) drop-shadow(0 0 5px rgba(127,224,255,.75)) drop-shadow(0 0 9px rgba(190,160,255,.45));
+  animation:eppearl 3.2s linear infinite}
+@keyframes eppearl{from{background-position:120% 0}to{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.lx.aur.epsum{animation:none;background-position:50% 0}}

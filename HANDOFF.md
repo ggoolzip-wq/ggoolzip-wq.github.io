@@ -267,3 +267,4 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - **본섭 적용(patch_prices)**: 패치내역 소스(notice-update)에 새 `update:` 글이 나오고 `upcoming` 이 있을 때만 그 공지 본문을 받아 가격표(20줄 이상, 값 정상)로 실서버 rows/source 갱신 + `upcoming` 삭제. 예정 가격이 없으면 본문을 받지 않음.
 - **update-prices.yml**: 매일 → 주 1회(금 12:17 KST) 대비용으로 축소. 지우지 않은 이유: 테섭을 거치지 않고 본섭에 바로 들어간 가격 변경·피드 작업이 놓친 경우(실패/차단)를 일주일 안에 잡아 주고, 7일 하트비트로 '마지막 확인'도 유지. 금요일 = 목요일 정기 패치 다음 날.
 - **사이트**: `upcoming` 이 있으면 결정석 가격 카드에 탭 '가격 / 패치 후 예상 주간 수익'. 후자는 캐릭터별 주간 상위 12개 + 월간 보스(fullExpected)를 예정 가격으로 다시 계산(withUpcoming)하고 현재 가격 대비 증감(+초록/−빨강)과 합계. upcoming 이 없어지면 탭 자동으로 사라짐. 테스트: test_upcoming.py(6·7), test_tracker31(로컬 10% 데모, 스크린샷 b39_*).
+- b39: 에픽빔 합계 숫자 광선(::before/::after, 회전, EP_DUR) 삭제 → 숫자 자체에 진주빛 그라데이션(흰→하늘→연보라, eppearl 3.2s 반짝임) + 흰/하늘/보라 drop-shadow 글로우. 모션 줄이기 시 정지.

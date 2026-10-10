@@ -1398,7 +1398,6 @@ const lootChips = m => `<span class="loots">${Object.keys(m).filter(k=>m[k]>0).s
 function ringExp(T){ const e={r4:0,c4:0}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); const p=ring4(it); if(p){ e.r4+=I.n*p.r4/100; e.c4+=I.n*p.c4/100; } }); return e; }
 const fmtExp=v=>(Math.round(v*100)/100).toFixed(2);
 const ringExpHtml=T=>{ const e=ringExp(T); return `<span class="ringexp">기댓값 리4 ${fmtExp(e.r4)}개 · 컨4 ${fmtExp(e.c4)}개</span>`; };
-const EP_DUR=(4+Math.random()*6).toFixed(1); // 에픽빔 광선 회전 속도: 접속할 때마다 4~10초 무작위
 function bossLootHtml(T){
   const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; };
   const rows=Object.values(T.byBoss||{}).filter(o=>Object.values(o.items).some(n=>n>0)).sort((a,b)=>bi(a.slot)-bi(b.slot)||a.dl.localeCompare(b.dl));
@@ -1458,7 +1457,7 @@ function renderTotal(){
   <div class="card">${(()=>{ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(isRing(it)) return; if(it==='chaosbox'){ let u=I.n; (I.outs||[]).forEach(o=>{ if(/^cb:/.test(o)&&ITEMS[o.slice(3)]){ R[o]=(R[o]||0)+1; u--; } }); if(u>0) R[it]=(R[it]||0)+u; return; } R[it]=(R[it]||0)+I.n; });
       const oi=k=>/^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*CHAOS_PICK.indexOf(k.slice(3)):Object.keys(ITEMS).indexOf(k);
       const ks=Object.keys(R).sort((x,y)=>oi(x)-oi(y));
-      const tot=Object.values(R).reduce((x,y)=>x+y,0); const hd=`<h2 class="eph">${miniIcon('sos')} <span class="ept">에픽빔 본 횟수</span>${tot?` <span class="epbeam" style="--epdur:${EP_DUR}s"><b class="lx aur epsum">${xN(tot)}</b></span>`:''}</h2>`;
+      const tot=Object.values(R).reduce((x,y)=>x+y,0); const hd=`<h2 class="eph">${miniIcon('sos')} <span class="ept">에픽빔 본 횟수</span>${tot?` <b class="lx aur epsum">${xN(tot)}</b>`:''}</h2>`;
       return hd+(ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${/^cb:/.test(k)?`${miniIcon('chaosbox')} - ${itemIcon(k.slice(3))}<span class="ln">${esc(ITEMS[k.slice(3)].n)}</span>`:`${itemIcon(k)}<span class="ln">${esc(ITEMS[k].n)}</span>`} <b class="lx">${xN(R[k])}</b></span></div>`).join('')}</div>`:'<p class="muted">아직 기록한 아이템이 없습니다. 보스 현황 탭에서 보스 행의 아이템을 누르고 저장하면 기록됩니다.</p>'); })()}</div>
   ${bossLootHtml(T)}${itemTotalsHtml(T)}
   <div class="card"><h2>🗓 전체 주 목록</h2><div style="overflow-x:auto"><table><thead><tr><th>주차</th><th class="num">클리어</th><th class="num">아이템</th><th class="num">주간 수익</th><th class="num">누적</th></tr></thead><tbody>
