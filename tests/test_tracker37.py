@@ -51,6 +51,8 @@ try:
     check('저장 → 선택이 저장 데이터에 남음', json.loads(pg.evaluate("localStorage.getItem('mapleBossTracker.v1')"))['characters'][0]['dmode']=={'kaling|g_faith':'w','kaling|r_life':'l','kaling|chaosbox':'s'})
     rp=pg.inner_text('.revpanel'); cw=pg.evaluate("getComputedStyle(document.querySelector('.revpanel .ptx-w')).color"); cl=pg.evaluate("getComputedStyle(document.querySelector('.revpanel .ptx-l')).color")
     check('이번 주 수익: (2인 블빵승리) 하늘색 / (2인 블빵패배) 회색 / (2인 분배)', '(2인 블빵승리)' in rp and '(2인 블빵패배)' in rp and '(2인 분배)' in rp and cw=='rgb(127, 211, 255)' and cl=='rgb(138, 143, 152)', (cw,cl))
+    hs=pg.evaluate("[...document.querySelectorAll('.revpanel .dl, .ringouts .dl')].map(e=>{const P=e.parentElement.closest('.rp-items,.ringouts').getBoundingClientRect(),R=e.getBoundingClientRect();return [e.innerText.replace(/\\s+/g,' '),Math.round(R.height),R.right<=P.right+1]})")
+    check('b50: 모든 항목(칠흑·블빵 포함)이 한 줄 덩어리, 칸 밖으로 안 나감', hs and all(h<=26 and ok for _,h,ok in hs), hs)
     pg.evaluate("endCelebrate(); document.querySelector('#iconBurst')?.remove()"); pg.locator('.revpanel').screenshot(path='/workspace/shots/b49_income.png')
     pg.click('[data-tab=total]'); pg.wait_for_timeout(500)
     tot=pg.inner_text('.itemtot'); bl=pg.inner_text('.bossloot')
