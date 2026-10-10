@@ -765,6 +765,7 @@ select.impworld option{color:#111}
 .drop.got{border-color:#3fb96f;background:rgba(63,185,111,.24);box-shadow:0 0 0 1px #3fb96f inset}
 .drop.got .dn{color:#e8fff0}
 .dqtop .dqsync{margin-left:6px;vertical-align:middle}
+.hexastat .hxat{font-size:.66rem;margin-top:2px}
 </style>
 </head>
 <body>
@@ -2141,7 +2142,7 @@ function renderBoss(){
       <div class="stat"><div class="k">이번 주 주간 보스 수익 (이 캐릭터)</div><div class="v acc">${meso(r.meso)}</div></div>
       <div class="stat"><div class="k">주간 보스 처치</div><div class="v">${r.weekly} / ${lim}</div><div class="bar ${r.weekly>lim?'over':''}"><i style="width:${Math.min(100,r.weekly/lim*100)}%"></i></div></div>
       <div class="stat"><div class="k">이번 달 월간 보스</div><div class="v">${monthlyCount(c)} / ${S.settings.monthlyLimit}${r.monthMeso?` <span class="mmeso">${meso(r.monthMeso)}</span>`:''}</div><div class="bar"><i style="width:${Math.min(100,monthlyCount(c)/S.settings.monthlyLimit*100)}%"></i></div></div>
-      <div class="stat"><div class="k">전체 캐릭터 주간 합계</div><div class="v acc">${meso(a.total)}</div></div>
+      ${hexaStat(c)}
     </div>
    </div>
    <div class="card">
@@ -2550,6 +2551,13 @@ function applyOfficialPrices(pj){
   officialInfo={checkedAt:pj.checkedAt||'', source:pj.source||{}, applied, pending, upcoming, upSource:(pj.upcoming&&pj.upcoming.source)||null};
   return changed;
 }
+/* 헥사 환산: 저장소의 hexa.json {캐릭터이름: {value, updatedAt, snapshot}} — scripts/set_hexa.py 로 갱신 (maplescouter 자동 수집 없음) */
+let hexaData={};
+function loadHexa(){ if(!/^https?:$/.test(location.protocol)) return;
+  fetch('./hexa.json?t='+Math.floor(Date.now()/6e4),{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(j=>{ if(j&&typeof j==='object'){ hexaData=j.characters||j; if(tab==='boss') render(); } }).catch(()=>{}); }
+function hexaStat(c){ const h=hexaData[c.name]; const v=h&&h.value!=null&&h.value!==''?h.value:null;
+  const at=v!==null&&h.updatedAt?String(h.updatedAt).replace('T',' ').slice(0,16)+' 갱신':'';
+  return `<div class="stat hexastat"><div class="k">헥사 환산</div><div class="v acc">${v===null?'—':esc(typeof v==='number'?v.toLocaleString():String(v))}</div>${at?`<div class="hxat muted">${esc(at)}</div>`:''}</div>`; }
 function loadOfficialPrices(){
   try{ const c=JSON.parse(localStorage.getItem(PRICES_CACHE_KEY)||'null'); if(c) applyOfficialPrices(c); }catch(e){}
   if(!/^https?:$/.test(location.protocol)) return; // 파일로 연 경우: 내장 기본값 사용
@@ -3322,7 +3330,7 @@ $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
 load();
 if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
-checkResets(); loadOfficialPrices(); save(); applyTheme(); render();
+checkResets(); loadOfficialPrices(); loadHexa(); save(); applyTheme(); render();
 /* 페이지를 열거나 새로고침할 때마다 넥슨 API 동기화 1회 (2026-10-10 사용자 요청) — 🔄 버튼과 같은 syncAll(넥슨 API 전용, 구글 드라이브·로그인 창과 무관).
  * 새로고침을 연달아 해도 API 호출량을 아끼도록: 마지막 동기화(완료) 또는 마지막 '열 때 동기화' 시작이 LOAD_SYNC_GAP_MS(3초, 사용자 결정) 안이면 건너뜀.
  * 시작 시각을 따로 저장(LOAD_SYNC_KEY)하는 이유: 동기화 도중 새로고침하면 lastSync 가 안 바뀌어 매번 다시 시작되기 때문. */

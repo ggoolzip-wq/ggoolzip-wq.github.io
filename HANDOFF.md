@@ -278,3 +278,6 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 캐릭터 정렬은 목록 왼쪽 아래(#charFoot, 쪽 버튼과 한 줄): 기본순 / 보스 미완료순 / 검마 정렬순(이번 달 검은 마법사 미처치 먼저, c.monthly.blackmage; 완료 캐릭터는 흐리게 + '★이번 달 검마 완료' 덮개). 기본순 외에는 순서 바꾸기 잠금.
 - 버그 수정: update_prices.py 가 가격이 같으면 7일마다만 checkedAt 를 바꿔 '변경 없음'으로 끝나던 문제 → 확인 성공 때마다 checkedAt=오늘(바뀌면 커밋). 피드 작업의 테섭 '결정석 변경 없음' 경로도 checkedAt=오늘.
 - b42: 일퀘 현황 10분 자동 갱신(탭 열기·60초 타이머·화면 복귀) 삭제, '10분마다 자동' 문구 삭제 → 제목 옆 🔄(#dqSync, 캐릭터 동기화와 같은 SYNC_SVG·.ibtn.sbtn; 누르면 보이는 캐릭터 스케줄러 강제 갱신). 페이지 열 때는 보스 동기화(syncAll, 3초 규칙, 넥슨 API 전용·로그인 창 없음)가 같은 스케줄러 응답으로 일퀘 캐시도 채움. 길드 탭 자동 갱신은 그대로. test_tracker33.
+- 헥사 환산 (maplescouter 자동 수집 없음): 캐릭터 정보 칸의 '전체 캐릭터 주간 합계' → '헥사 환산' 값 + 작은 글씨 'YYYY-MM-DD HH:MM 갱신', 자료 없으면 '—'. 자료는 저장소 hexa.json {"characters": {이름: {value, updatedAt, snapshot}}} (pages_dist.sh 에 포함, 사이트가 no-cache 로 읽음).
+  - 기록: `NEXON_API_KEY=… python3 scripts/set_hexa.py 림강혼망 123456` (현재 KST 시각 + 넥슨 API 스냅샷: level, equipment 해시, hexa 해시(코어+스탯), combatPower). 키 없으면 경고 후 값만, `--no-snapshot` 으로 생략. 이후 commit/push.
+  - 변경 확인: `NEXON_API_KEY=… python3 scripts/check_hexa.py [이름…]` → 'SAME 이름' / 'CHANGED 이름 level,equipment,…', 종료 코드 0=모두 같음, 1=바뀐 것 있음, 2=오류. 바뀐 캐릭터만 브라우저에서 환산 확인 후 set_hexa.py. tests/test_hexa.py, test_tracker34.
