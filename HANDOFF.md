@@ -288,3 +288,4 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - 림강혼망(렌, 2026-10-10 실제 API 응답으로 로컬 계산): 현재(장비1·하이퍼1·어빌3·링크2) API 226,966,178 = 모델 재현(보정 k=0.7654) → 최고 433,060,423 (장비 2 · 하이퍼 3 · 어빌 1 · 링크 1). k 가 1과 23% 차이 = 공식에 안 들어간 직업/숨은 값 → 프리셋 간 비율은 맞지만 절대값은 추정.
   - 스케줄(cron)은 안 씀: 서버는 사용자 키를 저장하지 않으므로(대표 키 원본 저장 금지 원칙) 사용자 키로 서버 혼자 조회할 수 없음 → 사이트에서 캐릭터 동기화가 끝날 때(syncAll finally → cpRefresh) 오늘 아직 계산 안 한 캐릭터만 요청. 동기화 서버 로그인(bossmaple / ?sync=test) 때만, github.io(드라이브 모드)는 '—'.
   - 테스트: tests/test_cp.mjs (node), test_tracker34. D1 표는 원격에 CREATE TABLE IF NOT EXISTS 로 추가함.
+- b43: 캐릭터 목록 줄의 ⠿ 손잡이를 왼쪽 여백 안 absolute(폭 10px)로 → 초상화~✎ 묶음 좌우 여백 11px/11px (전에는 손잡이+간격 때문에 왼쪽 34px). test_tracker34 에서 측정.

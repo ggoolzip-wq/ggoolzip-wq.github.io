@@ -24,6 +24,8 @@ try:
     pg.locator('.stats').first.screenshot(path='/workspace/shots/b43_cp.png')
     pg.click('.char[data-id="c1"]'); pg.wait_for_timeout(200)
     t=pg.inner_text('.cpstat'); check('no data → —', '—' in t and '갱신' not in t, t)
+    g=pg.evaluate("(()=>{const r=document.querySelector('.char[data-id=c1]'),R=r.getBoundingClientRect(),a=r.querySelector('.avatar').getBoundingClientRect(),e=r.querySelector('[data-edit]').getBoundingClientRect();return [a.left-R.left,R.right-e.right]})()")
+    check('char row: portrait…edit group centered (left gap = right gap)', abs(g[0]-g[1])<=1.5, g)
     check('hexa.json not requested', not hx)
     check('no page errors', not errs, errs[:3])
     b.close()
