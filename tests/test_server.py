@@ -84,6 +84,14 @@ try:
     s,v,_=req('POST','/api/login',{'device':DEV,'key':KB}); check('other user: vault none', v['vault']=='none' and v['subKeys']==[], v)
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KG,'label':'부2'}]},tok=TA); s,v,_=req('POST','/api/login',{'device':DEV,'key':KA})
     check('removing a sub key updates the vault', [x['key'] for x in v['subKeys']]==[KG], v)
+    # 예비 키 (같은 넥슨 계정만, 금고에 함께 암호화)
+    BKA,BKG='live_BK_A_0123456789abcdefg','live_BK_G_0123456789abcdefg'
+    s,b,_=req('PUT','/api/subkeys',{'main':KA,'mainBk':KF,'subs':[{'key':KG,'label':'부2'}]},tok=TA); check('backup key of another account → 400 backup_mismatch', s==400 and b['error']=='backup_mismatch', b)
+    s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KG,'label':'부2','bk':BKA}]},tok=TA); check('sub backup of wrong account → 400', s==400 and b['error']=='backup_mismatch' and '부2' in b['message'], b)
+    s,b,_=req('PUT','/api/subkeys',{'main':KA,'mainBk':BKA,'subs':[{'key':KG,'label':'부2','bk':BKG}]},tok=TA); check('backup keys of same accounts stored', s==200, b)
+    vr=json.dumps(dev.sql("SELECT * FROM keyvault")); check('vault ciphertext only (no backup keys)', BKA not in vr and BKG not in vr)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KA}); check('login with main → backup keys come back', v['mainBk']==BKA and [x.get('bk') for x in v['subKeys']]==[BKG], v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KF}); check('sub-key login → no backup keys', v['mainBk']=='' and v['subKeys']==[], v)
     # 로그아웃
     s,b,_=req('POST','/api/logout',tok=TA2); s2,b2,_=req('GET','/api/state',tok=TA2); s3,_,_=req('GET','/api/state',tok=TA)
     check('logout kills only that session', s==200 and s2==401 and s3==200, (s,s2,s3))

@@ -735,7 +735,28 @@ async function testAccount(a, quiet){ // (조용한 확인용) — 화면에서�
     return true;
   }catch(e){ a.status={ok:false,msg:e.message,at:Date.now()}; save(); render(); if(!quiet) toast(`${a.label} 연결 실패: ${e.message}`); return false; }
 }
+/* 예비 API 키 (2026-10-10): 계정마다 1개 (a.bk, 같은 넥슨 계정 키만). 기본 키가 호출량/한도 초과(HTTP 429 · OPENAPI00007)면
+ * 같은 요청을 예비 키로 다시 보내고, 그날(KST) 끝까지 그 계정은 예비 키 사용. 키 값은 로그·화면에 남기지 않음 */
+const BK_DAY_KEY='mapleBossTracker.bkDay';
+const isQuotaErr = e => !!e && (e.status===429 || e.code==='OPENAPI00007' || /quota|한도/i.test(e.apiMsg||''));
+const bkDays = () => { try{ return JSON.parse(localStorage.getItem(BK_DAY_KEY)||'{}')||{}; }catch(e){ return {}; } };
+const bkOn = a => bkDays()[a.id]===dayId();
+const bkSet = a => { const d=bkDays(); for(const k in d) if(d[k]!==dayId()) delete d[k]; d[a.id]=dayId(); localStorage.setItem(BK_DAY_KEY,JSON.stringify(d)); };
 async function nx(path, params={}, keyArg){
+  const key=(keyArg||'').trim(), a=key&&typeof S!=='undefined'?accounts().find(x=>x.bk&&x.key===key):null;
+  if(a&&bkOn(a)) return nxRaw(path,params,a.bk);
+  try{ return await nxRaw(path,params,key); }
+  catch(e){ if(a&&isQuotaErr(e)){ bkSet(a); return nxRaw(path,params,a.bk); } throw e; }
+}
+/* 남은 호출 수(추정): 넥슨은 남은 양을 알려 주지 않으므로 이 브라우저에서 보낸 호출을 키별·KST 날짜별로 셈 (키는 해시로만 저장) */
+const QUOTA_KEY='mapleBossTracker.callCount', DAILY_LIMIT=1000;
+const keyTag = k => { let h=2166136261; for(const ch of String(k)) { h^=ch.codePointAt(0); h=Math.imul(h,16777619)>>>0; } return h.toString(36); };
+const quotaGet = () => { try{ const q=JSON.parse(localStorage.getItem(QUOTA_KEY)||'null'); if(q&&q.day===dayId()) return q; }catch(e){} return {day:dayId(),c:{},x:{}}; };
+const quotaBump = (k,over) => { const q=quotaGet(), t=keyTag(k); q.c[t]=(q.c[t]||0)+1; if(over) q.x[t]=1; try{ localStorage.setItem(QUOTA_KEY,JSON.stringify(q)); }catch(e){} };
+const quotaOf = k => { const q=quotaGet(), t=keyTag(k); return {used:q.c[t]||0, over:!!q.x[t]||(q.c[t]||0)>=DAILY_LIMIT}; };
+const quotaHtml = (k,switched) => { if(!k) return ''; const {used,over}=quotaOf(k), left=Math.max(0,DAILY_LIMIT-used);
+  return `<span class="quota${over?' over':''}" title="이 브라우저에서 오늘(KST) 이 키로 보낸 호출 수로 계산한 추정치">${over?`호출 한도 도달${switched?' → 예비 키 사용 중':''}`:`남은 호출 약 ${left}/${DAILY_LIMIT}`}</span>`; };
+async function nxRaw(path, params={}, keyArg){
   const key=(keyArg||'').trim(); if(!key) throw new Error('API 키가 설정되지 않았습니다');
   const wait=lastCall+CONFIG.API_DELAY_MS-Date.now(); if(wait>0) await sleep(wait); lastCall=Date.now();
   const qs=new URLSearchParams(Object.entries(params).filter(([,v])=>v!=null&&v!=='')).toString();
@@ -743,6 +764,7 @@ async function nx(path, params={}, keyArg){
   try{ res=await fetch(CONFIG.API_BASE+path+(qs?'?'+qs:''),{headers:{'x-nxopen-api-key':key,'accept':'application/json'}}); }
   catch(e){ const err=new Error('네트워크 오류 — 인터넷 연결 또는 브라우저 확장 프로그램·네트워크의 차단 여부를 확인하세요.'); err.status=0; err.code='NETWORK'; throw err; }
   let body=null; try{ body=await res.json(); }catch(e){}
+  quotaBump(key, res.status===429||body?.error?.name==='OPENAPI00007');
   if(!res.ok || !body || typeof body!=='object'){
     const n=body?.error?.name||'', m=body?.error?.message||'';
     const err=new Error(`${API_ERR[n]||(res.ok?'응답을 해석할 수 없습니다':'요청 실패')} (HTTP ${res.status}${n?' · '+n:''})${m?' — '+m:''}`);
@@ -1529,12 +1551,38 @@ function renderAccList(){
     const linked=S.characters.filter(c=>c.accId===a.id).length;
     const stt=!a.key?'<span class="warnc">키 없음</span>':a.status?.ok===false?`<span class="warnc" title="${esc(a.status.msg)}">⚠ 오류</span>`:'<span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료</span>';
     return `<div class="accrow ${a.id===impAccId?'on':''}" ${a.key?`data-acctest="${a.id}" title="이 계정의 캐릭터 보기"`:''}><input class="pin acclbl" data-acclabel="${a.id}" value="${esc(a.label)}" maxlength="12" aria-label="계정 이름">
-      <span class="accst">${stt}</span>
-      <span class="accbtns"><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>`;
+      <span class="accst">${stt}${quotaHtml(a.key,!!a.bk&&bkOn(a))}</span>
+      <span class="accbtns"><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>${a.key?bkRow(a):''}`;
   }).join(''):'<div class="muted acc-empty">등록된 API 키가 없습니다. 아래에 키를 붙여넣고 <b>+ API 키 추가</b>를 누르면 바로 그 계정의 캐릭터 목록이 나와요.</div>';
   $('#newAccLabel').placeholder=accounts().length?`부계정${accounts().length}`:'본계정';
   $('#accOpts').innerHTML=''; // (예전 '스케줄러 보스 자동 추가' 옵션 — 2026-10-10 삭제: 항상 켜짐)
 }
+const bkErr={};
+const bkRow = a => `<div class="bkrow" data-bkrow="${a.id}">${a.bk
+  ? `<input class="pin acclbl" data-bklabel="${a.id}" value="${esc(a.bkLabel||a.label+' 예비')}" maxlength="14" aria-label="예비 키 이름"><span class="accst"><span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료</span>${quotaHtml(a.bk)}${bkOn(a)?' <span class="muted tiny">오늘 사용 중</span>':''}</span><span class="accbtns"><button class="btn sm plain danger" data-bkdel="${a.id}" title="예비 키 삭제">삭제</button></span>`
+  : `<input class="pin acclbl" id="bkLb-${a.id}" maxlength="14" placeholder="${esc(a.label)} 예비" aria-label="예비 키 이름"><input class="pin bkin" id="bkIn-${a.id}" type="password" autocomplete="off" spellcheck="false" placeholder="같은 넥슨 계정의 다른 API 키" aria-label="예비 API 키"><button class="btn sm plain" data-bkadd="${a.id}">등록</button>`}
+  ${bkErr[a.id]?`<div class="bkerr" role="alert">${esc(bkErr[a.id])}</div>`:''}</div>`;
+// 계정 id 목록: 같은 넥슨 계정인지 비교용 (키 값은 저장·표시하지 않음)
+const acctIds = d => [...new Set((Array.isArray(d?.account_list)?d.account_list:[]).map(x=>String(x?.account_id||'')).filter(Boolean))].sort().join(',');
+async function bkAdd(id){
+  const a=accById(id), inp=$('#bkIn-'+id); if(!a||!inp) return; const k=inp.value.trim(); delete bkErr[id];
+  if(!k){ bkErr[id]='예비 API 키를 붙여넣으세요'; return renderAccList(); }
+  if(accounts().some(x=>x.key===k||x.bk===k)){ bkErr[id]='이미 등록된 키입니다 (기본 키와 다른 키를 넣으세요)'; return renderAccList(); }
+  const btn=document.querySelector(`[data-bkadd="${id}"]`); if(btn){ btn.disabled=true; btn.textContent='확인 중…'; }
+  try{
+    const mine=acctIds(await nxRaw('/maplestory/v1/character/list',{},a.key).catch(e=>{ if(isQuotaErr(e)) return {account_list:(listCache[a.id]?.all||[]).map(x=>({account_id:x.account_id}))}; throw e; }));
+    let theirs; try{ theirs=acctIds(await nxRaw('/maplestory/v1/character/list',{},k)); }catch(e){ throw new Error(isQuotaErr(e)?'예비 키도 지금 호출량 초과입니다. 잠시 후 다시 시도하세요':'넥슨이 이 예비 키를 거부했습니다 (키 확인)'); }
+    if(!mine) throw new Error('기본 키의 계정을 확인하지 못했습니다. 잠시 후 다시 시도하세요');
+    if(mine!==theirs) throw new Error('같은 넥슨 계정의 키가 아닙니다. 이 계정 주인의 키만 예비 키로 쓸 수 있어요');
+    a.bk=k; a.bkLabel=($('#bkLb-'+id)?.value||'').trim()||a.label+' 예비'; save(); render(); toast(`'${a.label}' 예비 키를 등록했습니다`);
+    if(SV_ON&&svTok()&&gdMeta.on) svSyncSubKeys().catch(()=>{});
+  }catch(e){ bkErr[id]=e.message; }
+  renderAccList();
+}
+function bkDel(id){ const a=accById(id); if(!a) return; delete a.bk; delete a.bkLabel; delete bkErr[id]; const d=bkDays(); delete d[id]; localStorage.setItem(BK_DAY_KEY,JSON.stringify(d)); save(); renderAccList(); render(); if(SV_ON&&svTok()&&gdMeta.on) svSyncSubKeys().catch(()=>{}); }
+document.addEventListener('click',e=>{ const t=e.target.closest('[data-bkadd],[data-bkdel]'); if(!t) return; e.stopPropagation(); if(t.dataset.bkadd) bkAdd(t.dataset.bkadd); else bkDel(t.dataset.bkdel); },true);
+document.addEventListener('change',e=>{ const id=e.target.dataset?.bklabel; if(!id) return; const a=accById(id); if(a){ a.bkLabel=e.target.value.trim()||a.label+' 예비'; save(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.classList?.contains('bkin')){ e.preventDefault(); bkAdd(e.target.id.slice(5)); } });
 function openAdd(){ openImport(); }
 async function openImport(accId){
   const modal=$('#importModal'), wasOpen=modal.classList.contains('show');
@@ -1866,7 +1914,7 @@ async function gdWrite(keepalive){
  *   캐릭터·계정은 id, 주간/월간 기록은 week/month 로 짝지음. 한쪽 삭제 + 다른 쪽 수정 → 수정본 유지(데이터 안 잃음).
  *   API 로 다시 받는 값(레벨·직업·월드·ocid·계정 배정)과 지난 기록 요약은 충돌이어도 묻지 않음(이 PC 값 / 클리어 많은 쪽). */
 const GD_BASE_KEY=SV_ON?'mapleBossTracker.svbase':'mapleBossTracker.gdbase';
-const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|autoSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp)$|^settings\.accounts\[[^\]]*\]\.(key|status)$/;
+const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|autoSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp)$|^settings\.accounts\[[^\]]*\]\.(key|bk|status)$/;
 const GD_SOFT_RE=/^characters\[[^\]]*\]\.(level|job|world|ocid|accId)$/;
 const GD_HIST_RE=/^(history|monthHistory|missW|missM)\[[^\]]*\]$/;
 const GD_KEYED={characters:'id',history:'week',monthHistory:'month',missW:'week',missM:'month','settings.accounts':'id'};
@@ -2103,7 +2151,7 @@ async function svLogin(key,accId){
     const keep=prev?prev===b.user:(gdLocalEmpty()||confirm(b.rev?'이 PC 데이터를 이 계정 데이터와 합칠까요?\n[취소]를 누르면 이 PC 데이터는 지우고 서버에 있는 이 계정 데이터만 불러옵니다.':'이 PC 데이터를 이 계정으로 올릴까요?\n[취소]를 누르면 이 PC 데이터는 지우고 빈 상태로 시작합니다.'));
     if(!keep){ svWipeLocal(); accId=''; }
     localStorage.setItem(SV_USER_KEY,b.user);
-    gd.login={key,accId:accId||'',hashes:b.accounts||[],vault:b.vault||'none',subs:b.subKeys||[]};
+    gd.login={key,accId:accId||'',hashes:b.accounts||[],vault:b.vault||'none',subs:b.subKeys||[],mainBk:b.mainBk||''};
     const la=(accId&&accById(accId))||(keep?accounts().find(x=>x.key===key):null); // 등록된 키로 로그인: 첫 저장 전에 계정 해시(ah)를 붙여 둠 → 다른 기기에서 키 짝짓기
     if(la&&((b.accounts?.[0]&&!(b.accounts||[]).includes(la.ah))||(b.vault!=='locked'&&!la.main))){ if(b.accounts?.[0]&&!(b.accounts||[]).includes(la.ah)) la.ah=b.accounts[0]; if(b.vault!=='locked'){ accounts().forEach(x=>delete x.main); la.main=true; } save(); clearTimeout(gd.timer); gd.timer=null; }
     gdMeta={on:true}; gdSaveMeta(); localStorage.removeItem(GD_BASE_KEY); gd.remoteRev=undefined; gd.fileId=null;
@@ -2155,11 +2203,12 @@ function svAfterLogin(){
   if(L.hashes[0]&&a.ah!==L.hashes[0]&&!hs.has(a.ah)){ a.ah=L.hashes[0]; ch=true; }
   if(L.vault!=='locked'){ for(const x of accounts()) if(!!x.main!==(x===a)){ x.main=x===a||undefined; if(!x.main) delete x.main; ch=true; } } // 대표 키 = 로그인에 쓴 키 (부계정 키로 로그인하면 그대로)
   let back=0;
+  if(L.mainBk&&!a.bk&&L.mainBk!==a.key){ a.bk=L.mainBk; ch=true; back++; } // 서버 금고의 예비 키 복원
   for(const sub of L.subs||[]){ // 대표 키로 로그인 → 서버가 풀어 준 부계정 키 채우기
     if(!sub?.key||sub.key===a.key) continue;
     const ac=accounts(), x=ac.find(y=>y.key===sub.key)||ac.find(y=>!y.key&&sub.ah&&y.ah===sub.ah);
-    if(x){ if(!x.key){ x.key=sub.key; ch=true; back++; } if(sub.ah&&!x.ah){ x.ah=sub.ah; ch=true; } }
-    else { S.settings.accounts=[...ac,{id:'a'+Date.now().toString(36)+ac.length,label:sub.label||`부계정${ac.length}`,key:sub.key,...(sub.ah?{ah:sub.ah}:{})}]; ch=true; back++; }
+    if(x){ if(!x.key){ x.key=sub.key; ch=true; back++; } if(sub.ah&&!x.ah){ x.ah=sub.ah; ch=true; } if(sub.bk&&!x.bk){ x.bk=sub.bk; ch=true; } }
+    else { S.settings.accounts=[...ac,{id:'a'+Date.now().toString(36)+ac.length,label:sub.label||`부계정${ac.length}`,key:sub.key,...(sub.ah?{ah:sub.ah}:{}),...(sub.bk?{bk:sub.bk}:{})}]; ch=true; back++; }
   }
   if(back) toast(`부계정 키 ${back}개를 불러왔습니다`);
   if(L.vault==='open'&&!back) localStorage.setItem(SV_SUBSIG_KEY,svSubSig()); // 서버 금고와 같으면 다시 올리지 않음
@@ -2167,15 +2216,15 @@ function svAfterLogin(){
   if(svMain()&&svSubSig()!==localStorage.getItem(SV_SUBSIG_KEY)) svSyncSubKeys().then(()=>gdRender()).catch(()=>{});
 }
 const svMain=()=>accounts().find(a=>a.main&&a.key)||null;
-const svSubSig=()=>{ const m=svMain(); return m?JSON.stringify([m.key,...accounts().filter(a=>a.key&&a!==m&&a.key!==m.key).map(a=>[a.key,a.label])]):''; };
+const svSubSig=()=>{ const m=svMain(); return m?JSON.stringify([m.key,m.bk||'',...accounts().filter(a=>a.key&&a!==m&&a.key!==m.key).map(a=>[a.key,a.label,a.bk||''])]):''; };
 // 부계정 키를 서버 금고에 (대표 키로 암호화) — 바뀌었을 때만. 대표 키가 이 기기에 없으면 예전처럼 연결만.
 async function svSyncSubKeys(){
   const m=svMain(); if(!m) return svLinkNewKeys();
   const sig=svSubSig(); if(sig===localStorage.getItem(SV_SUBSIG_KEY)) return svLinkNewKeys();
   const subs=accounts().filter(a=>a.key&&a!==m&&a.key!==m.key);
-  if(!subs.length&&!localStorage.getItem(SV_SUBSIG_KEY)){ localStorage.setItem(SV_SUBSIG_KEY,sig); return; } // 부계정 키가 처음부터 없으면 서버에 올릴 것 없음
+  if(!subs.length&&!m.bk&&!localStorage.getItem(SV_SUBSIG_KEY)){ localStorage.setItem(SV_SUBSIG_KEY,sig); return; } // 부계정 키가 처음부터 없으면 서버에 올릴 것 없음
   try{
-    const r=await svFetch('/api/subkeys',{method:'PUT',body:{main:m.key,subs:subs.map(a=>({key:a.key,label:a.label}))}});
+    const r=await svFetch('/api/subkeys',{method:'PUT',body:{main:m.key,...(m.bk?{mainBk:m.bk}:{}),subs:subs.map(a=>({key:a.key,label:a.label,...(a.bk?{bk:a.bk}:{})}))}});
     let ch=false; (r.subs||[]).forEach((x,i)=>{ const a=subs[i]; if(a&&x.ah&&a.ah!==x.ah){ a.ah=x.ah; ch=true; } });
     localStorage.setItem(SV_SUBSIG_KEY,sig);
     if(ch){ S.updatedAt=Date.now(); lastSig=contentSig(S); lastBody=bodyOf(); localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); }
@@ -2373,13 +2422,13 @@ $('#themeBtn').onclick=()=>{ const dark=document.documentElement.dataset.theme==
 // 드라이브 저장용 직렬화 (withKeys=true: API 키 포함 / false: 비교용, 키 제외)
 function backupData(withKeys){
   const data=JSON.parse(JSON.stringify(S)); delete data.settings.apiKey;
-  data.settings.accounts=(data.settings.accounts||[]).map(a=>({id:a.id,label:a.label,...(a.ah?{ah:a.ah}:{}),...(a.main?{main:true}:{}),...(withKeys?{key:a.key||''}:{})})); // ah: 동기화 서버 계정 해시(키 아님)
+  data.settings.accounts=(data.settings.accounts||[]).map(a=>({id:a.id,label:a.label,...(a.ah?{ah:a.ah}:{}),...(a.main?{main:true}:{}),...(a.bkLabel?{bkLabel:a.bkLabel}:{}),...(withKeys?{key:a.key||'',...(a.bk?{bk:a.bk}:{})}:{})})); // ah: 동기화 서버 계정 해시(키 아님)
   return data;
 }
 // 드라이브 데이터 적용: 데이터에 키가 없으면 이 브라우저의 키를 계정 id 기준으로 다시 연결하고, 없는 계정은 유지
 function applyData(d){
   d.settings=d.settings||{}; const cur=accounts();
-  const acc=(Array.isArray(d.settings.accounts)?d.settings.accounts:[]).map(a=>({...a,key:a.key||cur.find(x=>x.id===a.id)?.key||''}));
+  const acc=(Array.isArray(d.settings.accounts)?d.settings.accounts:[]).map(a=>{ const o=cur.find(x=>x.id===a.id), bk=a.bk||o?.bk; return {...a,key:a.key||o?.key||'',...(bk?{bk}:{})}; });
   cur.forEach(x=>{ if(!acc.some(a=>a.id===x.id)) acc.push(x); }); d.settings.accounts=acc;
   localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(d)); load(); checkResets(); save(); applyTheme(); render();
 }

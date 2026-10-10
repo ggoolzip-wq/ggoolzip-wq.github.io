@@ -220,7 +220,7 @@ async function route(req, env) {
     const row = await stateRow(env, userId);
     const v = newUser ? null : await vaultOpen(env, b.key, userId);
     return json(200, { token, user: userId.slice(0, 8), accounts: hashes, newUser, rev: row ? row.rev : 0, updatedAt: row ? row.updated_at : 0,
-      vault: v === null ? 'none' : v === false ? 'locked' : 'open', subKeys: v ? (v.subs || []) : [] });
+      vault: v === null ? 'none' : v === false ? 'locked' : 'open', subKeys: v ? (v.subs || []) : [], mainBk: v ? (v.mainBk || '') : '' });
   }
 
   const me = await auth(env, req);
@@ -246,6 +246,13 @@ async function route(req, env) {
     const mainHashes = await nexonAccounts(env, b.main);
     if (!mainHashes.some(h => mine.has(h))) throw new HttpError(403, 'not_main', '대표 키가 이 데이터의 계정이 아닙니다');
     const mainKey = String(b.main).trim(), now = Date.now(), out = [], seen = new Set();
+    // 예비 키: 같은 넥슨 계정(계정 해시 집합이 같음)이어야 함 — 스케줄러는 그 계정 주인 키로만 동작
+    const sameAcct = async (key, hs, label) => { const bk = String(key || '').trim(); if (!bk) return '';
+      if (bk === mainKey || seen.has(bk)) throw new HttpError(400, 'backup_dup', `'${label}' 예비 키가 다른 키와 같습니다`);
+      const bh = await nexonAccounts(env, bk); const A = new Set(hs);
+      if (bh.length !== A.size || !bh.every(h => A.has(h))) throw new HttpError(400, 'backup_mismatch', `'${label}' 예비 키는 같은 넥슨 계정의 키가 아닙니다`);
+      seen.add(bk); return bk; };
+    const mainBk = await sameAcct(b.mainBk, mainHashes, '대표 계정');
     for (const s0 of subsIn) {
       const key = String(s0?.key || '').trim(); if (!key || key === mainKey || seen.has(key)) continue; seen.add(key);
       const hs = await nexonAccounts(env, key);
@@ -253,9 +260,10 @@ async function route(req, env) {
       const other = (await env.DB.prepare(`SELECT user_id FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hs, me.userId).all()).results;
       if (other.length) throw new HttpError(409, 'linked_elsewhere', `'${String(s0.label || '부계정').slice(0, 30)}' 키의 넥슨 계정은 이미 다른 데이터에 연결되어 있습니다`);
       await env.DB.batch(hs.map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, me.userId, now)));
-      out.push({ key, ah: hs[0], label: String(s0.label || '').slice(0, 40) });
+      const bk = await sameAcct(s0.bk, hs, String(s0.label || '부계정').slice(0, 30));
+      out.push({ key, ah: hs[0], label: String(s0.label || '').slice(0, 40), ...(bk ? { bk } : {}) });
     }
-    const sealed = await vaultSeal(env, mainKey, me.userId, { v: 1, subs: out });
+    const sealed = await vaultSeal(env, mainKey, me.userId, { v: 1, subs: out, ...(mainBk ? { mainBk } : {}) });
     await env.DB.prepare('INSERT INTO keyvault (user_id,iv,ct,updated_at) VALUES (?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET iv=excluded.iv, ct=excluded.ct, updated_at=excluded.updated_at')
       .bind(me.userId, sealed.iv, sealed.ct, now).run();
     return json(200, { subs: out.map(({ ah, label }) => ({ ah, label })), accounts: await acctList(env, me.userId) });

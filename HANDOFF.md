@@ -16,6 +16,8 @@
 
 - **b46 (2026-10-10)**: (1) 아이템 항목(.dl/.loot/.ro/.cbx/.drop)은 white-space:nowrap 한 덩어리 — 안 들어가면 첫 아이콘부터 다음 줄. (2) 오른쪽 열 400px(≤1700: 360, ≤1500: 330, ≤1360: 300), main 1760 가운데. `fitPriceCard()` 는 14px 에서 시작해 안 들어가면 0.5px씩 줄임(최소 9px), 창 크기 바뀌면 다시. (3) 수익 분석 '지금까지 빠뜨린 보스메소는? (주간/월간 Ver)': `S.missW`/`S.missM` (기간당 1개, 3-way 병합 키 week/month). 주간/월간 초기화 때 `resetCore` 가 초기화 직전 상태로 `remainingWeekly` (상위 12·스케줄러·파티 분배 / 월간 보스) 못 잡은 것을 기록. 몇 주 안 열었으면 `missBackfill` 이 S.history(캐릭터별 클리어 보스)로 지난 주를 채움(approx:true, 지금 보스 설정·가격 기준 근사). 기록이 없는 주(안 열고 클리어도 없던 주)는 알 수 없어 건너뜀. 월간은 백필 불가(월간 기록에 못 잡은 캐릭터가 없음). 서버 모드면 기록 추가 후 svSaveNow. (4) 일퀘 현황 탭·코드·dqicons.json·build_dqicons.py·test_tracker33 삭제 (S.dq 는 불러올 때 지움, 스케줄러 보스 가져오기·길드 지하수로는 그대로). test_tracker35. 참고: test_tracker8 은 이 변경 전부터 스우 r_red 칩 대기에서 실패(드롭 표 정리 이후).
 
+- **b48 (2026-10-10) 예비 API 키**: 계정(본계정·부계정)마다 예비 키 1개 (`a.bk`, 이름 `a.bkLabel`, '+추가' 모달 계정 줄 아래). 등록 시 기본 키와 예비 키의 /character/list account_id 집합이 같아야 함(아니면 빨간 메시지). `nx()` 가 기본 키 429/OPENAPI00007(또는 quota/한도 메시지)면 같은 요청을 예비 키로 다시 보내고, `mapleBossTracker.bkDay` 에 그 계정을 오늘(KST)로 표시 → 그날은 예비 키만. 서버 금고: `/api/subkeys` 가 `mainBk`·`subs[].bk` 를 같은 계정인지 확인(backup_mismatch 400) 후 AES-GCM 금고에 함께 저장, 대표 키 로그인 때 `mainBk`·`subKeys[].bk` 로 돌려줌. 남은 호출: `mapleBossTracker.callCount` = {day, c:{키해시:호출수}, x:{키해시:한도 도달}} — 이 브라우저에서 보낸 호출만 셈(추정, 1,000/일). 키 값은 저장·로그 안 함(해시만). test_tracker36, test_server.
+
 ## 1. 개요
 - 목적: 메이플스토리(KMS) 본캐·부캐의 **주간/월간 보스 클리어 체크 → 강렬한 힘의 결정 판매 수익 계산**, 보스 드롭(반지 상자 등) 획득 **개수** 기록, 주간·누적 기록.
 - 라이브 주소: **https://ggoolzip-wq.github.io/** (GitHub Pages, `main` 브랜치 루트). 예전 주소 `https://ggoolzip-wq.github.io/maple-boss-tracker/` 는 새 주소로 리디렉트(저장소 `ggoolzip-wq/maple-boss-tracker`의 index.html).

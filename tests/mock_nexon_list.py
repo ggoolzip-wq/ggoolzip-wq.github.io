@@ -3,7 +3,7 @@ import json, threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 KEYS={'live_KEY_A_0123456789abcdef':['acc-A'],'live_KEY_B_0123456789abcdef':['acc-B'],'live_KEY_AC_0123456789abcde':['acc-A','acc-C'],
       'live_KEY_D_0123456789abcdef':['acc-D'],'live_KEY_E_0123456789abcdef':['acc-E'],'live_RATE_0123456789abcdef':'429',
-      'live_KEY_F_0123456789abcdef':['acc-F'],'live_KEY_G_0123456789abcdef':['acc-G']}
+      'live_KEY_F_0123456789abcdef':['acc-F'],'live_KEY_G_0123456789abcdef':['acc-G'],'live_BK_A_0123456789abcdefg':['acc-A'],'live_BK_G_0123456789abcdefg':['acc-G']}
 SEEN=[]
 class H(BaseHTTPRequestHandler):
     def log_message(self,*a): pass
