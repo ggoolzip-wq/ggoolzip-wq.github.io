@@ -44,6 +44,12 @@ try:
     pg.evaluate("document.querySelector('#iconBurst')?.remove()"); pg.locator('#bbModal .modal').screenshot(path='/workspace/shots/b50_modal.png')
     pg.click('#bbModal [data-bb=l]'); pg.wait_for_timeout(200)
     check('반지: 결과 고른 뒤 블빵패배 → 기록(l)·결과 r4, 축하·불꽃 없음', pg.evaluate("S.characters[0].dmode['kaling|r_life']==='l'&&S.characters[0].dropOut['kaling|r_life'][0]==='r4'") and pg.locator('#congrats.show').count()==0 and pg.locator('#iconBurst').count()==0)
+    pg.evaluate("delete S.characters[0].drops['kaling|r_life']; delete S.characters[0].dropOut['kaling|r_life']; delete S.characters[0].dmode['kaling|r_life']; render()")
+    pg.click('[data-drop="kaling|r_life"]'); pg.wait_for_selector('#ringModal.show'); pg.click('#ringModal [data-ring=x]'); pg.wait_for_timeout(250)
+    rl=' '.join(pg.eval_on_selector_all('.ringouts','e=>e.map(x=>x.innerText)'))
+    check('2인 꽝 → 블빵 창 없음, 라벨 없이 1인처럼, 축하 없음', pg.locator('#bbModal').count()==0 and pg.evaluate("S.characters[0].dropOut['kaling|r_life'][0]==='x'") and pg.locator('#congrats.show').count()==0 and '생명의 보스 반지 상자 x1' in rl.replace('\n',' ') and '꽝' in rl, rl)
+    pg.evaluate("delete S.characters[0].drops['kaling|r_life']; delete S.characters[0].dropOut['kaling|r_life']; delete S.characters[0].dmode['kaling|r_life']; render()")
+    pg.click('[data-drop="kaling|r_life"]'); pg.wait_for_selector('#ringModal.show'); pg.click('#ringModal [data-ring=r4]'); pg.wait_for_selector('#bbModal'); pg.click('#bbModal [data-bb=l]'); pg.wait_for_timeout(200)
     pg.evaluate("openRing('kaling|r_white')"); xt2=pg.inner_text('#ringModal [data-ring=x]'); pg.evaluate('closeRing()')
     check("다른 반지 상자는 '둘 다'", '둘 다 못 먹었어요' in xt2, xt2)
     # 칠흑: 장신구 → 3지선다 → 분배

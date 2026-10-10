@@ -289,6 +289,7 @@ function chooseRing(o){
   const p=ringPending; if(!p||!(o in OUT_LABEL)) return; closeRing();
   const c=S.characters.find(x=>x.id===p.cid); if(!c) return; const [slot,item]=p.key.split('|'); const b=findBoss(slot);
   pendStart(); const m=dropMap(c,b.type);
+  if(o==='x'){ m[p.key]=1; const om=outMap(c,b.type); (om[p.key]||(om[p.key]=[])).push('x'); modeMap(c,b.type)[p.key]='n'; save(); render(); return; } // 꽝: 블빵 창 없이 1인처럼 (라벨 없음)
   askBbang(c,b,p.key,()=>{ m[p.key]=1; const om=outMap(c,b.type); (om[p.key]||(om[p.key]=[])).push(o); },
     ()=>{ if(o==='gl') celebrate(null,'g_life'); else if(o!=='x') celebrate(o); },
     o==='gl'?{ico:itemIcon('g_life'),name:ITEMS.g_life.n}:o==='x'?{ico:itemIcon(item),name:ITEMS[item].n+' · 꽝'}:{ico:outIcon(o),name:OUT_NAME[o]});
@@ -615,7 +616,7 @@ function parseIK(k){ const [a,pp]=String(k).split('#'); const mode=/^\d+([wl])$/
 // 이번 기간 획득 기록 → 현재 파티 인원을 붙인 키
 function charDrops(c,type){
   const m=type==='monthly'?c.mdrops:c.drops, om=type==='monthly'?c.mdropOut:c.dropOut, I={}, O={};
-  for(const [k,n] of Object.entries(m||{})){ if(!(+n>0)) continue; const slot=k.split('|')[0], p=curParty(c,slot), md=p>1?((type==='monthly'?c.mdmode:c.dmode)||{})[k]:'', key=p>1?`${k}#${p}${md==='w'||md==='l'?md:''}`:k;
+  for(const [k,n] of Object.entries(m||{})){ if(!(+n>0)) continue; const slot=k.split('|')[0], p=curParty(c,slot), md=p>1?((type==='monthly'?c.mdmode:c.dmode)||{})[k]:'', key=p>1&&md!=='n'?`${k}#${p}${md==='w'||md==='l'?md:''}`:k;
     I[key]=+n; const l=(om||{})[k]; if(Array.isArray(l)&&l.length) O[key]=l.filter(o=>o==='r4'||o==='c4'||o==='gl'||o==='x'||/^cb:\w+$/.test(o)); }
   return {items:I, outcomes:O};
 }
