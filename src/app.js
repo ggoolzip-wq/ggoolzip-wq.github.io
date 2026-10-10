@@ -304,10 +304,12 @@ function iconBurst(src){
     h+=`<img src="${src}" style="--x:${x.toFixed(0)}px;--y:${y.toFixed(0)}px;--r:${r.toFixed(0)}deg;--s:${sc.toFixed(2)};animation-delay:${dl}ms">`; }
   box.innerHTML=h; document.body.appendChild(box); setTimeout(()=>box.remove(),2100);
 }
-const CG_EMOJI=['😚','😙','😊','😘','🥳'];
+// 이모지: 글꼴에 컬러 이모지가 없는 PC(예: PC방 윈도우)에서도 보이게 Twemoji 이미지(CC-BY 4.0)로, alt 에 글자
+const CG_EMOJI=[['😚','1f61a'],['😙','1f619'],['😊','1f60a'],['😘','1f618'],['🥳','1f973']];
+const cgEmoji = () => { const [ch,cp]=CG_EMOJI[Math.random()*CG_EMOJI.length|0]; return `<img class="cg-emo" src="${ITEM_ICONS['emo_'+cp]}" alt="${ch}" data-emo="${ch}" draggable="false">`; };
 function celebrate(o,item){
   const cv=$('#fx'), msg=$('#congrats');
-  msg.innerHTML=`<div class="cg-in">${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}<div class="cg-big">축하드립니다! ${CG_EMOJI[Math.random()*CG_EMOJI.length|0]}</div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득 🎉</div></div>`;
+  msg.innerHTML=`<div class="cg-in">${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}<div class="cg-big"><span class="cg-t">축하드립니다!</span> ${cgEmoji()}</div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득 <img class="cg-emo sm" src="${ITEM_ICONS.emo_1f389}" alt="🎉" draggable="false"></div></div>`;
   const img=null; iconBurst(ITEM_ICONS[item||(o==='r4'?'ring_restraint':'ring_continuous')]);
   msg.classList.add('show'); cv.classList.add('show'); celebrate.running=true;
   clearTimeout(celebrate._t); celebrate._t=setTimeout(endCelebrate,2200);
