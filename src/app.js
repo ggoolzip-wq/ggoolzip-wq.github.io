@@ -339,10 +339,8 @@ function defaultSettings(){
   return {weeklyLimit:CONFIG.WEEKLY_BOSS_LIMIT, monthlyLimit:CONFIG.MONTHLY_BOSS_LIMIT,
     prices:{}, accounts:[], autoEnable:true, lastSync:0};
 }
-// 일퀘 현황 표시 설정: off{항목:1}=전체 숨김, charOff{캐릭터:{항목:1}}=캐릭터별 숨김, hide{캐릭터:1}=카드 숨김
-function defaultDq(){ return {off:{}, charOff:{}, hide:{}}; }
 function defaultState(){
-  return {version:5, theme:null, activeId:null, characters:[], worldOrder:[], history:[], monthHistory:[], startWeek:weekId(), settings:defaultSettings(), dq:defaultDq(),
+  return {version:5, theme:null, activeId:null, characters:[], worldOrder:[], history:[], monthHistory:[], startWeek:weekId(), settings:defaultSettings(),
     period:{week:weekId(), day:dayId(), month:monthId()}};
 }
 /* character: {id,name,job,level,world,ocid,image,isMain, bosses:{slot:{enabled,diff,party}},
@@ -363,7 +361,7 @@ function normState(obj){
     S.settings.weeklyLimit=CONFIG.WEEKLY_BOSS_LIMIT; S.settings.monthlyLimit=CONFIG.MONTHLY_BOSS_LIMIT; // 처치 한도는 고정값 (설정 화면 제거)
     delete S.settings.worldLimit; // 월드 결정석 판매 한도 기능 제거 (수익 = 클리어한 보스 합계, 상한 없음)
     S.characters.forEach(normChar);
-    S.dq=Object.assign(defaultDq(),S.dq&&typeof S.dq==='object'?S.dq:{}); ['off','charOff','hide'].forEach(k=>{ if(!S.dq[k]||typeof S.dq[k]!=='object') S.dq[k]={}; });
+    delete S.dq; // 일퀘 현황 탭 삭제 (2026-10-10)
     if(typeof S.updatedAt!=='number') S.updatedAt=0;
     return S;
   } finally { S=keep; }
@@ -407,6 +405,7 @@ function migrate(){
     S.version=5;
   }
   if(!Array.isArray(S.monthHistory)) S.monthHistory=[];
+  if(!Array.isArray(S.missW)) S.missW=[]; if(!Array.isArray(S.missM)) S.missM=[];
   // 총 수익 집계 시작 주: 가장 오래된 기록 주(없으면 이번 주). 한 번 정하면 저장되어 유지
   { const ws=(S.history||[]).map(h=>h.week).filter(Boolean).sort(); const first=ws[0]||S.period?.week||weekId();
     if(!S.startWeek || first<S.startWeek) S.startWeek=first; }
@@ -458,10 +457,51 @@ const activeChar = () => S.characters.find(c=>c.id===S.activeId);
 const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
 const worldOf = c => c.world || '월드 미지정';
 
+/* ---------- 빠뜨린 보스메소 (수익 분석) ----------
+ * S.missW=[{week,date:'YYYY.MM.DD'(초기화 날짜),n,meso,list:[{name,n,meso}],approx?}] / S.missM=[{month,date,...}]
+ * 주간: 초기화(목 00:00) 직전 상태로 각 캐릭터의 '상위 12개 중 못 잡은 주간 보스'(예상 수익과 같은 규칙: 스케줄러 보스·파티 분배) 합계.
+ * 월간: 초기화(1일 00:00) 직전 상태로 월간 보스(검은 마법사)를 못 잡은 캐릭터. 기간당 1개(중복 없음). 서버 키 없이 브라우저에서 계산 */
+const ymdDot = id => String(id).replace(/-/g,'.');
+const nextWeekId = w => dayId(Date.parse(w+'T00:00:00+09:00')+7*864e5);
+const nextMonthId = m => { const [y,mm]=m.split('-').map(Number); return mm===12?`${y+1}-01`:`${y}-${pad(mm+1)}`; };
+function missPack(list){ return {n:list.reduce((a,x)=>a+x.n,0), meso:list.reduce((a,x)=>a+x.meso,0), list}; }
+function missNow(kind){ const list=[];
+  S.characters.forEach(c=>{ const r=remainingWeekly(c), l=kind==='w'?r.list:r.mon; if(l.length) list.push({name:c.name,n:l.length,meso:l.reduce((a,x)=>a+x.value,0)}); });
+  return missPack(list); }
+function missRecord(kind,id,pk,extra){ const arr=kind==='w'?(S.missW||(S.missW=[])):(S.missM||(S.missM=[])), f=kind==='w'?'week':'month';
+  if(!id||arr.some(x=>x[f]===id)) return false;
+  arr.push({[f]:id, date:ymdDot(kind==='w'?nextWeekId(id):nextMonthId(id)+'-01'), ...pk, ...(extra||{})}); arr.sort((a,b)=>a[f]<b[f]?-1:1); return true; }
+// 며칠/몇 주 안 열었을 때: 저장된 주간 기록(history: 캐릭터별 클리어 보스)으로 지난 주들을 채움 (보스 목록·가격은 지금 설정 기준이라 근사값)
+function missBackfill(){ let n=0; const cur=weekId(), lim=S.settings.weeklyLimit;
+  for(const h of S.history||[]){ if(!h.week||h.week>=cur||(S.missW||[]).some(x=>x.week===h.week)) continue; const list=[];
+    for(const p of h.perChar||[]){ const c=S.characters.find(x=>x.id===p.id); if(!c) continue;
+      const top=expectedAll(c).slice(0,lim), got=new Set((p.bosses||[]).map(t=>String(t).split('(')[0]));
+      const miss=top.filter(x=>!got.has(x.name)).slice(0,Math.max(0,top.length-(+p.count||0)));
+      if(miss.length) list.push({name:p.name||c.name,n:miss.length,meso:miss.reduce((a,x)=>a+x.value,0)}); }
+    if(missRecord('w',h.week,missPack(list),{approx:true})) n++; }
+  return n; }
+function missSync(){ if(typeof SV_ON!=='undefined'&&SV_ON&&!pend) setTimeout(()=>{ try{ if(svTok()&&gdMeta.on) svSaveNow(); }catch(e){} },1500); }
+function missChart(rows, kind){
+  if(!rows.length) return '<p class="muted">아직 기록이 없어요</p>';
+  const n=rows.length, W=Math.max(640,90+n*80), Hh=220, pl=45, pr=45, pt=24, pb=34, max=Math.max(1,...rows.map(r=>r.meso));
+  const X=i=>n===1?W/2:pl+(W-pl-pr)*i/(n-1), Y=v=>Hh-pb-(Hh-pb-pt)*v/max;
+  const tip=r=>(r.list.length?`${r.date} · 손해 ${meso(r.meso)}\n`+r.list.map(x=>`${x.name}: ${x.n}개 · ${meso(x.meso)}`).join('\n')+`\n합계: ${r.n}개 · ${meso(r.meso)}`+(r.approx?'\n(주간 기록으로 채운 근사값)':''):`${r.date}\n손해 없음`);
+  return `<div class="chart scrollx misschart"><svg viewBox="0 0 ${W} ${Hh}" style="width:${W}px;max-width:${W>640?'none':'100%'}" role="img" aria-label="빠뜨린 보스메소 그래프">
+    <line x1="0" x2="${W}" y1="${Hh-pb}" y2="${Hh-pb}" stroke="currentColor" opacity=".15"/>
+    <polyline fill="none" stroke="#f2c94c" stroke-width="2.5" points="${rows.map((r,i)=>`${X(i).toFixed(1)},${Y(r.meso).toFixed(1)}`).join(' ')}"/>
+    ${rows.map((r,i)=>`<g class="mpt" data-tip="${esc(tip(r))}"><circle cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="14" fill="transparent"/><circle cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="4.5" fill="#f2c94c"/>
+      <text x="${X(i).toFixed(1)}" y="${(Y(r.meso)-10).toFixed(1)}" text-anchor="middle" class="lbl" font-size="10">${r.meso?meso(r.meso).replace(/ .*/,''):'0'}</text>
+      <text x="${X(i).toFixed(1)}" y="${Hh-pb+16}" text-anchor="middle" font-size="10">${r.date}</text></g>`).join('')}</svg></div>`;
+}
+const missIcon = '<span class="missic" aria-hidden="true">!</span>';
+function missHtml(){ return `<div class="card"><h2>${missIcon} 지금까지 빠뜨린 보스메소는? (주간 Ver)</h2>${missChart(S.missW||[],'w')}</div>
+  <div class="card"><h2>${missIcon} 지금까지 빠뜨린 보스메소는? (월간 Ver)</h2>${missChart(S.missM||[],'m')}</div>`; }
+
 /* ---------- 리셋 처리 ---------- */
 function resetCore(){
   const now={week:weekId(),day:dayId(),month:monthId()}; let changed=false; const msgs=[];
   if(S.period.week!==now.week){
+    missRecord('w',S.period.week,missNow('w')); // 지난 주 빠뜨린 보스메소 (초기화 전 상태로 계산)
     const sum=weekSummary(S.period.week);
     if(sum.cleared>0 && !S.history.some(h=>h.week===S.period.week)) S.history.push(sum);
     S.history.sort((a,b)=>a.week<b.week?-1:1);
@@ -469,6 +509,7 @@ function resetCore(){
     msgs.push('주간 보스가 초기화되었습니다 (지난 주 기록 저장됨)'); changed=true;
   }
   if(S.period.month!==now.month){
+    missRecord('m',S.period.month,missNow('m'));
     const ms=monthSummary(S.period.month); if(ms.cleared>0 && !S.monthHistory.some(h=>h.month===ms.month)) S.monthHistory.push(ms);
     S.monthHistory.sort((a,b)=>a.month<b.month?-1:1);
     S.characters.forEach(c=>{c.monthly={}; c.mdrops={}; c.mdropOut={}; for(const k in c.auto) if(findBoss(k)?.type==='monthly') delete c.auto[k];}); msgs.push('월간 보스 초기화'); changed=true; }
@@ -477,7 +518,7 @@ function resetCore(){
   return {changed,msgs};
 }
 
-function checkResets(){ const r=resetCore(); if(r.changed){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
+function checkResets(){ const r=resetCore(); const bf=missBackfill(); if(r.changed||bf) missSync(); if(r.changed||bf){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
 // 다른 상태 객체(드라이브 데이터 등)도 지금 주·월로 넘김 (지난 주 체크 → 기록으로 보관 후 초기화) — 병합 전에 양쪽 기준을 맞춤
 function rollPeriod(x){ const keep=S; try{ S=x; resetCore(); } finally{ S=keep; } return x; }
 
@@ -815,45 +856,21 @@ async function syncAll(opts={}){
  *  '[길드] 지하 수로' · '[길드] 플래그 레이스' · '[길드] 주간 미션 포인트'(now_count = 이번 주 점수).
  *  quest_state: "2" 완료, "1" 진행 중, "0" 기타(미수락·미해금).
  * ===================================================================== */
-const DQ_ITEMS = [ // lv: 일일 퀘스트 수행 가능 레벨 (그란디스 지역)
-  {id:'cer',  label:'세르니움',   key:'세르니움',   lv:260, col:'#e0b04a'},
-  {id:'arcs', label:'아르크스',   key:'아르크스',   lv:265, col:'#e2843a'},
-  {id:'odium',label:'오디움',     key:'오디움',     lv:270, col:'#3fb3a3'},
-  {id:'dow',  label:'도원경',     key:'도원경',     lv:275, col:'#e57ba8'},
-  {id:'art',  label:'아르테리아', key:'아르테리아', lv:280, col:'#d9574a'},
-  {id:'car',  label:'카르시온',   key:'카르시온',   lv:285, col:'#4a8fe0'},
-  {id:'tal',  label:'탈라하트',   key:'탈라하트',   lv:290, col:'#9a6ae0'},
-  {id:'gear', label:'기어드락',   key:'기어드락',   lv:295, col:'#8a97a8'},
-  {id:'mp',   label:'몬스터파크', kind:'mp',  lv:0,   col:'#4caf50'},
-  {id:'xmp',  label:'익스트림 몬파', kind:'xmp', lv:260, col:'#1f9e74', weekly:true},
-];
-const DQ_ICONS = /*__DQ_ICONS__*/{}; // 지역 아이콘 data URI (어센틱/그랜드 어센틱심볼, 몬스터파크 이용권, 익몬=몬스터파크 NPC 슈피겔만 얼굴) — src/dqicons.json
-const dqIco = (it,cls='dqico') => DQ_ICONS[it.id]?`<img class="${cls}" src="${DQ_ICONS[it.id]}" alt="" width="20" height="20" decoding="async">`:'';
 const DQ_TTL_MS = 10*60e3;      // 스케줄러 캐시 기본 수명 (길드 탭 등). 일퀘 탭은 자동 갱신 없음: 페이지 열 때 + 🔄 버튼
 const GUILD_TTL_MS = 30*60e3;   // 길드 랭킹: 하루 1번(09:30경) 갱신 데이터라 30분 캐시
-const MP_CHAR_DAILY = 7;        // 몬스터파크: 캐릭터당 하루 7회 (스케줄러 max_count 14 = 월드 기준)
 const GUILD = {name:'봉사활동', world:'스카니아'}; // 고정값 (사용자 요청 시 변경)
 const SCHED_KEY = 'mapleBossTracker.sched', GUILD_KEY = 'mapleBossTracker.guild';
 const lsGet = k => { try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } };
 const lsSet = (k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
 let schedC = lsGet(SCHED_KEY) || {};   // charId → {date, level, items{id:{st,now,max,reg,name}}, guild{suro,flag,mission}, at, ok, msg}
 let guildC = lsGet(GUILD_KEY);          // {date, t1, t2, at, ok, msg}
-let dqBusy=false, guildBusy=false, dqEdit=false, apiPauseUntil=0;
+let dqBusy=false, guildBusy=false, apiPauseUntil=0;
 
 function schedSummary(d){
-  const daily=Array.isArray(d?.daily_contents)?d.daily_contents:[], weekly=Array.isArray(d?.weekly_contents)?d.weekly_contents:[];
+  const weekly=Array.isArray(d?.weekly_contents)?d.weekly_contents:[];
   const nm=r=>normName(r?.content_name);
-  const pick=r=>r?{st:String(r.quest_state??''),now:Number(r.now_count)||0,max:Number(r.max_count)||0,reg:flagOn(r.registration_flag),name:String(r.content_name||'')}:null;
-  const items={};
-  for(const it of DQ_ITEMS){
-    let r=null;
-    if(it.kind==='mp') r=daily.find(x=>nm(x)==='몬스터파크');
-    else if(it.kind==='xmp') r=weekly.find(x=>nm(x).includes('익스트림몬스터파'))||daily.find(x=>nm(x).includes('익스트림몬스터파'));
-    else r=daily.find(x=>nm(x).includes(normName(it.key)) && (x.type==='quest'||/일일/.test(x.content_name||'')));
-    if(r) items[it.id]=pick(r);
-  }
   const g=k=>{ const r=weekly.find(x=>nm(x).includes(k)); return r?{now:Number(r.now_count)||0,max:Number(r.max_count)||0}:null; };
-  return {date:String(d?.date||'').slice(0,10)||dayId(), level:Number(d?.character_level)||0, items,
+  return {date:String(d?.date||'').slice(0,10)||dayId(), level:Number(d?.character_level)||0,
     guild:{suro:g('지하수로')} /* 2026-10-10: 플래그·주간 미션 표시 삭제 (같은 스케줄러 응답이라 API 호출 수는 그대로) */, at:Date.now(), ok:true, msg:''};
 }
 function schedPut(c,d){ schedC[c.id]=schedSummary(d); lsSet(SCHED_KEY,schedC); }
@@ -908,72 +925,10 @@ async function refreshGuild(force){
 /* 60초 타이머·탭 열기·화면 복귀 시 호출: 열려 있는 탭만 갱신 */
 function tabTick(){
   if(document.hidden) return;
-  // 일퀘 탭: 자동 갱신 없음 (2026-10-10) — 페이지 열 때 동기화(syncAll, 3초 규칙)가 같은 스케줄러 응답을 저장 + 🔄 버튼
   if(tab==='guild'){ refreshGuild(); refreshSched(S.characters.filter(c=>c.isMain)); }
 }
-function renderTabView(){ if(tab==='daily') renderDaily(); else if(tab==='guild') renderGuild(); }
+function renderTabView(){ if(tab==='guild') renderGuild(); }
 const hhmm = t => { const d=kst(t); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
-const dqChars = () => orderedChars().filter(schedOk);
-/* 항목 상태: lock(레벨 미달) · none(스케줄러에 없음) · done · prog · idle */
-function dqState(it, x, lv){
-  if(it.lv && lv && lv<it.lv) return 'lock';
-  if(!x) return 'none';
-  if(it.kind==='mp') return x.now>=Math.min(MP_CHAR_DAILY, x.max||MP_CHAR_DAILY)?'done':x.now>0?'prog':'idle';
-  if(x.st==='2' || (it.kind==='xmp' && x.max>0 && x.now>=x.max)) return 'done';
-  if(x.st==='1') return 'prog';
-  return 'idle';
-}
-const DQ_TXT = {done:'완료', prog:'진행 중', idle:'미수락', none:'정보 없음'};
-function dqCell(c, it, x, st, off){
-  // 몬스터파크: 캐릭터당 하루 7회 기준(n/7회) · 익스트림 몬파: 주간 퀘스트(주간 n/5) · 진행 중 퀘스트에 카운트가 있으면 '진행 n/m'
-  let txt=DQ_TXT[st], cnt='';
-  if(x && it.kind==='mp'){ txt=st==='done'?'완료':''; cnt=`${Math.min(x.now,MP_CHAR_DAILY)}/${MP_CHAR_DAILY}회`; }
-  else if(x && it.kind==='xmp'){ txt=st==='done'?'완료':'주간'; cnt=x.max>0?`${x.now}/${x.max}`:''; }
-  else if(x && st==='prog' && x.max>0){ txt='진행'; cnt=`${x.now}/${x.max}`; }
-  const tip = (x?.name||it.label)+(it.weekly?' (주간)':'')+(it.kind==='mp'?` · 오늘 ${x?.now??0}회 (캐릭터당 하루 ${MP_CHAR_DAILY}회, 스케줄러 최대 ${x?.max??'-'})`:'')+(dqEdit?'\n클릭: 이 캐릭터에서 '+(off?'다시 표시':'숨기기'):'');
-  return `<div class="dqi s-${st}${off?' off':''}" style="--c:${it.col}" data-dqi="${it.id}" ${dqEdit?`data-dqc="${c.id}|${it.id}" role="button" tabindex="0"`:''} title="${esc(tip)}">
-    <b class="dqn">${dqIco(it)}<span>${esc(it.label)}</span></b><span class="dqs">${esc(txt)}${cnt?`${txt?' ':''}<em>${cnt}</em>`:''}</span>
-    ${st==='done'?`<div class="dqov" aria-hidden="true"><span class="dqov-n">${dqIco(it,'dqico ov')}${esc(it.label)}</span><span class="dqov-t"><b>✓</b> 완료</span></div>`:''}</div>`;
-}
-function renderDaily(){
-  const v=$('#view'); const D=S.dq, all=dqChars(), today=dayId();
-  const noKey=S.characters.filter(c=>!schedOk(c)).length;
-  const shown=all.filter(c=>dqEdit||!D.hide[c.id]), hidden=all.length-all.filter(c=>!D.hide[c.id]).length;
-  const items=DQ_ITEMS.filter(it=>!D.off[it.id]);
-  const newest=Math.max(0,...all.map(c=>schedC[c.id]?.at||0));
-  const status=dqBusy?'<span class="dqspin" aria-hidden="true"></span>갱신 중…':newest?`갱신 ${hhmm(newest)}`:'';
-  const chips=dqEdit?`<div class="dqedit"><span class="muted tiny">표시 항목 (전체 캐릭터)</span><div class="dqchips">${DQ_ITEMS.map(it=>`<button class="dqchip${D.off[it.id]?'':' on'}" data-dqg="${it.id}" style="--c:${it.col}" aria-pressed="${!D.off[it.id]}">${esc(it.label)}</button>`).join('')}</div>
-    <div class="muted tiny">카드의 항목을 누르면 그 캐릭터에서만 숨기거나 다시 표시 · 카드의 👁 로 캐릭터 숨기기</div></div>`:'';
-  const card=c=>{
-    const x=schedC[c.id], ok=x&&x.ok!==false&&x.date===today, lv=Number(ok&&x.level||c.level)||0, co=D.charOff[c.id]||{};
-    const hid=!!D.hide[c.id];
-    let body='', done=0, tot=0;
-    if(!x||(!ok&&x.ok!==false)) body=`<div class="dqmsg muted">${dqBusy||!x?'불러오는 중…':'오늘 데이터를 기다리는 중…'}</div>`;
-    else if(x.ok===false&&x.date!==today) body=`<div class="dqmsg warnc">⚠ 스케줄러 조회 실패 — ${esc(x.msg||'')}</div>`;
-    else{
-      const locked=[], cells=[];
-      for(const it of items){
-        const st=dqState(it,x.items?.[it.id],lv), off=!!co[it.id];
-        if(st==='lock'){ locked.push(it); continue; }
-        if(off&&!dqEdit) continue;
-        if(!off&&st!=='none'){ tot++; if(st==='done') done++; }
-        cells.push(dqCell(c,it,x.items?.[it.id],st,off));
-      }
-      body=(cells.length?`<div class="dqcells">${cells.join('')}</div>`:`<div class="dqmsg muted">표시할 항목이 없어요${dqEdit?'':' · 편집에서 항목을 켜세요'}</div>`)
-        +(locked.length?`<div class="dqlock muted" title="캐릭터 레벨이 낮아 아직 할 수 없는 항목">🔒 ${locked.map(it=>`${esc(it.label)} Lv.${it.lv}`).join(' · ')}</div>`:'')
-        +(x.ok===false?`<div class="dqlock warnc">⚠ 최근 갱신 실패 (${hhmm(x.errAt)}) — ${esc(x.msg||'')}</div>`:'');
-    }
-    return `<div class="card dqc${hid?' hid':''}${tot&&done===tot?' alldone':''}" data-dqchar="${c.id}">
-      <div class="dqh">${avatar(c)}<div class="grow"><div class="nm">${esc(c.name)}${c.isMain?'<span class="mainbadge">★</span>':''}</div><div class="meta">Lv.${esc(lv||'?')} · ${esc(c.job||'')}</div></div>
-      ${tot?`<span class="dqcnt${done===tot?' full':''}">${done}/${tot}</span>`:''}${dqEdit?`<button class="btn sm plain dqeye" data-dqhide="${c.id}" title="${hid?'이 캐릭터 다시 표시':'이 캐릭터 숨기기'}" aria-label="${hid?'다시 표시':'숨기기'}">${hid?'숨김':'👁'}</button>`:''}</div>
-      ${body}</div>`;
-  };
-  v.innerHTML=`<div class="card dqtop"><h2>${miniIcon('symsel')} 일퀘 현황 <span class="muted" style="font-weight:500">${esc(today)}</span><span class="hspace"></span><span class="muted tiny dqstat">${status}</span><button class="ibtn sbtn dqsync${dqBusy||syncing?' busy':''}" id="dqSync" type="button" ${dqBusy||syncing?'disabled aria-busy="true"':''} aria-label="일퀘 현황 지금 갱신" title="일퀘 현황 지금 갱신 (넥슨 스케줄러)">${SYNC_SVG}</button>
-      <button class="btn sm ${dqEdit?'':'plain'}" id="dqEditBtn" aria-pressed="${dqEdit}">${dqEdit?'완료':'편집'}</button></h2>${chips}
-    ${!hasApi()?'<div class="note">넥슨 API 키를 등록하면 메이플 스케줄러에서 일퀘 진행 상황을 실시간으로 불러옵니다. 사이드바 <b>+ 추가</b>에서 계정별 API 키를 등록하세요.</div>':''}</div>
-    ${shown.length?`<div class="dqgrid">${shown.map(card).join('')}</div>`:(hasApi()?'<div class="card muted">표시할 캐릭터가 없습니다.</div>':'')}
-    ${hidden&&!dqEdit||noKey?`<div class="muted tiny dqfoot">${hidden&&!dqEdit?`숨긴 캐릭터 ${hidden}명 (편집에서 다시 표시)`:''}${hidden&&!dqEdit&&noKey?' · ':''}${noKey?`API 키가 연결되지 않은 캐릭터 ${noKey}명은 표시하지 않아요`:''}</div>`:''}`;
-}
 const num = n => (Number(n)||0).toLocaleString('ko-KR');
 function renderGuild(){
   const v=$('#view'), g=guildC, mains=S.characters.filter(c=>c.isMain);
@@ -1009,7 +964,7 @@ function meso(n){
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),3200);}
 const safeImg = u => /^https:\/\/open\.api\.nexon\.com\//.test(u||'') ? u : '';
 const avatar = (c,cls='') => `<div class="avatar ${cls}">${safeImg(c.image)?`<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">`:esc((c.name||'?').slice(0,1))}</div>`;
-const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','daily','guild']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
+const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','guild']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
 let tab=(()=>{ try{ const t=localStorage.getItem(TAB_KEY); return TABS.includes(t)?t:'boss'; }catch(e){ return 'boss'; } })(), bossFilter='weekly', editMode=false;
 
 function applyTheme(){
@@ -1019,7 +974,7 @@ function applyTheme(){
 }
 function render(){ if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
-  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),daily:renderDaily,guild:renderGuild})[tab](); if(tab==='boss') fitPriceCard(); renderResetInfo(); }
+  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),guild:renderGuild})[tab](); if(tab==='boss') fitPriceCard(); renderResetInfo(); }
 /* 캐릭터 카드 제목 옆: 🔄 지금 동기화 아이콘 버튼 (API 키가 있을 때만, 넥슨 API 전용 — 구글 드라이브는 헤더 ☁ 버튼) */
 const SYNC_SVG=`<svg class="rot" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 function renderHeaderSync(){
@@ -1307,13 +1262,12 @@ function afterPatchHtml(){
     <div class="pa-total"><span>합계</span><b>${meso(sum('next'))}${dlt(sum('next')-sum('now'),sum('now'))}</b></div>
     <div class="pa-note muted">주간 상위 ${S.settings.weeklyLimit}개 + 월간 보스, 테섭 예정 가격으로 계산</div>`;
 }
-document.addEventListener('click',e=>{ const b=e.target.closest('#dqSync'); if(b&&!b.disabled) refreshSched(dqChars().filter(c=>!S.dq.hide[c.id]),0); }); // 일퀘 🔄 (ttl 0 = 강제)
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]'); if(!t) return; pcTab=t.dataset.pctab; const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } });
 // 결정석 가격 줄이 안 들어가면 자르지 않고 글자를 조금씩 줄임 (최소 .56rem)
-function fitPriceCard(){ const card=document.querySelector('.pricecard'); if(!card) return; card.style.removeProperty('--pcfs');
+function fitPriceCard(){ const card=document.querySelector('.pricecard'); if(!card||!card.querySelector('.pc-row')) return;
+  // 폭이 허락하는 만큼 크게(최대 14px) → 안 들어가면 0.5px씩 줄임(최소 9px). 자르지 않음
   const over=()=>[...card.querySelectorAll('.pc-row')].some(r=>{ const n=r.querySelector('.pc-nm'); return n&&n.scrollWidth>n.clientWidth+0.5; });
-  let fs=parseFloat(getComputedStyle(card.querySelector('.pc-row')||card).fontSize)||11;
-  while(over()&&fs>9){ fs-=0.5; card.style.setProperty('--pcfs',fs+'px'); } }
+  let fs=14; card.style.setProperty('--pcfs',fs+'px'); while(over()&&fs>9){ fs-=0.5; card.style.setProperty('--pcfs',fs+'px'); } }
 function priceCard(){
   const up=(officialInfo&&officialInfo.upcoming)||{};
   const row=r=>{ const u=up[r.k]; return `<div class="pc-row${u?' has-up':''}" title="${esc(r.b.name)} ${D[r.d]} — ${r.p.toLocaleString()} 메소${u?` · 테섭 예정 ${u.toLocaleString()} 메소`:''}">${bossIcon(r.b)}<span class="pc-nm">${esc(r.b.name)} <span class="muted">${D[r.d]}</span></span><b>${meso(r.p)}${u?`<span class="pc-up">테섭 예정 → ${meso(u)}</span>`:''}</b></div>`; };
@@ -1471,7 +1425,7 @@ function renderTotal(){
       const ks=Object.keys(R).sort((x,y)=>oi(x)-oi(y));
       const tot=Object.values(R).reduce((x,y)=>x+y,0); const hd=`<h2 class="eph">${miniIcon('sos')} <span class="ept">에픽빔 본 횟수</span>${tot?` <b class="lx aur epsum">${xN(tot)}</b>`:''}</h2>`;
       return hd+(ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${/^cb:/.test(k)?`${miniIcon('chaosbox')} - ${itemIcon(k.slice(3))}<span class="ln">${esc(ITEMS[k.slice(3)].n)}</span>`:`${itemIcon(k)}<span class="ln">${esc(ITEMS[k].n)}</span>`} <b class="lx">${xN(R[k])}</b></span></div>`).join('')}</div>`:'<p class="muted">아직 기록한 아이템이 없습니다. 보스 현황 탭에서 보스 행의 아이템을 누르고 저장하면 기록됩니다.</p>'); })()}</div>
-  ${bossLootHtml(T)}${itemTotalsHtml(T)}
+  ${bossLootHtml(T)}${itemTotalsHtml(T)}${missHtml()}
   <div class="card"><h2>🗓 전체 주 목록</h2><div style="overflow-x:auto"><table><thead><tr><th>주차</th><th class="num">클리어</th><th class="num">아이템</th><th class="num">주간 수익</th><th class="num">누적</th></tr></thead><tbody>
     ${T.weeks.map(w=>{cum+=w.total||0;return {w,cum};}).reverse().map(({w,cum})=>`<tr><td>${fmtWeek(w.week)}${w.cur?' <span class="pill">이번 주</span>':''}</td><td class="num">${w.cleared??'-'}</td><td class="num">${w.items??itemSum(Object.assign({},...(w.perChar||[]).map(p=>p.items||{})))}</td><td class="num"><b>${meso(w.total||0)}</b></td><td class="num muted">${meso(cum)}</td></tr>`).join('')}
   </tbody></table></div></div></div>`;
@@ -1914,8 +1868,8 @@ async function gdWrite(keepalive){
 const GD_BASE_KEY=SV_ON?'mapleBossTracker.svbase':'mapleBossTracker.gdbase';
 const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|autoSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp)$|^settings\.accounts\[[^\]]*\]\.(key|status)$/;
 const GD_SOFT_RE=/^characters\[[^\]]*\]\.(level|job|world|ocid|accId)$/;
-const GD_HIST_RE=/^(history|monthHistory)\[[^\]]*\]$/;
-const GD_KEYED={characters:'id',history:'week',monthHistory:'month','settings.accounts':'id'};
+const GD_HIST_RE=/^(history|monthHistory|missW|missM)\[[^\]]*\]$/;
+const GD_KEYED={characters:'id',history:'week',monthHistory:'month',missW:'week',missM:'month','settings.accounts':'id'};
 const stable=v=>Array.isArray(v)?'['+v.map(stable).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}':JSON.stringify(v);
 const gdIsObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const gdP=(p,k)=>p?p+'.'+k:k;
@@ -2035,7 +1989,7 @@ async function gdSync(remote){
 // 병합 결과 m 을 이 PC 에 적용(달라졌으면)하고 드라이브에 저장(달라졌으면)
 async function gdCommit(m,remote){
   const rU=+remote.updatedAt||0, rd=gdPrep(remote.data);
-  ['history','monthHistory'].forEach(k=>{ if(Array.isArray(m[k])) m[k].sort((a,b)=>String(a.week||a.month)<String(b.week||b.month)?-1:1); });
+  ['history','monthHistory','missW','missM'].forEach(k=>{ if(Array.isArray(m[k])) m[k].sort((a,b)=>String(a.week||a.month)<String(b.week||b.month)?-1:1); });
   const mS=contentSig(m), toLocal=mS!==contentSig(gdPrep(backupData(true))), toRemote=mS!==contentSig(rd)||!remote.withKeys;
   if(toLocal){ m.updatedAt=gdSig(m)===gdSig(rd)&&!toRemote?rU:Date.now(); gdLoad(m); }
   if(toRemote){ await gdWrite(); }
@@ -2315,15 +2269,12 @@ document.addEventListener('click',e=>{
     // 저장 안 한 변경이 있으면 탭 이동 전에 묻기: 예 = 저장 후 이동 / 아니오 = 스냅샷으로 되돌리고 이동 / 닫기 = 머무름
     if(pend&&t.dataset.tab!==tab){ svAsk('변경사항을 저장하시겠습니까?',[['yes','예'],['no','아니오']]).then(async k=>{ if(k==='yes'){ await pendSave(); go(); } else if(k==='no'){ pendCancel(); go(); } }); return; }
     go(); return; }
-  if(t.dataset.dqg){ const k=t.dataset.dqg; if(S.dq.off[k]) delete S.dq.off[k]; else S.dq.off[k]=1; save(); renderDaily(); return; }
-  if(t.dataset.dqc){ dqToggleChar(t.dataset.dqc); return; }
-  if(t.dataset.dqhide){ const id=t.dataset.dqhide; if(S.dq.hide[id]) delete S.dq.hide[id]; else S.dq.hide[id]=1; save(); renderDaily(); return; }
   if(t.dataset.cpage){ charPage=+t.dataset.cpage; renderChars(); return; }
   if(t.dataset.move){ e.stopPropagation(); const [id,d]=t.dataset.move.split('|'); moveCharBy(id,+d); render(); return; }
   if(t.dataset.wmove){ e.stopPropagation(); const i=t.dataset.wmove.lastIndexOf('|'); moveWorldBy(t.dataset.wmove.slice(0,i),+t.dataset.wmove.slice(i+1)); render(); return; }
   if(e.target.closest('.drag-h')) return;
   if(t.dataset.edit){ e.stopPropagation(); openCharModal(t.dataset.edit); return; }
-  if(t.dataset.id){ S.activeId=t.dataset.id; save(); if(['history','total','daily','guild'].includes(tab)) {tab='boss';syncTabs();} render(); return; }
+  if(t.dataset.id){ S.activeId=t.dataset.id; save(); if(['history','total','guild'].includes(tab)) {tab='boss';syncTabs();} render(); return; }
   if(t.dataset.filter){ bossFilter=t.dataset.filter; render(); return; }
   if(t.dataset.toggle && c){ const s=t.dataset.toggle,b=findBoss(s); const cfg=c.bosses[s]||(c.bosses[s]={enabled:false,diff:b.diffs[0],party:1}); cfg.enabled=!cfg.enabled; save(); render(); return; }
   if(t.dataset.setdiff && c){
@@ -2348,7 +2299,6 @@ document.addEventListener('click',e=>{
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
   switch(t.id){
     case 'editModeBtn': editMode=!editMode; render(); break;
-    case 'dqEditBtn': dqEdit=!dqEdit; renderDaily(); break;
     case 'syncBtn': syncAll(); break;
     case 'importAccBtn': openImport(); break;
     case 'impRetry': openImport(impAccId); break;
@@ -2373,8 +2323,6 @@ document.addEventListener('click',e=>{
     case 'gdClose': $('#driveModal').classList.remove('show'); break;
   }
 });
-function dqToggleChar(v){ const [id,k]=v.split('|'); const o=S.dq.charOff[id]||(S.dq.charOff[id]={}); if(o[k]) delete o[k]; else o[k]=1; if(!Object.keys(o).length) delete S.dq.charOff[id]; save(); renderDaily(); }
-document.addEventListener('keydown',e=>{ const q=(e.key==='Enter'||e.key===' ')&&e.target.closest?.('[data-dqc]'); if(q){ e.preventDefault(); dqToggleChar(q.dataset.dqc); } });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('#ringModal').classList.contains('show')) closeRing(); if(celebrate.running) endCelebrate(); if($('#importModal').classList.contains('show')&&!$('#charModal').classList.contains('show')) closeImport(); gdMenu(false); } });
 document.addEventListener('keydown',e=>{ const wt=e.target.closest?.('[data-wtab]'); if(wt&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); if(wt.dataset.wtab!==worldTab) setWorldTab(wt.dataset.wtab); } });
 document.addEventListener('contextmenu',e=>{ const dc=e.target.closest('[data-drop]'); if(!dc) return; e.preventDefault(); if(tipTouchAt&&Date.now()-tipTouchAt<1500) return; /* 터치 길게 누르기 = 툴팁 보기 (취소는 − 버튼) */ changeDrop(dc.dataset.drop,-1); });
@@ -2444,6 +2392,7 @@ $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
 load();
 if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
 checkResets(); loadOfficialPrices(); save(); applyTheme(); render();
+addEventListener('resize',()=>{ clearTimeout(fitPriceCard._t); fitPriceCard._t=setTimeout(fitPriceCard,150); });
 /* 페이지를 열거나 새로고침할 때마다 넥슨 API 동기화 1회 (2026-10-10 사용자 요청) — 🔄 버튼과 같은 syncAll(넥슨 API 전용, 구글 드라이브·로그인 창과 무관).
  * 새로고침을 연달아 해도 API 호출량을 아끼도록: 마지막 동기화(완료) 또는 마지막 '열 때 동기화' 시작이 LOAD_SYNC_GAP_MS(3초, 사용자 결정) 안이면 건너뜀.
  * 시작 시각을 따로 저장(LOAD_SYNC_KEY)하는 이유: 동기화 도중 새로고침하면 lastSync 가 안 바뀌어 매번 다시 시작되기 때문. */

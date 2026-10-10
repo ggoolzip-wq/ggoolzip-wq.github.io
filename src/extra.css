@@ -312,51 +312,24 @@ img.ric{width:16px;height:16px;object-fit:contain;image-rendering:pixelated}
 /* ---- 상단 탭: '총 수익' 뒤 짧은 ㅡ 구분선 ---- */
 nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius:2px;background:rgba(255,255,255,.6);margin:0 6px}
 /* ---- 일퀘 현황 ---- */
-.dqtop{margin-bottom:12px}
-.dqtop h2{flex-wrap:wrap;margin:0}
-.dqstat{display:inline-flex;align-items:center;gap:5px;font-weight:500}
-.dqspin{width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sbspin .8s linear infinite}
-.dqedit{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:6px}
-.dqchips{display:flex;flex-wrap:wrap;gap:6px}
-.dqchip{border:1px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:700;cursor:pointer;text-decoration:line-through}
 .dqchip.on{color:var(--text);text-decoration:none;border-color:var(--c);box-shadow:inset 3px 0 0 var(--c)}
-.dqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
 .dqc{padding:12px}
 .dqc.hid{opacity:.45}
-.dqh{display:flex;align-items:center;gap:9px;margin-bottom:10px}
 .dqh .avatar{width:36px;height:36px}
 .dqh .nm{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dqh .meta{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dqh .grow{flex:1;min-width:0}
-.dqcnt{font-size:.78rem;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
 .dqcnt.full{background:var(--ok);border-color:var(--ok);color:#fff}
-.dqeye{padding:3px 8px;font-size:.78rem}
-.dqcells{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
-.dqi{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:7px 8px 6px 11px;min-height:44px;display:flex;flex-direction:column;justify-content:center;gap:2px;overflow:hidden}
-.dqi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
-.dqn{font-size:.82rem;font-weight:800;word-break:keep-all;overflow-wrap:anywhere;line-height:1.2}
-.dqs{font-size:.72rem;color:var(--muted);white-space:nowrap;line-height:1.2}
-.dqs em{font-style:normal;font-weight:700}
 .dqi.s-prog .dqs{color:var(--accent);font-weight:700}
 .dqi.s-done .dqs{color:var(--ok);font-weight:700}
 .dqi.s-none{opacity:.55}
 .dqi.off{opacity:.4;border-style:dashed}
 .dqi.off .dqn{text-decoration:line-through}
-.dqi[data-dqc]{cursor:pointer}
-.dqi[data-dqc]:hover{border-color:var(--accent)}
 /* 완료 덮개: 주간 보스 완료 덮개와 같은 처리 (rgba 0,0,0,.55 · 마우스를 올리면 사라짐 · 클릭 통과) */
-.dqov{position:absolute;inset:0;border-radius:inherit;background:rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
   color:#fff;font-weight:800;font-size:.8rem;line-height:1.2;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none;opacity:1;transition:opacity .15s ease;z-index:2;padding:2px 4px}
-.dqov-n{font-size:.78rem;word-break:keep-all}
-.dqov-t{font-size:.72rem}
-.dqov-t b{color:#7dffb0}
 /* 덮개가 있을 때는 원래 글자를 숨겨 겹치지 않게 (마우스를 올리면 덮개가 사라지고 원래 칸이 보임) */
 .dqi.s-done>.dqn,.dqi.s-done>.dqs{opacity:0;transition:opacity .15s ease}
-@media(hover:hover){.dqi:hover .dqov{opacity:0}.dqi.s-done:hover>.dqn,.dqi.s-done:hover>.dqs{opacity:1}}
 .dqlock{font-size:.74rem;margin-top:8px}
-.dqmsg{font-size:.84rem;padding:6px 2px}
-.dqfoot{margin:10px 2px 0}
-@media(max-width:520px){.dqgrid{grid-template-columns:1fr}.dqcells{grid-template-columns:repeat(3,minmax(0,1fr))}.dqtop h2 .dqstat{order:5;width:100%}}
 /* ---- 길드 현황 ---- */
 .gcard h2{flex-wrap:wrap}
 .gmeta{display:flex;align-items:center;gap:10px;font-size:.88rem;margin-bottom:10px}
@@ -380,17 +353,8 @@ nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius
 .gsc.main b{font-size:1.15rem;color:var(--accent)}
 @media(max-width:520px){.gv{font-size:1.2rem}.grow-r{flex-wrap:wrap}.grow-r .grow{flex-basis:calc(100% - 50px)}.gsc{min-width:0;flex:1;align-items:flex-start}}
 /* 일퀘 칸 지역 아이콘 (이름 왼쪽 20px, 덮개 안에서는 살짝 어둡게) */
-.dqn{display:flex;align-items:center;gap:4px;min-width:0}
-.dqn>span{min-width:0}
-.dqico{width:20px;height:20px;object-fit:contain;flex:none;image-rendering:auto;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
-.dqov-n{display:inline-flex;align-items:center;gap:4px}
 .dqov-n .dqico.ov{width:18px;height:18px;opacity:.85}
-.dqi{padding-left:9px}
-@media(max-width:520px){.dqico{width:18px;height:18px}.dqn{gap:3px}}
 /* 일퀘 칸: 모든 상태에서 아이콘+지역명·상태 줄 가운데 정렬 (완료 덮개와 같은 정렬) */
-.dqi{align-items:center;text-align:center;padding:7px 6px 6px 9px}
-.dqn{justify-content:center;max-width:100%}
-.dqs{text-align:center}
 
 /* 소식 피드 카드 (왼쪽 아래) — 높이는 JS(feedFit)가 남은 화면 높이로 맞춤, 안쪽 스크롤 없음 */
 .feedcard{display:flex;flex-direction:column;padding:10px 10px 8px;overflow:hidden;min-height:0}
@@ -657,17 +621,29 @@ select.impworld option{color:#111}
 /* 드롭 칩 선택 = 초록 배경 + 테두리 (체크 표시 없음, 크기 그대로) */
 .drop.got{border-color:#3fb96f;background:rgba(63,185,111,.24);box-shadow:0 0 0 1px #3fb96f inset}
 .drop.got .dn{color:#e8fff0}
-.dqtop .dqsync{margin-left:6px;vertical-align:middle}
 /* b43: ⠿ 손잡이는 왼쪽 여백 안에 겹쳐 두고(흐름에서 뺌) → 초상화~✎ 묶음이 줄 가운데 (좌우 여백 같음) */
 #charList .char{position:relative}
 #charList .char .drag-h{position:absolute;left:0;top:50%;transform:translateY(-50%);width:10px;padding:6px 0;text-align:center;font-size:.8rem;overflow:hidden;z-index:1}
 .stats.s3{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:600px){.stats.s3{grid-template-columns:1fr}}
 /* b45: 오른쪽 열(이번 주 수익·결정석 가격) 넓힘 → 보스 이름+난이도+가격 한 줄. 전체는 가운데(좌우 여백 같음) */
-main{max-width:1640px;margin-left:auto;margin-right:auto}
-@media(min-width:1181px){.bosslay{grid-template-columns:minmax(0,1fr) 340px}}
-@media(min-width:1181px) and (max-width:1500px){.bosslay{grid-template-columns:minmax(0,1fr) 310px}}
-@media(min-width:1181px) and (max-width:1360px){.bosslay{grid-template-columns:minmax(0,1fr) 290px}.pricecard .pc-row{font-size:.68rem}}
+main{max-width:1760px;margin-left:auto;margin-right:auto}
+@media(min-width:1181px){.bosslay{grid-template-columns:minmax(0,1fr) 400px}}
+@media(min-width:1181px) and (max-width:1700px){.bosslay{grid-template-columns:minmax(0,1fr) 360px}}
+@media(min-width:1181px) and (max-width:1500px){.bosslay{grid-template-columns:minmax(0,1fr) 330px}}
+@media(min-width:1181px) and (max-width:1360px){.bosslay{grid-template-columns:minmax(0,1fr) 300px}}
 .pricecard .pc-row .pc-nm{text-overflow:clip}
 .pricecard[style*='--pcfs'] .pc-row{font-size:var(--pcfs)}
 .pricecard[style*='--pcfs'] .pc-up{font-size:calc(var(--pcfs) - 1px)}
+/* b46: 빠뜨린 보스메소 */
+.missic{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#f2c94c;color:#1b1b1b;font-weight:900;font-size:.8rem;vertical-align:-3px}
+.misschart .mpt{cursor:default}
+.misschart text{fill:var(--muted)}
+/* b46: 아이템 항목은 끊기지 않는 한 덩어리 — 안 들어가면 첫 아이콘부터 다음 줄로 */
+.dls{display:flex;flex-wrap:wrap;gap:3px 12px;align-items:center}
+.dl,.dl .dlt,.dl .routs,.routs,.ro,.cbx,.loot,.tl,.drop,.hitems .dl{white-space:nowrap}
+.dl{display:inline-block;max-width:none}
+.dl .routs,.dl .ro{display:inline}
+
+.pricecard .pc-row .bicon,.pricecard .pc-row .bfb{width:1.6em;height:1.6em}
+.misschart svg .mpt,.misschart svg .mpt circle{pointer-events:all}

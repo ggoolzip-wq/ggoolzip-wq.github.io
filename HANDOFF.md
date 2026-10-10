@@ -14,6 +14,8 @@
 
 - **b45 (2026-10-10)**: '최고 전투력' 패널·Worker /api/cp·클라이언트 호출 삭제(D1 cp 테이블은 미사용으로 남김), 정보 패널 3칸 균등. 캐릭터 목록의 주황 ★본캐 뱃지 제거(닉네임 전체 표시). 오른쪽 열 340px(≤1500: 310, ≤1360: 290 + 작은 글씨), main max-width 1640 가운데 정렬. 결정석 가격 줄이 안 들어가면 `fitPriceCard()`가 글자를 줄임(자르지 않음). test_tracker34 가 1920/1600/1280 검사.
 
+- **b46 (2026-10-10)**: (1) 아이템 항목(.dl/.loot/.ro/.cbx/.drop)은 white-space:nowrap 한 덩어리 — 안 들어가면 첫 아이콘부터 다음 줄. (2) 오른쪽 열 400px(≤1700: 360, ≤1500: 330, ≤1360: 300), main 1760 가운데. `fitPriceCard()` 는 14px 에서 시작해 안 들어가면 0.5px씩 줄임(최소 9px), 창 크기 바뀌면 다시. (3) 수익 분석 '지금까지 빠뜨린 보스메소는? (주간/월간 Ver)': `S.missW`/`S.missM` (기간당 1개, 3-way 병합 키 week/month). 주간/월간 초기화 때 `resetCore` 가 초기화 직전 상태로 `remainingWeekly` (상위 12·스케줄러·파티 분배 / 월간 보스) 못 잡은 것을 기록. 몇 주 안 열었으면 `missBackfill` 이 S.history(캐릭터별 클리어 보스)로 지난 주를 채움(approx:true, 지금 보스 설정·가격 기준 근사). 기록이 없는 주(안 열고 클리어도 없던 주)는 알 수 없어 건너뜀. 월간은 백필 불가(월간 기록에 못 잡은 캐릭터가 없음). 서버 모드면 기록 추가 후 svSaveNow. (4) 일퀘 현황 탭·코드·dqicons.json·build_dqicons.py·test_tracker33 삭제 (S.dq 는 불러올 때 지움, 스케줄러 보스 가져오기·길드 지하수로는 그대로). test_tracker35. 참고: test_tracker8 은 이 변경 전부터 스우 r_red 칩 대기에서 실패(드롭 표 정리 이후).
+
 ## 1. 개요
 - 목적: 메이플스토리(KMS) 본캐·부캐의 **주간/월간 보스 클리어 체크 → 강렬한 힘의 결정 판매 수익 계산**, 보스 드롭(반지 상자 등) 획득 **개수** 기록, 주간·누적 기록.
 - 라이브 주소: **https://ggoolzip-wq.github.io/** (GitHub Pages, `main` 브랜치 루트). 예전 주소 `https://ggoolzip-wq.github.io/maple-boss-tracker/` 는 새 주소로 리디렉트(저장소 `ggoolzip-wq/maple-boss-tracker`의 index.html).

@@ -80,7 +80,7 @@ try:
     pg.click('#sunCard .sunimg'); pg.wait_for_selector('#sunLb'); pg.mouse.click(5,5); check('click outside (backdrop) closes', pg.locator('#sunLb').count()==0)
     for vw,vh in [(1280,800),(1920,1080)]:
         pg.set_viewport_size({'width':vw,'height':vh}); pg.wait_for_timeout(300)
-        for t in ['boss','daily']:
+        for t in ['boss','guild']:
             pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(250); pg.evaluate('feedFit()')
             c=pg.evaluate(CARDS); h0=pg.evaluate(NOSIDE)
             ratio=c['fh']/(c['fh']+c['sh'])

@@ -114,7 +114,7 @@ try:
     # 7) 모든 탭에서 카드 때문에 스크롤 안 생김 (1280x800, 1920x1080)
     for vw,vh in [(1280,800),(1920,1080)]:
         pg.set_viewport_size({'width':vw,'height':vh}); pg.wait_for_timeout(200)
-        for t in ['boss','total','daily','guild']:
+        for t in ['boss','total','guild']:
             pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(250)
             c=pg.evaluate(CARD)
             pg.evaluate("document.querySelector('#feedCard').style.display='none'"); sh0=pg.evaluate('document.scrollingElement.scrollHeight')

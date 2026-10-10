@@ -419,51 +419,24 @@ img.ric{width:16px;height:16px;object-fit:contain;image-rendering:pixelated}
 /* ---- 상단 탭: '총 수익' 뒤 짧은 ㅡ 구분선 ---- */
 nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius:2px;background:rgba(255,255,255,.6);margin:0 6px}
 /* ---- 일퀘 현황 ---- */
-.dqtop{margin-bottom:12px}
-.dqtop h2{flex-wrap:wrap;margin:0}
-.dqstat{display:inline-flex;align-items:center;gap:5px;font-weight:500}
-.dqspin{width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sbspin .8s linear infinite}
-.dqedit{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:6px}
-.dqchips{display:flex;flex-wrap:wrap;gap:6px}
-.dqchip{border:1px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:700;cursor:pointer;text-decoration:line-through}
 .dqchip.on{color:var(--text);text-decoration:none;border-color:var(--c);box-shadow:inset 3px 0 0 var(--c)}
-.dqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
 .dqc{padding:12px}
 .dqc.hid{opacity:.45}
-.dqh{display:flex;align-items:center;gap:9px;margin-bottom:10px}
 .dqh .avatar{width:36px;height:36px}
 .dqh .nm{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dqh .meta{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dqh .grow{flex:1;min-width:0}
-.dqcnt{font-size:.78rem;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
 .dqcnt.full{background:var(--ok);border-color:var(--ok);color:#fff}
-.dqeye{padding:3px 8px;font-size:.78rem}
-.dqcells{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
-.dqi{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:7px 8px 6px 11px;min-height:44px;display:flex;flex-direction:column;justify-content:center;gap:2px;overflow:hidden}
-.dqi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
-.dqn{font-size:.82rem;font-weight:800;word-break:keep-all;overflow-wrap:anywhere;line-height:1.2}
-.dqs{font-size:.72rem;color:var(--muted);white-space:nowrap;line-height:1.2}
-.dqs em{font-style:normal;font-weight:700}
 .dqi.s-prog .dqs{color:var(--accent);font-weight:700}
 .dqi.s-done .dqs{color:var(--ok);font-weight:700}
 .dqi.s-none{opacity:.55}
 .dqi.off{opacity:.4;border-style:dashed}
 .dqi.off .dqn{text-decoration:line-through}
-.dqi[data-dqc]{cursor:pointer}
-.dqi[data-dqc]:hover{border-color:var(--accent)}
 /* 완료 덮개: 주간 보스 완료 덮개와 같은 처리 (rgba 0,0,0,.55 · 마우스를 올리면 사라짐 · 클릭 통과) */
-.dqov{position:absolute;inset:0;border-radius:inherit;background:rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
   color:#fff;font-weight:800;font-size:.8rem;line-height:1.2;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none;opacity:1;transition:opacity .15s ease;z-index:2;padding:2px 4px}
-.dqov-n{font-size:.78rem;word-break:keep-all}
-.dqov-t{font-size:.72rem}
-.dqov-t b{color:#7dffb0}
 /* 덮개가 있을 때는 원래 글자를 숨겨 겹치지 않게 (마우스를 올리면 덮개가 사라지고 원래 칸이 보임) */
 .dqi.s-done>.dqn,.dqi.s-done>.dqs{opacity:0;transition:opacity .15s ease}
-@media(hover:hover){.dqi:hover .dqov{opacity:0}.dqi.s-done:hover>.dqn,.dqi.s-done:hover>.dqs{opacity:1}}
 .dqlock{font-size:.74rem;margin-top:8px}
-.dqmsg{font-size:.84rem;padding:6px 2px}
-.dqfoot{margin:10px 2px 0}
-@media(max-width:520px){.dqgrid{grid-template-columns:1fr}.dqcells{grid-template-columns:repeat(3,minmax(0,1fr))}.dqtop h2 .dqstat{order:5;width:100%}}
 /* ---- 길드 현황 ---- */
 .gcard h2{flex-wrap:wrap}
 .gmeta{display:flex;align-items:center;gap:10px;font-size:.88rem;margin-bottom:10px}
@@ -487,17 +460,8 @@ nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius
 .gsc.main b{font-size:1.15rem;color:var(--accent)}
 @media(max-width:520px){.gv{font-size:1.2rem}.grow-r{flex-wrap:wrap}.grow-r .grow{flex-basis:calc(100% - 50px)}.gsc{min-width:0;flex:1;align-items:flex-start}}
 /* 일퀘 칸 지역 아이콘 (이름 왼쪽 20px, 덮개 안에서는 살짝 어둡게) */
-.dqn{display:flex;align-items:center;gap:4px;min-width:0}
-.dqn>span{min-width:0}
-.dqico{width:20px;height:20px;object-fit:contain;flex:none;image-rendering:auto;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
-.dqov-n{display:inline-flex;align-items:center;gap:4px}
 .dqov-n .dqico.ov{width:18px;height:18px;opacity:.85}
-.dqi{padding-left:9px}
-@media(max-width:520px){.dqico{width:18px;height:18px}.dqn{gap:3px}}
 /* 일퀘 칸: 모든 상태에서 아이콘+지역명·상태 줄 가운데 정렬 (완료 덮개와 같은 정렬) */
-.dqi{align-items:center;text-align:center;padding:7px 6px 6px 9px}
-.dqn{justify-content:center;max-width:100%}
-.dqs{text-align:center}
 
 /* 소식 피드 카드 (왼쪽 아래) — 높이는 JS(feedFit)가 남은 화면 높이로 맞춤, 안쪽 스크롤 없음 */
 .feedcard{display:flex;flex-direction:column;padding:10px 10px 8px;overflow:hidden;min-height:0}
@@ -764,20 +728,32 @@ select.impworld option{color:#111}
 /* 드롭 칩 선택 = 초록 배경 + 테두리 (체크 표시 없음, 크기 그대로) */
 .drop.got{border-color:#3fb96f;background:rgba(63,185,111,.24);box-shadow:0 0 0 1px #3fb96f inset}
 .drop.got .dn{color:#e8fff0}
-.dqtop .dqsync{margin-left:6px;vertical-align:middle}
 /* b43: ⠿ 손잡이는 왼쪽 여백 안에 겹쳐 두고(흐름에서 뺌) → 초상화~✎ 묶음이 줄 가운데 (좌우 여백 같음) */
 #charList .char{position:relative}
 #charList .char .drag-h{position:absolute;left:0;top:50%;transform:translateY(-50%);width:10px;padding:6px 0;text-align:center;font-size:.8rem;overflow:hidden;z-index:1}
 .stats.s3{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:600px){.stats.s3{grid-template-columns:1fr}}
 /* b45: 오른쪽 열(이번 주 수익·결정석 가격) 넓힘 → 보스 이름+난이도+가격 한 줄. 전체는 가운데(좌우 여백 같음) */
-main{max-width:1640px;margin-left:auto;margin-right:auto}
-@media(min-width:1181px){.bosslay{grid-template-columns:minmax(0,1fr) 340px}}
-@media(min-width:1181px) and (max-width:1500px){.bosslay{grid-template-columns:minmax(0,1fr) 310px}}
-@media(min-width:1181px) and (max-width:1360px){.bosslay{grid-template-columns:minmax(0,1fr) 290px}.pricecard .pc-row{font-size:.68rem}}
+main{max-width:1760px;margin-left:auto;margin-right:auto}
+@media(min-width:1181px){.bosslay{grid-template-columns:minmax(0,1fr) 400px}}
+@media(min-width:1181px) and (max-width:1700px){.bosslay{grid-template-columns:minmax(0,1fr) 360px}}
+@media(min-width:1181px) and (max-width:1500px){.bosslay{grid-template-columns:minmax(0,1fr) 330px}}
+@media(min-width:1181px) and (max-width:1360px){.bosslay{grid-template-columns:minmax(0,1fr) 300px}}
 .pricecard .pc-row .pc-nm{text-overflow:clip}
 .pricecard[style*='--pcfs'] .pc-row{font-size:var(--pcfs)}
 .pricecard[style*='--pcfs'] .pc-up{font-size:calc(var(--pcfs) - 1px)}
+/* b46: 빠뜨린 보스메소 */
+.missic{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#f2c94c;color:#1b1b1b;font-weight:900;font-size:.8rem;vertical-align:-3px}
+.misschart .mpt{cursor:default}
+.misschart text{fill:var(--muted)}
+/* b46: 아이템 항목은 끊기지 않는 한 덩어리 — 안 들어가면 첫 아이콘부터 다음 줄로 */
+.dls{display:flex;flex-wrap:wrap;gap:3px 12px;align-items:center}
+.dl,.dl .dlt,.dl .routs,.routs,.ro,.cbx,.loot,.tl,.drop,.hitems .dl{white-space:nowrap}
+.dl{display:inline-block;max-width:none}
+.dl .routs,.dl .ro{display:inline}
+
+.pricecard .pc-row .bicon,.pricecard .pc-row .bfb{width:1.6em;height:1.6em}
+.misschart svg .mpt,.misschart svg .mpt circle{pointer-events:all}
 </style>
 </head>
 <body>
@@ -796,7 +772,6 @@ main{max-width:1640px;margin-left:auto;margin-right:auto}
     <button data-tab="boss" class="on">보스 현황</button>
     <button data-tab="total">수익 분석</button>
     <span class="tabsep" aria-hidden="true"></span>
-    <button data-tab="daily">일퀘 현황</button>
     <button data-tab="guild">길드 현황</button>
   </nav>
 </header>
@@ -1236,10 +1211,8 @@ function defaultSettings(){
   return {weeklyLimit:CONFIG.WEEKLY_BOSS_LIMIT, monthlyLimit:CONFIG.MONTHLY_BOSS_LIMIT,
     prices:{}, accounts:[], autoEnable:true, lastSync:0};
 }
-// 일퀘 현황 표시 설정: off{항목:1}=전체 숨김, charOff{캐릭터:{항목:1}}=캐릭터별 숨김, hide{캐릭터:1}=카드 숨김
-function defaultDq(){ return {off:{}, charOff:{}, hide:{}}; }
 function defaultState(){
-  return {version:5, theme:null, activeId:null, characters:[], worldOrder:[], history:[], monthHistory:[], startWeek:weekId(), settings:defaultSettings(), dq:defaultDq(),
+  return {version:5, theme:null, activeId:null, characters:[], worldOrder:[], history:[], monthHistory:[], startWeek:weekId(), settings:defaultSettings(),
     period:{week:weekId(), day:dayId(), month:monthId()}};
 }
 /* character: {id,name,job,level,world,ocid,image,isMain, bosses:{slot:{enabled,diff,party}},
@@ -1260,7 +1233,7 @@ function normState(obj){
     S.settings.weeklyLimit=CONFIG.WEEKLY_BOSS_LIMIT; S.settings.monthlyLimit=CONFIG.MONTHLY_BOSS_LIMIT; // 처치 한도는 고정값 (설정 화면 제거)
     delete S.settings.worldLimit; // 월드 결정석 판매 한도 기능 제거 (수익 = 클리어한 보스 합계, 상한 없음)
     S.characters.forEach(normChar);
-    S.dq=Object.assign(defaultDq(),S.dq&&typeof S.dq==='object'?S.dq:{}); ['off','charOff','hide'].forEach(k=>{ if(!S.dq[k]||typeof S.dq[k]!=='object') S.dq[k]={}; });
+    delete S.dq; // 일퀘 현황 탭 삭제 (2026-10-10)
     if(typeof S.updatedAt!=='number') S.updatedAt=0;
     return S;
   } finally { S=keep; }
@@ -1304,6 +1277,7 @@ function migrate(){
     S.version=5;
   }
   if(!Array.isArray(S.monthHistory)) S.monthHistory=[];
+  if(!Array.isArray(S.missW)) S.missW=[]; if(!Array.isArray(S.missM)) S.missM=[];
   // 총 수익 집계 시작 주: 가장 오래된 기록 주(없으면 이번 주). 한 번 정하면 저장되어 유지
   { const ws=(S.history||[]).map(h=>h.week).filter(Boolean).sort(); const first=ws[0]||S.period?.week||weekId();
     if(!S.startWeek || first<S.startWeek) S.startWeek=first; }
@@ -1355,10 +1329,51 @@ const activeChar = () => S.characters.find(c=>c.id===S.activeId);
 const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
 const worldOf = c => c.world || '월드 미지정';
 
+/* ---------- 빠뜨린 보스메소 (수익 분석) ----------
+ * S.missW=[{week,date:'YYYY.MM.DD'(초기화 날짜),n,meso,list:[{name,n,meso}],approx?}] / S.missM=[{month,date,...}]
+ * 주간: 초기화(목 00:00) 직전 상태로 각 캐릭터의 '상위 12개 중 못 잡은 주간 보스'(예상 수익과 같은 규칙: 스케줄러 보스·파티 분배) 합계.
+ * 월간: 초기화(1일 00:00) 직전 상태로 월간 보스(검은 마법사)를 못 잡은 캐릭터. 기간당 1개(중복 없음). 서버 키 없이 브라우저에서 계산 */
+const ymdDot = id => String(id).replace(/-/g,'.');
+const nextWeekId = w => dayId(Date.parse(w+'T00:00:00+09:00')+7*864e5);
+const nextMonthId = m => { const [y,mm]=m.split('-').map(Number); return mm===12?`${y+1}-01`:`${y}-${pad(mm+1)}`; };
+function missPack(list){ return {n:list.reduce((a,x)=>a+x.n,0), meso:list.reduce((a,x)=>a+x.meso,0), list}; }
+function missNow(kind){ const list=[];
+  S.characters.forEach(c=>{ const r=remainingWeekly(c), l=kind==='w'?r.list:r.mon; if(l.length) list.push({name:c.name,n:l.length,meso:l.reduce((a,x)=>a+x.value,0)}); });
+  return missPack(list); }
+function missRecord(kind,id,pk,extra){ const arr=kind==='w'?(S.missW||(S.missW=[])):(S.missM||(S.missM=[])), f=kind==='w'?'week':'month';
+  if(!id||arr.some(x=>x[f]===id)) return false;
+  arr.push({[f]:id, date:ymdDot(kind==='w'?nextWeekId(id):nextMonthId(id)+'-01'), ...pk, ...(extra||{})}); arr.sort((a,b)=>a[f]<b[f]?-1:1); return true; }
+// 며칠/몇 주 안 열었을 때: 저장된 주간 기록(history: 캐릭터별 클리어 보스)으로 지난 주들을 채움 (보스 목록·가격은 지금 설정 기준이라 근사값)
+function missBackfill(){ let n=0; const cur=weekId(), lim=S.settings.weeklyLimit;
+  for(const h of S.history||[]){ if(!h.week||h.week>=cur||(S.missW||[]).some(x=>x.week===h.week)) continue; const list=[];
+    for(const p of h.perChar||[]){ const c=S.characters.find(x=>x.id===p.id); if(!c) continue;
+      const top=expectedAll(c).slice(0,lim), got=new Set((p.bosses||[]).map(t=>String(t).split('(')[0]));
+      const miss=top.filter(x=>!got.has(x.name)).slice(0,Math.max(0,top.length-(+p.count||0)));
+      if(miss.length) list.push({name:p.name||c.name,n:miss.length,meso:miss.reduce((a,x)=>a+x.value,0)}); }
+    if(missRecord('w',h.week,missPack(list),{approx:true})) n++; }
+  return n; }
+function missSync(){ if(typeof SV_ON!=='undefined'&&SV_ON&&!pend) setTimeout(()=>{ try{ if(svTok()&&gdMeta.on) svSaveNow(); }catch(e){} },1500); }
+function missChart(rows, kind){
+  if(!rows.length) return '<p class="muted">아직 기록이 없어요</p>';
+  const n=rows.length, W=Math.max(640,90+n*80), Hh=220, pl=45, pr=45, pt=24, pb=34, max=Math.max(1,...rows.map(r=>r.meso));
+  const X=i=>n===1?W/2:pl+(W-pl-pr)*i/(n-1), Y=v=>Hh-pb-(Hh-pb-pt)*v/max;
+  const tip=r=>(r.list.length?`${r.date} · 손해 ${meso(r.meso)}\n`+r.list.map(x=>`${x.name}: ${x.n}개 · ${meso(x.meso)}`).join('\n')+`\n합계: ${r.n}개 · ${meso(r.meso)}`+(r.approx?'\n(주간 기록으로 채운 근사값)':''):`${r.date}\n손해 없음`);
+  return `<div class="chart scrollx misschart"><svg viewBox="0 0 ${W} ${Hh}" style="width:${W}px;max-width:${W>640?'none':'100%'}" role="img" aria-label="빠뜨린 보스메소 그래프">
+    <line x1="0" x2="${W}" y1="${Hh-pb}" y2="${Hh-pb}" stroke="currentColor" opacity=".15"/>
+    <polyline fill="none" stroke="#f2c94c" stroke-width="2.5" points="${rows.map((r,i)=>`${X(i).toFixed(1)},${Y(r.meso).toFixed(1)}`).join(' ')}"/>
+    ${rows.map((r,i)=>`<g class="mpt" data-tip="${esc(tip(r))}"><circle cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="14" fill="transparent"/><circle cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="4.5" fill="#f2c94c"/>
+      <text x="${X(i).toFixed(1)}" y="${(Y(r.meso)-10).toFixed(1)}" text-anchor="middle" class="lbl" font-size="10">${r.meso?meso(r.meso).replace(/ .*/,''):'0'}</text>
+      <text x="${X(i).toFixed(1)}" y="${Hh-pb+16}" text-anchor="middle" font-size="10">${r.date}</text></g>`).join('')}</svg></div>`;
+}
+const missIcon = '<span class="missic" aria-hidden="true">!</span>';
+function missHtml(){ return `<div class="card"><h2>${missIcon} 지금까지 빠뜨린 보스메소는? (주간 Ver)</h2>${missChart(S.missW||[],'w')}</div>
+  <div class="card"><h2>${missIcon} 지금까지 빠뜨린 보스메소는? (월간 Ver)</h2>${missChart(S.missM||[],'m')}</div>`; }
+
 /* ---------- 리셋 처리 ---------- */
 function resetCore(){
   const now={week:weekId(),day:dayId(),month:monthId()}; let changed=false; const msgs=[];
   if(S.period.week!==now.week){
+    missRecord('w',S.period.week,missNow('w')); // 지난 주 빠뜨린 보스메소 (초기화 전 상태로 계산)
     const sum=weekSummary(S.period.week);
     if(sum.cleared>0 && !S.history.some(h=>h.week===S.period.week)) S.history.push(sum);
     S.history.sort((a,b)=>a.week<b.week?-1:1);
@@ -1366,6 +1381,7 @@ function resetCore(){
     msgs.push('주간 보스가 초기화되었습니다 (지난 주 기록 저장됨)'); changed=true;
   }
   if(S.period.month!==now.month){
+    missRecord('m',S.period.month,missNow('m'));
     const ms=monthSummary(S.period.month); if(ms.cleared>0 && !S.monthHistory.some(h=>h.month===ms.month)) S.monthHistory.push(ms);
     S.monthHistory.sort((a,b)=>a.month<b.month?-1:1);
     S.characters.forEach(c=>{c.monthly={}; c.mdrops={}; c.mdropOut={}; for(const k in c.auto) if(findBoss(k)?.type==='monthly') delete c.auto[k];}); msgs.push('월간 보스 초기화'); changed=true; }
@@ -1374,7 +1390,7 @@ function resetCore(){
   return {changed,msgs};
 }
 
-function checkResets(){ const r=resetCore(); if(r.changed){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
+function checkResets(){ const r=resetCore(); const bf=missBackfill(); if(r.changed||bf) missSync(); if(r.changed||bf){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
 // 다른 상태 객체(드라이브 데이터 등)도 지금 주·월로 넘김 (지난 주 체크 → 기록으로 보관 후 초기화) — 병합 전에 양쪽 기준을 맞춤
 function rollPeriod(x){ const keep=S; try{ S=x; resetCore(); } finally{ S=keep; } return x; }
 
@@ -1712,45 +1728,21 @@ async function syncAll(opts={}){
  *  '[길드] 지하 수로' · '[길드] 플래그 레이스' · '[길드] 주간 미션 포인트'(now_count = 이번 주 점수).
  *  quest_state: "2" 완료, "1" 진행 중, "0" 기타(미수락·미해금).
  * ===================================================================== */
-const DQ_ITEMS = [ // lv: 일일 퀘스트 수행 가능 레벨 (그란디스 지역)
-  {id:'cer',  label:'세르니움',   key:'세르니움',   lv:260, col:'#e0b04a'},
-  {id:'arcs', label:'아르크스',   key:'아르크스',   lv:265, col:'#e2843a'},
-  {id:'odium',label:'오디움',     key:'오디움',     lv:270, col:'#3fb3a3'},
-  {id:'dow',  label:'도원경',     key:'도원경',     lv:275, col:'#e57ba8'},
-  {id:'art',  label:'아르테리아', key:'아르테리아', lv:280, col:'#d9574a'},
-  {id:'car',  label:'카르시온',   key:'카르시온',   lv:285, col:'#4a8fe0'},
-  {id:'tal',  label:'탈라하트',   key:'탈라하트',   lv:290, col:'#9a6ae0'},
-  {id:'gear', label:'기어드락',   key:'기어드락',   lv:295, col:'#8a97a8'},
-  {id:'mp',   label:'몬스터파크', kind:'mp',  lv:0,   col:'#4caf50'},
-  {id:'xmp',  label:'익스트림 몬파', kind:'xmp', lv:260, col:'#1f9e74', weekly:true},
-];
-const DQ_ICONS = {"cer":"data:image/png;base64,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","arcs":"data:image/png;base64,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","odium":"data:image/png;base64,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","dow":"data:image/png;base64,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","art":"data:image/png;base64,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","car":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACIAAAAiCAYAAAA6RwvCAAAF7UlEQVR42pWY4ZHbMA6FP+9sA7gSkBKYEpgSuCXIJVglWCWsSjBLCEsISwhaQAm5HyQl2pvczGlGa4+WIh8fHoBHX+jX5+OP9K8C+Hh+/bgc36dxgiOA9vEi4DgOWH/fP9b27uPe55Zz4uv1ed7LDMLbpPPlAGsHc2/jVCAAASf8BUjtt02g2vwHnHNuwK/Xix9A+lO5JX5vme/zwLFYZyACoYNpDxXcwP14y4AyAKWF257ZJsahDXeksXeZdsq04OulDBbaLSqNhhjOQbX02e3YwADkLiczIRBLpSAna++D+gnMgXqJ3PdCmZgQEQja7pkuA0Jsz6xCrUgPnbocoQIQUZSKTow3RiZWBv1DhIMBhbb4YMA7t0j7Z+4CC3JSWksD1bVhIYAIooqY4+7UUtkBm0OjUwjm74hAapMcAvAhqgnIQKjSAEELU6nneMBiRHI9NQTUtykUhw6CNkHSwzBA+AuI0EEAJGk3gPkJTBRSgnBqSc2/Zs/7S0gCEFQQk7azAWAsrpOca+2MKOTdqNW5f4YnlZufY0SgGlQ7kuIA8/4XRuRIxynPoj5nv/e0tQq5QkpKjLBeK9ZL4uMzUHpKh76JGGAvRyYK4OvHxd+6tiQEQgrILbWFbrGFZVQws1OcCJTcnpk5UY+U5XYLqENKgXUzFoVFmxjKCKk+lQoBeBsJUCuWK77lNngrTWRDcCMU7u0OsVElfSqzk60QFXBCUD7Wyse1suipsXgKf/DM25zLIwts1Ho5M6UWb4KbtCIqoE0b2ov9thtmI/ede1JU9QBT/bm8HoxcPy4uE5C5SkVptUAFQhBKOf/vA7Q5RmXLO3s2lpsQorXi0ZV+ixCjsq4tVJyblIFoiNVlksAMIuiJUPV5K2aGqrRQqSLqrGtGVYiibRNRMPfe0g13fRL9qH/vo9V/Pv4MZkT7YrtZW4BGqQM1O+6ZGAMigooeQEupmFXgRh4VfReWpB1MAy1fzMbJSGvifzEBZoA4pZ5VyNwP+kopmAeWJMQYUL1Rq3VdBWLo7dWMJQWqnX1qXu/tq/toVza435VihrlTrfQYCkhkzxmrhlVHxY5QrdeNWivVAiEIuWbcjJQCGiBFXhX5wsirWehgbl1dS1r4cd2PMY/PO9d1I6WIahuzXjeQgJnj7BjCz8cN78wq/77eefWHQ0T9s/jIDvj5uRwvXq8baWkgBhO/fj2+LLDXE0AuZ49Cnnf+NoVFZus0MEVtEyU9n3///tFBCGbG9bqiQbmuG9++/+hCb/exN3m+/cXDvj+ZW38WUDoalZFNmyWtW/v0E3TQQK2VoIFlWfj27Qe/f/88gIxCKVMTnAC27nuAOHMHaHVkL5mggVwKHhaoe+ui94D0bNAgpCUR7Lnrfvv4zu/Hr5b20+Kje/esO2T79iIRd28dtXmRCC6kEPkMrbrW6lhxriasW/PDGoSYwqGXVvwCuZbWMCdLr72FdOaPDnV53P8oIOnGr7yRhzeN6URubmwu3PVU87pvaISe1Wg82YiSCBrQTkO2BmAUymy9Swg7kNf/XOqRNXnj2v2IAcHsNDNBlNAL22gOYfkkieEK2Tas9/jH7RPD2fOOuRE0cEvLYa6mJl1xbGhkMKL/8KxomNy5GblWHKdo4qHDwXtPS2VvfQB3J4ZI6DWm2Nl5aa6+9NvWbxf7UtBiQks+gKtVxK2BUVVuqpRauQdhzTtLTM2BaQOxCHiI7dzRWcj1KUMMp/YzzRexNhALSRSNCR3uurcWSobaTVMMAQNSiNTeAp6OhR1Eqc0W+jD/Tk2KLIFwHFD9xaEBXnY2d2rJ5A6ixFZMS+9b5K1lldJYGLe7s4xaYbB3K9lLQgEyUOT5KHsewnsdmZ288HWwvB45RZp+dCofVruP9VGr24H80Kg8lcwjNOuPfgh/AfM3ILwewoEg0s4toxe5HWW7nXn7UTNF4l7ILzbj0McB5KnMf/3ZgI/14hNYfTmUz+Adofr8s4Q899Lp7wHi+H3k/7n+EUqZdmjdiPnrjzH/6/ovlpNbET2Pz0EAAAAASUVORK5CYII=","tal":"data:image/png;base64,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","gear":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACMAAAAlCAYAAADIgFBEAAAPJklEQVR42m2Ye3RWxbXAfzNnzjnfK+RNeIQAIUJQCY+CbyxgxeoSqdqHttRlrfX2UrVV29rb3ke9va72tsu+bG2vVYuUtt7bKmIr9VEVeYigFiNBwICEBAIJSb7vS/Lle52Zff8I9N6u1b3WXvucddaZ/Zs9M3v2jJJHv+8BGjhjFWBOP2vAKymfgoqVj3tTOew1e92myRQkbpQQ1w5PO9AOtMVqS147Sp4lXyWZ0iy9307zjqgar5/xtpUG5RBPwBPEcxAIIOa0c+80gHdawzPvFi+wGNK6yvZ79SbjVaYsuloUtUqoEXW6JUAUJRRDQL/C9lu8dIFEviihK0moAlXSoDxEW9AW0RGYCPEiJHQGCE47DwD/NERo8XyntCmqMJ7RleFJr8Ef8GrrxnR8qlXedByNoqi96waWcloeWsc2YFAh3UpxqCz+4WFXfWKYmnxcFQSd8wxlX6MKoIvg5RGTR3yH+JyBSQAJbrjtfvfEI992SsfL+EFex+Kpaz7y5RqngvYXj/95TMdnWLyZQOM9H2cWwIbNUXFSlehTA8qtvdksBXjkYQ6BdGvcQeBIWcKBosTLoStps2TxInnrjR2In1V4g2AGwR8Cv2jORAJIuiceecApXaGv/dTXspueeyztVdWYsqoqWp0a1hOWFVU47R+v9mbhK365uWgbKkp6zVUV4ZnIvLhlRDKDgbv1Vr8FJy3/87BrQjiebK6PoqODRyPlSxhLLHQuiJTyjjN/flzt6Xwe8fNIYA2QBKodurakgglFFVaOPvPic0NeXeuAVzv50Csn+kd0KvbJK5LL8H1+9qyNlswtep+5KuGJhBw+3MuUKbV0dBzlQx+crZTC2/v2mHTsdvbGm1wLw7S0b0p3z5g/8xzp2DuoJk2eYfGz3sIFF9o339voEdQqCQaRoGCApEPX6Fu++Hxx3aNfV3POXTx8eGA041XWjejUlGuWVSwgDPnZ85SnTyp7n748ZlKpkJ5j/bTv7UIrRdzk2fjUDnbt3M9111/MvLZqNaspb3a+lHPFY3lZdr5tIt3NSOvZKVVVmZQl57WWd717GGLTrQtPeOL3GIJhZR/94fyy8mcVVdg6puLNyUsuWdn5+qHMoiUT55FI8vjOsBwkAr18YehNqo9RjCyv7niXzs5uUqk41a6TZVeu4p4br6JmwZ24yHHp0nNZ+aE2QokY6RshGrOSaqpTfl3lmRHFDY0Wot5sl+TcVvtm/y8CvB5jlTYFFVbkVbwhr2OzJtUmpy1qDae9+Fa5NOxFum2Gbxa2JRXGcLRzP2+8+jwH33mD+kVriPIZaqdPQXsRYTxObuQYYVjHkz+4iZceq2LN5+9lcdsSGB1Uwy+9R66hSaqWnaPoOIQ+lo4NHjInIDiipMJLgfO++pFrZ+q2xVeEra0rJy6YvZiqWoZVSuobEqZtptGNk2JqID3Ivtc2c/TAbs5pnUDfoCVRPZWLz5vF5ImVuMwOahMhb23ZhK6Yjowe4mOXx9m++QXSvV00NM6lck4zprdXudo6Tj571BUnN5YaWhMtx7rCN0uSOKIwaZNXsWJ6X8/+nB6auvCcxJzhhtny9ssH5NLzKhWqgn17dtF7tJ3qSkOYSOGHKRpnzeGsxYt4+F8+w8pFQ6QzVcy//GpaF15Ab84jH1nAIloRDXWwc8dGalMzOO+8y2BkhBFXoaJ9ZVW3upqClOsU3oS4RIHO6KrikFcTDeoaQ7KCTDZi4uSkIhbntVeeo+/9PdTXJmluncS5532QwZEksxp286O7PsptN4Y0tVSz/FOnUJk/seaGZmr1fu64eyZbd2aZ0Zhk3gUxFn7wSva8/nse/un9gE+iqYKci3sUhIIKaiJlJhRVEJq0rioPqWo3puM+SY++I5Esaa3Wz/5uHZnhDAs/cBax2qlUNNbyyuMPMjp4nN6Mx5fvbEVsiZrmMcTFqJ7dy6n2J/nkNa3s7VpI23xNEEsxddky4tXLufi699jy57d4YeMGVl7/GdU7AGIMkVYpLSolqNAM6LrSkK62JRV4JBUnsiVIxvHHOjh8aJSZ0wIYOs6O3/6RWLKaMFVFGPfRJsmEliLVs7b9dYUgzfS376PjtU6WrlhB5thBnv7+es5doenYso53/jLMJA6B9zm8mNNUhSgvSimhQjkVml49OcqruBWURwLGdAAJn+bWHFs6ItJ9h1m0Yj61sQq8MIUXJPHfVVQ258Ep/lY09fOGqf+zpSGxjeZlF1POVZCoy1Izs43a3m7aFltEe0xZEKCqfZqX6uae7VHCiQrMGCkBPIfWeIIVp/A8/rJ7hKn1Kc5eECM1JY+fyKI80J7jgpY4mUMpKmeWgAuBYWAUMJzaO4Fr7xpC5AhKnSA19UL8BLRdNJt9HV0cPFzFWYHHkf0Rkxs93t0tvb7xXB6xJm4LuqBjysNpBJQbLzsKuQydPRHVLTW0vwKHX7f4sSJ+LI/xHfOXKIYOKFxkEBdDnOPU3hAosfEHCnEacQXQr7Lo6gXMXrSP93tzzGyIg/Eo+YIrQCHQzjop+aiizkvKOmfEOSN4hvHua/647SSj2TQvbxikbkXERx+oYvX9SerrS1zxNcMb207iojEG9xmQIgMdCRDLjpeyfOrndTTNDPn0IxP59MO11Cy17HjKIuL4044eCBTFQENMUQxVlA91aSxQRV1rh0zS5v2YLWnKJYyNwFoa2m5jydmw9e0sJzcXeeL2XqCEd8UIT97bw8T6Mru2nKJmTh/iStSdPcSOlzNMm+Gz4bZ+wo+VAVj/2T4yr4XsPxHj0oun0rb8K2AUpVChQk0hpmw+poqjcVXSCVfwfGuVcVbjHMY5EMfgvkdZvnwyo9k0FclhGps8nri9l0Uz40TFPLacp2FSxDM/KfPMgxFP/8gybboBcYBwfksN62/tY3pzyITTW9L5F9Rw4K2fooyiFCh0COU4tpigmK1QJRPYsg6U9TRKYRXGCjghDEJsKct3HqzlO988zM2rNI0zDL9Z28tZdxsO/bDIRctSTGkMQBwi4yDbX8px1lcU62/tY+llKQC27hrgtjsrSXdmxwtUBWV/3NoYosb5RQfO+sa60LMuIJHAOAER4okUEpUZPODz4Q+kufe+LurnDeFsmZ2dJ3FRmbpzB6ifN0j9vCHq29LUz88gzrGzcwCAiQuyfPmb3Zxd28Fwj/mbJBB542lBAnwX4IuPNs75gUalPIgzMop2SgA1d+GX+LfvfpW1t1RQGhvkC2smcvP1fQCobYqmKwbYdD0ggiCIjGvTSqH7bhAZYtM2+OrtCzBhClNzGf/1vZ9yzXU/AqDsjfsRnwRCShyhCZyN+WIrtFIxnKJt8BJ9/NGI5av+QBg8wfqNX+BE9wlQiqtWPsrmFz7LJQ8oajdWM/W7aWqfqvprbweuHaJ2YzXTHhhi+91wyy3PMmlFFQfe2kn3tndZ+Ykf09hcTfdDTQT7KzUP7kV8QoQEDmNiUvZKEtmyKIcdP7FMvXk3sm4+NVWPs/LKxxkdyEFhkNc6/gVE2H63gBqC7YAM/d9usE2AIcxOn3Vb93No39scejaG1Cxn3kWNjI6UMC8vpGltN9wxb/wfQ4RQVA5nqsiVIokNFUUPEWneil61rLvQa7ylg/Mfa2V03jb2/OkIj/9+JasvqWb+x5fRewKqYz28d2AcZNV1LfzhyU4APn7fU3TtfYPe7fcx1JVle8cw169ZR1VNgsTrF9D4D938+s7FjN2+N3IWg+YkjpNAzlRSjCIK/Y1X19eRUviu6P7itit5bIme9rlOfn3PQlb/6y7e6bqM2XO7yKe7uWBRLbGJHyanulk09yTTrtvN51eN0H9kH3LyN0yvc3R3WaZOS9JiZ9G2fAobv3EhN3zzo/z3PZeS//ybTlvElkBHHNQRx5SlYCaoct5STPtGcoM9DHz4WqnDOE48XQEli1Ehz/z7Ray9ZBAQ7v1lxNAvDgO7x3PHZVdze+3n6PV387uff4/G5tlYK+RGNDfOfpUr62DjN15BqRg28lE6yY0N40fnXx3iVb/Me/4Yp/wcBROIX0ig0qc29j2WdYkVBwmWOKgb653sp16/hU/88wowZbp/+xRNa4/wnzQB0+jMxBk6dpi6llG++5ODfOsXc/jYqrNRbpS921+jCmi6aTXd6zdx47eWYcsxMu/0sKczQ7GLshL6fUu3ydMbZinEMjijJSykUCMWdSpSchRHY+U5pvIY69jx3M1+8dk9LF+dBBTZHSvHJx/AQ01QNYVNx+eyYNI2vv/1u5ju7QdgzbeXAZBtPzBu3+nkvv84SOBXMfe+3dGqVrRGqjdvs8f8EUaTaVNWFmWMhEUIinG8jBU5psR2Vk/zmvv2lfOxKb9KWs8zLzz9IVOyVcj+Ppa2N1E5fw5NN60GYPX6TTTd382GO+b9DUS2/SBb91eytX0Q73evs/ChfqtKLopyhZySMO4pCjpd6grzwbAu47wSouTH7yes+A2CN8W1TbicZn910BQsGNxf6O/ritThfc4rBWGyGBhPAuXJnvnq0rnZvy7nprXdZHdcTuXFL7Lhjnmc+bZ1fyXDX2oXwTkXRZEdLYxFw7m0G8odN1nbmSzF91a6ir0TolRPoMKMjsgaJCx7mJwTb9juGdsxvKvUk/xEzRfefvzArkFbrhs1sYlU1Ew2VbWTNEEcME1ru2H0DrLtB+h+qGl8bjzUxKob5lA5fzw6/NMWRMRaF+Xy2XTPWP/A++WBbJfOlo9WlSt6jfVP+Jo+0S6nNUXAGSQQ8CItOifOZox4nktHrwcuetPms6bkjVU438wMSolFQWhmqwvbKzbcMS84E5k1D3aPA60dHyqeOAnAyBffKYIdsVH53XKxsK00MtruMmPHJ0SVo5W5ZD4VpMqhieXjOl4ASoBT8sOMh+i4oBOgUg6dtKLiEaqURxd7taLH6LrhQH3A+iyVgLNcSIUEiAspS4CTEJwP4qPFx8dDiceIeHSieFUJr5kC3alechXHcX4OZQoI4P6/GsQ4UCXQiKhIUGOgjEZZD8opwfpCWsYL3eNAM0I1glNCXgSLgBq/vvJwxEWjEdLK8b5oDoqip5xgJN2CTbcgszbzd8UgRoAyKCdQBKUEpR3KaRCFIoIREUYQ+hHeUUJMBMERKUHEnr58cygcBodSioLAsIJh0RQQxqsWDVesVX8X5n8BgRUyK6rYnksAAAAASUVORK5CYII=","mp":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACMAAAAdCAYAAAAgqdWEAAADyklEQVR42q1X7XGsOgw9zqQBXglKCUoJpgRTAlsClGBKWEqAEqAEVAIuIZSg9wPswC57d5N7NcPgQZZ9fPRlDH4nuhubJ/pHc+7k7TdAVBWqCu/92cYH/YM5/0RUVVU7aOfWsfded5ud6m/m/Bsgf/O8Auj9J675qYQgEBEAQFFcns5/fxVICIL80gMAMua7Scu2aZR58BBZwTS9oOuuTwG9ygzySw9bOjgmWMowhgW9BFwdb2NKc8e2P9iyq1DUDeZ5wsfHpz7KrrdXWcmYwVkGSxnaMaCXAMeEuhfU7QiRcGcsIuCNRSKLj/yCeZ4eZtdLzBRtQGkZtAGRZQFnGdpekFG2np4JIgGLCObBb/ES0EsGXxIaMGgD+IihPxasZ0EbgjzUxXhJrmJG3Qb4klDULSrHaJr2gOH9zC3GGHjv0TTNU9aWJTzUlWUJotVNH3mN4eogIiCyYKb9pt4YU5/Wkt/IPE/pqapS53lKOmutctUp2UrneVKylYJYq6qM+/nTmJnnKdHf9+OaHeP6vl79U6ZW9wRcLvXORQRgBJcMEcFwdcgvOLBzGzO69ZEEYBiGQ3xcLnVaIMvozlXMjLbtwUwoyzIdKB4m2sagjsVQVZu9mw50W2vTmIiUiO50Z24iIrXWqrVWvffJZWd6stWpm1Itadv2WOjyAs65bZxjGAaEEJDn+eGkAOD9FcPQIc8LEFFiQ2Sdb61Nrm7bFhBB34fzThxPEANOVZWIlJmVmQ/fziTax9NP05B00zSsbBDpPE/qvdeqKp8H8EcbsA+reCK56T3m4xNUdQhNAV2r6o6lCswWxnyH5DQNqOsGbdtubHOKPWNMBaBOzOxj4REz0e9nEm3iO5aJdQ2rAA6MRf00Del68R4zZRiGFAshhD8yE+ftJcbTXogoZR2zxTiOYB5gjEm6z88c0zQc4yYWqXj6bxa+UhbtdffZNKfMiw+zVWarZVkmdvZsxSe2oLfVTV+Q+hPoTSp0Ufr+uyNHdkQCiqJAX5jNpoeIwHsPIjowxEyoqhJEdMLWsSWkK4TrvgD3haoqDxs7Z+9c4pxD13VwnQJO4ZxLV4XTqjzeN9RbkCmbjPnvtKx7Xx10zLR9My9fPS0zmrY/bPoI5FtsCVmWIb6zLEPTtBCRxNTZt1tbIkpPlAjkNrgjyLSQMXU8ohIxliVgWRbsx/vN1j603Pa1O9tt5qGHiYwJZPwWQYqMK559RsWFliUkgxAkgdmAnF7IzmwjoMjKOuceZFzTPPktxQ9+Ux/afrstOwNpfvQP/Jc/fi8f7n+ivM1XnTOkAQAAAABJRU5ErkJggg==","xmp":"data:image/png;base64,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"}; // 지역 아이콘 data URI (어센틱/그랜드 어센틱심볼, 몬스터파크 이용권, 익몬=몬스터파크 NPC 슈피겔만 얼굴) — src/dqicons.json
-const dqIco = (it,cls='dqico') => DQ_ICONS[it.id]?`<img class="${cls}" src="${DQ_ICONS[it.id]}" alt="" width="20" height="20" decoding="async">`:'';
 const DQ_TTL_MS = 10*60e3;      // 스케줄러 캐시 기본 수명 (길드 탭 등). 일퀘 탭은 자동 갱신 없음: 페이지 열 때 + 🔄 버튼
 const GUILD_TTL_MS = 30*60e3;   // 길드 랭킹: 하루 1번(09:30경) 갱신 데이터라 30분 캐시
-const MP_CHAR_DAILY = 7;        // 몬스터파크: 캐릭터당 하루 7회 (스케줄러 max_count 14 = 월드 기준)
 const GUILD = {name:'봉사활동', world:'스카니아'}; // 고정값 (사용자 요청 시 변경)
 const SCHED_KEY = 'mapleBossTracker.sched', GUILD_KEY = 'mapleBossTracker.guild';
 const lsGet = k => { try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } };
 const lsSet = (k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
 let schedC = lsGet(SCHED_KEY) || {};   // charId → {date, level, items{id:{st,now,max,reg,name}}, guild{suro,flag,mission}, at, ok, msg}
 let guildC = lsGet(GUILD_KEY);          // {date, t1, t2, at, ok, msg}
-let dqBusy=false, guildBusy=false, dqEdit=false, apiPauseUntil=0;
+let dqBusy=false, guildBusy=false, apiPauseUntil=0;
 
 function schedSummary(d){
-  const daily=Array.isArray(d?.daily_contents)?d.daily_contents:[], weekly=Array.isArray(d?.weekly_contents)?d.weekly_contents:[];
+  const weekly=Array.isArray(d?.weekly_contents)?d.weekly_contents:[];
   const nm=r=>normName(r?.content_name);
-  const pick=r=>r?{st:String(r.quest_state??''),now:Number(r.now_count)||0,max:Number(r.max_count)||0,reg:flagOn(r.registration_flag),name:String(r.content_name||'')}:null;
-  const items={};
-  for(const it of DQ_ITEMS){
-    let r=null;
-    if(it.kind==='mp') r=daily.find(x=>nm(x)==='몬스터파크');
-    else if(it.kind==='xmp') r=weekly.find(x=>nm(x).includes('익스트림몬스터파'))||daily.find(x=>nm(x).includes('익스트림몬스터파'));
-    else r=daily.find(x=>nm(x).includes(normName(it.key)) && (x.type==='quest'||/일일/.test(x.content_name||'')));
-    if(r) items[it.id]=pick(r);
-  }
   const g=k=>{ const r=weekly.find(x=>nm(x).includes(k)); return r?{now:Number(r.now_count)||0,max:Number(r.max_count)||0}:null; };
-  return {date:String(d?.date||'').slice(0,10)||dayId(), level:Number(d?.character_level)||0, items,
+  return {date:String(d?.date||'').slice(0,10)||dayId(), level:Number(d?.character_level)||0,
     guild:{suro:g('지하수로')} /* 2026-10-10: 플래그·주간 미션 표시 삭제 (같은 스케줄러 응답이라 API 호출 수는 그대로) */, at:Date.now(), ok:true, msg:''};
 }
 function schedPut(c,d){ schedC[c.id]=schedSummary(d); lsSet(SCHED_KEY,schedC); }
@@ -1805,72 +1797,10 @@ async function refreshGuild(force){
 /* 60초 타이머·탭 열기·화면 복귀 시 호출: 열려 있는 탭만 갱신 */
 function tabTick(){
   if(document.hidden) return;
-  // 일퀘 탭: 자동 갱신 없음 (2026-10-10) — 페이지 열 때 동기화(syncAll, 3초 규칙)가 같은 스케줄러 응답을 저장 + 🔄 버튼
   if(tab==='guild'){ refreshGuild(); refreshSched(S.characters.filter(c=>c.isMain)); }
 }
-function renderTabView(){ if(tab==='daily') renderDaily(); else if(tab==='guild') renderGuild(); }
+function renderTabView(){ if(tab==='guild') renderGuild(); }
 const hhmm = t => { const d=kst(t); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
-const dqChars = () => orderedChars().filter(schedOk);
-/* 항목 상태: lock(레벨 미달) · none(스케줄러에 없음) · done · prog · idle */
-function dqState(it, x, lv){
-  if(it.lv && lv && lv<it.lv) return 'lock';
-  if(!x) return 'none';
-  if(it.kind==='mp') return x.now>=Math.min(MP_CHAR_DAILY, x.max||MP_CHAR_DAILY)?'done':x.now>0?'prog':'idle';
-  if(x.st==='2' || (it.kind==='xmp' && x.max>0 && x.now>=x.max)) return 'done';
-  if(x.st==='1') return 'prog';
-  return 'idle';
-}
-const DQ_TXT = {done:'완료', prog:'진행 중', idle:'미수락', none:'정보 없음'};
-function dqCell(c, it, x, st, off){
-  // 몬스터파크: 캐릭터당 하루 7회 기준(n/7회) · 익스트림 몬파: 주간 퀘스트(주간 n/5) · 진행 중 퀘스트에 카운트가 있으면 '진행 n/m'
-  let txt=DQ_TXT[st], cnt='';
-  if(x && it.kind==='mp'){ txt=st==='done'?'완료':''; cnt=`${Math.min(x.now,MP_CHAR_DAILY)}/${MP_CHAR_DAILY}회`; }
-  else if(x && it.kind==='xmp'){ txt=st==='done'?'완료':'주간'; cnt=x.max>0?`${x.now}/${x.max}`:''; }
-  else if(x && st==='prog' && x.max>0){ txt='진행'; cnt=`${x.now}/${x.max}`; }
-  const tip = (x?.name||it.label)+(it.weekly?' (주간)':'')+(it.kind==='mp'?` · 오늘 ${x?.now??0}회 (캐릭터당 하루 ${MP_CHAR_DAILY}회, 스케줄러 최대 ${x?.max??'-'})`:'')+(dqEdit?'\n클릭: 이 캐릭터에서 '+(off?'다시 표시':'숨기기'):'');
-  return `<div class="dqi s-${st}${off?' off':''}" style="--c:${it.col}" data-dqi="${it.id}" ${dqEdit?`data-dqc="${c.id}|${it.id}" role="button" tabindex="0"`:''} title="${esc(tip)}">
-    <b class="dqn">${dqIco(it)}<span>${esc(it.label)}</span></b><span class="dqs">${esc(txt)}${cnt?`${txt?' ':''}<em>${cnt}</em>`:''}</span>
-    ${st==='done'?`<div class="dqov" aria-hidden="true"><span class="dqov-n">${dqIco(it,'dqico ov')}${esc(it.label)}</span><span class="dqov-t"><b>✓</b> 완료</span></div>`:''}</div>`;
-}
-function renderDaily(){
-  const v=$('#view'); const D=S.dq, all=dqChars(), today=dayId();
-  const noKey=S.characters.filter(c=>!schedOk(c)).length;
-  const shown=all.filter(c=>dqEdit||!D.hide[c.id]), hidden=all.length-all.filter(c=>!D.hide[c.id]).length;
-  const items=DQ_ITEMS.filter(it=>!D.off[it.id]);
-  const newest=Math.max(0,...all.map(c=>schedC[c.id]?.at||0));
-  const status=dqBusy?'<span class="dqspin" aria-hidden="true"></span>갱신 중…':newest?`갱신 ${hhmm(newest)}`:'';
-  const chips=dqEdit?`<div class="dqedit"><span class="muted tiny">표시 항목 (전체 캐릭터)</span><div class="dqchips">${DQ_ITEMS.map(it=>`<button class="dqchip${D.off[it.id]?'':' on'}" data-dqg="${it.id}" style="--c:${it.col}" aria-pressed="${!D.off[it.id]}">${esc(it.label)}</button>`).join('')}</div>
-    <div class="muted tiny">카드의 항목을 누르면 그 캐릭터에서만 숨기거나 다시 표시 · 카드의 👁 로 캐릭터 숨기기</div></div>`:'';
-  const card=c=>{
-    const x=schedC[c.id], ok=x&&x.ok!==false&&x.date===today, lv=Number(ok&&x.level||c.level)||0, co=D.charOff[c.id]||{};
-    const hid=!!D.hide[c.id];
-    let body='', done=0, tot=0;
-    if(!x||(!ok&&x.ok!==false)) body=`<div class="dqmsg muted">${dqBusy||!x?'불러오는 중…':'오늘 데이터를 기다리는 중…'}</div>`;
-    else if(x.ok===false&&x.date!==today) body=`<div class="dqmsg warnc">⚠ 스케줄러 조회 실패 — ${esc(x.msg||'')}</div>`;
-    else{
-      const locked=[], cells=[];
-      for(const it of items){
-        const st=dqState(it,x.items?.[it.id],lv), off=!!co[it.id];
-        if(st==='lock'){ locked.push(it); continue; }
-        if(off&&!dqEdit) continue;
-        if(!off&&st!=='none'){ tot++; if(st==='done') done++; }
-        cells.push(dqCell(c,it,x.items?.[it.id],st,off));
-      }
-      body=(cells.length?`<div class="dqcells">${cells.join('')}</div>`:`<div class="dqmsg muted">표시할 항목이 없어요${dqEdit?'':' · 편집에서 항목을 켜세요'}</div>`)
-        +(locked.length?`<div class="dqlock muted" title="캐릭터 레벨이 낮아 아직 할 수 없는 항목">🔒 ${locked.map(it=>`${esc(it.label)} Lv.${it.lv}`).join(' · ')}</div>`:'')
-        +(x.ok===false?`<div class="dqlock warnc">⚠ 최근 갱신 실패 (${hhmm(x.errAt)}) — ${esc(x.msg||'')}</div>`:'');
-    }
-    return `<div class="card dqc${hid?' hid':''}${tot&&done===tot?' alldone':''}" data-dqchar="${c.id}">
-      <div class="dqh">${avatar(c)}<div class="grow"><div class="nm">${esc(c.name)}${c.isMain?'<span class="mainbadge">★</span>':''}</div><div class="meta">Lv.${esc(lv||'?')} · ${esc(c.job||'')}</div></div>
-      ${tot?`<span class="dqcnt${done===tot?' full':''}">${done}/${tot}</span>`:''}${dqEdit?`<button class="btn sm plain dqeye" data-dqhide="${c.id}" title="${hid?'이 캐릭터 다시 표시':'이 캐릭터 숨기기'}" aria-label="${hid?'다시 표시':'숨기기'}">${hid?'숨김':'👁'}</button>`:''}</div>
-      ${body}</div>`;
-  };
-  v.innerHTML=`<div class="card dqtop"><h2>${miniIcon('symsel')} 일퀘 현황 <span class="muted" style="font-weight:500">${esc(today)}</span><span class="hspace"></span><span class="muted tiny dqstat">${status}</span><button class="ibtn sbtn dqsync${dqBusy||syncing?' busy':''}" id="dqSync" type="button" ${dqBusy||syncing?'disabled aria-busy="true"':''} aria-label="일퀘 현황 지금 갱신" title="일퀘 현황 지금 갱신 (넥슨 스케줄러)">${SYNC_SVG}</button>
-      <button class="btn sm ${dqEdit?'':'plain'}" id="dqEditBtn" aria-pressed="${dqEdit}">${dqEdit?'완료':'편집'}</button></h2>${chips}
-    ${!hasApi()?'<div class="note">넥슨 API 키를 등록하면 메이플 스케줄러에서 일퀘 진행 상황을 실시간으로 불러옵니다. 사이드바 <b>+ 추가</b>에서 계정별 API 키를 등록하세요.</div>':''}</div>
-    ${shown.length?`<div class="dqgrid">${shown.map(card).join('')}</div>`:(hasApi()?'<div class="card muted">표시할 캐릭터가 없습니다.</div>':'')}
-    ${hidden&&!dqEdit||noKey?`<div class="muted tiny dqfoot">${hidden&&!dqEdit?`숨긴 캐릭터 ${hidden}명 (편집에서 다시 표시)`:''}${hidden&&!dqEdit&&noKey?' · ':''}${noKey?`API 키가 연결되지 않은 캐릭터 ${noKey}명은 표시하지 않아요`:''}</div>`:''}`;
-}
 const num = n => (Number(n)||0).toLocaleString('ko-KR');
 function renderGuild(){
   const v=$('#view'), g=guildC, mains=S.characters.filter(c=>c.isMain);
@@ -1906,7 +1836,7 @@ function meso(n){
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),3200);}
 const safeImg = u => /^https:\/\/open\.api\.nexon\.com\//.test(u||'') ? u : '';
 const avatar = (c,cls='') => `<div class="avatar ${cls}">${safeImg(c.image)?`<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">`:esc((c.name||'?').slice(0,1))}</div>`;
-const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','daily','guild']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
+const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','guild']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
 let tab=(()=>{ try{ const t=localStorage.getItem(TAB_KEY); return TABS.includes(t)?t:'boss'; }catch(e){ return 'boss'; } })(), bossFilter='weekly', editMode=false;
 
 function applyTheme(){
@@ -1916,7 +1846,7 @@ function applyTheme(){
 }
 function render(){ if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
-  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),daily:renderDaily,guild:renderGuild})[tab](); if(tab==='boss') fitPriceCard(); renderResetInfo(); }
+  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),guild:renderGuild})[tab](); if(tab==='boss') fitPriceCard(); renderResetInfo(); }
 /* 캐릭터 카드 제목 옆: 🔄 지금 동기화 아이콘 버튼 (API 키가 있을 때만, 넥슨 API 전용 — 구글 드라이브는 헤더 ☁ 버튼) */
 const SYNC_SVG=`<svg class="rot" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 function renderHeaderSync(){
@@ -2204,13 +2134,12 @@ function afterPatchHtml(){
     <div class="pa-total"><span>합계</span><b>${meso(sum('next'))}${dlt(sum('next')-sum('now'),sum('now'))}</b></div>
     <div class="pa-note muted">주간 상위 ${S.settings.weeklyLimit}개 + 월간 보스, 테섭 예정 가격으로 계산</div>`;
 }
-document.addEventListener('click',e=>{ const b=e.target.closest('#dqSync'); if(b&&!b.disabled) refreshSched(dqChars().filter(c=>!S.dq.hide[c.id]),0); }); // 일퀘 🔄 (ttl 0 = 강제)
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]'); if(!t) return; pcTab=t.dataset.pctab; const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } });
 // 결정석 가격 줄이 안 들어가면 자르지 않고 글자를 조금씩 줄임 (최소 .56rem)
-function fitPriceCard(){ const card=document.querySelector('.pricecard'); if(!card) return; card.style.removeProperty('--pcfs');
+function fitPriceCard(){ const card=document.querySelector('.pricecard'); if(!card||!card.querySelector('.pc-row')) return;
+  // 폭이 허락하는 만큼 크게(최대 14px) → 안 들어가면 0.5px씩 줄임(최소 9px). 자르지 않음
   const over=()=>[...card.querySelectorAll('.pc-row')].some(r=>{ const n=r.querySelector('.pc-nm'); return n&&n.scrollWidth>n.clientWidth+0.5; });
-  let fs=parseFloat(getComputedStyle(card.querySelector('.pc-row')||card).fontSize)||11;
-  while(over()&&fs>9){ fs-=0.5; card.style.setProperty('--pcfs',fs+'px'); } }
+  let fs=14; card.style.setProperty('--pcfs',fs+'px'); while(over()&&fs>9){ fs-=0.5; card.style.setProperty('--pcfs',fs+'px'); } }
 function priceCard(){
   const up=(officialInfo&&officialInfo.upcoming)||{};
   const row=r=>{ const u=up[r.k]; return `<div class="pc-row${u?' has-up':''}" title="${esc(r.b.name)} ${D[r.d]} — ${r.p.toLocaleString()} 메소${u?` · 테섭 예정 ${u.toLocaleString()} 메소`:''}">${bossIcon(r.b)}<span class="pc-nm">${esc(r.b.name)} <span class="muted">${D[r.d]}</span></span><b>${meso(r.p)}${u?`<span class="pc-up">테섭 예정 → ${meso(u)}</span>`:''}</b></div>`; };
@@ -2368,7 +2297,7 @@ function renderTotal(){
       const ks=Object.keys(R).sort((x,y)=>oi(x)-oi(y));
       const tot=Object.values(R).reduce((x,y)=>x+y,0); const hd=`<h2 class="eph">${miniIcon('sos')} <span class="ept">에픽빔 본 횟수</span>${tot?` <b class="lx aur epsum">${xN(tot)}</b>`:''}</h2>`;
       return hd+(ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${/^cb:/.test(k)?`${miniIcon('chaosbox')} - ${itemIcon(k.slice(3))}<span class="ln">${esc(ITEMS[k.slice(3)].n)}</span>`:`${itemIcon(k)}<span class="ln">${esc(ITEMS[k].n)}</span>`} <b class="lx">${xN(R[k])}</b></span></div>`).join('')}</div>`:'<p class="muted">아직 기록한 아이템이 없습니다. 보스 현황 탭에서 보스 행의 아이템을 누르고 저장하면 기록됩니다.</p>'); })()}</div>
-  ${bossLootHtml(T)}${itemTotalsHtml(T)}
+  ${bossLootHtml(T)}${itemTotalsHtml(T)}${missHtml()}
   <div class="card"><h2>🗓 전체 주 목록</h2><div style="overflow-x:auto"><table><thead><tr><th>주차</th><th class="num">클리어</th><th class="num">아이템</th><th class="num">주간 수익</th><th class="num">누적</th></tr></thead><tbody>
     ${T.weeks.map(w=>{cum+=w.total||0;return {w,cum};}).reverse().map(({w,cum})=>`<tr><td>${fmtWeek(w.week)}${w.cur?' <span class="pill">이번 주</span>':''}</td><td class="num">${w.cleared??'-'}</td><td class="num">${w.items??itemSum(Object.assign({},...(w.perChar||[]).map(p=>p.items||{})))}</td><td class="num"><b>${meso(w.total||0)}</b></td><td class="num muted">${meso(cum)}</td></tr>`).join('')}
   </tbody></table></div></div></div>`;
@@ -2811,8 +2740,8 @@ async function gdWrite(keepalive){
 const GD_BASE_KEY=SV_ON?'mapleBossTracker.svbase':'mapleBossTracker.gdbase';
 const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|autoSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp)$|^settings\.accounts\[[^\]]*\]\.(key|status)$/;
 const GD_SOFT_RE=/^characters\[[^\]]*\]\.(level|job|world|ocid|accId)$/;
-const GD_HIST_RE=/^(history|monthHistory)\[[^\]]*\]$/;
-const GD_KEYED={characters:'id',history:'week',monthHistory:'month','settings.accounts':'id'};
+const GD_HIST_RE=/^(history|monthHistory|missW|missM)\[[^\]]*\]$/;
+const GD_KEYED={characters:'id',history:'week',monthHistory:'month',missW:'week',missM:'month','settings.accounts':'id'};
 const stable=v=>Array.isArray(v)?'['+v.map(stable).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}':JSON.stringify(v);
 const gdIsObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const gdP=(p,k)=>p?p+'.'+k:k;
@@ -2932,7 +2861,7 @@ async function gdSync(remote){
 // 병합 결과 m 을 이 PC 에 적용(달라졌으면)하고 드라이브에 저장(달라졌으면)
 async function gdCommit(m,remote){
   const rU=+remote.updatedAt||0, rd=gdPrep(remote.data);
-  ['history','monthHistory'].forEach(k=>{ if(Array.isArray(m[k])) m[k].sort((a,b)=>String(a.week||a.month)<String(b.week||b.month)?-1:1); });
+  ['history','monthHistory','missW','missM'].forEach(k=>{ if(Array.isArray(m[k])) m[k].sort((a,b)=>String(a.week||a.month)<String(b.week||b.month)?-1:1); });
   const mS=contentSig(m), toLocal=mS!==contentSig(gdPrep(backupData(true))), toRemote=mS!==contentSig(rd)||!remote.withKeys;
   if(toLocal){ m.updatedAt=gdSig(m)===gdSig(rd)&&!toRemote?rU:Date.now(); gdLoad(m); }
   if(toRemote){ await gdWrite(); }
@@ -3212,15 +3141,12 @@ document.addEventListener('click',e=>{
     // 저장 안 한 변경이 있으면 탭 이동 전에 묻기: 예 = 저장 후 이동 / 아니오 = 스냅샷으로 되돌리고 이동 / 닫기 = 머무름
     if(pend&&t.dataset.tab!==tab){ svAsk('변경사항을 저장하시겠습니까?',[['yes','예'],['no','아니오']]).then(async k=>{ if(k==='yes'){ await pendSave(); go(); } else if(k==='no'){ pendCancel(); go(); } }); return; }
     go(); return; }
-  if(t.dataset.dqg){ const k=t.dataset.dqg; if(S.dq.off[k]) delete S.dq.off[k]; else S.dq.off[k]=1; save(); renderDaily(); return; }
-  if(t.dataset.dqc){ dqToggleChar(t.dataset.dqc); return; }
-  if(t.dataset.dqhide){ const id=t.dataset.dqhide; if(S.dq.hide[id]) delete S.dq.hide[id]; else S.dq.hide[id]=1; save(); renderDaily(); return; }
   if(t.dataset.cpage){ charPage=+t.dataset.cpage; renderChars(); return; }
   if(t.dataset.move){ e.stopPropagation(); const [id,d]=t.dataset.move.split('|'); moveCharBy(id,+d); render(); return; }
   if(t.dataset.wmove){ e.stopPropagation(); const i=t.dataset.wmove.lastIndexOf('|'); moveWorldBy(t.dataset.wmove.slice(0,i),+t.dataset.wmove.slice(i+1)); render(); return; }
   if(e.target.closest('.drag-h')) return;
   if(t.dataset.edit){ e.stopPropagation(); openCharModal(t.dataset.edit); return; }
-  if(t.dataset.id){ S.activeId=t.dataset.id; save(); if(['history','total','daily','guild'].includes(tab)) {tab='boss';syncTabs();} render(); return; }
+  if(t.dataset.id){ S.activeId=t.dataset.id; save(); if(['history','total','guild'].includes(tab)) {tab='boss';syncTabs();} render(); return; }
   if(t.dataset.filter){ bossFilter=t.dataset.filter; render(); return; }
   if(t.dataset.toggle && c){ const s=t.dataset.toggle,b=findBoss(s); const cfg=c.bosses[s]||(c.bosses[s]={enabled:false,diff:b.diffs[0],party:1}); cfg.enabled=!cfg.enabled; save(); render(); return; }
   if(t.dataset.setdiff && c){
@@ -3245,7 +3171,6 @@ document.addEventListener('click',e=>{
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
   switch(t.id){
     case 'editModeBtn': editMode=!editMode; render(); break;
-    case 'dqEditBtn': dqEdit=!dqEdit; renderDaily(); break;
     case 'syncBtn': syncAll(); break;
     case 'importAccBtn': openImport(); break;
     case 'impRetry': openImport(impAccId); break;
@@ -3270,8 +3195,6 @@ document.addEventListener('click',e=>{
     case 'gdClose': $('#driveModal').classList.remove('show'); break;
   }
 });
-function dqToggleChar(v){ const [id,k]=v.split('|'); const o=S.dq.charOff[id]||(S.dq.charOff[id]={}); if(o[k]) delete o[k]; else o[k]=1; if(!Object.keys(o).length) delete S.dq.charOff[id]; save(); renderDaily(); }
-document.addEventListener('keydown',e=>{ const q=(e.key==='Enter'||e.key===' ')&&e.target.closest?.('[data-dqc]'); if(q){ e.preventDefault(); dqToggleChar(q.dataset.dqc); } });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('#ringModal').classList.contains('show')) closeRing(); if(celebrate.running) endCelebrate(); if($('#importModal').classList.contains('show')&&!$('#charModal').classList.contains('show')) closeImport(); gdMenu(false); } });
 document.addEventListener('keydown',e=>{ const wt=e.target.closest?.('[data-wtab]'); if(wt&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); if(wt.dataset.wtab!==worldTab) setWorldTab(wt.dataset.wtab); } });
 document.addEventListener('contextmenu',e=>{ const dc=e.target.closest('[data-drop]'); if(!dc) return; e.preventDefault(); if(tipTouchAt&&Date.now()-tipTouchAt<1500) return; /* 터치 길게 누르기 = 툴팁 보기 (취소는 − 버튼) */ changeDrop(dc.dataset.drop,-1); });
@@ -3341,6 +3264,7 @@ $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
 load();
 if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
 checkResets(); loadOfficialPrices(); save(); applyTheme(); render();
+addEventListener('resize',()=>{ clearTimeout(fitPriceCard._t); fitPriceCard._t=setTimeout(fitPriceCard,150); });
 /* 페이지를 열거나 새로고침할 때마다 넥슨 API 동기화 1회 (2026-10-10 사용자 요청) — 🔄 버튼과 같은 syncAll(넥슨 API 전용, 구글 드라이브·로그인 창과 무관).
  * 새로고침을 연달아 해도 API 호출량을 아끼도록: 마지막 동기화(완료) 또는 마지막 '열 때 동기화' 시작이 LOAD_SYNC_GAP_MS(3초, 사용자 결정) 안이면 건너뜀.
  * 시작 시각을 따로 저장(LOAD_SYNC_KEY)하는 이유: 동기화 도중 새로고침하면 lastSync 가 안 바뀌어 매번 다시 시작되기 때문. */
