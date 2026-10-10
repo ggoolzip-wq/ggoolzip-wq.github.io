@@ -20,7 +20,7 @@ try:
     first=pg.evaluate("[...document.querySelectorAll('[data-drop^=\"seren|\"]')].map(e=>e.dataset.drop).find(k=>!/^seren\\|r_/.test(k))")
     pg.click(f'[data-drop="{first}"]'); pg.wait_for_timeout(200)
     t=pg.inner_text('#congrats') if pg.locator('#congrats.show').count() else ''
-    check('1인: 고르기 창 없이 바로 기록 + 축하 + 이모지 1개', pg.locator('#bbModal').count()==0 and pg.evaluate(f"S.characters[0].drops['{first}']===1") and '축하드립니다!' in t and pg.evaluate("(()=>{const i=document.querySelector('#congrats img.cg-emo');return !!i&&i.complete&&i.naturalWidth>0&&document.querySelectorAll('#congrats img.cg-emo').length===1&&getComputedStyle(i.parentElement).backgroundClip!=='text'})()") and pg.get_attribute('#congrats img.cg-emo','alt') in EMO, t)
+    check('1인: 고르기 창 없이 바로 기록 + 축하 + 이모지 1개', pg.locator('#bbModal').count()==0 and pg.evaluate(f"S.characters[0].drops['{first}']===1") and '축하드립니다!' in t and pg.evaluate("(()=>{const i=document.querySelector('#congrats .cg-big img.cg-emo');return !!i&&i.complete&&i.naturalWidth>0&&document.querySelectorAll('#congrats .cg-big img.cg-emo').length===1&&getComputedStyle(i.parentElement).backgroundClip!=='text'})()") and pg.get_attribute('#congrats .cg-big img.cg-emo','alt') in EMO, t)
     pg.evaluate("document.querySelector('#iconBurst')?.remove()"); pg.locator('#congrats .cg-in').screenshot(path='/workspace/shots/b51_emoji.png')
     pg.evaluate('endCelebrate()')
     pg.click('[data-drop="kaling|g_faith"]'); pg.wait_for_selector('#bbModal')
@@ -35,7 +35,7 @@ try:
     check('취소 → 기록 안 함, 취소/저장 비활성', not pg.evaluate("S.characters[0].drops['kaling|g_faith']") and pg.locator('#bbModal').count()==0)
     pg.click('[data-drop="kaling|g_faith"]'); pg.click('#bbModal [data-bb=w]'); pg.wait_for_timeout(200)
     t=pg.inner_text('#congrats')
-    check('블빵승리 → 기록(w) + 축하', pg.evaluate("S.characters[0].drops['kaling|g_faith']===1&&S.characters[0].dmode['kaling|g_faith']==='w'") and pg.locator('#congrats.show').count()==1 and pg.evaluate("(()=>{const i=document.querySelector('#congrats img.cg-emo');return !!i&&i.complete&&i.naturalWidth>0&&document.querySelectorAll('#congrats img.cg-emo').length===1&&getComputedStyle(i.parentElement).backgroundClip!=='text'})()") and pg.get_attribute('#congrats img.cg-emo','alt') in EMO, t)
+    check('블빵승리 → 기록(w) + 축하', pg.evaluate("S.characters[0].drops['kaling|g_faith']===1&&S.characters[0].dmode['kaling|g_faith']==='w'") and pg.locator('#congrats.show').count()==1 and pg.evaluate("(()=>{const i=document.querySelector('#congrats .cg-big img.cg-emo');return !!i&&i.complete&&i.naturalWidth>0&&document.querySelectorAll('#congrats .cg-big img.cg-emo').length===1&&getComputedStyle(i.parentElement).backgroundClip!=='text'})()") and pg.get_attribute('#congrats .cg-big img.cg-emo','alt') in EMO, t)
     pg.evaluate("endCelebrate(); document.querySelector('#iconBurst')?.remove()")
     # 생명 반지 상자: 결과 → 3지선다 → 블빵패배 (축하 없음)
     pg.click('[data-drop="kaling|r_life"]'); pg.wait_for_selector('#ringModal.show')
