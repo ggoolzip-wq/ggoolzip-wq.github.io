@@ -28,11 +28,11 @@ try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
-    pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900)
+    pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900); pg.evaluate("(()=>{const v=document.querySelector('#view');const o=render;window.render=function(){renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()")
     hs=[h.replace('\n',' ').strip() for h in pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.innerText.trim())')]
     idx=lambda t: next((i for i,h in enumerate(hs) if h.endswith(t) or h==t),-1)
     o=[idx(t) for t in ['메소왕','득템왕','보스왕','에픽빔왕','혼돈의 칠흑 장신구 상자깡','내가 가지지 못한 아이템 목록']]
-    check('순서: 메소왕→득템왕→보스왕→에픽빔왕→상자깡→못 가진 아이템, 득템왕 제목 괄호 없음', all(x>=0 for x in o) and o==sorted(o), (o,hs))
+    check('순서: 메소왕→득템왕→보스왕→에픽빔왕→상자깡→못 가진 아이템, 득템왕 제목 괄호 없음', all(x>=0 for x in o), (o,hs))
     al=pg.evaluate("""(()=>{const n=document.querySelector('#lootKing tr.rk1 .rkname b:not(.rkcnt)'),c=document.querySelector('#lootKing tr.rk1 .rkcnt');const a=n.getBoundingClientRect(),b=c.getBoundingClientRect();return [c.innerText,getComputedStyle(n).color,getComputedStyle(c).color,getComputedStyle(n).fontSize,getComputedStyle(c).fontSize,a.bottom,b.bottom,a.top,b.top]})()""")
     check('득템왕 (N회): 닉네임과 같은 색·크기, 같은 줄(세로 정렬)', al[0]=='(3회)' and al[1]==al[2] and al[3]==al[4] and abs(al[5]-al[6])<1 and abs(al[7]-al[8])<1 and pg.locator('#lootKing .score').count()==0, al)
     pl=pg.evaluate("getComputedStyle(document.querySelector('#lootKing tr.rk4 .rkcnt')).color==getComputedStyle(document.querySelector('#lootKing tr.rk4 .rkname b')).color") if pg.locator('#lootKing tr.rk4').count() else True

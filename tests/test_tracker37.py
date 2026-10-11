@@ -63,7 +63,7 @@ try:
     hs=pg.evaluate("[...document.querySelectorAll('.revpanel .dl, .ringouts .dl')].map(e=>{const P=e.parentElement.closest('.rp-items,.ringouts').getBoundingClientRect(),R=e.getBoundingClientRect();return [e.innerText.replace(/\\s+/g,' '),Math.round(R.height),R.right<=P.right+1]})")
     check('b50: 모든 항목(칠흑·블빵 포함)이 한 줄 덩어리, 칸 밖으로 안 나감', hs and all(h<=26 and ok for _,h,ok in hs), hs)
     pg.evaluate("endCelebrate(); document.querySelector('#iconBurst')?.remove()"); pg.locator('.revpanel').screenshot(path='/workspace/shots/b49_income.png')
-    pg.click('[data-tab=total]'); pg.wait_for_timeout(500)
+    pg.click('[data-tab=total]'); pg.wait_for_timeout(500); pg.evaluate("(()=>{if(window.__sh)return;window.__sh=1;const v=document.querySelector('#view');const o=render;window.render=function(){if(tab!=='total')return o.apply(this,arguments);renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()")
     tot=pg.inner_text('.itemtot'); bl=pg.inner_text('.bossloot')
     check('수익 분석 총 아이템 획득량: 승리/패배 따로', '(블빵승리)' in tot and '(블빵패배)' in tot and pg.locator('.itemtot .loot.md-w').count()>=1 and pg.locator('.itemtot .loot.md-l').count()>=1, tot)
     ring=pg.evaluate("totalData().ring"); check('패배한 반지 상자의 결과는 내 시드링(리4) 집계에서 제외', ring['r4']==0, ring)

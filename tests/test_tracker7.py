@@ -36,12 +36,12 @@ with sync_playwright() as p:
     # drop clicks
     pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|mitra"]'); pg.wait_for_timeout(80)
     pg.click('.boss:has-text("선택받은 세렌") [data-drop="seren|mitra"]'); pg.wait_for_timeout(80)
-    pg.click('.boss:has-text("스우") [data-drop="lotus|r_red"]'); pg.click('#ringModal [data-ring="x"]'); pg.wait_for_timeout(80)
+    pg.click('.boss:has-text("진 힐라") [data-drop="jinhilla|r_black"]'); pg.click('#ringModal [data-ring="x"]'); pg.wait_for_timeout(80)
     pg.wait_for_timeout(250)
     while pg.locator('#bbModal').count(): pg.click('#bbModal [data-bb=s]'); pg.wait_for_timeout(150)  # b49: 2인 이상 블빵 3지선다 → 분배
     print('D1 counts after clicks:', pg.evaluate("activeChar().drops"), '| chip text:', pg.inner_text('[data-drop="seren|mitra"]'), '| got class:', pg.get_attribute('[data-drop="seren|mitra"]','class'))
     pg.click('[data-drop="seren|mitra"]'); pg.wait_for_timeout(80)
-    pg.click('[data-drop="lotus|r_red"]', button='right'); pg.wait_for_timeout(80)
+    pg.click('[data-drop="jinhilla|r_black"]', button='right'); pg.wait_for_timeout(80)
     print('D2 after −1 and right-click:', pg.evaluate("activeChar().drops"), '| revenue unchanged:', pg.evaluate("allRevenue().total")==total_before)
     # +N expand → hidden chip clickable
     more=pg.locator('.boss:has-text("선택받은 세렌") [data-dropmore]')

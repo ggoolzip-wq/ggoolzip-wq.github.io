@@ -62,7 +62,8 @@ try:
         check('kaling hard eternal tooltip: 단체보상 without 하드', t.startswith('뒤엉킨 흉수의 고리 7개 (단체보상)') and '하드' not in t, t)
         # 2026-10-10: 툴팁은 반지 상자(녹옥 제외)·혼돈의 칠흑 장신구 상자·에테르넬 칩에만
         bad=pg.evaluate("""[...document.querySelectorAll('.drop')].filter(e=>{const k=(e.dataset.drop||'').split('|')[1]||'';
-          const want=e.classList.contains('eter')||k==='chaosbox'||['r_red','r_black','r_white','r_life'].includes(k);
+          const want=e.classList.contains('eter')||k==='chaosbox'||['r_black','r_white','r_life'].includes(k);
+          if(e.classList.contains('off')) return false;
           return want!==e.hasAttribute('data-tip') || e.hasAttribute('title') || !!e.querySelector('[title]');}).map(e=>e.className+' '+(e.dataset.drop||''))""")
         check('tooltips only on ring boxes (not green), chaos box, eternal; no title anywhere in chips (erda too)', not bad and pg.locator('.drop.erda:not(.eter)[data-tip]').count()==0, bad)
         check('green ring box: no tooltip', pg.evaluate("itemTip('r_green')")=='' and pg.evaluate("itemTip('g_life')+itemTip('se1')+itemTip('lcm')")=='')
@@ -77,7 +78,7 @@ try:
             pg.hover(sel); pg.wait_for_timeout(150); tips[k]=tip()
             if k=='r_life':
                 r=pg.locator(sel).bounding_box(); shot(pg,'tip_ringbox_life.png',{'x':max(0,r['x']-150),'y':max(0,r['y']-110),'width':420,'height':150})
-        check('ring box tooltips = name + 리4 + 컨4 only', tips.get('r_life')=='생명의 보스 반지 상자\n리4: 10.16%\n컨4: 10.16%' and tips.get('r_white')=='백옥의 보스 반지 상자\n리4: 5.00%\n컨4: 5.00%' and tips.get('r_red')=='홍옥의 보스 반지 상자\n리4: 0.69%\n컨4: 0.69%', tips)
+        check('ring box tooltips = name + 리4 + 컨4 only', tips.get('r_life')=='생명의 보스 반지 상자\n리4: 10.16%\n컨4: 10.16%' and tips.get('r_white')=='백옥의 보스 반지 상자\n리4: 5.00%\n컨4: 5.00%', tips)
         r4=pg.evaluate("Object.fromEntries(['r_green','r_red','r_black','r_white','r_life'].map(k=>[k,fmtPct(ring4(k).r4)+'/'+fmtPct(ring4(k).c4)]))")
         check('r4/c4 all boxes (green none, black 2.50%)', r4=={'r_green':'없음/없음','r_red':'0.69%/0.69%','r_black':'2.50%/2.50%','r_white':'5.00%/5.00%','r_life':'10.16%/10.16%'}, r4)
         pg.click(f'{ROW("kaling")} [data-drop="kaling|chaosbox"]'); pg.wait_for_timeout(150); pg.click('#chaosModal [data-cbpick="sos"]'); pg.evaluate('endCelebrate()')
@@ -87,7 +88,7 @@ try:
         check('r4 result recorded', st()['drops'].get('kaling|r_life')==1 and st().get('dropOut',{}).get('kaling|r_life')==['r4'], (st()['drops'],st().get('dropOut')))
         pg.click(f'{ROW("kaling")} [data-drop="kaling|chaosbox"]',button='right'); pg.wait_for_timeout(150)
         check('mouse right-click still −1', not st()['drops'].get('kaling|chaosbox'))
-        check('no native title on drop chips (custom tooltip instead)', pg.locator('.drop[title], .drop [title]').count()==0)
+        check('no native title on drop chips (custom tooltip instead)', pg.locator('.drop:not(.off)[title], .drop:not(.off) [title]').count()==0)
       else:
         pg.locator(f'{ROW("kaling")} .drop.eter').scroll_into_view_if_needed()
         pg.tap(f'{ROW("kaling")} .drop.eter'); pg.wait_for_timeout(200); t=tip()

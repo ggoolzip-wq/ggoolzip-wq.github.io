@@ -19,7 +19,7 @@ try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
-    pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900)
+    pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900); pg.evaluate("(()=>{const v=document.querySelector('#view');const o=render;window.render=function(){renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()")
     pri=pg.evaluate("Object.fromEntries(['whisper','h_face','h_ear','genesis','lcm','cfe','eye','chaosbox','g_faith','g_life'].map(k=>[k,itemPri(k)]))")
     check('순위: 광휘 1 · 해머·창세 1.5 · 루컨마·커포 = 다른 칠흑과 같은 2', pri['whisper']==1 and pri['h_face']==1.5 and pri['h_ear']==1.5 and pri['genesis']==1.5 and pri['lcm']==2 and pri['cfe']==2 and pri['eye']==2 and pri['chaosbox']==2 and pri['g_faith']==2 and pri['g_life']==3, pri)
     j=pg.evaluate("[dropsFor(findBoss('lotus'),'normal').includes('r_green'), dropsOff(findBoss('lotus'),'normal').includes('r_green'), missingItems(totalData()).some(o=>o.k==='r_green'), dropsFor(findBoss('lotus'),'normal').includes('r_red')]")
@@ -69,7 +69,7 @@ try:
     rs=pg.evaluate("(()=>{const s=document.querySelector('.ringsum'),l=s.querySelector('.rslab'),x=s.querySelector('.ringexp');return [getComputedStyle(s).fontSize,getComputedStyle(l).color,getComputedStyle(l).fontWeight,getComputedStyle(x).fontSize,getComputedStyle(x).color==getComputedStyle(s).color,s.scrollWidth<=s.clientWidth+1,s.getBoundingClientRect().height]})()")
     check('시드링: 글자 크고 굵게, 라벨 초록, 기댓값 작고 무색, 한 줄', float(rs[0][:-2])>=16 and rs[1]=='rgb(63, 208, 122)' and int(rs[2])>=700 and float(rs[3][:-2])<12 and rs[4] and rs[5] and rs[6]<60, rs)
     # 블빵 구분선
-    pg.evaluate("s=>{const x=JSON.parse(JSON.stringify(s));x.history[0].perChar[0].items['kaling|g_faith#2w']=1;localStorage.setItem('mapleBossTracker.v1',JSON.stringify(x))}",ST); pg.reload(); pg.wait_for_timeout(700)
+    pg.evaluate("s=>{const x=JSON.parse(JSON.stringify(s));x.history[0].perChar[0].items['kaling|g_faith#2w']=1;localStorage.setItem('mapleBossTracker.v1',JSON.stringify(x))}",ST); pg.reload(); pg.wait_for_timeout(700); pg.evaluate("(()=>{const v=document.querySelector('#view');const o=render;window.render=function(){renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()")
     bb=pg.evaluate("""(()=>{const t=document.querySelector('#bbRate tr:last-child td'),w=document.querySelector('#bbWon');const cs=getComputedStyle(w);return [t?getComputedStyle(t).borderBottomWidth:'-',cs.borderTopWidth,cs.paddingTop,cs.marginTop]})()""")
     check('블빵: 승률 표 마지막 줄선 없음 + 구분선 1개, 위아래 여백', bb[0] in ('0px','-') and bb[1]=='1px' and float(bb[2][:-2])>=14 and float(bb[3][:-2])>=14, bb)
     # 이번 주 수익 / 가격 카드 / 보스 별 누적

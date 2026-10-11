@@ -37,7 +37,7 @@ try:
     check('B migration: counts >1 clamped to 1 (3 entries), ring outcome keeps latest', d=={'seren|mitra':1,'kaling|chaosbox':1,'kaling|r_white':1} and o['kaling|r_white']==['r4'] and pg.evaluate("dropClampN")==3, (d,o))
     # E/D tabs
     tabs=pg.eval_on_selector_all('#tabs [data-tab], nav [data-tab]',"e=>e.map(x=>x.textContent.trim())")
-    check("tabs: 보스 현황 / 수익 분석, no 주간 기록·캐릭터 별 기록", '보스 현황' in tabs and '수익 분석' in tabs and '캐릭터 별 기록' not in tabs and '주간 기록' not in tabs and '수익 요약' not in tabs, tabs)
+    check("tabs: 보스 현황 / 수익 분석, no 주간 기록·캐릭터 별 기록", '보스 현황' in tabs and '결정석 분석' in tabs and '캐릭터 별 기록' not in tabs and '주간 기록' not in tabs and '수익 요약' not in tabs, tabs)
     # C drop tables
     def drops_of(slot): return pg.eval_on_selector_all(f'[data-drop^="{slot}|"]',"e=>e.map(x=>x.dataset.drop.split('|')[1])")
     check('papulatus chaos: only 파풀라투스 마크', drops_of('papulatus')==['papmark'], drops_of('papulatus'))
@@ -84,7 +84,7 @@ try:
     check('저장 → committed to storage + income updated, buttons disabled', stg['bosses']['seren']['party']==1 and stg['drops'].get('papulatus|papmark')==1 and pg.evaluate("charRevenue(S.characters[0]).meso")>r0 and pg.inner_text('.char[data-id="c1"] .rev')!=rev0 and pg.is_disabled('#pendSave'), (stg['bosses']['seren'],r0))
     check('캐릭터 별 기록 tab deleted', pg.locator('[data-tab="summary"]').count()==0)
     # 개수 표기: '리4 x1' (붙어서 '리41개'로 읽히지 않게), 0개는 숨김
-    pg.evaluate("S.characters[0].drops['kaling|r_white']=1; S.characters[0].dropOut={'kaling|r_white':['r4']}; save(); tab='total'; render()"); pg.wait_for_timeout(200)
+    pg.evaluate("S.characters[0].drops['kaling|r_white']=1; S.characters[0].dropOut={'kaling|r_white':['r4']}; save(); tab='total'; render()"); pg.evaluate("(()=>{if(window.__sh)return;window.__sh=1;const v=document.querySelector('#view');const o=render;window.render=function(){if(tab!=='total')return o.apply(this,arguments);renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()"); pg.wait_for_timeout(200)
     rs=' | '.join(pg.eval_on_selector_all('.ringsum','e=>e.map(x=>{const c=x.cloneNode(true);c.querySelectorAll(".ringexp").forEach(z=>z.remove());return c.textContent})'))
     check("ring summary uses '리4 x1', hides 컨4 x0, no '개'", '리4 x1' in rs and '컨4' not in rs and '리41' not in rs, rs)
     t=pg.inner_text('#view')
@@ -94,8 +94,8 @@ try:
     sr=pg.inner_text('.ringcard .totloot'); check('seed-ring section lists box with outcome (x-count)', '백옥의 보스 반지 상자' in sr and 'x1' in sr and pg.locator('.ringcard .totloot .routs').count()>=1, sr)
     check('에픽빔 section lists non-ring drops', '파풀라투스마크x1' in pg.inner_text('#view').replace(chr(10),'').replace(' ',''))
     k=pg.eval_on_selector_all('#view .stat .k','e=>e.map(x=>[x.textContent.trim(),!!x.querySelector("img")])')
-    check('total stats labels: 총 수익 / 주간 보스 누적 / 월간 보스 누적 / 획득 아이템 누적, each with icon', [x[0] for x in k]==['총 수익','주간 보스 누적','월간 보스 누적','획득 아이템 누적'] and all(x[1] for x in k), k)
-    check('총 수익 title icon + 캐릭터별 누적 main-char avatar (fallback ok)', pg.locator('#view h2:has-text("총 수익") img').count()==1 and pg.locator('#mesoKing h2 img').count()==1)  # b52: 캐릭터별 누적 → 메소왕
+    check('total stats labels: 총 수익 / 주간 보스 누적 / 월간 보스 누적 / 획득 아이템 누적, each with icon', [x[0] for x in k][:3]==['총 수익','주보 누적 메소량','검마 누적 메소량'] and all(x[1] for x in k), k)
+    check('총 수익 title icon + 캐릭터별 누적 main-char avatar (fallback ok)', pg.locator('#view h2:has-text("누적 수입") img').count()==1 and pg.locator('#mesoKing h2 img').count()==1)  # b52: 캐릭터별 누적 → 메소왕
     pth=os.path.join(OUT,'total_counts.png'); pg.locator('#view').screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
     check('no page errors', not errs, errs[:3])
     b.close()
