@@ -772,11 +772,14 @@ tr.rkpad td{border-color:transparent}
 
 /* b55: 스포트라이트 — 글자 모양 안에서만 빛이 훑음 (글자색 유지: 맨 아래 레이어 = currentColor). 1위 빠르고 강 · 2위 중간 속도/약간 약 · 3위 중간/더 약 · (익스트림) 중간/중간 */
 tr.rk1{--spd:2.2s;--spa:.9}tr.rk2{--spd:3.2s;--spa:.7}tr.rk3{--spd:3.2s;--spa:.5}
-:is(tr.rk1,tr.rk2,tr.rk3) :is(.spk:not(:has(*)),.spk .bdn,.spk .dlv),.dlv-extreme{
+:is(tr.rk1,tr.rk2,tr.rk3) :is(td,span,b,strong,small,em):not(:has(*)):not(.rkpad):not(.crown),.dlv-extreme{
   --spd2:var(--spd,3.2s);--spa2:var(--spa,.65);
-  background:radial-gradient(ellipse 50% 100% at 50% 50%,rgba(255,255,255,var(--spa2)),rgba(255,255,255,0) 70%) -60% 0/45% 100% no-repeat,linear-gradient(currentColor,currentColor);
+  background:radial-gradient(ellipse 50% 100% at 50% 50%,rgba(var(--splc,255,255,255),var(--spa2)),rgba(255,255,255,0) 70%) -60% 0/45% 100% no-repeat,linear-gradient(currentColor,currentColor);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;animation:spl var(--spd2) linear infinite}
 :is(tr.rk1,tr.rk2,tr.rk3) :is(.spk:not(:has(*)),.spk .bdn):not(.dlv){filter:drop-shadow(0 0 4px currentColor)}
 .dlv-extreme{--spd:3.2s;--spa:.65}
 @keyframes spl{from{background-position:-60% 0,0 0}to{background-position:160% 0,0 0}}
-@media (prefers-reduced-motion:reduce){:is(tr.rk1,tr.rk2,tr.rk3) :is(.spk:not(:has(*)),.spk .bdn,.spk .dlv),.dlv-extreme{animation:none}}
+@media (prefers-reduced-motion:reduce){:is(tr.rk1,tr.rk2,tr.rk3) :is(td,span,b,strong,small,em):not(:has(*)):not(.rkpad):not(.crown),.dlv-extreme{animation:none}}
+
+/* b56: 순위 행 전체 글자(순위 숫자·횟수·메소량·아이템 등)에 스포트라이트, 익스트림은 더 굵게 + 검은 빛 */
+.dlv-extreme{font-weight:900;--splc:0,0,0}

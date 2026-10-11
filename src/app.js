@@ -1484,7 +1484,7 @@ const medal = r => r===1?'gold':r===2?'silver':r===3?'bronze':'';
 const crown = '<span class="crown" aria-hidden="true">👑</span>';
 function rankName(o,r,extra){ const c=S.characters.find(x=>x.id===o.id); const m=medal(r);
   return `<span class="rkname ${m?'md-'+m:''}">${m&&c?avatar(c,'rkav'):''}${r===1?crown:''}<span class="rknm"><b class="${m?'spk':''}">${esc(o.name)}</b>${extra?`<b class="rkcnt">${extra}</b>`:''}</span></span>`; }
-const rankNo = r => `<span class="rkno ${medal(r)?'md-'+medal(r):''}">${r===1?crown:''}${r}</span>`;
+const rankNo = r => `<span class="rkno ${medal(r)?'md-'+medal(r):''}">${r===1?crown:''}<span class="rkn">${r}</span></span>`;
 function rankPager(kind,n){ const pages=Math.ceil(n/RANK_PER); if(pages<=1) return ''; const cur=Math.min(rankPage[kind],pages);
   return `<div class="cpager rkpager">${Array.from({length:pages},(_,i)=>`<button type="button" class="cpg${i+1===cur?' on':''}" data-rkpage="${kind}|${i+1}"${i+1===cur?' aria-current="page"':''}>${i+1}</button>`).join('')}</div>`; }
 const rankPad = (n,total,cols) => total>RANK_PER&&n<RANK_PER ? Array.from({length:RANK_PER-n},()=>`<tr class="rkpad" aria-hidden="true">${'<td>&nbsp;</td>'.repeat(cols)}</tr>`).join('') : '';
