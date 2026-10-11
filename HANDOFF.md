@@ -2,6 +2,22 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## 2026-10-11 b53 (사용자 요청 10개 일괄) — 다음 봇 인수인계
+작업 전 `gh auth status` 로 GitHub 로그인(ggoolzip-wq) 확인 필요. 로그인이 없으면 사용자에게 `gh auth login`(기기 코드 승인)을 부탁할 것. 수정은 `src/` 만, `python3 tools/build.py` 후 `git pull --rebase` → 일반 push(강제 push 금지).
+1. **반짝이 가루** (`src/extra.css` `.spk`): 예전 ✦ 두 개 → `.spk::before/::after` 두 겹의 아주 작은 radial-gradient 점들이 글자 전체 위에서 어긋난 주기(`spkd1` 1.1s, `spkd2` 1.4s, steps)로 깜빡·위치 이동. 모션 줄이기면 정지. 1~3위 이름(`.spk`)에 적용.
+2. **아이템 순위** (`itemPri()`): 광휘 1 · **익셉셔널 해머(set '해머')·창세의 뱃지 1.5** · 신념 연마석·칠흑 전부(**루즈 컨트롤 머신 마크·커맨더 포스 이어링도 이제 다른 칠흑과 같은 2**) · 이하 그대로. 해석: 사용자 문장이 모호했음(커포·루컨마를 1.5로 올린다는 뜻일 수도 있음) → '해머·창세=1.5, 루컨마·커포=칠흑과 동급(2)'로 해석.
+3. **녹옥 반지 상자**: `RING_OFF`(app.js) — `dropsFor`에서 제외, `dropsOff`(회색 칩 .drop.off, 클릭 불가)에 포함 → 못 가진 아이템 목록에서도 사라짐. ITEMS·예전 기록은 그대로.
+4. **못 가진 아이템 다중 보스**: `missingItems()` 가 아이템마다 `list`(그 아이템을 주는 모든 보스·난이도, 결정석 싼 순) 반환, `missGroups()` 가 같은 보스 난이도를 묶어 '림보 (노말)(하드)' 로 표시, 보스는 ' · ' 로 이음. 행이 길어 한 줄 유지 위해 보스가 4개 이상 묶이면 보스 아이콘 생략 + `fitMiss()` 가 글자를 13px→최소 9px 로 줄이고, 그래도 넘치면 표 래퍼 가로 스크롤(1280px 이하에선 가장 긴 행이 스크롤됨 = 미해결).
+5. **3위 안일 때만 글자색** (`itemCol()` + `rankTable` 의 `o.col`, CSS `.ic-pink/.ic-purple/.ic-sky`): 광휘 세트·익셉셔널 해머 = 핫핑크(#ff4fa3), 칠흑 세트·혼돈의 칠흑 장신구 상자 = 보라(#b36bff), 연마석류·소울 에테르류 = 하늘(#5fd0ff). 적용 표: 에픽빔왕, 상자깡(전부 보라). 4위 이하·못 가진 목록은 색 없음. 창세의 뱃지(set 칠흑)는 보라, 에테르넬 등은 색 없음.
+6. **보스 옆 난이도 표기** `dlvHtml(d)` = `<span class="dlv dlv-<난이도>">(노말)</span>` (색은 b55 의 `.dlv-*`). 추가한 곳: 이번 주 수익 패널 아이템 줄(`dropLine` 7번째 인자 diff, `itemsInline` opts.diffOf — `cfgDiff(c)`=현재 설정 / `tagDiff(p,c)`=기록의 '이름(난이도)' 태그), 결정석 가격 카드 줄(`priceCard` row, 예전 muted 일반 글씨 → 색 글씨), 보스 별 누적 획득 아이템(`bossLootHtml`), 반지 상자 모달 부제(innerHTML). **캐릭터 정보의 보스 드롭 표(`bossRow`·`dropsHtml`, `.pill`)는 그대로.** 12/12 덮개 '검마 격파 필요'에는 넣지 않음(test_tracker12 가 문구 정확히 검사).
+7. `.dlv{font-weight:800}` — 괄호+난이도는 항상 굵게.
+8. **시드링 획득 타율**: `.ringsum` 1.1rem 굵게(한 줄 nowrap), 라벨 `.rslab`(반지 상자 결과) 초록 #3fd07a, 기댓값 `.ringexp` .7rem·색 없음(inherit).
+9. **블빵 카드**: `.bbtbl tr:last-child td{border-bottom:0}` 로 선 2개→1개, `.bbpart+.bbpart` margin/padding 16px (이 카드에만).
+10. **주별 누적 결정석 메소** → `cumLineChart()` 라인 차트(누적 선+면+점, y축 눈금 억 단위, 이번 주 점은 주황). 예전 `weekChart()` 는 쓰이지 않지만 남겨 둠.
+- **한 줄 규칙**: 난이도를 붙였다고 두 줄이 되면 안 됨 → 가격 카드는 `fitPriceCard()`(글자 축소), 못 가진 목록은 `fitMiss()`, 시드링은 nowrap. 새 표기를 넣을 땐 1920/1600/1280 에서 높이/잘림 확인.
+- **테스트**: 신규 `tests/test_tracker42.py`(+ run_all.sh 에 추가). test_tracker41(반짝이·상자깡 순서·못 가진 목록 list)·test_tracker40(가격 카드 \(난이도\) 표기)는 새 동작에 맞게 기대값 수정. 기존 실패(이번 변경과 무관): test_tracker8(스우 r_red 대기), test_tracker9(card foot 문구)·test_tracker30(price foot 문구) — b45 이후 푸터 문구 변경으로 인한 예전 테스트 불일치. test_tracker29 는 `/workspace/shots` 폴더가 있어야 함. 테스트가 루트 PNG(screenshot.png 등)를 덮어쓰므로 커밋 전 `git checkout -- *.png` 할 것.
+- 미해결/모호: 위 2번 해석, 4번 1280px 이하 가로 스크롤, 6번의 '모든 구간' 은 위 목록만 확인(드롭 외에 보스가 나오는 곳은 이미 난이도 표기).
+
 ## 2026-10-10 배치 (b28)
 - 취소/저장 비교: `pendSig()` (파티 숫자화·빈 드롭 제거) — 원인: 저장 데이터에 `party` 키가 없거나 문자열 '1' → 1→2→1 후 `party:1`이 새로 생겨 서명 불일치. `normChar`가 이제 party 를 항상 숫자로.
 - `DROPS_OFF`: 보스 장신구(파풀라투스 마크 제외)·여명 세트 = 표 끝 회색 칩(.drop.off, 클릭 불가).

@@ -23,7 +23,7 @@ try:
     full=pg.locator('.pricecard .pc-row').count()
     pg.click('.pc-mine >> text=내가 잡는 보스만 보기'); pg.wait_for_timeout(200)
     nm=pg.eval_on_selector_all('.pricecard .pc-row .pc-nm','e=>e.map(x=>x.innerText.replace(/\\s+/g," "))')
-    check('라벨 클릭으로 켜짐: 스우 하드·익스트림 따로, 루시드 하드 1번, 검마 하드, 꺼진 자쿰 없음', sorted(nm)==sorted(['스우 하드','스우 익스트림','루시드 하드','검은 마법사 하드']), nm)
+    check('라벨 클릭으로 켜짐: 스우 하드·익스트림 따로, 루시드 하드 1번, 검마 하드, 꺼진 자쿰 없음', sorted(nm)==sorted(['스우 (하드)','스우 (익스트림)','루시드 (하드)','검은 마법사 (하드)']), nm)
     check('localStorage 기억', pg.evaluate("localStorage.getItem('mapleBossTracker.pcMine')")=='1')
     over=pg.evaluate("[...document.querySelectorAll('.pricecard .pc-nm')].some(n=>n.scrollWidth>n.clientWidth+0.5)")
     check('잘림 없음', not over)

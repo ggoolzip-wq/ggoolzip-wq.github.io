@@ -1,0 +1,78 @@
+# b53: 반짝이 가루, 아이템 순위(1.5/2), 녹옥 비활성, 못 가진 아이템 다중 보스, 1~3위 글자색, (난이도) 굵게·전 화면 표기, 시드링 글자, 블빵 구분선 1개, 누적 라인 차트
+import os, sys, json, time, subprocess
+from playwright.sync_api import sync_playwright
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL='http://localhost:8842/index.html'
+fails=[]; errs=[]
+def check(n,c,d=''):
+    print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
+    if not c: fails.append(n)
+srv=subprocess.Popen([sys.executable,'-m','http.server','8842','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+ch={'id':'c0','name':'캐릭00','level':280,'job':'히어로','world':'스카니아','ocid':'','accId':'','isMain':True,'image':'',
+    'bosses':{'kaling':{'enabled':True,'diff':'hard','party':1},'limbo':{'enabled':True,'diff':'normal','party':1}},'weekly':{},'monthly':{},'auto':{},'sync':{},
+    'drops':{'kaling|g_faith':1,'limbo|se3':1},'dropOut':{}}
+per=[{'id':'c0','name':'캐릭00','meso':100000000,'count':2,'bosses':['카링(하드)','림보(노말)'],'bvals':[1,1],
+      'items':{'kaling|g_faith':1,'kaling|se1':1,'kaling|se1#2':1,'limbo|whisper':1,'kaling|g_life':1,'kaling|r_black':1,'kaling|chaosbox':1,'blackmage|h_belt':1,'kaling|h_ear':1},
+      'outcomes':{'kaling|r_black':['r4'],'kaling|chaosbox':['cb:cfe']}}]
+hist=[{'week':'2026-10-01','weeklyOnly':True,'total':100000000,'cleared':2,'perChar':per},{'week':'2026-10-08','weeklyOnly':True,'total':200000000,'cleared':2,'perChar':[]}]
+ST={'version':5,'theme':'dark','activeId':'c0','characters':[ch],'history':hist,'monthHistory':[],'worldOrder':[],'startWeek':'2026-10-01','settings':{'accounts':[]}}
+try:
+  with sync_playwright() as p:
+    b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
+    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900)
+    pri=pg.evaluate("Object.fromEntries(['whisper','h_face','h_ear','genesis','lcm','cfe','eye','chaosbox','g_faith','g_life'].map(k=>[k,itemPri(k)]))")
+    check('순위: 광휘 1 · 해머·창세 1.5 · 루컨마·커포 = 다른 칠흑과 같은 2', pri['whisper']==1 and pri['h_face']==1.5 and pri['h_ear']==1.5 and pri['genesis']==1.5 and pri['lcm']==2 and pri['cfe']==2 and pri['eye']==2 and pri['chaosbox']==2 and pri['g_faith']==2 and pri['g_life']==3, pri)
+    j=pg.evaluate("[dropsFor(findBoss('lotus'),'normal').includes('r_green'), dropsOff(findBoss('lotus'),'normal').includes('r_green'), missingItems(totalData()).some(o=>o.k==='r_green'), dropsFor(findBoss('lotus'),'normal').includes('r_red')]")
+    check('녹옥 반지 상자: 회색 칩(비활성) + 못 가진 목록에서 제외', j[0]==False and j[1]==True and j[2]==False, j)
+    # 못 가진 아이템: 같은 아이템 모든 보스
+    ml=pg.evaluate("(()=>{const o=missingItems(totalData()).find(x=>x.k==='se4'); return o?o.list.map(x=>x.b.id+'|'+x.d):[]})()")
+    check('못 가진 아이템: 4단계 소울 에테르 = 유피테르 노말·하드 모두', ml==['jupiter|normal','jupiter|hard'], ml)
+    g=pg.evaluate("(()=>{const o=missingItems(totalData()).find(x=>x.k==='se2'); return o?o.list.map(x=>x.b.id+'|'+x.d):[]})()")
+    check('못 가진 아이템: 2단계 에테르 = 여러 보스(별·벨로나)', len(g)==4 and {x.split('|')[0] for x in g}=={'star','bellona'}, g)
+    rows=pg.evaluate("[...document.querySelectorAll('#missItems tbody tr:not(.rkpad)')].map(r=>({h:r.getBoundingClientRect().height,n:r.querySelectorAll('.missbn').length,t:r.innerText.replace(/\\s+/g,' ')}))")
+    check('못 가진 목록 행 = 한 줄(48px), 여러 보스 줄 존재', rows and all(r['h']<=49 for r in rows) and any(r['t'].count('(')>=2 for r in rows), rows[:4])
+    # 글자색 (1~3위만)
+    col=pg.evaluate("""(()=>{const out={};document.querySelectorAll('#epicCard tbody tr[class*=rk]').forEach(t=>{const s=t.querySelector('.rkname > span:last-child');if(s) out[t.querySelector('.rkno').innerText.trim()+':'+s.innerText]=[s.className,getComputedStyle(s).color];});return out})()""")
+    print(col)
+    check('1~3위 아이템에만 색 클래스', all((('ic-' in v[0]) or not ('md-' in v[0])) for v in col.values()) and any('ic-pink' in v[0] for v in col.values()) or any('ic-sky' in v[0] for v in col.values()) or any('ic-purple' in v[0] for v in col.values()), col)
+    cc=pg.evaluate("[itemCol('whisper'),itemCol('h_ear'),itemCol('eye'),itemCol('chaosbox'),itemCol('genesis'),itemCol('g_faith'),itemCol('se2'),itemCol('r_red'),itemCol('cb:cfe')]")
+    check('색 매핑: 광휘·해머 핑크, 칠흑·상자 보라, 연마석·에테르 하늘', cc==['ic-pink','ic-pink','ic-purple','ic-purple','ic-purple','ic-sky','ic-sky','','ic-purple'], cc)
+    cs=pg.evaluate("(()=>{const e=document.querySelector('#epicCard tr.rk1 .ic-pink,#epicCard tr.rk1 .ic-purple,#epicCard tr.rk1 .ic-sky');return e?getComputedStyle(e).color:''})()")
+    check('1위 아이템 글자색 적용', cs in ('rgb(255, 79, 163)','rgb(179, 107, 255)','rgb(95, 208, 255)'), cs)
+    # 반짝이 가루
+    sp=pg.evaluate("(()=>{const e=document.querySelector('#epicCard tr.rk1 .spk');const a=getComputedStyle(e,'::before'),b=getComputedStyle(e,'::after');return [a.animationName,b.animationName,a.backgroundImage.split('radial').length-1,a.content]})()")
+    check('반짝이 가루: 작은 점 여러 겹 두 층 애니메이션', sp[0]=='spkd1' and sp[1]=='spkd2' and sp[2]>=4 and sp[3]!='"✦"', sp)
+    # 난이도 굵게
+    bw=pg.evaluate("[...document.querySelectorAll('.dlv')].map(e=>getComputedStyle(e).fontWeight)")
+    check('(난이도) 전부 굵게', bw and all(int(x)>=700 for x in bw), bw[:5])
+    # 라인 차트
+    lc=pg.evaluate("(()=>{const c=document.querySelector('.linechart');return c?[c.querySelectorAll('polyline').length,c.querySelectorAll('rect').length,c.querySelectorAll('circle').length]:null})()")
+    check('주별 누적 = 라인 차트(막대 없음, 점 3개(이번 주 포함))', lc==[1,0,3], lc)
+    # 시드링
+    rs=pg.evaluate("(()=>{const s=document.querySelector('.ringsum'),l=s.querySelector('.rslab'),x=s.querySelector('.ringexp');return [getComputedStyle(s).fontSize,getComputedStyle(l).color,getComputedStyle(l).fontWeight,getComputedStyle(x).fontSize,getComputedStyle(x).color==getComputedStyle(s).color,s.scrollWidth<=s.clientWidth+1,s.getBoundingClientRect().height]})()")
+    check('시드링: 글자 크고 굵게, 라벨 초록, 기댓값 작고 무색, 한 줄', float(rs[0][:-2])>=16 and rs[1]=='rgb(63, 208, 122)' and int(rs[2])>=700 and float(rs[3][:-2])<12 and rs[4] and rs[5] and rs[6]<60, rs)
+    # 블빵 구분선
+    pg.evaluate("s=>{const x=JSON.parse(JSON.stringify(s));x.history[0].perChar[0].items['kaling|g_faith#2w']=1;localStorage.setItem('mapleBossTracker.v1',JSON.stringify(x))}",ST); pg.reload(); pg.wait_for_timeout(700)
+    bb=pg.evaluate("""(()=>{const t=document.querySelector('#bbRate tr:last-child td'),w=document.querySelector('#bbWon');const cs=getComputedStyle(w);return [t?getComputedStyle(t).borderBottomWidth:'-',cs.borderTopWidth,cs.paddingTop,cs.marginTop]})()""")
+    check('블빵: 승률 표 마지막 줄선 없음 + 구분선 1개, 위아래 여백', bb[0] in ('0px','-') and bb[1]=='1px' and float(bb[2][:-2])>=14 and float(bb[3][:-2])>=14, bb)
+    # 이번 주 수익 / 가격 카드 / 보스 별 누적
+    pg.evaluate("s=>{localStorage.setItem('mapleBossTracker.tab','boss')}"); pg.reload(); pg.wait_for_timeout(900)
+    rp=pg.evaluate("[...document.querySelectorAll('.revpanel .dlb')].map(e=>e.innerText.trim())")
+    check('이번 주 수익: 보스 + (난이도)', '카링 (하드)' in rp and '림보 (노말)' in rp, rp)
+    pr=pg.evaluate("[document.querySelectorAll('.pricecard .pc-nm .dlv').length,[...document.querySelectorAll('.pricecard .pc-row')].every(r=>r.getBoundingClientRect().height<30),[...document.querySelectorAll('.pricecard .pc-nm')].every(n=>n.scrollWidth<=n.clientWidth+1)]")
+    check('결정석 가격: 색 (난이도), 한 줄, 잘림 없음', pr[0]>10 and pr[1] and pr[2], pr)
+    pg.set_viewport_size({'width':1280,'height':800}); pg.wait_for_timeout(500)
+    pr=pg.evaluate("[[...document.querySelectorAll('.pricecard .pc-row')].every(r=>r.getBoundingClientRect().height<30),[...document.querySelectorAll('.pricecard .pc-nm')].every(n=>n.scrollWidth<=n.clientWidth+1)]")
+    check('1280px 결정석 가격 한 줄·잘림 없음', all(pr), pr)
+    # 캐릭터 정보 보스 표는 예전 표기
+    bp=pg.evaluate("document.querySelector('.boss-list .bn .pill').innerText")
+    check('캐릭터 정보 보스 표: 예전 pill 표기 유지', bp in ('하드','노말'), bp)
+    # 녹옥 칩 (스우 노말)
+    pg.evaluate("s=>{const x=JSON.parse(localStorage.getItem('mapleBossTracker.v1'));x.characters[0].bosses.lotus={enabled:true,diff:'normal',party:1};x.activeId='c0';localStorage.setItem('mapleBossTracker.v1',JSON.stringify(x))}"); pg.reload(); pg.wait_for_timeout(700)
+    jc=pg.evaluate("(()=>{const l=[...document.querySelectorAll('.drop.off')].filter(e=>/녹옥/.test(e.innerText||e.title));return [l.length,l[0]&&l[0].getAttribute('aria-disabled'),document.querySelectorAll('.drop[data-drop*=r_green]').length]})()")
+    check('녹옥 반지 상자 칩: 회색 비활성', jc[0]>=1 and jc[1]=='true' and jc[2]==0, jc)
+    check('JS 오류 없음', not errs, errs)
+finally:
+    srv.terminate()
+print('FAILS:',fails,'ERRORS:',errs)
+sys.exit(1 if fails else 0)
