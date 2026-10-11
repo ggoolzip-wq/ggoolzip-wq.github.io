@@ -18,6 +18,14 @@
 - **테스트**: 신규 `tests/test_tracker42.py`(+ run_all.sh 에 추가). test_tracker41(반짝이·상자깡 순서·못 가진 목록 list)·test_tracker40(가격 카드 \(난이도\) 표기)는 새 동작에 맞게 기대값 수정. 기존 실패(이번 변경과 무관): test_tracker8(스우 r_red 대기), test_tracker9(card foot 문구)·test_tracker30(price foot 문구) — b45 이후 푸터 문구 변경으로 인한 예전 테스트 불일치. test_tracker29 는 `/workspace/shots` 폴더가 있어야 함. 테스트가 루트 PNG(screenshot.png 등)를 덮어쓰므로 커밋 전 `git checkout -- *.png` 할 것.
 - 미해결/모호: 위 2번 해석, 4번 1280px 이하 가로 스크롤, 6번의 '모든 구간' 은 위 목록만 확인(드롭 외에 보스가 나오는 곳은 이미 난이도 표기).
 
+## 2026-10-11 b54-후속 (반짝이 별·익스트림 주홍·득템왕 색·에픽빔 스포트라이트)
+(위 b53 이후 후속, 같은 방식: src 수정→build→테스트→main push. gh 로그인 필요, git push 인증은 `gh auth setup-git`.)
+1. **반짝이(.spk) 재설계**: 흰 가루가 글자를 가려서 → `::before/::after` 가 `background-color:currentColor` + 별(✦) SVG `mask-image` 3개씩(4~6px)로, 글자색(아이템 색 포함)과 같은 색, 최대 불투명도 .5/.45 로 은은하게 깜빡(`spkd1` 2.2s, `spkd2` 2.6s·지연 1s). 모션 줄이기면 정지(.3). 가독성 최우선이라 더 키우지 말 것.
+2. **익스트림 색**: `.dlv-extreme` #ff6a00 → 주홍 #ff4500 (난이도 색 정의는 이 한 곳).
+3. **득템왕 아이템 색**: `lootChips(m, top)` — 득템왕에서 메달(1~3위) 행만 `top=true` → 각 칩 이름 `.ln` 에 `spk` + `itemCol()` 클래스(핫핑크/보라/하늘). 4위 이하·다른 칩 목록(총 획득량 등)은 색 없음. 색 클래스 CSS 는 `.rkname` 의존을 없애 어디서나 적용.
+4. **에픽빔 누적 횟수 숫자(.epgold)**: 글자 모양 안에서만 보이는 작은 흰 스포트라이트(radial-gradient 레이어, `epgs` 2.8s)가 금빛 숫자를 훑음. reduced-motion 이면 정지. (참고: 예전 `.lx.aur.epsum` 오로라 스타일은 현재 쓰이지 않음)
+- 테스트: test_tracker42 에 위 4개 검사 추가.
+
 ## 2026-10-10 배치 (b28)
 - 취소/저장 비교: `pendSig()` (파티 숫자화·빈 드롭 제거) — 원인: 저장 데이터에 `party` 키가 없거나 문자열 '1' → 1→2→1 후 `party:1`이 새로 생겨 서명 불일치. `normChar`가 이제 party 를 항상 숫자로.
 - `DROPS_OFF`: 보스 장신구(파풀라투스 마크 제외)·여명 세트 = 표 끝 회색 칩(.drop.off, 클릭 불가).

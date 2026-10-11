@@ -39,9 +39,15 @@ try:
     check('색 매핑: 광휘·해머 핑크, 칠흑·상자 보라, 연마석·에테르 하늘', cc==['ic-pink','ic-pink','ic-purple','ic-purple','ic-purple','ic-sky','ic-sky','','ic-purple'], cc)
     cs=pg.evaluate("(()=>{const e=document.querySelector('#epicCard tr.rk1 .ic-pink,#epicCard tr.rk1 .ic-purple,#epicCard tr.rk1 .ic-sky');return e?getComputedStyle(e).color:''})()")
     check('1위 아이템 글자색 적용', cs in ('rgb(255, 79, 163)','rgb(179, 107, 255)','rgb(95, 208, 255)'), cs)
-    # 반짝이 가루
-    sp=pg.evaluate("(()=>{const e=document.querySelector('#epicCard tr.rk1 .spk');const a=getComputedStyle(e,'::before'),b=getComputedStyle(e,'::after');return [a.animationName,b.animationName,a.backgroundImage.split('radial').length-1,a.content]})()")
-    check('반짝이 가루: 작은 점 여러 겹 두 층 애니메이션', sp[0]=='spkd1' and sp[1]=='spkd2' and sp[2]>=4 and sp[3]!='"✦"', sp)
+    # b54: 별 반짝이(currentColor, 약함), 극익스트림 주홍, 득템왕 색, 에픽빔 스포트라이트
+    st=pg.evaluate("(()=>{const e=document.querySelector('#epicCard tr.rk1 .spk');const a=getComputedStyle(e,'::before');return [a.backgroundColor===getComputedStyle(e).color,a.maskImage!=='none'||a.webkitMaskImage!=='none',a.animationName]})()")
+    check('반짝이: 글자색과 같은 색 작은 별 마스크', st[0] and st[1] and st[2]=='spkd1', st)
+    ex=pg.evaluate("(()=>{const e=document.createElement('span');e.className='dlv dlv-extreme';document.body.appendChild(e);return getComputedStyle(e).color})()")
+    check('익스트림 = 주홍 #ff4500', ex=='rgb(255, 69, 0)', ex)
+    lk=pg.evaluate("[...document.querySelectorAll('#lootKing tr.rk1 .ln')].map(e=>e.className+'|'+getComputedStyle(e).color)")
+    check('득템왕 1위 아이템 이름: 규칙대로 색+반짝이', any('ic-sky' in x for x in lk) and all('spk' in x for x in lk if 'ic-' in x), lk)
+    eg=pg.evaluate("(()=>{const e=document.querySelector('.epgold');if(!e) return null;const c=getComputedStyle(e);return [c.animationName,c.backgroundImage.split('gradient').length-1]})()")
+    check('에픽빔 숫자 스포트라이트(2겹 배경 애니메이션)', eg and eg[0]=='epgs' and eg[1]>=2, eg)
     # 난이도 굵게
     bw=pg.evaluate("[...document.querySelectorAll('.dlv')].map(e=>getComputedStyle(e).fontWeight)")
     check('(난이도) 전부 굵게', bw and all(int(x)>=700 for x in bw), bw[:5])

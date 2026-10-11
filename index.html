@@ -827,7 +827,7 @@ tr.rkpad td{border-color:transparent}
 .rkico{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;flex:none}
 .rkico img{max-width:30px;max-height:30px}
 .bdn{color:#fff}
-.dlv-easy{color:#4db8ff}.dlv-normal{color:#7ed957}.dlv-hard{color:#ff4d4d}.dlv-extreme{color:#ff6a00}.dlv-chaos{color:#c9a6ff}
+.dlv-easy{color:#4db8ff}.dlv-normal{color:#7ed957}.dlv-hard{color:#ff4d4d}.dlv-extreme{color:#ff4500}.dlv-chaos{color:#c9a6ff}
 .md-gold .bdn,.md-silver .bdn,.md-bronze .bdn{color:#fff}
 .epline{font-size:.85rem;margin:-4px 0 8px}
 .epgold{font-size:1.3rem;font-weight:900;background:linear-gradient(100deg,#b8860b,#ffd54a 30%,#fff6c2 45%,#ffd54a 60%,#b8860b);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 6px rgba(255,200,60,.7));animation:epg 2.4s linear infinite}
@@ -838,19 +838,18 @@ tr.rkpad td{border-color:transparent}
 .rknm{display:inline-flex;align-items:baseline;gap:5px}
 
 /* b53 */
-/* 반짝이 가루: 글자 전체에 아주 작은 점들이 제각각 깜빡임 (::before/::after 두 겹, 배경 점 + 위치 어긋남) */
-.spk::before,.spk::after{content:"";position:absolute;inset:-4px -5px;pointer-events:none;background-repeat:repeat;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.95))}
-.spk::before{background-image:radial-gradient(circle at 18% 28%,#fff 0 .7px,transparent 1.5px),radial-gradient(circle at 72% 62%,#fff 0 .6px,transparent 1.4px),radial-gradient(circle at 46% 86%,#fffbe0 0 .8px,transparent 1.7px),radial-gradient(circle at 88% 14%,#fff 0 .5px,transparent 1.2px);
-  background-size:13px 11px,17px 14px,11px 19px,23px 13px;animation:spkd1 1.1s steps(1,end) infinite}
-.spk::after{background-image:radial-gradient(circle at 34% 70%,#fff 0 .6px,transparent 1.4px),radial-gradient(circle at 80% 30%,#fffbe0 0 .8px,transparent 1.7px),radial-gradient(circle at 12% 12%,#fff 0 .5px,transparent 1.2px),radial-gradient(circle at 60% 48%,#fff 0 .7px,transparent 1.5px);
-  background-size:15px 12px,19px 16px,12px 21px,29px 15px;background-position:5px 3px,9px 7px,3px 11px,13px 5px;animation:spkd2 1.4s steps(1,end) infinite;animation-delay:.35s}
-@keyframes spkd1{0%{opacity:1;background-position:0 0,0 0,0 0,0 0}25%{opacity:.15;background-position:3px 2px,5px 1px,2px 4px,6px 3px}50%{opacity:1;background-position:7px 4px,2px 6px,5px 1px,3px 7px}75%{opacity:.2;background-position:2px 6px,8px 3px,6px 5px,9px 2px}100%{opacity:1}}
-@keyframes spkd2{0%{opacity:.2;background-position:5px 3px,9px 7px,3px 11px,13px 5px}30%{opacity:1;background-position:1px 6px,4px 2px,8px 5px,5px 9px}60%{opacity:.1;background-position:8px 1px,12px 9px,1px 8px,10px 2px}85%{opacity:1;background-position:3px 8px,6px 4px,7px 12px,2px 6px}100%{opacity:.2}}
-@media (prefers-reduced-motion:reduce){.spk::before,.spk::after{animation:none;opacity:.7}}
+/* 반짝이: 글자색(currentColor)과 같은 색의 아주 작은 ✦ 별들이 은은하게 깜빡 (최대 불투명도 .5, 글자 가독성 우선) */
+.spk::before,.spk::after{content:"";position:absolute;inset:-3px -4px;pointer-events:none;background-color:currentColor;opacity:0;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E")}
+.spk::before{-webkit-mask-size:6px 6px,5px 5px,4px 4px;mask-size:6px 6px,5px 5px,4px 4px;-webkit-mask-position:6% 12%,52% 88%,92% 30%;mask-position:6% 12%,52% 88%,92% 30%;animation:spkd1 2.2s ease-in-out infinite}
+.spk::after{-webkit-mask-size:5px 5px,6px 6px,4px 4px;mask-size:5px 5px,6px 6px,4px 4px;-webkit-mask-position:28% 80%,70% 8%,96% 85%;mask-position:28% 80%,70% 8%,96% 85%;animation:spkd2 2.6s ease-in-out infinite;animation-delay:1s}
+@keyframes spkd1{0%,100%{opacity:0}50%{opacity:.5}}
+@keyframes spkd2{0%,100%{opacity:0}45%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.spk::before,.spk::after{animation:none;opacity:.3}}
 /* 1~3위 아이템 글자색 */
-.rkname .ic-pink{color:#ff4fa3;text-shadow:0 0 6px rgba(255,79,163,.75),0 0 14px rgba(255,20,147,.45)}
-.rkname .ic-purple{color:#b36bff;text-shadow:0 0 6px rgba(179,107,255,.75),0 0 14px rgba(140,60,230,.45)}
-.rkname .ic-sky{color:#5fd0ff;text-shadow:0 0 6px rgba(95,208,255,.75),0 0 14px rgba(40,160,230,.45)}
+.ic-pink{color:#ff4fa3;text-shadow:0 0 6px rgba(255,79,163,.75),0 0 14px rgba(255,20,147,.45)}
+.ic-purple{color:#b36bff;text-shadow:0 0 6px rgba(179,107,255,.75),0 0 14px rgba(140,60,230,.45)}
+.ic-sky{color:#5fd0ff;text-shadow:0 0 6px rgba(95,208,255,.75),0 0 14px rgba(40,160,230,.45)}
 /* (난이도) 굵게 */
 .dlv{font-weight:800}
 .dl .dlb .dlv{font-size:inherit}
@@ -872,6 +871,11 @@ tr.rkpad td{border-color:transparent}
 .bbtbl tr:last-child td{border-bottom:0}
 .bbpart+.bbpart{margin-top:16px;padding-top:16px}
 .bbpart h2{margin-bottom:12px}
+
+/* b54: 에픽빔 누적 횟수 숫자 — 미니 스포트라이트(작은 빛이 숫자 위를 훑음, 글자 모양 안에서만) */
+.epgold{background:radial-gradient(ellipse 50% 90% at 50% 50%,rgba(255,255,255,.95),rgba(255,255,255,0) 70%) -60% 0/42% 100% no-repeat,linear-gradient(100deg,#b8860b,#ffd54a 30%,#fff6c2 45%,#ffd54a 60%,#b8860b) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;animation:epgs 2.8s linear infinite}
+@keyframes epgs{from{background-position:-60% 0,0 0}to{background-position:160% 0,-250% 0}}
+@media (prefers-reduced-motion:reduce){.epgold{animation:none;background-position:-60% 0,0 0}}
 </style>
 </head>
 <body>
@@ -2415,7 +2419,7 @@ const lootIco0 = k => /^cb:/.test(k)?itemIcon(k.slice(3)) : k==='ring:r4'?miniIc
 const lootOrd = k => /^x:/.test(k)?Object.keys(ITEMS).indexOf(k.slice(2))+.5:lootOrd0(lootBase(k))+({w:.001,l:.002}[lootSf(k)]||0);
 const lootOrd0 = k => /^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*(1+CHAOS_PICK.indexOf(k.slice(3))) : /^ring:/.test(k)?-1+(k==='ring:c4'?.5:0) : Object.keys(ITEMS).indexOf(k);
 const modeTag = k => lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:'';
-const lootChips = m => `<span class="loots">${Object.keys(m).filter(k=>m[k]>0).sort((a,b)=>itemCmp(a,b)).map(k=>`<span class="loot${lootSf(k)?' md-'+lootSf(k):''}">${/^cb:/.test(k)?miniIcon('chaosbox')+' - ':''}${lootIco(k)}<span class="ln">${esc(lootName(k))}${lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:''}</span> <b class="lx">${xN(m[k])}</b></span>`).join('')}</span>`;
+const lootChips = (m,top) => `<span class="loots">${Object.keys(m).filter(k=>m[k]>0).sort((a,b)=>itemCmp(a,b)).map(k=>`<span class="loot${lootSf(k)?' md-'+lootSf(k):''}">${/^cb:/.test(k)?miniIcon('chaosbox')+' - ':''}${lootIco(k)}<span class="ln${top&&itemCol(k)?' spk '+itemCol(k):''}">${esc(lootName(k))}${lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:''}</span> <b class="lx">${xN(m[k])}</b></span>`).join('')}</span>`;
 // 시드링 기댓값: 상자 종류별 (획득 상자 수 × 상자 1개의 리4/컨4 확률) 합. 확률 = BOX_INFO (넥슨 공식 확률 공개, 툴팁과 같은 값)
 function ringExp(T){ const e={r4:0,c4:0}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); const p=ring4(it); if(p){ e.r4+=I.n*p.r4/100; e.c4+=I.n*p.c4/100; } }); return e; }
 const fmtExp=v=>(Math.round(v*100)/100).toFixed(2);
@@ -2495,7 +2499,7 @@ function kingHtml(T){
     ${rankSlice('meso',mr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)}</td><td class="num">${meso(o.week)}</td><td class="num">${o.month?meso(o.month):'-'}</td><td class="num"><b>${meso(o.week+o.month)}</b></td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('meso',mr).length,mr.length,5)}
     </tbody></table></div>${rankPager('meso',mr.length)}</div>
   <div class="card kingcard" id="lootKing"><h2>${itemIcon('oath')} 득템왕</h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th>누적 획득 아이템</th></tr></thead><tbody>
-    ${rankSlice('loot',lr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r,`(${o.ln}회)`)}</td><td>${lootChips(o.loot)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('loot',lr).length,lr.length,3)}
+    ${rankSlice('loot',lr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r,`(${o.ln}회)`)}</td><td>${lootChips(o.loot,!!medal(r))}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('loot',lr).length,lr.length,3)}
     </tbody></table></div>${rankPager('loot',lr.length)}</div>`;
 }
 /* ---------- b55: 순위 표 공통 · 보스왕 · 에픽빔왕 · 상자깡 · 못 가진 아이템 ---------- */
