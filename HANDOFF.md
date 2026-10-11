@@ -26,6 +26,13 @@
 4. **에픽빔 누적 횟수 숫자(.epgold)**: 글자 모양 안에서만 보이는 작은 흰 스포트라이트(radial-gradient 레이어, `epgs` 2.8s)가 금빛 숫자를 훑음. reduced-motion 이면 정지. (참고: 예전 `.lx.aur.epsum` 오로라 스타일은 현재 쓰이지 않음)
 - 테스트: test_tracker42 에 위 4개 검사 추가.
 
+## 2026-10-11 b55-후속 (별 반짝이 살짝 강화 · 스포트라이트)
+(주의: 위 b55 순위 표 섹션과 별개인 후속 작업. 같은 방식: src 수정→build→테스트→main push, gh 로그인 필요. HANDOFF 기록은 사용자가 말 안 해도 항상 할 것.)
+1. 별 반짝이(.spk) 살짝 강화: 별 6→8개(::before 4 + ::after 4), 최대 불투명도 .5/.45 → .65/.6. 글자색(currentColor) 유지, 가독성 우선이라 더 키우지 말 것.
+2. **스포트라이트**(`src/extra.css` 끝, `@keyframes spl`): 글자 모양 안에서만 흰 빛이 훑음 = `background-clip:text` + `-webkit-text-fill-color:transparent`, 맨 아래 레이어 `linear-gradient(currentColor,currentColor)` 로 글자색 유지. 강도/속도는 CSS 변수 `--spa`(강도)/`--spd`(주기): 1위 `tr.rk1` 2.2s·.9, 2위 3.2s·.7, 3위 3.2s·.5, `.dlv-extreme` 3.2s·.65(자체 변수라 순위 행 안에서도 이 값). 대상: `tr.rk1~3` 안의 `.spk`(자식 요소 없는 것) · `.spk .bdn` · `.spk .dlv` (메소왕·득템왕(이름·1~3위 아이템 칩)·보스왕·에픽빔왕·상자깡 순위 글자) + 모든 `.dlv-extreme` (익스트림 표기 전부, 주홍 #ff4500 유지). 자식 span 이 있는 `.spk` 에 transparent fill 을 걸면 자식 글자색이 사라지므로 leaf 만 적용. 투명 글자에선 text-shadow 가 빛을 가려 → text-shadow 제거, 순위 글자는 `filter:drop-shadow(0 0 4px currentColor)` 로 글로우 대체. reduced-motion 이면 정지.
+- 에픽빔 누적 횟수 숫자의 스포트라이트(`epgs`, b54)는 그대로.
+- 테스트: test_tracker42 에 스포트라이트 값 검사 추가.
+
 ## 2026-10-10 배치 (b28)
 - 취소/저장 비교: `pendSig()` (파티 숫자화·빈 드롭 제거) — 원인: 저장 데이터에 `party` 키가 없거나 문자열 '1' → 1→2→1 후 `party:1`이 새로 생겨 서명 불일치. `normChar`가 이제 party 를 항상 숫자로.
 - `DROPS_OFF`: 보스 장신구(파풀라투스 마크 제외)·여명 세트 = 표 끝 회색 칩(.drop.off, 클릭 불가).

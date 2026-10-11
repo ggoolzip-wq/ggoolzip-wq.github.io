@@ -731,14 +731,14 @@ tr.rkpad td{border-color:transparent}
 .rknm{display:inline-flex;align-items:baseline;gap:5px}
 
 /* b53 */
-/* 반짝이: 글자색(currentColor)과 같은 색의 아주 작은 ✦ 별들이 은은하게 깜빡 (최대 불투명도 .5, 글자 가독성 우선) */
+/* 반짝이: 글자색(currentColor)과 같은 색의 아주 작은 ✦ 별 (b55: 개수 6→8, 최대 불투명도 .65/.6 — 가독성 유지) */
 .spk::before,.spk::after{content:"";position:absolute;inset:-3px -4px;pointer-events:none;background-color:currentColor;opacity:0;
-  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E")}
-.spk::before{-webkit-mask-size:6px 6px,5px 5px,4px 4px;mask-size:6px 6px,5px 5px,4px 4px;-webkit-mask-position:6% 12%,52% 88%,92% 30%;mask-position:6% 12%,52% 88%,92% 30%;animation:spkd1 2.2s ease-in-out infinite}
-.spk::after{-webkit-mask-size:5px 5px,6px 6px,4px 4px;mask-size:5px 5px,6px 6px,4px 4px;-webkit-mask-position:28% 80%,70% 8%,96% 85%;mask-position:28% 80%,70% 8%,96% 85%;animation:spkd2 2.6s ease-in-out infinite;animation-delay:1s}
-@keyframes spkd1{0%,100%{opacity:0}50%{opacity:.5}}
-@keyframes spkd2{0%,100%{opacity:0}45%{opacity:.45}}
-@media (prefers-reduced-motion:reduce){.spk::before,.spk::after{animation:none;opacity:.3}}
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2010%2010'%3E%3Cpath%20d='M5%200%206.1%203.9%2010%205%206.1%206.1%205%2010%203.9%206.1%200%205%203.9%203.9z'/%3E%3C/svg%3E")}
+.spk::before{-webkit-mask-size:6px 6px,5px 5px,4px 4px,5px 5px;mask-size:6px 6px,5px 5px,4px 4px,5px 5px;-webkit-mask-position:6% 12%,52% 88%,92% 30%,38% 10%;mask-position:6% 12%,52% 88%,92% 30%,38% 10%;animation:spkd1 2.2s ease-in-out infinite}
+.spk::after{-webkit-mask-size:5px 5px,6px 6px,4px 4px,4px 4px;mask-size:5px 5px,6px 6px,4px 4px,4px 4px;-webkit-mask-position:28% 80%,70% 8%,96% 85%,14% 45%;mask-position:28% 80%,70% 8%,96% 85%,14% 45%;animation:spkd2 2.6s ease-in-out infinite;animation-delay:1s}
+@keyframes spkd1{0%,100%{opacity:0}50%{opacity:.65}}
+@keyframes spkd2{0%,100%{opacity:0}45%{opacity:.6}}
+@media (prefers-reduced-motion:reduce){.spk::before,.spk::after{animation:none;opacity:.35}}
 /* 1~3위 아이템 글자색 */
 .ic-pink{color:#ff4fa3;text-shadow:0 0 6px rgba(255,79,163,.75),0 0 14px rgba(255,20,147,.45)}
 .ic-purple{color:#b36bff;text-shadow:0 0 6px rgba(179,107,255,.75),0 0 14px rgba(140,60,230,.45)}
@@ -769,3 +769,14 @@ tr.rkpad td{border-color:transparent}
 .epgold{background:radial-gradient(ellipse 50% 90% at 50% 50%,rgba(255,255,255,.95),rgba(255,255,255,0) 70%) -60% 0/42% 100% no-repeat,linear-gradient(100deg,#b8860b,#ffd54a 30%,#fff6c2 45%,#ffd54a 60%,#b8860b) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;animation:epgs 2.8s linear infinite}
 @keyframes epgs{from{background-position:-60% 0,0 0}to{background-position:160% 0,-250% 0}}
 @media (prefers-reduced-motion:reduce){.epgold{animation:none;background-position:-60% 0,0 0}}
+
+/* b55: 스포트라이트 — 글자 모양 안에서만 빛이 훑음 (글자색 유지: 맨 아래 레이어 = currentColor). 1위 빠르고 강 · 2위 중간 속도/약간 약 · 3위 중간/더 약 · (익스트림) 중간/중간 */
+tr.rk1{--spd:2.2s;--spa:.9}tr.rk2{--spd:3.2s;--spa:.7}tr.rk3{--spd:3.2s;--spa:.5}
+:is(tr.rk1,tr.rk2,tr.rk3) :is(.spk:not(:has(*)),.spk .bdn,.spk .dlv),.dlv-extreme{
+  --spd2:var(--spd,3.2s);--spa2:var(--spa,.65);
+  background:radial-gradient(ellipse 50% 100% at 50% 50%,rgba(255,255,255,var(--spa2)),rgba(255,255,255,0) 70%) -60% 0/45% 100% no-repeat,linear-gradient(currentColor,currentColor);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;animation:spl var(--spd2) linear infinite}
+:is(tr.rk1,tr.rk2,tr.rk3) :is(.spk:not(:has(*)),.spk .bdn):not(.dlv){filter:drop-shadow(0 0 4px currentColor)}
+.dlv-extreme{--spd:3.2s;--spa:.65}
+@keyframes spl{from{background-position:-60% 0,0 0}to{background-position:160% 0,0 0}}
+@media (prefers-reduced-motion:reduce){:is(tr.rk1,tr.rk2,tr.rk3) :is(.spk:not(:has(*)),.spk .bdn,.spk .dlv),.dlv-extreme{animation:none}}
