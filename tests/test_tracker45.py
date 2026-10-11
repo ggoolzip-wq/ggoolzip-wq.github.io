@@ -35,6 +35,28 @@ try:
             check(f'(1) {vw}px {i}쪽: 가로 스크롤·잘림 없음, 이름/보스 묶음 한 줄, 글자>=10px', m['ovw']<=0 and m['ovc']<=1 and not m['names'] and not m['groups'] and m['minfs']>=10, m)
             if vw>=1600: check(f'(1) {vw}px {i}쪽: 줄바꿈 없음(전부 한 줄)', m['wrapped']==0, m)
         if vw in (1920,1280,1024,390): pg.locator('#missItems').screenshot(path=os.path.join(SHOT,f'oct12_after_miss_{vw}.png'))
+    # (2) 낮은 창: 아래 카드가 잘리지 않고 스크롤로 전부 보임 (캐릭터 8명 = 사이드바가 긴 경우 포함)
+    VIS="""(sel=>{const e=document.querySelector(sel);if(!e)return null;if(getComputedStyle(e).display==='none')return {hidden:true};
+      e.scrollIntoView({block:'end'});const r=e.getBoundingClientRect(),hb=document.querySelector('header').getBoundingClientRect().bottom;
+      return {top:Math.round(r.top),bot:Math.round(r.bottom),ih:innerHeight,hb:Math.round(hb),clip:e.scrollHeight>e.clientHeight+1,ok:r.bottom<=innerHeight+1&&(r.height>innerHeight-hb||r.top>=hb-1)}})"""
+    def side(st,label):
+        for vw,vh in [(1366,650),(1280,720),(1024,700),(1280,560)]:
+            pg.set_viewport_size({'width':vw,'height':vh}); pg.goto(URL); pg.evaluate("([s])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','boss')}",[st]); pg.reload(); pg.wait_for_timeout(1000)
+            for t in ['boss','total','loot','guild']:
+                pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(400)
+                sels=['#feedCard','#sunCard']+(['.rcol>.revpanel','.rcol>.pricecard','.rcol>.resetcard'] if t=='boss' else [])
+                for sel in sels:
+                    v=pg.evaluate(VIS,sel)
+                    check(f'(2) {label} {vw}x{vh} {t} {sel}: 보임(숨김·잘림 없음)', v and not v.get('hidden') and v['ok'] and not v['clip'], v)
+                pg.evaluate('scrollTo(0,0)')
+            if label=='8명': pg.click('[data-tab=boss]'); pg.wait_for_timeout(300); pg.evaluate('scrollTo(0,1e6)'); pg.wait_for_timeout(150); pg.screenshot(path=os.path.join(SHOT,f'oct12_after_side_{vw}x{vh}_bottom.png'))
+    one=json.loads(json.dumps(ST)); one['characters']=one['characters'][:1]
+    side(ST,'8명'); side(one,'1명')
+    # 큰 화면은 예전 그대로: 1명이면 사이드바 sticky, 소식+썬데이가 남은 높이를 채우고 페이지가 안 길어짐, 오른쪽 열 sticky
+    for vw,vh in [(1920,1080),(1280,800)]:
+        pg.set_viewport_size({'width':vw,'height':vh}); pg.goto(URL); pg.evaluate("([s])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','boss')}",[one]); pg.reload(); pg.wait_for_timeout(1000)
+        r=pg.evaluate("({flow:document.querySelector('.side-sticky').classList.contains('side-flow'),pos:getComputedStyle(document.querySelector('.rcol')).position,doc:document.scrollingElement.scrollHeight,ih:innerHeight,sun:getComputedStyle(document.querySelector('#sunCard')).display,sb:document.querySelector('#sunCard').getBoundingClientRect().bottom})")
+        check(f'(2) {vw}x{vh}: 큰 화면 동작 그대로(sticky, 페이지 안 길어짐, 썬데이 화면 안)', not r['flow'] and r['pos']=='sticky' and r['doc']<=r['ih'] and r['sun']!='none' and r['sb']<=r['ih'], r)
     check('JS 오류 없음', not errs, errs)
 finally:
     srv.terminate()

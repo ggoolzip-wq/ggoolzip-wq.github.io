@@ -2756,6 +2756,7 @@ function sunLbClose(){ const lb=$('#sunLb'); if(!lb) return; lb.remove(); docume
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('#sunLb')){ e.preventDefault(); e.stopPropagation(); sunLbClose(); } },true);
 $('#sunCard').addEventListener('click',e=>{ if(e.target.closest('[data-sunopen]')) sunLightbox(); });
 /* 카드 높이 = 남은 화면 높이 (페이지가 이 카드 때문에 스크롤되지 않게), 쪽당 글 수 = 그 높이에 들어가는 줄 수 */
+const FEED_FLOW_ROWS=5, SUN_FLOW_H=320; // b61: 낮은 창(.side-flow)일 때 소식 줄 수·썬데이 높이
 function feedFit(){
   const c=$('#feedCard'); if(!c) return; let old=feed.per;
   const sun=$('#sunCard');
@@ -2773,7 +2774,11 @@ function feedFit(){
     const h=Math.floor(Math.min(hStatic,hStick))-1;
     const minH=FEED_ROW*2+70, SUN_MIN=140, gap=12;
     // 남은 높이를 소식 1/3 : 썬데이 2/3 로 나눔. 썬데이 칸이 너무 작아지면(SUN_MIN 미만) 썬데이를 숨기고 소식이 전부 사용
+    // b61: 화면이 낮아(또는 캐릭터 카드가 길어) 소식 최소 + 썬데이 최소가 안 들어가면 → 사이드바를 따라오지 않게(.side-flow, position:static)
+    // 하고 두 카드를 기본 높이로 → 페이지가 길어지고 스크롤로 전부 닿음 (예전: 썬데이를 숨기고 sticky 라 아래가 잘림)
+    const flow=h-gap<minH+(sun?SUN_MIN:0); aside.classList.toggle('side-flow',flow);
     let fh=Math.max(minH,Math.round((h-gap)/3)), sh=h-gap-fh;
+    if(flow){ fh=FEED_ROW*FEED_FLOW_ROWS+70; sh=SUN_FLOW_H; }
     if(sun){ if(sh>=SUN_MIN){ sun.style.display=''; sun.style.height=sh+'px'; sun.classList.toggle('tight',sh<230); } else { sun.style.display='none'; fh=h; } }
     c.style.height=Math.max(minH,fh)+'px';
     const fb=c.querySelector('.fbody'); const avail=fb?fb.clientHeight:0;
@@ -2782,7 +2787,7 @@ function feedFit(){
     // 최소 높이에서 내용(머리글·2줄·쪽 번호)이 넘치면 넘친 만큼 소식 카드를 키우고 썬데이 카드에서 뺌 (모자라면 썬데이 숨김)
     const fb2=c.querySelector('.fbody'), over=Math.max(c.scrollHeight-c.clientHeight, fb2?fb2.scrollHeight-fb2.clientHeight:0);
     if(over>0){ const nh=c.offsetHeight+over; c.style.height=nh+'px';
-      if(sun&&sun.style.display!=='none'){ const s2=h-gap-nh; if(s2>=SUN_MIN){ sun.style.height=s2+'px'; sun.classList.toggle('tight',s2<230); } else { sun.style.display='none'; c.style.height=Math.max(nh,h)+'px'; } } }
+      if(!flow&&sun&&sun.style.display!=='none'){ const s2=h-gap-nh; if(s2>=SUN_MIN){ sun.style.height=s2+'px'; sun.classList.toggle('tight',s2<230); } else { sun.style.display='none'; c.style.height=Math.max(nh,h)+'px'; } } }
   }
   if(feed.per!==old){ const first=(feed.page-1)*old; feed.page=Math.floor(first/feed.per)+1; renderFeed(); }
 }

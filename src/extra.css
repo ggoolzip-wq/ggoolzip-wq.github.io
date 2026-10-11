@@ -819,3 +819,12 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
   .misstbl td.missn{grid-area:n;width:auto;white-space:normal;font-weight:700}
   .misstbl td.missb{grid-area:b}
 }
+/* b61 낮은 창: 왼쪽 사이드바가 화면에 안 들어가면 sticky 해제(feedFit 이 .side-flow) → 페이지 스크롤로 소식·썬데이 카드까지 닿음 */
+.side-sticky.side-flow{position:static}
+/* b61 낮은 창(높이 <760px, 넓은 화면): 오른쪽 열(수익·결정석 가격·초기화)을 화면 높이 고정(sticky+안쪽 스크롤)에서 일반 흐름으로 → 잘림 없이 페이지 스크롤 */
+@media(min-width:1181px) and (max-height:759px){
+  .rcol{position:static;height:auto;max-height:none;overflow:visible}
+  .rcol>.revpanel,.rcol>.pricecard{overflow:visible;max-height:none;flex:none}
+  .rcol>.pricecard .pc-list{max-height:440px}
+  .rcol>.resetcard{margin-top:0}
+}

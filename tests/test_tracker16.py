@@ -95,7 +95,8 @@ try:
         shot(pg,f'sun_{vw}x{vh}.png'); shot(pg.locator('#sunCard'),f'sun_card_{vw}.png')
     pg.set_viewport_size({'width':1280,'height':560}); pg.wait_for_timeout(300); pg.evaluate('feedFit()')
     c=pg.evaluate(CARDS); h0=pg.evaluate(NOSIDE)
-    check('short window: page not taller (sun hidden if no room)', c['doc']<=max(h0,c['ih']) or c['sdisp']=='none', (c,h0))
+    # b61: 낮은 창이면 썬데이를 숨기지 않고 사이드바 sticky 해제(.side-flow) → 페이지 스크롤로 닿음
+    check('short window: page not taller, or sidebar flows with sun visible (b61)', c['doc']<=max(h0,c['ih']) or (c['sdisp']!='none' and pg.evaluate("document.querySelector('.side-sticky').classList.contains('side-flow')")), (c,h0))
     for vw,vh in [(390,844),(320,640)]:
         pg.set_viewport_size({'width':vw,'height':vh}); pg.wait_for_timeout(300)
         c=pg.evaluate(CARDS); sw0=pg.evaluate("(()=>{const b=document.querySelector('#sunCard');b.style.display='none';const w=document.scrollingElement.scrollWidth;b.style.display='';return w})()")
