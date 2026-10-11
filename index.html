@@ -2313,24 +2313,26 @@ function renderBoss(){
    </div></div><div class="rcol">${COMMITTED(()=>revPanel(allRevenue(),activeChar()))}${priceCard()}<div class="card resetcard"><div class="muted" id="resetInfo"></div></div></div></div>`;
 }
 /* b58: 월간 보스는 '잡은 주'(c.monthly[slot] = 클리어한 주 key)가 현재 주일 때만 이번 주 수익 표시에 합산 — 표시 전용, allRevenue/weekSummary/monthSummary/history 는 건드리지 않음(이중 계산 방지) */
+const pWeekMonthly = p => { const l=p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week); return {n:l.length, meso:l.reduce((t,x)=>t+x.value,0), any:p.r.mlist.some(x=>p.c.monthly[x.slot]===S.period.week)||Object.values(p.c.monthly||{}).some(w=>w===S.period.week)}; };
 function weekMonthly(a){ let n=0, meso=0; a.per.forEach(p=>p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week).forEach(x=>{ n++; meso+=x.value; })); return {n,meso}; }
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
 function revPanel(a,cur){
   const lim=S.settings.weeklyLimit;
   const per=orderedChars().map(c=>a.per.find(p=>p.c===c)).filter(Boolean);
-  const max=Math.max(1,...per.map(p=>p.r.meso));
+  const pm=new Map(per.map(p=>[p,pWeekMonthly(p)])), pmeso=p=>p.r.meso+pm.get(p).meso;
+  const max=Math.max(1,...per.map(pmeso));
   const wm=weekMonthly(a);
   return `<aside class="revpanel card" aria-label="이번 주 수익 요약">
     <h2>${miniIcon('meso')} 이번 주 수익</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     <div class="rp-total">${((a.total+wm.meso)/1e8).toFixed(1)}억<small> 메소</small></div>
     <div class="muted" style="font-size:.75rem">${(a.total+wm.meso).toLocaleString()} · 주간 보스 결정석 ${a.count}개</div>
-    ${wm.n?`<div class="muted rp-mline" style="font-size:.75rem">월간 보스 결정석 ${wm.n}개 (${wm.meso.toLocaleString()} 메소 포함)</div>`:''}
+    ${wm.n?`<div class="muted rp-mline" style="font-size:.75rem">월간 보스 결정석 ${wm.n}개</div>`:''}
     ${(()=>{const n=S.characters.reduce((s,c)=>s+itemSum(c.drops),0); return `<div class="rp-items-n muted">${miniIcon('chaosbox')} 이번 주 획득 아이템 ${n}개</div>`;})()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
-      <div class="rp-row"><span class="rp-nm">${esc(p.c.name)}${p.c.isMain?' <span class="mainbadge">★</span>':''}</span><b>${meso(p.r.meso)}</b></div>
-      <div class="rp-row"><span class="mini"><i style="width:${(p.r.meso/max*100).toFixed(1)}%"></i></span><span class="muted" style="font-size:.72rem;white-space:nowrap">${p.r.weekly}/${lim}${monthlyCount(p.c)?' · 월간 ✓':''}</span></div>
+      <div class="rp-row"><span class="rp-nm">${esc(p.c.name)}${p.c.isMain?' <span class="mainbadge">★</span>':''}</span><b>${meso(pmeso(p))}</b></div>
+      <div class="rp-row"><span class="mini"><i style="width:${(pmeso(p)/max*100).toFixed(1)}%"></i></span><span class="muted" style="font-size:.72rem;white-space:nowrap">${p.r.weekly}/${lim}${pm.get(p).any?' · 월간 ✓':''}</span></div>
       ${(d=>itemsInline(d.items)?`<div class="rp-items">${itemsInline(d.items,{outs:d.outcomes,byBoss:true,diffOf:cfgDiff(p.c)})}</div>`:'')(charAllDrops(p.c))}</div>`).join('')}</div>
   </aside>`;
 }
