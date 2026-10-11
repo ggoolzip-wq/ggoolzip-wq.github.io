@@ -52,13 +52,13 @@ try:
     sl=pg.evaluate("""(()=>{const g=(sel)=>{const e=document.querySelector(sel);if(!e)return null;const c=getComputedStyle(e);return [c.animationName,c.animationDuration,c.getPropertyValue('--spa2').trim(),c.webkitTextFillColor,c.color,c.backgroundClip||c.webkitBackgroundClip]};
       const ex=document.createElement('span');ex.className='dlv dlv-extreme';ex.textContent='(익스트림)';document.body.appendChild(ex);const c=getComputedStyle(ex);
       return {r1:g('#epicCard tr.rk1 .spk'),r2:g('#epicCard tr.rk2 .spk'),r3:g('#epicCard tr.rk3 .spk'),ex:[c.animationName,c.animationDuration,c.getPropertyValue('--spa2').trim(),c.color]}})()""")
-    check('스포트라이트: 1위 2.2s 강(.9) / 2위 3.2s .7 / 3위 3.2s .5 / 익스트림 3.2s .65 주홍 유지', sl['r1'][:3]==['spl','2.2s','.9'] and sl['r2'][:3]==['spl','3.2s','.7'] and sl['r3'][:3]==['spl','3.2s','.5'] and sl['ex'][:3]==['spl','3.2s','.65'] and sl['ex'][3]=='rgb(255, 69, 0)' and sl['r1'][3]=='rgba(0, 0, 0, 0)', sl)
+    check('스포트라이트: 1위 2.2s 강(.9) / 2위 3.2s .7 / 3위 3.2s .5 / 익스트림 spx 2.8s 주홍 유지', sl['r1'][:3]==['spl','2.2s','.9'] and sl['r2'][:3]==['spl','3.2s','.7'] and sl['r3'][:3]==['spl','3.2s','.5'] and sl['ex'][:2]==['spx','2.8s'] and sl['ex'][3]=='rgb(255, 69, 0)' and sl['r1'][3]=='rgba(0, 0, 0, 0)', sl)
     # b56: 행 전체 스포트라이트, 익스트림 굵게·검은 빛
     rw=pg.evaluate("""(()=>{const out={};for(const sel of ['#mesoKing','#lootKing','#bossKing','#epicCard','#chaosCard']){const tr=document.querySelector(sel+' tr.rk1');if(!tr){out[sel]='none';continue}
       const leaves=[...tr.querySelectorAll('td,span,b')].filter(e=>!e.children.length&&e.innerText.trim()&&!e.classList.contains('crown'));out[sel]=[leaves.length,leaves.filter(e=>getComputedStyle(e).animationName==='spl').length]}return out})()""")
     check('1위 행 모든 글자 스포트라이트', all(v=='none' or v[0]==v[1] for v in rw.values()) and rw['#epicCard'][0]>=3, rw)
-    xe=pg.evaluate("(()=>{const e=document.createElement('span');e.className='dlv dlv-extreme';e.textContent='(익스트림)';document.body.appendChild(e);const c=getComputedStyle(e);return [c.fontWeight,c.color,c.backgroundImage.includes('rgba(0, 0, 0')]})()")
-    check('익스트림: 900 굵기, 주홍, 검은 빛', xe[0]=='900' and xe[1]=='rgb(255, 69, 0)' and xe[2], xe)
+    xe=pg.evaluate("(()=>{const e=document.createElement('span');e.className='dlv dlv-extreme';e.textContent='(익스트림)';document.body.appendChild(e);const c=getComputedStyle(e);return [c.fontWeight,c.color,c.backgroundImage.includes('rgba(0, 0, 0'),c.animationName]})()")
+    check('익스트림: 900 굵기, 주홍, 검은 빛', xe[0]=='900' and xe[1]=='rgb(255, 69, 0)' and xe[2] and xe[3]=='spx', xe)
     # 난이도 굵게
     bw=pg.evaluate("[...document.querySelectorAll('.dlv')].map(e=>getComputedStyle(e).fontWeight)")
     check('(난이도) 전부 굵게', bw and all(int(x)>=700 for x in bw), bw[:5])

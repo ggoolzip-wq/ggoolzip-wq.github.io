@@ -890,6 +890,21 @@ tr.rk1{--spd:2.2s;--spa:.9}tr.rk2{--spd:3.2s;--spa:.7}tr.rk3{--spd:3.2s;--spa:.5
 
 /* b56: 순위 행 전체 글자(순위 숫자·횟수·메소량·아이템 등)에 스포트라이트, 익스트림은 더 굵게 + 검은 빛 */
 .dlv-extreme{font-weight:900;--splc:0,0,0}
+
+/* b57: (익스트림) 검은 눈부심 — 선명한 어두운 중심(코어) + 부드러운 번짐(헤일로) + 지나가는 순간만 번쩍이는 글로우. 2.8s 중 0~30%(약 0.84초)에 확 지나가고 나머지(약 2초)는 정지 */
+html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
+  background:
+    radial-gradient(ellipse 50% 110% at 50% 50%,rgba(0,0,0,.98) 0,rgba(0,0,0,.75) 28%,rgba(0,0,0,0) 100%) -40% 0/22% 100% no-repeat,
+    radial-gradient(ellipse 50% 100% at 50% 50%,rgba(0,0,0,.55) 0,rgba(0,0,0,.25) 45%,rgba(0,0,0,0) 100%) -125% 0/60% 100% no-repeat,
+    linear-gradient(currentColor,currentColor);
+  -webkit-background-clip:text;background-clip:text;
+  animation:spx 2.8s cubic-bezier(.35,0,.25,1) infinite}
+@keyframes spx{
+  0%{background-position:-40% 0,-125% 0,0 0;filter:drop-shadow(0 0 0 rgba(255,110,40,0))}
+  14%{filter:drop-shadow(0 0 5px rgba(255,120,50,.95)) drop-shadow(0 0 10px rgba(255,69,0,.6))}
+  30%{background-position:140% 0,225% 0,0 0;filter:drop-shadow(0 0 0 rgba(255,110,40,0))}
+  30.01%,100%{background-position:-40% 0,-125% 0,0 0;filter:drop-shadow(0 0 0 rgba(255,110,40,0))}}
+@media (prefers-reduced-motion:reduce){html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{animation:none}}
 </style>
 </head>
 <body>
