@@ -45,7 +45,7 @@ try:
     check("no 'API'/'API 자동' pill", pg.locator('.pill.api').count()==0 and 'API 자동' not in v)
     check('no clear-check icon in boss rows', pg.locator('[data-check]').count()==0)
     rp=pg.inner_text('.revpanel')
-    check("월간 label: no (별도), '(따로 합산)' below", '(별도)' not in rp and '(따로 합산)' in rp, rp[:300])
+    check("b58: 월간 (따로 합산) 영역 삭제", '(별도)' not in rp and '(따로 합산)' not in rp and pg.locator('.rp-month').count()==0, rp[:300])
     shot(pg.locator('#view'),'b28_bosslist.png')
     # 7
     pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.wait_for_timeout(300)

@@ -905,6 +905,14 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
   30%{background-position:140% 0,225% 0,0 0;filter:drop-shadow(0 0 0 rgba(255,110,40,0))}
   30.01%,100%{background-position:-40% 0,-125% 0,0 0;filter:drop-shadow(0 0 0 rgba(255,110,40,0))}}
 @media (prefers-reduced-motion:reduce){html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{animation:none}}
+
+/* b58: 툴팁(모든 [data-tip], 그래프 점 포함) — 둥근 모서리·부드러운 그림자·작은 꼬리, 화면 안으로 위치 보정 */
+#mbtTip{border-radius:12px;padding:9px 12px;background:rgba(21,23,28,.97);border:1px solid #3a3f4a;box-shadow:0 10px 28px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.35);transform:translateY(3px);transition:opacity .12s,transform .12s}
+#mbtTip.show{transform:none}
+#mbtTip::after{content:"";position:absolute;left:var(--ax,50%);bottom:-6px;width:10px;height:10px;margin-left:-5px;background:inherit;border-right:1px solid #3a3f4a;border-bottom:1px solid #3a3f4a;transform:rotate(45deg);border-radius:0 0 3px 0}
+#mbtTip.below::after{bottom:auto;top:-6px;transform:rotate(225deg)}
+.lpt rect{cursor:default}.lpt:hover circle,.mpt:hover circle:last-of-type{r:5.5}
+@media (prefers-reduced-motion:reduce){#mbtTip{transition:none;transform:none}}
 </style>
 </head>
 <body>
@@ -1687,7 +1695,7 @@ function weekSummary(wid){
 function monthSummary(mid){
   const a=allRevenue();
   return {month:mid, total:a.monthTotal, cleared:a.per.reduce((s,p)=>s+p.r.mlist.length,0),
-    perChar:a.per.filter(p=>p.r.mlist.length||itemSum(cleanItems(p.c.mdrops))).map(p=>({id:p.c.id, name:p.c.name, meso:p.r.monthMeso, bosses:p.r.mlist.map(bossTag), bvals:p.r.mlist.map(x=>x.counted?x.value:0), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes)}))(charDrops(p.c,'monthly'))}))};
+    perChar:a.per.filter(p=>p.r.mlist.length||itemSum(cleanItems(p.c.mdrops))).map(p=>({id:p.c.id, name:p.c.name, meso:p.r.monthMeso, bosses:p.r.mlist.map(bossTag), bvals:p.r.mlist.map(x=>x.counted?x.value:0), mweeks:p.r.mlist.map(x=>typeof p.c.monthly[x.slot]==='string'?p.c.monthly[x.slot]:''), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes)}))(charDrops(p.c,'monthly'))}))};
 }
 /* 획득 아이템 줄 (모든 화면 공통 형식): [아이콘] 아이템 이름 (N인 분배) ×개수 · 반지 상자는 결과 집계(리4·컨4·꽝·미기록)
  * byBoss: 보스별로 따로 (보스 이름 표시) / 기본: 아이템 + 인원별 합계 */
@@ -2304,17 +2312,20 @@ function renderBoss(){
     <div class="boss-list">${shown.length?shown.map(b=>bossRow(c,b)).join(''):`<div class="empty muted">${c.ocid?`게임 스케줄러에 등록된 ${TYPE_LABEL[bossFilter]}가 없습니다.<br>게임에서 보스를 스케줄러에 등록한 뒤 동기화(↻)하면 자동으로 표시돼요.`:`넥슨 API로 불러온 캐릭터만 보스가 자동 표시돼요.<br>캐릭터 편집에서 API 키 계정에 연결해 주세요.`}</div>`}</div>
    </div></div><div class="rcol">${COMMITTED(()=>revPanel(allRevenue(),activeChar()))}${priceCard()}<div class="card resetcard"><div class="muted" id="resetInfo"></div></div></div></div>`;
 }
+/* b58: 월간 보스는 '잡은 주'(c.monthly[slot] = 클리어한 주 key)가 현재 주일 때만 이번 주 수익 표시에 합산 — 표시 전용, allRevenue/weekSummary/monthSummary/history 는 건드리지 않음(이중 계산 방지) */
+function weekMonthly(a){ let n=0, meso=0; a.per.forEach(p=>p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week).forEach(x=>{ n++; meso+=x.value; })); return {n,meso}; }
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
 function revPanel(a,cur){
   const lim=S.settings.weeklyLimit;
   const per=orderedChars().map(c=>a.per.find(p=>p.c===c)).filter(Boolean);
   const max=Math.max(1,...per.map(p=>p.r.meso));
+  const wm=weekMonthly(a);
   return `<aside class="revpanel card" aria-label="이번 주 수익 요약">
     <h2>${miniIcon('meso')} 이번 주 수익</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
-    <div class="rp-total">${(a.total/1e8).toFixed(1)}억<small> 메소</small></div>
-    <div class="muted" style="font-size:.75rem">${a.total.toLocaleString()} · 주간 보스 결정석 ${a.count}개</div>
-    ${a.monthTotal||S.characters.some(c=>c.bosses.blackmage?.enabled)?`<div class="rp-month"><span><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="rpm-t">${+S.period.month.slice(5)}월 월간 보스<small class="muted">(따로 합산)</small></span></span><b>${a.monthTotal?meso(a.monthTotal):'-'}</b></div>`:''}
+    <div class="rp-total">${((a.total+wm.meso)/1e8).toFixed(1)}억<small> 메소</small></div>
+    <div class="muted" style="font-size:.75rem">${(a.total+wm.meso).toLocaleString()} · 주간 보스 결정석 ${a.count}개</div>
+    ${wm.n?`<div class="muted rp-mline" style="font-size:.75rem">월간 보스 결정석 ${wm.n}개 (${wm.meso.toLocaleString()} 메소 포함)</div>`:''}
     ${(()=>{const n=S.characters.reduce((s,c)=>s+itemSum(c.drops),0); return `<div class="rp-items-n muted">${miniIcon('chaosbox')} 이번 주 획득 아이템 ${n}개</div>`;})()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
@@ -2467,14 +2478,25 @@ function itemTotalsHtml(T){
   return `<div class="card itemtot"><h2>${miniIcon('bliss')} 총 아이템 획득량</h2>${Object.values(m).some(n=>n>0)?lootChips(m):'<p class="muted">아직 저장된 아이템이 없습니다.</p>'}</div>`;
 }
 // b53: 주별 누적 결정석 메소 = 라인 차트 (주마다 점, 누적 합계 선 + 아래 은은한 면)
-function cumLineChart(rows){
+/* b58: 월간 보스 결정석 수익은 '잡은 주'(mweeks, c.monthly[slot] 의 주 key)의 수익에 포함. 그 주가 목록에 없거나(예전 기록 — mweeks 없음) 알 수 없으면 같은 달(YYYY-MM)로 시작하는 마지막 주로 근사 */
+function monthlyByWeek(T){
+  const M={}, keys=T.weeks.map(w=>w.week);
+  T.months.forEach(m=>(m.perChar||[]).forEach(p=>(p.bosses||[]).forEach((t,i)=>{
+    const mt=/^(.+?)\((.+?)\)(?:\/(\d+)인)?/.exec(t), b=mt&&BOSSES.find(x=>x.name===mt[1]), d=mt&&DK[mt[2]];
+    const v=p.bvals&&p.bvals[i]!=null?+p.bvals[i]:(b&&d?Math.floor(price(b,d)/Math.max(1,+mt[3]||1)):0); if(!(v>0)) return;
+    let wk=p.mweeks&&p.mweeks[i]; if(!keys.includes(wk)){ const c=keys.filter(k=>String(k).startsWith(m.month)); wk=c.length?c[c.length-1]:''; }
+    if(!wk) return; const o=M[wk]||(M[wk]={n:0,meso:0}); o.n++; o.meso+=v; })));
+  return M; }
+function cumLineChart(rows0,T){
+  const MW=T?monthlyByWeek(T):{}; const rows=rows0.map(r=>({...r,mm:(MW[r.week]||{}).meso||0,mn:(MW[r.week]||{}).n||0,total:(r.total||0)+((MW[r.week]||{}).meso||0)}));
   const n=rows.length, pl=44, pr=14, pt=26, pb=36, Hh=240, bw=Math.max(34,(640-pl-pr)/Math.max(1,n)), W=Math.max(640,pl+pr+n*bw);
   let cum=0; const cums=rows.map(r=>cum+=r.total); const cmax=Math.max(1,cum);
   const X=i=>pl+i*bw+bw/2, Y=v=>Hh-pb-(Hh-pb-pt)*v/cmax, step=Math.max(1,Math.ceil(n/(W/60)));
   const pts=cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
   const grid=[0,.25,.5,.75,1].map(f=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(cmax*f).toFixed(1)}" y2="${Y(cmax*f).toFixed(1)}" stroke="currentColor" opacity="${f?'.08':'.18'}"/><text x="${pl-6}" y="${(Y(cmax*f)+3.5).toFixed(1)}" text-anchor="end" font-size="10">${f?(cmax*f/1e8).toFixed(1)+'억':'0'}</text>`).join('');
   const xl=rows.map((r,i)=>i%step===0||r.cur?`<text x="${X(i).toFixed(1)}" y="${Hh-pb+16}" text-anchor="middle">${fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(rows[n-1]&&rows[n-1].cur?`<text x="${X(n-1).toFixed(1)}" y="${Hh-pb+30}" text-anchor="middle">이번 주</text>`:'');
-  const dots=cums.map((v,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?4.5:3.2}" fill="${rows[i].cur?'#ffb066':'#2f7fd8'}" stroke="#fff" stroke-width="1"><title>${fmtWeek(rows[i].week)}: 주간 ${meso(rows[i].total)} · 누적 ${meso(v)}</title></circle>${n<=16?`<text x="${X(i).toFixed(1)}" y="${(Y(v)-8).toFixed(1)}" text-anchor="middle" class="lbl" font-size="10">${(v/1e8).toFixed(1)}억</text>`:''}`).join('');
+  const tipOf=(r,v)=>`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n누적 ${meso(v)}`;
+  const dots=cums.map((v,i)=>`<g class="lpt" data-tip="${esc(tipOf(rows[i],v))}"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/><circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?4.5:3.2}" fill="${rows[i].cur?'#ffb066':'#2f7fd8'}" stroke="#fff" stroke-width="1"/></g>${n<=16?`<text x="${X(i).toFixed(1)}" y="${(Y(v)-8).toFixed(1)}" text-anchor="middle" class="lbl" font-size="10" pointer-events="none">${(v/1e8).toFixed(1)}억</text>`:''}`).join('');
   return `<div class="chart scrollx linechart"><svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주별 누적 결정석 메소 라인 차트">
       <defs><linearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f7fd8" stop-opacity=".35"/><stop offset="1" stop-color="#2f7fd8" stop-opacity="0"/></linearGradient></defs>
       ${grid}<polygon fill="url(#lcg)" points="${X(0).toFixed(1)},${Y(0)} ${pts} ${X(n-1).toFixed(1)},${Y(0)}"/>
@@ -2609,7 +2631,7 @@ function renderTotal(){
     </div>
     <p class="muted" style="margin:8px 0 0;font-size:.78rem">수익은 결정석 판매 금액만 합산합니다(드롭 아이템은 개수만 기록).</p>
   </div>
-  <div class="card"><h2>📈 주별 누적 결정석 메소 <span class="muted" style="font-weight:500">라인: 주마다 쌓인 누적 합계</span></h2>${cumLineChart(T.weeks)}</div>
+  <div class="card"><h2>📈 주별 누적 결정석 메소 <span class="muted" style="font-weight:500">라인: 주마다 쌓인 누적 합계 (월간 보스는 잡은 주에 포함)</span></h2>${cumLineChart(T.weeks,T)}</div>
   ${kingHtml(T)}
   ${bossKingHtml(T)}
   ${epicKingHtml(T)}
@@ -3556,8 +3578,9 @@ function tipShow(el){
   if(!tipEl){ tipEl=document.createElement('div'); tipEl.id='mbtTip'; tipEl.setAttribute('role','tooltip'); document.body.appendChild(tipEl); }
   tipFor=el; const [h0,...rest]=String(el.dataset.tip).split('\n'); // 첫 줄 = 굵은 제목(아이템 이름)
   tipEl.replaceChildren(Object.assign(document.createElement('b'),{className:'tth',textContent:h0}),...(rest.length?['\n'+rest.join('\n')]:[])); tipEl.classList.add('show');
-  const r=el.getBoundingClientRect(), w=tipEl.offsetWidth, h=tipEl.offsetHeight, m=8;
-  let x=Math.min(Math.max(m,r.left+r.width/2-w/2),innerWidth-w-m), y=r.top-h-8; if(y<m) y=Math.min(r.bottom+8,innerHeight-h-m);
+  const r=(el.querySelector?.('[data-tipanchor]')||el).getBoundingClientRect(), w=tipEl.offsetWidth, h=tipEl.offsetHeight, m=8;
+  let x=Math.min(Math.max(m,r.left+r.width/2-w/2),innerWidth-w-m), y=r.top-h-10, below=false; if(y<m){ y=Math.min(r.bottom+10,innerHeight-h-m); below=true; }
+  tipEl.classList.toggle('below',below); tipEl.style.setProperty('--ax',Math.min(Math.max(14,r.left+r.width/2-x),w-14)+'px');
   tipEl.style.left=x+'px'; tipEl.style.top=y+'px';
 }
 function tipHide(){ clearTimeout(tipTimer); tipFor=null; if(tipEl) tipEl.classList.remove('show'); }
