@@ -854,13 +854,18 @@ tr.rkpad td{border-color:transparent}
 .dlv{font-weight:800}
 .dl .dlb .dlv{font-size:inherit}
 /* 못 가진 아이템: 보스 여러 개 한 줄 */
-.misstbl td.missb,.misstbl td{white-space:nowrap}
+/* b61: 보스 칸이 남는 폭 전부, 넘치면 그 줄만 글자 축소 → 아이콘 생략 → 묶음 단위 줄바꿈 (fitMiss). 가로 스크롤 없음 */
+.misswrap{overflow-x:hidden}
+.misstbl{width:100%;table-layout:auto}
+.misstbl td.missi,.misstbl td.missn{white-space:nowrap;width:1%}
+.misstbl td.missn{padding-right:6px}
+.misstbl td.missb{width:auto;white-space:normal}
+.missbl{display:flex;flex-wrap:wrap;align-items:center;row-gap:2px;font-size:var(--msfs,13px);line-height:1.35}
 .missbn{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.missbn:not(:last-child)::after{content:"·";opacity:.5;margin:0 5px 0 2px}
 .missbn .dlv{margin-left:1px}.missbn .dlv+.dlv{margin-left:0}
-.misssep{opacity:.5;margin:0 4px}
-.misstbl td.missb{font-size:var(--msfs,13px)}
-.misstbl .missbn .hbi{width:18px;height:18px}
-.misstbl td.missb{width:1%}
+.misstbl .missbn .hbi{width:18px;height:18px;flex:none}
+.missbl.noico .hbi{display:none}
 /* 시드링 획득 타율: 반지 상자 결과 크고 굵게, 라벨 초록 / 기댓값은 작고 색 없음 */
 .ringsum{font-size:1.1rem;font-weight:800;white-space:nowrap;overflow-x:auto}
 .ringsum .rslab{color:#3fd07a;font-weight:900}
@@ -913,6 +918,14 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 #mbtTip.below::after{bottom:auto;top:-6px;transform:rotate(225deg)}
 .lpt rect{cursor:default}.lpt:hover circle,.mpt:hover circle:last-of-type{r:5.5}
 @media (prefers-reduced-motion:reduce){#mbtTip{transition:none;transform:none}}
+/* b61 모바일(≤760px): 못 가진 아이템 = 위 [아이콘 이름] / 아래 보스 목록(전체 폭, 묶음 단위 줄바꿈) — 잘림·가로 스크롤 없음 */
+@media(max-width:760px){
+  .misstbl tbody tr:not(.rkpad){display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"i n" "b b";align-items:center;height:auto;padding:4px 0;border-bottom:1px solid var(--line)}
+  .misstbl tbody tr:not(.rkpad) td{height:auto;border:0;padding-top:2px;padding-bottom:2px}
+  .misstbl td.missi{grid-area:i;width:auto}
+  .misstbl td.missn{grid-area:n;width:auto;white-space:normal;font-weight:700}
+  .misstbl td.missb{grid-area:b}
+}
 </style>
 </head>
 <body>
@@ -2606,11 +2619,17 @@ function missingItems(T){ const got=new Set();
   return Object.keys(src).sort((a,b)=>itemPri(a)-itemPri(b)||src[a].p-src[b].p||lootOrd(a)-lootOrd(b)).map(k=>({k,...src[k]})); }
 // 같은 보스의 여러 난이도는 한 덩어리로: 림보 (노말)(하드) — 한 줄에 최대한 들어가게
 const missGroups = list => { const g=[]; list.forEach(x=>{ let e=g.find(y=>y.b===x.b); if(!e) g.push(e={b:x.b,ds:[]}); e.ds.push(x.d); }); return g; };
-// 못 가진 아이템 목록: 보스가 많은 줄도 한 줄로 — 안 들어가면 글자를 0.5px씩 줄임(최소 9px), 그래도 넘치면 가로 스크롤
-function fitMiss(){ const t=document.querySelector('#missItems .misstbl'); if(!t) return; const w=t.parentElement; let fs=13; t.style.setProperty('--msfs',fs+'px'); while(w.scrollWidth>w.clientWidth+1&&fs>9){ fs-=.5; t.style.setProperty('--msfs',fs+'px'); } }
+// 못 가진 아이템 목록 (b61): 보스 칸 = 남는 폭 전부(아이콘·이름 칸은 내용 폭), 가로 스크롤 없음.
+// 줄마다 따로: 13px 에서 한 줄에 안 들어가면 그 줄만 0.5px씩 줄임(최소 10.5px) → 그래도 안 되면 보스 아이콘 생략 후 다시(최소 10px)
+// → 그래도 안 되면 보스 묶음(이름+난이도) 단위로만 다음 줄(묶음 안은 절대 안 끊김). 아이템 이름은 항상 한 줄.
+function fitMiss(){ const t=document.querySelector('#missItems .misstbl'); if(!t) return;
+  const one=l=>{ const k=l.children; return !k.length||k[k.length-1].offsetTop-k[0].offsetTop<2; };
+  t.querySelectorAll('.missbl').forEach(l=>{ l.classList.remove('noico'); let fs=13; const set=()=>l.style.setProperty('--msfs',fs+'px'); set();
+    while(!one(l)&&fs>10.5){ fs-=.5; set(); }
+    if(!one(l)){ l.classList.add('noico'); fs=13; set(); while(!one(l)&&fs>10){ fs-=.5; set(); } if(!one(l)){ fs=11; set(); } } }); }
 function missingHtml(T){ const L=missingItems(T), sl=rankSlice('miss',L);
   return `<div class="card" id="missItems"><h2>${L[0]?`<span class="gray">${itemIcon(L[0].k)}</span>`:miniIcon('chaosbox')} 내가 가지지 못한 아이템 목록</h2>
-    ${L.length?`<div style="overflow-x:auto"><table class="ranktbl misstbl"><tbody>${sl.map(([o])=>`<tr><td class="missb">${(G=>G.map(g=>`<span class="missbn"><span class="hbi">${bossIcon(g.b)}</span><span class="bdn">${esc(g.b.name)}</span>${g.ds.map(d=>dlvHtml(d)).join('')}</span>`).join('<span class="misssep">·</span>'))(missGroups(o.list))}</td><td>${itemIcon(o.k)}</td><td>${esc(ITEMS[o.k].n)}</td></tr>`).join('')}${rankPad(sl.length,L.length,3)}</tbody></table></div>${rankPager('miss',L.length)}`:'<p class="muted">모든 아이템을 가졌어요!</p>'}</div>`; }
+    ${L.length?`<div class="misswrap"><table class="ranktbl misstbl"><tbody>${sl.map(([o])=>`<tr><td class="missb"><div class="missbl">${missGroups(o.list).map(g=>`<span class="missbn"><span class="hbi">${bossIcon(g.b)}</span><span class="bdn">${esc(g.b.name)}</span>${g.ds.map(d=>dlvHtml(d)).join('')}</span>`).join('')}</div></td><td class="missi">${itemIcon(o.k)}</td><td class="missn">${esc(ITEMS[o.k].n)}</td></tr>`).join('')}${rankPad(sl.length,L.length,3)}</tbody></table></div>${rankPager('miss',L.length)}`:'<p class="muted">모든 아이템을 가졌어요!</p>'}</div>`; }
 function bbangStats(T){ const p={}; for(const o of T.chars) for(const [a,n] of Object.entries(o.items||{})){ const {party,mode}=parseIK(a); if(mode!=='w'&&mode!=='l') continue; const q=p[party]||(p[party]={w:0,l:0}); q[mode]+=+n||0; } return p; }
 const blinkIco = cls => `<span class="blk ${cls||''}" aria-hidden="true">${miniIcon('blink')}</span>`;
 function bbangHtml(T){

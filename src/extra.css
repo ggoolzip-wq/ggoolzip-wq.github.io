@@ -747,13 +747,18 @@ tr.rkpad td{border-color:transparent}
 .dlv{font-weight:800}
 .dl .dlb .dlv{font-size:inherit}
 /* 못 가진 아이템: 보스 여러 개 한 줄 */
-.misstbl td.missb,.misstbl td{white-space:nowrap}
+/* b61: 보스 칸이 남는 폭 전부, 넘치면 그 줄만 글자 축소 → 아이콘 생략 → 묶음 단위 줄바꿈 (fitMiss). 가로 스크롤 없음 */
+.misswrap{overflow-x:hidden}
+.misstbl{width:100%;table-layout:auto}
+.misstbl td.missi,.misstbl td.missn{white-space:nowrap;width:1%}
+.misstbl td.missn{padding-right:6px}
+.misstbl td.missb{width:auto;white-space:normal}
+.missbl{display:flex;flex-wrap:wrap;align-items:center;row-gap:2px;font-size:var(--msfs,13px);line-height:1.35}
 .missbn{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.missbn:not(:last-child)::after{content:"·";opacity:.5;margin:0 5px 0 2px}
 .missbn .dlv{margin-left:1px}.missbn .dlv+.dlv{margin-left:0}
-.misssep{opacity:.5;margin:0 4px}
-.misstbl td.missb{font-size:var(--msfs,13px)}
-.misstbl .missbn .hbi{width:18px;height:18px}
-.misstbl td.missb{width:1%}
+.misstbl .missbn .hbi{width:18px;height:18px;flex:none}
+.missbl.noico .hbi{display:none}
 /* 시드링 획득 타율: 반지 상자 결과 크고 굵게, 라벨 초록 / 기댓값은 작고 색 없음 */
 .ringsum{font-size:1.1rem;font-weight:800;white-space:nowrap;overflow-x:auto}
 .ringsum .rslab{color:#3fd07a;font-weight:900}
@@ -806,3 +811,11 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 #mbtTip.below::after{bottom:auto;top:-6px;transform:rotate(225deg)}
 .lpt rect{cursor:default}.lpt:hover circle,.mpt:hover circle:last-of-type{r:5.5}
 @media (prefers-reduced-motion:reduce){#mbtTip{transition:none;transform:none}}
+/* b61 모바일(≤760px): 못 가진 아이템 = 위 [아이콘 이름] / 아래 보스 목록(전체 폭, 묶음 단위 줄바꿈) — 잘림·가로 스크롤 없음 */
+@media(max-width:760px){
+  .misstbl tbody tr:not(.rkpad){display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"i n" "b b";align-items:center;height:auto;padding:4px 0;border-bottom:1px solid var(--line)}
+  .misstbl tbody tr:not(.rkpad) td{height:auto;border:0;padding-top:2px;padding-bottom:2px}
+  .misstbl td.missi{grid-area:i;width:auto}
+  .misstbl td.missn{grid-area:n;width:auto;white-space:normal;font-weight:700}
+  .misstbl td.missb{grid-area:b}
+}
