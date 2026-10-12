@@ -75,9 +75,9 @@ try:
     names1=sorted(c['id'] for c in st(p1)['characters'])  # 이름은 넥슨 새로고침(ocid)으로 바뀔 수 있어 id 로 비교
     check('PC1 has characters to restore later', len(names1)>0, names1)
     # 로그아웃(헤더) → 다시 '본계정 키 등록만'
-    p1.click('#gBtn'); p1.wait_for_function("!svTok()",timeout=8000); p1.wait_for_timeout(300)
-    check('logout → dashboard empty, no gate, header ☁ 로그인', p1.locator('#svGate').count()==0 and p1.evaluate("S.characters.length")==0 and p1.inner_text('#gBtn').strip()=='☁ 로그인')
-    p1.click('#gBtn'); p1.wait_for_selector('#svMainKey')
+    p1.evaluate("document.getElementById('gBtn').click()"); p1.wait_for_function("!svTok()",timeout=8000); p1.wait_for_timeout(300)
+    check('logout → dashboard empty, no gate, header ☁ 로그인', p1.locator('#svGate').count()==0 and p1.evaluate("S.characters.length")==0 and p1.text_content('#gBtn').strip()=='☁ 로그인')
+    p1.evaluate("document.getElementById('gBtn').click()"); p1.wait_for_selector('#svMainKey')
     check('☁ 로그인 → main-key-only modal again', p1.is_visible('#svMainKey') and not p1.is_visible('#accList'))
     # 부계정 키를 본계정으로 → 빨간 글
     p1.fill('#svMainKey',KF); p1.click('#svMainBtn'); p1.wait_for_selector('#svMainSt .keyrej'); p1.wait_for_timeout(200)
@@ -89,7 +89,7 @@ try:
     wait_on(p2)
     p2.wait_for_function("accounts().some(a=>a.key==='%s')"%KF,timeout=10000); s2=st(p2)
     check('returning user (new PC): main key only → characters + alt key restored', sorted(c['id'] for c in s2['characters'])==names1 and keyset(s2)==sorted([KA,KF]), (keyset(s2),[c['name'] for c in s2['characters']]))
-    check('header 로그아웃 when logged in', p2.inner_text('#gBtn').strip()=='로그아웃')
+    check('header 로그아웃 when logged in', p2.text_content('#gBtn').strip()=='로그아웃')
     check('JS 오류 없음', not errs, errs)
     b.close()
 except Exception as e:

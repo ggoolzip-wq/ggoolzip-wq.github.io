@@ -45,13 +45,13 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     # 0) 플래그 꺼짐 = 기존 구글 드라이브 그대로
     ctx0,p0=mkctx(b); p0.goto(URL); p0.wait_for_timeout(300)
-    check('flag off (default): Google Drive mode unchanged', p0.evaluate("SV_ON")=='' and '구글' in p0.inner_text('#gBtn'), p0.inner_text('#gBtn')); ctx0.close()
+    check('flag off (default): Google Drive mode unchanged', p0.evaluate("SV_ON")=='' and '구글' in p0.text_content('#gBtn'), p0.text_content('#gBtn')); ctx0.close()
     # 1) 기기 A: 등록된 키로 로그인 → 이 PC 데이터 첫 저장
     ca,pa=mkctx(b); pa.goto(URL)
     pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));sessionStorage.setItem('t_preset',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); inject(pa); pa.wait_for_timeout(400)
     check('flag on: header ☁ 로그인, no auto login, no popup', pa.text_content('#gBtn')=='☁ 로그인' and not popups and not pa.evaluate("svTok()"), pa.text_content('#gBtn'))
     check('b67: no entry gate — dashboard visible right away (no invite password)', pa.locator('#svGate').count()==0 and not pa.evaluate("document.documentElement.classList.contains('gated')") and pa.is_visible('#charList'))
-    pa.click('#gBtn'); pa.wait_for_selector('#svMainSec #svMainKey')
+    pa.evaluate("document.getElementById('gBtn').click()"); pa.wait_for_selector('#svMainSec #svMainKey')
     check('b67: ☁ 로그인 → 캐릭터 추가 창, 본계정 키 등록 칸만', pa.is_visible('#svMainKey') and not pa.is_visible('#accList') and not pa.is_visible('#impSec') and not pa.is_visible('#newAccKey'))
     check('key not shown anywhere', KA not in pa.inner_text('body') and KA not in pa.content().split('<script')[0])
     pa.fill('#svMainKey',KA); pa.click('#svMainBtn'); wait_on(pa)

@@ -920,3 +920,13 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - D1 백업: /workspace/maple-boss-tracker/d1backup/alts_pre.sql (스키마 변경 없음).
 - 미검증: 실제 사용자 브라우저에서 다음 로그인 때 칸 정리·저장. 다른 기기 데이터와 합칠 때(gdMerge) 지운 칸이 되살아나는지는 따로 확인 안 함.
 
+
+## b104 — 크롬 확장 삭제, '최저가 갱신' = maple.ai.kr 시세
+- **삭제**: `extension/` 폴더 전체, 확장 zip, PostMessage 다리(bossmaple-ext/page), 확장 감지·'확장 없음' 안내, test_ext_core/test_ext_dom. (b101 확장 수정도 함께 사라짐 — 넥슨 경매장에 우리 쪽이 요청하는 일 없음)
+- **출처**: https://maple.ai.kr/blog/item-price-tracker-2026 (API 없음, Next.js 페이지 HTML 안에 일별 기록 JSON). robots.txt: `/blog/` 허용(막힌 곳 /pf/ /admin/ /book/). 단위 억 메소, 본서버/챌린저스 중 **본서버(main)** 값만, 하루 1번 바뀌는 일별 시세(실시간 최저가 아님).
+- **Worker** `GET /api/admin/maple-prices` (관리자만, 비관리자 403): 페이지 1번 받아 `parseMai` 로 가장 최근 날짜만. **같은 KST 날짜에 이미 받았으면 meta `mai_cache` 재사용(바깥 요청 0)**. 테스트용 `MAI_URL` var.
+- **화면**: 버튼 이름 '최저가 갱신', 힌트 '최저가 측정 시간 - YYYY-MM-DD HH:mm'(KST) 그대로. 누르면 1.2~3초×(1.0~1.5 실행 배율) 무작위 대기(항상 ≥1초) 뒤 요청 1번 → 수익 기록 창 금액 자동 채움. 페이지에 없는 아이템은 그대로(채움·시간 안 바뀜). 작은 글씨 '출처: maple.ai.kr (본섭 일별 시세)'.
+- **이름 맞춤** (`MAI_CODE`, 도우미 조사 maple-ai-price-map.json 18개 + 반지 상자 결과 2개): 루컨마·언더컨트롤·마깃안·몽벨·마도서*·거공·커포·고근·창뱃·미트라*·근원의 속삭임·죽음의 맹세·황홀한 악몽·굶주리는 핏빛 원혼·불멸의 유산·파풀마·연마석(스카)*·신마석(스카)*·리4·컨4. (*근사: 사이트=마도서/미트라 장비, 우리=선택 상자; 생명·신념의 연마석=스카니아 값). 실제 페이지(2026-10-12 기록)에서 20개 모두 읽힘 확인.
+- **테스트**: test_tracker68 재작성(대기≥1초·요청 1번·3개 갱신·출처·채움·없는 아이템 그대로·비관리자 없음), test_server_b91 에 b104 4개(403·최신 날짜/본섭만·브라우저 UA 1번·같은 날 캐시).
+- **스크린샷**: oct12z_b104_before/after_admin.png, oct12z_b104_before/after_revmodal.png
+- **확인 못 한 것**: 실제 Cloudflare 에서 maple.ai.kr 이 Worker 요청을 막지 않는지(로컬 curl 은 200), 관리자 실제 계정으로 버튼 누르기(MAPLE_ADMIN_KEY 안 씀). 페이지 구조가 바뀌면 '시세 표를 읽지 못했습니다' 오류로 보임.

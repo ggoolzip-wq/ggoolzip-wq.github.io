@@ -11,5 +11,4 @@ for t in upcoming feed_minor feed_sunday feed_keys sunday_ocr sunday_watch serve
   echo "== test_$t"; python3 tests/test_$t.py > tests/out/r_$t.log 2>&1 || fail=1
   grep -E 'FAIL' tests/out/r_$t.log | tail -3
 done
-echo "== test_ext_core"; (PATH=$HOME/.n22/bin:$PATH node tests/test_ext_core.mjs > tests/out/r_ext_core.log 2>&1) || fail=1; grep FAIL tests/out/r_ext_core.log | tail -3
 exit $fail

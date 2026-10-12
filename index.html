@@ -1124,6 +1124,7 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .svmapi a{color:inherit;text-decoration:underline}
 /* zosu-ui: 수익 기록 창 [기록하기] 옆 [취소하기] */
 .rvbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.admsrc a{color:inherit;text-decoration:underline}
 </style>
 </head>
 <body>
@@ -1519,7 +1520,7 @@ const revMap = (c,type) => type==='monthly' ? (c.mdrev||(c.mdrev={})) : (c.drev|
 function askRev(c,b,key,ik,cel){
   const pty=curParty(c,b.id), md=modeMap(c,b.type)[key]||'', div=pty>1&&md!=='w'&&md!=='n'?pty:1; // 분배(예전 기록 포함) = ÷인원, 1인·블빵승리 = 전부
   document.querySelector('#revModal')?.remove();
-  const ap=admPriceOf(ik); // b93: 관리자만 — 크롬 확장이 측정한 경매장 최저가로 미리 채움 (수정 가능)
+  const ap=admPriceOf(ik); // b104: 관리자만 — maple.ai.kr 시세로 미리 채움 (수정 가능)
   const el=document.createElement('div'); el.id='revModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rvTitle');
   el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`최저가 측정 시간 - ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
     <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><span class="rvbtns"><button class="btn rvok" data-rv="ok">기록하기</button><button class="btn ghost rvcancel" data-rv="cancel">취소하기</button></span></div>
@@ -4276,44 +4277,45 @@ async function admDecide(id,action){
   try{ await svFetch('/api/admin/decide',{method:'POST',body:{user:id,action}}); if(action!=='kick') toast({approve:'승인했습니다',reject:'거절했습니다',kick:'강퇴했습니다',unblock:'승인했습니다'}[action]+` — ${nm}`); }
   catch(e){ admUsers=before; try{ sessionStorage.setItem(ADM_CACHE_KEY,JSON.stringify(before)); }catch(x){} renderAdmin(); toast(`⚠ ${nm} — 처리하지 못해 되돌렸어요: ${e.message}`); }
 }
-/* b93: 관리자 전용 경매장 최저가 (개인용, 넥슨 약관 위험을 사용자가 감수하기로 함) — extension/ 크롬 확장이 관리자 본인 크롬의 경매장 세션으로 검색,
- * 이 페이지와 window.postMessage 로만 주고받음(src 'bossmaple-page' ↔ 'bossmaple-ext'). 결과 {item, lowestPrice(메소), time} → /api/admin/prices (서버는 관리자만).
- * 쿠키·세션은 페이지·서버로 오지 않음. 수익 기록 창에서 금액 자동 채움 + '최저가 측정 시간 - YYYY-MM-DD HH:mm'(KST). */
-const ADM_PRICE_KEY='mapleBossTracker.admPrices', ADM_PRICE_DAY_KEY='mapleBossTracker.admPriceDay';
-const PRICE_SETS=new Set(['칠흑','여명','광휘','해머','보장','연마석']), PRICE_SKIP=new Set(['chaosbox','cfs']);
-const priceItems=()=>Object.entries(ITEMS).filter(([k,v])=>PRICE_SETS.has(v.set)&&!PRICE_SKIP.has(k)).map(([k,v])=>({key:k,name:v.n}));
+/* b104: 관리자 전용 시세 — maple.ai.kr '아이템 시세 추적' 페이지(https://maple.ai.kr/blog/item-price-tracker-2026, 본섭 일별 시세)를 Worker 가 한 번 받아 읽음
+ * (/api/admin/maple-prices, 관리자만, 브라우저 CORS 없이·요청 1번). robots.txt: Allow / (막힌 곳 /pf/ /admin/ /book/ 뿐).
+ * 우리 드롭 표에서 [획득]으로 넣는 아이템 중 그 페이지에 있는 것만 이름으로 맞춤(MAI_CODE). 없는 아이템은 그대로(채움·시간 안 바뀜).
+ * 수익 기록 창에서 금액 자동 채움 + '최저가 측정 시간 - YYYY-MM-DD HH:mm'(KST, 받아 온 시각). 예전 크롬 확장(b93)은 b104 에서 삭제(넥슨 약관). */
+const ADM_PRICE_KEY='mapleBossTracker.admPrices';
+// 우리 아이템 키 → maple.ai.kr 페이지의 아이템 코드 (페이지의 <option value=코드>이름</option> 와 맞춰 봄, 2026-10-13)
+const MAI_CODE={lcm:'루컨마',tc:'언더컨트롤',eye:'마깃안',belt:'몽벨',book:'마도서',terror:'거공',cfe:'커포',sos:'고근',genesis:'창뱃',mitra:'미트라',
+  whisper:'근원의 속삭임',oath:'죽음의 맹세',bliss:'황홀한 악몽',spirit:'굶주리는 핏빛 원혼',legacy:'불멸의 유산',papmark:'파풀마',g_life:'연마석(스카)',g_faith:'신마석(스카)',
+  ring_r4:'리4',ring_c4:'컨4'}; // 도우미 조사(maple-ai-price-map.json) 18개 + 반지 상자 결과 리스트레인트·컨티뉴어스 링 4레벨. 근사: 마도서·미트라(사이트=장비, 우리=선택 상자), 연마석(스카)·신마석(스카)=생명·신념의 연마석
 const kstStamp=t=>new Date(t+9*3600e3).toISOString().slice(0,16).replace('T',' ');
 const admPrices=()=>{ try{ return JSON.parse(localStorage.getItem(ADM_PRICE_KEY)||'{}')||{}; }catch(e){ return {}; } };
-function admPriceOf(ik){ if(!svIsAdmin()) return null; const k=String(ik||'').replace(/^cb:/,''), o=admPrices()[k]; return o&&+o.p>0&&+o.t>0?o:null; }
-let extVer='', admPriceMsg='', admPriceBusy=false;
+// 반지 상자 결과 'ring:r4'·'ring:c4'(리스트레인트·컨티뉴어스 링 4레벨) → ring_r4·ring_c4, 칠흑 상자 결과 'cb:키' → 키
+function admPriceOf(ik){ if(!svIsAdmin()) return null; const k=String(ik||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1'), o=admPrices()[k]; return o&&+o.p>0&&+o.t>0?o:null; }
+let admPriceMsg='', admPriceBusy=false;
 function admPriceSave(P){ const cur=admPrices(); for(const [k,o] of Object.entries(P||{})) if(o&&+o.p>0&&(!cur[k]||cur[k].t<=o.t)) cur[k]={p:+o.p,t:+o.t}; try{ localStorage.setItem(ADM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
 async function admPriceLoad(){ if(!svIsAdmin()) return; try{ admPriceSave((await svFetch('/api/admin/prices')).prices); }catch(e){} }
-async function admPriceGot(m){
-  admPriceBusy=false;
-  if(!m.ok){ admPriceMsg=`⚠ ${esc(m.error||'실패')}`; renderAdmPrice(); return; }
-  const P={}; for(const r of m.results||[]) if(ITEMS[r.item]&&+r.lowestPrice>0) P[r.item]={p:Math.round(+r.lowestPrice),t:+r.time||Date.now()};
-  admPriceSave(P); try{ localStorage.setItem(ADM_PRICE_DAY_KEY,dayId()); }catch(e){}
-  try{ const r=await svFetch('/api/admin/prices',{method:'PUT',body:{prices:P}}); admPriceSave(r.prices); }catch(e){ admPriceMsg=`⚠ 서버 저장 실패: ${esc(e.message)}`; renderAdmPrice(); return; }
-  admPriceMsg=`${Object.keys(P).length}개 갱신 (새 검색 ${m.posts||0}회, 남은 검색 ${m.remaining??'?'}회)${m.stop?' · '+esc(m.stop):''}${(m.skipped||[]).length?` · 못 찾음 ${m.skipped.length}개`:''}`; renderAdmPrice();
-}
-function admPriceRun(auto){
+// 페이지 값(억, 본섭) → {우리 키: {p: 메소, t}} — 본섭 값이 없거나 0 이하면 넣지 않음
+function maiMap(items,t){ const P={}; for(const [k,c] of Object.entries(MAI_CODE)){ const v=+(items?.[c]?.main); if(v>0) P[k]={p:Math.round(v*1e8),t}; } return P; }
+// 사람처럼: 누를 때마다 실행 배율(1.0~1.5)을 새로 뽑고, 그 안에서 1.2~3초 무작위로 기다린 뒤 요청 (최소 1초 이상)
+const humanWait=()=>{ const f=1+Math.random()*0.5; return sleep(Math.max(1000,Math.round((1200+Math.random()*1800)*f))); };
+async function admPriceRun(){
   if(!svIsAdmin()||admPriceBusy) return;
-  if(!extVer){ if(auto) return; admPriceBusy=true; admPriceMsg='확장 확인 중…'; renderAdmPrice(); window.postMessage({src:'bossmaple-page',type:'ping'},location.origin);
-    setTimeout(()=>{ admPriceBusy=false; if(extVer) return admPriceRun(); admPriceMsg='noext'; renderAdmPrice(); },1200); return; }
-  admPriceBusy=true; admPriceMsg='경매장에서 검색 중…'; renderAdmPrice();
-  window.postMessage({src:'bossmaple-page',type:'refresh',reqId:String(Date.now()),items:priceItems()},location.origin);
+  admPriceBusy=true; admPriceMsg='maple.ai.kr 시세 받는 중…'; renderAdmPrice();
+  try{ await humanWait();
+    const r=await svFetch('/api/admin/maple-prices'); const P=maiMap(r.items,+r.fetchedAt||Date.now());
+    const miss=Object.keys(MAI_CODE).filter(k=>!P[k]).length;
+    admPriceSave(P);
+    const sv=await svFetch('/api/admin/prices',{method:'PUT',body:{prices:P}}); admPriceSave(sv.prices);
+    admPriceMsg=`${Object.keys(P).length}개 갱신 (maple.ai.kr ${esc(String(r.date||''))} 본섭 시세)${miss?` · 없음 ${miss}개`:''}`;
+  }catch(e){ admPriceMsg=`⚠ ${esc(e.message||'실패')}`; }
+  admPriceBusy=false; renderAdmPrice();
 }
 function renderAdmPrice(){
   const el=$('#admPrice'); if(!el) return;
   const P=admPrices(), ts=Object.values(P).map(o=>o.t), last=ts.length?Math.max(...ts):0;
-  const msg=admPriceMsg==='noext'?`<div class="impmsg warn">크롬 확장을 먼저 설치해주세요<ol class="tiny"><li>bossmaple-price-ext.zip 을 풀어 폴더를 만듭니다</li><li>크롬 주소창에 chrome://extensions 입력</li><li>오른쪽 위 '개발자 모드' 켜기</li><li>'압축해제된 확장 프로그램을 로드합니다' → 그 폴더 선택</li><li>https://auction.maplestory.nexon.com 에 로그인하고 그 탭을 열어 둔 채 이 페이지를 새로고침</li></ol></div>`:admPriceMsg?`<div class="muted tiny">${admPriceMsg}</div>`:'';
-  el.innerHTML=`<div class="admprice-h"><b>경매장 최저가</b><span class="muted tiny">${last?`마지막 측정 ${kstStamp(last)} · ${Object.keys(P).length}개`:'아직 없음'}${extVer?' · 확장 연결됨':''}</span><button class="btn sm" id="admPriceBtn" ${admPriceBusy?'disabled':''}>최저가 갱신</button></div>${msg}`;
+  const msg=admPriceMsg?`<div class="muted tiny">${admPriceMsg}</div>`:'';
+  el.innerHTML=`<div class="admprice-h"><b>경매장 최저가</b><span class="muted tiny">${last?`마지막 측정 ${kstStamp(last)} · ${Object.keys(P).length}개`:'아직 없음'}</span><button class="btn sm" id="admPriceBtn" ${admPriceBusy?'disabled':''}>최저가 갱신</button></div>${msg}<div class="muted tiny admsrc">출처: <a href="https://maple.ai.kr/blog/item-price-tracker-2026" target="_blank" rel="noopener noreferrer">maple.ai.kr</a> (본섭 일별 시세)</div>`;
 }
-window.addEventListener('message',e=>{ if(e.source!==window||e.origin!==location.origin) return; const m=e.data; if(!m||m.src!=='bossmaple-ext') return;
-  if(m.type==='hello'){ const first=!extVer; extVer=String(m.version||'1'); if(first&&svIsAdmin()){ window.postMessage({src:'bossmaple-page',type:'takePending'},location.origin); admPriceLoad().then(()=>{ if(localStorage.getItem(ADM_PRICE_DAY_KEY)!==dayId()) admPriceRun(true); }); } renderAdmPrice(); }
-  if(m.type==='prices') admPriceGot(m); });
 document.addEventListener('click',e=>{ if(e.target.closest('#admPriceBtn')) admPriceRun(); });
-setTimeout(()=>window.postMessage({src:'bossmaple-page',type:'ping'},location.origin),0); // 확장이 먼저 인사했어도 다시 확인
 let admPage=1; const admOpen=new Set(); // b91: 펼친 본계정 id
 const admReg=t=>`<span class="admreg muted tiny">등록 날짜 : ${t?new Date(t+9*3600e3).toISOString().slice(0,10):'-'}</span>`; // KST
 document.addEventListener('click',e=>{ const at=e.target.closest('[data-admalt]'); if(at){ const id=at.dataset.admalt; admOpen.has(id)?admOpen.delete(id):admOpen.add(id); renderAdmin(); return; } const pg=e.target.closest('[data-admpage]'); if(pg){ admPage=+pg.dataset.admpage; renderAdmin(); return; } const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }

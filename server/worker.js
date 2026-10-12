@@ -289,6 +289,23 @@ function userInfoFrom(st, roles) {
   return { chars: chars.length, size: st?.size || 0, savedAt: st?.saved_at || 0, name, world, level, alts, mainRegAt };
 }
 
+/* b104: maple.ai.kr 시세 페이지 읽기 — Next.js 페이지 안의 일별 기록 {"date":"YYYY-MM-DD","items":{코드:{challenger,main}}} 중 가장 최근 날짜 하나.
+ * 값 단위 = 억 메소. 돌려주는 것: {date, items:{코드:{main}}} (본섭 값만, 숫자만) */
+const MAI_URL = 'https://maple.ai.kr/blog/item-price-tracker-2026';
+export function parseMai(html) {
+  const u = String(html || '').replace(/\\"/g, '"'); let best = null;
+  const re = /"date":"(\d{4}-\d\d-\d\d)","items":\{/g; let m;
+  while ((m = re.exec(u))) {
+    if (best && m[1] <= best.date) continue;
+    let i = m.index + m[0].length - 1, d = 0, j = i;
+    for (; j < u.length && j < i + 50000; j++) { if (u[j] === '{') d++; else if (u[j] === '}' && --d === 0) break; }
+    let o; try { o = JSON.parse(u.slice(i, j + 1)); } catch (e) { continue; }
+    const items = {}; for (const [k, v] of Object.entries(o || {})) { const n = +v?.main; if (k.length <= 40 && n > 0 && n < 1e6) items[k] = { main: n }; }
+    if (Object.keys(items).length) best = { date: m[1], items };
+  }
+  return best;
+}
+
 /* ---------- 세션 ---------- */
 async function auth(env, req) {
   const m = /^Bearer\s+([A-Za-z0-9_-]{20,100})$/.exec(req.headers.get('Authorization') || '');
@@ -333,7 +350,7 @@ const stateOut = (row, withData = true) => row
 /* ---------- 라우트 ---------- */
 async function route(req, env) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, ''), M = req.method;
-  if (p === '/api/health') return json(200, { ok: true, v: 'b102' });
+  if (p === '/api/health') return json(200, { ok: true, v: 'b104' });
   await ensureSchema(env); await authEpoch(env); await loadAdmin(env); // 첫 요청 때 강제 로그아웃 기준 시각 확정
   // b67: IP별 요청 제한 (읽기 300/분, 쓰기 120/분) — 세션·사용자별 제한과 별개
   await limit(env, await ipKey(env, req, M === 'GET' ? 'ipr' : 'ipw'), M === 'GET' ? IP_LIMITS.read : IP_LIMITS.write);
@@ -547,6 +564,19 @@ async function route(req, env) {
       return json(200, { users: out, ...(wantP ? { prices } : {}) });
     }
     // b93: 관리자 전용 경매장 최저가 (크롬 확장이 관리자 본인 브라우저에서 측정 → 페이지가 저장). {prices:{item:{p:메소, t:측정 ms}}}. 넥슨 세션·쿠키는 오지 않음
+    // b104: maple.ai.kr 아이템 시세 페이지(본섭 일별 시세)를 한 번 받아 최신 날짜 값만 돌려줌 (관리자만). 같은 KST 날짜에 이미 받았으면 저장한 것(바깥 요청 없음)
+    if (p === '/api/admin/maple-prices' && M === 'GET') {
+      const c = await env.DB.prepare("SELECT v FROM meta WHERE k='mai_cache'").first(); let cv = null; try { cv = c ? JSON.parse(c.v) : null; } catch (e) {}
+      const kday = t => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
+      if (cv && kday(cv.fetchedAt) === kday(Date.now())) return json(200, { ...cv, cached: true });
+      const r = await fetch(env.MAI_URL || MAI_URL, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36', Accept: 'text/html', 'Accept-Language': 'ko-KR,ko;q=0.9' } });
+      if (!r.ok) throw new HttpError(502, 'mai_http', `maple.ai.kr 응답 ${r.status}`);
+      const out = parseMai(await r.text());
+      if (!out) throw new HttpError(502, 'mai_parse', 'maple.ai.kr 시세 표를 읽지 못했습니다 (페이지 구조가 바뀌었을 수 있음)');
+      out.fetchedAt = Date.now();
+      await env.DB.prepare("INSERT INTO meta (k,v) VALUES ('mai_cache',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(out)).run();
+      return json(200, out);
+    }
     if (p === '/api/admin/prices' && M === 'GET') {
       const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'").first(); let v = {}; try { v = r ? JSON.parse(r.v) : {}; } catch (e) {}
       return json(200, { prices: v });

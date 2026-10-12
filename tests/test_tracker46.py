@@ -88,10 +88,10 @@ try:
     dev.sql(f"UPDATE sessions SET created_at={ep-1000} WHERE token_hash='{hashlib.sha256(tok.encode()).hexdigest()}'")
     before=dev.sql("SELECT rev FROM state")[0]['rev']
     pa.reload(); pa.wait_for_function("!localStorage.getItem('mapleBossTracker.svToken')",timeout=15000); pa.wait_for_timeout(300)
-    check('예전 세션: 새로고침하면 (입장 화면 없이) 로그아웃 상태 + 다시 로그인 안내', pa.locator('#svGate').count()==0 and '다시 로그인' in pa.evaluate("gd.svErr") and pa.inner_text('#gBtn').strip() in ('☁ 로그인','☁ 다시 로그인'), (pa.evaluate("gd.svErr"),pa.inner_text('#gBtn')))
+    check('예전 세션: 새로고침하면 (입장 화면 없이) 로그아웃 상태 + 다시 로그인 안내', pa.locator('#svGate').count()==0 and '다시 로그인' in pa.evaluate("gd.svErr") and pa.text_content('#gBtn').strip() in ('☁ 로그인','☁ 다시 로그인'), (pa.evaluate("gd.svErr"),pa.text_content('#gBtn')))
     sa=st(pa); check('b69: 예전(무효) 세션 → 이 PC 데이터·키 전부 지움 (공용 PC; 세션이 없어 저장 못 한 변경은 버림)', sa['characters']==[] and keyset(sa)==[] and pa.evaluate("S.characters.length")==0, keyset(sa))
     check('예전 세션: 서버 데이터 그대로', dev.sql("SELECT rev FROM state")[0]['rev']==before)
-    pa.click('#gBtn'); pa.wait_for_selector('#svMainSec .keyrej.soft',timeout=5000)
+    pa.evaluate("document.getElementById('gBtn').click()"); pa.wait_for_selector('#svMainSec .keyrej.soft',timeout=5000)
     check('☁ 로그인 → 캐릭터 추가 창에 본계정 키 칸만 + 다시 로그인 안내', '다시 로그인' in pa.inner_text('#svMainSt') and not pa.is_visible('#accList'))
     login(pa,KA); wait_on(pa); pa.wait_for_timeout(500)
     sa=st(pa); check('다시 로그인: 묻지 않고 서버 데이터·키 전부 복원', not pa.evaluate("document.querySelector('#driveModal').classList.contains('show')") and sa['characters'][0]['name']=='단풍용사' and keyset(sa)==sorted([KA,KF,KG]), (sa['characters'][0]['name'],keyset(sa)))
