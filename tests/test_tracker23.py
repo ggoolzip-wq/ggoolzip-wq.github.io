@@ -35,7 +35,9 @@ def mkctx(b):
     pg=ctx.new_page(); pg.on('dialog',lambda d:(dialogs.append(d.message),d.accept())); pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('popup',lambda p:popups.append(p.url))
     pg.on('console',lambda m:errs.append('console:'+m.text) if m.type=='error' and 'Failed to load resource' not in m.text and 'net::' not in m.text else None)
     return ctx,pg
-st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1'))")
+def inject(pg):  # b69: 서버 모드는 세션 없이 새로고침하면 이 PC 데이터를 지움 → '로그인 전에 이 페이지에서 만든 데이터'로 다시 넣음
+    pg.wait_for_timeout(300); pg.evaluate("()=>{const p=sessionStorage.getItem('t_preset'); if(p){localStorage.setItem('mapleBossTracker.v1',p);load();render();}}")
+st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')||'{\"characters\":[],\"settings\":{\"accounts\":[]}}')")
 server_state=lambda: dev.sql("SELECT rev, data FROM state")
 def wait_on(pg,t=15000): pg.wait_for_function("gd.state==='on'&&!gd.busy&&!gd.timer",timeout=t); pg.wait_for_timeout(150)
 try:
@@ -46,7 +48,7 @@ try:
     check('flag off (default): Google Drive mode unchanged', p0.evaluate("SV_ON")=='' and '구글' in p0.inner_text('#gBtn'), p0.inner_text('#gBtn')); ctx0.close()
     # 1) 기기 A: 등록된 키로 로그인 → 이 PC 데이터 첫 저장
     ca,pa=mkctx(b); pa.goto(URL)
-    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
+    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));sessionStorage.setItem('t_preset',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); inject(pa); pa.wait_for_timeout(400)
     check('flag on: header ☁ 로그인, no auto login, no popup', pa.text_content('#gBtn')=='☁ 로그인' and not popups and not pa.evaluate("svTok()"), pa.text_content('#gBtn'))
     check('b67: no entry gate — dashboard visible right away (no invite password)', pa.locator('#svGate').count()==0 and not pa.evaluate("document.documentElement.classList.contains('gated')") and pa.is_visible('#charList'))
     pa.click('#gBtn'); pa.wait_for_selector('#svMainSec #svMainKey')

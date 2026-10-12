@@ -37,7 +37,9 @@ def mkctx(b):
     pg=ctx.new_page(); pg.on('dialog',lambda d:d.accept()); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.on('console',lambda m:errs.append('console:'+m.text) if m.type=='error' and 'Failed to load resource' not in m.text and 'net::' not in m.text else None)
     return ctx,pg
-st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1'))")
+def inject(pg):  # b69: 서버 모드는 세션 없이 새로고침하면 이 PC 데이터를 지움 → '로그인 전에 이 페이지에서 만든 데이터'로 다시 넣음
+    pg.wait_for_timeout(300); pg.evaluate("()=>{const p=sessionStorage.getItem('t_preset'); if(p){localStorage.setItem('mapleBossTracker.v1',p);load();render();}}")
+st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')||'{\"characters\":[],\"settings\":{\"accounts\":[]}}')")
 def wait_on(pg,t=15000): pg.wait_for_function("gd.state==='on'&&!gd.busy&&!gd.timer",timeout=t); pg.wait_for_timeout(200); pg.evaluate("closeImport()")
 def invite(pg): pass  # b67: 초대 비밀번호 폐지 (호환용 빈 함수)
 def login(pg,key):  # b67: 캐릭터 추가 창의 '본계정 API 키 등록'으로 로그인
@@ -51,7 +53,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     # ---- 기기 A: 대표 키 로그인 → (+추가 창처럼) 부계정 2개·예비 키 2개를 저장 버튼 없이 등록 ----
     ca,pa=mkctx(b); pa.goto(URL)
-    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
+    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));sessionStorage.setItem('t_preset',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); inject(pa); pa.wait_for_timeout(400)
     invite(pa); login(pa,KA); wait_on(pa)
     pa.evaluate("([KF,KG,BKA,BKG])=>{const ac=accounts();ac[0].bk=BKA;ac[0].bkLabel='본계정 예비';S.settings.accounts=[...ac,{id:'a2',label:'부계정F',key:KF},{id:'a3',label:'부계정G',key:KG,bk:BKG,bkLabel:'G 예비'}];save();render()}",[KF,KG,BKA,BKG])
     pa.wait_for_function("localStorage.getItem('mapleBossTracker.svSubSig')===svSubSig()",timeout=15000)
@@ -87,16 +89,16 @@ try:
     before=dev.sql("SELECT rev FROM state")[0]['rev']
     pa.reload(); pa.wait_for_function("!localStorage.getItem('mapleBossTracker.svToken')",timeout=15000); pa.wait_for_timeout(300)
     check('예전 세션: 새로고침하면 (입장 화면 없이) 로그아웃 상태 + 다시 로그인 안내', pa.locator('#svGate').count()==0 and '다시 로그인' in pa.evaluate("gd.svErr") and pa.inner_text('#gBtn').strip() in ('☁ 로그인','☁ 다시 로그인'), (pa.evaluate("gd.svErr"),pa.inner_text('#gBtn')))
-    sa=st(pa); check('예전 세션: 이 PC 데이터·키는 지우지 않음', sa['characters'][0]['name']=='단풍용사2' and keyset(sa)==sorted([KA,KF,KG,BKA,BKG]), keyset(sa))
+    sa=st(pa); check('b69: 예전(무효) 세션 → 이 PC 데이터·키 전부 지움 (공용 PC; 세션이 없어 저장 못 한 변경은 버림)', sa['characters']==[] and keyset(sa)==[] and pa.evaluate("S.characters.length")==0, keyset(sa))
     check('예전 세션: 서버 데이터 그대로', dev.sql("SELECT rev FROM state")[0]['rev']==before)
     pa.click('#gBtn'); pa.wait_for_selector('#svMainSec .keyrej.soft',timeout=5000)
     check('☁ 로그인 → 캐릭터 추가 창에 본계정 키 칸만 + 다시 로그인 안내', '다시 로그인' in pa.inner_text('#svMainSt') and not pa.is_visible('#accList'))
     login(pa,KA); wait_on(pa); pa.wait_for_timeout(500)
-    sa=st(pa); check('다시 로그인: 묻지 않고 합침, 저장 안 했던 변경 유지, 키 그대로', not pa.evaluate("document.querySelector('#driveModal').classList.contains('show')") and sa['characters'][0]['name']=='단풍용사2' and keyset(sa)==sorted([KA,KF,KG,BKA,BKG]), (sa['characters'][0]['name'],keyset(sa)))
-    srvd=json.loads(dev.sql("SELECT data FROM state")[0]['data']); check('다시 로그인 후 서버에도 반영(데이터 손실 없음)', [c['name'] for c in srvd['characters']]==['단풍용사2','부캐F','부캐G'], [c['name'] for c in srvd['characters']])
+    sa=st(pa); check('다시 로그인: 묻지 않고 서버 데이터·키 전부 복원', not pa.evaluate("document.querySelector('#driveModal').classList.contains('show')") and sa['characters'][0]['name']=='단풍용사' and keyset(sa)==sorted([KA,KF,KG,BKA,BKG]), (sa['characters'][0]['name'],keyset(sa)))
+    srvd=json.loads(dev.sql("SELECT data FROM state")[0]['data']); check('다시 로그인 후 서버에도 반영(데이터 손실 없음)', [c['name'] for c in srvd['characters']]==['단풍용사','부캐F','부캐G'], [c['name'] for c in srvd['characters']])
     # ---- 또 다른 새 기기 D: 강제 로그아웃 뒤에도 대표 키 → 전부 복원 ----
     cd,pd=fresh(b); invite(pd); login(pd,KA); wait_on(pd); pd.wait_for_timeout(500)
-    sd=st(pd); check('D(새 PC): 키 전부 + 최신 데이터', keyset(sd)==sorted([KA,KF,KG,BKA,BKG]) and sd['characters'][0]['name']=='단풍용사2', keyset(sd))
+    sd=st(pd); check('D(새 PC): 키 전부 + 최신 데이터', keyset(sd)==sorted([KA,KF,KG,BKA,BKG]) and sd['characters'][0]['name']=='단풍용사', keyset(sd))
     check('JS 오류 없음', not errs, errs)
     b.close()
 except Exception as e:

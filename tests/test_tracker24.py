@@ -35,7 +35,9 @@ def mkctx(b):
     pg=ctx.new_page(); pg.on('dialog',lambda d:d.accept()); pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('popup',lambda p:popups.append(p.url))
     pg.on('console',lambda m:errs.append('console:'+m.text) if m.type=='error' and 'Failed to load resource' not in m.text and 'net::' not in m.text else None)
     return ctx,pg
-st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1'))")
+def inject(pg):  # b69: 서버 모드는 세션 없이 새로고침하면 이 PC 데이터를 지움 → '로그인 전에 이 페이지에서 만든 데이터'로 다시 넣음
+    pg.wait_for_timeout(300); pg.evaluate("()=>{const p=sessionStorage.getItem('t_preset'); if(p){localStorage.setItem('mapleBossTracker.v1',p);load();render();}}")
+st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')||'{\"characters\":[],\"settings\":{\"accounts\":[]}}')")
 server_state=lambda: dev.sql("SELECT rev, data FROM state")
 def wait_on(pg,t=15000): pg.wait_for_function("gd.state==='on'&&!gd.busy&&!gd.timer",timeout=t); pg.wait_for_timeout(150)
 KF='live_KEY_F_0123456789abcdef'
@@ -47,7 +49,7 @@ try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     ca,pa=mkctx(b); pa.goto(URL)
-    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
+    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));sessionStorage.setItem('t_preset',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); inject(pa); pa.wait_for_timeout(400)
     invite(pa); t=pa.inner_text('#svMainSec')
     check('b67: main-key-only modal wording: 본계정 API 키', '본계정 API 키' in t and pa.get_attribute('#svMainKey','placeholder').startswith('본계정'), t[:200])
     pa.fill('#svMainKey',KA); pa.click('#svMainBtn'); wait_on(pa); pa.evaluate('closeImport()')

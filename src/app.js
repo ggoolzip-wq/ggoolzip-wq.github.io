@@ -2005,14 +2005,17 @@ const svIsAdmin=()=>SV_ON&&!!svTok()&&localStorage.getItem(SV_ADMIN_KEY)==='1';
 const SV_RELOGIN='로그인이 만료되었어요 — 캐릭터 추가(+ 추가)에서 본계정 API 키로 다시 로그인해 주세요 (데이터는 서버와 이 PC에 그대로 있어요)';
 const SV_VAULT_KEY='mapleBossTracker.svVault', SV_KEYERR_KEY='mapleBossTracker.svKeyErr'; // b62: 이 기기 로그인 때 금고 상태(open|none|locked) · 마지막 키 보관 오류
 const SV_NEED_LOGIN='로그인이 필요해요 — 캐릭터 추가(+ 추가)에서 본계정 API 키를 등록하면 이어서 동기화돼요 (바꾼 내용은 이 PC에 그대로 있어요)';
+let svGen=0; // b69: 로그아웃·초기화 때마다 +1 → 그 전에 시작한 서버 요청의 결과는 버림 (로그아웃 뒤 늦게 온 응답이 데이터를 되살리지 않게)
 async function svFetch(path,opt={}){
   const tok=svTok(); if(!tok&&!opt.noAuth) throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'});
-  let r;
+  const gen=svGen; let r;
   try{ r=await fetch(SV_ON+path,{method:opt.method||'GET',keepalive:!!opt.keepalive,headers:{'Content-Type':'application/json',...(opt.noAuth?{}:{Authorization:'Bearer '+tok})},body:opt.body===undefined?undefined:JSON.stringify(opt.body)}); }
   catch(e){ throw Object.assign(new Error('동기화 서버에 연결하지 못했습니다 (인터넷 연결 확인)'),{type:'network'}); }
   let b=null; try{ b=await r.json(); }catch(e){}
-  if(r.status===401&&!opt.noAuth){ localStorage.removeItem(SV_TOKEN_KEY); gd.svErr=SV_RELOGIN; setTimeout(()=>{ gdRender(); if($('#importModal')?.classList.contains('show')) openImport(); },0); throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'}); }
-  if(r.status===403&&!opt.noAuth&&b&&(b.error==='blocked'||b.error==='rejected'||b.error==='pending')){ localStorage.removeItem(SV_TOKEN_KEY); localStorage.removeItem(SV_ADMIN_KEY); gd.svErr=b.message; setTimeout(()=>gdRender(),0); throw Object.assign(new Error(b.message),{type:'interaction_required',code:b.error}); } // b68: 차단·거절
+  if(gen!==svGen&&!opt.noGen) throw Object.assign(new Error('로그아웃되어 취소됨'),{type:'aborted'});
+  // b69: 세션 없음·만료(401) / 차단·거절(403) → 이 PC 의 앱 데이터 전부 지우고 처음 온 사람 상태 (공용 PC). 서버 데이터는 그대로
+  if(r.status===401&&!opt.noAuth){ svWipeAll({keepPending:true,broadcast:true}); gd.svErr=SV_RELOGIN; setTimeout(()=>{ gdRender(); if($('#importModal')?.classList.contains('show')) openImport(); },0); throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'}); }
+  if(r.status===403&&!opt.noAuth&&b&&(b.error==='blocked'||b.error==='rejected'||b.error==='pending')){ svWipeAll({broadcast:true}); gd.svErr=b.message; setTimeout(()=>gdRender(),0); throw Object.assign(new Error(b.message),{type:'interaction_required',code:b.error}); } // b68: 차단·거절
   if(r.status===409&&opt.allow409) return {conflict:true,...b};
   if(!r.ok) throw Object.assign(new Error((b&&b.message)||`동기화 서버 오류 (HTTP ${r.status})`),{status:r.status,code:b&&b.error});
   return b;
@@ -2474,6 +2477,24 @@ function svWipeLocal(){ // 이 브라우저의 보스 데이터 비우기 (테�
   const th=S.theme; clearTimeout(gd.timer); gd.timer=null; localStorage.removeItem(GD_BASE_KEY); localStorage.removeItem(SV_SUBSIG_KEY);
   const d=defaultState(); d.theme=th; gdLoad(d); lastSig=contentSig(S);
 }
+/* b69: 공용 PC(PC방) — 로그아웃·세션 없음이면 이 사이트의 앱 데이터(localStorage·sessionStorage 의 mapleBossTracker.*)를 전부 지우고
+ * 메모리 상태도 처음으로. 남기는 것: syncApi(테스트용 서버 주소), keepPending 이면 승인 대기 요청(svPending). 다른 탭은 storage 이벤트로 새로고침 */
+const SV_KEEP_RE=/^mapleBossTracker\.(syncApi)$/;
+function svWipeAll(o={}){
+  svGen++; pend=null; clearTimeout(gd.timer); gd.timer=null; try{ clearTimeout(seenT); seenPush=new Set(); }catch(e){}
+  gd.fileId=null; gd.remoteRev=undefined; gd.login=null; gd.pending=null; gd.busy=false; gd.again=false;
+  const keepP=o.keepPending?localStorage.getItem(SV_PEND_KEY):null;
+  for(const st of [localStorage,sessionStorage]){ try{ for(const k of Object.keys(st)) if(k.startsWith('mapleBossTracker.')&&!SV_KEEP_RE.test(k)) st.removeItem(k); }catch(e){} }
+  if(keepP) localStorage.setItem(SV_PEND_KEY,keepP);
+  try{ localStorage.setItem(KEY_RESET_K,KEY_RESET); }catch(e){} // (b64 키 초기화는 이미 비어 있으므로 다시 할 필요 없음)
+  gdMeta={}; try{ feedSeen=new Set(); }catch(e){}
+  S=normState(null); lastBody=bodyOf(); lastSig=contentSig(S); applyTheme();
+  if(o.broadcast) try{ localStorage.setItem('mapleBossTracker.svLogout',String(Date.now())); localStorage.removeItem('mapleBossTracker.svLogout'); }catch(e){} // 다른 탭에 알림 (로그아웃·세션 끊김만 — 시작할 때 지우는 건 알리지 않음: 탭끼리 새로고침 반복 방지)
+  try{ $('#adminModal')?.classList.remove('show'); gdMenu(false); }catch(e){}
+  try{ render(); renderFeed(); }catch(e){}
+}
+// 다른 탭에서 로그아웃(또는 세션 만료로 초기화)하면 이 탭도 새로고침 → 시작할 때 세션이 없으니 빈 상태
+addEventListener('storage',e=>{ if(typeof SV_ON!=='undefined'&&SV_ON&&e.key==='mapleBossTracker.svLogout'&&e.newValue) location.reload(); });
 function svGate(){ // b67: 입장 화면(초대 비밀번호·대표 키) 폐지 — 바로 대시보드. 예전 화면이 남아 있으면 지움 (호출하는 곳 호환용)
   $('#svGate')?.remove(); document.documentElement.classList.remove('gated');
 }
@@ -2575,12 +2596,15 @@ function svAsk(msg,btns){ return new Promise(res=>{
   document.body.appendChild(d); d.querySelector('[data-k]')?.focus();
 }); }
 async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그대로 둠 — PC방은 종료 시 자동 초기화)
-  if(SV_ON){
-    pend=null; // 저장 안 한 변경은 그냥 버림 (저장은 보스 목록 [저장]으로만)
-    try{ if(svTok()) await svFetch('/api/logout',{method:'POST'}); }catch(e){}
-    clearTimeout(gd.timer); gd.timer=null; gd.fileId=null; gd.remoteRev=undefined; localStorage.removeItem(SV_TOKEN_KEY); localStorage.removeItem(SV_SUBSIG_KEY); localStorage.removeItem(SV_VAULT_KEY); localStorage.removeItem(SV_KEYERR_KEY); localStorage.removeItem(SV_ADMIN_KEY);
-    gdMeta={}; localStorage.removeItem(GD.META_KEY); localStorage.removeItem(GD_BASE_KEY);
-    svWipeLocal(); gd.svErr=''; gdSet('off'); render(); svGate(); toast('로그아웃했습니다 (이 PC의 보스 데이터도 지웠어요 — 캐릭터 추가에서 본계정 키를 넣으면 서버에서 불러옵니다)'); return;
+  if(SV_ON){ // b69: ① 세션이 살아 있으면 남은 변경(저장 안 한 체크·키·읽음)을 먼저 서버에 저장 ② 서버 세션 삭제 ③ 이 PC 의 앱 데이터 전부 삭제 → 처음 온 사람 상태
+    if(svTok()&&gdMeta.on&&gd.state!=='conflict'){
+      try{ if(pend){ pend=null; save(); } }catch(e){}
+      try{ if(gd.timer||gdLocalDirty()){ clearTimeout(gd.timer); gd.timer=null; await gdPush({manual:true}); } }catch(e){}
+      try{ if(svTok()&&localStorage.getItem(SV_SUBSIG_KEY)!==svSubSig()) await svSyncSubKeys(); }catch(e){}
+      try{ clearTimeout(seenT); await svSeenFlush(); }catch(e){}
+    }
+    try{ if(svTok()) await svFetch('/api/logout',{method:'POST',noGen:true}); }catch(e){}
+    svWipeAll({broadcast:true}); gd.svErr=''; gdSet('off'); render(); svGate(); toast('로그아웃했습니다 — 이 PC의 데이터를 모두 지웠어요 (서버에는 그대로, 캐릭터 추가에서 본계정 키를 넣으면 불러옵니다)'); return;
   }
   if(gdMeta.on && gdLocalDirty()){
     const ok=gdHasTok() ? await gdPush() : false;
@@ -2751,6 +2775,8 @@ try{ if(SV_ON&&localStorage.getItem(KEY_RESET_K)!==KEY_RESET){
   if(n){ localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); localStorage.removeItem(SV_TOKEN_KEY); }
   localStorage.setItem(KEY_RESET_K,KEY_RESET);
 } }catch(e){}
+// b69: 서버 모드인데 세션(토큰)이 없으면 이 PC 에 남은 앱 데이터를 쓰지 않고 지움 (예전 로그인의 데이터가 로그인 없이 보이지 않게). 승인 대기 요청만 유지
+try{ if(SV_ON&&!svTok()&&(S.characters.length||accounts().length||S.history.length||(S.monthHistory||[]).length||['svUser','svmeta','svbase','svVault','svSubSig','svAdmin','guild','sched'].some(k=>localStorage.getItem('mapleBossTracker.'+k)!=null))) svWipeAll({keepPending:true}); }catch(e){ console.warn(e); }
 if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
 checkResets(); loadOfficialPrices(); save(); applyTheme(); render();
 addEventListener('resize',()=>{ clearTimeout(fitPriceCard._t); fitPriceCard._t=setTimeout(()=>{ fitPriceCard(); fitMiss(); },150); });

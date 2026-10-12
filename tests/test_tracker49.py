@@ -37,7 +37,9 @@ def mkctx(b):
     ctx.route('**/feed.json*',lambda r:r.fulfill(status=200,content_type='application/json',body='{"version":1,"sources":{},"items":{}}'))
     pg=ctx.new_page(); pg.on('dialog',lambda d:d.accept()); pg.on('pageerror',lambda e:errs.append(str(e)))
     return ctx,pg
-st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1'))")
+def inject(pg):  # b69: 서버 모드는 세션 없이 새로고침하면 이 PC 데이터를 지움 → '로그인 전에 이 페이지에서 만든 데이터'로 다시 넣음
+    pg.wait_for_timeout(300); pg.evaluate("()=>{const p=sessionStorage.getItem('t_preset'); if(p){localStorage.setItem('mapleBossTracker.v1',p);load();render();}}")
+st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')||'{\"characters\":[],\"settings\":{\"accounts\":[]}}')")
 keyset=lambda s: sorted(x for a in s['settings']['accounts'] for x in (a.get('key'),a.get('bk')) if x)
 def wait_on(pg,t=15000): pg.wait_for_function("gd.state==='on'&&!gd.busy&&!gd.timer",timeout=t); pg.wait_for_timeout(200); pg.evaluate("closeImport()")
 def invite(pg): pass  # b67: 초대 비밀번호 폐지 (호환용 빈 함수)
@@ -56,7 +58,7 @@ try:
     rq=urllib.request.Request(API+'/api/state',data=json.dumps({'baseRev':0,'updatedAt':1,'data':{'characters':[{'id':'x','name':'남의캐릭'}]}}).encode(),method='PUT',headers={'Content-Type':'application/json','Authorization':'Bearer '+tI}); urllib.request.urlopen(rq)
     # ---- 집 PC(H): 키 전부 있는 예전 상태 (초기화 전) → 로그인·금고 보관 ----
     ch_,ph=mkctx(b); ph.goto(URL)
-    ph.evaluate("([p,api,r])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset',r);localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API,RESET]); ph.reload(); ph.wait_for_timeout(400)
+    ph.evaluate("([p,api,r])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));sessionStorage.setItem('t_preset',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset',r);localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API,RESET]); ph.reload(); inject(ph); ph.wait_for_timeout(400)
     invite(ph); login(ph,KA); wait_on(ph)
     ph.evaluate("()=>{S.updatedAt=Date.now();svSaveNow()}"); ph.wait_for_function("localStorage.getItem('mapleBossTracker.svSubSig')===svSubSig()",timeout=20000); wait_on(ph)
     check('준비: 금고·등록부에 부계정 2 + 예비 1', len(dev.sql("SELECT * FROM keyvault2"))==1 and len(dev.sql("SELECT * FROM keyreg"))==3, dev.sql("SELECT kind FROM keyreg"))
@@ -70,11 +72,11 @@ try:
     pp.reload(); pp.wait_for_function("!svTok()&&typeof gd!=='undefined'",timeout=15000); pp.wait_for_timeout(300)
     sp=st(pp)
     check('P: 새 버전 첫 실행 → 이 기기 키(대표·부계정·예비) 전부 비움', keyset(sp)==[] and not any(a.get('bkLabel') for a in sp['settings']['accounts']), keyset(sp))
-    check('P: 계정 칸(id·이름)·캐릭터·연결(accId) 그대로', [a['id'] for a in sp['settings']['accounts']]==['a1','a2','a3'] and [(c['name'],c['accId']) for c in sp['characters']]==[(c['name'],c['accId']) for c in json.loads(json.loads(dump)['mapleBossTracker.v1'])['characters']] and [c['accId'] for c in sp['characters']]==['a1','a2','a3'], [(c['name'],c.get('accId')) for c in sp['characters']])
+    check('P: b69 — 세션이 없어진 기기라 이 PC 데이터도 전부 지움 (서버에서 다시 받음)', sp['settings'].get('accounts',[])==[] and sp['characters']==[], [(c['name'],c.get('accId')) for c in sp['characters']])
     check('P: 세션·금고 표시 지움(대표 키로 다시 로그인), 초기화 표시 저장', not pp.evaluate("localStorage.getItem('mapleBossTracker.svToken')") and not pp.evaluate("localStorage.getItem('mapleBossTracker.svVault')") and pp.evaluate("localStorage.getItem('mapleBossTracker.keyReset')")==RESET)
     login(pp,KA); wait_on(pp); pp.wait_for_timeout(500)
     sp=st(pp); a1=[a for a in sp['settings']['accounts'] if a['id']=='a1'][0]
-    check('P: 대표 키 로그인 → 본계정 칸(a1)에 대표 키, 부계정 키 없음(금고 비었음)', a1.get('key')==KA and keyset(sp)==[KA] and len(sp['settings']['accounts'])==3, keyset(sp))
+    check('P: 대표 키 로그인 → 서버 데이터 복원, 본계정 칸(a1)에 대표 키, 부계정 키 없음(금고 비었음)', a1.get('key')==KA and keyset(sp)==[KA] and len(sp['settings']['accounts'])==3, keyset(sp))
     pp.reload(); pp.wait_for_timeout(800); check('P: 다시 열어도 또 지우지 않음 (1번만)', keyset(st(pp))==[KA] and bool(pp.evaluate('svTok()')))
     # 캐릭터 추가 창에서 부계정 F 키 다시 추가 → 예전 '부계정F' 칸에 재연결 (새 칸 안 생김)
     pp.evaluate("openAdd()"); pp.wait_for_selector('#newAccKey')
