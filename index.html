@@ -1069,6 +1069,19 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 #suroCard .surocand:hover{background:rgba(255,255,255,.05)}
 #suroCard .surocand .avatar{width:28px;height:28px}
 #suroCard .suropick-b{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
+
+/* b85: 길드 현황 — 길드 여러 개 */
+#guildCard h2{display:flex;align-items:center;gap:8px}
+#guildCard h2 #guildAdd{margin-left:auto}
+#guildCard .gblk{border-top:1px solid rgba(255,255,255,.08);padding:10px 0 4px}
+#guildCard .gblk:first-of-type{border-top:0}
+#guildCard .gblk-h{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+#guildCard .gblk-h .hspace{flex:1}
+#guildCard button.surodel,#suroCard button.surodel{margin-left:8px;flex:none;opacity:.7;background:none;border:1px solid rgba(255,255,255,.18);color:#ccc;width:26px;height:26px;border-radius:6px;font-size:13px;line-height:1;cursor:pointer;padding:0}
+#guildCard button.surodel:hover{opacity:1;color:#ff6b6b}
+#guildCard .suropick{border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:8px;margin:6px 0 10px}
+#guildCard .surocand{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:8px;cursor:pointer}
+#guildCard .suropick-b{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -2116,6 +2129,7 @@ async function fetchBasic(c,key){
   if(b.world_name) c.world=b.world_name;
   if(b.character_class) c.job=b.character_class;
   if(b.character_level) c.level=b.character_level;
+  c.guild=String(b.character_guild_name||''); c.guildAt=Date.now(); // b85: 길드 현황 '+ 길드 추가' 후보
   c.sync=Object.assign(c.sync||{},{imgAt:Date.now()});
 }
 let syncing=false;
@@ -2156,12 +2170,15 @@ async function syncAll(opts={}){
  * ===================================================================== */
 const DQ_TTL_MS = 10*60e3;      // 스케줄러 캐시 기본 수명 (길드 탭 등). 일퀘 탭은 자동 갱신 없음: 페이지 열 때 + 🔄 버튼
 const GUILD_TTL_MS = 30*60e3;   // 길드 랭킹: 하루 1번(09:30경) 갱신 데이터라 30분 캐시
-const GUILD = {name:'봉사활동', world:'스카니아'}; // 고정값 (사용자 요청 시 변경)
-const SCHED_KEY = 'mapleBossTracker.sched', GUILD_KEY = 'mapleBossTracker.guild';
+/* b85: 고정 길드('봉사활동') 삭제 → 사용자가 고른 길드들 S.settings.guilds=[{world,name}] (동기화됨). 랭킹 캐시는 길드별 */
+const SCHED_KEY = 'mapleBossTracker.sched', GUILD_KEY = 'mapleBossTracker.guild2';
+const gKey = g => g.world+'|'+g.name;
+const guildList = () => Array.isArray(S.settings.guilds)?S.settings.guilds:[];
 const lsGet = k => { try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } };
 const lsSet = (k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
 let schedC = lsGet(SCHED_KEY) || {};   // charId → {date, level, items{id:{st,now,max,reg,name}}, guild{suro,flag,mission}, at, ok, msg}
-let guildC = lsGet(GUILD_KEY);          // {date, t1, t2, at, ok, msg}
+let guildC = lsGet(GUILD_KEY) || {};    // gKey → {date, t1, t2, at, ok, msg}
+let guildPick=false, guildCandBusy=false;
 let dqBusy=false, guildBusy=false, apiPauseUntil=0;
 
 function schedSummary(d){
@@ -2198,28 +2215,41 @@ async function refreshSched(chars, ttl=DQ_TTL_MS){
 /* 길드 랭킹: 오늘 날짜(09:30 KST 이후) → 비었거나 준비 전이면 어제 */
 async function refreshGuild(force){
   if(guildBusy||Date.now()<apiPauseUntil) return; const key=anyKey(); if(!key) return;
-  const ttl=guildC?.ok&&guildC.date===dayId()?3*GUILD_TTL_MS:GUILD_TTL_MS;
-  if(!force && guildC && Date.now()-(guildC.at||0)<ttl) return;
+  const todo=guildList().filter(G=>{ const c=guildC[gKey(G)]; const ttl=c?.ok&&c.date===dayId()?3*GUILD_TTL_MS:GUILD_TTL_MS; return force||!c||Date.now()-(c.at||0)>=ttl; });
+  if(!todo.length) return;
   guildBusy=true; renderTabView();
   const k=kst(), ready=k.getUTCHours()*60+k.getUTCMinutes()>=9*60+30;
   const days=(ready?[dayId()]:[]).concat(dayId(Date.now()-864e5));
-  let got=null, lastErr=null;
   try{
-    for(const d of days){
-      const rows={};
-      try{
-        for(const t of [2,1]){
-          const r=await nx('/maplestory/v1/ranking/guild',{date:d,world_name:GUILD.world,ranking_type:t,guild_name:GUILD.name},key);
-          rows[t]=(Array.isArray(r?.ranking)?r.ranking:[]).find(x=>x&&x.guild_name===GUILD.name&&(!x.world_name||x.world_name===GUILD.world))||null;
-        }
-      }catch(e){ lastErr=e; if(e.code==='OPENAPI00007'||e.status===429||e.code==='NETWORK') break; continue; }
-      if(rows[1]||rows[2]){ got={date:d,t1:rows[1],t2:rows[2]}; break; }
+    for(const G of todo){
+      let got=null, lastErr=null, stop=false;
+      for(const d of days){
+        const rows={};
+        try{
+          for(const t of [2,1]){
+            const r=await nx('/maplestory/v1/ranking/guild',{date:d,world_name:G.world,ranking_type:t,guild_name:G.name},key);
+            rows[t]=(Array.isArray(r?.ranking)?r.ranking:[]).find(x=>x&&x.guild_name===G.name&&(!x.world_name||x.world_name===G.world))||null;
+          }
+        }catch(e){ lastErr=e; if(e.code==='OPENAPI00007'||e.status===429||e.code==='NETWORK'){ stop=true; break; } continue; }
+        if(rows[1]||rows[2]){ got={date:d,t1:rows[1],t2:rows[2]}; break; }
+      }
+      const kk=gKey(G);
+      guildC[kk]=got?{...got,at:Date.now(),ok:true,msg:''}:{...(guildC[kk]||{}),at:Date.now(),ok:false,msg:lastErr?lastErr.message:`'${G.world}' 월드 랭킹에서 '${G.name}' 길드를 찾지 못했습니다`};
+      lsSet(GUILD_KEY,guildC); renderTabView();
+      if(stop) break;
     }
-    if(got) guildC={...got,at:Date.now(),ok:true,msg:''};
-    else guildC={...(guildC||{}),at:Date.now(),ok:false,msg:lastErr?lastErr.message:`'${GUILD.world}' 월드 랭킹에서 '${GUILD.name}' 길드를 찾지 못했습니다`};
-    lsSet(GUILD_KEY,guildC);
   } finally { guildBusy=false; renderTabView(); }
 }
+/* '+ 길드 추가' 후보: 보이는 캐릭터의 (월드, 길드). 길드 정보가 아직 없는 캐릭터는 character/basic으로 한 번 채움 */
+async function fillGuildCands(){
+  if(guildCandBusy) return; const todo=vchars().filter(c=>c.guildAt==null&&c.ocid&&accOf(c)?.key); if(!todo.length) return;
+  guildCandBusy=true; renderTabView();
+  try{ for(const c of todo){ try{ await fetchBasic(c,accOf(c).key); }catch(e){ if(e.code==='OPENAPI00007'||e.status===429||e.code==='NETWORK') break; } } save(); }
+  finally{ guildCandBusy=false; renderTabView(); }
+}
+function guildCands(){ const have=new Set(guildList().map(gKey)), m=new Map();
+  for(const c of vchars()) if(c.guild&&c.world){ const G={world:c.world,name:c.guild}, k=gKey(G); if(have.has(k)) continue; const e=m.get(k)||{...G,chars:[]}; e.chars.push(c.name); m.set(k,e); }
+  return [...m.values()]; }
 /* 60초 타이머·탭 열기·화면 복귀 시 호출: 열려 있는 탭만 갱신 */
 function tabTick(){
   if(document.hidden) return;
@@ -2236,13 +2266,18 @@ const num = n => (Number(n)||0).toLocaleString('ko-KR');
 function renderGuild(){
   const v=$('#view'), g=guildC, mains=suroChars();
   const tile=(lbl,ico,r)=>`<div class="gtile"><div class="gk">${ico} ${lbl}</div>${r?`<div class="gv">${num(r.guild_point)}<small>점</small></div><div class="grk"><b>${num(r.ranking)}</b>위</div>`:`<div class="gv dim">기록 없음</div><div class="grk muted">랭킹 미등록</div>`}</div>`;
-  const info=g?.t2||g?.t1;
-  const head=!hasApi()?'<div class="note">넥슨 API 키를 등록하면 길드 랭킹을 불러옵니다. 사이드바 <b>+ 추가</b>에서 API 키를 등록하세요.</div>'
+  const gblock=G=>{ const g=guildC[gKey(G)], info=g?.t2||g?.t1;
+  const body=!hasApi()?'<div class="note">넥슨 API 키를 등록하면 길드 랭킹을 불러옵니다. 사이드바 <b>+ 추가</b>에서 API 키를 등록하세요.</div>'
     : !g ? `<div class="muted">${guildBusy?'불러오는 중…':'잠시 후 불러옵니다…'}</div>`
     : `${info?`<div class="gmeta"><span class="glv">Lv.${esc(info.guild_level)}</span><span>마스터 <b>${esc(info.guild_master_name||'-')}</b></span></div>
        <div class="gtiles">${tile('지하 수로','🌊',g.t2)}${tile('플래그 레이스','🚩',g.t1)}</div>`:''}
        ${g.ok===false?`<div class="dqlock warnc">⚠ 길드 랭킹 조회 실패 — ${esc(g.msg||'')}</div>`:''}`;
   const sub=g?.date?`<span class="muted tiny">기준 ${esc(g.date)}${g.date!==dayId()?' (어제 · 오늘 랭킹 준비 전)':''}${guildBusy?' · 갱신 중…':g.at?` · 확인 ${hhmm(g.at)}`:''}</span>`:'';
+  return `<div class="gblk"><div class="gblk-h"><b>🛡️ ${esc(G.name)}</b> <span class="muted">${worldIcon(G.world)} ${esc(G.world)}</span><span class="hspace"></span>${sub}<button class="surodel" data-gdel="${esc(gKey(G))}" title="길드 제거" aria-label="${esc(G.name)} 제거">✕</button></div>${body}</div>`; };
+  const gc=guildCands();
+  const gpick=guildPick?`<div class="suropick">${gc.length?gc.map(G=>`<label class="surocand"><input type="checkbox" value="${esc(gKey(G))}"><span>${worldIcon(G.world)} <b>${esc(G.name)}</b> <span class="muted tiny">${esc(G.world)} · ${G.chars.map(esc).join(', ')}</span></span></label>`).join(''):`<div class="muted">${guildCandBusy?'캐릭터 길드 정보를 불러오는 중…':'추가할 수 있는 길드가 없습니다. (보이는 캐릭터가 가입한 길드만 추가할 수 있습니다)'}</div>`}
+      <div class="suropick-b"><button class="btn" id="guildCancel">취소</button><button class="btn primary" id="guildOk"${gc.length?'':' disabled'}>추가</button></div></div>`:'';
+  const gl=guildList();
   const row=c=>{ const x=schedC[c.id], gg=x?.guild||{}, has=x&&x.ok!==false;
     return `<div class="grow-r">${avatar(c)}<div class="grow"><div class="nm">${esc(c.name)}</div><div class="meta">Lv.${esc(c.level||'?')} · ${esc(c.job||'')}</div></div>
       ${!schedOk(c)?'<span class="muted tiny">API 키 미연결</span>':!x?`<span class="muted tiny">${dqBusy?'불러오는 중…':'대기 중…'}</span>`:!has?`<span class="warnc tiny" title="${esc(x.msg||'')}">⚠ 조회 실패</span>`
@@ -2250,10 +2285,17 @@ function renderGuild(){
   const cand=vchars().filter(c=>!suroIds().includes(c.id));
   const pick=suroPick?`<div class="suropick">${cand.length?cand.map(c=>`<label class="surocand">${avatar(c)}<input type="checkbox" value="${esc(c.id)}"><span><b>${esc(c.name)}</b> <span class="muted tiny">Lv.${esc(c.level||'?')} · ${esc(c.job||'')}</span></span></label>`).join(''):'<div class="muted">추가할 수 있는 캐릭터가 없습니다.</div>'}
       <div class="suropick-b"><button class="btn" id="suroCancel">취소</button><button class="btn primary" id="suroOk"${cand.length?'':' disabled'}>추가</button></div></div>`:'';
-  v.innerHTML=`<div class="grid"><div class="card gcard"><h2>🛡️ ${esc(GUILD.name)} <span class="muted" style="font-weight:500">${esc(GUILD.world)}</span><span class="hspace"></span>${sub}</h2>${head}</div>
+  v.innerHTML=`<div class="grid"><div class="card gcard" id="guildCard"><h2>🛡️ 길드 <button class="btn sm" id="guildAdd">+ 길드 추가</button></h2>${gpick}${gl.length?gl.map(gblock).join(''):'<div class="muted">+ 길드 추가로 캐릭터가 가입한 길드를 고르세요.</div>'}</div>
     <div class="card" id="suroCard"><h2><img class="bicon suroico" src="${SURO_ICON}" alt="" aria-hidden="true"> 지하 수로 <span class="muted" style="font-weight:500">이번 주</span><button class="btn sm" id="suroAdd">+ 캐릭터 추가</button></h2>${pick}
       ${mains.length?mains.map(row).join(''):'<div class="muted">+ 캐릭터 추가로 수로 점수를 볼 캐릭터를 고르세요.</div>'}
       <div class="muted tiny" style="margin-top:8px">캐릭터 점수는 메이플 스케줄러의 '[길드] 지하 수로' 점수(이번 주 누적, 목요일 초기화)입니다. 길드 순위·점수는 넥슨 길드 랭킹(하루 1번, 09:30경 갱신) 기준입니다.</div></div></div>`;
+  const gcd=$('#guildCard');
+  if(gcd){ gcd.querySelector('#guildAdd').onclick=()=>{ guildPick=!guildPick; renderGuild(); if(guildPick) fillGuildCands(); };
+    const gx=gcd.querySelector('#guildCancel'); if(gx) gx.onclick=()=>{ guildPick=false; renderGuild(); };
+    const go=gcd.querySelector('#guildOk'); if(go) go.onclick=()=>{ const ks=[...gcd.querySelectorAll('.suropick input:checked')].map(i=>i.value); if(!ks.length){ toast('추가할 길드를 선택해주세요.'); return; }
+      if(!Array.isArray(S.settings.guilds)) S.settings.guilds=[]; for(const k of ks){ const i=k.indexOf('|'); S.settings.guilds.push({world:k.slice(0,i),name:k.slice(i+1)}); }
+      guildPick=false; save(); renderGuild(); refreshGuild(); };
+    gcd.querySelectorAll('[data-gdel]').forEach(b=>b.onclick=()=>{ S.settings.guilds=guildList().filter(G=>gKey(G)!==b.dataset.gdel); save(); renderGuild(); }); }
   const sc=$('#suroCard'); if(!sc) return;
   sc.querySelector('#suroAdd').onclick=()=>{ suroPick=!suroPick; renderGuild(); };
   const cc=sc.querySelector('#suroCancel'); if(cc) cc.onclick=()=>{ suroPick=false; renderGuild(); };

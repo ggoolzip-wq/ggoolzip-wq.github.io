@@ -711,3 +711,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 고른 목록은 `S.settings.suroChars`(id 배열, 동기화됨)에 저장합니다. 값이 없으면 처음 한 번 기존 본캐(isMain)로 채웁니다.
 - 보이는 캐릭터만 표시하고 후보에 올립니다(규칙 9). 스케줄러 갱신(tabTick) 대상도 이 목록입니다.
 - 테스트: test_tracker62.
+
+## b85 — 길드 현황 '+ 길드 추가'
+- 고정 길드 '봉사활동'(GUILD 상수)을 지웠습니다. 길드 카드 제목 옆 '+ 길드 추가'에서 보이는 캐릭터의 (월드, 길드)를 중복 없이 보여 주고, 여러 개를 골라 추가합니다.
+- 고른 길드는 `S.settings.guilds=[{world,name}]`(동기화됨)에 저장하고, 길드마다 ✕로 제거합니다.
+- 캐릭터 길드는 character/basic의 character_guild_name을 `c.guild`/`c.guildAt`에 저장합니다. 동기화할 때마다 갱신하고, 후보 목록을 열었을 때 아직 길드 정보가 없는 캐릭터만 한 번 불러옵니다.
+- 길드마다 랭킹(수로 type 2, 플래그 type 1, Lv·마스터)을 불러와 캐시합니다(localStorage `mapleBossTracker.guild2`, 키는 world|name).
+- 테스트: test_tracker63.

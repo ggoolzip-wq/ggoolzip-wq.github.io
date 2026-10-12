@@ -962,3 +962,16 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 #suroCard .surocand:hover{background:rgba(255,255,255,.05)}
 #suroCard .surocand .avatar{width:28px;height:28px}
 #suroCard .suropick-b{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
+
+/* b85: 길드 현황 — 길드 여러 개 */
+#guildCard h2{display:flex;align-items:center;gap:8px}
+#guildCard h2 #guildAdd{margin-left:auto}
+#guildCard .gblk{border-top:1px solid rgba(255,255,255,.08);padding:10px 0 4px}
+#guildCard .gblk:first-of-type{border-top:0}
+#guildCard .gblk-h{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+#guildCard .gblk-h .hspace{flex:1}
+#guildCard button.surodel,#suroCard button.surodel{margin-left:8px;flex:none;opacity:.7;background:none;border:1px solid rgba(255,255,255,.18);color:#ccc;width:26px;height:26px;border-radius:6px;font-size:13px;line-height:1;cursor:pointer;padding:0}
+#guildCard button.surodel:hover{opacity:1;color:#ff6b6b}
+#guildCard .suropick{border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:8px;margin:6px 0 10px}
+#guildCard .surocand{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:8px;cursor:pointer}
+#guildCard .suropick-b{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
