@@ -50,7 +50,8 @@ try:
     check('modal: only the 본계정 key section (key input + 등록 button), no alt/spare rows, no character picker',
           only['secs']==['svMainSec'] and set(only['inputs'])<={'svMainKey','svMainBtn','pin acclbl','impClose'} and 'svMainKey' in only['inputs'] and 'svMainBtn' in only['inputs'], only)
     b71=pg.evaluate("(()=>{const s=document.querySelector('#svMainSec');const vis=e=>e&&e.offsetParent!==null;return {text:s.innerText.trim(),ph:document.querySelector('#svMainKey').placeholder,ctl:[...s.querySelectorAll('input,button,a,select')].filter(vis).map(e=>e.id||e.tagName)}})()")
-    check("b71: 등록 칸 = 'API키 입력' 입력 + 등록 버튼만 (안내 문구·제목·링크 없음)", b71['text']=='등록' and b71['ph']=='API키 입력' and b71['ctl']==['svMainKey','svMainBtn'], b71)
+    # zosu-ui: 키 칸 아래 'API 발급 : 링크' 한 줄만 추가 허용 (그 밖의 안내 문구·제목 없음)
+    check("b71(+zosu-ui): 등록 칸 = 'API키 입력' 입력 + 등록 버튼 + 'API 발급 : 링크' 한 줄", b71['text']=='등록\nAPI 발급 : https://openapi.nexon.com/ko/my-application/create-app/' and b71['ph']=='API키 입력' and b71['ctl']==['svMainKey','svMainBtn','A'], b71)
     v=vis_in_vp(pg,'.addm .svmattrib'); check('modal: NEXON attribution visible (1280x800)', v['ok'] and v['text']==ATTRIB, v)
     shot(pg,'oct12e_mainkey_modal.png')
     pg.set_viewport_size({'width':390,'height':844}); pg.wait_for_timeout(200)

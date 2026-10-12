@@ -1119,6 +1119,11 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 /* zosu: 🔄 동기화 끝 → 버튼 옆 초록 '새로고침 완료!' (3초 뒤 서서히 사라짐) */
 .syncdone{color:#4ade80;font-size:13px;font-weight:600;margin-left:6px;transition:opacity .6s;opacity:1}
 .syncdone.out{opacity:0}
+/* zosu-ui: 로그인 전 '+ 추가' 본계정 키 칸 아래 'API 발급 : 링크' 한 줄 */
+.svmapi{margin-top:6px;font-size:11.5px;line-height:1.4;overflow-wrap:anywhere}
+.svmapi a{color:inherit;text-decoration:underline}
+/* zosu-ui: 수익 기록 창 [기록하기] 옆 [취소하기] */
+.rvbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -1517,15 +1522,20 @@ function askRev(c,b,key,ik,cel){
   const ap=admPriceOf(ik); // b93: 관리자만 — 크롬 확장이 측정한 경매장 최저가로 미리 채움 (수정 가능)
   const el=document.createElement('div'); el.id='revModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rvTitle');
   el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`최저가 측정 시간 - ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
-    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><button class="btn rvok" data-rv="ok">기록하기</button></div>
+    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><span class="rvbtns"><button class="btn rvok" data-rv="ok">기록하기</button><button class="btn ghost rvcancel" data-rv="cancel">취소하기</button></span></div>
     <button class="btn plain rvno" data-rv="no">아니오</button></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
   document.body.appendChild(el);
   let closed=false; const fin=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true); if(cel) cel(); };
   const ok=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')); if(!(v>0)||v>100000){ $('#rvErr').textContent='금액을 입력해주세요.'; markEmpty($('#rvAmt')); $('#rvAmt').focus(); return; }
     const cc=S.characters.find(x=>x.id===c.id)||c; revMap(cc,b.type)[key]={m:Math.round(v*1e8/div),a:Math.round(v*1e4)/1e4,p:div,i:ik}; save(); render(); fin(); };
+  // zosu-ui: [취소하기] = 이 창을 띄운 아이템 선택 자체를 되돌림(획득·블빵/분배·반지/칠흑 결과·수익 기록 삭제, 축하 없음) — changeDrop 의 취소와 같은 정리
+  const undo=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true);
+    const cc=S.characters.find(x=>x.id===c.id)||c, t=b.type; delete dropMap(cc,t)[key]; delete modeMap(cc,t)[key]; delete outMap(cc,t)[key];
+    const rk=t==='monthly'?'mdrev':'drev', rm=cc[rk]; if(rm){ delete rm[key]; if(!Object.keys(rm).length) delete cc[rk]; }
+    if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; save(); render(); };
   const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); fin(); } else if(e.key==='Enter'&&e.target.id==='rvAmt'){ e.preventDefault(); ok(); } };
   document.addEventListener('keydown',kd,true);
-  el.onclick=e=>{ const t=e.target.closest('[data-rv]'); if(t) return t.dataset.rv==='ok'?ok():fin(); }; // b75: 바깥(배경) 클릭은 아무것도 안 함
+  el.onclick=e=>{ const t=e.target.closest('[data-rv]'); if(t) return t.dataset.rv==='ok'?ok():t.dataset.rv==='cancel'?undo():fin(); }; // b75: 바깥(배경) 클릭은 아무것도 안 함
   setTimeout(()=>{ const i=$('#rvAmt'); if(i){ i.focus(); if(ap) i.select(); } },30);
 }
 function changeDrop(key, delta){
@@ -3226,6 +3236,7 @@ function svMainRender(){
   }
   // b71: 처음 등록 칸 = API 키 입력 하나 + [등록] 만 (안내 문구 없음). 오류·부계정 경고는 생길 때만 아래 줄에. NEXON 표기는 칸 밖(창 아래)
   sec.innerHTML=`<div class="accrow svmrow"><input id="svMainKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="API키 입력" aria-label="API키 입력"${busy?' disabled':''}><button class="btn sm" id="svMainBtn"${busy?' disabled':''}>${busy?'확인 중…':'등록'}</button></div>
+    <div class="svmapi tiny muted">API 발급 : <a href="https://openapi.nexon.com/ko/my-application/create-app/" target="_blank" rel="noopener">https://openapi.nexon.com/ko/my-application/create-app/</a></div>
     ${err?`<div class="accst svmst" id="svMainSt"><span class="keyrej${soft?' soft':''}" role="alert">${esc(err)}</span></div>`:'<div class="accst svmst" id="svMainSt" hidden></div>'}`;
   svMainAttr(true);
   const inp=$('#svMainKey'); if(inp){ inp.value=v; if(err==='API 키를 넣어 주세요'&&!v) markEmpty(inp); if(!busy) setTimeout(()=>inp.focus(),0); }
@@ -3452,6 +3463,7 @@ function gdRender(){
     const svIn=SV_ON&&!!svTok()&&gdMeta.on&&gd.state!=='conflict';
     if(svIn){ b.textContent='로그아웃'; b.classList.remove('warn'); b.title='로그아웃 (이 PC의 데이터는 지워지고 서버에 남아요)'; b.setAttribute('aria-haspopup','false'); }
     else b.setAttribute('aria-haspopup','true');
+    b.hidden=SV_ON&&!svTok(); // zosu-ui: 로그인 전(서버 모드, 세션 없음) 첫 화면엔 오른쪽 위 로그인 버튼 없음 — 가운데 '캐릭터 추가'가 로그인 길. 로그인 뒤 헤더는 그대로
     // b77: 관리자 입구 = 헤더 [로그아웃] 왼쪽 '👑 관리자' (b67 이후 헤더 버튼이 바로 로그아웃이라 ☁ 메뉴의 관리자 버튼에 갈 수 없었음)
     let ad=$('#svAdminHdr'); const adm=svIn&&svIsAdmin();
     if(adm&&!ad){ ad=document.createElement('button'); ad.id='svAdminHdr'; ad.className='hbtn admhdr'; ad.textContent='👑 관리자'; ad.title='관리자 — 가입 승인'; ad.onclick=e=>{ e.stopPropagation(); openAdmin(); }; b.parentNode.insertBefore(ad,b); }
