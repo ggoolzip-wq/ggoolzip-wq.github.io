@@ -1004,3 +1004,8 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .medalrow .mdico img{width:32px;height:32px;display:block;image-rendering:pixelated}
 .medalrow .mdtri{position:absolute;left:-5px;top:-5px;width:16px;height:14px;background:#e3192d;clip-path:polygon(50% 0,100% 100%,0 100%);color:#fff;font:900 10px/16px sans-serif;text-align:center;filter:drop-shadow(0 0 1px #000)}
 .medalrow .mdtxt{font-size:1.06rem;font-weight:700;color:#ffb3b8}
+
+/* b99 길드 아이콘 */
+#guildCard h2 .gbless{width:22px;height:22px;image-rendering:pixelated;vertical-align:-4px;margin-right:6px}
+.gblk-h .gmark{width:17px;height:17px;image-rendering:pixelated;vertical-align:-2px;margin-right:6px;flex:none;display:inline-block}
+.gblk-h .gmark0{font-size:15px;line-height:17px;text-align:center}

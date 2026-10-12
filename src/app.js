@@ -983,6 +983,8 @@ const lsGet = k => { try{ return JSON.parse(localStorage.getItem(k)||'null'); }c
 const lsSet = (k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
 let schedC = lsGet(SCHED_KEY) || {};   // charId → {date, level, items{id:{st,now,max,reg,name}}, guild{suro,flag,mission}, at, ok, msg}
 let guildC = lsGet(GUILD_KEY) || {};    // gKey → {date, t1, t2, at, ok, msg}
+const GUILD_MARK_TTL=7*864e5;
+const guildMarkHtml=G=>{ const m=guildC[gKey(G)]?.mark; return m?.src?`<img class="gmark" src="${esc(m.src)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'gmark gmark0',textContent:'🛡️'}))">`:'<span class="gmark gmark0">🛡️</span>'; };
 let guildPick=false, guildCandBusy=false;
 let dqBusy=false, guildBusy=false, apiPauseUntil=0;
 
@@ -1038,8 +1040,18 @@ async function refreshGuild(force){
         }catch(e){ lastErr=e; if(e.code==='OPENAPI00007'||e.status===429||e.code==='NETWORK'){ stop=true; break; } continue; }
         if(rows[1]||rows[2]){ got={date:d,t1:rows[1],t2:rows[2]}; break; }
       }
-      const kk=gKey(G);
+      const kk=gKey(G), prevMark=guildC[kk]?.mark;
       guildC[kk]=got?{...got,at:Date.now(),ok:true,msg:''}:{...(guildC[kk]||{}),at:Date.now(),ok:false,msg:lastErr?lastErr.message:`'${G.world}' 월드 랭킹에서 '${G.name}' 길드를 찾지 못했습니다`};
+      if(prevMark) guildC[kk].mark=prevMark;
+      // b99: 길드 마크 — guild/id → guild/basic. guild_mark_custom(base64) 우선, 없으면 guild_mark(URL). 7일 캐시
+      if(!stop&&(!prevMark||Date.now()-(prevMark.at||0)>=GUILD_MARK_TTL)){
+        try{
+          const id=await nx('/maplestory/v1/guild/id',{guild_name:G.name,world_name:G.world},key);
+          if(id?.oguild_id){ const gb=await nx('/maplestory/v1/guild/basic',{oguild_id:id.oguild_id},key);
+            const cu=typeof gb?.guild_mark_custom==='string'&&gb.guild_mark_custom.trim(), mk=typeof gb?.guild_mark==='string'&&gb.guild_mark.trim();
+            guildC[kk].mark={src:cu?(cu.startsWith('data:')?cu:'data:image/png;base64,'+cu):(mk&&/^https:\/\//.test(mk)?mk:''),at:Date.now()}; }
+        }catch(e){ if(e.code==='OPENAPI00007'||e.status===429||e.code==='NETWORK') stop=true; }
+      }
       lsSet(GUILD_KEY,guildC); renderTabView();
       if(stop) break;
     }
@@ -1078,7 +1090,7 @@ function renderGuild(){
        <div class="gtiles">${tile('지하 수로','🌊',g.t2)}${tile('플래그 레이스','🚩',g.t1)}</div>`:''}
        ${g.ok===false?`<div class="dqlock warnc">⚠ 길드 랭킹 조회 실패 — ${esc(g.msg||'')}</div>`:''}`;
   const sub=g?.date?`<span class="muted tiny">기준 ${esc(g.date)}${g.date!==dayId()?' (어제 · 오늘 랭킹 준비 전)':''}${guildBusy?' · 갱신 중…':g.at?` · 확인 ${hhmm(g.at)}`:''}</span>`:'';
-  return `<div class="gblk"><div class="gblk-h"><b>🛡️ ${esc(G.name)}</b> <span class="muted">${worldIcon(G.world)} ${esc(G.world)}</span><span class="hspace"></span>${sub}<button class="surodel" data-gdel="${esc(gKey(G))}" title="길드 제거" aria-label="${esc(G.name)} 제거">✕</button></div>${body}</div>`; };
+  return `<div class="gblk"><div class="gblk-h">${guildMarkHtml(G)}<b>${esc(G.name)}</b> <span class="muted">${worldIcon(G.world)} ${esc(G.world)}</span><span class="hspace"></span>${sub}<button class="surodel" data-gdel="${esc(gKey(G))}" title="길드 제거" aria-label="${esc(G.name)} 제거">✕</button></div>${body}</div>`; };
   const gc=guildCands();
   const gpick=guildPick?`<div class="suropick">${gc.length?gc.map(G=>`<label class="surocand"><input type="checkbox" value="${esc(gKey(G))}"><span>${worldIcon(G.world)} <b>${esc(G.name)}</b> <span class="muted tiny">${esc(G.world)} · ${G.chars.map(esc).join(', ')}</span></span></label>`).join(''):`<div class="muted">${guildCandBusy?'캐릭터 길드 정보를 불러오는 중…':'추가할 수 있는 길드가 없습니다. (보이는 캐릭터가 가입한 길드만 추가할 수 있습니다)'}</div>`}
       <div class="suropick-b"><button class="btn" id="guildCancel">취소</button><button class="btn primary" id="guildOk"${gc.length?'':' disabled'}>추가</button></div></div>`:'';
@@ -1090,7 +1102,7 @@ function renderGuild(){
   const cand=vchars().filter(c=>!suroIds().includes(c.id));
   const pick=suroPick?`<div class="suropick">${cand.length?cand.map(c=>`<label class="surocand">${avatar(c)}<input type="checkbox" value="${esc(c.id)}"><span><b>${esc(c.name)}</b> <span class="muted tiny">Lv.${esc(c.level||'?')} · ${esc(c.job||'')}</span></span></label>`).join(''):'<div class="muted">추가할 수 있는 캐릭터가 없습니다.</div>'}
       <div class="suropick-b"><button class="btn" id="suroCancel">취소</button><button class="btn primary" id="suroOk"${cand.length?'':' disabled'}>추가</button></div></div>`:'';
-  v.innerHTML=`<div class="grid"><div class="card gcard" id="guildCard"><h2>🛡️ 길드 <button class="btn sm" id="guildAdd">+ 길드 추가</button></h2>${gpick}${gl.length?gl.map(gblock).join(''):'<div class="muted">+ 길드 추가로 캐릭터가 가입한 길드를 고르세요.</div>'}</div>
+  v.innerHTML=`<div class="grid"><div class="card gcard" id="guildCard"><h2><img class="gbless" src="${ITEM_ICONS.guildbless||''}" alt="" aria-hidden="true">길드 <button class="btn sm" id="guildAdd">+ 길드 추가</button></h2>${gpick}${gl.length?gl.map(gblock).join(''):'<div class="muted">+ 길드 추가로 캐릭터가 가입한 길드를 고르세요.</div>'}</div>
     <div class="card" id="suroCard"><h2><img class="bicon suroico" src="${SURO_ICON}" alt="" aria-hidden="true"> 지하 수로 <span class="muted" style="font-weight:500">이번 주</span><button class="btn sm" id="suroAdd">+ 캐릭터 추가</button></h2>${pick}
       ${mains.length?mains.map(row).join(''):'<div class="muted">+ 캐릭터 추가로 수로 점수를 볼 캐릭터를 고르세요.</div>'}
       <div class="muted tiny" style="margin-top:8px">캐릭터 점수는 메이플 스케줄러의 '[길드] 지하 수로' 점수(이번 주 누적, 목요일 초기화)입니다. 길드 순위·점수는 넥슨 길드 랭킹(하루 1번, 09:30경 갱신) 기준입니다.</div></div></div>`;

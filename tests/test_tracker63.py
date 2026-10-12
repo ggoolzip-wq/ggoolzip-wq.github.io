@@ -51,7 +51,7 @@ try:
     saved=pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')).settings.guilds")
     check('remove + persisted', saved==[{'world':'루나','name':'C길드'}], saved)
     pg.reload(); pg.wait_for_timeout(800); pg.evaluate("tab='guild'; render()"); pg.wait_for_timeout(500)
-    r=pg.evaluate("[...document.querySelectorAll('#guildCard .gblk-h b')].map(e=>e.innerText)"); check('survives reload', r==['🛡️ C길드'], r)
+    r=pg.evaluate("[...document.querySelectorAll('#guildCard .gblk-h b')].map(e=>e.innerText)"); check('survives reload', r==['C길드'], r)
     check('JS 오류 없음', not errs, errs)
     b.close()
 except Exception as e:

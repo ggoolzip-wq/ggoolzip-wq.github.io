@@ -879,3 +879,9 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - level/job/world는 넣지 않았습니다. 수동 캐릭터는 사용자가 직접 고치는 값이라 다른 기기의 수정이 사라집니다(test17). API 캐릭터는 두 기기 값이 보통 같아서 충돌이 나지 않습니다.
 - 수로 데이터(settings.suroChars)와 길드 목록(settings.guilds)은 사용자가 고르는 값이라 그대로 둡니다.
 - 테스트: test_tracker72(포트 8897), test17/test47 통과.
+
+## b99 — 길드 현황 아이콘
+- '길드' 제목 앞 🛡️ → '길드의 축복' 아이콘 (현행 보라색 G 선물상자, 아이템 2432290, maplestory.io KMS 389 icon → src/assets/itemicons/2432290.png, itemicons.json 'guildbless'). 길드의 축복은 스킬이 아니라 '길드 정기 지원' 스킬로 받는 소비 아이템이라 아이템 아이콘을 사용.
+- 길드 이름 앞: 그 길드의 마크. refreshGuild에서 guild/id → guild/basic 호출(길드당 2회, 7일 캐시 guildC[k].mark={src,at}, 랭킹 갱신 시에도 유지). guild_mark_custom(base64) 우선 → guild_mark(https URL) → 없거나 로드 실패 시 기본 🛡️.
+- 테스트: tests/test_tracker73.py (포트 8898, Nexon API mock).
+- 미검증: 실제 Nexon guild_mark_custom 이 접두사 없는 base64 PNG(앞에 data:image/png;base64, 붙임)인 실제 응답. 실제 길드로 실데이터 확인 안 함.
