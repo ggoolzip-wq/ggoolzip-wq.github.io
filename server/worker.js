@@ -28,6 +28,16 @@
  *   PUT    /api/state         {baseRev, updatedAt, data} (인증) → {rev, savedAt} | 409 {rev, updatedAt, savedAt, data}
  *   DELETE /api/account                            (인증) 내 데이터·세션·계정 연결 전부 삭제
  *   GET    /api/health
+ *   GET    /api/seen  · PUT /api/seen {ids:[...]}   (인증, b62) 소식 카드 읽음 표시 — 서버가 합집합으로 보관 (기기 간 동기화)
+ *
+ * b62 (2026-10-12):
+ *  - 금고 v2 (keyvault2): AES-GCM 키 = HKDF(ikm = ID_PEPPER + 대표 넥슨 계정 account_id). account_id 원본은 저장하지 않고(해시만),
+ *    넥슨이 그 계정의 '아무' 유효한 키(대표 키·예비 키·재발급 키)에만 알려 주므로, 대표 계정의 어떤 키로 로그인해도 금고가 열림.
+ *    (v1 = 대표 키 문자열 그대로 → 예비 키/재발급 키/다른 키로는 'locked' 이었음.) v1 은 대표 키로 열리면 자동으로 v2 로 옮김.
+ *  - 부계정·예비 키 등록부 (keyreg: sha256(ID_PEPPER:key:키) → user_id, 종류) + 계정 역할 (acct_role: 계정 해시 → main|sub).
+ *    부계정/예비 키로 로그인하면 403 sub_key '이미 등록된 부계정 API입니다.' (키 원본은 저장 안 함, 해시만)
+ *  - 강제 로그아웃: meta.auth_epoch_b62 (이 버전이 처음 실행된 시각) 이전에 만든 세션·기기 표(초대 비밀번호)는 무효.
+ *    사용자 데이터(state·history·금고)는 그대로 — 다시 로그인하면 돌아옴.
  */
 const SESSION_DAYS = 365;
 const MAX_BODY = 1_800_000;          // D1 한 행 최대 2MB
@@ -95,7 +105,39 @@ async function nexonAccounts(env, key) {
   if (!ids.length) throw new HttpError(400, 'no_account', '이 키로 조회되는 메이플 계정이 없습니다');
   const hashes = [];
   for (const id of ids) hashes.push(await sha256hex(pepper(env) + ':' + id));
+  Object.defineProperty(hashes, 'ids', { value: ids, enumerable: false }); // 원본 account_id (금고 v2 키 유도에만, 저장 안 함)
   return hashes;
+}
+const keyHash = (env, key) => sha256hex(pepper(env) + ':key:' + String(key || '').trim()); // 키 원본 대신 저장하는 값 (keyreg)
+
+/* ---------- b62: 새 표 (배포만 하면 자동 생성 — 원격 schema 실행 불필요) ---------- */
+let schemaOk = false;
+async function ensureSchema(env) {
+  if (schemaOk) return;
+  await env.DB.batch([
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS keyvault2 (user_id TEXT PRIMARY KEY, owner_hash TEXT NOT NULL, iv TEXT NOT NULL, ct TEXT NOT NULL, updated_at INTEGER NOT NULL)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS keyreg (key_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, kind TEXT NOT NULL, updated_at INTEGER NOT NULL)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS keyreg_user ON keyreg(user_id)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS acct_role (acct_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, role TEXT NOT NULL)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS acct_role_user ON acct_role(user_id)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL)'),
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS seen (user_id TEXT PRIMARY KEY, ids TEXT NOT NULL, updated_at INTEGER NOT NULL)'),
+  ]);
+  schemaOk = true;
+}
+/* ---------- b62: 강제 로그아웃 기준 시각 ---------- */
+const EPOCH_KEY = 'auth_epoch_b62';   // 다시 전원 로그아웃시키려면 이 이름만 바꿔 배포 (예: auth_epoch_b63)
+let epochMs = 0;
+async function authEpoch(env) {
+  if (epochMs) return epochMs;
+  const now = Date.now();
+  const ins = await env.DB.prepare('INSERT OR IGNORE INTO meta (k,v) VALUES (?,?)').bind(EPOCH_KEY, String(now)).run();
+  const r = await env.DB.prepare('SELECT v FROM meta WHERE k=?').bind(EPOCH_KEY).first();
+  epochMs = +r.v || now;
+  if (ins.meta?.changes) await env.DB.batch([ // 처음 한 번: 예전 세션·기기 표 정리 (데이터는 건드리지 않음)
+    env.DB.prepare('DELETE FROM sessions WHERE created_at<?').bind(epochMs),
+    env.DB.prepare('DELETE FROM devices WHERE created_at<?').bind(epochMs)]);
+  return epochMs;
 }
 
 /* ---------- 부계정 키 금고 (AES-GCM, 대표 키에서 HKDF) ---------- */
@@ -111,6 +153,43 @@ async function vaultSeal(env, mainKey, userId, obj) {
   const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(userId) }, await vaultKey(env, mainKey, userId), enc.encode(JSON.stringify(obj))));
   return { iv: b64(iv), ct: b64(ct) };
 }
+// v2: 대표 넥슨 계정 account_id 로 유도 (그 계정의 어떤 유효한 키로도 열림)
+async function vaultKey2(env, accountId, userId) {
+  const ikm = await crypto.subtle.importKey('raw', enc.encode(pepper(env) + ':acct:' + String(accountId)), 'HKDF', false, ['deriveKey']);
+  const salt = new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode('ggoolzip-vault-salt:' + pepper(env))));
+  return crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt, info: enc.encode('ggoolzip-subkeys:v2:' + userId) }, ikm, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function vault2Seal(env, hashes, userId, obj) { // hashes = nexonAccounts(대표 키) 결과 (ids 포함). 소유 계정 = 첫 계정
+  const id = hashes.ids[0], owner = hashes[0], iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(userId) }, await vaultKey2(env, id, userId), enc.encode(JSON.stringify(obj))));
+  await env.DB.batch([
+    env.DB.prepare('INSERT INTO keyvault2 (user_id,owner_hash,iv,ct,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET owner_hash=excluded.owner_hash, iv=excluded.iv, ct=excluded.ct, updated_at=excluded.updated_at').bind(userId, owner, b64(iv), b64(ct), Date.now()),
+    env.DB.prepare('DELETE FROM keyvault WHERE user_id=?').bind(userId)]); // v1 은 지움
+}
+// 로그인 키로 금고 열기: null = 없음, false = 이 키로는 못 엶, 객체 = 내용 (+ .migrated)
+async function vaultOpenAny(env, key, hashes, userId) {
+  const r2 = await env.DB.prepare('SELECT owner_hash, iv, ct FROM keyvault2 WHERE user_id=?').bind(userId).first();
+  if (r2) {
+    const i = hashes.indexOf(r2.owner_hash); if (i < 0) return false;
+    try {
+      const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(r2.iv), additionalData: enc.encode(userId) }, await vaultKey2(env, hashes.ids[i], userId), unb64(r2.ct));
+      return JSON.parse(new TextDecoder().decode(pt));
+    } catch (e) { return false; }
+  }
+  const v1 = await vaultOpen(env, key, userId);
+  if (v1) { await vault2Seal(env, hashes, userId, v1); } // v1 → v2 자동 이전 (대표 키로 열렸을 때만)
+  return v1;
+}
+// 등록부·역할 다시 쓰기 (금고 내용 기준). 키 원본은 저장하지 않음 (해시만)
+async function writeRegistry(env, userId, mainHashes, v) {
+  const now = Date.now(), st = [env.DB.prepare('DELETE FROM keyreg WHERE user_id=?').bind(userId)]; // 역할(sub)은 지우지 않음: 부계정 목록에서 뺀 계정도 계속 부계정 (대표 계정이 되면 main 으로 바뀜)
+  const reg = async (k, kind) => { if (k) st.push(env.DB.prepare('INSERT OR REPLACE INTO keyreg (key_hash,user_id,kind,updated_at) VALUES (?,?,?,?)').bind(await keyHash(env, k), userId, kind, now)); };
+  await reg(v.mainBk, 'bk');
+  for (const s of v.subs || []) { await reg(s.key, 'sub'); await reg(s.bk, 'bk'); for (const h of (s.ahs || (s.ah ? [s.ah] : []))) if (!mainHashes.includes(h)) st.push(env.DB.prepare("INSERT OR REPLACE INTO acct_role (acct_hash,user_id,role) VALUES (?,?,'sub')").bind(h, userId)); }
+  for (const h of mainHashes) st.push(env.DB.prepare("INSERT OR REPLACE INTO acct_role (acct_hash,user_id,role) VALUES (?,?,'main')").bind(h, userId));
+  await env.DB.batch(st);
+}
+const SUB_MSG = '이미 등록된 부계정 API입니다.';
 async function vaultOpen(env, mainKey, userId) { // 없으면 null, 대표 키가 아니면 false
   const r = await env.DB.prepare('SELECT iv, ct FROM keyvault WHERE user_id=?').bind(userId).first();
   if (!r) return null;
@@ -143,8 +222,8 @@ const passVer = env => String(env.SITE_PASS_HASH || '').toLowerCase().slice(0, 1
 async function checkDevice(env, device) {
   if (!env.SITE_PASS_HASH) throw new HttpError(503, 'not_configured', '서버 설정이 아직 끝나지 않았습니다 (초대 비밀번호 미설정)');
   if (!/^[A-Za-z0-9_-]{20,100}$/.test(String(device || ''))) throw new HttpError(403, 'need_invite', '초대 비밀번호를 먼저 입력해 주세요');
-  const d = await env.DB.prepare('SELECT expires_at, pass_ver FROM devices WHERE ticket_hash=?').bind(await sha256hex(device)).first();
-  if (!d || d.expires_at < Date.now() || d.pass_ver !== passVer(env)) throw new HttpError(403, 'need_invite', '초대 비밀번호를 다시 입력해 주세요 (비밀번호가 바뀌었거나 만료됨)');
+  const d = await env.DB.prepare('SELECT created_at, expires_at, pass_ver FROM devices WHERE ticket_hash=?').bind(await sha256hex(device)).first();
+  if (!d || d.expires_at < Date.now() || d.pass_ver !== passVer(env) || d.created_at < await authEpoch(env)) throw new HttpError(403, 'need_invite', '초대 비밀번호를 다시 입력해 주세요 (비밀번호가 바뀌었거나 만료됨)');
 }
 
 /* ---------- 세션 ---------- */
@@ -152,8 +231,8 @@ async function auth(env, req) {
   const m = /^Bearer\s+([A-Za-z0-9_-]{20,100})$/.exec(req.headers.get('Authorization') || '');
   if (!m) throw new HttpError(401, 'no_session', '로그인이 필요합니다');
   const th = await sha256hex(m[1]), now = Date.now();
-  const s = await env.DB.prepare('SELECT user_id, last_used, expires_at FROM sessions WHERE token_hash=?').bind(th).first();
-  if (!s || s.expires_at < now) { if (s) await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(th).run(); throw new HttpError(401, 'no_session', '로그인이 만료되었습니다 — 다시 로그인하세요'); }
+  const s = await env.DB.prepare('SELECT user_id, created_at, last_used, expires_at FROM sessions WHERE token_hash=?').bind(th).first();
+  if (!s || s.expires_at < now || s.created_at < await authEpoch(env)) { if (s) await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(th).run(); throw new HttpError(401, 'no_session', '로그인이 만료되었습니다 — 다시 로그인하세요'); }
   if (now - s.last_used > DAY) await env.DB.prepare('UPDATE sessions SET last_used=?, expires_at=? WHERE token_hash=?').bind(now, now + SESSION_DAYS * DAY, th).run();
   return { userId: s.user_id, th };
 }
@@ -190,7 +269,8 @@ const stateOut = (row, withData = true) => row
 /* ---------- 라우트 ---------- */
 async function route(req, env) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, ''), M = req.method;
-  if (p === '/api/health') return json(200, { ok: true });
+  if (p === '/api/health') return json(200, { ok: true, v: 'b62' });
+  await ensureSchema(env); await authEpoch(env); // 첫 요청 때 강제 로그아웃 기준 시각 확정
 
   if (p === '/api/invite' && M === 'POST') {
     if (!env.SITE_PASS_HASH) throw new HttpError(503, 'not_configured', '서버 설정이 아직 끝나지 않았습니다 (초대 비밀번호 미설정)');
@@ -206,8 +286,12 @@ async function route(req, env) {
     await rateLimit(env, req);
     const b = await readBody(req);
     await checkDevice(env, b.device);
+    // b62: 부계정/예비 키로 등록된 키는 로그인 불가 (넥슨 호출 전에 해시로 확인)
+    if (await env.DB.prepare('SELECT 1 FROM keyreg WHERE key_hash=?').bind(await keyHash(env, b.key)).first()) throw new HttpError(403, 'sub_key', SUB_MSG);
     const hashes = await nexonAccounts(env, b.key);
     const qs = hashes.map(() => '?').join(',');
+    const roles = (await env.DB.prepare(`SELECT role FROM acct_role WHERE acct_hash IN (${qs})`).bind(...hashes).all()).results;
+    if (roles.some(r => r.role === 'sub') && !roles.some(r => r.role === 'main')) throw new HttpError(403, 'sub_key', SUB_MSG); // 부계정 계정의 (등록 안 된) 다른 키
     const found = (await env.DB.prepare(`SELECT a.acct_hash, a.user_id, s.saved_at FROM accounts a LEFT JOIN state s ON s.user_id=a.user_id WHERE a.acct_hash IN (${qs})`).bind(...hashes).all()).results;
     const now = Date.now(); let userId, newUser = false;
     if (found.length) userId = found.sort((x, y) => (y.saved_at || 0) - (x.saved_at || 0))[0].user_id; // 여러 데이터에 걸쳐 있으면 최근 저장한 쪽
@@ -218,9 +302,11 @@ async function route(req, env) {
     if (ins.length) await env.DB.batch(ins);
     const token = await newSession(env, userId, b.label);
     const row = await stateRow(env, userId);
-    const v = newUser ? null : await vaultOpen(env, b.key, userId);
+    const v = newUser ? null : await vaultOpenAny(env, b.key, hashes, userId);
+    if (v) await writeRegistry(env, userId, hashes, v);           // 금고를 연 키 = 대표 계정 → 역할·등록부 최신화
+    else if (v === null && !roles.length) await env.DB.batch(hashes.map(h => env.DB.prepare("INSERT OR IGNORE INTO acct_role (acct_hash,user_id,role) VALUES (?,?,'main')").bind(h, userId)));
     return json(200, { token, user: userId.slice(0, 8), accounts: hashes, newUser, rev: row ? row.rev : 0, updatedAt: row ? row.updated_at : 0,
-      vault: v === null ? 'none' : v === false ? 'locked' : 'open', subKeys: v ? (v.subs || []) : [], mainBk: v ? (v.mainBk || '') : '' });
+      vault: v === null ? 'none' : v === false ? 'locked' : 'open', subKeys: v ? (v.subs || []) : [], mainBk: v ? (v.mainBk || '') : '', mainBkLabel: v ? (v.mainBkLabel || '') : '' });
   }
 
   const me = await auth(env, req);
@@ -234,7 +320,8 @@ async function route(req, env) {
     const qs = hashes.map(() => '?').join(',');
     const other = (await env.DB.prepare(`SELECT user_id FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hashes, me.userId).all()).results;
     if (other.length) throw new HttpError(409, 'linked_elsewhere', '이 넥슨 계정은 이미 다른 데이터에 연결되어 있습니다');
-    await env.DB.batch(hashes.map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, me.userId, now)));
+    await env.DB.batch(hashes.map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, me.userId, now))
+      .concat(hashes.map(h => env.DB.prepare("INSERT OR IGNORE INTO acct_role (acct_hash,user_id,role) VALUES (?,?,'sub')").bind(h, me.userId))));
     return json(200, { accounts: hashes, all: await acctList(env, me.userId) });
   }
   if (p === '/api/subkeys' && M === 'PUT') {
@@ -257,15 +344,22 @@ async function route(req, env) {
       const key = String(s0?.key || '').trim(); if (!key || key === mainKey || seen.has(key)) continue; seen.add(key);
       const hs = await nexonAccounts(env, key);
       const qs = hs.map(() => '?').join(',');
-      const other = (await env.DB.prepare(`SELECT user_id FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hs, me.userId).all()).results;
-      if (other.length) throw new HttpError(409, 'linked_elsewhere', `'${String(s0.label || '부계정').slice(0, 30)}' 키의 넥슨 계정은 이미 다른 데이터에 연결되어 있습니다`);
+      const other = (await env.DB.prepare(`SELECT DISTINCT user_id FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hs, me.userId).all()).results;
+      for (const o of other) { // b62: 예전에 이 부계정 키로 따로 로그인해서 생긴 '빈' 데이터면 이쪽으로 옮김 (키 주인임은 넥슨 확인으로 증명됨)
+        const oa = await acctList(env, o.user_id), st = await env.DB.prepare('SELECT data FROM state WHERE user_id=?').bind(o.user_id).first();
+        let nChars = 0; try { nChars = st ? (JSON.parse(st.data).characters || []).length : 0; } catch (e) {}
+        if (oa.every(h => hs.includes(h)) && nChars === 0) {
+          await env.DB.batch(['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen'].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(o.user_id))
+            .concat(env.DB.prepare('DELETE FROM users WHERE id=?').bind(o.user_id)));
+        } else throw new HttpError(409, 'linked_elsewhere', `'${String(s0.label || '부계정').slice(0, 30)}' 키의 넥슨 계정은 이미 다른 데이터(캐릭터가 있는 데이터)에 연결되어 있습니다`);
+      }
       await env.DB.batch(hs.map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, me.userId, now)));
       const bk = await sameAcct(s0.bk, hs, String(s0.label || '부계정').slice(0, 30));
-      out.push({ key, ah: hs[0], label: String(s0.label || '').slice(0, 40), ...(bk ? { bk } : {}) });
+      out.push({ key, ah: hs[0], ...(hs.length > 1 ? { ahs: hs } : {}), label: String(s0.label || '').slice(0, 40), ...(bk ? { bk, ...(s0.bkLabel ? { bkLabel: String(s0.bkLabel).slice(0, 40) } : {}) } : {}) });
     }
-    const sealed = await vaultSeal(env, mainKey, me.userId, { v: 1, subs: out, ...(mainBk ? { mainBk } : {}) });
-    await env.DB.prepare('INSERT INTO keyvault (user_id,iv,ct,updated_at) VALUES (?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET iv=excluded.iv, ct=excluded.ct, updated_at=excluded.updated_at')
-      .bind(me.userId, sealed.iv, sealed.ct, now).run();
+    const vv = { v: 2, subs: out, ...(mainBk ? { mainBk, ...(b.mainBkLabel ? { mainBkLabel: String(b.mainBkLabel).slice(0, 40) } : {}) } : {}) };
+    await vault2Seal(env, mainHashes, me.userId, vv);
+    await writeRegistry(env, me.userId, mainHashes, vv);
     return json(200, { subs: out.map(({ ah, label }) => ({ ah, label })), accounts: await acctList(env, me.userId) });
   }
   if (p === '/api/logout' && M === 'POST') { await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(me.th).run(); return json(200, { ok: true }); }
@@ -294,8 +388,19 @@ async function route(req, env) {
     ]);
     return json(200, { rev, savedAt: now, updatedAt: upd });
   }
+  if (p === '/api/seen' && M === 'GET') { const r = await env.DB.prepare('SELECT ids FROM seen WHERE user_id=?').bind(me.userId).first(); return json(200, { ids: r ? JSON.parse(r.ids) : [] }); }
+  if (p === '/api/seen' && M === 'PUT') { // 합집합 저장 (최근 1500개)
+    const b = await readBody(req);
+    const add = (Array.isArray(b.ids) ? b.ids : []).map(x => String(x).slice(0, 80)).filter(Boolean).slice(0, 1500);
+    const r = await env.DB.prepare('SELECT ids FROM seen WHERE user_id=?').bind(me.userId).first();
+    const cur = r ? JSON.parse(r.ids) : [], set = new Set(cur);
+    for (const x of add) if (!set.has(x)) { set.add(x); cur.push(x); }
+    const out = cur.slice(-1500);
+    await env.DB.prepare('INSERT INTO seen (user_id,ids,updated_at) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET ids=excluded.ids, updated_at=excluded.updated_at').bind(me.userId, JSON.stringify(out), Date.now()).run();
+    return json(200, { ids: out });
+  }
   if (p === '/api/account' && M === 'DELETE') {
-    await env.DB.batch(['state', 'state_history', 'sessions', 'accounts', 'keyvault'].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(me.userId))
+    await env.DB.batch(['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen'].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(me.userId))
       .concat(env.DB.prepare('DELETE FROM users WHERE id=?').bind(me.userId)));
     return json(200, { ok: true });
   }

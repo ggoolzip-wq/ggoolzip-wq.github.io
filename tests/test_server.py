@@ -1,5 +1,5 @@
 # 동기화 서버(server/worker.js) — wrangler dev(로컬 D1) + 넥슨 모의 서버로 API 테스트
-import os, sys, json, urllib.request, urllib.error
+import subprocess, os, sys, json, urllib.request, urllib.error
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cf_dev, mock_nexon_list as MN
 fails=[]; errs=[]
@@ -66,21 +66,24 @@ try:
     check('A data unchanged by B save', b['data']['characters'][0]['name']=='단풍용사' and b['rev']==2, b)
     # 같은 사람의 다른 넥슨 계정 연결
     s,b,_=req('POST','/api/link',{'device':DEV,'key':KD},tok=TA); check('link key D to A', s==200 and len(b['all'])==2, b)
-    s,d,_=req('POST','/api/login',{'device':DEV,'key':KD}); check('login with D → A data', d['user']==a1['user'] and d['rev']==2, d)
+    s,d,_=req('POST','/api/login',{'device':DEV,'key':KD}); check('b62: login with linked sub account D → 403 sub_key (부계정)', s==403 and d['error']=='sub_key' and d['message']=='이미 등록된 부계정 API입니다.', d)
     s,b,_=req('POST','/api/link',{'device':DEV,'key':KB},tok=TA); check('link B (owned by another user) → 409', s==409 and b['error']=='linked_elsewhere', b)
     s,ac,_=req('POST','/api/login',{'device':DEV,'key':KAC}); check('key with accounts A+C → A data, C auto-linked', ac['user']==a1['user'] and len(ac['accounts'])==2, ac)
-    s,me,_=req('GET','/api/me',tok=TA); check('me: 3 linked accounts, ≥4 sessions', len(me['accounts'])==3 and me['sessions']>=4 and me['rev']==2, me)
+    s,me,_=req('GET','/api/me',tok=TA); check('me: 3 linked accounts, ≥4 sessions', len(me['accounts'])==3 and me['sessions']>=3 and me['rev']==2, me)
     # 부계정 키 금고: 대표 키(A)로 암호화 보관 → 다른 기기에서 대표 키만으로 로그인하면 되돌아옴
     KF,KG='live_KEY_F_0123456789abcdef','live_KEY_G_0123456789abcdef'
     s,b,_=req('PUT','/api/subkeys',{'main':KB,'subs':[{'key':KF,'label':'부1'}]},tok=TA); check('subkeys with a main key not of this data → 403', s==403 and b['error']=='not_main', b)
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KB,'label':'x'}]},tok=TA); check('sub key owned by another user → 409', s==409 and b['error']=='linked_elsewhere', b)
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KF,'label':'부1'},{'key':KG,'label':'부2'},{'key':KA,'label':'dup main'}]},tok=TA)
     check('store 2 sub keys (main key skipped) → ah returned, linked', s==200 and [x['label'] for x in b['subs']]==['부1','부2'] and len(b['accounts'])==5, b)
-    vrows=json.dumps(dev.sql("SELECT * FROM keyvault")); dump=vrows+json.dumps(dev.sql("SELECT data FROM state"))+json.dumps(dev.sql("SELECT * FROM accounts"))
+    vrows=json.dumps(dev.sql("SELECT * FROM keyvault2")); dump=vrows+json.dumps(dev.sql("SELECT data FROM state"))+json.dumps(dev.sql("SELECT * FROM accounts"))
     check('vault holds only ciphertext (no raw main/sub keys)', '"ct"' in vrows and all(k not in dump for k in (KA,KF,KG)) and '부1' not in vrows)
     s,v,_=req('POST','/api/login',{'device':DEV,'key':KA}); check('new device, main key only → sub keys come back', v['vault']=='open' and sorted(x['key'] for x in v['subKeys'])==sorted([KF,KG]) and {x['label'] for x in v['subKeys']}=={'부1','부2'} and all(x['ah'] for x in v['subKeys']), v)
-    s,v,_=req('POST','/api/login',{'device':DEV,'key':KF}); check('login with a sub key → same data, vault locked, no keys', v['user']==a1['user'] and v['vault']=='locked' and v['subKeys']==[], v)
-    s,v,_=req('POST','/api/login',{'device':DEV,'key':KAC}); check('different key (also on acc-A) cannot open vault', v['vault']=='locked' and v['subKeys']==[], v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KF}); check('b62: login with a registered sub key → 403 sub_key, no token', s==403 and v['error']=='sub_key' and 'token' not in v, v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KAC}); check('b62: another key of the main account (acc-A) opens vault v2', v['vault']=='open' and sorted(x['key'] for x in v['subKeys'])==sorted([KF,KG]), v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':'live_KEY_A2_0123456789abcde'}); check('b62: re-issued main key (same account) → sub keys come back', s==200 and v['vault']=='open' and len(v['subKeys'])==2, v)
+    reg=json.dumps(dev.sql("SELECT * FROM keyreg"))+json.dumps(dev.sql("SELECT * FROM keyvault2"))+json.dumps(dev.sql("SELECT * FROM acct_role"))
+    check('b62: keyreg/keyvault2/acct_role hold no raw key or account_id', all(k not in reg for k in (KA,KF,KG,'acc-A','acc-F')) and len(dev.sql("SELECT * FROM keyreg"))==2, reg[:200])
     s,v,_=req('POST','/api/login',{'device':DEV,'key':KB}); check('other user: vault none', v['vault']=='none' and v['subKeys']==[], v)
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KG,'label':'부2'}]},tok=TA); s,v,_=req('POST','/api/login',{'device':DEV,'key':KA})
     check('removing a sub key updates the vault', [x['key'] for x in v['subKeys']]==[KG], v)
@@ -89,9 +92,44 @@ try:
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'mainBk':KF,'subs':[{'key':KG,'label':'부2'}]},tok=TA); check('backup key of another account → 400 backup_mismatch', s==400 and b['error']=='backup_mismatch', b)
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KG,'label':'부2','bk':BKA}]},tok=TA); check('sub backup of wrong account → 400', s==400 and b['error']=='backup_mismatch' and '부2' in b['message'], b)
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'mainBk':BKA,'subs':[{'key':KG,'label':'부2','bk':BKG}]},tok=TA); check('backup keys of same accounts stored', s==200, b)
-    vr=json.dumps(dev.sql("SELECT * FROM keyvault")); check('vault ciphertext only (no backup keys)', BKA not in vr and BKG not in vr)
+    vr=json.dumps(dev.sql("SELECT * FROM keyvault2")); check('vault ciphertext only (no backup keys)', BKA not in vr and BKG not in vr)
     s,v,_=req('POST','/api/login',{'device':DEV,'key':KA}); check('login with main → backup keys come back', v['mainBk']==BKA and [x.get('bk') for x in v['subKeys']]==[BKG], v)
-    s,v,_=req('POST','/api/login',{'device':DEV,'key':KF}); check('sub-key login → no backup keys', v['mainBk']=='' and v['subKeys']==[], v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KF}); check('b62: removed sub key F (no longer registered, but acc-F linked as sub) → still blocked', s==403 and v['error']=='sub_key', v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':BKG}); check('b62: sub backup (예비) key login → 403 sub_key', s==403 and v['error']=='sub_key', v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':BKA}); check('b62: main backup (예비) key login → 403 sub_key', s==403 and v['error']=='sub_key', v)
+    # b62: 예전에 부계정 키로 따로 로그인해 생긴 빈 데이터 → 대표 키가 부계정으로 등록하면 옮겨짐 (캐릭터 있는 데이터는 409)
+    KH,KI='live_KEY_H_0123456789abcdef','live_KEY_I_0123456789abcdef'; TA=req('POST','/api/login',{'device':DEV,'key':KA})[1]['token']  # 새 세션 (부계정 등록 요청 제한 10회/10분/세션)
+    s,h1,_=req('POST','/api/login',{'device':DEV,'key':KH}); check('H alone → new (empty) user', h1['newUser'], h1)
+    s,i1,_=req('POST','/api/login',{'device':DEV,'key':KI}); req('PUT','/api/state',{'baseRev':0,'updatedAt':1,'data':{'characters':[{'id':'x','name':'I캐릭'}]}},tok=i1['token'])
+    s,b,_=req('PUT','/api/subkeys',{'main':KA,'mainBk':BKA,'subs':[{'key':KG,'label':'부2','bk':BKG},{'key':KI,'label':'부I'}]},tok=TA); check('sub key whose account has its own characters → 409 (not moved)', s==409 and b['error']=='linked_elsewhere', b)
+    s,b,_=req('PUT','/api/subkeys',{'main':KA,'mainBk':BKA,'subs':[{'key':KG,'label':'부2','bk':BKG},{'key':KH,'label':'부H'}]},tok=TA); check('empty orphan data of sub key H → moved, vault stored', s==200 and len(b['subs'])==2, b)
+    s,v,_=req('GET','/api/state',tok=h1['token']); check('orphan session removed', s==401, s)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KH}); check('H login now blocked (부계정)', s==403 and v['error']=='sub_key', v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KA}); check('main login → H, G, backups come back', s==200 and sorted(x['key'] for x in v['subKeys'])==sorted([KG,KH]) and v['mainBk']==BKA, v)
+    dev.sql("DELETE FROM rate WHERE k LIKE 'login:%'")
+    # b62: 예전 v1 금고(대표 키 문자열로 암호화) → 대표 키 로그인 때 v2 로 자동 이전, 그 뒤엔 재발급 키로도 열림
+    uid=dev.sql(f"SELECT user_id FROM accounts WHERE acct_hash='{a1['accounts'][0]}'")[0]['user_id']
+    sealed=json.loads(subprocess.run([os.path.join(cf_dev.NODE_BIN,'node'),os.path.join(os.path.dirname(os.path.abspath(__file__)),'v1seal.mjs'),KA,uid,json.dumps({'v':1,'subs':[{'key':KG,'label':'부2','bk':BKG}],'mainBk':BKA})],capture_output=True,text=True).stdout)
+    dev.sql(f"DELETE FROM keyvault2 WHERE user_id='{uid}'"); dev.sql(f"DELETE FROM keyreg WHERE user_id='{uid}'"); dev.sql(f"INSERT INTO keyvault (user_id,iv,ct,updated_at) VALUES ('{uid}','{sealed['iv']}','{sealed['ct']}',1)")
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':'live_KEY_A2_0123456789abcde'}); check('v1 vault: re-issued key cannot open (locked) before migration', s==200 and v['vault']=='locked', v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KA}); check('v1 vault opens with exact main key', v['vault']=='open' and [x['key'] for x in v['subKeys']]==[KG] and v['mainBk']==BKA, v)
+    check('v1 → v2 migrated (v1 row gone)', len(dev.sql(f"SELECT * FROM keyvault WHERE user_id='{uid}'"))==0 and len(dev.sql(f"SELECT * FROM keyvault2 WHERE user_id='{uid}'"))==1)
+    s,v2_,_=req('POST','/api/login',{'device':DEV,'key':'live_KEY_A2_0123456789abcde'}); check('after migration: re-issued key opens vault', v2_['vault']=='open' and [x['key'] for x in v2_['subKeys']]==[KG], v2_)
+    s,x,_=req('POST','/api/login',{'device':DEV,'key':BKG}); check('after migration: registry rebuilt from vault → spare key blocked', s==403 and x['error']=='sub_key', x)
+    # b62: 읽음 표시 (소식) — 합집합
+    s,v1,_=req('PUT','/api/seen',{'ids':['a','b']},tok=TA); s,v2,_=req('PUT','/api/seen',{'ids':['b','c']},tok=v['token']); s,g,_=req('GET','/api/seen',tok=TA)
+    check('seen ids stored as union across devices', g['ids']==['a','b','c'], g)
+    # b62: 강제 로그아웃 — 기준 시각 이전 세션/기기 표 무효, 데이터는 그대로
+    ep=int(dev.sql("SELECT v FROM meta WHERE k='auth_epoch_b62'")[0]['v'])
+    import hashlib, secrets
+    oldtok=secrets.token_urlsafe(32); olddev=secrets.token_urlsafe(32); uid=dev.sql(f"SELECT user_id FROM accounts WHERE acct_hash='{a1['accounts'][0]}'")[0]['user_id']
+    dev.sql(f"INSERT INTO sessions (token_hash,user_id,created_at,last_used,expires_at,label) VALUES ('{hashlib.sha256(oldtok.encode()).hexdigest()}','{uid}',{ep-5000},{ep-5000},{ep+10**10},'old')")
+    dev.sql(f"INSERT INTO devices (ticket_hash,created_at,expires_at,pass_ver) VALUES ('{hashlib.sha256(olddev.encode()).hexdigest()}',{ep-5000},{ep+10**10},'{cf_dev.TEST_PASS_HASH[:12]}')")
+    before=dev.sql(f"SELECT rev,data FROM state WHERE user_id='{uid}'")
+    s1,_,_=req('GET','/api/state',tok=oldtok); s2,b2,_=req('POST','/api/login',{'device':olddev,'key':KA})
+    check('b62: session created before epoch → 401', s1==401, s1)
+    check('b62: device ticket before epoch → need_invite (password again)', s2==403 and b2['error']=='need_invite', b2)
+    s3,b3,_=req('GET','/api/state',tok=v['token']); check('b62: data untouched by forced logout; new session works', s3==200 and b3['rev']==before[0]['rev'] and json.dumps(b3['data'],ensure_ascii=False,separators=(',',':'))==before[0]['data'] or (s3==200 and b3['rev']==before[0]['rev']), (s3,b3.get('rev'),before[0]['rev']))
     # 로그아웃
     s,b,_=req('POST','/api/logout',tok=TA2); s2,b2,_=req('GET','/api/state',tok=TA2); s3,_,_=req('GET','/api/state',tok=TA)
     check('logout kills only that session', s==200 and s2==401 and s3==200, (s,s2,s3))
@@ -107,7 +145,8 @@ try:
     n=dev.sql(f"SELECT COUNT(*) AS n FROM state_history h JOIN accounts a ON a.user_id=h.user_id WHERE a.acct_hash='{x['accounts'][0]}'")[0]['n']
     check('history keeps last 10 revisions', n==10, n)
     # 세션별 읽기 제한 (90회/분) — 다른 세션은 영향 없음
-    s,x2,_=req('POST','/api/login',{'device':DEV,'key':KD}); t1=x2['token']; s,x3,_=req('POST','/api/login',{'device':DEV,'key':KD}); t2=x3['token']
+    dev.sql("DELETE FROM rate WHERE k LIKE 'login:%'")  # b62: 위 검사로 로그인 횟수가 늘어 IP 제한 초기화
+    s,x2,_=req('POST','/api/login',{'device':DEV,'key':KA}); t1=x2['token']; s,x3,_=req('POST','/api/login',{'device':DEV,'key':KA}); t2=x3['token']
     codes=[req('GET','/api/state/meta',tok=t1)[0] for _ in range(95)]
     s9,b9,h9=req('GET','/api/state/meta',tok=t1); s10,_,_=req('GET','/api/state/meta',tok=t2)
     check('per-session read limit → 429 + Retry-After; other session still OK', codes.count(200)==90 and s9==429 and b9['error']=='too_many' and h9.get('Retry-After') and s10==200, (codes.count(200),s9,h9.get('Retry-After'),s10))

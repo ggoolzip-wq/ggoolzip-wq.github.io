@@ -480,6 +480,7 @@ function save(){
   lastBody=bodyOf();
   localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(S));
   if(changed) gdChanged();
+  if(typeof svKeysSoon==='function') svKeysSoon(); // b62: 서버 모드 — 키(부계정·예비)만 바뀐 것도 바로 금고에 (키는 내용 비교에서 빠져 있어 [저장]이 안 생김)
 }
 const price = (b,diff) => { const k=priceKey(b,diff); return (k in S.settings.prices)?S.settings.prices[k]:(PRICE_CONFIG[k]||0); };
 const activeChar = () => S.characters.find(c=>c.id===S.activeId);
@@ -1911,6 +1912,8 @@ const SV_ON = (()=>{ let u=SYNC_API_URL;
 const SV_TOKEN_KEY='mapleBossTracker.svToken', SV_DEVICE_KEY='mapleBossTracker.svDevice', SV_SUBSIG_KEY='mapleBossTracker.svSubSig', SV_USER_KEY='mapleBossTracker.svUser'; // svUser = 이 기기에서 마지막으로 로그인한 서버 사용자 (다른 사용자로 로그인하면 이 PC 데이터를 올리지 않고 비움) // svDevice = 초대 비밀번호를 통과한 기기 표 (로그아웃해도 유지)
 const svDev=()=>{ try{ return localStorage.getItem(SV_DEVICE_KEY)||''; }catch(e){ return ''; } };
 const svTok=()=>{ try{ return localStorage.getItem(SV_TOKEN_KEY)||''; }catch(e){ return ''; } };
+const SV_RELOGIN='로그인이 만료되었어요 — 초대 비밀번호와 대표 키로 다시 로그인해 주세요 (데이터는 서버와 이 PC에 그대로 있어요)';
+const SV_VAULT_KEY='mapleBossTracker.svVault', SV_KEYERR_KEY='mapleBossTracker.svKeyErr'; // b62: 이 기기 로그인 때 금고 상태(open|none|locked) · 마지막 키 보관 오류
 const SV_NEED_LOGIN='로그인이 필요해요 — 상단 ☁ 버튼에서 넥슨 API 키로 로그인하면 이어서 동기화돼요 (바꾼 내용은 이 PC에 그대로 있어요)';
 async function svFetch(path,opt={}){
   const tok=svTok(); if(!tok&&!opt.noAuth) throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'});
@@ -1918,7 +1921,7 @@ async function svFetch(path,opt={}){
   try{ r=await fetch(SV_ON+path,{method:opt.method||'GET',keepalive:!!opt.keepalive,headers:{'Content-Type':'application/json',...(opt.noAuth?{}:{Authorization:'Bearer '+tok})},body:opt.body===undefined?undefined:JSON.stringify(opt.body)}); }
   catch(e){ throw Object.assign(new Error('동기화 서버에 연결하지 못했습니다 (인터넷 연결 확인)'),{type:'network'}); }
   let b=null; try{ b=await r.json(); }catch(e){}
-  if(r.status===401&&!opt.noAuth){ localStorage.removeItem(SV_TOKEN_KEY); throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'}); }
+  if(r.status===401&&!opt.noAuth){ localStorage.removeItem(SV_TOKEN_KEY); gd.svErr=SV_RELOGIN; setTimeout(()=>svGate(),0); throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'}); }
   if(r.status===409&&opt.allow409) return {conflict:true,...b};
   if(!r.ok) throw Object.assign(new Error((b&&b.message)||`동기화 서버 오류 (HTTP ${r.status})`),{status:r.status,code:b&&b.error});
   return b;
@@ -1975,7 +1978,7 @@ function svLoginHtml(){ // 서버 모드 로그인: (기기당 한 번) 초대 �
 }
 function svSubHtml(){ // 로그인 후: 대표 키 / 부계정 키 추가 (부계정 키는 대표 키로 암호화해 서버 보관)
   const m=svMain(), subs=accounts().filter(a=>a.key&&a!==m&&(!m||a.key!==m.key));
-  return `<div class="svsub" style="margin-top:8px"><div class="muted tiny">대표 키: <b>${m?esc(m.label):'이 기기에 없음'}</b> · 부계정 키 ${subs.length}개${subs.length?` (${subs.map(a=>esc(a.label)).join(', ')})`:''}${m?' — 대표 키로 암호화해 서버에 보관':' — 대표 키로 로그인해야 서버에 보관돼요'}</div>
+  return `<div class="svsub" style="margin-top:8px"><div class="muted tiny">대표 키: <b>${m?esc(m.label):'이 기기에 없음'}</b> · 부계정 키 ${subs.length}개${subs.length?` (${subs.map(a=>esc(a.label)).join(', ')})`:''}${m?' — 대표 키로 암호화해 서버에 보관':' — 대표 키로 로그인해야 서버에 보관돼요'}</div>${localStorage.getItem(SV_KEYERR_KEY)?`<div class="impmsg warn" style="margin-top:4px">⚠ 키 보관 실패: ${esc(localStorage.getItem(SV_KEYERR_KEY))}</div>`:''}
     <div class="row" style="display:flex;gap:6px;margin-top:4px"><input class="pin" id="svSubKey" type="password" autocomplete="off" placeholder="부계정 넥슨 API 키" style="flex:1;min-width:0;text-align:left"><button class="btn sm" id="svSubBtn">부계정 키 추가</button></div></div>`;
 }
 function gdStatusHtml(){
@@ -2355,16 +2358,19 @@ async function svLogin(key,accId){
     const prev=localStorage.getItem(SV_USER_KEY);
     const keep=prev?prev===b.user:(gdLocalEmpty()||confirm(b.rev?'이 PC 데이터를 이 계정 데이터와 합칠까요?\n[취소]를 누르면 이 PC 데이터는 지우고 서버에 있는 이 계정 데이터만 불러옵니다.':'이 PC 데이터를 이 계정으로 올릴까요?\n[취소]를 누르면 이 PC 데이터는 지우고 빈 상태로 시작합니다.'));
     if(!keep){ svWipeLocal(); accId=''; }
-    localStorage.setItem(SV_USER_KEY,b.user);
-    gd.login={key,accId:accId||'',hashes:b.accounts||[],vault:b.vault||'none',subs:b.subKeys||[],mainBk:b.mainBk||''};
+    const same=!!prev&&prev===b.user&&keep; // b62: 같은 사용자로 다시 로그인(강제 로그아웃 등) → 마지막으로 맞춘 기준(base·rev) 유지 = 저장 안 한 변경도 3-way 병합
+    localStorage.setItem(SV_USER_KEY,b.user); localStorage.setItem(SV_VAULT_KEY,b.vault||'none');
+    gd.login={key,accId:accId||'',hashes:b.accounts||[],vault:b.vault||'none',subs:b.subKeys||[],mainBk:b.mainBk||'',mainBkLabel:b.mainBkLabel||''};
     const la=(accId&&accById(accId))||(keep?accounts().find(x=>x.key===key):null); // 등록된 키로 로그인: 첫 저장 전에 계정 해시(ah)를 붙여 둠 → 다른 기기에서 키 짝짓기
     if(la&&((b.accounts?.[0]&&!(b.accounts||[]).includes(la.ah))||(b.vault!=='locked'&&!la.main))){ if(b.accounts?.[0]&&!(b.accounts||[]).includes(la.ah)) la.ah=b.accounts[0]; if(b.vault!=='locked'){ accounts().forEach(x=>delete x.main); la.main=true; } save(); clearTimeout(gd.timer); gd.timer=null; }
-    gdMeta={on:true}; gdSaveMeta(); localStorage.removeItem(GD_BASE_KEY); gd.remoteRev=undefined; gd.fileId=null;
+    if(same&&localStorage.getItem(GD_BASE_KEY)) gdMeta={...gdMeta,on:true}; else { gdMeta={on:true}; localStorage.removeItem(GD_BASE_KEY); }
+    gdSaveMeta(); gd.remoteRev=undefined; gd.fileId=null;
     await gdConnect(true);
     svGate();
     svAfterLogin();
     if(gd.state==='on') toast('☁ 로그인했습니다'+(b.newUser?' — 이 데이터를 서버에 저장합니다':''));
-  }catch(e){ if(e.code==='need_invite') localStorage.removeItem(SV_DEVICE_KEY); gd.svErr=e.message; gdSet('off'); if($('#svGate')) svGate(); else gdMenu(true); }
+    svSeenPull();
+  }catch(e){ if(e.code==='need_invite') localStorage.removeItem(SV_DEVICE_KEY); gd.svErr=e.code==='sub_key'?'이미 등록된 부계정 API입니다.':e.message; gdSet('off'); if($('#svGate')) svGate(); else gdMenu(true); }
 }
 function svWipeLocal(){ // 이 브라우저의 보스 데이터 비우기 (테마·기기 표·서버 주소는 유지)
   const th=S.theme; clearTimeout(gd.timer); gd.timer=null; localStorage.removeItem(GD_BASE_KEY); localStorage.removeItem(SV_SUBSIG_KEY);
@@ -2409,32 +2415,44 @@ function svAfterLogin(){
   if(L.vault!=='locked'){ for(const x of accounts()) if(!!x.main!==(x===a)){ x.main=x===a||undefined; if(!x.main) delete x.main; ch=true; } } // 대표 키 = 로그인에 쓴 키 (부계정 키로 로그인하면 그대로)
   let back=0;
   if(L.mainBk&&!a.bk&&L.mainBk!==a.key){ a.bk=L.mainBk; ch=true; back++; } // 서버 금고의 예비 키 복원
+  if(L.mainBkLabel&&a.bk===L.mainBk&&!a.bkLabel){ a.bkLabel=L.mainBkLabel; ch=true; }
   for(const sub of L.subs||[]){ // 대표 키로 로그인 → 서버가 풀어 준 부계정 키 채우기
     if(!sub?.key||sub.key===a.key) continue;
     const ac=accounts(), x=ac.find(y=>y.key===sub.key)||ac.find(y=>!y.key&&sub.ah&&y.ah===sub.ah);
-    if(x){ if(!x.key){ x.key=sub.key; ch=true; back++; } if(sub.ah&&!x.ah){ x.ah=sub.ah; ch=true; } if(sub.bk&&!x.bk){ x.bk=sub.bk; ch=true; } }
-    else { S.settings.accounts=[...ac,{id:'a'+Date.now().toString(36)+ac.length,label:sub.label||`부계정${ac.length}`,key:sub.key,...(sub.ah?{ah:sub.ah}:{}),...(sub.bk?{bk:sub.bk}:{})}]; ch=true; back++; }
+    if(x){ if(!x.key){ x.key=sub.key; ch=true; back++; } if(sub.ah&&!x.ah){ x.ah=sub.ah; ch=true; } if(sub.bk&&!x.bk){ x.bk=sub.bk; ch=true; } if(sub.bkLabel&&x.bk===sub.bk&&!x.bkLabel){ x.bkLabel=sub.bkLabel; ch=true; } }
+    else { S.settings.accounts=[...ac,{id:'a'+Date.now().toString(36)+ac.length,label:sub.label||`부계정${ac.length}`,key:sub.key,...(sub.ah?{ah:sub.ah}:{}),...(sub.bk?{bk:sub.bk,...(sub.bkLabel?{bkLabel:sub.bkLabel}:{})}:{})}]; ch=true; back++; }
   }
   if(back) toast(`부계정 키 ${back}개를 불러왔습니다`);
-  if(L.vault==='open'&&!back) localStorage.setItem(SV_SUBSIG_KEY,svSubSig()); // 서버 금고와 같으면 다시 올리지 않음
+  // b62: 서버 금고에 이 PC 의 키가 전부 있을 때만 '맞춤'으로 표시 (예전엔 금고가 열리기만 하면 맞춤 처리 → 이 PC 에만 있던 키가 영영 안 올라감)
+  const vset=new Set([L.key,L.mainBk,...(L.subs||[]).flatMap(x=>[x.key,x.bk])].filter(Boolean));
+  const lset=accounts().flatMap(x=>[x.key,x.bk]).filter(Boolean);
+  if(L.vault==='open'&&lset.every(k=>vset.has(k))&&accounts().filter(x=>x.key&&!x.main).length===(L.subs||[]).length) localStorage.setItem(SV_SUBSIG_KEY,svSubSig());
+  else if(L.vault==='open') localStorage.removeItem(SV_SUBSIG_KEY);
   if(ch){ save(); render(); }
   if(svMain()&&svSubSig()!==localStorage.getItem(SV_SUBSIG_KEY)) svSyncSubKeys().then(()=>gdRender()).catch(()=>{});
 }
 const svMain=()=>accounts().find(a=>a.main&&a.key)||null;
-const svSubSig=()=>{ const m=svMain(); return m?JSON.stringify([m.key,m.bk||'',...accounts().filter(a=>a.key&&a!==m&&a.key!==m.key).map(a=>[a.key,a.label,a.bk||''])]):''; };
+const svSubSig=()=>{ const m=svMain(); return m?JSON.stringify([m.key,m.bk||'',m.bkLabel||'',...accounts().filter(a=>a.key&&a!==m&&a.key!==m.key).map(a=>[a.key,a.label,a.bk||'',a.bkLabel||''])]):''; };
 // 부계정 키를 서버 금고에 (대표 키로 암호화) — 바뀌었을 때만. 대표 키가 이 기기에 없으면 예전처럼 연결만.
 async function svSyncSubKeys(){
   const m=svMain(); if(!m) return svLinkNewKeys();
   const sig=svSubSig(); if(sig===localStorage.getItem(SV_SUBSIG_KEY)) return svLinkNewKeys();
+  if(localStorage.getItem(SV_VAULT_KEY)==='locked') return svLinkNewKeys(); // b62: 이 기기는 금고 내용을 모름(대표 계정이 아닌 키로 로그인) → 금고를 덮어쓰지 않음
   const subs=accounts().filter(a=>a.key&&a!==m&&a.key!==m.key);
   if(!subs.length&&!m.bk&&!localStorage.getItem(SV_SUBSIG_KEY)){ localStorage.setItem(SV_SUBSIG_KEY,sig); return; } // 부계정 키가 처음부터 없으면 서버에 올릴 것 없음
   try{
-    const r=await svFetch('/api/subkeys',{method:'PUT',body:{main:m.key,...(m.bk?{mainBk:m.bk}:{}),subs:subs.map(a=>({key:a.key,label:a.label,...(a.bk?{bk:a.bk}:{})}))}});
+    const r=await svFetch('/api/subkeys',{method:'PUT',body:{main:m.key,...(m.bk?{mainBk:m.bk,...(m.bkLabel?{mainBkLabel:m.bkLabel}:{})}:{}),subs:subs.map(a=>({key:a.key,label:a.label,...(a.bk?{bk:a.bk,...(a.bkLabel?{bkLabel:a.bkLabel}:{})}:{})}))}});
     let ch=false; (r.subs||[]).forEach((x,i)=>{ const a=subs[i]; if(a&&x.ah&&a.ah!==x.ah){ a.ah=x.ah; ch=true; } });
-    localStorage.setItem(SV_SUBSIG_KEY,sig);
+    localStorage.setItem(SV_SUBSIG_KEY,sig); localStorage.setItem(SV_VAULT_KEY,'open'); localStorage.removeItem(SV_KEYERR_KEY);
     if(ch){ S.updatedAt=Date.now(); lastSig=contentSig(S); lastBody=bodyOf(); localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); }
-  }catch(e){ if(e.type==='interaction_required') throw e; toast('부계정 키 보관: '+e.message); localStorage.setItem(SV_SUBSIG_KEY,sig); }
+  }catch(e){ if(e.type==='interaction_required') throw e;
+    // b62: 실패하면 '맞춤'으로 표시하지 않음 (예전: 실패해도 맞춤 처리 → 다시 안 올림 = 다른 PC 에서 키가 사라지던 원인 중 하나). 다음 저장/키 변경 때 다시 시도
+    localStorage.setItem(SV_KEYERR_KEY,String(e.message||e).slice(0,200)); toast('⚠ 부계정·예비 키를 서버에 보관하지 못했어요: '+e.message); }
 }
+// b62: 키를 추가·삭제하면 (저장 버튼과 무관하게) 2초 뒤 금고에 보관
+let svKeysT=null;
+function svKeysSoon(){ if(!SV_ON||!svTok()||!gdMeta.on||!svMain()||!['open','none'].includes(localStorage.getItem(SV_VAULT_KEY))) return; // b62 로그인(금고 상태 기록)한 기기만 if(svSubSig()===localStorage.getItem(SV_SUBSIG_KEY)) return;
+  clearTimeout(svKeysT); svKeysT=setTimeout(()=>{ svSyncSubKeys().then(()=>gdRender()).catch(()=>{}); },2000); }
 async function svAddSub(key){
   key=String(key||'').trim(); if(!key) return toast('부계정 API 키를 넣어 주세요');
   const ac=accounts(); if(ac.some(a=>a.key===key)) return toast('이미 등록된 키입니다');
@@ -2487,9 +2505,9 @@ async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그
   if(SV_ON){
     pend=null; // 저장 안 한 변경은 그냥 버림 (저장은 보스 목록 [저장]으로만)
     try{ if(svTok()) await svFetch('/api/logout',{method:'POST'}); }catch(e){}
-    clearTimeout(gd.timer); gd.timer=null; gd.fileId=null; gd.remoteRev=undefined; localStorage.removeItem(SV_TOKEN_KEY); localStorage.removeItem(SV_SUBSIG_KEY);
+    clearTimeout(gd.timer); gd.timer=null; gd.fileId=null; gd.remoteRev=undefined; localStorage.removeItem(SV_TOKEN_KEY); localStorage.removeItem(SV_SUBSIG_KEY); localStorage.removeItem(SV_VAULT_KEY); localStorage.removeItem(SV_KEYERR_KEY);
     gdMeta={}; localStorage.removeItem(GD.META_KEY); localStorage.removeItem(GD_BASE_KEY);
-    svWipeLocal(); gdSet('off'); render(); svGate(); toast('로그아웃했습니다 (이 PC의 보스 데이터도 지웠어요 — 다시 로그인하면 서버에서 불러옵니다)'); return;
+    svWipeLocal(); gd.svErr=''; gdSet('off'); render(); svGate(); toast('로그아웃했습니다 (이 PC의 보스 데이터도 지웠어요 — 다시 로그인하면 서버에서 불러옵니다)'); return;
   }
   if(gdMeta.on && gdLocalDirty()){
     const ok=gdHasTok() ? await gdPush() : false;
@@ -2668,6 +2686,14 @@ const FEED_LIVE='https://ggoolzip-wq.github.io/feed.json', FEED_SEEN_KEY='mapleB
 const feed={data:null,err:'',tab:'saryo',page:1,per:5,at:0};
 let feedSeen=new Set((()=>{ try{ return JSON.parse(localStorage.getItem(FEED_SEEN_KEY))||[]; }catch(e){ return []; } })());
 const feedItems=t=>((feed.data&&feed.data.items&&feed.data.items[t])||[]);
+// b62: 읽음 표시를 서버(로그인한 계정)에 합집합으로 보관 → 다른 PC 에서도 이미 본 글은 N 표시 없음 (서버 모드만, 예전 서버면 조용히 건너뜀)
+let seenPush=new Set(), seenT=null;
+function svSeenMark(id){ if(!SV_ON||!svTok()) return; seenPush.add(id); clearTimeout(seenT); seenT=setTimeout(svSeenFlush,1500); }
+async function svSeenFlush(){ if(!seenPush.size||!svTok()) return; const ids=[...seenPush]; seenPush=new Set();
+  try{ const r=await svFetch('/api/seen',{method:'PUT',body:{ids}}); svSeenApply(r.ids); }catch(e){ if(e.status!==404) ids.forEach(x=>seenPush.add(x)); } }
+function svSeenApply(ids){ let ch=false; (ids||[]).forEach(x=>{ if(!feedSeen.has(x)){ feedSeen.add(x); ch=true; } }); if(ch){ feedSaveSeen(); renderFeed(); } }
+async function svSeenPull(){ if(!SV_ON||!svTok()) return;
+  try{ const r=await svFetch('/api/seen'); const srv=new Set(r.ids||[]); svSeenApply(r.ids); const mine=[...feedSeen].filter(x=>!srv.has(x)); if(mine.length){ mine.forEach(x=>seenPush.add(x)); svSeenFlush(); } }catch(e){} }
 const feedUnseen=t=>feedItems(t).filter(x=>!feedSeen.has(x.id)).length;
 function feedSaveSeen(){ // feed 에 아직 있는 글만 기억 (무한히 커지지 않게)
   const live=new Set(FEED_TABS.flatMap(([t])=>feedItems(t).map(x=>x.id)));
@@ -2795,9 +2821,9 @@ function feedFit(){
 $('#feedCard').addEventListener('click',e=>{
   const tb=e.target.closest('[data-ftab]'); if(tb){ feed.tab=tb.dataset.ftab; feed.page=1; renderFeed(); feedFit(); return; }
   const pg=e.target.closest('[data-fpage]'); if(pg&&!pg.disabled){ feed.page=+pg.dataset.fpage; renderFeed(); return; }
-  const a=e.target.closest('a[data-fid]'); if(a&&!feedSeen.has(a.dataset.fid)){ feedSeen.add(a.dataset.fid); feedSaveSeen(); setTimeout(renderFeed,0); }
+  const a=e.target.closest('a[data-fid]'); if(a&&!feedSeen.has(a.dataset.fid)){ feedSeen.add(a.dataset.fid); feedSaveSeen(); svSeenMark(a.dataset.fid); setTimeout(renderFeed,0); }
 });
-$('#feedCard').addEventListener('auxclick',e=>{ const a=e.target.closest('a[data-fid]'); if(a&&e.button===1&&!feedSeen.has(a.dataset.fid)){ feedSeen.add(a.dataset.fid); feedSaveSeen(); setTimeout(renderFeed,0); } });
+$('#feedCard').addEventListener('auxclick',e=>{ const a=e.target.closest('a[data-fid]'); if(a&&e.button===1&&!feedSeen.has(a.dataset.fid)){ feedSeen.add(a.dataset.fid); feedSaveSeen(); svSeenMark(a.dataset.fid); setTimeout(renderFeed,0); } });
 renderFeed(); feedFit();
 addEventListener('resize',feedFit);
 if(window.ResizeObserver){ const ro=new ResizeObserver(()=>feedFit()); document.querySelectorAll('.side-sticky>.card:not(#feedCard):not(#sunCard), .foot, header, #view').forEach(el=>ro.observe(el)); }
@@ -2805,5 +2831,5 @@ feedLoad().then(feedFit);
 setInterval(()=>{ if(!document.hidden) feedLoad(); },3e5);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&Date.now()-feed.at>3e5) feedLoad(); });
 gdRender(); svGate();
-if(SV_ON){ if(gdMeta.on&&svTok()) gdConnect(false); else gdRender(); } // 서버 모드: 남은 세션 토큰으로만 (없으면 ☁ 로그인)
+if(SV_ON){ if(gdMeta.on&&svTok()){ gdConnect(false).then(()=>svSeenPull()); } else gdRender(); } // 서버 모드: 남은 세션 토큰으로만 (없으면 ☁ 로그인)
 else if(gdUsable()){ gdLoadLib().catch(()=>{}); if(gdMeta.on) gdConnect(false); }

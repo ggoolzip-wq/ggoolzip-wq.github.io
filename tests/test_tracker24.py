@@ -60,7 +60,7 @@ try:
     pa.evaluate('gdMenu(true)'); pa.wait_for_timeout(300)
     check('A: sub key added + linked, panel counts 1', '부계정 키 1개' in pa.inner_text('#gMenu'), pa.inner_text('#gMenu')[:300])
     shot(pa,'sv_sub_key_added.png')
-    v=dev.sql("SELECT * FROM keyvault"); dump=json.dumps(v)+json.dumps(server_state())
+    v=dev.sql("SELECT * FROM keyvault2"); dump=json.dumps(v)+json.dumps(server_state())
     check('server: vault row, ciphertext only (no raw keys anywhere)', len(v)==1 and KA not in dump and KF not in dump, len(v))
     # 기기 B: 대표 키만 입력 → 데이터 + 부계정 키 복원
     cb,pb=mkctx(b); pb.goto(URL); pb.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); pb.reload(); pb.wait_for_timeout(400)

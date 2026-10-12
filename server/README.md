@@ -52,3 +52,11 @@ Workers 요청 10만/일, D1 저장 5GB · 읽기 500만 행/일 · 쓰기 10만
 - 다른 기기에서 대표 키로 `/api/login` → 서버가 그 요청 안에서만 복호화해 `subKeys` 로 돌려줌(`vault: open`). 부계정 키나 다른 키로 로그인하면 데이터는 열리지만 `vault: locked`, 키는 안 돌아옴.
 - 대표 키를 넥슨에서 재발급하면 예전 금고는 못 풀림 → 새 대표 키로 로그인한 기기에서 부계정 키가 다시 올라가 덮어씀.
 - 기존 DB에 테이블 추가: `npx wrangler d1 execute ggoolzip-sync --remote --file schema.sql` (IF NOT EXISTS 라 반복 실행 안전).
+
+## b62 (2026-10-12) — 금고 v2 · 부계정 키 로그인 차단 · 강제 로그아웃 · 읽음 동기화
+- **배포만 하면 됨** (`npx wrangler deploy`). 새 표(keyvault2·keyreg·acct_role·meta·seen)는 Worker 가 첫 요청 때 `CREATE TABLE IF NOT EXISTS` 로 만듦 → 원격 schema 실행 불필요(schema.sql 에도 적어 둠).
+- 금고 v2: 암호 키 = HKDF(ID_PEPPER + 대표 넥슨 계정 account_id). account_id 원본은 저장 안 함(넥슨이 그 계정의 유효한 키에만 알려 줌) → 대표 계정의 어떤 키(예비·재발급 키)로도 열림. 예전 v1(대표 키 문자열) 금고는 대표 키로 로그인할 때 자동 이전.
+- 부계정·예비 키 등록부 keyreg = sha256(ID_PEPPER:key:키) → user_id (키 원본 없음). 계정 역할 acct_role(main|sub). 부계정/예비 키나 부계정 계정의 다른 키로 로그인하면 403 `sub_key` '이미 등록된 부계정 API입니다.'
+- 강제 로그아웃: 새 Worker 첫 요청 시각을 meta `auth_epoch_b62` 에 기록 → 그 이전 세션·기기 표(초대 비밀번호 통과)는 무효(한 번 삭제). 데이터(state·history·금고)는 그대로. 다시 전원 로그아웃하려면 worker.js `EPOCH_KEY` 이름만 바꿔 배포.
+- `GET/PUT /api/seen` 소식 카드 읽음 표시(합집합, 최근 1500개).
+- 부계정 키 등록 때 그 계정이 예전에 따로 로그인해 생긴 **빈** 데이터(캐릭터 0명, 그 계정만 연결)에 묶여 있으면 이쪽으로 옮김(캐릭터가 있으면 409 그대로).

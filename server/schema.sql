@@ -74,3 +74,12 @@ CREATE TABLE IF NOT EXISTS cp (
   day      TEXT NOT NULL,             -- KST 날짜 (하루 1번 제한)
   PRIMARY KEY (user_id, ocid)
 );
+
+-- b62 (2026-10-12): Worker 가 첫 요청 때 자동으로 만듦 (worker.js ensureSchema) — 여기엔 기록용
+CREATE TABLE IF NOT EXISTS keyvault2 (user_id TEXT PRIMARY KEY, owner_hash TEXT NOT NULL, iv TEXT NOT NULL, ct TEXT NOT NULL, updated_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS keyreg (key_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, kind TEXT NOT NULL, updated_at INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS keyreg_user ON keyreg(user_id);
+CREATE TABLE IF NOT EXISTS acct_role (acct_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, role TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS acct_role_user ON acct_role(user_id);
+CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS seen (user_id TEXT PRIMARY KEY, ids TEXT NOT NULL, updated_at INTEGER NOT NULL);
