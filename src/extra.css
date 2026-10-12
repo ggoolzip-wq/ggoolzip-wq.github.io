@@ -924,5 +924,5 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 #salesCard h2 .hbi{display:inline-flex;vertical-align:middle}
 
 /* b77 */
-.admhdr{margin-right:6px;border-color:#ffcc4d!important;color:#ffcc4d!important;font-weight:700}
+.admhdr{margin-right:6px;background:#1d1d23!important;border-color:#1d1d23!important;color:#ffcc4d!important;font-weight:800}
 .admhdr[hidden]{display:none}

@@ -650,3 +650,11 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - `totalData().sales` 키 = 아이템#인원 ({n,m,i,p}; r.p = 기록 때 나눈 인원). 같은 아이템도 1인/2인 분배/3인 분배… 따로 줄·따로 건수. 줄마다 '1인'·'N인 분배' 표시(.slp), 한 줄 고정(nowrap, 긴 이름은 말줄임), 가로 스크롤 없음(390px 확인).
 - 테스트: test_tracker57 (run_all 추가), test47 제목 기대값 수정. 47·57 통과.
 - 스크린샷: /workspace/maple-boss-tracker/oct12n_b76_before_sales.png, oct12n_b76_after_sales.png
+
+## b77 — 관리자 버튼이 안 보이던 문제 (2026-10-12)
+- 원인: b67 이후 서버 모드 로그인 상태의 헤더 버튼(#gBtn)은 바로 '로그아웃' 이라 ☁ 메뉴(gdMenu)를 열 길이 없음 → 메뉴 안의 '👑 관리자 — 가입 승인'(#svAdminBtn)에 갈 수 없었음. 로그인 경로·SV_ADMIN_KEY('1')·gdMeta.on·svAdminCheck 는 정상(라이브에서 실제 키로 확인).
+- 수정: 헤더 오른쪽 위 [로그아웃] 바로 왼쪽에 '👑 관리자' 버튼(#svAdminHdr, 어두운 바탕 노란 글) — 관리자이고 로그인 중일 때만, 새로고침 뒤에도(svAdminCheck → gdRender). 누르면 가입 승인 창(openAdmin).
+- 라이브 확인(실제 관리자 키, 화면·로그에 키 없음): 로그인 직후·새로고침 뒤 버튼 보임, 눌러서 관리자 창 열림, 확인 후 로그아웃. 'bot-check' 세션 1개 삭제(백업 /workspace/backup/b77_sessions_before_20261012_151011.json, 600). 사용자 'Windows' 세션 2개는 그대로.
+- 참고: 사용자 데이터 vault:'none' = 서버 금고에 부계정 키 없음(b64 키 초기화 뒤 부계정 키를 다시 등록하지 않음 — 예상된 상태). 계정 칸 4개 중 키 있는 건 본계정 1개뿐 → b72 규칙으로 캐릭터 22명 중 본계정 8명만 보이고 14명은 숨김(데이터 유지, 부계정 키를 '+ 계정 추가'로 다시 넣으면 다시 보임).
+- 테스트: test_tracker52 에 헤더 관리자 버튼(로그아웃 왼쪽, 새로고침 뒤, 비관리자 없음) 추가.
+- 스크린샷: /workspace/maple-boss-tracker/oct12o_b77_before_header.png, oct12o_b77_after_header.png, oct12o_b77_after_reload.png, oct12o_b77_test_header.png
