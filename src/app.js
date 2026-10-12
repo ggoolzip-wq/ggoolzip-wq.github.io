@@ -276,11 +276,11 @@ function askRev(c,b,key,ik,cel){
     <button class="btn plain rvno" data-rv="no">아니오</button></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
   document.body.appendChild(el);
   let closed=false; const fin=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true); if(cel) cel(); };
-  const ok=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')); if(!(v>0)||v>100000){ $('#rvErr').textContent='금액(억 메소)을 넣어 주세요'; $('#rvAmt').focus(); return; }
+  const ok=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')); if(!(v>0)||v>100000){ $('#rvErr').textContent='금액을 입력해주세요.'; markEmpty($('#rvAmt')); $('#rvAmt').focus(); return; }
     const cc=S.characters.find(x=>x.id===c.id)||c; revMap(cc,b.type)[key]={m:Math.round(v*1e8/div),a:Math.round(v*1e4)/1e4,p:div,i:ik}; save(); render(); fin(); };
   const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); fin(); } else if(e.key==='Enter'&&e.target.id==='rvAmt'){ e.preventDefault(); ok(); } };
   document.addEventListener('keydown',kd,true);
-  el.onclick=e=>{ const t=e.target.closest('[data-rv]'); if(t) return t.dataset.rv==='ok'?ok():fin(); if(e.target===el) fin(); };
+  el.onclick=e=>{ const t=e.target.closest('[data-rv]'); if(t) return t.dataset.rv==='ok'?ok():fin(); }; // b75: 바깥(배경) 클릭은 아무것도 안 함
   setTimeout(()=>$('#rvAmt')?.focus(),30);
 }
 function changeDrop(key, delta){
@@ -491,8 +491,13 @@ function pendSig(x){ const d=JSON.parse(JSON.stringify(x)); (d.characters||[]).f
 function pendStart(){ if(!pend){ pend={base:JSON.parse(JSON.stringify(S))}; } }
 const COMMITTED=fn=>{ if(!pend) return fn(); const live=S; pend.base.activeId=live.activeId; S=pend.base; try{ return fn(); } finally{ S=live; } };
 const cRev=c=>COMMITTED(()=>charRevenue(S.characters.find(x=>x.id===c.id)||c));
-function pendCancel(){ if(!pend) return; const keepId=S.activeId; S=pend.base; S.activeId=keepId; pend=null; save(); render(); toast('변경사항을 취소했습니다'); }
-async function pendSave(){ if(!pend&&!svUnsaved()) return; pend=null; save(); render(); if(SV_ON&&svTok()&&gdMeta.on){ await svSaveNow(); render(); } else toast('저장했습니다'); }
+function pendCancel(quiet){ if(!pend) return; const keepId=S.activeId; S=pend.base; S.activeId=keepId; pend=null; save(); render(); if(!quiet) toast('변경사항을 취소했습니다'); }
+let pendDoneAt=0; // b75: 보스 목록 [저장] → 취소 버튼 왼쪽에 초록 '저장이 완료되었습니다.' (하단 알림 없음)
+async function pendSave(){ if(!pend&&!svUnsaved()) return; pend=null; save(); pendDoneAt=Date.now(); render(); if(SV_ON&&svTok()&&gdMeta.on){ await svSaveNow(true); render(); }
+  clearTimeout(pendSave._t); pendSave._t=setTimeout(()=>{ pendDoneAt=0; document.querySelectorAll('.pdone').forEach(e=>e.remove()); },3000); }
+/* b75: 저장 안 한 보스 목록 변경이 있으면 탭 이동·다른 캐릭터 선택 전에 묻기 (그 캐릭터 사진 + 문구, 예=저장 후 이동 / 아니오=버리고 이동 / 바깥 클릭=머무름) */
+function pendGuard(go){ if(!pend) return go(); const c=activeChar();
+  svAsk('지금까지의 변경사항을 저장하시겠습니까?',[['yes','예'],['no','아니오']],c?`<div class="pgav">${avatar(c,'pgavi')}<div class="pgname">${esc(c.name||'')}</div></div>`:'').then(async k=>{ if(k==='yes'){ await pendSave(); go(); } else if(k==='no'){ pendCancel(true); go(); } }); }
 function pendAsk(){ svAsk('변경사항을 취소하시겠습니까?',[['yes','예'],['no','아니오']]).then(k=>{ if(k==='yes') pendCancel(); }); }
 function save(){
   if(pend){ if(pendSig(S)===pendSig(pend.base)) pend=null; else return; } // 대기 중: 저장소에 쓰지 않음. 되돌려서 스냅샷과 같아지면 대기 해제(버튼 비활성)
@@ -1047,6 +1052,9 @@ function meso(n){
   let s=''; if(eok) s+=eok.toLocaleString()+'억 '; if(man) s+=man.toLocaleString()+'만'; if(!eok&&!man) s=rest.toLocaleString();
   return s.trim()+' 메소'; // b60: 금액에는 항상 '메소' 단위
 }
+/* b75 규칙: 칸을 비워서 경고가 나오면 그 칸 테두리를 빨갛게(.inerr) — 입력하면 바로 지움 */
+function markEmpty(el,on=true){ if(el) el.classList.toggle('inerr',!!on); return el; }
+document.addEventListener('input',e=>{ const t=e.target; if(t?.classList?.contains('inerr')&&String(t.value).trim()) t.classList.remove('inerr'); },true);
 function toastHide(){ clearTimeout(toast._t); $('#toast')?.classList.remove('show'); }
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),3200);}
 const safeImg = u => /^https:\/\/open\.api\.nexon\.com\//.test(u||'') ? u : '';
@@ -1303,7 +1311,7 @@ function renderBoss(){
     <div class="toolbar" style="margin-bottom:10px">
       <div class="seg">${['weekly','monthly'].map(t=>`<button data-filter="${t}" class="${bossFilter===t?'on':''}">${TYPE_LABEL[t]} <span style="opacity:.8">${doneType(t)}/${cntType(t)}</span></button>`).join('')}</div>
       <span style="flex:1"></span>
-      ${(on=>`<button class="pbtn pcancel${on?' on':''}" id="pendCancel" ${on?'':'disabled'}>취소</button><button class="pbtn psave${on?' on':''}" id="pendSave" ${on?'':'disabled'}>저장</button>`)(!!pend||svUnsaved())}
+      ${(!pend&&pendDoneAt&&Date.now()-pendDoneAt<3000)?'<span class="pdone" role="status">저장이 완료되었습니다.</span>':''}${(on=>`<button class="pbtn pcancel${on?' on':''}" id="pendCancel" ${on?'':'disabled'}>취소</button><button class="pbtn psave${on?' on':''}" id="pendSave" ${on?'':'disabled'}>저장</button>`)(!!pend||svUnsaved())}
     </div>
     ${bossFilter==='monthly'?'<div class="muted" style="margin-bottom:8px">월간 보스(검은 마법사)는 매월 1일 00:00 초기화되며 월 1회만 처치 가능합니다. 주간 수익과 별도로 「이번 달 월간 보스」 수익으로 집계됩니다.</div>':''}
     <div class="boss-list">${shown.length?shown.map(b=>bossRow(c,b)).join(''):`<div class="empty muted">${c.ocid?`게임 스케줄러에 등록된 ${TYPE_LABEL[bossFilter]}가 없습니다.<br>게임에서 보스를 스케줄러에 등록한 뒤 동기화(↻)하면 자동으로 표시돼요.`:`넥슨 API로 불러온 캐릭터만 보스가 자동 표시돼요.<br>캐릭터 편집에서 API 키 계정에 연결해 주세요.`}</div>`}</div>
@@ -1742,7 +1750,7 @@ async function pickChar(ocid){
 }
 function closeCharModal(){ $('#charModal').classList.remove('show'); }
 async function lookupByName(){
-  const name=$('#fName').value.trim(); if(!name){toast('이름을 입력하세요');return;}
+  const name=$('#fName').value.trim(); if(!name){toast('이름을 입력하세요');markEmpty($('#fName')).focus();return;}
   const msg=$('#fLookupMsg'); msg.innerHTML='<span class="spin"></span> 조회 중…';
   try{
     const key=accById($('#fAcc').value)?.key||anyKey();
@@ -1755,7 +1763,7 @@ async function lookupByName(){
   }catch(e){ msg.textContent='조회 실패: '+e.message; }
 }
 function saveChar(){
-  const name=$('#fName').value.trim(); if(!name){toast('이름을 입력하세요');return;}
+  const name=$('#fName').value.trim(); if(!name){toast('이름을 입력하세요');markEmpty($('#fName')).focus();return;}
   const job=$('#fJob').value.trim(), world=$('#fWorld').value.trim(); const level=Math.max(1,Math.min(300,parseInt($('#fLevel').value)||0))||'';
   const isMain=$('#fMain').checked, accId=$('#fAcc').value||'';
   let c;
@@ -1859,7 +1867,7 @@ function svMainRender(){
   sec.innerHTML=`<div class="accrow svmrow"><input id="svMainKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="API키 입력" aria-label="API키 입력"${busy?' disabled':''}><button class="btn sm" id="svMainBtn"${busy?' disabled':''}>${busy?'확인 중…':'등록'}</button></div>
     ${err?`<div class="accst svmst" id="svMainSt"><span class="keyrej${soft?' soft':''}" role="alert">${esc(err)}</span></div>`:'<div class="accst svmst" id="svMainSt" hidden></div>'}`;
   svMainAttr(true);
-  const inp=$('#svMainKey'); if(inp){ inp.value=v; if(!busy) setTimeout(()=>inp.focus(),0); }
+  const inp=$('#svMainKey'); if(inp){ inp.value=v; if(err==='API 키를 넣어 주세요'&&!v) markEmpty(inp); if(!busy) setTimeout(()=>inp.focus(),0); }
 }
 async function openImport(accId){
   const modal=$('#importModal'), wasOpen=modal.classList.contains('show');
@@ -1918,11 +1926,12 @@ async function svKeyCheck(k){ // '' = 통과 (서버 모드가 아니거나, 예
   catch(e){ return e.code==='sub_key'?'이미 등록된 부계정 API입니다.':''; }
 }
 async function addAccount(){
-  const k=$('#newAccKey').value.trim(); if(!k){ toast('API 키를 붙여넣으세요'); $('#newAccKey').focus(); return; }
+  const k=$('#newAccKey').value.trim();
+  { const lb=$('#newAccLabel').value.trim()||(accounts().length?'':'본계정'); // b75: 빈 칸 전부 빨간 테두리 (이름 → 키 순서로 안내)
+    if(!lb||!k){ newAccLblErr(!lb); markEmpty($('#newAccLabel'),!lb); markEmpty($('#newAccKey'),!k); if(!lb) $('#newAccLabel').focus(); else { toast('API 키를 붙여넣으세요'); $('#newAccKey').focus(); } return; } }
   const dup=accounts().find(a=>a.key===k); if(dup){ toast(`이미 '${dup.label}'(으)로 등록된 키입니다`); openImport(dup.id); return; }
   const n=accounts().length, label=$('#newAccLabel').value.trim()||(n?'':'본계정');
   // b72: 부계정 키는 이름을 꼭 입력 (자동 이름 없음) — 비어 있으면 이름 칸 바로 아래 빨간 글, 등록 안 함
-  newAccLblErr(!label); if(!label){ $('#newAccLabel').focus(); return; }
   if(accAdding) return; accAdding=true; accRej=null; accRejShow();
   let rej=''; try{ rej=await svKeyCheck(k); }finally{ accAdding=false; }
   if(rej){ accRej={label,msg:rej}; accRejShow(); $('#newAccKey').value=''; return; }
@@ -1931,7 +1940,7 @@ async function addAccount(){
   openImport(a.id); render();
 }
 function newAccLblErr(on){ let d=$('#newAccLblErr');
-  if(!on){ d?.remove(); return; }
+  if(!on){ d?.remove(); markEmpty($('#newAccLabel'),false); return; }
   if(!d){ d=document.createElement('div'); d.id='newAccLblErr'; d.className='lblerr'; d.setAttribute('role','alert'); d.textContent='계정 이름을 입력해주세요'; $('.accadd')?.insertAdjacentElement('afterend',d); }
 }
 document.addEventListener('input',e=>{ if(e.target.id==='newAccLabel'&&e.target.value.trim()) newAccLblErr(false); });
@@ -2627,11 +2636,12 @@ async function svImportDrive(){
 // 서버 모드: 저장 안 한 변경 (dirty) = 이 PC 수정 시각 ≠ 마지막으로 서버와 맞춘 시각
 function svUnsaved(){ return SV_ON&&!!svTok()&&gdMeta.on&&(gdLocalDirty()||!!pend); }
 // 수동 저장 (나중에 [저장] 버튼은 이것만 부르면 됨) → true/false
-async function svSaveNow(){ const ok=await gdPush({manual:true}); if(ok) toast('☁ 서버에 저장했습니다'); gdRender(); return ok; }
-function svAsk(msg,btns){ return new Promise(res=>{
+async function svSaveNow(quiet){ const ok=await gdPush({manual:true}); if(ok&&!quiet) toast('☁ 서버에 저장했습니다'); gdRender(); return ok; }
+function svAsk(msg,btns,head=''){ return new Promise(res=>{
   const d=document.createElement('div'); d.id='svAsk'; d.className='svask';
-  d.innerHTML=`<div class="svaskbox"><div class="svaskmsg">${esc(msg)}</div><div class="svaskbtns">${btns.map(([k,t],i)=>`<button class="btn sm${i?' ghost':''}" data-k="${k}">${esc(t)}</button>`).join('')}</div></div>`;
+  d.innerHTML=`<div class="svaskbox">${head}<div class="svaskmsg">${esc(msg)}</div><div class="svaskbtns">${btns.map(([k,t],i)=>`<button class="btn sm${i?' ghost':''}" data-k="${k}">${esc(t)}</button>`).join('')}</div></div>`;
   d.addEventListener('click',e=>{ const b=e.target.closest('[data-k]'); if(b||e.target===d){ e.stopPropagation(); d.remove(); res(b?b.dataset.k:'cancel'); } });
+  if(head) d.classList.add('svaskc');
   document.body.appendChild(d); d.querySelector('[data-k]')?.focus();
 }); }
 async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그대로 둠 — PC방은 종료 시 자동 초기화)
@@ -2675,14 +2685,15 @@ document.addEventListener('click',e=>{
   const c=activeChar();
   if(t.dataset.tab){ const go=()=>{ tab=t.dataset.tab; try{ localStorage.setItem(TAB_KEY,tab); }catch(e){} syncTabs(); render(); tabTick(); };
     // 저장 안 한 변경이 있으면 탭 이동 전에 묻기: 예 = 저장 후 이동 / 아니오 = 스냅샷으로 되돌리고 이동 / 닫기 = 머무름
-    if(pend&&t.dataset.tab!==tab){ svAsk('변경사항을 저장하시겠습니까?',[['yes','예'],['no','아니오']]).then(async k=>{ if(k==='yes'){ await pendSave(); go(); } else if(k==='no'){ pendCancel(); go(); } }); return; }
+    if(pend&&t.dataset.tab!==tab){ pendGuard(go); return; }
     go(); return; }
   if(t.dataset.cpage){ charPage=+t.dataset.cpage; renderChars(); return; }
   if(t.dataset.move){ e.stopPropagation(); const [id,d]=t.dataset.move.split('|'); moveCharBy(id,+d); render(); return; }
   if(t.dataset.wmove){ e.stopPropagation(); const i=t.dataset.wmove.lastIndexOf('|'); moveWorldBy(t.dataset.wmove.slice(0,i),+t.dataset.wmove.slice(i+1)); render(); return; }
   if(e.target.closest('.drag-h')) return;
   if(t.dataset.edit){ e.stopPropagation(); openCharModal(t.dataset.edit); return; }
-  if(t.dataset.id){ S.activeId=t.dataset.id; save(); if(['history','total','loot','guild'].includes(tab)) {tab='boss';syncTabs();} render(); return; }
+  if(t.dataset.id){ const id=t.dataset.id; if(pend&&id!==S.activeId) return pendGuard(()=>{ S.activeId=id; save(); if(['history','total','loot','guild'].includes(tab)) {tab='boss';syncTabs();} render(); });
+    S.activeId=id; save(); if(['history','total','loot','guild'].includes(tab)) {tab='boss';syncTabs();} render(); return; }
   if(t.dataset.filter){ bossFilter=t.dataset.filter; render(); return; }
   if(t.dataset.toggle && c){ const s=t.dataset.toggle,b=findBoss(s); const cfg=c.bosses[s]||(c.bosses[s]={enabled:false,diff:b.diffs[0],party:1}); cfg.enabled=!cfg.enabled; save(); render(); return; }
   if(t.dataset.setdiff && c){

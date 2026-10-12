@@ -907,3 +907,10 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 /* b74 */
 .accadd[hidden],.accaddopen[hidden]{display:none}
 .accaddopen{margin:4px 0 6px}
+
+/* b75 */
+.inerr{border-color:#ff5a5a!important;box-shadow:0 0 0 1px #ff5a5a!important}
+.pdone{color:#3ccf6e;font-weight:700;font-size:.85rem;margin-right:8px;align-self:center;white-space:nowrap}
+.svaskc .svaskbox{text-align:center}.svaskc .svaskbtns{justify-content:center}
+.pgav{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:10px}
+.pgav .avatar{width:72px;height:72px;font-size:1.6rem}.pgname{font-weight:700}
