@@ -52,7 +52,10 @@ try:
     mi=pg.eval_on_selector_all('#missItems tbody tr:not(.rkpad)','e=>e.map(x=>x.innerText.replace(/\s+/g," ").trim())')
     allm=pg.evaluate("missingItems(totalData()).map(o=>o.list.map(x=>ITEMS[o.k].n+'@'+x.b.name)).flat()")
     check('못 가진 아이템: 4단계 소울 에테르(유피테르) 있음, 얻은 신념·생명 연마석(상자 결과) 없음', any(x.startswith('4단계 소울 에테르@유피테르') for x in allm) and not any(x.split('@')[0] in ('신념의 연마석','생명의 연마석') for x in allm), allm)
-    check('못 가진 아이템: 광휘 먼저, 10줄 고정, 흑백 제목 아이콘', len(mi)<=10 and pg.locator('#missItems tbody tr').count()==10 and pg.locator('#missItems h2 .gray').count()==1 and ('창세' in allm[0] or pg.evaluate("ITEMS[missingItems(totalData())[0].k].set")=='광휘'), allm[:3])
+    check('못 가진 아이템: 10줄 고정, 흑백 제목 아이콘', len(mi)<=10 and pg.locator('#missItems tbody tr').count()==10 and pg.locator('#missItems h2 .gray').count()==1, allm[:3])
+    # zosu-sort: 보스 순(BOSSES) 먼저 → 같은 보스면 난이도(익스트림>하드=카오스>노말>이지) → 아이템 우선순위
+    so=pg.evaluate("(()=>{const L=missingItems(totalData());return L.map(o=>[BOSSES.indexOf(o.list[0].b),diffRank(o.list[0].d),itemPri(o.k)])})()")
+    check('못 가진 아이템: 보스 순 먼저 → 난이도 → 아이템 순', len(so)>1 and all(so[i]<=so[i+1] for i in range(len(so)-1)) and len({x[0] for x in so})>1, so[:6])
     sm=pg.inner_text('#view .card >> nth=0')
     check('요약: 억 1자리, 주/월 평균 원 단위, 종 없음', '월 평균' in sm and '종' not in sm and '억' in sm and '개월' not in sm, sm)
     for n,sel in [('loot','#lootKing'),('boss','#bossKing'),('epic','#epicCard'),('miss','#missItems'),('summary','#view .card >> nth=0')]: pg.locator(sel).screenshot(path=f'/workspace/shots/b55_{n}.png')

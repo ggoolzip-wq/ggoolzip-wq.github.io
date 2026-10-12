@@ -1004,3 +1004,6 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .medalrow .mdico img{width:32px;height:32px;display:block;image-rendering:pixelated}
 .medalrow .mdtri{position:absolute;left:-5px;top:-5px;width:16px;height:14px;background:#e3192d;clip-path:polygon(50% 0,100% 100%,0 100%);color:#fff;font:900 10px/16px sans-serif;text-align:center;filter:drop-shadow(0 0 1px #000)}
 .medalrow .mdtxt{font-size:1.06rem;font-weight:700;color:#ffb3b8}
+/* zosu: 🔄 동기화 끝 → 버튼 옆 초록 '새로고침 완료!' (3초 뒤 서서히 사라짐) */
+.syncdone{color:#4ade80;font-size:13px;font-weight:600;margin-left:6px;transition:opacity .6s;opacity:1}
+.syncdone.out{opacity:0}
