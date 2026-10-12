@@ -986,3 +986,11 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 @keyframes mwShine{from{left:-40%}to{left:120%}}
 @keyframes mwFade{0%,55%{opacity:1}75%,90%{opacity:.25}100%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.char .medalwarn,.char .medalwarn::after{animation:none}}
+/* b91: 관리자 창 — 부계정 접기/펼치기, 등록 날짜 */
+.admm .admbtns{align-items:center}
+.admm .admreg{white-space:nowrap}
+.admm .admtg{background:none;border:1px solid rgba(255,255,255,.18);color:inherit;border-radius:6px;padding:2px 7px;font-size:.78rem;cursor:pointer;white-space:nowrap}
+.admm .admtg:hover{border-color:rgba(255,255,255,.4)}
+.admm .admalts[hidden]{display:none}
+.admm .admalt{padding-left:22px;background:rgba(255,255,255,.025)}
+.admm .admkick-sp{display:inline-block;width:52px}

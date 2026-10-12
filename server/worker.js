@@ -147,6 +147,9 @@ async function ensureSchema(env) {
     // b68: 가입 승인. 행이 없는 사용자 = 승인됨(b68 이전부터 있던 사용자). status = pending | ok | rejected | blocked
     env.DB.prepare('CREATE TABLE IF NOT EXISTS approval (user_id TEXT PRIMARY KEY, status TEXT NOT NULL, name TEXT, world TEXT, level INTEGER, requested_at INTEGER NOT NULL, decided_at INTEGER)'),
   ]);
+  // b91: acct_role.created_at = 그 넥슨 계정(API 키)이 이 데이터에 처음 등록된 시각. 없으면 추가하고 accounts.created_at 으로 채움 (모르면 NULL → 관리자 창 '-')
+  try { await env.DB.prepare('ALTER TABLE acct_role ADD COLUMN created_at INTEGER').run(); } catch (e) {}
+  await env.DB.prepare('UPDATE acct_role SET created_at=(SELECT a.created_at FROM accounts a WHERE a.acct_hash=acct_role.acct_hash) WHERE created_at IS NULL').run();
   schemaOk = true;
 }
 /* ---------- b62: 강제 로그아웃 기준 시각 ---------- */
@@ -209,8 +212,8 @@ async function writeRegistry(env, userId, mainHashes, v) {
   const now = Date.now(), st = [env.DB.prepare('DELETE FROM keyreg WHERE user_id=?').bind(userId)]; // 역할(sub)은 지우지 않음: 부계정 목록에서 뺀 계정도 계속 부계정 (대표 계정이 되면 main 으로 바뀜)
   const reg = async (k, kind) => { if (k) st.push(env.DB.prepare('INSERT OR REPLACE INTO keyreg (key_hash,user_id,kind,updated_at) VALUES (?,?,?,?)').bind(await keyHash(env, k), userId, kind, now)); };
   await reg(v.mainBk, 'bk');
-  for (const s of v.subs || []) { await reg(s.key, 'sub'); await reg(s.bk, 'bk'); for (const h of (s.ahs || (s.ah ? [s.ah] : []))) if (!mainHashes.includes(h)) st.push(env.DB.prepare("INSERT OR REPLACE INTO acct_role (acct_hash,user_id,role) VALUES (?,?,'sub')").bind(h, userId)); }
-  for (const h of mainHashes) st.push(env.DB.prepare("INSERT OR REPLACE INTO acct_role (acct_hash,user_id,role) VALUES (?,?,'main')").bind(h, userId));
+  for (const s of v.subs || []) { await reg(s.key, 'sub'); await reg(s.bk, 'bk'); for (const h of (s.ahs || (s.ah ? [s.ah] : []))) if (!mainHashes.includes(h)) st.push(env.DB.prepare("INSERT INTO acct_role (acct_hash,user_id,role,created_at) VALUES (?,?,'sub',?) ON CONFLICT(acct_hash) DO UPDATE SET user_id=excluded.user_id, role=excluded.role, created_at=COALESCE(acct_role.created_at, excluded.created_at)").bind(h, userId, now)); }
+  for (const h of mainHashes) st.push(env.DB.prepare("INSERT INTO acct_role (acct_hash,user_id,role,created_at) VALUES (?,?,'main',?) ON CONFLICT(acct_hash) DO UPDATE SET user_id=excluded.user_id, role=excluded.role, created_at=COALESCE(acct_role.created_at, excluded.created_at)").bind(h, userId, now));
   await env.DB.batch(st);
 }
 const SUB_MSG = '이미 등록된 부계정 API입니다.';
@@ -260,7 +263,19 @@ async function userInfo(env, uid) { // 관리자 목록용: 대표 캐릭터·�
   try { chars = st ? (JSON.parse(st.data).characters || []) : []; } catch (e) {}
   const m = chars.find(c => c && c.isMain) || [...chars].sort((x, y) => (+y?.level || 0) - (+x?.level || 0))[0];
   if (m) { name = String(m.name || ''); world = String(m.world || ''); level = +m.level || 0; }
-  return { chars: chars.length, size: st?.size || 0, savedAt: st?.saved_at || 0, name, world, level };
+  // b91: 부계정 목록 + 등록 날짜 (acct_role.created_at, 키 원본·해시는 내보내지 않음)
+  let accs = []; try { accs = st ? ((JSON.parse(st.data).settings || {}).accounts || []) : []; } catch (e) {}
+  const roles = (await env.DB.prepare('SELECT acct_hash, role, created_at FROM acct_role WHERE user_id=?').bind(uid).all()).results || [];
+  const rAt = Object.fromEntries(roles.map(r => [r.acct_hash, r.created_at || 0])), mainHs = roles.filter(r => r.role === 'main').map(r => r.acct_hash);
+  const hsOf = a => (Array.isArray(a.ahs) ? a.ahs : []).concat(a.ah ? [a.ah] : []).filter(h => typeof h === 'string');
+  const mainAcc = accs.find(a => a && a.main) || accs.find(a => a && hsOf(a).some(h => mainHs.includes(h))) || (m && accs.find(a => a && a.id === m.accId)) || accs[0];
+  const minAt = hs => { const v = hs.map(h => rAt[h]).filter(x => x > 0); return v.length ? Math.min(...v) : 0; };
+  const alts = accs.filter(a => a && a !== mainAcc).map(a => {
+    const cs = chars.filter(c => c && c.accId === a.id).sort((x, y) => (+y?.level || 0) - (+x?.level || 0)), c = cs[0];
+    return { label: String(a.label || '').slice(0, 40), name: c ? String(c.name || '') : '', world: c ? String(c.world || '') : '', level: c ? +c.level || 0 : 0, chars: cs.length, regAt: minAt(hsOf(a)) };
+  });
+  const mainRegAt = minAt(mainAcc ? hsOf(mainAcc) : []) || minAt(mainHs);
+  return { chars: chars.length, size: st?.size || 0, savedAt: st?.saved_at || 0, name, world, level, alts, mainRegAt };
 }
 
 /* ---------- 세션 ---------- */
@@ -356,7 +371,7 @@ async function route(req, env) {
     const row = await stateRow(env, userId);
     const v = newUser ? null : await vaultOpenAny(env, b.key, hashes, userId);
     if (v) await writeRegistry(env, userId, hashes, v);           // 금고를 연 키 = 대표 계정 → 역할·등록부 최신화
-    else if (v === null && !roles.length) await env.DB.batch(hashes.map(h => env.DB.prepare("INSERT OR IGNORE INTO acct_role (acct_hash,user_id,role) VALUES (?,?,'main')").bind(h, userId)));
+    else if (v === null && !roles.length) await env.DB.batch(hashes.map(h => env.DB.prepare("INSERT OR IGNORE INTO acct_role (acct_hash,user_id,role,created_at) VALUES (?,?,'main',?)").bind(h, userId, Date.now())));
     return json(200, { status: 'ok', admin: userId === adminId(env), token, user: userId.slice(0, 8), accounts: hashes, newUser, rev: row ? row.rev : 0, updatedAt: row ? row.updated_at : 0,
       vault: v === null ? 'none' : v === false ? 'locked' : 'open', subKeys: v ? (v.subs || []) : [], mainBk: v ? (v.mainBk || '') : '', mainBkLabel: v ? (v.mainBkLabel || '') : '' });
   }
@@ -374,7 +389,7 @@ async function route(req, env) {
     if (other.length) throw new HttpError(409, 'linked_elsewhere', '이 넥슨 계정은 이미 다른 데이터에 연결되어 있습니다');
     if ((await acctList(env, me.userId)).length + hashes.length > MAX_ACCTS) throw new HttpError(400, 'too_many_accounts', `한 데이터에 넥슨 계정은 ${MAX_ACCTS}개까지`);
     await env.DB.batch(hashes.map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, me.userId, now))
-      .concat(hashes.map(h => env.DB.prepare("INSERT OR IGNORE INTO acct_role (acct_hash,user_id,role) VALUES (?,?,'sub')").bind(h, me.userId))));
+      .concat(hashes.map(h => env.DB.prepare("INSERT OR IGNORE INTO acct_role (acct_hash,user_id,role,created_at) VALUES (?,?,'sub',?)").bind(h, me.userId, now))));
     return json(200, { accounts: hashes, all: await acctList(env, me.userId) });
   }
   if (p === '/api/subkeys' && M === 'PUT') {
@@ -473,9 +488,9 @@ async function route(req, env) {
       const us = (await env.DB.prepare('SELECT u.id, u.created_at, u.last_login, a.status, a.name, a.world, a.level, a.requested_at, a.decided_at FROM users u LEFT JOIN approval a ON a.user_id=u.id ORDER BY u.created_at').all()).results;
       const out = [];
       for (const u of us.slice(0, 500)) {
-        const st = u.status || 'ok', inf = st === 'pending' ? { chars: 0, size: 0, savedAt: 0 } : await userInfo(env, u.id);
+        const st = u.status || 'ok', inf = st === 'pending' ? { chars: 0, size: 0, savedAt: 0, alts: [] } : await userInfo(env, u.id);
         out.push({ id: u.id, status: st, admin: u.id === adminId(env), name: inf.name || u.name || '', world: inf.world || u.world || '', level: inf.level || u.level || 0,
-          chars: inf.chars, size: inf.size, savedAt: inf.savedAt, createdAt: u.created_at, lastLogin: u.last_login, requestedAt: u.requested_at || 0, decidedAt: u.decided_at || 0 });
+          chars: inf.chars, size: inf.size, savedAt: inf.savedAt, createdAt: u.created_at, lastLogin: u.last_login, requestedAt: u.requested_at || 0, decidedAt: u.decided_at || 0, regAt: inf.mainRegAt || u.created_at || 0, alts: inf.alts || [] });
       }
       return json(200, { users: out });
     }

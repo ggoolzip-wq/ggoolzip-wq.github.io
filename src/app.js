@@ -2952,7 +2952,10 @@ function renderAdmin(){
   const PG=10, np=Math.max(1,Math.ceil(A.length/PG)); admPage=Math.min(Math.max(1,admPage),np); const Ap=A.slice((admPage-1)*PG,admPage*PG);
   const sec=(t,list,empty,f,shown)=>`<section class="admsec"><h4>${t} <span class="muted">(${list.length})</span></h4>${list.length?(shown||list).map(f).join(''):`<div class="muted tiny">${empty}</div>`}</section>`;
   b.innerHTML=sec('승인 대기',P,'대기 중인 요청이 없어요',u=>row(u,`요청 ${u.requestedAt?hm(u.requestedAt):'-'}`,`<button class="btn sm" data-adm="approve">승인</button><button class="btn sm ghost admno" data-adm="reject">거절</button>`))
-    +sec('사용 중',A,'없음',u=>row(u,`${u.status==='blocked'?'(예전 차단) ':''}캐릭터 ${u.chars||0} · 데이터 ${Math.ceil((u.size||0)/1024)}KB · 마지막 로그인 ${u.lastLogin?hm(u.lastLogin):'-'}`,u.admin?'<span class="admtag">관리자</span>':`<button class="btn sm ghost admno" data-adm="kick">강퇴</button>`),Ap)
+    +sec('사용 중',A,'없음',u=>{ const al=u.alts||[], op=admOpen.has(u.id); // b91: 부계정은 본계정 아래 접힘(▽/△), 강퇴 없음, 등록 날짜(KST)
+      const tg=al.length?`<button class="admtg" data-admalt="${esc(u.id)}" aria-expanded="${op}" title="부계정 ${al.length}개 ${op?'접기':'펼치기'}">${op?'△':'▽'} 부계정 ${al.length}</button>`:'';
+      return row(u,`${u.status==='blocked'?'(예전 차단) ':''}캐릭터 ${u.chars||0} · 데이터 ${Math.ceil((u.size||0)/1024)}KB · 마지막 로그인 ${u.lastLogin?hm(u.lastLogin):'-'}`,`${tg}${admReg(u.regAt)}${u.admin?'<span class="admtag">관리자</span>':`<button class="btn sm ghost admno" data-adm="kick">강퇴</button>`}`)
+        +(al.length?`<div class="admalts"${op?'':' hidden'}>${al.map(a=>`<div class="admrow admalt"><div class="admwho"><span class="muted">└</span> <b>${esc(a.label||'부계정')}</b><span class="muted">${a.name?' · '+esc(a.name):''}${a.world?' · '+esc(a.world):''}${a.level?' · Lv.'+a.level:''}</span><div class="muted tiny">부계정 · 캐릭터 ${a.chars||0}</div></div><div class="admbtns">${admReg(a.regAt)}<span class="admkick-sp"></span></div></div>`).join('')}</div>`:''); },Ap)
     +(np>1?`<div class="admpages">${Array.from({length:np},(_,i)=>`<button class="btn sm ${i+1===admPage?'':'ghost'}" data-admpage="${i+1}">${i+1}</button>`).join('')}</div>`:''); // b78: 10명씩 쪽 번호
 }
 async function admDecide(id,action){
@@ -2962,8 +2965,9 @@ async function admDecide(id,action){
   try{ await svFetch('/api/admin/decide',{method:'POST',body:{user:id,action}}); if(action!=='kick') toast({approve:'승인했습니다',reject:'거절했습니다',kick:'강퇴했습니다',unblock:'승인했습니다'}[action]+` — ${nm}`); }catch(e){ toast(e.message); }
   await admLoad();
 }
-let admPage=1;
-document.addEventListener('click',e=>{ const pg=e.target.closest('[data-admpage]'); if(pg){ admPage=+pg.dataset.admpage; renderAdmin(); return; } const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }
+let admPage=1; const admOpen=new Set(); // b91: 펼친 본계정 id
+const admReg=t=>`<span class="admreg muted tiny">등록 날짜 : ${t?new Date(t+9*3600e3).toISOString().slice(0,10):'-'}</span>`; // KST
+document.addEventListener('click',e=>{ const at=e.target.closest('[data-admalt]'); if(at){ const id=at.dataset.admalt; admOpen.has(id)?admOpen.delete(id):admOpen.add(id); renderAdmin(); return; } const pg=e.target.closest('[data-admpage]'); if(pg){ admPage=+pg.dataset.admpage; renderAdmin(); return; } const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }
   if(e.target.id==='adminModal') e.target.classList.remove('show'); });
 setTimeout(()=>{ if(!SV_ON) return; if(svTok()&&gdMeta.on) svAdminCheck(); else if(svPend()?.key) svLogin(svPend().key,'',{quiet:true}); gdRender(); },800); // 승인 대기 → 열 때 한 번 다시 확인
 

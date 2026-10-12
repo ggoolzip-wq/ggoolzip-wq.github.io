@@ -765,3 +765,17 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 ## b90 — b89 취소
 - 사용자 요청으로 b89(1~3위 이름·난이도 900 + text-stroke)를 되돌렸습니다. src/extra.css의 b89 규칙을 삭제해 b89 이전과 같습니다(이름 700, 검마 테두리 .5px, 난이도 800/익스트림 900, 테두리 없음).
 - test_tracker66은 이제 이 b89 이전 값을 확인합니다. 스크린샷: /workspace/maple-boss-tracker/oct12z_b90_before_bossloot.png, oct12z_b90_after_bossloot.png.
+
+## b91 — 관리자 창: 부계정 접기, 강퇴는 본계정만, 등록 날짜
+- '사용 중' 목록: 부계정은 본계정 아래에 접혀 있습니다. 본계정 줄의 '▽ 부계정 N' 버튼으로 펼치고(△) 접습니다(`admOpen`, 다시 그려도 유지).
+  - 10명씩 쪽 번호는 본계정 수로 셉니다.
+  - 부계정 줄에는 강퇴 버튼이 없습니다(같은 자리는 빈칸).
+- 모든 줄의 강퇴 버튼 자리 옆에 '등록 날짜 : YYYY-MM-DD'(KST)가 있습니다. 모르면 '-'.
+- 서버(/api/admin/users): 사용자마다 `regAt`(본계정 키 등록 시각)과 `alts:[{label,name,world,level,chars,regAt}]`를 줍니다.
+  - 부계정 = 저장된 데이터의 settings.accounts 중 본계정이 아닌 것. 대표 캐릭터 = 그 계정(accId)의 최고 레벨 캐릭터. 키·해시는 내보내지 않습니다.
+- D1: `acct_role.created_at` 열을 추가했습니다(Worker ensureSchema가 ALTER, 원격에는 직접 실행). 넥슨 계정(키)이 처음 등록된 시각입니다.
+  - acct_role 쓰기는 upsert로 바꾸어 created_at을 유지합니다(예전 INSERT OR REPLACE는 매번 지웠음).
+  - 채우기: 기존 행은 accounts.created_at으로 채웠습니다(원격 4행 모두 main, 모두 채워짐). 그 밖에는 NULL → '-'.
+  - 백업: /workspace/maple-boss-tracker/d1backup/b91_pre.sql (2026-10-12 18:04 KST).
+- server/node_modules를 설치했습니다(`cd server && npm install`). 이제 cf_dev 테스트(test_server, 52 등)가 SKIP하지 않고 실제로 돕니다.
+- 테스트: test_tracker67(UI, 모의 목록, 포트 8887), test_server_b91(wrangler dev, 포트 8890/8891).
