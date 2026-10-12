@@ -33,4 +33,12 @@ const ITEMS = [{ key: 'eye', name: '마력이 깃든 안대' }, { key: 'daybreak
   check(`stops new searches when remaining < ${MIN_REMAIN}`, r.posts === 2 && r.skipped.includes('belt') && /멈춤/.test(r.stop), r); }
 { const M = mock({ session: false }), S = mem(); let e = null; try { await refresh(makeApi(M.f, 'd'), ITEMS, S); } catch (x) { e = x; }
   check('no auction session → clear error', e && e.code === 'no_session' && /auction\.maplestory\.nexon\.com/.test(e.message), e && e.message); }
+// b101: 동시 요청 없음 + 요청 간격 ≥ gap, 로그아웃·인증 주소 안 부름, 401 이면 바로 멈춤
+{ let inflight = 0, maxIn = 0; const times = []; const M = mock();
+  const f = async (u, o) => { inflight++; maxIn = Math.max(maxIn, inflight); times.push(Date.now()); await new Promise(r => setTimeout(r, 5)); try { return await M.f(u, o); } finally { inflight--; } };
+  await refresh(makeApi(f, 'd', 40), ITEMS, mem());
+  const gaps = times.slice(1).map((t, i) => t - times[i]);
+  check('b101: one request at a time, ≥gap apart', maxIn === 1 && Math.min(...gaps) >= 38, { maxIn, min: Math.min(...gaps) });
+  check('b101: never calls login/logout/auth endpoints', !M.log.some(([, u]) => /log(in|out)|auth|session|token/i.test(u)), M.log.map(x => x[1]).filter(u => /log|auth/.test(u)));
+  const M2 = mock({ session: false }); try { await refresh(makeApi(M2.f, 'd', 0), ITEMS, mem()); } catch (e) {} check('b101: stops after first 401', M2.log.length === 1, M2.log.length); }
 console.log('FAILS:', fails); process.exit(fails ? 1 : 0);

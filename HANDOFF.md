@@ -891,3 +891,26 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 길드 이름 앞: 그 길드의 마크. refreshGuild에서 guild/id → guild/basic 호출(길드당 2회, 7일 캐시 guildC[k].mark={src,at}, 랭킹 갱신 시에도 유지). guild_mark_custom(base64) 우선 → guild_mark(https URL) → 없거나 로드 실패 시 기본 🛡️.
 - 테스트: tests/test_tracker73.py (포트 8898, Nexon API mock).
 - 미검증: 실제 Nexon guild_mark_custom 이 접두사 없는 base64 PNG(앞에 data:image/png;base64, 붙임)인 실제 응답. 실제 길드로 실데이터 확인 안 함.
+
+## b101 — 크롬 확장: '최저가 갱신' 후 경매장 로그아웃 문제
+- 증상: 관리자 창 '최저가 갱신'을 누르면 넥슨 경매장 사이트에서 로그아웃됨.
+- 원인(추정, 실제 넥슨 세션으로는 확인 못 함): 확장 백그라운드(service worker, 출처 chrome-extension://)가 경매장 사이트와 다른 임의의 x-device-id 로 api.mskr.nexon.com 을 직접 불렀고, 시작 때 월드 18개 캐릭터 조회를 동시에 보냄 → 같은 로그인 세션이 다른 기기·다른 출처에서 몰아서 쓰인 것으로 보여 넥슨이 세션을 끊었을 가능성이 가장 큼. 확장은 로그아웃·인증 주소를 부르지 않았고 쿠키도 건드리지 않았음(코드 확인).
+- 수정 (확장 1.1.0): 검색은 이미 열린 경매장 탭 안의 content script(auction.js)에서 사이트와 같은 출처·Referer·세션으로 실행. 사이트가 쓰는 기기 id(localStorage 의 device 값, 쿠키 아님)를 그대로 사용. 요청은 한 번에 하나, 0.7초 간격. 401/403 이면 즉시 멈춤(재시도 없음). 탭을 열거나 닫지 않음, 경매장 탭이 없으면 안내만. 백그라운드는 더 이상 넥슨에 직접 요청하지 않음.
+- 테스트: tests/test_ext_core.mjs 에 동시 요청 없음·간격·인증 주소 미호출·401 즉시 중단 추가. zip 재생성(/workspace/maple-boss-tracker/bossmaple-price-ext.zip), 설치방법에 '경매장 탭 열어 두기'·'예전 버전 삭제' 추가.
+- 미검증: 실제 크롬·실제 경매장 로그인 상태에서 로그아웃이 더는 안 생기는지, 사이트의 실제 device id 저장 이름.
+
+## b102 — 지운 부계정이 관리자 창에 남던 문제 + 관리자 창 속도
+- 원인: 관리자 목록(/api/admin/users → userInfo)이 부계정을 '저장된 데이터(settings.accounts)의 본계정 아닌 칸 전부'로 셌음. 부계정 키를 지워도 클라이언트(b95)가 칸(이름·ah)을 남겨 캐릭터를 숨기는 방식이라, 서버 연결(acct_role 부계정 행·keyreg·금고)은 이미 다 지워졌는데도 칸이 3개 남아 '부계정 3'으로 보였음. (실서버 D1 확인: 그 사용자 acct_role 부계정 행 0, keyreg 0, keyvault2 0, 데이터 안 칸 4개 = 본계정 + 키·ah 없는 부계정1~3.)
+- 규칙(사용자): 부계정 삭제 = 키·연결·계정 칸·관리자 목록 등 모든 흔적 삭제, 캐릭터 기록만 숨김으로 남김.
+- 수정
+  - Worker: 부계정 = 데이터의 칸 중 서버에 살아 있는 부계정 연결(acct_role role<>'main')이 있는 것만.
+  - 클라이언트: 부계정 삭제 시 계정 칸을 통째로 지움(accForget), 칸 id 만 S.settings.goneAccs 에 남겨 그 캐릭터를 숨김(charShown). 본계정 칸은 예전처럼 남김(다시 넣으면 보임).
+  - 예전 흔적: 실서버 D1 에는 그 부계정의 키·연결 행이 이미 0개(정리할 행 없음). 사용자 데이터 안에 남은 키·해시 없는 칸 3개(이름만)는 Worker 수정으로 관리자 창에 안 보임. 로그인 때 자동으로 지우는 정리는 넣었다가 뺐음 — 예전 본계정 중복 칸(test55)의 캐릭터까지 숨겨지는 위험이 있어서.
+- 관리자 창 속도
+  - Worker: /api/admin/users 의 사용자마다 D1 쿼리 2개(N+1)를 표 3개 한 번씩 batch 로 바꿈, 안 쓰는 필드(savedAt·createdAt·decidedAt) 뺌, ?prices=1 이면 최저가도 같은 응답에(요청 2개 → 1개). acct_role(user_id) 인덱스는 이미 있음.
+  - 클라이언트: 이 탭의 지난 목록(sessionStorage, 로그아웃 때 지움)으로 바로 그리고 뒤에서 새로 받음. 승인·거절·강퇴는 누르자마자 목록 반영, 요청은 뒤에서, 실패하면 되돌리고 '처리하지 못해 되돌렸어요' 알림. 처리 후 목록 전체 다시 받기 없음.
+  - 측정(로컬 wrangler dev + 로컬 D1, 사용자 41명·각 캐릭터 12개, tests/bench_admin.py): GET /api/admin/users 중앙값 173ms → 16ms, 응답 12.8KB → 10.0KB. 거절 POST 자체 16ms→15ms(원래 빠름)인데 예전엔 그 뒤 목록 전체를 다시 받아야 화면이 바뀜 → 이제 클릭 즉시(0ms) 반영. 창 열기 = 캐시가 있으면 즉시. 실서버 D1 은 쿼리마다 왕복이 있어 N+1 차이가 더 큼(실측 안 함 — 관리자 키 사용 금지).
+- 테스트: test_tracker77(부계정 삭제, 관리자 낙관적/되돌림/캐시), test_server_b91(키 없는 칸 안 보임, ?prices=1, unlink 후 0개), test69·b95 기대값을 새 규칙으로 변경.
+- D1 백업: /workspace/maple-boss-tracker/d1backup/alts_pre.sql (스키마 변경 없음).
+- 미검증: 실제 사용자 브라우저에서 다음 로그인 때 칸 정리·저장. 다른 기기 데이터와 합칠 때(gdMerge) 지운 칸이 되살아나는지는 따로 확인 안 함.
+

@@ -269,20 +269,19 @@ async function loadAdmin(env) { if (env.ADMIN_USER) return; const r = await env.
 // b78: user_id 로 사용자에 묶인 표 전부 (계정 삭제·강퇴 공통)
 const USER_TABLES = ['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen', 'approval', 'cp'];
 const STATUS_MSG = { pending: '승인 대기 중이에요 — 관리자가 승인하면 사용할 수 있어요', rejected: '가입 요청이 거절되었습니다', blocked: '이 계정은 이용이 차단되었습니다' };
-async function userInfo(env, uid) { // 관리자 목록용: 대표 캐릭터·캐릭터 수 (승인 요청 기록이 있으면 그것, 없으면 저장된 데이터에서)
-  const st = await env.DB.prepare('SELECT size, saved_at, data FROM state WHERE user_id=?').bind(uid).first();
-  let chars = [], name = '', world = '', level = 0;
-  try { chars = st ? (JSON.parse(st.data).characters || []) : []; } catch (e) {}
+// b102: 관리자 목록용 — 순수 계산 (D1 은 /api/admin/users 에서 표 전체를 한 번씩만 읽음, 사용자마다 쿼리하던 N+1 제거)
+// 부계정 = 저장 데이터의 계정 칸 중 서버에 살아 있는 부계정 연결(acct_role role<>'main')이 있는 것만. 키를 지운 칸·키 없는 칸은 안 보임 (b102 사용자 규칙: 삭제한 부계정은 어디에도 안 남음)
+function userInfoFrom(st, roles) {
+  let d = {}; try { d = st ? JSON.parse(st.data) : {}; } catch (e) {}
+  const chars = Array.isArray(d.characters) ? d.characters : [], accs = Array.isArray((d.settings || {}).accounts) ? d.settings.accounts : [];
+  let name = '', world = '', level = 0;
   const m = chars.find(c => c && c.isMain) || [...chars].sort((x, y) => (+y?.level || 0) - (+x?.level || 0))[0];
   if (m) { name = String(m.name || ''); world = String(m.world || ''); level = +m.level || 0; }
-  // b91: 부계정 목록 + 등록 날짜 (acct_role.created_at, 키 원본·해시는 내보내지 않음)
-  let accs = []; try { accs = st ? ((JSON.parse(st.data).settings || {}).accounts || []) : []; } catch (e) {}
-  const roles = (await env.DB.prepare('SELECT acct_hash, role, created_at FROM acct_role WHERE user_id=?').bind(uid).all()).results || [];
-  const rAt = Object.fromEntries(roles.map(r => [r.acct_hash, r.created_at || 0])), mainHs = roles.filter(r => r.role === 'main').map(r => r.acct_hash);
+  const rAt = Object.fromEntries(roles.map(r => [r.acct_hash, r.created_at || 0])), mainHs = roles.filter(r => r.role === 'main').map(r => r.acct_hash), subHs = new Set(roles.filter(r => r.role !== 'main').map(r => r.acct_hash));
   const hsOf = a => (Array.isArray(a.ahs) ? a.ahs : []).concat(a.ah ? [a.ah] : []).filter(h => typeof h === 'string');
   const mainAcc = accs.find(a => a && a.main) || accs.find(a => a && hsOf(a).some(h => mainHs.includes(h))) || (m && accs.find(a => a && a.id === m.accId)) || accs[0];
   const minAt = hs => { const v = hs.map(h => rAt[h]).filter(x => x > 0); return v.length ? Math.min(...v) : 0; };
-  const alts = accs.filter(a => a && a !== mainAcc).map(a => {
+  const alts = accs.filter(a => a && a !== mainAcc && hsOf(a).some(h => subHs.has(h))).map(a => {
     const cs = chars.filter(c => c && c.accId === a.id).sort((x, y) => (+y?.level || 0) - (+x?.level || 0)), c = cs[0];
     return { label: String(a.label || '').slice(0, 40), name: c ? String(c.name || '') : '', world: c ? String(c.world || '') : '', level: c ? +c.level || 0 : 0, chars: cs.length, regAt: minAt(hsOf(a)) };
   });
@@ -334,7 +333,7 @@ const stateOut = (row, withData = true) => row
 /* ---------- 라우트 ---------- */
 async function route(req, env) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, ''), M = req.method;
-  if (p === '/api/health') return json(200, { ok: true, v: 'b95' });
+  if (p === '/api/health') return json(200, { ok: true, v: 'b102' });
   await ensureSchema(env); await authEpoch(env); await loadAdmin(env); // 첫 요청 때 강제 로그아웃 기준 시각 확정
   // b67: IP별 요청 제한 (읽기 300/분, 쓰기 120/분) — 세션·사용자별 제한과 별개
   await limit(env, await ipKey(env, req, M === 'GET' ? 'ipr' : 'ipw'), M === 'GET' ? IP_LIMITS.read : IP_LIMITS.write);
@@ -531,15 +530,21 @@ async function route(req, env) {
   }
   if (p.startsWith('/api/admin/')) { // b68: 관리자만 (서버에서 사용자 id 로 확인)
     if (!adminId(env) || me.userId !== adminId(env)) throw new HttpError(403, 'not_admin', '관리자만 쓸 수 있습니다');
-    if (p === '/api/admin/users' && M === 'GET') {
-      const us = (await env.DB.prepare('SELECT u.id, u.created_at, u.last_login, a.status, a.name, a.world, a.level, a.requested_at, a.decided_at FROM users u LEFT JOIN approval a ON a.user_id=u.id ORDER BY u.created_at').all()).results;
-      const out = [];
-      for (const u of us.slice(0, 500)) {
-        const st = u.status || 'ok', inf = st === 'pending' ? { chars: 0, size: 0, savedAt: 0, alts: [] } : await userInfo(env, u.id);
-        out.push({ id: u.id, status: st, admin: u.id === adminId(env), name: inf.name || u.name || '', world: inf.world || u.world || '', level: inf.level || u.level || 0,
-          chars: inf.chars, size: inf.size, savedAt: inf.savedAt, createdAt: u.created_at, lastLogin: u.last_login, requestedAt: u.requested_at || 0, decidedAt: u.decided_at || 0, regAt: inf.mainRegAt || u.created_at || 0, alts: inf.alts || [] });
-      }
-      return json(200, { users: out });
+    if (p === '/api/admin/users' && M === 'GET') { // b102: 쿼리 3개를 한 번에(batch) — 사용자 수와 상관없이 왕복 1번. ?prices=1 이면 최저가도 같이
+      const q = [env.DB.prepare('SELECT u.id, u.created_at, u.last_login, a.status, a.name, a.world, a.level, a.requested_at, a.decided_at FROM users u LEFT JOIN approval a ON a.user_id=u.id ORDER BY u.created_at LIMIT 500'),
+        env.DB.prepare("SELECT s.user_id, s.size, s.saved_at, s.data FROM state s LEFT JOIN approval a ON a.user_id=s.user_id WHERE COALESCE(a.status,'ok')<>'pending'"),
+        env.DB.prepare('SELECT user_id, acct_hash, role, created_at FROM acct_role')];
+      const wantP = url.searchParams.get('prices') === '1'; if (wantP) q.push(env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'"));
+      const [ur, sr, rr, pr] = await env.DB.batch(q);
+      const stOf = new Map((sr.results || []).map(r => [r.user_id, r])), roOf = new Map();
+      for (const r of rr.results || []) { if (!roOf.has(r.user_id)) roOf.set(r.user_id, []); roOf.get(r.user_id).push(r); }
+      const out = (ur.results || []).map(u => {
+        const st = u.status || 'ok', inf = st === 'pending' ? { chars: 0, size: 0, savedAt: 0, alts: [] } : userInfoFrom(stOf.get(u.id), roOf.get(u.id) || []);
+        return { id: u.id, status: st, admin: u.id === adminId(env), name: inf.name || u.name || '', world: inf.world || u.world || '', level: inf.level || u.level || 0,
+          chars: inf.chars, size: inf.size, lastLogin: u.last_login, requestedAt: u.requested_at || 0, regAt: inf.mainRegAt || u.created_at || 0, alts: inf.alts || [] };
+      });
+      let prices; if (wantP) { try { prices = pr.results?.[0] ? JSON.parse(pr.results[0].v) : {}; } catch (e) { prices = {}; } }
+      return json(200, { users: out, ...(wantP ? { prices } : {}) });
     }
     // b93: 관리자 전용 경매장 최저가 (크롬 확장이 관리자 본인 브라우저에서 측정 → 페이지가 저장). {prices:{item:{p:메소, t:측정 ms}}}. 넥슨 세션·쿠키는 오지 않음
     if (p === '/api/admin/prices' && M === 'GET') {

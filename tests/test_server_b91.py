@@ -26,7 +26,8 @@ try:
     s,_=req('PUT','/api/state',{'baseRev':0,'updatedAt':1,'data':st},tok=TA); check('state saved', s==200, s)
     s,u=req('GET','/api/admin/users',tok=TA); U={x['id']:x for x in u['users']}; A=U[UA]
     check('main regAt set', A['regAt']>0, A)
-    check('alts = 부계정F (rep char 부캐F, regAt) + 키없음 (regAt 0)', [x['label'] for x in A['alts']]==['부계정F','키없음'] and A['alts'][0]['name']=='부캐F' and A['alts'][0]['regAt']>0 and A['alts'][1]['regAt']==0, A['alts'])
+    check('alts = 부계정F only (rep char 부캐F, regAt); b102: 키 없는 칸 키없음 은 안 보임', [x['label'] for x in A['alts']]==['부계정F'] and A['alts'][0]['name']=='부캐F' and A['alts'][0]['regAt']>0, A['alts'])
+    s,u2=req('GET','/api/admin/users?prices=1',tok=TA); check('b102: ?prices=1 → users + prices in one response', s==200 and 'prices' in u2 and len(u2['users'])==len(u['users']), list(u2))
     check('no key/hash leaked', KF not in json.dumps(u) and AH not in json.dumps(u))
     check('user B no alts', all(x['alts']==[] for x in u['users'] if x['id']!=UA), u['users'])
     t0=A['alts'][0]['regAt']; time.sleep(1.2)
@@ -38,6 +39,8 @@ try:
     s,r=req('PUT','/api/admin/prices',{'prices':{'eye':{'p':2928000000,'t':1000},'BAD KEY':{'p':1,'t':1},'x':{'p':-5,'t':1}}},tok=TA); check('b93: admin PUT keeps valid only', s==200 and r['prices']=={'eye':{'p':2928000000,'t':1000}}, r)
     req('PUT','/api/admin/prices',{'prices':{'eye':{'p':1,'t':500},'belt':{'p':3900000000,'t':2000}}},tok=TA)
     s,r=req('GET','/api/admin/prices',tok=TA); check('b93: older time ignored, merge', r['prices']=={'eye':{'p':2928000000,'t':1000},'belt':{'p':3900000000,'t':2000}}, r)
+    s,_=req('POST','/api/unlink',{'ah':AH},tok=TA); s,u3=req('GET','/api/admin/users',tok=TA); A3=[x for x in u3['users'] if x['id']==UA][0]
+    check('b102: after /api/unlink of the alt → admin shows 0 alts (even though state still has the slot)', A3['alts']==[], A3['alts'])
 finally:
     dev.stop(); ms.shutdown()
 print('FAILS:',fails); sys.exit(1 if fails else 0)

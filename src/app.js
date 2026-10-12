@@ -744,7 +744,10 @@ const accById = id => accounts().find(a=>a.id===id);
 /* b72: 키가 등록되지 않은 계정(계정 칸은 있는데 key 없음)의 캐릭터는 화면 어디에도 안 보임 — 데이터(보스·수익·순서)는 그대로 두고,
  * 그 계정 키를 다시 등록하면 그대로 다시 보임. 연결 = c.accId(계정 칸 id; 키를 다시 넣으면 keyRelink/svAfterLogin 이 같은 칸에 넣음).
  * 계정 연결이 없는(수동 추가) 캐릭터·없는 계정을 가리키는 캐릭터는 보임. 지난 기록(history·누적 수익)은 숨긴 캐릭터 것도 유지·합산. */
-const charShown = c => { if(!c||!c.accId) return true; const a=accById(c.accId); return !a||!!a.key; };
+/* b102: 삭제한 부계정 = 계정 칸 자체를 지움(키·ah·이름 등 흔적 없음). 그 캐릭터 기록만 남기고 숨김 — 칸 id 는 S.settings.goneAccs 에만 (캐릭터 연결용) */
+const goneAcc = id => (S.settings.goneAccs||[]).includes(id);
+const charShown = c => { if(!c||!c.accId) return true; if(goneAcc(c.accId)) return false; const a=accById(c.accId); return !a||!!a.key; };
+function accForget(list){ const ids=list.map(x=>x.id); S.settings.goneAccs=[...new Set([...(S.settings.goneAccs||[]),...ids])].slice(-200); S.settings.accounts=accounts().filter(x=>!ids.includes(x.id)); ids.forEach(id=>{ if(listCache[id]) delete listCache[id]; }); }
 const vchars = () => S.characters.filter(charShown);
 /* b82 규칙: 모든 합계·표·차트(지금·앞으로의 모든 탭)는 '지금 보이는(키 등록된) 캐릭터'만 — visibleCharIds() / visHist().
  * 저장된 기록(S.history·monthHistory)은 지우지 않고 볼 때마다 캐릭터 id 로 걸러 합계를 다시 계산 → 키를 다시 넣으면 합계도 그대로 돌아옴.
@@ -2775,6 +2778,7 @@ async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그
       try{ if(svTok()&&localStorage.getItem(SV_SUBSIG_KEY)!==svSubSig()) await svSyncSubKeys(); }catch(e){}
       try{ clearTimeout(seenT); await svSeenFlush(); }catch(e){}
     }
+    try{ sessionStorage.removeItem('mapleBossTracker.admUsers'); admUsers=null; }catch(e){}
     try{ if(svTok()) await svFetch('/api/logout',{method:'POST',noGen:true}); }catch(e){}
     svWipeAll({broadcast:true}); gd.svErr=''; gdSet('off'); render(); svGate(); toastHide(); return; // b73: 직접 로그아웃 = 알림 없음 (저장 중 뜬 알림도 지움)
   }
@@ -2843,6 +2847,7 @@ document.addEventListener('click',e=>{
     if(confirm(`'${a.label}' ${all?'대표 계정과 모든 부계정의':'계정의'} API 키를 삭제할까요?\n캐릭터 기록은 지워지지 않고 숨겨지며, 같은 계정 키를 다시 등록하면 다시 보입니다.`)){
       const body=all?{all:true}:{key:a.key,bk:a.bk,ah:a.ah,ahs:a.ahs};
       tgt.forEach(x=>{ x.key=''; delete x.bk; delete x.bkLabel; delete x.status; if(listCache[x.id]) delete listCache[x.id]; });
+      accForget(tgt.filter(x=>!x.main&&!(all&&x===accounts()[0]&&!accounts().some(y=>y.main)))); // b102: 부계정 칸은 통째로 지움 (본계정 칸만 남겨 b72 처럼 다시 넣으면 보이게)
       localStorage.removeItem(SV_SUBSIG_KEY); if(impAccId===a.id||all){ impAccId=null; accChars=[]; }
       if(SV_ON&&svTok()) svFetch('/api/unlink',{method:'POST',body}).catch(e=>toast('⚠ 서버의 키 연결을 지우지 못했어요: '+e.message));
       save(); render(); if($('#importModal').classList.contains('show')) openImport(); } return; }
@@ -2976,8 +2981,16 @@ window.addEventListener('pagehide',()=>{ if(!SV_ON&&(gd.timer||gdLocalDirty())) 
 /* b68: 가입 승인 — 관리자(서버가 사용자 id 로 확인)만 목록·승인/거절/차단. 처음 연 기기에서도 관리자 버튼이 보이게 /api/me 로 확인 */
 async function svAdminCheck(){ if(!SV_ON||!svTok()||!gdMeta.on) return; try{ const r=await svFetch('/api/me'); localStorage.setItem(SV_ADMIN_KEY,r.admin?'1':'0'); gdRender(); const m=$('#gMenu'); if(m&&!m.hidden) gdMenu(true); }catch(e){} }
 let admUsers=null, admErr='';
-async function openAdmin(){ $('#adminModal').classList.add('show'); admErr=''; renderAdmin(); admPriceLoad().then(renderAdmPrice); await admLoad(); }
-async function admLoad(){ try{ admUsers=(await svFetch('/api/admin/users')).users||[]; admErr=''; }catch(e){ admErr=e.message; } renderAdmin(); }
+/* b102: 관리자 창 즉시 — 지난 목록(이 탭 sessionStorage)으로 바로 그리고 뒤에서 새로 받음. 사용자 목록+최저가 = 요청 1번(/api/admin/users?prices=1) */
+const ADM_CACHE_KEY='mapleBossTracker.admUsers';
+let admSeq=0;
+async function openAdmin(){ $('#adminModal').classList.add('show'); admErr='';
+  if(!admUsers){ try{ const c=JSON.parse(sessionStorage.getItem(ADM_CACHE_KEY)||'null'); if(Array.isArray(c)) admUsers=c; }catch(e){} }
+  renderAdmin(); await admLoad(); }
+async function admLoad(){ const my=++admSeq;
+  try{ const r=await svFetch('/api/admin/users?prices=1'); if(my!==admSeq) return; admUsers=r.users||[]; admErr=''; try{ sessionStorage.setItem(ADM_CACHE_KEY,JSON.stringify(admUsers)); }catch(e){} if(r.prices&&svIsAdmin()) admPriceSave(r.prices); }
+  catch(e){ if(my!==admSeq) return; if(!admUsers) admErr=e.message; else toast('관리자 목록을 새로 받지 못했어요: '+e.message); }
+  renderAdmin(); }
 function renderAdmin(){
   const b=$('#admBody'); if(!b) return;
   if(admErr){ b.innerHTML=`<div class="impmsg warn">${esc(admErr)}</div>`; return; }
@@ -2999,8 +3012,13 @@ async function admDecide(id,action){
   const u=(admUsers||[]).find(x=>x.id===id); const nm=u?.name||'이 사용자';
   if(action==='kick'&&!confirm(`${nm}\n정말 강퇴할까요? 이 사용자의 등록 키와 데이터가 모두 삭제됩니다.`)) return; // b78
   if(action==='reject'&&!confirm(`${nm} — 가입 요청을 거절할까요?`)) return;
-  try{ await svFetch('/api/admin/decide',{method:'POST',body:{user:id,action}}); if(action!=='kick') toast({approve:'승인했습니다',reject:'거절했습니다',kick:'강퇴했습니다',unblock:'승인했습니다'}[action]+` — ${nm}`); }catch(e){ toast(e.message); }
-  await admLoad();
+  // b102: 낙관적 반영 — 누르자마자 목록을 바꾸고 요청은 뒤에서. 실패하면 되돌리고 오류 알림
+  const before=admUsers; admSeq++; // 진행 중인 목록 새로 받기 결과는 버림 (바뀐 화면을 덮지 않게)
+  admUsers=(admUsers||[]).flatMap(x=>x.id!==id?[x]:action==='approve'||action==='unblock'?[{...x,status:'ok',regAt:x.regAt||Date.now()}]:[]);
+  try{ sessionStorage.setItem(ADM_CACHE_KEY,JSON.stringify(admUsers)); }catch(e){}
+  renderAdmin();
+  try{ await svFetch('/api/admin/decide',{method:'POST',body:{user:id,action}}); if(action!=='kick') toast({approve:'승인했습니다',reject:'거절했습니다',kick:'강퇴했습니다',unblock:'승인했습니다'}[action]+` — ${nm}`); }
+  catch(e){ admUsers=before; try{ sessionStorage.setItem(ADM_CACHE_KEY,JSON.stringify(before)); }catch(x){} renderAdmin(); toast(`⚠ ${nm} — 처리하지 못해 되돌렸어요: ${e.message}`); }
 }
 /* b93: 관리자 전용 경매장 최저가 (개인용, 넥슨 약관 위험을 사용자가 감수하기로 함) — extension/ 크롬 확장이 관리자 본인 크롬의 경매장 세션으로 검색,
  * 이 페이지와 window.postMessage 로만 주고받음(src 'bossmaple-page' ↔ 'bossmaple-ext'). 결과 {item, lowestPrice(메소), time} → /api/admin/prices (서버는 관리자만).
@@ -3032,7 +3050,7 @@ function admPriceRun(auto){
 function renderAdmPrice(){
   const el=$('#admPrice'); if(!el) return;
   const P=admPrices(), ts=Object.values(P).map(o=>o.t), last=ts.length?Math.max(...ts):0;
-  const msg=admPriceMsg==='noext'?`<div class="impmsg warn">크롬 확장을 먼저 설치해주세요<ol class="tiny"><li>bossmaple-price-ext.zip 을 풀어 폴더를 만듭니다</li><li>크롬 주소창에 chrome://extensions 입력</li><li>오른쪽 위 '개발자 모드' 켜기</li><li>'압축해제된 확장 프로그램을 로드합니다' → 그 폴더 선택</li><li>https://auction.maplestory.nexon.com 에 로그인한 뒤 이 페이지를 새로고침</li></ol></div>`:admPriceMsg?`<div class="muted tiny">${admPriceMsg}</div>`:'';
+  const msg=admPriceMsg==='noext'?`<div class="impmsg warn">크롬 확장을 먼저 설치해주세요<ol class="tiny"><li>bossmaple-price-ext.zip 을 풀어 폴더를 만듭니다</li><li>크롬 주소창에 chrome://extensions 입력</li><li>오른쪽 위 '개발자 모드' 켜기</li><li>'압축해제된 확장 프로그램을 로드합니다' → 그 폴더 선택</li><li>https://auction.maplestory.nexon.com 에 로그인하고 그 탭을 열어 둔 채 이 페이지를 새로고침</li></ol></div>`:admPriceMsg?`<div class="muted tiny">${admPriceMsg}</div>`:'';
   el.innerHTML=`<div class="admprice-h"><b>경매장 최저가</b><span class="muted tiny">${last?`마지막 측정 ${kstStamp(last)} · ${Object.keys(P).length}개`:'아직 없음'}${extVer?' · 확장 연결됨':''}</span><button class="btn sm" id="admPriceBtn" ${admPriceBusy?'disabled':''}>최저가 갱신</button></div>${msg}`;
 }
 window.addEventListener('message',e=>{ if(e.source!==window||e.origin!==location.origin) return; const m=e.data; if(!m||m.src!=='bossmaple-ext') return;
