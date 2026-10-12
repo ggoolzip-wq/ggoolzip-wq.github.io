@@ -949,3 +949,16 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 @media (max-width:600px){#bossLootKing .blktbl th:nth-child(1){width:34px}#bossLootKing .blktbl th:nth-child(2){width:52%}#bossLootKing .blktbl th:nth-child(3){width:48px}#bossLootKing .blkb .rkico{display:none}#bossLootKing td{padding-left:4px;padding-right:4px}}
 #bossLootKing th{white-space:nowrap;overflow:hidden;text-overflow:clip}
 @media (max-width:600px){#bossLootKing th{font-size:.7rem}#bossLootKing .blktbl th:nth-child(1){width:40px}#bossLootKing .blktbl th:nth-child(3){width:56px}}
+
+/* b84: 지하 수로 카드 */
+#suroCard h2{display:flex;align-items:center;gap:8px}
+#suroCard h2 #suroAdd{margin-left:auto}
+#suroCard .suroico{width:28px;height:28px;border-radius:6px}
+#suroCard .grow-r{position:relative}
+#suroCard button.surodel{margin-left:8px;flex:none;opacity:.7;background:none;border:1px solid rgba(255,255,255,.18);color:#ccc;width:26px;height:26px;border-radius:6px;font-size:13px;line-height:1;cursor:pointer;padding:0}
+#suroCard .surodel:hover{opacity:1;color:#ff6b6b}
+#suroCard .suropick{border:1px solid var(--line,#444);border-radius:10px;padding:8px;margin:6px 0 10px;max-height:320px;overflow:auto}
+#suroCard .surocand{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:8px;cursor:pointer}
+#suroCard .surocand:hover{background:rgba(255,255,255,.05)}
+#suroCard .surocand .avatar{width:28px;height:28px}
+#suroCard .suropick-b{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}

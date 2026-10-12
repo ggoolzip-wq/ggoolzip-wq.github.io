@@ -1056,6 +1056,19 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 @media (max-width:600px){#bossLootKing .blktbl th:nth-child(1){width:34px}#bossLootKing .blktbl th:nth-child(2){width:52%}#bossLootKing .blktbl th:nth-child(3){width:48px}#bossLootKing .blkb .rkico{display:none}#bossLootKing td{padding-left:4px;padding-right:4px}}
 #bossLootKing th{white-space:nowrap;overflow:hidden;text-overflow:clip}
 @media (max-width:600px){#bossLootKing th{font-size:.7rem}#bossLootKing .blktbl th:nth-child(1){width:40px}#bossLootKing .blktbl th:nth-child(3){width:56px}}
+
+/* b84: 지하 수로 카드 */
+#suroCard h2{display:flex;align-items:center;gap:8px}
+#suroCard h2 #suroAdd{margin-left:auto}
+#suroCard .suroico{width:28px;height:28px;border-radius:6px}
+#suroCard .grow-r{position:relative}
+#suroCard button.surodel{margin-left:8px;flex:none;opacity:.7;background:none;border:1px solid rgba(255,255,255,.18);color:#ccc;width:26px;height:26px;border-radius:6px;font-size:13px;line-height:1;cursor:pointer;padding:0}
+#suroCard .surodel:hover{opacity:1;color:#ff6b6b}
+#suroCard .suropick{border:1px solid var(--line,#444);border-radius:10px;padding:8px;margin:6px 0 10px;max-height:320px;overflow:auto}
+#suroCard .surocand{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:8px;cursor:pointer}
+#suroCard .surocand:hover{background:rgba(255,255,255,.05)}
+#suroCard .surocand .avatar{width:28px;height:28px}
+#suroCard .suropick-b{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -2210,13 +2223,18 @@ async function refreshGuild(force){
 /* 60초 타이머·탭 열기·화면 복귀 시 호출: 열려 있는 탭만 갱신 */
 function tabTick(){
   if(document.hidden) return;
-  if(tab==='guild'){ refreshGuild(); refreshSched(vchars().filter(c=>c.isMain)); }
+  if(tab==='guild'){ refreshGuild(); refreshSched(suroChars()); }
 }
+/* b84: '지하 수로' 카드 — 본캐(★) 대신 사용자가 고른 캐릭터들(S.settings.suroChars, 동기화됨). 처음엔 기존 본캐로 채움. 보이는 캐릭터만 */
+const SURO_ICON='data:image/webp;base64,UklGRoQIAABXRUJQVlA4WAoAAAAQAAAAPwAAPwAAQUxQSGABAAABkLtt2/E+eePkZ9u2bds2a3fqH6DJk93J2NrJtm3b7vPcRZyja4+ImACJuTVBpSvfQfeP0wt7M4M8HLVKmcRS5Q6h3XthKD/euWBMWXKIu51cmE8IhZ1XxpSzYNbHAPDm+oGlg2n+DiphFqlCZecanD646T0YBjMzALzaOTEvxFklE0YJpVarkQuhdPaLymyeu/cZQDCaiQh4d3B2ZbSnvVpumND4phdFemq1gQXzNu598BMghmmZADq/ZmJJhJdBQuXTdujC1pao2MatDADEMD0TgE/X1k7WI4REZu9XsxvAkSlzLwJEDHMTA/iiS65UKpziZqx6TT+J7/0AwzKZCAqZkAiVV3i4f+SsD5++QifBcjnQ3Vmt9CrZsauu+jQYfzPDkudPKw8NKNgJzJ96jUmHpX89NbNyyU+i83uewlqfbTwGhvUy4fs3AGBrARj/nX7n/GewVV099cHKCP9SVlA4IP4GAADwGwCdASpAAEAAPlEejEQjoaEY+c7YOAUEtQBOmWDpE1jA3Pv7PPok2zHmA8230Pf531AP8z1DvPy+xd+6HpLYErubxNcpPqCO1Sl4Td8PxDycbuOAD8x/uHfR6k3f3oo78qgB+e/Vi/u/HF9U+wN+vfW/9GL9sVdGI+dWOxVWADkrYSttRL/UvXL65jY8/ZYzXztC0thNaGLqv1ziBb6FAurElmGThHTmSfLxtQ6Ww6eGE/6k0+//Mt/duLMVOlV+Kx1zRoiW+xLlrdIq937LcBNBnuQbqNH8not5AddR0DxfErGx6aKAAP7/2If5xBAbxARNuoYDOKQPwJDmMvJCVm96Aof4F1vRFpbDL31SLjtdTvt9UIkOFtZzUB/i5HT2IPqMLLdax4LLSj+HS2+GqPmjidr5n5T71ImMVSm2qysaj29+k7M2CbCRks1Y/Rw/vEaCzAH8+Pn2d+dXclCTjGCs31tHIWSKIRfcyBpte7ZajQ+IOjo11KObSg8F5X39hginLuqk3tMQlHADudzv5gzrW2tiQnAirpg4eLcjc6eRdqS8iqaOEmmQvyPxXPgT0gFsI5LOAtvFshjoVgN5bC/NM4j9vz8FRmVmD++3cXgbBVLnxtWk+0f3ZGz5+cr0UJMKB8OWLUdjUrygypDqiwt4w+DXVZBR7EHaKPRXbSz3b29MpubH9WmcGgYqD2TK8/PJsuL7iyJm9WDFPXHqKFrbAFevZIuvHx/FTksqzCl5LB7KF1s5tuTafRv55SPyclaQQ/SfSP2sT+cE5OrUpvQofPOghdTtD0lWU8Pc+a2B4JKd9jmDUUFzbtPDO/skXTKDUOZzmNopyOD819XTVVc8I+h3RpKhzFh7oBk5FohOCXVLaDhDtQnRTf8GJa0wed51Ow5qKqpD2t7G/F25wSqmsZ4bkURppJsPHubao0leteb6zL1D2eoJFQLuE6wf2N1JH0H0lDrHJJInsNw+cCXHxIC1E+/sbibkeelR8e+6znJl4fZjLj+z8t26e+u0bJrZ8z6wnx288YOgM12yDkwpkRVPwAmFATPQr5o+h5a+b5kLSqNo6/4Zk0xvpvROZqL2SEr+AjsVDHkV3tIIbXX+RHlgMxdMEA3/Z//dm27fEfbBG5+lBbJUVRUiN5xhZbhI4fx/T+J6/F6XbnhaeZzH5hQKSoqWm14ft0Ubs20c0lXr871jpc91KSrWkhk3HYuYE/Q47bMhWza2gpX4HSKtPZzsWCbf0/h004ABLE0thSAi1Fz7K7ZGH8lDwTSg10l23thPIASOEZ4LAqIMK0goRXEuvYBL3khqWT0yh/NULafJqqVM+XxC0xvxUNql/w0GftR6aFTRbksSUf3FM1YNXvheiLI1EZ1dJRCTdaQLJvDnLY5sL7VjVd2eh+z08be09YiVRODi9xv2zIqnyqiOOK7+85hIFbr72OLG5lGAnhlXP2pBv/2Qqj+d4Ds4d/ouHjQXh5Jb0+//8beHmzgkoQWc2RPK7qn4+ohIlQU//Gy/qNiRNLY2EgVrywaQU88KlGwTCxM0yH5Vorj2sl8y7fMAFTiW0wU8Ei7jmWKX02FA/G1kpLuqdHnqpB8qe+9pIVT//U5/ypfTdR7btU4AzEp3QJzRplQ+K9BMwc7Sd9OdSRr1wCGZd/f3g71UlacaMr2h8svJCHobI3yP60sKhYbTnjh2sW9EvB5EzPaMerBEXhJ/TrANKvyrUjea7fQ8ZfCtcCs9aOPsvg2l+KcX5Juyw7kBGq3w39ZpNcKpPEjXlJ30seWDSbbLXbCVwnPrh9cGSx9232HrgyQwkDL5PE05mZ8hcNz8y+E28skxUGKowo8f5UkJEhQ4N6oEzP0AO8z5FQddlHe0j1yCzLh4y4CVxk0fqBfGTP0xDCuvRQ7Sg/dshFh1eUmcdVQMG0CIwBZjFL3A2klSHShE+Yl/l7sq0Y+D3sl7NjKBqXJ5k5H71YEiOuKPOPhC5xNP9yHsFME2H6RRFMoMGYoHiZud31Mx59tUxDzjG4C5liXBI9AxoIN0FvhLYw9gl/xYDGGhq5bO18OG7GKQRMFFU2v1qh94EJx7CAo168rptS3yLtSBNxDW2jrnMRr95tYXa7Gy3nHThTl+xw3B0O4kV1JwJ0CGPm8TPGpIxDqx8VyroBW0GldvT9ePAvONNzWqryKBcUdzDznQn0Sd7B5dTdJYVhq02z881fJvnDIOvtqbYHrxsuDR5dqdeEXyCCBAciek2AWEnEJ5/4s3k4+rZJ1snnHKLxB5XFLBBIRvDhGYMLZrltwgsnQDSyFG4B9m8i086EGmPc5ZnH4Q2k9JZhxJ8rO0M7sKrHAM+OXmaXhnVCso0XU7OwnxRSFVWEc1pYo07Kc2KxcKxEAAAA=='; // 수로 보스 '아르카누스' (MapStory Fandom Wiki Mob_Arcanus.png, 얼굴 위주 잘라 64px)
+let suroPick=false;
+function suroIds(){ const st=S.settings; if(!Array.isArray(st.suroChars)) st.suroChars=S.characters.filter(c=>c.isMain).map(c=>c.id); return st.suroChars; }
+const suroChars=()=>{ const ids=suroIds(); return vchars().filter(c=>ids.includes(c.id)).sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id)); };
 function renderTabView(){ if(tab==='guild') renderGuild(); }
 const hhmm = t => { const d=kst(t); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
 const num = n => (Number(n)||0).toLocaleString('ko-KR');
 function renderGuild(){
-  const v=$('#view'), g=guildC, mains=vchars().filter(c=>c.isMain);
+  const v=$('#view'), g=guildC, mains=suroChars();
   const tile=(lbl,ico,r)=>`<div class="gtile"><div class="gk">${ico} ${lbl}</div>${r?`<div class="gv">${num(r.guild_point)}<small>점</small></div><div class="grk"><b>${num(r.ranking)}</b>위</div>`:`<div class="gv dim">기록 없음</div><div class="grk muted">랭킹 미등록</div>`}</div>`;
   const info=g?.t2||g?.t1;
   const head=!hasApi()?'<div class="note">넥슨 API 키를 등록하면 길드 랭킹을 불러옵니다. 사이드바 <b>+ 추가</b>에서 API 키를 등록하세요.</div>'
@@ -2226,13 +2244,22 @@ function renderGuild(){
        ${g.ok===false?`<div class="dqlock warnc">⚠ 길드 랭킹 조회 실패 — ${esc(g.msg||'')}</div>`:''}`;
   const sub=g?.date?`<span class="muted tiny">기준 ${esc(g.date)}${g.date!==dayId()?' (어제 · 오늘 랭킹 준비 전)':''}${guildBusy?' · 갱신 중…':g.at?` · 확인 ${hhmm(g.at)}`:''}</span>`:'';
   const row=c=>{ const x=schedC[c.id], gg=x?.guild||{}, has=x&&x.ok!==false;
-    return `<div class="grow-r">${avatar(c)}<div class="grow"><div class="nm">${esc(c.name)} <span class="mainbadge">★ 본캐</span></div><div class="meta">Lv.${esc(c.level||'?')} · ${esc(c.job||'')}</div></div>
+    return `<div class="grow-r">${avatar(c)}<div class="grow"><div class="nm">${esc(c.name)}</div><div class="meta">Lv.${esc(c.level||'?')} · ${esc(c.job||'')}</div></div>
       ${!schedOk(c)?'<span class="muted tiny">API 키 미연결</span>':!x?`<span class="muted tiny">${dqBusy?'불러오는 중…':'대기 중…'}</span>`:!has?`<span class="warnc tiny" title="${esc(x.msg||'')}">⚠ 조회 실패</span>`
-       :`<div class="gsc main"><span class="muted tiny">지하 수로</span><b>${gg.suro?num(gg.suro.now):'-'}</b></div>`}</div>`; };
+       :`<div class="gsc main"><span class="muted tiny">지하 수로</span><b>${gg.suro?num(gg.suro.now):'-'}</b></div>`}<button class="surodel" data-surodel="${esc(c.id)}" title="목록에서 제거" aria-label="${esc(c.name)} 제거">✕</button></div>`; };
+  const cand=vchars().filter(c=>!suroIds().includes(c.id));
+  const pick=suroPick?`<div class="suropick">${cand.length?cand.map(c=>`<label class="surocand">${avatar(c)}<input type="checkbox" value="${esc(c.id)}"><span><b>${esc(c.name)}</b> <span class="muted tiny">Lv.${esc(c.level||'?')} · ${esc(c.job||'')}</span></span></label>`).join(''):'<div class="muted">추가할 수 있는 캐릭터가 없습니다.</div>'}
+      <div class="suropick-b"><button class="btn" id="suroCancel">취소</button><button class="btn primary" id="suroOk"${cand.length?'':' disabled'}>추가</button></div></div>`:'';
   v.innerHTML=`<div class="grid"><div class="card gcard"><h2>🛡️ ${esc(GUILD.name)} <span class="muted" style="font-weight:500">${esc(GUILD.world)}</span><span class="hspace"></span>${sub}</h2>${head}</div>
-    <div class="card"><h2>⭐ 본캐 지하 수로 <span class="muted" style="font-weight:500">이번 주</span></h2>
-      ${mains.length?mains.map(row).join(''):'<div class="muted">★ 본캐로 지정된 캐릭터가 없습니다. 사이드바 ✎에서 본캐로 지정하세요.</div>'}
+    <div class="card" id="suroCard"><h2><img class="bicon suroico" src="${SURO_ICON}" alt="" aria-hidden="true"> 지하 수로 <span class="muted" style="font-weight:500">이번 주</span><button class="btn sm" id="suroAdd">+ 캐릭터 추가</button></h2>${pick}
+      ${mains.length?mains.map(row).join(''):'<div class="muted">+ 캐릭터 추가로 수로 점수를 볼 캐릭터를 고르세요.</div>'}
       <div class="muted tiny" style="margin-top:8px">캐릭터 점수는 메이플 스케줄러의 '[길드] 지하 수로' 점수(이번 주 누적, 목요일 초기화)입니다. 길드 순위·점수는 넥슨 길드 랭킹(하루 1번, 09:30경 갱신) 기준입니다.</div></div></div>`;
+  const sc=$('#suroCard'); if(!sc) return;
+  sc.querySelector('#suroAdd').onclick=()=>{ suroPick=!suroPick; renderGuild(); };
+  const cc=sc.querySelector('#suroCancel'); if(cc) cc.onclick=()=>{ suroPick=false; renderGuild(); };
+  const ok=sc.querySelector('#suroOk'); if(ok) ok.onclick=()=>{ const ids=[...sc.querySelectorAll('.suropick input:checked')].map(i=>i.value); if(!ids.length){ toast('추가할 캐릭터를 선택해주세요.'); return; }
+    suroIds().push(...ids); suroPick=false; save(); renderGuild(); refreshSched(suroChars()); };
+  sc.querySelectorAll('[data-surodel]').forEach(b=>b.onclick=()=>{ const ids=suroIds(), i=ids.indexOf(b.dataset.surodel); if(i>=0) ids.splice(i,1); save(); renderGuild(); });
 }
 
 /* =====================================================================

@@ -704,3 +704,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - 여기에 .spk 반짝임이 붙습니다.
 - table-layout: fixed와 nowrap/ellipsis로 한 행을 한 줄로 유지하고 가로 스크롤을 없앴습니다. 600px 이하에서는 칩 이름과 행 아이콘을 숨깁니다. 페이지는 10개씩(rankPage.bloot)입니다.
 - 테스트: test_tracker61.
+
+## b84 — 길드 현황 '지하 수로' 카드
+- '본캐 지하 수로'를 '지하 수로'로 바꿨습니다. 제목 아이콘은 수로 보스 아르카누스입니다(`SURO_ICON`, Fandom Mob_Arcanus.png를 잘라 64px WebP로 넣음).
+- ★ 본캐 기준을 없앴습니다. 대신 제목 옆 '+ 캐릭터 추가'에서 여러 캐릭터를 골라 추가하고, 행마다 ✕로 제거합니다.
+- 고른 목록은 `S.settings.suroChars`(id 배열, 동기화됨)에 저장합니다. 값이 없으면 처음 한 번 기존 본캐(isMain)로 채웁니다.
+- 보이는 캐릭터만 표시하고 후보에 올립니다(규칙 9). 스케줄러 갱신(tabTick) 대상도 이 목록입니다.
+- 테스트: test_tracker62.
