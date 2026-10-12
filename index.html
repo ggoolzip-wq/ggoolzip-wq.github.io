@@ -1696,7 +1696,7 @@ function missRecord(kind,id,pk,extra){ const arr=kind==='w'?(S.missW||(S.missW=[
 // 며칠/몇 주 안 열었을 때: 저장된 주간 기록(history: 캐릭터별 클리어 보스)으로 지난 주들을 채움 (보스 목록·가격은 지금 설정 기준이라 근사값)
 function missBackfill(){ let n=0; const cur=weekId(), lim=S.settings.weeklyLimit;
   for(const h of S.history||[]){ if(!h.week||h.week>=cur||(S.missW||[]).some(x=>x.week===h.week)) continue; const list=[];
-    for(const p of h.perChar||[]){ const c=S.characters.find(x=>x.id===p.id); if(!c) continue;
+    for(const p of h.perChar||[]){ const c=S.characters.find(x=>x.id===p.id); if(!c||!charShown(c)) continue; // b82
       const top=expectedAll(c).slice(0,lim), got=new Set((p.bosses||[]).map(t=>String(t).split('(')[0]));
       const miss=top.filter(x=>!got.has(x.name)).slice(0,Math.max(0,top.length-(+p.count||0)));
       if(miss.length) list.push({name:p.name||c.name,n:miss.length,meso:miss.reduce((a,x)=>a+x.value,0)}); }
@@ -1906,6 +1906,14 @@ const accById = id => accounts().find(a=>a.id===id);
  * 계정 연결이 없는(수동 추가) 캐릭터·없는 계정을 가리키는 캐릭터는 보임. 지난 기록(history·누적 수익)은 숨긴 캐릭터 것도 유지·합산. */
 const charShown = c => { if(!c||!c.accId) return true; const a=accById(c.accId); return !a||!!a.key; };
 const vchars = () => S.characters.filter(charShown);
+/* b82 규칙: 모든 합계·표·차트(지금·앞으로의 모든 탭)는 '지금 보이는(키 등록된) 캐릭터'만 — visibleCharIds() / visHist().
+ * 저장된 기록(S.history·monthHistory)은 지우지 않고 볼 때마다 캐릭터 id 로 걸러 합계를 다시 계산 → 키를 다시 넣으면 합계도 그대로 돌아옴.
+ * (b72 의 '지난 기록은 숨긴 캐릭터 것도 합산' 결정을 대체. 지금 목록에 없는(삭제된) 캐릭터의 기록도 빠짐) */
+const visibleCharIds = () => new Set(vchars().map(c=>c.id));
+function visHist(h,ids=visibleCharIds()){ const pc=(h.perChar||[]).filter(p=>p&&p.id&&ids.has(p.id));
+  if(pc.length===(h.perChar||[]).length) return h;
+  return {...h, perChar:pc, total:pc.reduce((x,p)=>x+(+p.meso||0),0), cleared:pc.reduce((x,p)=>x+((p.bosses||[]).length||+p.count||0),0),
+    crystals:pc.reduce((x,p)=>x+(p.bvals||[]).filter(v=>v>0).length,0), items:pc.reduce((x,p)=>x+itemSum(p.items),0)}; }
 const accOf = c => c && c.accId ? accById(c.accId) : null;
 const hasApi = () => accounts().some(a=>a.key);
 const anyKey = () => accounts().find(a=>a.key)?.key || '';
@@ -2599,8 +2607,9 @@ function renderSummary(){
 // (주간 기록 탭 · renderHistory 는 2026-10-10 삭제 — S.history 데이터는 '캐릭터 별 기록'·'총 수익' 탭이 계속 사용)
 /* 총 수익: 시작 주(S.startWeek)부터 저장된 모든 주간 기록 + 이번 주, 월간 보스는 별도 합계. 기록은 자동 삭제되지 않음 */
 function totalData(){
-  const weeks=[...S.history.slice().sort((a,b)=>a.week<b.week?-1:1).map(h=>({...h,cur:false})),{...weekSummary(S.period.week),cur:true}];
-  const months=[...S.monthHistory.map(m=>({...m,cur:false})),{...monthSummary(S.period.month),cur:true}];
+  const VI=visibleCharIds(); // b82: 보이는 캐릭터만
+  const weeks=[...S.history.slice().sort((a,b)=>a.week<b.week?-1:1).map(h=>({...visHist(h,VI),cur:false})),{...visHist(weekSummary(S.period.week),VI),cur:true}];
+  const months=[...S.monthHistory.map(m=>({...visHist(m,VI),cur:false})),{...visHist(monthSummary(S.period.month),VI),cur:true}];
   const wTotal=weeks.reduce((s,w)=>s+(w.total||0),0), mTotal=months.reduce((s,m)=>s+(m.total||0),0);
   const chars={}, items={};
   const nameOf=p=>{ const c=p.id&&S.characters.find(x=>x.id===p.id); return c?c.name:p.name; };
