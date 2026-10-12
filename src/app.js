@@ -1064,7 +1064,7 @@ const SURO_ICON='data:image/webp;base64,UklGRoQIAABXRUJQVlA4WAoAAAAQAAAAPwAAPwAA
 let suroPick=false;
 function suroIds(){ const st=S.settings; if(!Array.isArray(st.suroChars)) st.suroChars=S.characters.filter(c=>c.isMain).map(c=>c.id); return st.suroChars; }
 const suroChars=()=>{ const ids=suroIds(); return vchars().filter(c=>ids.includes(c.id)).sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id)); };
-function renderTabView(){ if(tab==='guild') renderGuild(); }
+function renderTabView(){ if(tab==='guild'&&vchars().length) renderGuild(); }
 const hhmm = t => { const d=kst(t); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
 const num = n => (Number(n)||0).toLocaleString('ko-KR');
 function renderGuild(){
@@ -1132,6 +1132,8 @@ let tab=(()=>{ try{ const t=localStorage.getItem(TAB_KEY); return TABS.includes(
 function applyTheme(){ document.documentElement.dataset.theme='dark'; } // b67: 다크 전용 (라이트 모드·테마 버튼 삭제, 저장된 테마·시스템 설정 무시)
 function render(){ if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
+  /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
+  if(!vchars().length){ $('#view').innerHTML=emptyView(); renderResetInfo(); return; }
   ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),guild:renderGuild})[tab](); if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); renderResetInfo(); }
 /* 캐릭터 카드 제목 옆: 🔄 지금 동기화 아이콘 버튼 (API 키가 있을 때만, 넥슨 API 전용 — 구글 드라이브는 헤더 ☁ 버튼) */
 const SYNC_SVG=`<svg class="rot" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
