@@ -922,3 +922,7 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 #salesCard .slp{flex:none;font-size:.75rem;color:var(--muted,#9a9aa6);border:1px solid var(--line,#3a3a46);border-radius:6px;padding:0 5px}
 #salesCard .sl .lx,#salesCard .slm{flex:none}
 #salesCard h2 .hbi{display:inline-flex;vertical-align:middle}
+
+/* b77 */
+.admhdr{margin-right:6px;border-color:#ffcc4d!important;color:#ffcc4d!important;font-weight:700}
+.admhdr[hidden]{display:none}

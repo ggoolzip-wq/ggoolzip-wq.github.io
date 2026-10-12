@@ -2095,6 +2095,10 @@ function gdRender(){
     const svIn=SV_ON&&!!svTok()&&gdMeta.on&&gd.state!=='conflict';
     if(svIn){ b.textContent='로그아웃'; b.classList.remove('warn'); b.title='로그아웃 (이 PC의 데이터는 지워지고 서버에 남아요)'; b.setAttribute('aria-haspopup','false'); }
     else b.setAttribute('aria-haspopup','true');
+    // b77: 관리자 입구 = 헤더 [로그아웃] 왼쪽 '👑 관리자' (b67 이후 헤더 버튼이 바로 로그아웃이라 ☁ 메뉴의 관리자 버튼에 갈 수 없었음)
+    let ad=$('#svAdminHdr'); const adm=svIn&&svIsAdmin();
+    if(adm&&!ad){ ad=document.createElement('button'); ad.id='svAdminHdr'; ad.className='hbtn admhdr'; ad.textContent='👑 관리자'; ad.title='관리자 — 가입 승인'; ad.onclick=e=>{ e.stopPropagation(); openAdmin(); }; b.parentNode.insertBefore(ad,b); }
+    if(ad) ad.hidden=!adm;
     let w=$('#svWarn'); const bad=svIn&&['error','reconnect'].includes(gd.state);
     if(bad&&!w){ w=document.createElement('button'); w.id='svWarn'; w.className='hbtn svwarn'; b.parentNode.insertBefore(w,b); }
     if(w){ w.hidden=!bad; if(bad){ w.textContent='⚠ 저장 안 됨'; w.title=(gd.msg||'서버에 저장하지 못했습니다')+' — 눌러서 다시 저장'; } }

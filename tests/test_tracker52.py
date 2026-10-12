@@ -74,7 +74,12 @@ try:
     # ---- 관리자(PC2) ----
     c2,p2=mkctx(b); fresh(p2); p2.click('#addCharBtn'); p2.wait_for_selector('#svMainKey'); p2.fill('#svMainKey',KA); p2.click('#svMainBtn'); wait_on(p2)
     check('admin logs in normally (admin flag)', p2.evaluate("localStorage.getItem('mapleBossTracker.svAdmin')")=='1')
-    p2.evaluate("gdMenu(true)"); p2.wait_for_selector('#svAdminBtn'); p2.click('#svAdminBtn'); p2.wait_for_selector('#admBody .admrow')
+    # b77: 관리자 입구 = 헤더 '👑 관리자' (로그아웃 왼쪽), 새로고침 뒤에도
+    hdr=lambda pg: pg.evaluate("(()=>{const a=document.querySelector('#svAdminHdr'),g=document.querySelector('#gBtn'); return !!a&&!a.hidden&&a.offsetParent!==null&&a.textContent.includes('관리자')&&a.getBoundingClientRect().right<=g.getBoundingClientRect().left})()")
+    check('b77: admin header button visible left of 로그아웃', hdr(p2) and p2.inner_text('#gBtn').strip()=='로그아웃')
+    p2.reload(); p2.wait_for_timeout(2500); check('b77: admin header button after reload', hdr(p2))
+    p2.screenshot(path='/workspace/maple-boss-tracker/oct12o_b77_test_header.png')
+    p2.click('#svAdminHdr'); p2.wait_for_selector('#admBody .admrow')
     t=p2.inner_text('#admBody')
     check("admin modal: 승인 대기 lists 캐릭F with 승인/거절; admin row tagged 관리자", '승인 대기' in t and '캐릭F' in t and p2.locator('[data-adm=approve]').count()==1 and p2.locator('[data-adm=reject]').count()==1 and '관리자' in t, t)
     p2.screenshot(path=os.path.join(OUT,'oct12f_admin.png'))
@@ -85,7 +90,7 @@ try:
     p1.wait_for_selector('#accList .accrow .regok',timeout=15000)
     check('after approval: 승인 확인 → logged in, normal modal, pending cleared, not admin', p1.evaluate('!!svTok()') and p1.locator('#svMainSec').count()==0 and not p1.evaluate("localStorage.getItem('mapleBossTracker.svPending')") and p1.evaluate("localStorage.getItem('mapleBossTracker.svAdmin')")=='0' and p1.inner_text('#gBtn').strip()=='로그아웃')
     p1.evaluate("closeImport()"); p1.evaluate("gdMenu(true)"); p1.wait_for_timeout(200)
-    check('non-admin: no 관리자 button', p1.locator('#svAdminBtn').count()==0)
+    check('non-admin: no 관리자 button', p1.locator('#svAdminBtn').count()==0 and not p1.evaluate("!!document.querySelector('#svAdminHdr')&&!document.querySelector('#svAdminHdr').hidden"))
     # 관리자: 차단 → 새 사람의 다음 요청에서 로그아웃
     p2.click('[data-adm=block]'); p2.wait_for_selector('#admBody [data-adm=unblock]',timeout=8000)
     p1.evaluate("svFetch('/api/state/meta').catch(()=>{})"); p1.wait_for_timeout(800)
