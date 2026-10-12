@@ -15,6 +15,7 @@
  *   POST   /api/invite        {pass}               → {device}  (초대 비밀번호 확인, 기기 표 발급)
  *   POST   /api/login         {key, device, label?} → {token, user, accounts:[hash], newUser, rev}
  *   POST   /api/link          {key}                (인증) 다른 넥슨 계정 키를 같은 데이터에 연결 → {accounts}
+ *   POST   /api/keycheck      {key}                (인증, b64) 추가하려는 부계정·예비 키가 다른 데이터에 이미 등록됐는지 → 200 | 409 sub_key
  *   PUT    /api/subkeys       {main, subs:[{key,label}]} (인증) 부계정 키를 대표 키로 암호화해 보관 → {subs:[{ah,label}], accounts}
  *
  * 부계정 키 보관: AES-GCM-256, 키 = HKDF-SHA256(ikm=대표 키, salt=sha256(ID_PEPPER), info='ggoolzip-subkeys:v1:'+user_id).
@@ -49,6 +50,7 @@ const LIMITS = {                                               // 세션별·사
   write: { n: 20, windowMs: 60e3 },                            //   PUT (자동 저장은 5초 모아서)
   userWrite: { n: 40, windowMs: 60e3 },                        //   한 사용자의 모든 기기 합계
   link:  { n: 10, windowMs: 10 * 60e3 },
+  keycheck: { n: 30, windowMs: 10 * 60e3 },                   // b64: 키 추가 전 확인
 };
 const DEVICE_DAYS = 365;
 const DAY = 86400e3;
@@ -361,6 +363,20 @@ async function route(req, env) {
     await vault2Seal(env, mainHashes, me.userId, vv);
     await writeRegistry(env, me.userId, mainHashes, vv);
     return json(200, { subs: out.map(({ ah, label }) => ({ ah, label })), accounts: await acctList(env, me.userId) });
+  }
+  if (p === '/api/keycheck' && M === 'POST') { // b64: 캐릭터 추가 창에서 부계정·예비 키를 넣을 때 미리 확인 (저장 안 함)
+    await limit(env, 'kc:' + sk, LIMITS.keycheck);
+    const b = await readBody(req);
+    const kr = await env.DB.prepare('SELECT user_id FROM keyreg WHERE key_hash=?').bind(await keyHash(env, b.key)).first();
+    if (kr && kr.user_id !== me.userId) throw new HttpError(409, 'sub_key', SUB_MSG);         // 다른 데이터에 부계정/예비 키로 등록된 키
+    const hs = await nexonAccounts(env, b.key), qs = hs.map(() => '?').join(',');
+    const other = (await env.DB.prepare(`SELECT DISTINCT user_id FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hs, me.userId).all()).results;
+    for (const o of other) { // /api/subkeys 와 같은 규칙: 그 계정만 있는 '빈' 데이터면 옮길 수 있으므로 통과, 아니면 거부
+      const oa = await acctList(env, o.user_id), st = await env.DB.prepare('SELECT data FROM state WHERE user_id=?').bind(o.user_id).first();
+      let nChars = 0; try { nChars = st ? (JSON.parse(st.data).characters || []).length : 0; } catch (e) {}
+      if (!(oa.every(h => hs.includes(h)) && nChars === 0)) throw new HttpError(409, 'sub_key', SUB_MSG);
+    }
+    return json(200, { ok: true });
   }
   if (p === '/api/logout' && M === 'POST') { await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(me.th).run(); return json(200, { ok: true }); }
   if (p === '/api/logout-all' && M === 'POST') { const r = await env.DB.prepare('DELETE FROM sessions WHERE user_id=?').bind(me.userId).run(); return json(200, { ok: true, removed: r.meta?.changes || 0 }); }

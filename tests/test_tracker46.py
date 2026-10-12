@@ -43,14 +43,14 @@ def invite(pg):
     pg.wait_for_selector('#svGate #svInvite'); pg.fill('#svGate #svInvite',cf_dev.TEST_PASS); pg.click('#svGate #svInviteBtn'); pg.wait_for_selector('#svGate #svKey')
 def login(pg,key): pg.fill('#svGate #svKey',key); pg.click('#svGate #svLoginBtn')
 def fresh(b):
-    c,p=mkctx(b); p.goto(URL); p.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); p.reload(); p.wait_for_timeout(400); return c,p
+    c,p=mkctx(b); p.goto(URL); p.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",API); p.reload(); p.wait_for_timeout(400); return c,p
 keyset=lambda s: sorted(x for a in s['settings']['accounts'] for x in (a.get('key'),a.get('bk')) if x)
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     # ---- 기기 A: 대표 키 로그인 → (+추가 창처럼) 부계정 2개·예비 키 2개를 저장 버튼 없이 등록 ----
     ca,pa=mkctx(b); pa.goto(URL)
-    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
+    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
     invite(pa); login(pa,KA); wait_on(pa)
     pa.evaluate("([KF,KG,BKA,BKG])=>{const ac=accounts();ac[0].bk=BKA;ac[0].bkLabel='본계정 예비';S.settings.accounts=[...ac,{id:'a2',label:'부계정F',key:KF},{id:'a3',label:'부계정G',key:KG,bk:BKG,bkLabel:'G 예비'}];save();render()}",[KF,KG,BKA,BKG])
     pa.wait_for_function("localStorage.getItem('mapleBossTracker.svSubSig')===svSubSig()",timeout=15000)

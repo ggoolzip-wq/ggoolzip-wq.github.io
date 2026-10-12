@@ -29,7 +29,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     pg=b.new_page(viewport={'width':1280,'height':800},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route(API+'/**',fake); pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
-    pg.goto(URL); pg.evaluate("a=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',a)}",API); pg.reload(); pg.wait_for_selector('#svGate #svInvite')
+    pg.goto(URL); pg.evaluate("a=>{localStorage.clear();localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',a)}",API); pg.reload(); pg.wait_for_selector('#svGate #svInvite')
     pg.fill('#svGate #svInvite','wrong'); pg.press('#svGate #svInvite','Enter'); pg.wait_for_selector('#svGate .svgerr')
     l=look(pg)
     check('invite: error visible, red #ff5a5a, transparent background', l and '초대 비밀번호' in l['t'] and l['color']=='rgb(255, 90, 90)' and l['bg'] in ('rgba(0, 0, 0, 0)','transparent') and l['vis'], l)

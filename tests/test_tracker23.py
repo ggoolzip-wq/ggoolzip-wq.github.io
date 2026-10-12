@@ -46,7 +46,7 @@ try:
     check('flag off (default): Google Drive mode unchanged', p0.evaluate("SV_ON")=='' and '구글' in p0.inner_text('#gBtn'), p0.inner_text('#gBtn')); ctx0.close()
     # 1) 기기 A: 등록된 키로 로그인 → 이 PC 데이터 첫 저장
     ca,pa=mkctx(b); pa.goto(URL)
-    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
+    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
     check('flag on: header ☁ 로그인, no auto login, no popup', pa.text_content('#gBtn')=='☁ 로그인' and not popups and not pa.evaluate("svTok()"), pa.text_content('#gBtn'))
     check('entry gate: invite screen covers the page on open', pa.is_visible('#svGate #svInvite') and pa.evaluate("getComputedStyle(document.querySelector('#svGate')).position")=='fixed')
     check('first: invite password asked (no key buttons yet)', pa.locator('[data-svlogin]').count()==0)
@@ -65,7 +65,7 @@ try:
     check('A header shows only 로그아웃', pa.text_content('#gBtn')=='로그아웃', pa.text_content('#gBtn'))
     # 2) 기기 B (빈 PC): 키 입력 → 내려받기 + 그 키 자동 채움
     cb,pb=mkctx(b); pb.goto(URL)
-    pb.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); pb.reload(); pb.wait_for_timeout(300)
+    pb.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",API); pb.reload(); pb.wait_for_timeout(300)
     pb.wait_for_selector('#svGate #svInvite'); pb.fill('#svGate #svInvite',cf_dev.TEST_PASS); pb.press('#svGate #svInvite','Enter'); pb.wait_for_selector('#svGate #svKey'); pb.fill('#svGate #svKey',KA); pb.press('#svGate #svKey','Enter'); wait_on(pb)
     sb=st(pb)
     check('B (empty PC) login → pulled 2 chars, key filled for that account', len(sb['characters'])==2 and sb['settings']['accounts'][0].get('key')==KA, [a.get('key','')[:8] for a in sb['settings']['accounts']])

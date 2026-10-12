@@ -48,7 +48,7 @@ try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     ca,pa=mkctx(b); pa.goto(URL)
-    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
+    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
     invite(pa); t=pa.inner_text('#svGate')
     check('gate step 2 wording: 대표 키', '대표 키' in t and pa.get_attribute('#svGate #svKey','placeholder').startswith('대표 키'), t[:200])
     pa.fill('#svGate #svKey',KA); pa.click('#svGate #svLoginBtn'); wait_on(pa)
@@ -63,7 +63,7 @@ try:
     v=dev.sql("SELECT * FROM keyvault2"); dump=json.dumps(v)+json.dumps(server_state())
     check('server: vault row, ciphertext only (no raw keys anywhere)', len(v)==1 and KA not in dump and KF not in dump, len(v))
     # 기기 B: 대표 키만 입력 → 데이터 + 부계정 키 복원
-    cb,pb=mkctx(b); pb.goto(URL); pb.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); pb.reload(); pb.wait_for_timeout(400)
+    cb,pb=mkctx(b); pb.goto(URL); pb.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",API); pb.reload(); pb.wait_for_timeout(400)
     invite(pb); pb.fill('#svGate #svKey',KA); pb.press('#svGate #svKey','Enter'); wait_on(pb)
     pb.wait_for_function("accounts().some(a=>a.key==='%s')"%KF,timeout=10000)
     acc=st(pb)['settings']['accounts']

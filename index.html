@@ -2911,6 +2911,7 @@ async function bkAdd(id){
     let theirs; try{ theirs=acctIds(await nxRaw('/maplestory/v1/character/list',{},k)); }catch(e){ throw new Error(isQuotaErr(e)?'예비 키도 지금 호출량 초과입니다. 잠시 후 다시 시도하세요':'넥슨이 이 예비 키를 거부했습니다 (키 확인)'); }
     if(!mine) throw new Error('기본 키의 계정을 확인하지 못했습니다. 잠시 후 다시 시도하세요');
     if(mine!==theirs) throw new Error('같은 넥슨 계정의 키가 아닙니다. 이 계정 주인의 키만 예비 키로 쓸 수 있어요');
+    { const rej=await svKeyCheck(k); if(rej) throw new Error(rej); } // b64: 다른 데이터에 등록된 키면 저장 안 함
     a.bk=k; a.bkLabel=($('#bkLb-'+id)?.value||'').trim()||a.label+' 예비'; save(); render(); toast(`'${a.label}' 예비 키를 등록했습니다`);
     if(SV_ON&&svTok()&&gdMeta.on) svSyncSubKeys().catch(()=>{});
   }catch(e){ bkErr[id]=e.message; }
@@ -2925,7 +2926,7 @@ function openAdd(){ openImport(); }
 async function openImport(accId){
   const modal=$('#importModal'), wasOpen=modal.classList.contains('show');
   const usable=accounts().filter(a=>a.key);
-  const a=(accById(accId)?.key&&accById(accId))||usable.find(x=>x.id===impAccId)||usable[0];
+  let a=(accById(accId)?.key&&accById(accId))||usable.find(x=>x.id===impAccId)||usable[0];
   modal.classList.add('show');
   if(!a){ impAccId=null; accChars=[]; renderAccList(); $('#impSec').classList.add('hidden'); setTimeout(()=>$('#newAccKey').focus(),50); return; }
   $('#impSec').classList.remove('hidden');
@@ -2936,6 +2937,7 @@ async function openImport(accId){
   const msg=$('#impMsg'); msg.className='impmsg'; msg.innerHTML=`<span class="spin"></span> '${esc(a.label)}' 계정의 캐릭터 목록을 불러오는 중…`;
   try{
     const all=await listAccount(a); if(impAccId!==a.id) return;
+    const ra=keyRelink(a,all); if(ra){ a=ra; impAccId=ra.id; impBusy=ra.id; } // b64: 키 없는 예전 계정 칸에 다시 연결
     const n=assignFromList(a,all); save();
     accChars=all.map(x=>({...x,accId:a.id})).sort((x,y)=>y.character_level-x.character_level||x.character_name.localeCompare(y.character_name));
     const worlds=[...new Set(accChars.map(x=>x.world_name).filter(Boolean))];
@@ -2950,15 +2952,40 @@ async function openImport(accId){
     msg.className='impmsg err'; msg.innerHTML=errHtml(e,a)+`<div class="toolbar"><button class="btn sm plain" id="impRetry">다시 불러오기</button></div>`;
   }finally{ if(impBusy===a.id) impBusy=null; }
 }
-function addAccount(){
+// b64: 새로 추가한 키의 캐릭터 목록(ocid)이 '키 없음' 상태의 예전 계정 칸에 연결된 캐릭터와 겹치면 → 그 칸에 키를 넣고 새 칸은 지움
+//   (키 초기화 뒤 다시 등록할 때 캐릭터 연결(accId)·이름·순서가 그대로 유지되게. 캐릭터 데이터는 건드리지 않음)
+function keyRelink(a,all){
+  if(!a?.key) return null; const ids=new Set((all||[]).map(x=>x.ocid).filter(Boolean)); if(!ids.size) return null;
+  const o=accounts().find(x=>x!==a&&!x.key&&S.characters.some(c=>c.accId===x.id&&c.ocid&&ids.has(c.ocid)));
+  if(!o) return null;
+  o.key=a.key; if(a.bk&&!o.bk){ o.bk=a.bk; if(a.bkLabel) o.bkLabel=a.bkLabel; } if(a.ah&&!o.ah) o.ah=a.ah; delete o.status;
+  if(listCache[a.id]){ listCache[o.id]=listCache[a.id]; delete listCache[a.id]; }
+  S.settings.accounts=accounts().filter(x=>x!==a); save(); toast(`'${o.label}' 계정에 키를 다시 연결했습니다`); return o;
+}
+// b64: 서버 모드 — 추가하려는 키가 다른 데이터(캐릭터가 있는)에 이미 등록된 넥슨 계정/부계정·예비 키면 저장하지 않고 빨간 글만
+let accRej=null, accAdding=false;
+function accRejShow(){
+  let d=$('#accRej'); if(!accRej){ d?.remove(); return; }
+  if(!d){ d=document.createElement('div'); d.id='accRej'; $('#accList')?.insertAdjacentElement('afterend',d); }
+  d.innerHTML=`<div class="accrow accrej"><input class="pin acclbl" value="${esc(accRej.label)}" disabled aria-label="계정 이름"><span class="accst"><span class="keyrej" role="alert" style="color:#ff5a5a;font-weight:600;font-size:.9rem">${esc(accRej.msg)}</span></span></div>`;
+}
+async function svKeyCheck(k){ // '' = 통과 (서버 모드가 아니거나, 예전 Worker(404)·넥슨 오류 등은 예전 흐름대로 계속)
+  if(!SV_ON||!svTok()||!gdMeta.on) return '';
+  try{ await svFetch('/api/keycheck',{method:'POST',body:{key:k}}); return ''; }
+  catch(e){ return e.code==='sub_key'?'이미 등록된 부계정 API입니다.':''; }
+}
+async function addAccount(){
   const k=$('#newAccKey').value.trim(); if(!k){ toast('API 키를 붙여넣으세요'); $('#newAccKey').focus(); return; }
   const dup=accounts().find(a=>a.key===k); if(dup){ toast(`이미 '${dup.label}'(으)로 등록된 키입니다`); openImport(dup.id); return; }
   const n=accounts().length, label=$('#newAccLabel').value.trim()||(n?`부계정${n}`:'본계정');
+  if(accAdding) return; accAdding=true; accRej=null; accRejShow();
+  let rej=''; try{ rej=await svKeyCheck(k); }finally{ accAdding=false; }
+  if(rej){ accRej={label,msg:rej}; accRejShow(); $('#newAccKey').value=''; return; }
   const a={id:uid(),label,key:k}; accounts().push(a); save();
   $('#newAccKey').value=''; $('#newAccLabel').value='';
   openImport(a.id); render();
 }
-function closeImport(){ $('#importModal').classList.remove('show'); }
+function closeImport(){ $('#importModal').classList.remove('show'); accRej=null; accRejShow(); }
 function renderImportList(){
   const min=parseInt($('#impMin').value)||0, w=$('#impWorld').value, q=normName($('#impQ').value);
   const have=new Set(S.characters.map(c=>c.ocid).filter(Boolean)), haveName=new Set(S.characters.map(c=>c.name));
@@ -3550,7 +3577,7 @@ function svAfterLogin(){
   if(L.mainBkLabel&&a.bk===L.mainBk&&!a.bkLabel){ a.bkLabel=L.mainBkLabel; ch=true; }
   for(const sub of L.subs||[]){ // 대표 키로 로그인 → 서버가 풀어 준 부계정 키 채우기
     if(!sub?.key||sub.key===a.key) continue;
-    const ac=accounts(), x=ac.find(y=>y.key===sub.key)||ac.find(y=>!y.key&&sub.ah&&y.ah===sub.ah);
+    const ac=accounts(), x=ac.find(y=>y.key===sub.key)||ac.find(y=>!y.key&&sub.ah&&y.ah===sub.ah)||ac.find(y=>!y.key&&!y.main&&!y.ah&&sub.label&&y.label===sub.label); // b64: ah 가 없는 예전 칸은 이름으로
     if(x){ if(!x.key){ x.key=sub.key; ch=true; back++; } if(sub.ah&&!x.ah){ x.ah=sub.ah; ch=true; } if(sub.bk&&!x.bk){ x.bk=sub.bk; ch=true; } if(sub.bkLabel&&x.bk===sub.bk&&!x.bkLabel){ x.bkLabel=sub.bkLabel; ch=true; } }
     else { S.settings.accounts=[...ac,{id:'a'+Date.now().toString(36)+ac.length,label:sub.label||`부계정${ac.length}`,key:sub.key,...(sub.ah?{ah:sub.ah}:{}),...(sub.bk?{bk:sub.bk,...(sub.bkLabel?{bkLabel:sub.bkLabel}:{})}:{})}]; ch=true; back++; }
   }
@@ -3795,6 +3822,17 @@ function applyData(d){
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
 load();
+/* b64 (2026-10-12): 등록된 API 키 전체 초기화 (사용자 요청) — 서버 모드 기기마다 이 버전을 처음 열 때 한 번:
+ *  이 기기에 저장된 대표·부계정·예비 키(settings.accounts[].key/bk/bkLabel)만 비움. 계정 칸(id·이름·ah)과 캐릭터·기록·수익 등은 그대로.
+ *  금고 상태 표시도 지우고, 키가 있던 기기는 세션도 지워 대표 키로 다시 로그인하게 함(같은 사용자 → 저장 안 한 변경 유지·3-way 병합).
+ *  서버 금고(keyvault2)·등록부(keyreg)는 같은 날 운영자가 D1 에서 지움. 다시 초기화하려면 KEY_RESET 값을 바꿔 배포. */
+const KEY_RESET='b64-2026-10-12', KEY_RESET_K='mapleBossTracker.keyReset';
+try{ if(SV_ON&&localStorage.getItem(KEY_RESET_K)!==KEY_RESET){
+  let n=0; for(const a of accounts()){ if(a.key){ a.key=''; n++; } if(a.bk){ delete a.bk; n++; } delete a.bkLabel; delete a.status; }
+  [SV_SUBSIG_KEY,SV_VAULT_KEY,SV_KEYERR_KEY].forEach(k=>localStorage.removeItem(k));
+  if(n){ localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); localStorage.removeItem(SV_TOKEN_KEY); }
+  localStorage.setItem(KEY_RESET_K,KEY_RESET);
+} }catch(e){}
 if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
 checkResets(); loadOfficialPrices(); save(); applyTheme(); render();
 addEventListener('resize',()=>{ clearTimeout(fitPriceCard._t); fitPriceCard._t=setTimeout(()=>{ fitPriceCard(); fitMiss(); },150); });

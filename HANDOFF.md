@@ -11,6 +11,19 @@
 6. **작업을 시작할 때마다** 사용 한도량(사용치)을 사용자에게 알리고, 한도 100% 전에 끝낼 수 없는 작업이면 **'한도 때문에 작업 불가'라고 미리** 알린다.
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## 2026-10-12 b64 (등록된 API 키 전체 초기화 · 키 다시 추가 시 예전 계정 칸에 재연결 · 다른 데이터 키 추가 차단)
+(src 수정→build→테스트→main 일반 push, Worker 는 `cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`. HANDOFF 기록은 항상.)
+배경: b62 Worker 배포(10:35) 뒤 사용자가 집 PC(키 전부 있음)보다 먼저 PC방에서 대표 키로 로그인 → 금고 v2 가 부계정 0개 상태로 만들어짐(원격 D1 확인: keyvault2 1행, keyreg 0행, acct_role main 4행). 사용자가 '캐릭터 추가 창의 API 키(대표·부계정·예비) 전부 초기화 후 PC방에서 다시 등록'을 요청·확인.
+1. **서버(원격 D1) 초기화 — 2026-10-12 10:47 KST**: 사용자 ef4ca70b… 의 `keyvault2`(1행) 삭제, `keyvault`·`keyreg`(이미 0행). `acct_role`(main 4행)·`accounts`(넥슨 계정 연결 9행)·state·state_history·seen·sessions·devices 는 **그대로**.
+   - 백업(박스, chmod 600, 내용 출력 안 함): `/workspace/backup/keys_reset_20261012_104640.json`(keyvault2·acct_role·accounts 행) · `/workspace/backup/state_before_b64_20261012.json`(state rev 42 전체, 키 없음).
+   - 전/후 행 수 동일: users 3 · accounts 29 · state 3 · state_history 15 · seen 0 · sessions 1 · devices 1 · acct_role 4 · state rev/size/캐릭터 = 42/54192/22. 바뀐 것: keyvault2 1→0.
+   - 주의(기록): 첫 DELETE 문의 하위 질의가 잘못 쓰여(users 표에 user_id 열 없음 → 바깥 열로 해석) 사실상 keyvault2 **전체** 삭제 조건이었으나, keyvault2 는 원래 이 사용자 1행뿐이라 결과는 같음. keyvault·keyreg 는 0행이었음.
+2. **기기별 키 초기화 (클라이언트, `KEY_RESET='b64-2026-10-12'`, localStorage `mapleBossTracker.keyReset`)**: 서버 모드에서 이 버전을 기기마다 처음 열 때 한 번 — `settings.accounts[].key` 를 '' 로, `bk`·`bkLabel`·`status` 삭제, `svSubSig`·`svVault`·`svKeyErr` 삭제, 키가 있던 기기는 `svToken` 도 삭제(→ 입장 화면, 대표 키로 다시 로그인; svUser·기준(base)은 유지라 저장 안 한 변경도 3-way 병합). 계정 칸(id·이름·ah·main), 캐릭터·accId·보스·수익·기록·소식 읽음은 안 건드림. 다시 전원 초기화 = KEY_RESET 값 바꿔 배포(+ 서버 금고 삭제). 서버 state 에는 원래 키가 없어서 병합으로 키가 돌아오지 않음(key/bk 는 GD_LOCAL 경로).
+   - 기존 서버 모드 테스트(23·24·25·29·46)는 미리 넣는 localStorage 에 keyReset 표시를 추가(안 그러면 키가 지워짐).
+3. **키 다시 추가 → 예전 칸에 재연결** (`keyRelink(a,all)`, `openImport` 안): '+ API 키 추가'로 넣은 키의 캐릭터 목록(ocid)이 '키 없음' 칸에 연결된 캐릭터와 겹치면 그 칸에 키(·예비 키·ah)를 넣고 새 칸은 지움 → 캐릭터 accId·계정 이름 그대로, 중복 칸 없음. 대표 키는 로그인 때 ah 로 본계정 칸에 들어감(기존). 금고 복원(`svAfterLogin`)은 ah 가 없는 예전 칸이면 **이름(label)** 으로도 짝지음(실데이터의 부계정 칸 3개는 ah 가 없었음).
+4. **다른 데이터에 묶인 키 추가 차단**: Worker `POST /api/keycheck {key}`(인증, 세션당 30회/10분, 저장 없음) — keyreg 에 다른 사용자 키로 있거나, 그 넥슨 계정이 **캐릭터가 있는** 다른 데이터에 연결돼 있으면 409 `sub_key` '이미 등록된 부계정 API입니다.'(빈 데이터는 /api/subkeys 가 옮기므로 통과). 클라이언트 `addAccount()`(이제 async)·`bkAdd()` 가 저장 전에 `svKeyCheck()` → 거부면 키를 저장하지 않고 키 목록 아래 `#accRej` 줄에 '등록 완료' 자리 대신 빨간 글(#ff5a5a, 600, .9rem = 입장 화면 경고와 같은 모양)만, 예비 키는 bkerr 빨간 글. 창 닫으면 사라짐. 예전 Worker(404)·넥슨 오류면 예전 흐름대로 진행. Worker 배포 Version 4776323e (10:51 KST), EPOCH_KEY 그대로라 강제 로그아웃 없음.
+5. 테스트: test_server.py(b64 keycheck 4개), 신규 **test_tracker49**(초기화 1번만·키만 비움·캐릭터/연결 유지·세션 지움 / 대표 키 로그인 → 본계정 칸 / F·G 다시 추가 → 예전 a2·a3 칸 / 남의 키 → 빨간 글·저장 안 함 / 집 PC 예전 키 → 비운 뒤 대표 키로 PC방 등록분만 복원·중복 칸 없음·금고에 예전 키 안 올라감). 통과: test_server, 4, 5, 23, 24, 25, 29, 36, 46, 49. run_all.sh 에 49 추가.
+6. 사용자 할 일: ① PC방 페이지 새로고침(F5) → 입장 화면 → 대표 키 로그인 ② 캐릭터 추가 창에서 부계정 키를 '+ API 키 추가'로 하나씩, 예비 키는 각 계정 줄의 예비 칸에 등록(2초 뒤 서버 금고에 보관, ☁ 메뉴에 '키 보관 실패'가 없는지 확인) ③ 집 PC: **페이지를 새로고침한 뒤**(예전 버전 탭으로 로그인하면 예전 키가 다시 금고에 올라갈 수 있음) 대표 키로 로그인 → 키가 다 돌아옴.
 ## 2026-10-12 b65 (결정석 가격: 매일 19:00 KST 확인 + 마지막 확인 날짜 갱신)
 (같은 방식: 최소 수정→`git pull --rebase`→main 일반 push. HANDOFF 기록은 항상. src/·server/ 키 리셋 작업과 겹치지 않게 워크플로·스크립트·HANDOFF 만.)
 1. **스케줄**: `update-prices.yml` cron `17 3 * * 5`(금 12:17 KST 대비) → **`0 10 * * *`(매일 19:00 KST)**. GitHub cron 은 수분~십여 분 늦을 수 있음. `workflow_dispatch` 유지.

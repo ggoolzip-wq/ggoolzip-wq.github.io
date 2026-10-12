@@ -55,7 +55,7 @@ try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     ca,pa=mkctx(b); pa.goto(URL)
-    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
+    pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
     check('gate shown before any content', pa.is_visible('#svGate') and pa.evaluate("document.elementFromPoint(640,400).closest('#svGate')!==null"))
     shot(pa,'x') if False else None
     pth=os.path.join(OUT,'sv_entry_gate.png'); pa.screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
@@ -82,7 +82,7 @@ try:
     check('switch B→A without logout: local B data wiped, A data loaded, nothing merged', [c['name'] for c in st(pa)['characters']]==['단풍용사','불독메이지'] and chars_of(ah_a)==['단풍용사','불독메이지'] and chars_of(ah_b)==['B캐릭'] and len(dialogs)==n, ([c['name'] for c in st(pa)['characters']],chars_of(ah_a)))
     check('2 users total, A and B separate', nusers()==2, nusers())
     # 4) 새 기기, 이 PC 데이터 있음 → 질문에 [취소] → 지우고 서버(A) 데이터만
-    cc,pc=mkctx(b); pc.goto(URL); pc.evaluate("([p,api])=>{localStorage.clear();p.characters=[{...p.characters[0],id:'z',name:'남의캐릭'}];localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pc.reload(); pc.wait_for_timeout(400)
+    cc,pc=mkctx(b); pc.goto(URL); pc.evaluate("([p,api])=>{localStorage.clear();p.characters=[{...p.characters[0],id:'z',name:'남의캐릭'}];localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pc.reload(); pc.wait_for_timeout(400)
     invite(pc); ANSWER[0]=False; n=len(dialogs); login(pc,KA); ANSWER[0]=True
     check('first login + cancel → local wiped, server A data only (no merge)', len(dialogs)==n+1 and '합칠까요' in dialogs[-1] and [c['name'] for c in st(pc)['characters']]==['단풍용사','불독메이지'] and chars_of(ah_a)==['단풍용사','불독메이지'], ([c['name'] for c in st(pc)['characters']],dialogs[n:]))
     # 헤더: 로그인 중이면 [로그아웃]만, 저장 실패 시 작은 경고, 누르면 확인 없이 로그아웃 → 대표 키 화면

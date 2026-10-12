@@ -106,6 +106,11 @@ try:
     s,v,_=req('GET','/api/state',tok=h1['token']); check('orphan session removed', s==401, s)
     s,v,_=req('POST','/api/login',{'device':DEV,'key':KH}); check('H login now blocked (부계정)', s==403 and v['error']=='sub_key', v)
     s,v,_=req('POST','/api/login',{'device':DEV,'key':KA}); check('main login → H, G, backups come back', s==200 and sorted(x['key'] for x in v['subKeys'])==sorted([KG,KH]) and v['mainBk']==BKA, v)
+    # b64: 키 추가 전 확인 (/api/keycheck) — 캐릭터가 있는 다른 데이터의 계정 키 → 409 sub_key, 내 키 → 200, 저장 없음
+    s,b,_=req('POST','/api/keycheck',{'key':KI},tok=TA); check('b64: keycheck key of another data with characters → 409 sub_key', s==409 and b['error']=='sub_key' and b['message']=='이미 등록된 부계정 API입니다.', b)
+    s,b,_=req('POST','/api/keycheck',{'key':KG},tok=TA); check('b64: keycheck own sub key → 200', s==200 and b['ok'], b)
+    s,b,_=req('POST','/api/keycheck',{'key':BKG},tok=TA); check('b64: keycheck own spare key → 200', s==200, b)
+    s,b,_=req('POST','/api/keycheck',{'key':KG}); check('b64: keycheck without session → 401', s==401, b)
     dev.sql("DELETE FROM rate WHERE k LIKE 'login:%'")
     # b62: 예전 v1 금고(대표 키 문자열로 암호화) → 대표 키 로그인 때 v2 로 자동 이전, 그 뒤엔 재발급 키로도 열림
     uid=dev.sql(f"SELECT user_id FROM accounts WHERE acct_hash='{a1['accounts'][0]}'")[0]['user_id']
