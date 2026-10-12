@@ -503,7 +503,7 @@ function save(){
   if(typeof svKeysSoon==='function') svKeysSoon(); // b62: 서버 모드 — 키(부계정·예비)만 바뀐 것도 바로 금고에 (키는 내용 비교에서 빠져 있어 [저장]이 안 생김)
 }
 const price = (b,diff) => { const k=priceKey(b,diff); return (k in S.settings.prices)?S.settings.prices[k]:(PRICE_CONFIG[k]||0); };
-const activeChar = () => S.characters.find(c=>c.id===S.activeId);
+const activeChar = () => { const c=S.characters.find(c=>c.id===S.activeId); return c&&charShown(c)?c:vchars()[0]; };
 const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
 const worldOf = c => c.world || '월드 미지정';
 
@@ -516,7 +516,7 @@ const nextWeekId = w => dayId(Date.parse(w+'T00:00:00+09:00')+7*864e5);
 const nextMonthId = m => { const [y,mm]=m.split('-').map(Number); return mm===12?`${y+1}-01`:`${y}-${pad(mm+1)}`; };
 function missPack(list){ return {n:list.reduce((a,x)=>a+x.n,0), meso:list.reduce((a,x)=>a+x.meso,0), list}; }
 function missNow(kind){ const list=[];
-  S.characters.forEach(c=>{ const r=remainingWeekly(c), l=kind==='w'?r.list:r.mon; if(l.length) list.push({name:c.name,n:l.length,meso:l.reduce((a,x)=>a+x.value,0)}); });
+  vchars().forEach(c=>{ const r=remainingWeekly(c), l=kind==='w'?r.list:r.mon; if(l.length) list.push({name:c.name,n:l.length,meso:l.reduce((a,x)=>a+x.value,0)}); });
   return missPack(list); }
 function missRecord(kind,id,pk,extra){ const arr=kind==='w'?(S.missW||(S.missW=[])):(S.missM||(S.missM=[])), f=kind==='w'?'week':'month';
   if(!id||arr.some(x=>x[f]===id)) return false;
@@ -615,8 +615,8 @@ function expectedAll(c){ const l=[];
   for(const b of BOSSES){ if(b.type!=='weekly') continue; const cfg=c.bosses[b.id]; if(!cfg?.enabled) continue;
     const diff=b.diffs.includes(cfg.diff)?cfg.diff:b.diffs[0], party=curParty(c,b.id); l.push({slot:b.id,name:b.name,diff,party,value:Math.floor(price(b,diff)/party)}); }
   return l.sort((a,b)=>b.value-a.value); }
-function allRevenue(){
-  const per=S.characters.map(c=>({c,r:charRevenue(c)}));
+function allRevenue(list){ // b72: list 없으면 전체(기록 저장용), 화면의 '이번 주' 패널은 보이는 캐릭터만
+  const per=(list||S.characters).map(c=>({c,r:charRevenue(c)}));
   let total=0, count=0, monthTotal=0, monthCount=0;
   per.forEach(p=>{ p.r.wlist.filter(x=>x.counted).forEach(x=>{ total+=x.value; count++; }); p.r.mlist.filter(x=>x.counted).forEach(x=>{ monthTotal+=x.value; monthCount++; }); });
   return {per, total, count, monthTotal, monthCount};
@@ -729,6 +729,11 @@ let lastCall=0;
  * character/list · scheduler 는 '키 소유 계정'의 캐릭터만 조회되므로 캐릭터마다 소속 계정(accId)의 키를 사용 */
 const accounts = () => S.settings.accounts;
 const accById = id => accounts().find(a=>a.id===id);
+/* b72: 키가 등록되지 않은 계정(계정 칸은 있는데 key 없음)의 캐릭터는 화면 어디에도 안 보임 — 데이터(보스·수익·순서)는 그대로 두고,
+ * 그 계정 키를 다시 등록하면 그대로 다시 보임. 연결 = c.accId(계정 칸 id; 키를 다시 넣으면 keyRelink/svAfterLogin 이 같은 칸에 넣음).
+ * 계정 연결이 없는(수동 추가) 캐릭터·없는 계정을 가리키는 캐릭터는 보임. 지난 기록(history·누적 수익)은 숨긴 캐릭터 것도 유지·합산. */
+const charShown = c => { if(!c||!c.accId) return true; const a=accById(c.accId); return !a||!!a.key; };
+const vchars = () => S.characters.filter(charShown);
 const accOf = c => c && c.accId ? accById(c.accId) : null;
 const hasApi = () => accounts().some(a=>a.key);
 const anyKey = () => accounts().find(a=>a.key)?.key || '';
@@ -913,10 +918,10 @@ async function syncAll(opts={}){
       catch(e){ a.status={ok:false,msg:e.message,at:Date.now()}; badAcc.add(a.id); accMsgs.push(`${a.label}: ${e.message}`); if(/네트워크/.test(e.message)) throw e; }
     }
     // 2) 캐릭터별: 자기 계정 키로 이미지(하루 1회) + 스케줄러
-    for(const c of S.characters){
+    for(const c of vchars()){ // b72: 키 없는 계정의 (숨긴) 캐릭터는 동기화 안 함
       const a=accOf(c);
       if(!a){ if(c.ocid){ errs++; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:'넥슨 계정 미지정 — 등록된 어느 계정의 캐릭터 목록에도 없습니다. ✎ 편집에서 계정을 선택하거나 해당 계정의 API 키를 추가하세요.'}); } continue; }
-      if(!a.key||badAcc.has(a.id)){ errs++; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:`'${a.label}' 계정 API 키 오류: ${a.status?.msg||'키 없음'}`}); continue; }
+      if(!a.key||badAcc.has(a.id)){ errs++; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:`'${a.label}' 계정 API 키 오류: ${a.status?.msg||'API 키 미등록'}`}); continue; }
       if(!c.ocid){ try{ c.ocid=(await nx('/maplestory/v1/id',{character_name:c.name},a.key)).ocid; }catch(e){ c.sync={...c.sync,ok:false,msg:'ocid 조회 실패: '+e.message}; errs++; continue; } }
       try{ await fetchBasic(c,a.key); }catch(e){} // 이미지·레벨·EXP 갱신 (동기화마다)
       try{ total+=applyScheduler(c, await fetchSched(c,a)); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
@@ -1005,13 +1010,13 @@ async function refreshGuild(force){
 /* 60초 타이머·탭 열기·화면 복귀 시 호출: 열려 있는 탭만 갱신 */
 function tabTick(){
   if(document.hidden) return;
-  if(tab==='guild'){ refreshGuild(); refreshSched(S.characters.filter(c=>c.isMain)); }
+  if(tab==='guild'){ refreshGuild(); refreshSched(vchars().filter(c=>c.isMain)); }
 }
 function renderTabView(){ if(tab==='guild') renderGuild(); }
 const hhmm = t => { const d=kst(t); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
 const num = n => (Number(n)||0).toLocaleString('ko-KR');
 function renderGuild(){
-  const v=$('#view'), g=guildC, mains=S.characters.filter(c=>c.isMain);
+  const v=$('#view'), g=guildC, mains=vchars().filter(c=>c.isMain);
   const tile=(lbl,ico,r)=>`<div class="gtile"><div class="gk">${ico} ${lbl}</div>${r?`<div class="gv">${num(r.guild_point)}<small>점</small></div><div class="grk"><b>${num(r.ranking)}</b>위</div>`:`<div class="gv dim">기록 없음</div><div class="grk muted">랭킹 미등록</div>`}</div>`;
   const info=g?.t2||g?.t1;
   const head=!hasApi()?'<div class="note">넥슨 API 키를 등록하면 길드 랭킹을 불러옵니다. 사이드바 <b>+ 추가</b>에서 API 키를 등록하세요.</div>'
@@ -1067,7 +1072,7 @@ function renderHeaderSync(){
 function worldGroups(){
   const groups=new Map();
   for(const w of S.worldOrder) groups.set(w,[]);
-  for(const c of S.characters){ const w=worldOf(c); if(!groups.has(w)) groups.set(w,[]); groups.get(w).push(c); }
+  for(const c of vchars()){ const w=worldOf(c); if(!groups.has(w)) groups.set(w,[]); groups.get(w).push(c); }
   for(const [w,cs] of groups) if(!cs.length) groups.delete(w);
   return groups;
 }
@@ -1081,7 +1086,7 @@ function moveCharTo(id, targetId, after){
 }
 function moveCharBy(id, dir){
   const c=S.characters.find(x=>x.id===id); if(!c) return;
-  const same=S.characters.filter(x=>worldOf(x)===worldOf(c)); const i=same.indexOf(c), j=i+dir;
+  const same=vchars().filter(x=>worldOf(x)===worldOf(c)); const i=same.indexOf(c), j=i+dir;
   if(j<0||j>=same.length) return;
   moveCharTo(id, same[j].id, dir>0);
 }
@@ -1158,7 +1163,7 @@ function renderChars(){
   const el=$('#charList'), tabsEl=$('#worldTabs');
   const fixed=charSort!=='base'; // 미완료순 보기에서는 순서 바꾸기(드래그·▲▼) 잠금 — 기본순에서만
   el.classList.toggle('sorted',fixed);
-  if(!S.characters.length){ if(tabsEl) tabsEl.innerHTML=''; if($('#charPager')) $('#charPager').hidden=true; el.innerHTML='<div class="muted" style="padding:8px 2px">아직 캐릭터가 없습니다.<br><b>+ 추가</b> 또는 아래 <b>넥슨 API</b>로 불러오세요.</div>'; fitCharList(); return; }
+  if(!vchars().length){ if(tabsEl) tabsEl.innerHTML=''; if($('#charPager')) $('#charPager').hidden=true; el.innerHTML='<div class="muted" style="padding:8px 2px">아직 캐릭터가 없습니다.<br><b>+ 추가</b> 또는 아래 <b>넥슨 API</b>로 불러오세요.</div>'; fitCharList(); return; }
   const groups=worldGroups(); const worlds=[...groups.keys()];
   // 다른 곳(수익 요약 등)에서 다른 월드 캐릭터를 고르면 그 월드 탭으로
   const act=activeChar();
@@ -1300,7 +1305,7 @@ function renderBoss(){
     </div>
     ${bossFilter==='monthly'?'<div class="muted" style="margin-bottom:8px">월간 보스(검은 마법사)는 매월 1일 00:00 초기화되며 월 1회만 처치 가능합니다. 주간 수익과 별도로 「이번 달 월간 보스」 수익으로 집계됩니다.</div>':''}
     <div class="boss-list">${shown.length?shown.map(b=>bossRow(c,b)).join(''):`<div class="empty muted">${c.ocid?`게임 스케줄러에 등록된 ${TYPE_LABEL[bossFilter]}가 없습니다.<br>게임에서 보스를 스케줄러에 등록한 뒤 동기화(↻)하면 자동으로 표시돼요.`:`넥슨 API로 불러온 캐릭터만 보스가 자동 표시돼요.<br>캐릭터 편집에서 API 키 계정에 연결해 주세요.`}</div>`}</div>
-   </div></div><div class="rcol">${COMMITTED(()=>revPanel(allRevenue(),activeChar()))}${priceCard()}<div class="card resetcard"><div class="muted" id="resetInfo"></div></div></div></div>`;
+   </div></div><div class="rcol">${COMMITTED(()=>revPanel(allRevenue(vchars()),activeChar()))}${priceCard()}<div class="card resetcard"><div class="muted" id="resetInfo"></div></div></div></div>`;
 }
 /* b58: 월간 보스는 '잡은 주'(c.monthly[slot] = 클리어한 주 key)가 현재 주일 때만 이번 주 수익 표시에 합산 — 표시 전용, allRevenue/weekSummary/monthSummary/history 는 건드리지 않음(이중 계산 방지) */
 const pWeekMonthly = p => { const l=p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week); return {n:l.length, meso:l.reduce((t,x)=>t+x.value,0), any:p.r.mlist.some(x=>p.c.monthly[x.slot]===S.period.week)||Object.values(p.c.monthly||{}).some(w=>w===S.period.week)}; };
@@ -1318,7 +1323,7 @@ function revPanel(a,cur){
     <div class="rp-total">${((a.total+wm.meso)/1e8).toFixed(1)}억<small> 메소</small></div>
     <div class="muted" style="font-size:.75rem">${(a.total+wm.meso).toLocaleString()} · 주간 보스 결정석 ${a.count}개</div>
     ${wm.n?`<div class="muted rp-mline" style="font-size:.75rem">월간 보스 결정석 ${wm.n}개</div>`:''}
-    ${(()=>{const n=S.characters.reduce((s,c)=>s+itemSum(c.drops),0); return `<div class="rp-items-n muted">${miniIcon('chaosbox')} 이번 주 획득 아이템 ${n}개</div>`;})()}
+    ${(()=>{const n=vchars().reduce((s,c)=>s+itemSum(c.drops),0); return `<div class="rp-items-n muted">${miniIcon('chaosbox')} 이번 주 획득 아이템 ${n}개</div>`;})()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
       <div class="rp-row"><span class="rp-nm">${esc(p.c.name)}${p.c.isMain?' <span class="mainbadge">★</span>':''}</span><b>${meso(pmeso(p))}</b></div>
@@ -1329,7 +1334,7 @@ function revPanel(a,cur){
 // 보스+난이도별 가격 행 (싼 순서) — 보스 체크 탭 가격 카드
 let pcMine = localStorage.getItem('mapleBossTracker.pcMine')==='1';
 // 내가 잡는 보스만: 등록된 캐릭터 중 하나라도 켜 둔 보스+난이도 (난이도는 따로)
-const myBossKeys = () => new Set(S.characters.flatMap(c=>BOSSES.filter(b=>c.bosses[b.id]?.enabled).map(b=>{ const d=c.bosses[b.id].diff; return priceKey(b,b.diffs.includes(d)?d:b.diffs[0]); })));
+const myBossKeys = () => new Set(vchars().flatMap(c=>BOSSES.filter(b=>c.bosses[b.id]?.enabled).map(b=>{ const d=c.bosses[b.id].diff; return priceKey(b,b.diffs.includes(d)?d:b.diffs[0]); })));
 const priceRows = g => { const mine=pcMine?myBossKeys():null; return priceRows0(g).filter(r=>!mine||mine.has(r.k)); };
 const priceRows0 = g => BOSSES.filter(b=>b.type===g).flatMap(b=>b.diffs.map(d=>({b,d,k:priceKey(b,d),p:price(b,d)}))).sort((x,y)=>x.p-y.p);
 const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신\n(가격 변동일 ${officialInfo.changedAt||'-'}, 마지막 확인 ${officialInfo.checkedAt||'-'})${Object.keys(officialInfo.upcoming||{}).length?`\n테섭 예정 가격: ${officialInfo.upSource?.title||'테스트 서버 공지'}`:''}${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
@@ -1340,7 +1345,7 @@ function fullExpected(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit)
   const m=BOSSES.filter(b=>b.type==='monthly'&&c.bosses[b.id]?.enabled).reduce((s,b)=>{ const cfg=c.bosses[b.id], d=b.diffs.includes(cfg.diff)?cfg.diff:b.diffs[0]; return s+Math.floor(price(b,d)/curParty(c,b.id)); },0);
   return w+m; }
 function afterPatchHtml(){
-  const rows=S.characters.map(c=>({c,now:fullExpected(c),next:withUpcoming(()=>fullExpected(c))})).filter(r=>r.now||r.next);
+  const rows=vchars().map(c=>({c,now:fullExpected(c),next:withUpcoming(()=>fullExpected(c))})).filter(r=>r.now||r.next);
   const sum=k=>rows.reduce((s,r)=>s+(r[k]||0),0);
   const pct=(d,b)=>b?` (${d>0?'+':d<0?'−':''}${Math.abs(d/b*100).toFixed(1)}%)`:'';
   const dlt=(d,b)=>`<span class="pa-d ${d<0?'dn':d>0?'upx':''}">${d>0?'+':d<0?'−':'±'}${meso(Math.abs(d))}${pct(d,b)}</span>`;
@@ -1404,7 +1409,7 @@ function lootHtml(items){
   return ks.length?ks.map(k=>`<span class="loot" title="${esc(ITEMS[k].n)}">${itemIcon(k)}<span class="ln">${esc(ITEMS[k].s||ITEMS[k].n)}</span>${items[k]>1?`<b class="lx">x${items[k]}</b>`:''}</span>`).join(''):'<span class="muted">아직 없음</span>';
 }
 function renderSummary(){
-  const v=$('#view'); if(!S.characters.length){v.innerHTML=emptyView();return;}
+  const v=$('#view'); if(!vchars().length){v.innerHTML=emptyView();return;}
   const R=charRecords();
   v.innerHTML=`<div class="grid"><div class="card"><h2>2026.10.08부터 지금까지의 캐릭터 별 수익 및 득템</h2>
     <div style="overflow-x:auto"><table class="rectab"><thead><tr><th>캐릭터</th><th>월드 · 직업</th><th class="num">주간 수익</th><th class="num">월간 보스</th></tr></thead><tbody>
@@ -1776,23 +1781,23 @@ function deleteChar(){
 let accChars=[], impAccId=null, impBusy=null;
 /* 계정 캐릭터 불러오기: 모달을 바로 열고 GET /character/list 결과(목록·0명 안내·오류 코드)를 모달 안에 표시 */
 /* ---------- '+ 추가' 통합 모달: API 키(계정) 관리 + 계정 캐릭터 목록에서 여러 명 선택 추가 ---------- */
-const maskKey = k => !k ? '키 없음' : k.length<=10 ? '••••' : k.slice(0,5)+'••••'+k.slice(-4);
+const maskKey = k => !k ? '' : k.length<=10 ? '••••' : k.slice(0,5)+'••••'+k.slice(-4);
 function linkedOf(a){ return S.characters.filter(c=>c.accId===a.id).length; }
 const regOkHtml = n => `<span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료 · ${n}캐릭 등록 중</span>`;
 function renderAccList(){
   const el=$('#accList'); if(!el) return;
   const accs=accounts();
   // b63: 키에 연결된(accId) 캐릭터 수만 — 수동 추가·키 없는 캐릭터는 제외
-  const totalLinked=accs.reduce((s,a)=>s+linkedOf(a),0);
+  const totalLinked=accs.reduce((s,a)=>s+(a.key?linkedOf(a):0),0); // b72: 키 없는 계정(숨긴 캐릭터)은 빼고
   const ht=$('#accKeyTotal'); if(ht){ ht.textContent=`(총 ${totalLinked}캐릭 등록 중)`; ht.hidden=false; }
   el.innerHTML=accs.length?accs.map(a=>{
     const linked=linkedOf(a);
-    const stt=!a.key?'<span class="warnc">키 없음</span>':a.status?.ok===false?`<span class="warnc" title="${esc(a.status.msg)}">⚠ 오류</span>`:regOkHtml(linked);
-    return `<div class="accrow ${a.id===impAccId?'on':''}" ${a.key?`data-acctest="${a.id}" title="이 계정의 캐릭터 보기"`:''}><input class="pin acclbl" data-acclabel="${a.id}" value="${esc(a.label)}" maxlength="12" aria-label="계정 이름">
+    const stt=!a.key?'':a.status?.ok===false?`<span class="warnc" title="${esc(a.status.msg)}">⚠ 오류</span>`:regOkHtml(linked);
+    return `<div class="accrow ${a.id===impAccId?'on':''}" ${a.key?`data-acctest="${a.id}" title="이 계정의 캐릭터 보기"`:''}><input class="pin acclbl" data-acclabel="${a.id}" value="${a.key?esc(a.label):''}" placeholder="계정 이름" maxlength="12" aria-label="계정 이름">
       <span class="accst">${stt}${quotaHtml(a.key,!!a.bk&&bkOn(a))}</span>
       <span class="accbtns"><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>${a.key?bkRow(a,linked):''}`;
   }).join(''):'<div class="muted acc-empty">등록된 API 키가 없습니다. 아래에 키를 붙여넣고 <b>+ API 키 추가</b>를 누르면 바로 그 계정의 캐릭터 목록이 나와요.</div>';
-  $('#newAccLabel').placeholder=accs.length?`부계정${accs.length}`:'본계정';
+  $('#newAccLabel').placeholder='계정 이름'; // b72
   $('#accOpts').innerHTML=''; // (예전 '스케줄러 보스 자동 추가' 옵션 — 2026-10-10 삭제: 항상 켜짐)
 }
 const bkErr={};
@@ -1890,6 +1895,9 @@ function keyRelink(a,all){
   if(!a?.key) return null; const ids=new Set((all||[]).map(x=>x.ocid).filter(Boolean)); if(!ids.size) return null;
   const o=accounts().find(x=>x!==a&&!x.key&&S.characters.some(c=>c.accId===x.id&&c.ocid&&ids.has(c.ocid)));
   if(!o) return null;
+  if(a.main){ // b72: 본계정(1번 줄)은 그대로 두고, 같은 캐릭터가 붙은 키 없는 예전 칸을 본계정으로 합침 (칸 삭제, 캐릭터 데이터 유지)
+    S.characters.forEach(c=>{ if(c.accId===o.id) c.accId=a.id; }); if(o.bk&&!a.bk&&o.bk!==a.key){ a.bk=o.bk; if(o.bkLabel) a.bkLabel=o.bkLabel; }
+    S.settings.accounts=accounts().filter(x=>x!==o); save(); return a; }
   o.key=a.key; if(a.bk&&!o.bk){ o.bk=a.bk; if(a.bkLabel) o.bkLabel=a.bkLabel; } if(a.ah&&!o.ah) o.ah=a.ah; delete o.status;
   if(listCache[a.id]){ listCache[o.id]=listCache[a.id]; delete listCache[a.id]; }
   S.settings.accounts=accounts().filter(x=>x!==a); save(); toast(`'${o.label}' 계정에 키를 다시 연결했습니다`); return o;
@@ -1909,7 +1917,9 @@ async function svKeyCheck(k){ // '' = 통과 (서버 모드가 아니거나, 예
 async function addAccount(){
   const k=$('#newAccKey').value.trim(); if(!k){ toast('API 키를 붙여넣으세요'); $('#newAccKey').focus(); return; }
   const dup=accounts().find(a=>a.key===k); if(dup){ toast(`이미 '${dup.label}'(으)로 등록된 키입니다`); openImport(dup.id); return; }
-  const n=accounts().length, label=$('#newAccLabel').value.trim()||(n?`부계정${n}`:'본계정');
+  const n=accounts().length, label=$('#newAccLabel').value.trim()||(n?'':'본계정');
+  // b72: 부계정 키는 이름을 꼭 입력 (자동 이름 없음) — 비어 있으면 이름 칸 바로 아래 빨간 글, 등록 안 함
+  newAccLblErr(!label); if(!label){ $('#newAccLabel').focus(); return; }
   if(accAdding) return; accAdding=true; accRej=null; accRejShow();
   let rej=''; try{ rej=await svKeyCheck(k); }finally{ accAdding=false; }
   if(rej){ accRej={label,msg:rej}; accRejShow(); $('#newAccKey').value=''; return; }
@@ -1917,7 +1927,12 @@ async function addAccount(){
   $('#newAccKey').value=''; $('#newAccLabel').value='';
   openImport(a.id); render();
 }
-function closeImport(){ $('#importModal').classList.remove('show'); accRej=null; accRejShow(); svMainRender(); if(SV_ON&&gd.svErr&&!svTok()) gd.svErr=''; }
+function newAccLblErr(on){ let d=$('#newAccLblErr');
+  if(!on){ d?.remove(); return; }
+  if(!d){ d=document.createElement('div'); d.id='newAccLblErr'; d.className='lblerr'; d.setAttribute('role','alert'); d.textContent='계정 이름을 입력해주세요'; $('.accadd')?.insertAdjacentElement('afterend',d); }
+}
+document.addEventListener('input',e=>{ if(e.target.id==='newAccLabel'&&e.target.value.trim()) newAccLblErr(false); });
+function closeImport(){ newAccLblErr(false); $('#importModal').classList.remove('show'); accRej=null; accRejShow(); svMainRender(); if(SV_ON&&gd.svErr&&!svTok()) gd.svErr=''; }
 function renderImportList(){
   const min=parseInt($('#impMin').value)||0, w=$('#impWorld').value, q=normName($('#impQ').value);
   const have=new Set(S.characters.map(c=>c.ocid).filter(Boolean)), haveName=new Set(S.characters.map(c=>c.name));
@@ -2506,16 +2521,27 @@ function svGate(){ // b67: 입장 화면(초대 비밀번호·대표 키) 폐지
 function svAfterLogin(){
   const L=gd.login; if(!L||gd.state==='conflict') return; gd.login=null; let ch=false; // 질문 화면이면 고른 뒤(gdResolve)에 다시
   const hs=new Set(L.hashes), acc=accounts();
-  let a=(L.accId&&acc.find(x=>x.id===L.accId))||acc.find(x=>x.key===L.key)||acc.find(x=>!x.key&&hs.has(x.ah));
-  if(!a){ a={id:'a'+Date.now().toString(36),label:acc.length?`계정${acc.length+1}`:'본계정',key:L.key}; S.settings.accounts=[...acc,a]; ch=true; }
-  if(!a.key){ a.key=L.key; ch=true; }
+  const asMain=L.vault!=='locked';
+  let a=(L.accId&&acc.find(x=>x.id===L.accId))||acc.find(x=>x.key===L.key)||acc.find(x=>x.ah&&hs.has(x.ah))||(asMain&&acc.find(x=>x.main))||acc.find(x=>!x.key&&x.label==='본계정');
+  if(!a){ a={id:'a'+Date.now().toString(36),label:'본계정',key:L.key}; S.settings.accounts=[a,...acc]; ch=true; }
+  if(a.key!==L.key){ a.key=L.key; ch=true; } // b72: 같은 넥슨 계정의 새 키 → 새 키가 본계정, 예전 키는 버림
+  if(asMain){ // b72: 로그인한 대표 키 = 항상 1번 줄 '본계정'. 같은 계정(ah)·같은 키·예전 본계정 칸이 따로 있으면 합침(캐릭터 연결은 이 칸으로, 칸은 삭제 — 중복·'계정N' 줄 없음)
+    if(a.label!=='본계정'){ a.label='본계정'; ch=true; }
+    for(const x of accounts().slice()){ if(x===a) continue;
+      if(x.key===L.key||(x.ah&&hs.has(x.ah))||x.main){
+        S.characters.forEach(c=>{ if(c.accId===x.id) c.accId=a.id; });
+        if(x.bk&&!a.bk&&x.bk!==L.key){ a.bk=x.bk; if(x.bkLabel) a.bkLabel=x.bkLabel; }
+        if(!a.ah&&x.ah) a.ah=x.ah;
+        S.settings.accounts=accounts().filter(y=>y!==x); ch=true; } }
+    if(accounts()[0]!==a){ S.settings.accounts=[a,...accounts().filter(y=>y!==a)]; ch=true; }
+  }
   if(L.hashes[0]&&a.ah!==L.hashes[0]&&!hs.has(a.ah)){ a.ah=L.hashes[0]; ch=true; }
   if(L.vault!=='locked'){ for(const x of accounts()) if(!!x.main!==(x===a)){ x.main=x===a||undefined; if(!x.main) delete x.main; ch=true; } } // 대표 키 = 로그인에 쓴 키 (부계정 키로 로그인하면 그대로)
   let back=0;
   if(L.mainBk&&!a.bk&&L.mainBk!==a.key){ a.bk=L.mainBk; ch=true; back++; } // 서버 금고의 예비 키 복원
   if(L.mainBkLabel&&a.bk===L.mainBk&&!a.bkLabel){ a.bkLabel=L.mainBkLabel; ch=true; }
   for(const sub of L.subs||[]){ // 대표 키로 로그인 → 서버가 풀어 준 부계정 키 채우기
-    if(!sub?.key||sub.key===a.key) continue;
+    if(!sub?.key||sub.key===a.key||(sub.ah&&hs.has(sub.ah))) continue; // b72: 예전 본계정 키가 부계정으로 남아 있던 것은 버림
     const ac=accounts(), x=ac.find(y=>y.key===sub.key)||ac.find(y=>!y.key&&sub.ah&&y.ah===sub.ah)||ac.find(y=>!y.key&&!y.main&&!y.ah&&sub.label&&y.label===sub.label); // b64: ah 가 없는 예전 칸은 이름으로
     if(x){ if(!x.key){ x.key=sub.key; ch=true; back++; } if(sub.ah&&!x.ah){ x.ah=sub.ah; ch=true; } if(sub.bk&&!x.bk){ x.bk=sub.bk; ch=true; } if(sub.bkLabel&&x.bk===sub.bk&&!x.bkLabel){ x.bkLabel=sub.bkLabel; ch=true; } }
     else { S.settings.accounts=[...ac,{id:'a'+Date.now().toString(36)+ac.length,label:sub.label||`부계정${ac.length}`,key:sub.key,...(sub.ah?{ah:sub.ah}:{}),...(sub.bk?{bk:sub.bk,...(sub.bkLabel?{bkLabel:sub.bkLabel}:{})}:{})}]; ch=true; back++; }
@@ -2730,7 +2756,7 @@ document.addEventListener('change',e=>{
   const t=e.target; const c=activeChar();
   if(t.dataset.party && c){ const s=t.dataset.party; pendStart(); c.bosses[s].party=parseInt(t.value)||1; clampParty(c,s); save(); render(); }
   if(t.id==='impWorld') renderImportList();
-  if(t.dataset.acclabel){ const a=accById(t.dataset.acclabel); if(a){ a.label=t.value.trim()||a.label; save(); render(); if(a.id===impAccId) $('#impTitle').textContent=`'${a.label}' 계정 캐릭터`; } }
+  if(t.dataset.acclabel){ const a=accById(t.dataset.acclabel); if(a&&!t.value.trim()) return; /* b72: 비워 두면 예전 이름 유지 (빨간 글은 등록 버튼을 눌렀을 때만) */ if(a){ a.label=t.value.trim()||a.label; save(); render(); if(a.id===impAccId) $('#impTitle').textContent=`'${a.label}' 계정 캐릭터`; } }
 });
 $('#ricR').innerHTML=miniIcon('ring_restraint'); $('#ricC').innerHTML=miniIcon('ring_continuous'); $('#ricG').innerHTML=miniIcon('g_life');
 $('#impMin').addEventListener('input',renderImportList); $('#impQ').addEventListener('input',renderImportList);

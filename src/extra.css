@@ -899,3 +899,7 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 #svMainSec .svmrow{margin:0}
 #svMainSec .svmst{min-height:0;margin:6px 0 0 4px}
 #svMainAttr{text-align:center;margin-top:10px;font-size:.78rem}
+
+/* b72: 계정 이름 필수 경고 */
+.lblerr{color:#ff5a5a;font-weight:600;font-size:.85rem;margin:4px 0 2px 4px}
+.accrow .lblerr{flex-basis:100%;order:9}

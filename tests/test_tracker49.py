@@ -80,10 +80,10 @@ try:
     pp.reload(); pp.wait_for_timeout(800); check('P: 다시 열어도 또 지우지 않음 (1번만)', keyset(st(pp))==[KA] and bool(pp.evaluate('svTok()')))
     # 캐릭터 추가 창에서 부계정 F 키 다시 추가 → 예전 '부계정F' 칸에 재연결 (새 칸 안 생김)
     pp.evaluate("openAdd()"); pp.wait_for_selector('#newAccKey')
-    pp.fill('#newAccKey',KF); pp.click('#newAccBtn'); pp.wait_for_function("accounts().some(a=>a.id==='a2'&&a.key)",timeout=15000); pp.wait_for_timeout(500)
+    pp.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); pp.fill('#newAccKey',KF); pp.click('#newAccBtn'); pp.wait_for_function("accounts().some(a=>a.id==='a2'&&a.key)",timeout=15000); pp.wait_for_timeout(500)
     sp=st(pp); a2=[a for a in sp['settings']['accounts'] if a['id']=='a2'][0]
     check('P: 다시 추가한 F 키 → 예전 a2(부계정F) 칸에 들어감, 계정 칸 3개 그대로', a2.get('key')==KF and len(sp['settings']['accounts'])==3 and [c['accId'] for c in sp['characters']]==['a1','a2','a3'], [(a['id'],a['label'],bool(a.get('key'))) for a in sp['settings']['accounts']])
-    pp.fill('#newAccKey',KG); pp.click('#newAccBtn'); pp.wait_for_function("accounts().some(a=>a.id==='a3'&&a.key)",timeout=15000)
+    pp.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); pp.fill('#newAccKey',KG); pp.click('#newAccBtn'); pp.wait_for_function("accounts().some(a=>a.id==='a3'&&a.key)",timeout=15000)
     pp.wait_for_function("localStorage.getItem('mapleBossTracker.svSubSig')===svSubSig()",timeout=20000)
     check('P: 다시 등록한 부계정 2개 → 서버 금고·등록부', len(dev.sql("SELECT * FROM keyvault2"))==1 and sorted(r['kind'] for r in dev.sql("SELECT kind FROM keyreg"))==['sub','sub'])
     # 다른 데이터(캐릭터 있음)의 키 → 빨간 글, 저장 안 함

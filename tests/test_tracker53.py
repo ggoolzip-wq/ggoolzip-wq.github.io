@@ -59,7 +59,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     c1,p1=mkctx(b); p1.goto(URL); p1.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); p1.reload(); p1.wait_for_timeout(500)
     login(p1,KA); wait_on(p1)
-    p1.evaluate("openAdd()"); p1.wait_for_selector('#newAccKey'); p1.fill('#newAccKey',KF); p1.click('#newAccBtn'); p1.wait_for_function("accounts().some(a=>a.key==='%s')"%KF,timeout=15000); p1.evaluate("closeImport()")
+    p1.evaluate("openAdd()"); p1.wait_for_selector('#newAccKey'); p1.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); p1.fill('#newAccKey',KF); p1.click('#newAccBtn'); p1.wait_for_function("accounts().some(a=>a.key==='%s')"%KF,timeout=15000); p1.evaluate("closeImport()")
     p1.evaluate("S.characters.push({id:'c1',name:'단풍용사',level:280,job:'히어로',world:'스카니아',ocid:'o-acc-A',accId:accounts()[0].id,isMain:true,image:'',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}});save();render()")
     p1.evaluate("svSaveNow()"); wait_on(p1)
     p2=c1.new_page(); p2.on('pageerror',lambda e:errs.append(str(e))); p2.goto(URL); p2.wait_for_timeout(1500)
