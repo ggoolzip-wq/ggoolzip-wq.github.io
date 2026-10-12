@@ -11,6 +11,12 @@
 6. **작업을 시작할 때마다** 사용 한도량(사용치)을 사용자에게 알리고, 한도 100% 전에 끝낼 수 없는 작업이면 **'한도 때문에 작업 불가'라고 미리** 알린다.
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## 2026-10-12 b62 (메소왕 1위 초상화 · 누적 수입/누적 득템 아이콘 크기·가운데 정렬 · 부계정/예비 키 복원 · 부계정 키 로그인 차단 · 강제 로그아웃 · 소식 읽음 동기화)
+(같은 방식: src 수정→build→테스트→`git checkout -- *.png`→`git pull --rebase`→main 일반 push. HANDOFF 기록은 항상.)
+1. **메소왕 제목 아이콘** = 현재 1위 캐릭터 초상화(`kingHtml`: `top1`, `avatar(c,'hking')` 36px). 1위 누적이 0이거나 기록이 없으면 예전 메소 아이콘.
+2. **누적 수입**(결정석 분석 맨 위) · 3. **누적 득템**(득템 분석 맨 위): 두 카드의 `.stats.s3` 에 `kbig` 클래스 → 라벨 앞 아이콘(메소 주머니·보스·검마·에픽빔 1위 아이템·반지 상자·**블링크**) 전부 32×32 같은 크기, 라벨 글자는 `<span class="kt">` 로 감싸 flex `align-items:center` → 아이콘 세로 가운데(실측 차이 0px). CSS `src/extra.css` 끝 b62 블록. 보스 탭 정보 칸(.stats.s3, kbig 없음)은 그대로.
+   - 테스트: test_tracker44 에 b62 검사(32px·가운데 ±1px·메소왕 초상화·기록 없으면 메소 아이콘). 스크린샷 /workspace/maple-boss-tracker/before_*.png → oct12b_total_top.png · oct12b_loot_top.png · oct12b_mesoking.png.
+
 ## 2026-10-12 b61 (못 가진 아이템 목록 가로 스크롤 제거 · 낮은 창에서 카드 잘림)
 (같은 방식: src 수정→build→테스트→main push, gh 로그인 필요. HANDOFF 기록은 항상.)
 1. **내가 가지지 못한 아이템 목록** (b53 4번 미해결 해결): 가로 스크롤 래퍼 제거(`.misswrap` overflow-x:hidden). 표 칸 = 보스 목록(`td.missb` 안 `.missbl` flex-wrap, 남는 폭 전부) · 아이콘(`td.missi`) · 이름(`td.missn`, 항상 한 줄, width 1%). 구분점 '·' 은 `.missbn::after`.

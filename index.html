@@ -935,6 +935,15 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
   .rcol>.pricecard .pc-list{max-height:440px}
   .rcol>.resetcard{margin-top:0}
 }
+
+/* b62: 누적 수입·누적 득템 칸 머리 = 큰 아이콘(32px, 블링크 포함 모두 같은 크기) + 글자를 아이콘 세로 가운데에 */
+.stats.kbig .stat .k{display:flex;align-items:center;gap:8px;line-height:1.2;min-height:32px}
+.stats.kbig .stat .k>.ric,.stats.kbig .stat .k>.hbi,.stats.kbig .stat .k>.blk{width:32px;height:32px;flex:none;display:grid;place-items:center;margin:0;vertical-align:0}
+.stats.kbig .stat .k .ric,.stats.kbig .stat .k .hbi img,.stats.kbig .stat .k .hbi .bicon,.stats.kbig .stat .k .blk .ric{width:32px;height:32px;margin:0;vertical-align:0;object-fit:contain;display:block}
+.stats.kbig .stat .k .hbi .bicon{border-radius:7px;object-fit:cover}
+.stats.kbig .stat .k .kt{display:block;line-height:1.2}
+/* b62: 메소왕 제목 아이콘 = 1위 캐릭터 초상화 */
+.card h2 .avatar.hking{width:36px;height:36px;border-radius:9px;flex:none}
 </style>
 </head>
 <body>
@@ -2572,7 +2581,8 @@ function kingHtml(T,which){
   const ord=orderedChars().map(c=>c.id), oi=o=>{ const i=ord.indexOf(o.id); return i<0?1e6:i; }, tb=(a,b)=>oi(a)-oi(b)||a.name.localeCompare(b.name);
   const mr=T.chars.slice().sort((a,b)=>(b.week+b.month)-(a.week+a.month)||tb(a,b));
   const lr=T.chars.map(o=>{ const m=noBust(lootOf(o.items,o.outs,md=>md!=='l')); return {...o,loot:m,ln:Object.values(m).reduce((x,y)=>x+y,0)}; }).filter(o=>o.ln>0).sort((a,b)=>b.ln-a.ln||tb(a,b));
-  const MK=`<div class="card kingcard" id="mesoKing"><h2>${miniIcon('meso')} 메소왕</h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="num">누적 주간 보스메소량</th><th class="num">누적 월간 보스메소량</th><th class="num">누적 합계</th></tr></thead><tbody>
+  const top1=mr[0]&&(mr[0].week+mr[0].month)>0&&S.characters.find(x=>x.id===mr[0].id); // b62: 제목 아이콘 = 현재 1위 캐릭터 초상화 (없으면 메소 아이콘)
+  const MK=`<div class="card kingcard" id="mesoKing"><h2>${top1?avatar(top1,'hking'):miniIcon('meso')} 메소왕</h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="num">누적 주간 보스메소량</th><th class="num">누적 월간 보스메소량</th><th class="num">누적 합계</th></tr></thead><tbody>
     ${rankSlice('meso',mr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)}</td><td class="num">${meso(o.week)}</td><td class="num">${o.month?meso(o.month):'-'}</td><td class="num"><b>${meso(o.week+o.month)}</b></td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('meso',mr).length,mr.length,5)}
     </tbody></table></div>${rankPager('meso',mr.length)}</div>`;
   const LK=`<div class="card kingcard" id="lootKing"><h2>${itemIcon('oath')} 득템왕</h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th>누적 획득 아이템</th></tr></thead><tbody>
@@ -2656,10 +2666,10 @@ function renderTotal(){
   let cum=0; const bk=bossKills(T)[0];
   v.innerHTML=`<div class="grid"><div class="card">
     <h2>${miniIcon('ipc')} 누적 수입 <span class="muted" style="font-weight:500">${fmtWeek(S.startWeek).split(' ~')[0]}부터 · ${nW}주</span></h2>
-    <div class="stats s3">
-      <div class="stat"><div class="k">${miniIcon('meso')}총 수익</div><div class="v acc">${(n=>(n/1e8).toFixed(1)+'억')(T.grand)}</div><div class="muted">${T.grand.toLocaleString()} 메소</div></div>
-      <div class="stat"><div class="k"><span class="hbi">${bossIcon(bk?bk.b:findBoss('kaling'))}</span>주보 누적 메소량</div><div class="v">${(n=>(n/1e8).toFixed(1)+'억')(T.wTotal)}</div><div class="muted">주 평균 ${avg.toLocaleString()} 메소</div></div>
-      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span>검마 누적 메소량</div><div class="v">${T.mTotal?(n=>(n/1e8).toFixed(1)+'억')(T.mTotal):'-'}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()} 메소</div></div>
+    <div class="stats s3 kbig">
+      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc">${(n=>(n/1e8).toFixed(1)+'억')(T.grand)}</div><div class="muted">${T.grand.toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k"><span class="hbi">${bossIcon(bk?bk.b:findBoss('kaling'))}</span><span class="kt">주보 누적 메소량</span></div><div class="v">${(n=>(n/1e8).toFixed(1)+'억')(T.wTotal)}</div><div class="muted">주 평균 ${avg.toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="kt">검마 누적 메소량</span></div><div class="v">${T.mTotal?(n=>(n/1e8).toFixed(1)+'억')(T.mTotal):'-'}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()} 메소</div></div>
     </div>
     <p class="muted" style="margin:8px 0 0;font-size:.78rem">수익은 결정석 판매 금액만 합산합니다(드롭 아이템은 개수만 기록).</p>
   </div>
@@ -2694,10 +2704,10 @@ function renderLoot(){
   const v=$('#view'); const T=totalData(), L=lootSummary(T);
   v.innerHTML=`<div class="grid"><div class="card" id="lootTop">
     <h2>${itemIcon('genesis')} 누적 득템</h2>
-    <div class="stats s3">
-      <div class="stat" id="ltTotal"><div class="k"><span class="hbi">${L.epicIco}</span>총 득템</div><div class="v acc">${L.items}개</div><div class="muted" style="font-size:.7rem">녹옥, 홍옥 반지 상자 제외</div></div>
-      <div class="stat" id="ltRing"><div class="k"><span class="hbi">${L.boxIco}</span>반상 누적</div><div class="v">${L.rings}회</div><div class="muted" style="font-size:.7rem">${L.rate==null?'리4컨4 타율 -':`리4컨4 타율 ${Math.round(L.rate*10)/10}%`} · 녹옥, 홍옥 반지 상자 제외</div></div>
-      <div class="stat" id="ltBbang"><div class="k"><span class="blk" aria-hidden="true">${miniIcon('blink')}</span>누적 블빵 승리 횟수</div><div class="v">${L.wins}회</div></div>
+    <div class="stats s3 kbig">
+      <div class="stat" id="ltTotal"><div class="k"><span class="hbi">${L.epicIco}</span><span class="kt">총 득템</span></div><div class="v acc">${L.items}개</div><div class="muted" style="font-size:.7rem">녹옥, 홍옥 반지 상자 제외</div></div>
+      <div class="stat" id="ltRing"><div class="k"><span class="hbi">${L.boxIco}</span><span class="kt">반상 누적</span></div><div class="v">${L.rings}회</div><div class="muted" style="font-size:.7rem">${L.rate==null?'리4컨4 타율 -':`리4컨4 타율 ${Math.round(L.rate*10)/10}%`} · 녹옥, 홍옥 반지 상자 제외</div></div>
+      <div class="stat" id="ltBbang"><div class="k"><span class="blk" aria-hidden="true">${miniIcon('blink')}</span><span class="kt">누적 블빵 승리 횟수</span></div><div class="v">${L.wins}회</div></div>
     </div>
   </div>
   ${kingHtml(T,'loot')}

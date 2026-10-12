@@ -828,3 +828,12 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
   .rcol>.pricecard .pc-list{max-height:440px}
   .rcol>.resetcard{margin-top:0}
 }
+
+/* b62: 누적 수입·누적 득템 칸 머리 = 큰 아이콘(32px, 블링크 포함 모두 같은 크기) + 글자를 아이콘 세로 가운데에 */
+.stats.kbig .stat .k{display:flex;align-items:center;gap:8px;line-height:1.2;min-height:32px}
+.stats.kbig .stat .k>.ric,.stats.kbig .stat .k>.hbi,.stats.kbig .stat .k>.blk{width:32px;height:32px;flex:none;display:grid;place-items:center;margin:0;vertical-align:0}
+.stats.kbig .stat .k .ric,.stats.kbig .stat .k .hbi img,.stats.kbig .stat .k .hbi .bicon,.stats.kbig .stat .k .blk .ric{width:32px;height:32px;margin:0;vertical-align:0;object-fit:contain;display:block}
+.stats.kbig .stat .k .hbi .bicon{border-radius:7px;object-fit:cover}
+.stats.kbig .stat .k .kt{display:block;line-height:1.2}
+/* b62: 메소왕 제목 아이콘 = 1위 캐릭터 초상화 */
+.card h2 .avatar.hking{width:36px;height:36px;border-radius:9px;flex:none}

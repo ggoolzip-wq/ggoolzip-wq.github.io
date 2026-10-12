@@ -61,6 +61,18 @@ try:
     check('H: 타율 = 실제 ÷ 기댓값', rt is not None and abs(rt-round(100/0.15,1))<0.2, rt)
     check('H: 누적 블빵 승리 횟수 1회만', '1회' in L[2] and L[2].replace('누적 블빵 승리 횟수','').strip()=='1회', L[2])
     check('H: 3칸 아이콘', L[3]>=3, L)
+    # b62: 메소왕 제목 = 1위 초상화, 누적 수입/누적 득템 아이콘 32px·글자 세로 가운데
+    meas="sel=>[...document.querySelectorAll(sel)].map(k=>{const i=k.querySelector('.ric,.hbi img,.bicon').getBoundingClientRect(),t=k.querySelector('.kt').getBoundingClientRect();return [Math.round(i.width),Math.round(i.height),Math.abs((i.top+i.bottom)/2-(t.top+t.bottom)/2)]})"
+    L2=pg.evaluate(meas,'#lootTop .stat .k')
+    check('b62: 누적 득템 아이콘 3개 모두 32px(블링크 포함) + 글자 가운데(±1px)', len(L2)==3 and all(x[0]==32 and x[1]==32 and x[2]<=1 for x in L2), L2)
+    load('total')
+    T2=pg.evaluate(meas,'#view .card:first-child .stat .k')
+    check('b62: 누적 수입 아이콘 32px + 글자 가운데(±1px)', len(T2)==3 and all(x[0]==32 and x[1]==32 and x[2]<=1 for x in T2), T2)
+    mk=pg.evaluate("(()=>{const a=document.querySelector('#mesoKing h2 .avatar.hking');const r=document.querySelector('#mesoKing tr.rk1 .avatar');return [!!a,a&&a.offsetWidth,!!r]})()")
+    check('b62: 메소왕 제목 아이콘 = 1위 캐릭터 초상화', mk[0] and mk[1]==36, mk)
+    st2=json.loads(json.dumps(ST)); st2['history']=[]; st2['characters'][0]['weekly']={}
+    load('total',st2)
+    check('b62: 기록 없으면 메소 아이콘', pg.evaluate("!document.querySelector('#mesoKing h2 .avatar')&&!!document.querySelector('#mesoKing h2 .ric')"))
     check('JS 오류 없음', not errs, errs)
 finally:
     srv.terminate()
