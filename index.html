@@ -2788,7 +2788,7 @@ const ringExpHtml=T=>{ const e=ringExp(T); return `<span class="ringexp">기댓�
 const BOSS_REGION={lucid:'arc',will:'arc',dusk:'arc',jinhilla:'arc',dunkel:'arc',blackmage:'bm',seren:'gr1',kalos:'gr1',adversary:'gr1',kaling:'gr1',star:'gr2',limbo:'gr2',baldrix:'gr2',bellona:'gr2',jupiter:'gr2'};
 
 function bossLootKingHtml(T){
-  const rows=Object.values(T.byBoss||{}).filter(o=>o.cnt>0).map(o=>({...o,b:findBoss(o.slot),d:DK[o.dl]})).filter(o=>o.b).sort((a,b)=>b.cnt-a.cnt||BOSSES.indexOf(b.b)-BOSSES.indexOf(a.b)||(a.dl||'').localeCompare(b.dl||''));
+  const rows=Object.values(T.byBoss||{}).filter(o=>o.cnt>0).map(o=>({...o,b:findBoss(o.slot),d:DK[o.dl]})).filter(o=>o.b).sort((a,b)=>b.cnt-a.cnt||BOSSES.indexOf(b.b)-BOSSES.indexOf(a.b)||diffRank(a.dl)-diffRank(b.dl));
   const sl=rankSlice('bloot',rows);
   const nm=o=>`<span class="bdn">${esc(o.b.name)}</span>${o.d?` <span class="dlv dlv-${DIFF_CLS[o.d]||''}">(${D[o.d]||o.dl})</span>`:o.dl?` <span class="muted">(${esc(o.dl)})</span>`:''}`;
   const chips=m=>`<span class="blkchips">${Object.keys(m).filter(k=>m[k]>0).sort(itemCmp).map(k=>`<span class="blkchip" title="${esc(lootName(k))}">${/^cb:/.test(k)?miniIcon('chaosbox'):''}${lootIco(k)}<span class="ln">${esc(lootName(k))}</span>${m[k]>1?`<b class="lx">${xN(m[k])}</b>`:''}</span>`).join('')}</span>`;
@@ -2798,7 +2798,7 @@ function bossLootKingHtml(T){
 }
 function bossLootHtml(T){
   const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; };
-  const rows=Object.values(T.byBoss||{}).filter(o=>Object.values(o.items).some(n=>n>0)).sort((a,b)=>bi(a.slot)-bi(b.slot)||a.dl.localeCompare(b.dl));
+  const rows=Object.values(T.byBoss||{}).filter(o=>Object.values(o.items).some(n=>n>0)).sort((a,b)=>bi(a.slot)-bi(b.slot)||diffRank(a.dl)-diffRank(b.dl));
   return `<div class="card bossloot"><h2><span class="hbi">${bossIcon(findBoss('zakum'))}</span> 보스 별 누적 획득 아이템</h2>${rows.length?rows.map(o=>{ const b=findBoss(o.slot);
     return `<div class="blrow"><span class="blb"><span class="hbi">${bossIcon(b)}</span><b>${esc(b.name)}</b>${o.dl?` ${DK[o.dl]?dlvHtml(DK[o.dl]):`<span class="muted">${esc(o.dl)}</span>`}`:''}</span>${lootChips(o.items)}</div>`; }).join(''):'<p class="muted">아직 저장된 드랍 기록이 없습니다.</p>'}</div>`;
 }
@@ -2899,6 +2899,9 @@ function itemPri(k){ const b=String(k).replace(/^cb:/,'').replace(/@[wl]$/,''); 
 const itemCmp = (a,b) => itemPri(a)-itemPri(b)||lootOrd(a)-lootOrd(b);
 const DIFF_CLS = {easy:'easy',normal:'normal',hard:'hard',extreme:'extreme',chaos:'chaos'};
 const DK = Object.fromEntries(Object.entries(D).map(([k,v])=>[v,k]));
+// b97: 순위 동점 → 어려운 난이도 먼저 (익스트림 > 하드 = 카오스 > 노말 > 이지). 키(hard) 또는 표시 이름(하드) 모두 받음, 모르면 맨 뒤
+const DIFF_RANK = {extreme:0,hard:1,chaos:1,normal:2,easy:3};
+const diffRank = d => DIFF_RANK[d] ?? DIFF_RANK[DK[d]] ?? 9;
 // b53: 1~3위일 때만 아이템 글자색 — 광휘·해머 = 핫핑크, 칠흑(상자 포함) = 보라, 연마석·에테르 = 하늘
 function itemCol(k){ const b=String(k).replace(/^cb:/,'').replace(/^x:/,'').replace(/@[wl]$/,''), I=ITEMS[b]; if(!I) return '';
   if(I.set==='광휘'||I.set==='해머') return 'ic-pink'; if(I.set==='칠흑') return 'ic-purple'; if(I.set==='연마석'||I.set==='에테르') return 'ic-sky'; return ''; }
@@ -2914,7 +2917,7 @@ function bossKills(T){ const R={};
   const go=p=>{ (p.bosses||[]).forEach((t,i)=>{ const m=/^(.+?)\((.+?)\)(?:\/(\d+)인)?/.exec(t); if(!m) return; const b=BOSSES.find(x=>x.name===m[1]); const d=DK[m[2]]; if(!b||!d) return;
     const k=b.id+'|'+d, o=R[k]||(R[k]={b,d,n:0,meso:0}); o.n++; const v=p.bvals&&p.bvals[i]!=null?+p.bvals[i]:Math.floor(price(b,d)/Math.max(1,+m[3]||1)); o.meso+=v||0; }); };
   T.weeks.forEach(w=>(w.perChar||[]).forEach(go)); T.months.forEach(m=>(m.perChar||[]).forEach(go));
-  return Object.values(R).sort((a,b)=>b.n-a.n||price(b.b,b.d)-price(a.b,a.d)); }
+  return Object.values(R).sort((a,b)=>b.n-a.n||diffRank(a.d)-diffRank(b.d)||price(b.b,b.d)-price(a.b,a.d)); }
 function bossKingHtml(T){ const R=bossKills(T);
   return rankTable('boss','bossKing',`${R[0]?`<span class="hbi">${bossIcon(R[0].b)}</span>`:miniIcon('meso')} 결정석 보스왕`,['보스','처치 당한 횟수','쌓아준 누적 메소량'],
     R.map(o=>({ico:bossIcon(o.b),name:bossDiffHtml(o.b,o.d),cells:[`<b>${o.n}회</b>`,meso(o.meso)]}))); }

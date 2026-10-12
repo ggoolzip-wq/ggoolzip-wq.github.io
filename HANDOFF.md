@@ -860,3 +860,12 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 다른 캐릭터에는 나오지 않습니다.
 - 테스트: test_tracker71(포트 8896).
 - 주의: tools/build_items.py에는 넣지 않았습니다. 다시 돌리면 'emo_' 아이콘이 빠지므로 itemicons.json에 직접 추가했습니다.
+
+## b97 — 보스 순위 동점은 어려운 난이도 먼저
+- 순서: 익스트림 > 하드 = 카오스 > 노말 > 이지 (`DIFF_RANK`, `diffRank(d)`: 키 'hard'와 표시 이름 '하드' 모두 받음, 모르는 값은 맨 뒤).
+- 바꾼 곳:
+  - 보스 득템왕: 횟수 → 보스 순서 → (예전 가나다 localeCompare 대신) 난이도.
+  - 보스 별 누적 획득 아이템: 보스 순서 → 난이도.
+  - 보스 처치 순위(bossKills): 횟수 → 난이도 → 결정석 가격.
+- itemsInline의 mode 정렬은 난이도가 아니라(분배/블빵) 그대로입니다.
+- 테스트: test_tracker70(포트 8895). 스크린샷: /workspace/maple-boss-tracker/oct12z_diffsort_before.png, oct12z_diffsort_after.png.
