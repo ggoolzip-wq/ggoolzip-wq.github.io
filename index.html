@@ -1021,6 +1021,14 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .svaskc .svaskbox{text-align:center}.svaskc .svaskbtns{justify-content:center}
 .pgav{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:10px}
 .pgav .avatar{width:72px;height:72px;font-size:1.6rem}.pgname{font-weight:700}
+
+/* b76 */
+#salesCard .sl{flex-wrap:nowrap;min-width:0}
+#salesCard .sl .loot{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 auto;white-space:nowrap;overflow:hidden}
+#salesCard .sl .ln{overflow:hidden;text-overflow:ellipsis;min-width:0}
+#salesCard .slp{flex:none;font-size:.75rem;color:var(--muted,#9a9aa6);border:1px solid var(--line,#3a3a46);border-radius:6px;padding:0 5px}
+#salesCard .sl .lx,#salesCard .slm{flex:none}
+#salesCard h2 .hbi{display:inline-flex;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -2584,7 +2592,7 @@ function totalData(){
   const nameOf=p=>{ const c=p.id&&S.characters.find(x=>x.id===p.id); return c?c.name:p.name; };
   const keyOf=p=>p.id&&S.characters.some(x=>x.id===p.id)?p.id:'n:'+p.name;
   const ring={r4:0,c4:0,gl:0,x:0,un:0}, sales={}; // b62-8: 아이템 판매 수익 {실제 아이템 키: {n, m}}
-  const addS=p=>{ for(const r of Object.values(p.revs||{})){ if(!r||!(+r.m>0)) continue; const k=String(r.i||''); const o=sales[k]||(sales[k]={n:0,m:0}); o.n++; o.m+=+r.m; } };
+  const addS=p=>{ for(const r of Object.values(p.revs||{})){ if(!r||!(+r.m>0)) continue; const pp=Math.max(1,+r.p||1), k=String(r.i||'')+'#'+pp; const o=sales[k]||(sales[k]={n:0,m:0,i:String(r.i||''),p:pp}); o.n++; o.m+=+r.m; } }; // b76: 분배 인원별로 따로
   weeks.forEach(w=>(w.perChar||[]).forEach(addS)); months.forEach(m=>(m.perChar||[]).forEach(addS));
   const add=(p,f)=>{ const k=keyOf(p); const o=chars[k]||(chars[k]={id:k,name:nameOf(p),week:0,month:0,items:{},outs:{},weeks:0}); f(o);
     for(const [ik,n] of Object.entries(p.items||{})){ const {it,party,mode}=parseIK(ik); if(!ITEMS[it]) continue; const a=party>1?it+'#'+party+mode:it; o.items[a]=(o.items[a]||0)+(+n);
@@ -2821,10 +2829,15 @@ function ringCardHtml(T){ return `  <div class="card ringcard"><h2>${miniIcon('r
       const ks=Object.keys(R).sort((x,y)=>lootOrd(x)-lootOrd(y));
       return ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${lootIco(k)}<span class="ln">${esc(lootName(k))}${modeTag(k)}</span> <b class="lx">${xN(R[k].n)}</b></span>${outHtml(R[k].outs,R[k].n,true)}</div>`).join('')}</div>`:'<p class="muted">아직 획득한 반지 상자가 없습니다.</p>'; })()}</div>`; }
 // b62-8: 아이템 판매 수익 (드롭 때 '수익을 기록할까요?' 에서 입력한 값, 분배는 내 몫) — 간단 카드 (사용자가 나중에 다듬을 예정)
-function salesHtml(T){ const S_=T.sales||{}, ks=Object.keys(S_).filter(k=>{ try{ return !!lootName(k); }catch(e){ return false; } }).sort((a,b)=>S_[b].m-S_[a].m||itemCmp(a,b)), tot=ks.reduce((x,k)=>x+S_[k].m,0);
-  return `<div class="card" id="salesCard"><h2>${miniIcon('meso')} 아이템 판매 수익</h2>
-    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc">${tot?(tot/1e8).toFixed(1)+'억':'-'}</div><div class="muted">${tot.toLocaleString()} 메소 · ${ks.reduce((x,k)=>x+S_[k].n,0)}건</div></div></div>
-    ${ks.length?`<div class="slist">${ks.map(k=>`<div class="sl"><span class="loot">${lootIco(k)}<span class="ln">${esc(lootName(k))}</span> <b class="lx">${xN(S_[k].n)}</b></span><b class="slm">${meso(S_[k].m)}</b></div>`).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
+function salesHtml(T){ // b76: '아이템 판매 누적 수익' — 아이템·분배 인원별 줄, 제목 아이콘 = 가장 많이 판 아이템
+  const S_=T.sales||{}, ok=k=>{ try{ return !!lootName(S_[k].i||k.split('#')[0]); }catch(e){ return false; } };
+  const ks=Object.keys(S_).filter(ok).sort((a,b)=>S_[b].m-S_[a].m||itemCmp(S_[a].i||a,S_[b].i||b)||(S_[a].p||1)-(S_[b].p||1)), tot=ks.reduce((x,k)=>x+S_[k].m,0);
+  const top={}; ks.forEach(k=>{ const i=S_[k].i||k.split('#')[0]; top[i]=(top[i]||0)+S_[k].n; });
+  const best=Object.keys(top).sort((a,b)=>top[b]-top[a]||itemCmp(a,b))[0];
+  const ico=best?`<span class="hbi">${lootIco(best)}</span>`:miniIcon('meso'), pl=p=>p>1?`${p}인 분배`:'1인';
+  return `<div class="card" id="salesCard"><h2>${ico} 아이템 판매 누적 수익</h2>
+    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc">${tot?(tot/1e8).toFixed(1)+'억 메소':'-'}</div><div class="muted">${tot.toLocaleString()} 메소 · ${ks.reduce((x,k)=>x+S_[k].n,0)}건</div></div></div>
+    ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot">${lootIco(i)}<span class="ln">${esc(lootName(i))}</span> <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm">${meso(o.m)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
 function renderLoot(){
   const v=$('#view'); const T=totalData(), L=lootSummary(T);
   v.innerHTML=`<div class="grid"><div class="card" id="lootTop">

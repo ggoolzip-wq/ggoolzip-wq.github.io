@@ -643,3 +643,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 빈 칸 빨간 테두리(규칙 8): 수익 금액, 부계정 이름·API 키(이름 비면 b72 빨간 글 + 테두리, 키 비면 테두리 + 알림), 본계정 키 칸(svMainKey), 캐릭터 이름(fName).
 - 테스트: test_tracker56 (run_all 추가). 25·31·37·47·51·55 통과.
 - 스크린샷: /workspace/maple-boss-tracker/oct12m_b75_before_save.png, _before_guard.png, _before_rev.png, oct12m_b75_after_save.png, _after_guard.png, _after_rev.png, oct12m_b75_test_rev.png
+
+## b76 — 득템 분석 '아이템 판매 누적 수익' (2026-10-12)
+- 제목 '아이템 판매 수익' → '아이템 판매 누적 수익'. 제목 아이콘 = 표에서 판매 건수가 가장 많은 아이템(분배 인원 합산, 같으면 itemCmp 순), 기록 없으면 메소 아이콘.
+- 총 판매 수익(주황) '32.5억' → '32.5억 메소'. 줄 금액은 기존 meso() 그대로('…억 …만 메소').
+- `totalData().sales` 키 = 아이템#인원 ({n,m,i,p}; r.p = 기록 때 나눈 인원). 같은 아이템도 1인/2인 분배/3인 분배… 따로 줄·따로 건수. 줄마다 '1인'·'N인 분배' 표시(.slp), 한 줄 고정(nowrap, 긴 이름은 말줄임), 가로 스크롤 없음(390px 확인).
+- 테스트: test_tracker57 (run_all 추가), test47 제목 기대값 수정. 47·57 통과.
+- 스크린샷: /workspace/maple-boss-tracker/oct12n_b76_before_sales.png, oct12n_b76_after_sales.png

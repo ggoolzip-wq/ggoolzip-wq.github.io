@@ -76,7 +76,7 @@ try:
     # 득템 분석: 판매 수익 카드
     pg.click('[data-tab=loot]'); pg.wait_for_selector('#salesCard')
     sc=pg.inner_text('#salesCard'); tot=pg.evaluate("totalData().sales"); s=sum(v['m'] for v in tot.values())
-    check('득템 분석: 아이템 판매 수익 카드 (합계 5.5억, 항목별)', '아이템 판매 수익' in sc and s==550000000 and pg.locator('#salesCard .slist > *').count()==2, (sc,tot))
+    check('득템 분석: 아이템 판매 수익 카드 (합계 5.5억, 항목별)', '아이템 판매 누적 수익' in sc and s==550000000 and pg.locator('#salesCard .slist > *').count()==2, (sc,tot))
     pg.locator('#salesCard').screenshot(path=f'{SHOT}/oct12b_salescard.png')
     # 동기화 필드 / 기록 이전
     check('동기화: drev 는 S 에 저장되어 contentSig 에 포함', pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')).characters[0].drev!=null"))

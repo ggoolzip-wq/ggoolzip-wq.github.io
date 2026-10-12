@@ -914,3 +914,11 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .svaskc .svaskbox{text-align:center}.svaskc .svaskbtns{justify-content:center}
 .pgav{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:10px}
 .pgav .avatar{width:72px;height:72px;font-size:1.6rem}.pgname{font-weight:700}
+
+/* b76 */
+#salesCard .sl{flex-wrap:nowrap;min-width:0}
+#salesCard .sl .loot{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 auto;white-space:nowrap;overflow:hidden}
+#salesCard .sl .ln{overflow:hidden;text-overflow:ellipsis;min-width:0}
+#salesCard .slp{flex:none;font-size:.75rem;color:var(--muted,#9a9aa6);border:1px solid var(--line,#3a3a46);border-radius:6px;padding:0 5px}
+#salesCard .sl .lx,#salesCard .slm{flex:none}
+#salesCard h2 .hbi{display:inline-flex;vertical-align:middle}
