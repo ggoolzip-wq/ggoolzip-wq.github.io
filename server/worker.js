@@ -8,6 +8,10 @@
  *
  * b67 (2026-10-12): 초대 비밀번호 폐지 — /api/login 은 기기 표를 확인하지 않음(누구나 넥슨 키로 가입). 대신 IP별 요청 제한·새 데이터 생성 제한·
  *   데이터 크기 512KB·본문 크기 제한 (위 상수). 아래 초대 비밀번호 설명은 예전 기록 (/api/invite 는 예전 클라이언트용으로만 남음).
+ * b68 (2026-10-12): 가입 승인 — 처음 보는 대표 키로 /api/login → users + approval(pending: 대표 캐릭터 이름·월드·레벨·요청 시각) + accounts(계정 해시)만
+ *   만들고 세션·금고·데이터 없음 → {status:'pending', pending:{...}}. 거절·차단 → 403 rejected|blocked (세션도 막힘). approval 행이 없는 사용자 = 승인됨(기존 사용자).
+ *   관리자(secret ADMIN_USER = users.id): GET /api/admin/users → {users:[{id,status,name,world,level,chars,...}]},
+ *   POST /api/admin/decide {user, action: approve|reject|block|unblock}. 관리자가 아니면 403 not_admin.
  * 초대 비밀번호(친구 전용, b67 에서 폐지): 로그인 전에 기기마다 한 번 POST /api/invite {pass} → 기기 표(device ticket, 365일).
  *   서버는 비밀번호 해시만 secret SITE_PASS_HASH 로 보관 (= sha256('ggoolzip-invite:' + 앞뒤 공백 뺀 비밀번호), 대소문자 구분).
  *   SITE_PASS_HASH 가 없으면 로그인 전부 거부(fail closed). 비밀번호를 바꾸면 기존 기기 표로는 새 로그인이 안 됨(이미 로그인한 세션은 유지).
@@ -15,7 +19,7 @@
  *
  * API (모두 JSON, 인증 = Authorization: Bearer <토큰>)
  *   POST   /api/invite        {pass}               → {device}  (초대 비밀번호 확인, 기기 표 발급)
- *   POST   /api/login         {key, device, label?} → {token, user, accounts:[hash], newUser, rev}
+ *   POST   /api/login         {key, label?} → {status:'ok', admin, token, user, accounts:[hash], newUser, rev} | {status:'pending', pending} (b68)
  *   POST   /api/link          {key}                (인증) 다른 넥슨 계정 키를 같은 데이터에 연결 → {accounts}
  *   POST   /api/keycheck      {key}                (인증, b64) 추가하려는 부계정·예비 키가 다른 데이터에 이미 등록됐는지 → 200 | 409 sub_key
  *   PUT    /api/subkeys       {main, subs:[{key,label}]} (인증) 부계정 키를 대표 키로 암호화해 보관 → {subs:[{ah,label}], accounts}
@@ -50,8 +54,8 @@ const MAX_SMALL_BODY = 64 * 1024;    // 그 밖의 요청 본문 최대
 const HISTORY_KEEP = 10;             // 복구용 저장본 최대 10개 (사용자당)
 const MAX_ACCTS = 40;                // 한 데이터에 연결하는 넥슨 계정 최대
 const LOGIN_LIMIT = { n: 30, windowMs: 10 * 60e3 };           // 로그인 시도 (IP별)
-const NEWUSER_LIMIT = { n: 10, windowMs: 86400e3 };           // b67: 새 데이터(계정) 만들기 IP별 하루 10개
-const NEWUSER_ALL = { n: 300, windowMs: 86400e3 };            // b67: 전체 하루 300개 (IP 바꿔 가며 남용 방지)
+const NEWUSER_LIMIT = { n: 5, windowMs: 86400e3 };            // b68: 가입 승인 요청(새 데이터) IP별 하루 5개 (b67 은 10)
+const NEWUSER_ALL = { n: 100, windowMs: 86400e3 };            // b68: 전체 하루 100개 (b67 은 300)
 const IP_LIMITS = {                                           // b67: IP별 (1분 창) — 로그인한 요청 포함 모든 요청
   read:  { n: 300, windowMs: 60e3 },
   write: { n: 120, windowMs: 60e3 },
@@ -120,6 +124,10 @@ async function nexonAccounts(env, key) {
   const hashes = [];
   for (const id of ids) hashes.push(await sha256hex(pepper(env) + ':' + id));
   Object.defineProperty(hashes, 'ids', { value: ids, enumerable: false }); // 원본 account_id (금고 v2 키 유도에만, 저장 안 함)
+  // b68: 가입 승인 요청에 보여 줄 대표 캐릭터 (레벨 가장 높은 캐릭터 이름·월드·레벨)
+  const chars = (body?.account_list || []).flatMap(a => a.character_list || []);
+  const top = chars.sort((x, y) => (+y.character_level || 0) - (+x.character_level || 0))[0];
+  Object.defineProperty(hashes, 'top', { value: top ? { name: String(top.character_name || '').slice(0, 30), world: String(top.world_name || '').slice(0, 20), level: +top.character_level || 0 } : null, enumerable: false });
   return hashes;
 }
 const keyHash = (env, key) => sha256hex(pepper(env) + ':key:' + String(key || '').trim()); // 키 원본 대신 저장하는 값 (keyreg)
@@ -136,6 +144,8 @@ async function ensureSchema(env) {
     env.DB.prepare('CREATE INDEX IF NOT EXISTS acct_role_user ON acct_role(user_id)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS seen (user_id TEXT PRIMARY KEY, ids TEXT NOT NULL, updated_at INTEGER NOT NULL)'),
+    // b68: 가입 승인. 행이 없는 사용자 = 승인됨(b68 이전부터 있던 사용자). status = pending | ok | rejected | blocked
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS approval (user_id TEXT PRIMARY KEY, status TEXT NOT NULL, name TEXT, world TEXT, level INTEGER, requested_at INTEGER NOT NULL, decided_at INTEGER)'),
   ]);
   schemaOk = true;
 }
@@ -235,13 +245,30 @@ function sameHex(a, b) { a = String(a || '').toLowerCase(); b = String(b || '').
 const passVer = env => String(env.SITE_PASS_HASH || '').toLowerCase().slice(0, 12); // 비밀번호가 바뀌면 달라짐 → 예전 기기 표 무효
 // (b67: checkDevice — 초대 비밀번호 기기 표 확인 — 삭제. 로그인은 기기 표 없이)
 
+/* ---------- b68: 가입 승인 · 관리자 ----------
+ * 관리자 = Worker secret ADMIN_USER(사용자 id 전체). 바꾸기: `cd server && npx wrangler secret put ADMIN_USER` (D1 users.id 값 입력).
+ * 로컬 테스트용으로 D1 meta k='admin_user' 도 읽음 (secret 이 우선). 관리자는 승인 상태와 무관하게 항상 사용 가능. */
+let adminCache = null;
+const adminId = env => env.ADMIN_USER || adminCache || '';
+async function loadAdmin(env) { if (env.ADMIN_USER) return; const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_user'").first(); adminCache = r ? r.v : null; }
+const STATUS_MSG = { pending: '승인 대기 중이에요 — 관리자가 승인하면 사용할 수 있어요', rejected: '가입 요청이 거절되었습니다', blocked: '이 계정은 이용이 차단되었습니다' };
+async function userInfo(env, uid) { // 관리자 목록용: 대표 캐릭터·캐릭터 수 (승인 요청 기록이 있으면 그것, 없으면 저장된 데이터에서)
+  const st = await env.DB.prepare('SELECT size, saved_at, data FROM state WHERE user_id=?').bind(uid).first();
+  let chars = [], name = '', world = '', level = 0;
+  try { chars = st ? (JSON.parse(st.data).characters || []) : []; } catch (e) {}
+  const m = chars.find(c => c && c.isMain) || [...chars].sort((x, y) => (+y?.level || 0) - (+x?.level || 0))[0];
+  if (m) { name = String(m.name || ''); world = String(m.world || ''); level = +m.level || 0; }
+  return { chars: chars.length, size: st?.size || 0, savedAt: st?.saved_at || 0, name, world, level };
+}
+
 /* ---------- 세션 ---------- */
 async function auth(env, req) {
   const m = /^Bearer\s+([A-Za-z0-9_-]{20,100})$/.exec(req.headers.get('Authorization') || '');
   if (!m) throw new HttpError(401, 'no_session', '로그인이 필요합니다');
   const th = await sha256hex(m[1]), now = Date.now();
-  const s = await env.DB.prepare('SELECT user_id, created_at, last_used, expires_at FROM sessions WHERE token_hash=?').bind(th).first();
+  const s = await env.DB.prepare('SELECT s.user_id, s.created_at, s.last_used, s.expires_at, a.status FROM sessions s LEFT JOIN approval a ON a.user_id=s.user_id WHERE s.token_hash=?').bind(th).first();
   if (!s || s.expires_at < now || s.created_at < await authEpoch(env)) { if (s) await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(th).run(); throw new HttpError(401, 'no_session', '로그인이 만료되었습니다 — 다시 로그인하세요'); }
+  if (s.status && s.status !== 'ok' && s.user_id !== adminId(env)) { await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(th).run(); throw new HttpError(403, s.status, STATUS_MSG[s.status] || STATUS_MSG.blocked); } // b68
   if (now - s.last_used > DAY) await env.DB.prepare('UPDATE sessions SET last_used=?, expires_at=? WHERE token_hash=?').bind(now, now + SESSION_DAYS * DAY, th).run();
   return { userId: s.user_id, th };
 }
@@ -278,8 +305,8 @@ const stateOut = (row, withData = true) => row
 /* ---------- 라우트 ---------- */
 async function route(req, env) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, ''), M = req.method;
-  if (p === '/api/health') return json(200, { ok: true, v: 'b67' });
-  await ensureSchema(env); await authEpoch(env); // 첫 요청 때 강제 로그아웃 기준 시각 확정
+  if (p === '/api/health') return json(200, { ok: true, v: 'b68' });
+  await ensureSchema(env); await authEpoch(env); await loadAdmin(env); // 첫 요청 때 강제 로그아웃 기준 시각 확정
   // b67: IP별 요청 제한 (읽기 300/분, 쓰기 120/분) — 세션·사용자별 제한과 별개
   await limit(env, await ipKey(env, req, M === 'GET' ? 'ipr' : 'ipw'), M === 'GET' ? IP_LIMITS.read : IP_LIMITS.write);
 
@@ -309,17 +336,26 @@ async function route(req, env) {
     else {
       await limit(env, await ipKey(env, req, 'newuser'), NEWUSER_LIMIT, '이 네트워크에서 오늘 새로 만들 수 있는 데이터 수를 넘었습니다 — 내일 다시 시도하세요');
       await limit(env, 'newuser:all', NEWUSER_ALL, '오늘 새 가입이 많아 잠시 막혀 있습니다 — 내일 다시 시도하세요');
-      userId = crypto.randomUUID(); newUser = true; await env.DB.prepare('INSERT INTO users (id,created_at,last_login) VALUES (?,?,?)').bind(userId, now, now).run(); }
+      userId = crypto.randomUUID(); newUser = true; const t = hashes.top || {};
+      await env.DB.batch([env.DB.prepare('INSERT INTO users (id,created_at,last_login) VALUES (?,?,?)').bind(userId, now, now)]   // b68: 새 가입 = 승인 대기 (최소 기록만)
+        .concat(env.AUTO_APPROVE === '1' ? [] : [env.DB.prepare("INSERT INTO approval (user_id,status,name,world,level,requested_at) VALUES (?,'pending',?,?,?,?)").bind(userId, t.name || '', t.world || '', t.level || 0, now)])); } // AUTO_APPROVE=1 = 로컬 테스트 전용 (운영 wrangler.toml 에 넣지 말 것)
     if (!newUser) await env.DB.prepare('UPDATE users SET last_login=? WHERE id=?').bind(now, userId).run();
     const owned = new Set(found.map(f => f.acct_hash));
     const ins = hashes.filter(h => !owned.has(h)).map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, userId, now));
     if (ins.length) await env.DB.batch(ins);
+    // b68: 승인 안 된 사용자 = 세션·금고·데이터 없음. 대기 중이면 요청 정보만 돌려줌 (클라이언트가 '승인 대기 중' 표시, 나중에 같은 키로 다시 확인)
+    const ap = userId === adminId(env) ? null : await env.DB.prepare('SELECT status, name, world, level, requested_at FROM approval WHERE user_id=?').bind(userId).first();
+    if (ap && ap.status === 'pending') {
+      const t = hashes.top; if (t && !ap.name) await env.DB.prepare('UPDATE approval SET name=?, world=?, level=? WHERE user_id=?').bind(t.name, t.world, t.level, userId).run();
+      return json(200, { status: 'pending', newUser, user: userId.slice(0, 8), pending: { name: ap.name || t?.name || '', world: ap.world || t?.world || '', level: ap.level || t?.level || 0, requestedAt: ap.requested_at } });
+    }
+    if (ap && ap.status !== 'ok') throw new HttpError(403, ap.status, STATUS_MSG[ap.status] || STATUS_MSG.blocked);
     const token = await newSession(env, userId, b.label);
     const row = await stateRow(env, userId);
     const v = newUser ? null : await vaultOpenAny(env, b.key, hashes, userId);
     if (v) await writeRegistry(env, userId, hashes, v);           // 금고를 연 키 = 대표 계정 → 역할·등록부 최신화
     else if (v === null && !roles.length) await env.DB.batch(hashes.map(h => env.DB.prepare("INSERT OR IGNORE INTO acct_role (acct_hash,user_id,role) VALUES (?,?,'main')").bind(h, userId)));
-    return json(200, { token, user: userId.slice(0, 8), accounts: hashes, newUser, rev: row ? row.rev : 0, updatedAt: row ? row.updated_at : 0,
+    return json(200, { status: 'ok', admin: userId === adminId(env), token, user: userId.slice(0, 8), accounts: hashes, newUser, rev: row ? row.rev : 0, updatedAt: row ? row.updated_at : 0,
       vault: v === null ? 'none' : v === false ? 'locked' : 'open', subKeys: v ? (v.subs || []) : [], mainBk: v ? (v.mainBk || '') : '', mainBkLabel: v ? (v.mainBkLabel || '') : '' });
   }
 
@@ -397,7 +433,7 @@ async function route(req, env) {
   if (p === '/api/me' && M === 'GET') {
     const row = await env.DB.prepare('SELECT rev, updated_at, saved_at, size FROM state WHERE user_id=?').bind(me.userId).first();
     const ns = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE user_id=?').bind(me.userId).first();
-    return json(200, { user: me.userId.slice(0, 8), accounts: await acctList(env, me.userId), sessions: ns?.n || 0, rev: row?.rev || 0, updatedAt: row?.updated_at || 0, savedAt: row?.saved_at || 0, size: row?.size || 0 });
+    return json(200, { status: 'ok', admin: me.userId === adminId(env), user: me.userId.slice(0, 8), accounts: await acctList(env, me.userId), sessions: ns?.n || 0, rev: row?.rev || 0, updatedAt: row?.updated_at || 0, savedAt: row?.saved_at || 0, size: row?.size || 0 });
   }
   if (p === '/api/state/meta' && M === 'GET') return json(200, stateOut(await env.DB.prepare('SELECT rev, updated_at, saved_at FROM state WHERE user_id=?').bind(me.userId).first(), false));
   if (p === '/api/state' && M === 'GET') return json(200, stateOut(await stateRow(env, me.userId)));
@@ -429,8 +465,34 @@ async function route(req, env) {
     await env.DB.prepare('INSERT INTO seen (user_id,ids,updated_at) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET ids=excluded.ids, updated_at=excluded.updated_at').bind(me.userId, JSON.stringify(out), Date.now()).run();
     return json(200, { ids: out });
   }
+  if (p.startsWith('/api/admin/')) { // b68: 관리자만 (서버에서 사용자 id 로 확인)
+    if (!adminId(env) || me.userId !== adminId(env)) throw new HttpError(403, 'not_admin', '관리자만 쓸 수 있습니다');
+    if (p === '/api/admin/users' && M === 'GET') {
+      const us = (await env.DB.prepare('SELECT u.id, u.created_at, u.last_login, a.status, a.name, a.world, a.level, a.requested_at, a.decided_at FROM users u LEFT JOIN approval a ON a.user_id=u.id ORDER BY u.created_at').all()).results;
+      const out = [];
+      for (const u of us.slice(0, 500)) {
+        const st = u.status || 'ok', inf = st === 'pending' ? { chars: 0, size: 0, savedAt: 0 } : await userInfo(env, u.id);
+        out.push({ id: u.id, status: st, admin: u.id === adminId(env), name: inf.name || u.name || '', world: inf.world || u.world || '', level: inf.level || u.level || 0,
+          chars: inf.chars, size: inf.size, savedAt: inf.savedAt, createdAt: u.created_at, lastLogin: u.last_login, requestedAt: u.requested_at || 0, decidedAt: u.decided_at || 0 });
+      }
+      return json(200, { users: out });
+    }
+    if (p === '/api/admin/decide' && M === 'POST') {
+      const b = await readBody(req), uid = String(b.user || ''), act = String(b.action || '');
+      const to = { approve: 'ok', unblock: 'ok', reject: 'rejected', block: 'blocked' }[act];
+      if (!to) throw new HttpError(400, 'bad_action', '알 수 없는 동작');
+      if (uid === me.userId) throw new HttpError(400, 'self', '관리자 자신은 바꿀 수 없습니다');
+      const u = await env.DB.prepare('SELECT u.id, a.status, a.requested_at FROM users u LEFT JOIN approval a ON a.user_id=u.id WHERE u.id=?').bind(uid).first();
+      if (!u) throw new HttpError(404, 'no_user', '없는 사용자');
+      const now = Date.now();
+      await env.DB.batch([env.DB.prepare('INSERT INTO approval (user_id,status,requested_at,decided_at) VALUES (?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET status=excluded.status, decided_at=excluded.decided_at').bind(uid, to, u.requested_at || now, now)]
+        .concat(to === 'ok' ? [] : [env.DB.prepare('DELETE FROM sessions WHERE user_id=?').bind(uid)])); // 거절·차단 = 바로 로그아웃 (데이터는 지우지 않음)
+      return json(200, { ok: true, user: uid, status: to });
+    }
+    throw new HttpError(404, 'not_found', '없는 주소');
+  }
   if (p === '/api/account' && M === 'DELETE') {
-    await env.DB.batch(['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen'].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(me.userId))
+    await env.DB.batch(['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen', 'approval'].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(me.userId))
       .concat(env.DB.prepare('DELETE FROM users WHERE id=?').bind(me.userId)));
     return json(200, { ok: true });
   }

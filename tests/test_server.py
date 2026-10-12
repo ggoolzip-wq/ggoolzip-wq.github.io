@@ -145,6 +145,7 @@ try:
     check('logout kills only that session', s==200 and s2==401 and s3==200, (s,s2,s3))
     s,b,_=req('POST','/api/logout-all',tok=TA); s2,_,_=req('GET','/api/state',tok=TA); check('logout-all kills all sessions', s==200 and b['removed']>=3 and s2==401, b)
     # 계정 삭제
+    dev.sql("DELETE FROM rate WHERE k LIKE 'newuser%'")  # b68: 새 가입 IP별 하루 5개 — 위에서 이미 여러 명 만듦
     s,e,_=req('POST','/api/login',{'device':DEV,'key':KE}); TE=e['token']; req('PUT','/api/state',{'baseRev':0,'updatedAt':1,'data':{'characters':[]}},tok=TE)
     s,b,_=req('DELETE','/api/account',tok=TE); s2,_,_=req('GET','/api/state',tok=TE); s3,e2,_=req('POST','/api/login',{'device':DEV,'key':KE})
     check('delete account → data + sessions gone, next login = new user', s==200 and s2==401 and e2['newUser'] and e2['rev']==0, (s,s2,e2))
@@ -171,11 +172,11 @@ try:
     # 로그인 시도 제한 (30회/10분)
     codes=[req('POST','/api/login',{'device':DEV,'key':'live_WRONG_0123456789abcdef'})[0] for _ in range(30)]
     check('login rate limit → 429 too_many', 429 in codes and req('POST','/api/login',{'device':DEV,'key':KA})[1]['error']=='too_many', codes[-5:])
-    # b67: 새 데이터 만들기 IP별 하루 10개 / IP별 쓰기 120회/분
-    dev.sql("DELETE FROM rate"); NK=[f'live_NEWUSER_{i:02d}_0123456789ab' for i in range(11)]
+    # b67/b68: 새 데이터(가입 요청) IP별 하루 5개 / IP별 쓰기 120회/분
+    dev.sql("DELETE FROM rate"); NK=[f'live_NEWUSER_{i:02d}_0123456789ab' for i in range(6)]
     for i,k in enumerate(NK): MN.KEYS[k]=[f'acc-new-{i}']
-    codes=[req('POST','/api/login',{'key':k})[0] for k in NK[:10]]; s11,b11,_=req('POST','/api/login',{'key':NK[10]})
-    check('b67: 10 new users per IP per day, 11th → 429', codes==[200]*10 and s11==429 and b11['error']=='too_many', (codes,s11,b11))
+    codes=[req('POST','/api/login',{'key':k})[0] for k in NK[:5]]; s11,b11,_=req('POST','/api/login',{'key':NK[5]})
+    check('b68: 5 new users (sign-up requests) per IP per day, 6th → 429', codes==[200]*5 and s11==429 and b11['error']=='too_many', (codes,s11,b11))
     s,b,_=req('POST','/api/login',{'key':KA}); check('b67: existing user can still log in from that IP', s==200 and not b['newUser'], b)
     dev.sql("DELETE FROM rate")
     wc=[req('POST','/api/logout')[0] for _ in range(121)]
@@ -186,6 +187,41 @@ try:
     dev.stop(); dev=cf_dev.Dev(WP,NP,no_pass=True)
     s1,b1,_=req('POST','/api/invite',{'pass':cf_dev.TEST_PASS}); s2,b2,_=req('POST','/api/login',{'key':KA,'device':DEV})
     check('b67: no SITE_PASS_HASH → invite 503 (legacy) but login works', s1==503 and s2==200 and b2.get('token'), (s1,s2,b2))
+    # ---------- b68: 가입 승인 (AUTO_APPROVE 없음) ----------
+    dev.stop(); dev=cf_dev.Dev(WP,NP,approval=True)
+    s,b,_=req('POST','/api/login',{'key':KA}); TADM=b.get('token'); UADM=dev.sql("SELECT id FROM users")[0]['id']
+    check('b68: no admin configured → first user is pending too (no session)', s==200 and b.get('status')=='pending' and not b.get('token'), b)
+    dev.sql(f"DELETE FROM approval WHERE user_id='{UADM}'"); dev.sql(f"INSERT INTO meta (k,v) VALUES ('admin_user','{UADM}')")  # 기존 사용자 = 승인 행 없음, 관리자 지정
+    s,b,_=req('POST','/api/login',{'key':KA}); TADM=b.get('token')
+    check('b68: existing user (no approval row) = approved; admin flag', s==200 and b.get('status')=='ok' and b.get('admin') is True and TADM, b)
+    s,b,_=req('GET','/api/me',tok=TADM); check('b68: /api/me admin true', b.get('admin') is True, b)
+    s,p1,_=req('POST','/api/login',{'key':KB})
+    check('b68: new main key → pending with main char name/world/level, no token', s==200 and p1['status']=='pending' and not p1.get('token') and p1['pending']['name']=='캐릭B' and p1['pending']['world']=='스카니아' and p1['pending']['level']==280 and p1['pending']['requestedAt']>0, p1)
+    uB=[r['user_id'] for r in dev.sql("SELECT user_id FROM approval WHERE status='pending'")][0]
+    check('b68: pending stores only minimal record (no state/session/vault/roles)', not dev.sql(f"SELECT 1 FROM state WHERE user_id='{uB}'") and not dev.sql(f"SELECT 1 FROM sessions WHERE user_id='{uB}'") and not dev.sql(f"SELECT 1 FROM keyvault2 WHERE user_id='{uB}'") and not dev.sql(f"SELECT 1 FROM acct_role WHERE user_id='{uB}'"))
+    s,p2,_=req('POST','/api/login',{'key':KB}); check('b68: same key again → still pending, not a new user', p2['status']=='pending' and not p2['newUser'] and len(dev.sql("SELECT * FROM approval"))==1, p2)
+    s,b,_=req('POST','/api/login',{'key':KD}); TD=None
+    s,b,_=req('GET','/api/admin/users'); check('b68: admin list needs session', s==401)
+    s,b,_=req('GET','/api/admin/users',tok=TADM); us={u['id']:u for u in b['users']}
+    check('b68: admin list = pending (B, D) + approved admin', s==200 and us[uB]['status']=='pending' and us[UADM]['admin'] and us[UADM]['status']=='ok' and sum(u['status']=='pending' for u in b['users'])==2, b)
+    s,b,_=req('POST','/api/admin/decide',{'user':uB,'action':'approve'},tok=TADM); check('b68: approve', s==200 and b['status']=='ok', b)
+    s,bb,_=req('POST','/api/login',{'key':KB}); TB=bb.get('token')
+    check('b68: approved → login gives session, not admin', s==200 and bb['status']=='ok' and TB and bb['admin'] is False, bb)
+    s,b,_=req('GET','/api/admin/users',tok=TB); check('b68: non-admin → 403 not_admin', s==403 and b['error']=='not_admin', b)
+    s,b,_=req('POST','/api/admin/decide',{'user':UADM,'action':'block'},tok=TB); check('b68: non-admin cannot decide', s==403, b)
+    s,b,_=req('PUT','/api/state',{'baseRev':0,'updatedAt':1,'data':{'characters':[]}},tok=TB); check('b68: approved user saves', s==200, b)
+    s,b,_=req('POST','/api/admin/decide',{'user':uB,'action':'block'},tok=TADM); check('b68: block', s==200 and b['status']=='blocked', b)
+    s,b,_=req('PUT','/api/state',{'baseRev':1,'updatedAt':2,'data':{'characters':[]}},tok=TB); check('b68: blocked → existing session rejected, cannot store', s in (401,403), (s,b))
+    s,b,_=req('POST','/api/login',{'key':KB}); check('b68: blocked → login 403 blocked', s==403 and b['error']=='blocked', b)
+    check('b68: block keeps data (state row kept)', len(dev.sql(f"SELECT 1 FROM state WHERE user_id='{uB}'"))==1)
+    uD=[u for u in us if us[u]['status']=='pending' and u!=uB][0]
+    s,b,_=req('POST','/api/admin/decide',{'user':uD,'action':'reject'},tok=TADM); s2,b2,_=req('POST','/api/login',{'key':KD})
+    check('b68: rejected → login 403 rejected', s==200 and s2==403 and b2['error']=='rejected', b2)
+    s,b,_=req('POST','/api/admin/decide',{'user':UADM,'action':'block'},tok=TADM); check('b68: admin cannot block self', s==400, b)
+    s,b,_=req('POST','/api/admin/decide',{'user':uB,'action':'unblock'},tok=TADM); s2,b2,_=req('POST','/api/login',{'key':KB}); check('b68: unblock → login ok', s2==200 and b2.get('token'), b2)
+    dev.sql("DELETE FROM rate"); NK=[f'live_PEND_{i:02d}_0123456789abcd' for i in range(6)]
+    for i,k in enumerate(NK): MN.KEYS[k]=[f'acc-pend-{i}']
+    codes=[req('POST','/api/login',{'key':k})[0] for k in NK]; check('b68: pending sign-ups rate-limited per IP (5/day)', codes[:5]==[200]*5 and codes[5]==429, codes)
 except Exception as e:
     import traceback; traceback.print_exc(); errs.append(str(e))
 finally:

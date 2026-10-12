@@ -1832,6 +1832,16 @@ function svMainRender(){
   let sec=$('#svMainSec'); if(!on){ sec?.remove(); return; }
   if(!sec){ sec=document.createElement('section'); sec.className='addsec'; sec.id='svMainSec'; $('#addTitle').insertAdjacentElement('afterend',sec); }
   const busy=gd.state==='connecting', err=gd.svErr, soft=err===SV_RELOGIN||err===SV_NEED_LOGIN, v=$('#svMainKey')?.value||'';
+  const pd=svPend();
+  if(pd){ // b68: 가입 승인 대기 — 데이터는 아직 서버에 저장되지 않음
+    sec.innerHTML=`<div class="addsec-h"><b>⏳ 승인 대기 중</b></div>
+    <div class="svpend"><div>대표 캐릭터: <b>${esc(pd.name||'(이름 없음)')}</b>${pd.world?` · ${esc(pd.world)}`:''}${pd.level?` · Lv.${pd.level}`:''}</div>
+      <div class="muted tiny">요청: ${pd.requestedAt?hm(pd.requestedAt):'-'} · 관리자가 승인하면 [승인 확인]을 누르거나 페이지를 다시 열면 바로 시작돼요. 승인 전에는 데이터가 서버에 저장되지 않아요.</div></div>
+    <div class="accst svmst" id="svMainSt">${err?`<span class="keyrej${soft?' soft':''}" role="alert">${esc(err)}</span>`:''}</div>
+    <div class="toolbar"><button class="btn sm" id="svPendCheck"${busy?' disabled':''}>${busy?'확인 중…':'승인 확인'}</button><button class="btn sm ghost" id="svPendCancel"${busy?' disabled':''}>다른 키로 등록</button></div>
+    <div class="svmattrib muted">Data based on NEXON Open API</div>`;
+    return;
+  }
   sec.innerHTML=`<div class="addsec-h"><b>🔑 본계정 API 키 등록</b></div>
     <div class="accrow svmrow"><input class="pin acclbl" value="본계정" disabled aria-label="계정 이름"><input id="svMainKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="본계정 넥슨 API 키 (live_…) 붙여넣기" aria-label="본계정 API 키"${busy?' disabled':''}><button class="btn sm" id="svMainBtn"${busy?' disabled':''}>${busy?'확인 중…':'등록'}</button></div>
     <div class="accst svmst" id="svMainSt">${err?`<span class="keyrej${soft?' soft':''}" role="alert">${esc(err)}</span>`:''}</div>
@@ -1989,6 +1999,9 @@ const SV_ON = (()=>{ let u=SYNC_API_URL;
 const SV_TOKEN_KEY='mapleBossTracker.svToken', SV_DEVICE_KEY='mapleBossTracker.svDevice', SV_SUBSIG_KEY='mapleBossTracker.svSubSig', SV_USER_KEY='mapleBossTracker.svUser'; // svUser = 이 기기에서 마지막으로 로그인한 서버 사용자 (다른 사용자로 로그인하면 이 PC 데이터를 올리지 않고 비움) // svDevice = 초대 비밀번호를 통과한 기기 표 (로그아웃해도 유지)
 // (b67: svDev — 초대 비밀번호 기기 표 — 더 이상 쓰지 않음. 예전 기기의 mapleBossTracker.svDevice 값은 남아 있어도 무시)
 const svTok=()=>{ try{ return localStorage.getItem(SV_TOKEN_KEY)||''; }catch(e){ return ''; } };
+const SV_PEND_KEY='mapleBossTracker.svPending', SV_ADMIN_KEY='mapleBossTracker.svAdmin'; // b68: 승인 대기 중인 본계정 키 요청(이 기기) · 관리자 여부
+const svPend=()=>{ try{ return JSON.parse(localStorage.getItem(SV_PEND_KEY)||'null'); }catch(e){ return null; } };
+const svIsAdmin=()=>SV_ON&&!!svTok()&&localStorage.getItem(SV_ADMIN_KEY)==='1';
 const SV_RELOGIN='로그인이 만료되었어요 — 캐릭터 추가(+ 추가)에서 본계정 API 키로 다시 로그인해 주세요 (데이터는 서버와 이 PC에 그대로 있어요)';
 const SV_VAULT_KEY='mapleBossTracker.svVault', SV_KEYERR_KEY='mapleBossTracker.svKeyErr'; // b62: 이 기기 로그인 때 금고 상태(open|none|locked) · 마지막 키 보관 오류
 const SV_NEED_LOGIN='로그인이 필요해요 — 캐릭터 추가(+ 추가)에서 본계정 API 키를 등록하면 이어서 동기화돼요 (바꾼 내용은 이 PC에 그대로 있어요)';
@@ -1999,6 +2012,7 @@ async function svFetch(path,opt={}){
   catch(e){ throw Object.assign(new Error('동기화 서버에 연결하지 못했습니다 (인터넷 연결 확인)'),{type:'network'}); }
   let b=null; try{ b=await r.json(); }catch(e){}
   if(r.status===401&&!opt.noAuth){ localStorage.removeItem(SV_TOKEN_KEY); gd.svErr=SV_RELOGIN; setTimeout(()=>{ gdRender(); if($('#importModal')?.classList.contains('show')) openImport(); },0); throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'}); }
+  if(r.status===403&&!opt.noAuth&&b&&(b.error==='blocked'||b.error==='rejected'||b.error==='pending')){ localStorage.removeItem(SV_TOKEN_KEY); localStorage.removeItem(SV_ADMIN_KEY); gd.svErr=b.message; setTimeout(()=>gdRender(),0); throw Object.assign(new Error(b.message),{type:'interaction_required',code:b.error}); } // b68: 차단·거절
   if(r.status===409&&opt.allow409) return {conflict:true,...b};
   if(!r.ok) throw Object.assign(new Error((b&&b.message)||`동기화 서버 오류 (HTTP ${r.status})`),{status:r.status,code:b&&b.error});
   return b;
@@ -2030,7 +2044,7 @@ function gdRender(){
   const b=$('#gBtn'); if(b){
     const L={off:'☁ 구글 로그인',connecting:'☁ 연결 중…',saving:'☁ 저장 중…',reconnect:'☁ 다시 연결',conflict:'☁ 선택 필요',error:'☁ 동기화 오류',
       on: gd.timer||gdLocalDirty() ? '☁ 저장 대기' : (gdMeta.lastSave||gdMeta.lastLoad ? `☁ ${hm(Math.max(gdMeta.lastSave||0,gdMeta.lastLoad||0)).split(' ')[1]} 저장됨` : '☁ 동기화됨')};
-    if(SV_ON){ L.off='☁ 로그인'; L.reconnect='☁ 다시 로그인'; }
+    if(SV_ON){ L.off=svPend()&&!svTok()?'⏳ 승인 대기 중':'☁ 로그인'; L.reconnect='☁ 다시 로그인'; }
     b.textContent=SV_ON?(L[gd.state]||'☁ 동기화'):!gcid()?'☁ 구글':!gdOriginOk()?'☁ 구글 (온라인 전용)':(L[gd.state]||'☁ 구글'); b.classList.toggle('warn',['reconnect','conflict','error'].includes(gd.state));
     b.title=gd.msg||(SV_ON?'동기화 (넥슨 API 키로 로그인)':'구글 드라이브 동기화');
     // 서버 모드 로그인 중: 헤더는 [로그아웃]만 (저장은 뒤에서 조용히). 저장 실패만 작은 경고로 표시
@@ -2065,6 +2079,7 @@ function gdStatusHtml(){
       ${logged?`<div class="muted" style="font-size:.8rem">마지막 저장: ${gdTime(gdMeta.lastSave)} · 마지막 불러오기: ${gdTime(gdMeta.lastLoad)}</div>
       <div class="toolbar" style="margin-top:8px">${gd.state==='error'?'':'<button class="btn sm" id="gdSaveNow">지금 저장</button>'}<button class="btn sm ghost" id="gdLogout">로그아웃</button>
       ${gd.state==='conflict'?'<button class="btn sm" id="gBtn2" onclick="gdReask()">선택하기</button>':''}</div>
+      ${svIsAdmin()?'<div class="toolbar" style="margin-top:8px"><button class="btn sm" id="svAdminBtn">👑 관리자 — 가입 승인</button></div>':''}
       ${svSubHtml()}
       ${driveUsable()?`<div class="toolbar" style="margin-top:6px"><button class="btn sm ghost" id="svImportDrive" title="예전 구글 드라이브 저장본을 이 PC 데이터와 합친 뒤 서버에 저장 (구글 로그인 창이 한 번 뜸)">구글 드라이브에서 가져오기 (한 번)</button></div>`:''}`
       :svLoginHtml()}`;
@@ -2423,11 +2438,18 @@ async function gdPush(opts={}){
 }
 function gdLogin(){ $('#driveModal').classList.remove('show'); if(SV_ON){ openAdd(); return; } gdConnect(true); }
 /* ---- 서버 모드: 로그인 · 키 연결 · 드라이브에서 가져오기 ---- */
-async function svLogin(key,accId){
+async function svLogin(key,accId,opt={}){
+  if(gd.state==='connecting'&&opt.quiet) return; // b68: 열 때 자동 확인은 다른 로그인 중이면 건너뜀
   key=String(key||'').trim(); if(!key){ gd.svErr='API 키를 넣어 주세요'; return gdRender(); }
   gd.svErr=''; gdSet('connecting','넥슨 API 키 확인 중…'); svMainRender();
   try{
     const b=await svFetch('/api/login',{method:'POST',noAuth:true,body:{key,label:(navigator.userAgentData?.platform||navigator.platform||'').slice(0,30)}});
+    if(b.status==='pending'||(!b.token&&b.pending)){ // b68: 처음 보는 본계정 키 = 가입 승인 대기 (세션·데이터 없음). 키는 이 기기에만 보관해 나중에 같은 키로 다시 확인
+      localStorage.setItem(SV_PEND_KEY,JSON.stringify({key,...(b.pending||{})})); gdSet('off'); svMainRender();
+      if(!$('#importModal').classList.contains('show')&&!opt.quiet) openImport();
+      if(!opt.quiet) toast(b.newUser?'가입을 요청했어요 — 관리자 승인 후 사용할 수 있어요':'아직 승인 대기 중이에요'); return;
+    }
+    localStorage.removeItem(SV_PEND_KEY); localStorage.setItem(SV_ADMIN_KEY,b.admin?'1':'0');
     localStorage.setItem(SV_TOKEN_KEY,b.token);
     // 이 PC 데이터 주인 확인: 다른 사용자 → 비우고 서버 데이터만 / 같은 사용자 → 그대로 맞춤 / 이 기기 첫 로그인 → 물어봄
     const prev=localStorage.getItem(SV_USER_KEY);
@@ -2445,7 +2467,8 @@ async function svLogin(key,accId){
     if($('#importModal').classList.contains('show')) openImport(); // b67: 캐릭터 추가 창에서 로그인 → 평소 창(키 목록·캐릭터 목록)으로
     if(gd.state==='on') toast('☁ 로그인했습니다'+(b.newUser?' — 이 데이터를 서버에 저장합니다':''));
     svSeenPull();
-  }catch(e){ gd.svErr=e.code==='sub_key'?'이미 등록된 부계정 API입니다.':e.message; gdSet('off'); if($('#importModal').classList.contains('show')) svMainRender(); else gdMenu(true); }
+  }catch(e){ if(e.code==='rejected'||e.code==='blocked') localStorage.removeItem(SV_PEND_KEY); // b68
+    gd.svErr=e.code==='sub_key'?'이미 등록된 부계정 API입니다.':e.message; gdSet('off'); if($('#importModal').classList.contains('show')) svMainRender(); else if(!opt.quiet) gdMenu(true); }
 }
 function svWipeLocal(){ // 이 브라우저의 보스 데이터 비우기 (테마·기기 표·서버 주소는 유지)
   const th=S.theme; clearTimeout(gd.timer); gd.timer=null; localStorage.removeItem(GD_BASE_KEY); localStorage.removeItem(SV_SUBSIG_KEY);
@@ -2555,7 +2578,7 @@ async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그
   if(SV_ON){
     pend=null; // 저장 안 한 변경은 그냥 버림 (저장은 보스 목록 [저장]으로만)
     try{ if(svTok()) await svFetch('/api/logout',{method:'POST'}); }catch(e){}
-    clearTimeout(gd.timer); gd.timer=null; gd.fileId=null; gd.remoteRev=undefined; localStorage.removeItem(SV_TOKEN_KEY); localStorage.removeItem(SV_SUBSIG_KEY); localStorage.removeItem(SV_VAULT_KEY); localStorage.removeItem(SV_KEYERR_KEY);
+    clearTimeout(gd.timer); gd.timer=null; gd.fileId=null; gd.remoteRev=undefined; localStorage.removeItem(SV_TOKEN_KEY); localStorage.removeItem(SV_SUBSIG_KEY); localStorage.removeItem(SV_VAULT_KEY); localStorage.removeItem(SV_KEYERR_KEY); localStorage.removeItem(SV_ADMIN_KEY);
     gdMeta={}; localStorage.removeItem(GD.META_KEY); localStorage.removeItem(GD_BASE_KEY);
     svWipeLocal(); gd.svErr=''; gdSet('off'); render(); svGate(); toast('로그아웃했습니다 (이 PC의 보스 데이터도 지웠어요 — 캐릭터 추가에서 본계정 키를 넣으면 서버에서 불러옵니다)'); return;
   }
@@ -2636,6 +2659,10 @@ document.addEventListener('click',e=>{
     case 'gdLogin': gdLogin(); break;
     case 'svSubBtn': svAddSub($('#svSubKey')?.value); break;
     case 'svMainBtn': svLogin($('#svMainKey')?.value); break;
+    case 'svPendCheck': { const pd=svPend(); if(pd?.key) svLogin(pd.key); break; }
+    case 'svPendCancel': localStorage.removeItem(SV_PEND_KEY); gd.svErr=''; gdRender(); svMainRender(); break;
+    case 'svAdminBtn': gdMenu(false); openAdmin(); break;
+    case 'admClose': $('#adminModal').classList.remove('show'); break;
     case 'svLoginBtn': svLogin($('#svKey')?.value); break;
     case 'svImportDrive': gdMenu(false); svImportDrive(); break;
     case 'gdLogout': gdLogout(false); break;
@@ -2645,7 +2672,7 @@ document.addEventListener('click',e=>{
     case 'gdClose': $('#driveModal').classList.remove('show'); break;
   }
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('#ringModal').classList.contains('show')) closeRing(); if(celebrate.running) endCelebrate(); if($('#importModal').classList.contains('show')&&!$('#charModal').classList.contains('show')) closeImport(); gdMenu(false); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('#ringModal').classList.contains('show')) closeRing(); if(celebrate.running) endCelebrate(); if($('#importModal').classList.contains('show')&&!$('#charModal').classList.contains('show')) closeImport(); $('#adminModal')?.classList.remove('show'); gdMenu(false); } });
 document.addEventListener('keydown',e=>{ const wt=e.target.closest?.('[data-wtab]'); if(wt&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); if(wt.dataset.wtab!==worldTab) setWorldTab(wt.dataset.wtab); } });
 document.addEventListener('contextmenu',e=>{ const dc=e.target.closest('[data-drop]'); if(!dc) return; e.preventDefault(); if(tipTouchAt&&Date.now()-tipTouchAt<1500) return; /* 터치 길게 누르기 = 툴팁 보기 (취소는 − 버튼) */ changeDrop(dc.dataset.drop,-1); });
 /* 드롭 칩 툴팁 (마우스 올림 + 터치): [data-tip] — 터치는 누르는 순간 표시(클릭 동작은 그대로), 3초 뒤·다른 곳 터치 시 닫힘 */
@@ -2665,7 +2692,7 @@ document.addEventListener('pointerdown',e=>{ const t=e.target.closest?.('[data-t
   if(e.pointerType==='touch'){ tipTouchAt=t?Date.now():0; if(t){ tipShow(t); clearTimeout(tipTimer); tipTimer=setTimeout(tipHide,3000); } else tipHide(); } },true);
 let tipKbd=false; // 키보드(Tab)로 칩에 왔을 때만 포커스로 표시/숨김 — 클릭·터치 뒤 다시 그려질 때 툴팁이 사라지지 않게
 document.addEventListener('keydown',e=>{ if(e.key==='Tab') tipKbd=true; },true);
-document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='svMainKey'){ e.preventDefault(); svLogin(e.target.value); return; } if(e.key==='Enter'&&e.target.id==='svKey'){ e.preventDefault(); svLogin(e.target.value); } if(e.key==='Enter'&&e.target.id==='svSubKey'){ e.preventDefault(); svAddSub(e.target.value); } if(e.key==='Enter'&&e.target.id==='svInvite'){ e.preventDefault(); svInvite(e.target.value); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='svMainKey'){ e.preventDefault(); svLogin(e.target.value); return; } if(e.key==='Enter'&&e.target.id==='svKey'){ e.preventDefault(); svLogin(e.target.value); } if(e.key==='Enter'&&e.target.id==='svSubKey'){ e.preventDefault(); svAddSub(e.target.value); } });
 document.addEventListener('pointerdown',()=>{ tipKbd=false; },true);
 document.addEventListener('focusin',e=>{ if(!tipKbd) return; const t=e.target.closest?.('[data-tip]'); if(t) tipShow(t); });
 document.addEventListener('focusout',()=>{ if(tipKbd) tipHide(); });
@@ -2736,6 +2763,33 @@ if(loadSyncDue() || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))){ try{ 
 setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden) tabTick(); if(!document.hidden) gdPull(); }, 60e3);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); return; } if(checkResets()) render(); tabTick(); gdPull(); }); // (예전: 15분 지났으면 자동 동기화 — 2026-10-10 제거)
 window.addEventListener('pagehide',()=>{ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); });
+
+/* b68: 가입 승인 — 관리자(서버가 사용자 id 로 확인)만 목록·승인/거절/차단. 처음 연 기기에서도 관리자 버튼이 보이게 /api/me 로 확인 */
+async function svAdminCheck(){ if(!SV_ON||!svTok()||!gdMeta.on) return; try{ const r=await svFetch('/api/me'); localStorage.setItem(SV_ADMIN_KEY,r.admin?'1':'0'); gdRender(); const m=$('#gMenu'); if(m&&!m.hidden) gdMenu(true); }catch(e){} }
+let admUsers=null, admErr='';
+async function openAdmin(){ $('#adminModal').classList.add('show'); admErr=''; renderAdmin(); await admLoad(); }
+async function admLoad(){ try{ admUsers=(await svFetch('/api/admin/users')).users||[]; admErr=''; }catch(e){ admErr=e.message; } renderAdmin(); }
+function renderAdmin(){
+  const b=$('#admBody'); if(!b) return;
+  if(admErr){ b.innerHTML=`<div class="impmsg warn">${esc(admErr)}</div>`; return; }
+  if(!admUsers){ b.innerHTML='<div class="muted">불러오는 중…</div>'; return; }
+  const who=u=>`<b>${esc(u.name||'(이름 없음)')}</b><span class="muted">${u.world?' · '+esc(u.world):''}${u.level?' · Lv.'+u.level:''}</span>`;
+  const row=(u,info,btns)=>`<div class="admrow" data-admuser="${esc(u.id)}"><div class="admwho">${who(u)}<div class="muted tiny">${info}</div></div><div class="admbtns">${btns}</div></div>`;
+  const P=admUsers.filter(u=>u.status==='pending'), A=admUsers.filter(u=>u.status==='ok'), X=admUsers.filter(u=>u.status==='blocked'||u.status==='rejected');
+  const sec=(t,list,empty,f)=>`<section class="admsec"><h4>${t} <span class="muted">(${list.length})</span></h4>${list.length?list.map(f).join(''):`<div class="muted tiny">${empty}</div>`}</section>`;
+  b.innerHTML=sec('승인 대기',P,'대기 중인 요청이 없어요',u=>row(u,`요청 ${u.requestedAt?hm(u.requestedAt):'-'}`,`<button class="btn sm" data-adm="approve">승인</button><button class="btn sm ghost admno" data-adm="reject">거절</button>`))
+    +sec('사용 중',A,'없음',u=>row(u,`캐릭터 ${u.chars||0} · 데이터 ${Math.ceil((u.size||0)/1024)}KB · 마지막 로그인 ${u.lastLogin?hm(u.lastLogin):'-'}`,u.admin?'<span class="admtag">관리자</span>':`<button class="btn sm ghost admno" data-adm="block">차단</button>`))
+    +sec('차단 · 거절',X,'없음',u=>row(u,`${u.status==='blocked'?'차단':'거절'} ${u.decidedAt?hm(u.decidedAt):''}`,`<button class="btn sm" data-adm="${u.status==='blocked'?'unblock':'approve'}">${u.status==='blocked'?'차단 해제':'승인'}</button>`));
+}
+async function admDecide(id,action){
+  const u=(admUsers||[]).find(x=>x.id===id); const nm=u?.name||'이 사용자';
+  if((action==='block'||action==='reject')&&!confirm(`${nm} — ${action==='block'?'차단할까요? (바로 로그아웃되고 저장이 막혀요. 데이터는 지우지 않아요)':'가입 요청을 거절할까요?'}`)) return;
+  try{ await svFetch('/api/admin/decide',{method:'POST',body:{user:id,action}}); toast({approve:'승인했습니다',reject:'거절했습니다',block:'차단했습니다',unblock:'차단을 풀었습니다'}[action]+` — ${nm}`); }catch(e){ toast(e.message); }
+  await admLoad();
+}
+document.addEventListener('click',e=>{ const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }
+  if(e.target.id==='adminModal') e.target.classList.remove('show'); });
+setTimeout(()=>{ if(!SV_ON) return; if(svTok()&&gdMeta.on) svAdminCheck(); else if(svPend()?.key) svLogin(svPend().key,'',{quiet:true}); gdRender(); },800); // 승인 대기 → 열 때 한 번 다시 확인
 
 /* =====================================================================
  *  소식 피드 (왼쪽 아래 카드)

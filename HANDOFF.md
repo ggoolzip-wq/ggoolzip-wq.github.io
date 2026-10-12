@@ -11,6 +11,17 @@
 6. **작업을 시작할 때마다** 사용 한도량(사용치)을 사용자에게 알리고, 한도 100% 전에 끝낼 수 없는 작업이면 **'한도 때문에 작업 불가'라고 미리** 알린다.
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## 2026-10-12 b68 (가입 승인: 새 본계정 키 = 승인 대기 · 관리자 승인/거절/차단)
+(src 수정→build→테스트→main 일반 push, Worker 는 `cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`. HANDOFF 기록은 항상.)
+1. **새 가입 = 승인 대기**: 처음 보는 본계정 키로 /api/login → `users` + 새 표 `approval`(status pending, 대표 캐릭터 이름·월드·레벨 = 넥슨 목록에서 레벨 가장 높은 캐릭터, 요청 시각) + `accounts`(계정 해시, 같은 키로 다시 확인할 때 찾기용)만 만들고 **세션·금고·역할·데이터 없음** → `{status:'pending', pending}`. 같은 키로 다시 → 계속 pending(새로 안 만듦). approval 행이 **없는** 사용자 = 승인됨 → b68 전부터 있던 3명 모두 그대로(관리자 포함), 강제 로그아웃 없음.
+2. **화면**: 캐릭터 추가 창에 '⏳ 승인 대기 중' + 대표 캐릭터·요청 시각 + [승인 확인](같은 키로 다시 로그인 시도) / [다른 키로 등록], NEXON 표기 유지. 헤더 버튼도 '⏳ 승인 대기 중'. 키·요청 정보는 이 기기 localStorage `mapleBossTracker.svPending` 에만(서버 저장 X). 페이지 열 때 한 번 자동 확인 → 승인됐으면 바로 로그인(예전 흐름 그대로), 거절이면 빨간 '가입 요청이 거절되었습니다'.
+3. **거절·차단**: 로그인 403 `rejected`/`blocked`(빨간 글), 그 사용자의 세션 즉시 삭제, 세션이 남아 있어도 auth 가 403 → 저장·읽기 불가. **데이터는 지우지 않음**(차단 해제하면 그대로). 관리자 자신은 차단 불가.
+4. **관리자**: Worker secret `ADMIN_USER` = 사용자의 기존 본 데이터(캐릭터 22·rev 42)의 users.id (앞 8자리 `ef4ca70b`). 로그인하면 ☁ 메뉴에 **'👑 관리자 — 가입 승인'** → 창(#adminModal): 승인 대기(승인/거절) · 사용 중(차단, 관리자 줄은 '관리자') · 차단·거절(차단 해제/승인). 서버 `GET /api/admin/users`, `POST /api/admin/decide {user, action: approve|reject|block|unblock}` — 서버가 세션의 사용자 id 로만 확인(아니면 403 not_admin). 관리자 여부는 로그인 응답·`/api/me` 의 `admin`(localStorage `mapleBossTracker.svAdmin` 은 버튼 표시용일 뿐).
+   - **관리자 바꾸기**: D1 에서 새 관리자 users.id 확인(`npx wrangler d1 execute ggoolzip-sync --remote --command "SELECT u.id, s.rev FROM users u LEFT JOIN state s ON s.user_id=u.id"`) → `cd server && npx wrangler secret put ADMIN_USER` 에 그 id 입력(배포 따로 필요 없음). secret 이 없으면 D1 meta `admin_user` 값을 씀(로컬 테스트용). 둘 다 없으면 관리자 없음 → 새 가입은 계속 대기.
+5. **제한**: 가입 요청(새 데이터) **IP당 하루 5개**(b67 은 10), 전체 하루 100개(b67 은 300). 확인 버튼은 로그인 제한(IP당 30회/10분) 안에서.
+6. 테스트: test_server b68 항목(관리자 없으면 첫 사용자도 대기, 기존 사용자=승인·admin 표시, 대기 응답·최소 기록, 다시 → 그대로 대기, 관리자 목록·승인·비관리자 403, 승인 뒤 저장, 차단 → 세션 끊김·로그인 403·데이터 유지, 거절, 자기 차단 불가, 차단 해제, IP당 5개), 신규 **test_tracker52**(대기 창·헤더·서버에 아무것도 저장 안 됨·새로고침 뒤 대기 유지 / 관리자 ☁ 메뉴 → 승인 → 승인 확인 → 로그인·평소 창 / 비관리자 버튼 없음 / 차단 → 세션 끊김 / 거절 → 빨간 글). 예전 테스트는 `cf_dev.Dev(..., approval=False)` 기본값이 `AUTO_APPROVE=1` 을 넘겨 승인 없이 동작(**운영 wrangler.toml 에 AUTO_APPROVE 넣지 말 것**). 12·19·23·24·25·29·46~52·test_server 통과.
+7. 백업(변경 전): /workspace/backup/b68_before_20261012_120119.json (users·sessions·meta, 600). D1 스키마는 Worker 가 approval 표를 자동 생성. Worker Version fc32d5c1 (12:13 KST; ADMIN_USER secret 12:02 KST). 스크린샷 /workspace/maple-boss-tracker/oct12f_pending.png, oct12f_admin.png.
+
 ## 2026-10-12 b67 (초대 비밀번호·입장 화면 폐지 → '캐릭터 추가'에서 본계정 키로 로그인 · 공개 접속 남용 방지 · 다크 전용)
 (src 수정→build→테스트→main 일반 push, Worker 는 `cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`. HANDOFF 기록은 항상.)
 1. **입장 화면(#svGate)·초대 비밀번호 없음**: bossmaple.pages.dev 는 바로 대시보드(로그인 전 = 빈 화면 '캐릭터를 추가하세요'). `svGate()` 는 예전 #svGate 를 지우는 빈 함수, `svInvite`·기기 표 요청 삭제. 예전 b62·b66·친구 초대 설명은 이 항목으로 대체됨.
@@ -360,7 +371,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 
 ## 8. 사용자가 정한 동작·취향 (변경 시 사용자 확인 필요)
 - **항상 다크 테마**(2026-10-12 b67 사용자 요청): 라이트 모드·테마 전환 버튼 없음. 새 UI 는 다크만 만들고 확인(라이트 색 추가 금지).
-- **초대 비밀번호 없음**(b67): 누구나 bossmaple.pages.dev 에 들어와 '캐릭터 추가'에서 본계정 키로 가입·로그인.
+- **초대 비밀번호 없음**(b67): 누구나 bossmaple.pages.dev 에 들어와 '캐릭터 추가'에서 본계정 키로 가입 요청 → **관리자(사용자 본 데이터) 승인 후 사용**(b68).
 - 썬데이 새 글 감시: 매일 10:00~10:20 KST, **5초 간격**(사용자 결정, 최대 240회/일).
 - 데이터 출처는 **넥슨 Open API 우선**, 홈페이지 HTML 스크랩은 API 실패/자료 없음일 때만 대체(2026-10-09 사용자 요청). 호출 수는 하루 한도(개발 키 1,000회) 안에서 — 이미 받은 목록 재사용.
 - 썬데이 카드: 소식 카드 아래, 소식 1/3 : 썬데이 2/3, 이미지는 contain(페이지 길어지면 안 됨) + 이벤트 기간~혜택 부분만 자동 자르기, '☀ 썬데이' 탭 머리글(노란 해), 맨 아래 이번 주 실제 혜택(OCR, 혜택마다 한 줄; 못 읽으면 글 제목). 이미지 클릭 = 라이트박스(공식 사이트로 이동 X, '공지 보기' 링크만).
