@@ -925,6 +925,16 @@ async function fetchBasic(c,key){
   c.guild=String(b.character_guild_name||''); c.guildAt=Date.now(); // b85: 길드 현황 '+ 길드 추가' 후보
   c.sync=Object.assign(c.sync||{},{imgAt:Date.now()});
 }
+/* b86: '프리미엄 PC방' 훈장 감지 — /character/item-equipment 의 item_equipment(현재) + item_equipment_preset_1~3 전부에서
+ * item_equipment_slot(또는 part) '훈장' 아이템 이름에 '프리미엄 PC방'이 있으면 c.medal.bad. 동기화 때마다 갱신 (캐릭터당 1회 호출) */
+const MEDAL_BAD='프리미엄 PC방';
+function medalFrom(e){
+  const sets=[['현재',e?.item_equipment],['프리셋 1',e?.item_equipment_preset_1],['프리셋 2',e?.item_equipment_preset_2],['프리셋 3',e?.item_equipment_preset_3]];
+  const where=sets.filter(([,l])=>(Array.isArray(l)?l:[]).some(i=>i&&(i.item_equipment_slot==='훈장'||i.item_equipment_part==='훈장')&&String(i.item_name||'').includes(MEDAL_BAD))).map(([n])=>n);
+  return {bad:where.length>0, where, at:Date.now()};
+}
+async function fetchMedal(c,key){ c.medal=medalFrom(await nx('/maplestory/v1/character/item-equipment',{ocid:c.ocid},key)); }
+const medalBand = c => c.medal?.bad&&charShown(c) ? `<div class="medalwarn" title="'${MEDAL_BAD}' 훈장 착용: ${esc(c.medal.where.join(', '))}" aria-label="훈장 잘못 착용중"><span>훈장 잘못 착용중</span></div>` : '';
 let syncing=false;
 const LOAD_SYNC_GAP_MS=3e3, LOAD_SYNC_KEY='mapleBossTracker.loadSyncAt'; // 페이지 열 때 자동 동기화 최소 간격 (아래 loadSyncDue)
 async function syncAll(opts={}){
@@ -944,6 +954,7 @@ async function syncAll(opts={}){
       if(!a.key||badAcc.has(a.id)){ errs++; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:`'${a.label}' 계정 API 키 오류: ${a.status?.msg||'API 키 미등록'}`}); continue; }
       if(!c.ocid){ try{ c.ocid=(await nx('/maplestory/v1/id',{character_name:c.name},a.key)).ocid; }catch(e){ c.sync={...c.sync,ok:false,msg:'ocid 조회 실패: '+e.message}; errs++; continue; } }
       try{ await fetchBasic(c,a.key); }catch(e){} // 이미지·레벨·EXP 갱신 (동기화마다)
+      try{ await fetchMedal(c,a.key); }catch(e){} // b86: 훈장(모든 프리셋) 확인
       try{ total+=applyScheduler(c, await fetchSched(c,a)); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
       catch(e){ errs++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
     }
@@ -1253,7 +1264,7 @@ function renderChars(){
   el.innerHTML=list.slice(p0,p0+CHAR_PER_PAGE).map((c,cj)=>{const ci=p0+cj; const r=cRev(c);return `
     <div class="char ${c.id===S.activeId?'on':''}${charSort==='gm'?(gmDone(c)?' gmdone':''):r.weekly>=S.settings.weeklyLimit?' alldone':''}" data-id="${c.id}" data-world="${esc(w)}" draggable="${fixed?'false':'true'}">
       ${charSort==='gm'?(gmDone(c)?'<div class="dov gmov" aria-hidden="true"><div class="dov-t"><span class="dov-ok"><b class="dov-star">★</b>이번 달 검마 완료</span></div></div>':''):doneOverlay(c,r)}
-      <span class="drag-h" title="드래그해서 순서 변경">⠿</span>
+      ${medalBand(c)}<span class="drag-h" title="드래그해서 순서 변경">⠿</span>
       ${avatar(c)}
       <div class="grow"><div class="nm">${esc(c.name)}</div><div class="meta lvrow"><span class="lv">Lv.${esc(c.level||'?')}</span><span class="job">${esc(c.job||'직업 미설정')}</span></div>${expLine(c)}</div>
       <div style="text-align:right"><div class="rev">${meso(r.meso)}</div><div class="meta">${r.weekly}/${S.settings.weeklyLimit}${needAssign(c)?' <span class="warnc" title="넥슨 계정 미지정 — ✎ 편집에서 계정을 선택하세요">⚠</span>':c.sync?.ok===false?' <span title="'+esc(c.sync.msg)+'">⚠</span>':''}</div></div>

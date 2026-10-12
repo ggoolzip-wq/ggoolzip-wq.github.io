@@ -718,3 +718,15 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 캐릭터 길드는 character/basic의 character_guild_name을 `c.guild`/`c.guildAt`에 저장합니다. 동기화할 때마다 갱신하고, 후보 목록을 열었을 때 아직 길드 정보가 없는 캐릭터만 한 번 불러옵니다.
 - 길드마다 랭킹(수로 type 2, 플래그 type 1, Lv·마스터)을 불러와 캐시합니다(localStorage `mapleBossTracker.guild2`, 키는 world|name).
 - 테스트: test_tracker63.
+
+## b86 — '프리미엄 PC방' 훈장 경고
+- 동기화할 때 보이는 캐릭터마다 `/maplestory/v1/character/item-equipment`를 1번 호출합니다(`fetchMedal`).
+- item_equipment(현재)와 item_equipment_preset_1~3을 모두 봅니다. 그중 item_equipment_slot(또는 part)가 '훈장'인 아이템 이름에 '프리미엄 PC방'이 있으면 `c.medal={bad,where[],at}`로 표시합니다.
+- 사이드바 캐릭터 카드에 `.medalwarn` 띠를 씌웁니다.
+  - 반투명 빨간 띠에 '훈장 잘못 착용중'을 표시하고, 0.7초 빛줄기(mwShine)가 반복됩니다.
+  - 2.4초마다 옅어져서(mwFade) 레벨과 EXP가 보입니다.
+  - pointer-events:none이라 카드 클릭과 드래그가 그대로 되고, 카드 높이도 변하지 않습니다.
+  - title에 어느 프리셋인지 적습니다.
+- 숨은 캐릭터는 표시하지 않습니다.
+- 실제 데이터 확인(2026-10-12): 응답 필드 이름은 item_equipment_slot '훈장', item_name '프리미엄 PC방'입니다.
+- 테스트: test_tracker64.
