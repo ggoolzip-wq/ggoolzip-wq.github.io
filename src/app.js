@@ -960,7 +960,9 @@ async function syncAll(opts={}){
       catch(e){ errs++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
     }
     S.settings.lastSync=Date.now(); save();
-    if(!opts.silent || total || assigned || accMsgs.length) toast(`동기화 완료 — 새로 체크된 보스 ${total}개`+(assigned?` · 계정 자동 연결 ${assigned}명`:'')+(errs?` · 일부 캐릭터 실패 ${errs}`:'')+(accMsgs.length?` · 계정 오류: ${accMsgs.join(', ')}`:''));
+    // zosu: 성공 알림(toast) 대신 🔄 버튼 옆 초록 글자 '새로고침 완료!' (몇 초 뒤 사라짐). 실패(일부 캐릭터·계정 오류)는 계속 알림
+    if(errs||accMsgs.length) toast((errs?`일부 캐릭터 동기화 실패 ${errs}`:'')+(errs&&accMsgs.length?' · ':'')+(accMsgs.length?`계정 오류: ${accMsgs.join(', ')}`:''));
+    if(!opts.silent) syncDoneFlash();
   }catch(e){ if(!opts.silent) toast('동기화 실패: '+e.message); save(); }
   finally{ syncing=false; render(); }
 }
@@ -1148,6 +1150,8 @@ function render(){ if(!TABS.includes(tab)) tab='boss'; syncTabs();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length){ $('#view').innerHTML=emptyView(); renderResetInfo(); return; }
   ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),guild:renderGuild})[tab](); if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); renderResetInfo(); }
+function syncDoneFlash(){ const b=$('#syncBtn'); if(!b) return; let f=$('#syncDone'); if(!f){ f=document.createElement('span'); f.id='syncDone'; f.className='syncdone'; f.setAttribute('role','status'); b.after(f); }
+  f.textContent='새로고침 완료!'; f.classList.remove('out'); clearTimeout(syncDoneFlash.t); syncDoneFlash.t=setTimeout(()=>f.classList.add('out'),3000); }
 /* 캐릭터 카드 제목 옆: 🔄 지금 동기화 아이콘 버튼 (API 키가 있을 때만, 넥슨 API 전용 — 구글 드라이브는 헤더 ☁ 버튼) */
 const SYNC_SVG=`<svg class="rot" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 function renderHeaderSync(){
@@ -1711,7 +1715,9 @@ function missingItems(T){ const got=new Set();
   T.chars.forEach(o=>{ for(const [a,n] of Object.entries(o.items||{})){ const {it,mode}=parseIK(a); if(mode==='l'||!(+n>0)) continue; got.add(it); ((o.outs||{})[a]||[]).forEach(q=>{ if(/^cb:/.test(q)) got.add(q.slice(3)); if(q==='gl') got.add('g_life'); }); } });
   const src={}; BOSSES.forEach(b=>b.diffs.forEach(d=>dropsFor(b,d).forEach(k=>{ if(got.has(k)) return; const p=price(b,d); (src[k]||(src[k]={p:Infinity,list:[]})).list.push({b,d,p}); src[k].p=Math.min(src[k].p,p); })));
   Object.values(src).forEach(o=>o.list.sort((x,y)=>x.p-y.p)); // 같은 아이템을 주는 보스 전부 (결정석 싼 순)
-  return Object.keys(src).sort((a,b)=>itemPri(a)-itemPri(b)||src[a].p-src[b].p||lootOrd(a)-lootOrd(b)).map(k=>({k,...src[k]})); }
+  // zosu-sort: 보스 순서가 아이템 순서보다 먼저 — 줄의 대표 보스(결정석 가장 싼 보스·난이도 = list[0])의 BOSSES 순 → 같은 보스면 난이도(익스트림>하드=카오스>노말>이지) → 그다음 아이템 우선순위
+  const bi=s=>{ const i=BOSSES.indexOf(s); return i<0?999:i; };
+  return Object.keys(src).sort((a,b)=>bi(src[a].list[0].b)-bi(src[b].list[0].b)||diffRank(src[a].list[0].d)-diffRank(src[b].list[0].d)||itemPri(a)-itemPri(b)||src[a].p-src[b].p||lootOrd(a)-lootOrd(b)).map(k=>({k,...src[k]})); }
 // 같은 보스의 여러 난이도는 한 덩어리로: 림보 (노말)(하드) — 한 줄에 최대한 들어가게
 const missGroups = list => { const g=[]; list.forEach(x=>{ let e=g.find(y=>y.b===x.b); if(!e) g.push(e={b:x.b,ds:[]}); e.ds.push(x.d); }); return g; };
 // 못 가진 아이템 목록 (b61): 보스 칸 = 남는 폭 전부(아이콘·이름 칸은 내용 폭), 가로 스크롤 없음.
@@ -2495,7 +2501,7 @@ async function gdCommit(m,remote){
   if(toLocal){ m.updatedAt=gdSig(m)===gdSig(rd)&&!toRemote?rU:Date.now(); gdLoad(m); }
   if(toRemote){ await gdWrite(); }
   else { if((S.updatedAt||0)!==rU){ S.updatedAt=rU; localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); } gdMeta.lastLoad=Date.now(); gdMarkSynced(rU); }
-  if(toLocal) toast('☁ '+(toRemote?GD_RES_MSG.merged:GD_RES_MSG.pulled));
+  if(toLocal&&!toRemote) toast('☁ '+GD_RES_MSG.pulled); // zosu: 자동 병합(merged) 알림은 화면 아래에 띄우지 않음
   return toLocal&&toRemote?'merged':toLocal?'pulled':toRemote?'pushed':'same';
 }
 function gdLoad(m){ localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(m)); load(); checkResets(); localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); applyTheme(); render(); }
