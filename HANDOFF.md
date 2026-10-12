@@ -666,3 +666,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - '사용 중' 10명씩 + 쪽 번호 버튼(1, 2, …, 11명 이상일 때만) `admPage`.
 - 배포: D1 전체 백업 /workspace/backup/b78_before_20261012_151637.sql (600) 후 Worker 배포. 라이브에서는 실제 사용자를 강퇴하지 않음 — 버튼·창만 확인, 강퇴 동작은 로컬(test_tracker52)에서 확인.
 - 스크린샷: /workspace/maple-boss-tracker/oct12p_b78_before_admin.png, oct12p_b78_after_admin.png, oct12p_b78_test_admin.png, oct12p_b78_test_pages.png
+
+## b79 — 결정석 가격 카드 '마지막 확인' 시각 (2026-10-12)
+- prices.json `checkedAt` = KST 전체 시각(ISO, 예 2026-10-12T19:00:12+09:00). `scripts/update_prices.py`(매일 19:00 KST Action·touch) 와 `scripts/update_feed.py`(새 공지 촉발 경로, 날짜가 바뀐 첫 실행만 — `checkedAt[:10]` 비교) 둘 다 now ISO 저장.
+- 화면: '(가격 변동일 2026-09-17, 마지막 확인 10.12 19:00)' — `ckText()` 가 KST 'MM.DD HH:MM'. 예전 날짜만 있는 값은 그대로 표시. 가격 변동일은 그대로. 한 줄(390px 확인).
+- 현재 prices.json 의 checkedAt 은 오늘 Action 실행 시각(커밋 57a3549, 10:53:33 KST)으로 채움 — 다음 19:00 실행부터 자동.
+- 테스트: test_tracker58 (run_all 추가), test_upcoming 기대값(날짜 → ISO) 수정.
+- 스크린샷: /workspace/maple-boss-tracker/oct12q_b79_before_foot.png, oct12q_b79_after_foot.png, oct12q_b79_test_foot.png

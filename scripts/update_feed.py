@@ -361,8 +361,8 @@ def test_prices(new_items, fetch=None):
         if info["rows"]:
             if upcoming.add_upcoming(prices, {"url": it["url"], "title": info["title"] or it["title"], "date": (it.get("date") or "")[:10]}, info["rows"]):
                 changed = True
-        elif prices.get("checkedAt") != today_kst():  # 결정석 변경 없음 → '마지막 확인' 날짜만
-            prices["checkedAt"] = today_kst(); changed = True
+        elif str(prices.get("checkedAt", ""))[:10] != today_kst():  # 결정석 변경 없음 → '마지막 확인'만 (b79: 하루 1번, KST 전체 시각)
+            prices["checkedAt"] = now_iso(); changed = True
     if changed:
         with open(PRICES, "w", encoding="utf-8") as f:
             json.dump(prices, f, ensure_ascii=False, indent=1); f.write("\n")
@@ -397,7 +397,7 @@ def patch_prices(new_items, fetch=None):
         if len(rows) < PATCH_MIN_ROWS or any(not isinstance(r.get("new"), int) or r["new"] <= 0 for r in rows):
             continue
         prices.update(source={"url": it["url"], "title": info.get("title") or it["title"], "date": (it.get("date") or "")[:10]},
-                      rows=rows, notes=info.get("notes", prices.get("notes", [])), checkedAt=today_kst(), fetchedAt=now_iso())
+                      rows=rows, notes=info.get("notes", prices.get("notes", [])), checkedAt=now_iso(), fetchedAt=now_iso())
         prices.pop("upcoming", None)  # 본섭 적용 → 테섭 예정 표시 삭제
         with open(PRICES, "w", encoding="utf-8") as f:
             json.dump(prices, f, ensure_ascii=False, indent=1); f.write("\n")

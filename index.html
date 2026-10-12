@@ -2508,7 +2508,9 @@ let pcMine = localStorage.getItem('mapleBossTracker.pcMine')==='1';
 const myBossKeys = () => new Set(vchars().flatMap(c=>BOSSES.filter(b=>c.bosses[b.id]?.enabled).map(b=>{ const d=c.bosses[b.id].diff; return priceKey(b,b.diffs.includes(d)?d:b.diffs[0]); })));
 const priceRows = g => { const mine=pcMine?myBossKeys():null; return priceRows0(g).filter(r=>!mine||mine.has(r.k)); };
 const priceRows0 = g => BOSSES.filter(b=>b.type===g).flatMap(b=>b.diffs.map(d=>({b,d,k:priceKey(b,d),p:price(b,d)}))).sort((x,y)=>x.p-y.p);
-const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신\n(가격 변동일 ${officialInfo.changedAt||'-'}, 마지막 확인 ${officialInfo.checkedAt||'-'})${Object.keys(officialInfo.upcoming||{}).length?`\n테섭 예정 가격: ${officialInfo.upSource?.title||'테스트 서버 공지'}`:''}${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
+// b79: '마지막 확인' = KST 'MM.DD HH:MM' (예전 날짜만 있는 값은 'YYYY-MM-DD' 그대로)
+const ckText = v => { const t=v&&/T\d/.test(v)?Date.parse(v):NaN; if(!isFinite(t)) return v||'-'; const d=new Date(t+9*3600e3), p=n=>String(n).padStart(2,'0'); return `${p(d.getUTCMonth()+1)}.${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`; };
+const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신\n(가격 변동일 ${officialInfo.changedAt||'-'}, 마지막 확인 ${ckText(officialInfo.checkedAt)})${Object.keys(officialInfo.upcoming||{}).length?`\n테섭 예정 가격: ${officialInfo.upSource?.title||'테스트 서버 공지'}`:''}${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
 /* 보스 체크 탭 오른쪽: 결정석 가격 (읽기 전용, prices.json 자동 갱신) */
 // 테섭 예정 가격이 있을 때만: 캐릭터별 예상 주간 수익(주간 상위 12 + 월간) 현재 가격 vs 패치 후
 let pcTab='price';

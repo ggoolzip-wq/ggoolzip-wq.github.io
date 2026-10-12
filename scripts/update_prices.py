@@ -42,6 +42,7 @@ def main():
     global _OLD_UP
     _OLD_UP = (old or {}).get("upcoming")
     today = datetime.datetime.now(KST).strftime("%Y-%m-%d")
+    now_kst = datetime.datetime.now(KST).replace(microsecond=0).isoformat()  # b79: 마지막 확인 = KST 전체 시각
     try:
         res = parser.nexon_prices(posts=int(os.environ.get("MBT_POSTS", "15")))
     except Exception as e:
@@ -54,7 +55,7 @@ def main():
         # 목록은 읽었지만 최근 공지에 가격표가 없음 = 가격 변경 없음
         if res.get("error", {}).get("name") == "NO_PRICE_TABLE" and old:
             print("최근 공지에 새 가격표 없음 — 기존 가격 유지")
-            return touch(old, today)
+            return touch(old, now_kst)
         warn(f"가격표를 찾지 못함 — 기존 prices.json 유지: {res.get('error')}")
         return 0
 
@@ -64,13 +65,13 @@ def main():
         return 0
     if old and post_id(res["source"]["url"]) < post_id(old.get("source", {}).get("url")):
         print("찾은 공지가 현재 것보다 오래됨 — 기존 가격 유지")
-        return touch(old, today)
+        return touch(old, now_kst)
 
     new = {"version": 1, "source": res["source"], "rows": rows, "notes": res.get("notes", []),
-           "checkedAt": today, "fetchedAt": res.get("fetchedAt")}
+           "checkedAt": now_kst, "fetchedAt": res.get("fetchedAt")}
     if old and old.get("rows") == new["rows"] and old.get("source") == new["source"]:
         print("가격 변경 없음")
-        return touch(old, today)
+        return touch(old, now_kst)
     # changedAt: 실제 가격(rows)이 바뀐 공지의 날짜 = 지금 가격이 적용된 날 (가격이 같으면 유지)
     sd = (res["source"].get("date") or "").replace(".", "-")[:10]
     new["changedAt"] = (old or {}).get("changedAt") if old and old.get("rows") == new["rows"] else (sd or today)
@@ -83,7 +84,7 @@ def touch(old, today):
     if upcoming.reconcile(old):
         write(old)
         print("본섭 가격이 테섭 예정 가격과 같아져 예정 표시 삭제")
-    if old.get("checkedAt") != today:  # 확인에 성공하면 가격이 같아도 매번 '마지막 확인' 날짜 갱신
+    if old.get("checkedAt") != today:  # 확인에 성공하면 가격이 같아도 매번 '마지막 확인' 갱신 (b79: 호출하는 쪽이 KST 전체 시각을 넘김)
         old["checkedAt"] = today
         write(old)
         print("마지막 확인 날짜 갱신:", today)
