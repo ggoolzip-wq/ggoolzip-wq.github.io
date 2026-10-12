@@ -69,15 +69,15 @@ try:
     seen=dev.sql("SELECT ids FROM seen"); check('A: 읽은 글이 서버에 저장', seen and set(json.loads(seen[0]['ids']))>={'notice:900001','notice:900002'}, seen)
     # ---- 새 기기 B: 대표 키만 → 키 전부 + 데이터 + 읽음 ----
     cb,pb=fresh(b); invite(pb); login(pb,KA); wait_on(pb); pb.wait_for_timeout(800)
-    sb=st(pb); check('B(새 PC): 대표 키 로그인 → 부계정·예비 키 전부 그대로', keyset(sb)==sorted([KA,KF,KG,BKA,BKG]), keyset(sb))
-    check('B: 계정 이름·예비 키 이름도 그대로', {a['label'] for a in sb['settings']['accounts']}>={'본계정','부계정F','부계정G'} and {a.get('bkLabel') for a in sb['settings']['accounts']}>={'본계정 예비','G 예비'} and any(a.get('bk')==BKG for a in sb['settings']['accounts']), [(a['label'],a.get('bkLabel')) for a in sb['settings']['accounts']])
+    sb=st(pb); check('B(새 PC): 대표 키 로그인 → 부계정 키 그대로 (b74: 예비 키는 버림)', keyset(sb)==sorted([KA,KF,KG]), keyset(sb))
+    check('B: 계정 이름·예비 키 이름도 그대로', {a['label'] for a in sb['settings']['accounts']}>={'본계정','부계정F','부계정G'} and not any(a.get('bk') or a.get('bkLabel') for a in sb['settings']['accounts']), [(a['label'],a.get('bkLabel')) for a in sb['settings']['accounts']])
     check('B: 캐릭터 데이터도 그대로', [c['name'] for c in sb['characters']]==['단풍용사','부캐F','부캐G'], [c['name'] for c in sb['characters']])
     pb.wait_for_function("feedSeen.has('notice:900001')",timeout=10000)
     nb=pb.evaluate("[['notice:900001','notice:900002','notice:900003'].map(f=>!feedSeen.has(f)),feedUnseen('saryo'),[...document.querySelectorAll('#feedCard a[data-fid] ')].map(a=>[a.dataset.fid,!!a.querySelector('.fnew')])]")
     check('B: A 에서 읽은 글은 N 없음, 안 읽은 글만 N (안 읽은 수 1)', nb[0]==[False,False,True] and nb[1]==1 and all(n==(f=='notice:900003') for f,n in nb[2]), nb)
     # ---- 새 기기 C: 부계정 키 / 예비 키 → 빨간 글, 로그인 안 됨 ----
     cc,pc=fresh(b); invite(pc)
-    for k,nm in ((KF,'부계정 키'),(BKG,'부계정 예비 키'),(BKA,'본계정 예비 키')):
+    for k,nm in ((KF,'부계정 키'),):  # b74: 예비 키 기능 삭제
         login(pc,k); pc.wait_for_selector('#svMainSt .keyrej',timeout=10000); pc.wait_for_timeout(200)
         t=pc.inner_text('#svMainSt .keyrej'); col=pc.evaluate("getComputedStyle(document.querySelector('#svMainSt .keyrej')).color")
         check(f'C: {nm} 로그인 → 빨간 \'이미 등록된 부계정 API입니다.\' + 로그인 안 됨', t.strip()=='이미 등록된 부계정 API입니다.' and col=='rgb(255, 90, 90)' and not pc.evaluate("localStorage.getItem('mapleBossTracker.svToken')") and pc.locator('#svMainSec').count()==1, (t,col))
@@ -94,11 +94,11 @@ try:
     pa.click('#gBtn'); pa.wait_for_selector('#svMainSec .keyrej.soft',timeout=5000)
     check('☁ 로그인 → 캐릭터 추가 창에 본계정 키 칸만 + 다시 로그인 안내', '다시 로그인' in pa.inner_text('#svMainSt') and not pa.is_visible('#accList'))
     login(pa,KA); wait_on(pa); pa.wait_for_timeout(500)
-    sa=st(pa); check('다시 로그인: 묻지 않고 서버 데이터·키 전부 복원', not pa.evaluate("document.querySelector('#driveModal').classList.contains('show')") and sa['characters'][0]['name']=='단풍용사' and keyset(sa)==sorted([KA,KF,KG,BKA,BKG]), (sa['characters'][0]['name'],keyset(sa)))
+    sa=st(pa); check('다시 로그인: 묻지 않고 서버 데이터·키 전부 복원', not pa.evaluate("document.querySelector('#driveModal').classList.contains('show')") and sa['characters'][0]['name']=='단풍용사' and keyset(sa)==sorted([KA,KF,KG]), (sa['characters'][0]['name'],keyset(sa)))
     srvd=json.loads(dev.sql("SELECT data FROM state")[0]['data']); check('다시 로그인 후 서버에도 반영(데이터 손실 없음)', [c['name'] for c in srvd['characters']]==['단풍용사','부캐F','부캐G'], [c['name'] for c in srvd['characters']])
     # ---- 또 다른 새 기기 D: 강제 로그아웃 뒤에도 대표 키 → 전부 복원 ----
     cd,pd=fresh(b); invite(pd); login(pd,KA); wait_on(pd); pd.wait_for_timeout(500)
-    sd=st(pd); check('D(새 PC): 키 전부 + 최신 데이터', keyset(sd)==sorted([KA,KF,KG,BKA,BKG]) and sd['characters'][0]['name']=='단풍용사', keyset(sd))
+    sd=st(pd); check('D(새 PC): 키 전부 + 최신 데이터', keyset(sd)==sorted([KA,KF,KG]) and sd['characters'][0]['name']=='단풍용사', keyset(sd))
     check('JS 오류 없음', not errs, errs)
     b.close()
 except Exception as e:

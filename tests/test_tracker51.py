@@ -65,8 +65,8 @@ try:
     n0=dev.sql("SELECT COUNT(*) n FROM users")[0]['n']
     p1.fill('#svMainKey',KA); p1.click('#svMainBtn'); wait_on(p1,keep=True)
     p1.wait_for_selector('#accList .accrow .regok',timeout=15000); p1.wait_for_selector('#impList .imp-row, #impList label, #impList > *',timeout=15000)
-    check('main key registered → new account on server, modal switches to normal (본계정 등록 완료 + 캐릭터 목록)', dev.sql("SELECT COUNT(*) n FROM users")[0]['n']==n0+1 and p1.locator('#svMainSec').count()==0 and '등록 완료' in p1.inner_text('#accList') and p1.is_visible('#newAccKey') and p1.is_visible('#impSec'), p1.inner_text('#accList')[:200])
-    p1.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); p1.fill('#newAccKey',KF); p1.click('#newAccBtn'); p1.wait_for_function("accounts().some(a=>a.key==='%s')"%KF,timeout=15000)
+    check('main key registered → new account on server, modal switches to normal (본계정 등록 완료 + 캐릭터 목록)', dev.sql("SELECT COUNT(*) n FROM users")[0]['n']==n0+1 and p1.locator('#svMainSec').count()==0 and '등록 완료' in p1.inner_text('#accList') and p1.is_visible('#accAddOpen') and p1.is_visible('#impSec'), p1.inner_text('#accList')[:200])
+    p1.evaluate("accAddShow(true)"); p1.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); p1.fill('#newAccKey',KF); p1.click('#newAccBtn'); p1.wait_for_function("accounts().some(a=>a.key==='%s')"%KF,timeout=15000)
     p1.wait_for_function("localStorage.getItem('mapleBossTracker.svSubSig')===svSubSig()",timeout=20000)
     p1.evaluate("closeImport()")
     p1.evaluate("S.characters.push({id:'c1',name:'단풍용사',level:280,job:'히어로',world:'스카니아',ocid:'o-acc-A',accId:accounts()[0].id,isMain:true,image:'',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}});save();render()")

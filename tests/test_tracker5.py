@@ -49,7 +49,7 @@ def setkey(pg,accid,key):
 def imp(pg): return {'msg':pg.inner_text('#impMsg').replace('\n',' | ')[:400],'cls':pg.get_attribute('#impMsg','class'),'items':pg.locator('#impList .imp-item').count(),'count':pg.inner_text('#impCount')}
 def close(pg): pg.click('#impClose'); pg.wait_for_timeout(100)
 def addkey(pg,key):
-    pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); pg.fill('#newAccKey',key); pg.click('#newAccBtn')
+    pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.evaluate("accAddShow(true)"); pg.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); pg.fill('#newAccKey',key); pg.click('#newAccBtn')
     pg.wait_for_function("!document.querySelector('#impMsg .spin')",timeout=15000); pg.wait_for_timeout(150)
 
 with sync_playwright() as p:
@@ -58,7 +58,7 @@ with sync_playwright() as p:
     pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append('pageerror:'+str(e)))
     pg.goto(URL); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(200)
     pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); print('T0 empty modal: impSec hidden', pg.is_hidden('#impSec'), '|', pg.inner_text('#accList')[:60])
-    pg.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); pg.fill('#newAccKey','live_mock_MULTI'); pg.click('#newAccBtn'); pg.wait_for_function("!document.querySelector('#impMsg .spin')",timeout=15000); pg.wait_for_timeout(150)
+    pg.evaluate("accAddShow(true)"); pg.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); pg.fill('#newAccKey','live_mock_MULTI'); pg.click('#newAccBtn'); pg.wait_for_function("!document.querySelector('#impMsg .spin')",timeout=15000); pg.wait_for_timeout(150)
     aid=pg.evaluate("S.settings.accounts[0].id")
     # 1. multi account_list
     r=imp(pg); print('T1 multi:',r)

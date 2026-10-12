@@ -460,6 +460,7 @@ function migrate(){
   if(!Array.isArray(S.worldOrder)) S.worldOrder=[];
   // 단일 API 키 → 여러 넥슨 계정(계정마다 라벨 + 키). 기존 키는 '본계정'이 됨
   if(!Array.isArray(S.settings.accounts)) S.settings.accounts=[];
+  for(const a of S.settings.accounts) if(a&&(a.bk||a.bkLabel)){ delete a.bk; delete a.bkLabel; } // b74: 예비 API 키 기능 삭제 — 저장된 예비 키는 버림 (금고에서도 다음 동기화 때 빠짐)
   if(S.settings.apiKey){
     const k=String(S.settings.apiKey).trim();
     if(k && !S.settings.accounts.some(a=>a.key===k)) S.settings.accounts.unshift({id:uid(),label:S.settings.accounts.length?'계정'+(S.settings.accounts.length+1):'본계정',key:k});
@@ -1791,13 +1792,14 @@ function renderAccList(){
   // b63: 키에 연결된(accId) 캐릭터 수만 — 수동 추가·키 없는 캐릭터는 제외
   const totalLinked=accs.reduce((s,a)=>s+(a.key?linkedOf(a):0),0); // b72: 키 없는 계정(숨긴 캐릭터)은 빼고
   const ht=$('#accKeyTotal'); if(ht){ ht.textContent=`(총 ${totalLinked}캐릭 등록 중)`; ht.hidden=false; }
-  el.innerHTML=accs.length?accs.map(a=>{
+  const shown=accs.filter(a=>a.key||a.main); // b74: 키 없는 부계정 칸(빈 칸)은 목록에 안 보임 — 데이터·캐릭터 연결은 유지, 같은 계정 키를 '+ 계정 추가'로 넣으면 그 칸에 다시 연결
+  el.innerHTML=shown.length?shown.map(a=>{
     const linked=linkedOf(a);
     const stt=!a.key?'':a.status?.ok===false?`<span class="warnc" title="${esc(a.status.msg)}">⚠ 오류</span>`:regOkHtml(linked);
     return `<div class="accrow ${a.id===impAccId?'on':''}" ${a.key?`data-acctest="${a.id}" title="이 계정의 캐릭터 보기"`:''}><input class="pin acclbl" data-acclabel="${a.id}" value="${a.key?esc(a.label):''}" placeholder="계정 이름" maxlength="12" aria-label="계정 이름">
-      <span class="accst">${stt}${quotaHtml(a.key,!!a.bk&&bkOn(a))}</span>
-      <span class="accbtns"><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>${a.key?bkRow(a,linked):''}`;
-  }).join(''):'<div class="muted acc-empty">등록된 API 키가 없습니다. 아래에 키를 붙여넣고 <b>+ API 키 추가</b>를 누르면 바로 그 계정의 캐릭터 목록이 나와요.</div>';
+      <span class="accst">${stt}${quotaHtml(a.key,false)}</span>
+      <span class="accbtns"><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>`; // b74: 예비 키 줄 삭제
+  }).join(''):'<div class="muted acc-empty">등록된 API 키가 없습니다. <b>+ 계정 추가</b>로 키를 넣으면 바로 그 계정의 캐릭터 목록이 나와요.</div>';
   $('#newAccLabel').placeholder='계정 이름'; // b72
   $('#accOpts').innerHTML=''; // (예전 '스케줄러 보스 자동 추가' 옵션 — 2026-10-10 삭제: 항상 켜짐)
 }
@@ -1866,7 +1868,7 @@ async function openImport(accId){
   const usable=accounts().filter(a=>a.key);
   let a=(accById(accId)?.key&&accById(accId))||usable.find(x=>x.id===impAccId)||usable[0];
   modal.classList.add('show');
-  if(!a){ impAccId=null; accChars=[]; renderAccList(); $('#impSec').classList.add('hidden'); setTimeout(()=>$('#newAccKey').focus(),50); return; }
+  if(!a){ impAccId=null; accChars=[]; renderAccList(); $('#impSec').classList.add('hidden'); accAddShow(true); return; } // b74: 키가 하나도 없으면(구글 드라이브 모드 등) 추가 줄을 바로 보여 줌
   $('#impSec').classList.remove('hidden');
   if(impBusy===a.id) return; impBusy=a.id; impAccId=a.id; renderAccList();
   $('#impTitle').textContent=`'${a.label}' 계정 캐릭터`;
@@ -1925,7 +1927,7 @@ async function addAccount(){
   let rej=''; try{ rej=await svKeyCheck(k); }finally{ accAdding=false; }
   if(rej){ accRej={label,msg:rej}; accRejShow(); $('#newAccKey').value=''; return; }
   const a={id:uid(),label,key:k}; accounts().push(a); save();
-  $('#newAccKey').value=''; $('#newAccLabel').value='';
+  $('#newAccKey').value=''; $('#newAccLabel').value=''; accAddShow(false);
   openImport(a.id); render();
 }
 function newAccLblErr(on){ let d=$('#newAccLblErr');
@@ -1933,7 +1935,12 @@ function newAccLblErr(on){ let d=$('#newAccLblErr');
   if(!d){ d=document.createElement('div'); d.id='newAccLblErr'; d.className='lblerr'; d.setAttribute('role','alert'); d.textContent='계정 이름을 입력해주세요'; $('.accadd')?.insertAdjacentElement('afterend',d); }
 }
 document.addEventListener('input',e=>{ if(e.target.id==='newAccLabel'&&e.target.value.trim()) newAccLblErr(false); });
-function closeImport(){ newAccLblErr(false); $('#importModal').classList.remove('show'); accRej=null; accRejShow(); svMainRender(); if(SV_ON&&gd.svErr&&!svTok()) gd.svErr=''; }
+// b74: 부계정 추가 줄은 '+ 계정 추가'를 눌렀을 때만 (이름·키·등록·취소). 취소/등록 완료/창 닫기 → 지우고 숨김
+function accAddShow(on){ const r=$('#accAddRow'), b=$('#accAddOpen'); if(!r) return;
+  r.hidden=!on; if(b) b.hidden=!!on;
+  if(on) setTimeout(()=>$('#newAccLabel')?.focus(),0); else { $('#newAccLabel').value=''; $('#newAccKey').value=''; newAccLblErr(false); accRej=null; accRejShow(); }
+}
+function closeImport(){ accAddShow(false); newAccLblErr(false); $('#importModal').classList.remove('show'); accRej=null; accRejShow(); svMainRender(); if(SV_ON&&gd.svErr&&!svTok()) gd.svErr=''; }
 function renderImportList(){
   const min=parseInt($('#impMin').value)||0, w=$('#impWorld').value, q=normName($('#impQ').value);
   const have=new Set(S.characters.map(c=>c.ocid).filter(Boolean)), haveName=new Set(S.characters.map(c=>c.name));
@@ -2539,19 +2546,19 @@ function svAfterLogin(){
   if(L.hashes[0]&&a.ah!==L.hashes[0]&&!hs.has(a.ah)){ a.ah=L.hashes[0]; ch=true; }
   if(L.vault!=='locked'){ for(const x of accounts()) if(!!x.main!==(x===a)){ x.main=x===a||undefined; if(!x.main) delete x.main; ch=true; } } // 대표 키 = 로그인에 쓴 키 (부계정 키로 로그인하면 그대로)
   let back=0;
-  if(L.mainBk&&!a.bk&&L.mainBk!==a.key){ a.bk=L.mainBk; ch=true; back++; } // 서버 금고의 예비 키 복원
-  if(L.mainBkLabel&&a.bk===L.mainBk&&!a.bkLabel){ a.bkLabel=L.mainBkLabel; ch=true; }
   for(const sub of L.subs||[]){ // 대표 키로 로그인 → 서버가 풀어 준 부계정 키 채우기
     if(!sub?.key||sub.key===a.key||(sub.ah&&hs.has(sub.ah))) continue; // b72: 예전 본계정 키가 부계정으로 남아 있던 것은 버림
     const ac=accounts(), x=ac.find(y=>y.key===sub.key)||ac.find(y=>!y.key&&sub.ah&&y.ah===sub.ah)||ac.find(y=>!y.key&&!y.main&&!y.ah&&sub.label&&y.label===sub.label); // b64: ah 가 없는 예전 칸은 이름으로
-    if(x){ if(!x.key){ x.key=sub.key; ch=true; back++; } if(sub.ah&&!x.ah){ x.ah=sub.ah; ch=true; } if(sub.bk&&!x.bk){ x.bk=sub.bk; ch=true; } if(sub.bkLabel&&x.bk===sub.bk&&!x.bkLabel){ x.bkLabel=sub.bkLabel; ch=true; } }
-    else { S.settings.accounts=[...ac,{id:'a'+Date.now().toString(36)+ac.length,label:sub.label||`부계정${ac.length}`,key:sub.key,...(sub.ah?{ah:sub.ah}:{}),...(sub.bk?{bk:sub.bk,...(sub.bkLabel?{bkLabel:sub.bkLabel}:{})}:{})}]; ch=true; back++; }
+    if(x){ if(!x.key){ x.key=sub.key; ch=true; back++; } if(sub.ah&&!x.ah){ x.ah=sub.ah; ch=true; } }
+    else { S.settings.accounts=[...ac,{id:'a'+Date.now().toString(36)+ac.length,label:sub.label||`부계정${ac.length}`,key:sub.key,...(sub.ah?{ah:sub.ah}:{})}]; ch=true; back++; }
   }
   if(back) toast(`부계정 키 ${back}개를 불러왔습니다`);
+  accounts().forEach(x=>{ if(x.bk||x.bkLabel){ delete x.bk; delete x.bkLabel; ch=true; } }); // b74: 예비 키 버림
+  const vaultBk=!!(L.mainBk||(L.subs||[]).some(x=>x&&x.bk)); if(vaultBk) svBkPurge=true; // b74: 금고에 예비 키가 남아 있으면 아래에서 다시 올려(예비 키 없이) 지움
   // b62: 서버 금고에 이 PC 의 키가 전부 있을 때만 '맞춤'으로 표시 (예전엔 금고가 열리기만 하면 맞춤 처리 → 이 PC 에만 있던 키가 영영 안 올라감)
   const vset=new Set([L.key,L.mainBk,...(L.subs||[]).flatMap(x=>[x.key,x.bk])].filter(Boolean));
   const lset=accounts().flatMap(x=>[x.key,x.bk]).filter(Boolean);
-  if(L.vault==='open'&&lset.every(k=>vset.has(k))&&accounts().filter(x=>x.key&&!x.main).length===(L.subs||[]).length) localStorage.setItem(SV_SUBSIG_KEY,svSubSig());
+  if(L.vault==='open'&&!vaultBk&&lset.every(k=>vset.has(k))&&accounts().filter(x=>x.key&&!x.main).length===(L.subs||[]).length) localStorage.setItem(SV_SUBSIG_KEY,svSubSig());
   else if(L.vault==='open') localStorage.removeItem(SV_SUBSIG_KEY);
   if(ch){ save(); render(); }
   if(svMain()&&svSubSig()!==localStorage.getItem(SV_SUBSIG_KEY)) svSyncSubKeys().then(()=>gdRender()).catch(()=>{});
@@ -2559,16 +2566,17 @@ function svAfterLogin(){
 const svMain=()=>accounts().find(a=>a.main&&a.key)||null;
 const svSubSig=()=>{ const m=svMain(); return m?JSON.stringify([m.key,m.bk||'',m.bkLabel||'',...accounts().filter(a=>a.key&&a!==m&&a.key!==m.key).map(a=>[a.key,a.label,a.bk||'',a.bkLabel||''])]):''; };
 // 부계정 키를 서버 금고에 (대표 키로 암호화) — 바뀌었을 때만. 대표 키가 이 기기에 없으면 예전처럼 연결만.
+let svBkPurge=false; // b74: 금고의 예비 키를 지우려고 한 번 다시 올려야 함
 async function svSyncSubKeys(){
   const m=svMain(); if(!m) return svLinkNewKeys();
   const sig=svSubSig(); if(sig===localStorage.getItem(SV_SUBSIG_KEY)) return svLinkNewKeys();
   if(localStorage.getItem(SV_VAULT_KEY)==='locked') return svLinkNewKeys(); // b62: 이 기기는 금고 내용을 모름(대표 계정이 아닌 키로 로그인) → 금고를 덮어쓰지 않음
   const subs=accounts().filter(a=>a.key&&a!==m&&a.key!==m.key);
-  if(!subs.length&&!m.bk&&!localStorage.getItem(SV_SUBSIG_KEY)){ localStorage.setItem(SV_SUBSIG_KEY,sig); return; } // 부계정 키가 처음부터 없으면 서버에 올릴 것 없음
+  if(!subs.length&&!m.bk&&!svBkPurge&&!localStorage.getItem(SV_SUBSIG_KEY)){ localStorage.setItem(SV_SUBSIG_KEY,sig); return; } // 부계정 키가 처음부터 없으면 서버에 올릴 것 없음
   try{
     const r=await svFetch('/api/subkeys',{method:'PUT',body:{main:m.key,...(m.bk?{mainBk:m.bk,...(m.bkLabel?{mainBkLabel:m.bkLabel}:{})}:{}),subs:subs.map(a=>({key:a.key,label:a.label,...(a.bk?{bk:a.bk,...(a.bkLabel?{bkLabel:a.bkLabel}:{})}:{})}))}});
     let ch=false; (r.subs||[]).forEach((x,i)=>{ const a=subs[i]; if(a&&x.ah&&a.ah!==x.ah){ a.ah=x.ah; ch=true; } });
-    localStorage.setItem(SV_SUBSIG_KEY,sig); localStorage.setItem(SV_VAULT_KEY,'open'); localStorage.removeItem(SV_KEYERR_KEY);
+    svBkPurge=false; localStorage.setItem(SV_SUBSIG_KEY,sig); localStorage.setItem(SV_VAULT_KEY,'open'); localStorage.removeItem(SV_KEYERR_KEY);
     if(ch){ S.updatedAt=Date.now(); lastSig=contentSig(S); lastBody=bodyOf(); localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); }
   }catch(e){ if(e.type==='interaction_required') throw e;
     // b62: 실패하면 '맞춤'으로 표시하지 않음 (예전: 실패해도 맞춤 처리 → 다시 안 올림 = 다른 PC 에서 키가 사라지던 원인 중 하나). 다음 저장/키 변경 때 다시 시도
@@ -2702,7 +2710,9 @@ document.addEventListener('click',e=>{
     case 'syncBtn': syncAll(); break;
     case 'importAccBtn': openImport(); break;
     case 'impRetry': openImport(impAccId); break;
-    case 'impToSettings': $('#newAccKey')?.focus(); break;
+    case 'impToSettings': accAddShow(true); break;
+    case 'accAddOpen': accAddShow(true); break;
+    case 'accAddCancel': accAddShow(false); break;
     case 'impClear': $('#impMin').value=''; $('#impQ').value=''; $('#impWorld').value=''; renderImportList(); break;
     case 'newAccBtn': addAccount(); break;
     case 'impClose': closeImport(); break;

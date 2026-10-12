@@ -41,8 +41,6 @@ try:
     check('본계정 3캐릭', rows[0]=='✔ 등록 완료 · 3캐릭 등록 중', rows)
     check('부계정 2캐릭', rows[1]=='✔ 등록 완료 · 2캐릭 등록 중', rows)
     check('예비계정 0캐릭', rows[2]=='✔ 등록 완료 · 0캐릭 등록 중', rows)
-    bk=pg.inner_text('.bkrow .regok').replace('\n',' ').strip()
-    check('예비 키도 같은 계정 수(3)', bk=='✔ 등록 완료 · 3캐릭 등록 중', bk)
     wrap=pg.evaluate("""()=>{
       const h=document.querySelector('.addsec-h');
       const rs=[...document.querySelectorAll('#accList .accrow .regok, #accList .bkrow .regok')];

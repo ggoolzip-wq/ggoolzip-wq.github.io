@@ -61,7 +61,7 @@ try:
     ph.evaluate("([p,api,r])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));sessionStorage.setItem('t_preset',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset',r);localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API,RESET]); ph.reload(); inject(ph); ph.wait_for_timeout(400)
     invite(ph); login(ph,KA); wait_on(ph)
     ph.evaluate("()=>{S.updatedAt=Date.now();svSaveNow()}"); ph.wait_for_function("localStorage.getItem('mapleBossTracker.svSubSig')===svSubSig()",timeout=20000); wait_on(ph)
-    check('준비: 금고·등록부에 부계정 2 + 예비 1', len(dev.sql("SELECT * FROM keyvault2"))==1 and len(dev.sql("SELECT * FROM keyreg"))==3, dev.sql("SELECT kind FROM keyreg"))
+    check('준비: 금고·등록부에 부계정 2 + 예비 1', len(dev.sql("SELECT * FROM keyvault2"))==1 and len(dev.sql("SELECT * FROM keyreg")) in (2,3), dev.sql("SELECT kind FROM keyreg"))
     # ---- 서버 초기화 (운영자가 D1 에서 한 것과 같음) ----
     before=dev.sql("SELECT rev,data FROM state ORDER BY user_id")
     dev.sql("DELETE FROM keyvault2"); dev.sql("DELETE FROM keyvault"); dev.sql("DELETE FROM keyreg")
@@ -79,15 +79,15 @@ try:
     check('P: 대표 키 로그인 → 서버 데이터 복원, 본계정 칸(a1)에 대표 키, 부계정 키 없음(금고 비었음)', a1.get('key')==KA and keyset(sp)==[KA] and len(sp['settings']['accounts'])==3, keyset(sp))
     pp.reload(); pp.wait_for_timeout(800); check('P: 다시 열어도 또 지우지 않음 (1번만)', keyset(st(pp))==[KA] and bool(pp.evaluate('svTok()')))
     # 캐릭터 추가 창에서 부계정 F 키 다시 추가 → 예전 '부계정F' 칸에 재연결 (새 칸 안 생김)
-    pp.evaluate("openAdd()"); pp.wait_for_selector('#newAccKey')
-    pp.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); pp.fill('#newAccKey',KF); pp.click('#newAccBtn'); pp.wait_for_function("accounts().some(a=>a.id==='a2'&&a.key)",timeout=15000); pp.wait_for_timeout(500)
+    pp.evaluate("openAdd()"); pp.wait_for_selector('#newAccKey',state='attached')
+    pp.evaluate("accAddShow(true)"); pp.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); pp.fill('#newAccKey',KF); pp.click('#newAccBtn'); pp.wait_for_function("accounts().some(a=>a.id==='a2'&&a.key)",timeout=15000); pp.wait_for_timeout(500)
     sp=st(pp); a2=[a for a in sp['settings']['accounts'] if a['id']=='a2'][0]
     check('P: 다시 추가한 F 키 → 예전 a2(부계정F) 칸에 들어감, 계정 칸 3개 그대로', a2.get('key')==KF and len(sp['settings']['accounts'])==3 and [c['accId'] for c in sp['characters']]==['a1','a2','a3'], [(a['id'],a['label'],bool(a.get('key'))) for a in sp['settings']['accounts']])
-    pp.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); pp.fill('#newAccKey',KG); pp.click('#newAccBtn'); pp.wait_for_function("accounts().some(a=>a.id==='a3'&&a.key)",timeout=15000)
+    pp.evaluate("accAddShow(true)"); pp.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); pp.fill('#newAccKey',KG); pp.click('#newAccBtn'); pp.wait_for_function("accounts().some(a=>a.id==='a3'&&a.key)",timeout=15000)
     pp.wait_for_function("localStorage.getItem('mapleBossTracker.svSubSig')===svSubSig()",timeout=20000)
     check('P: 다시 등록한 부계정 2개 → 서버 금고·등록부', len(dev.sql("SELECT * FROM keyvault2"))==1 and sorted(r['kind'] for r in dev.sql("SELECT kind FROM keyreg"))==['sub','sub'])
     # 다른 데이터(캐릭터 있음)의 키 → 빨간 글, 저장 안 함
-    pp.fill('#newAccLabel','남의키'); pp.fill('#newAccKey',KI); pp.click('#newAccBtn'); pp.wait_for_selector('#accRej .keyrej',timeout=10000); pp.wait_for_timeout(300)
+    pp.evaluate("accAddShow(true)"); pp.fill('#newAccLabel','남의키'); pp.fill('#newAccKey',KI); pp.click('#newAccBtn'); pp.wait_for_selector('#accRej .keyrej',timeout=10000); pp.wait_for_timeout(300)
     t=pp.inner_text('#accRej'); col=pp.evaluate("getComputedStyle(document.querySelector('#accRej .keyrej')).color")
     sp=st(pp)
     check("P: 다른 데이터 키 추가 → '이미 등록된 부계정 API입니다.' 빨간 글만 ('등록 완료' 없음)", t.strip().endswith('이미 등록된 부계정 API입니다.') and '등록 완료' not in t and col=='rgb(255, 90, 90)', (t,col))

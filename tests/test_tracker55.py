@@ -61,7 +61,7 @@ try:
     c1,p1=mkctx(b); p1.goto(URL); p1.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); p1.reload(); p1.wait_for_timeout(500)
     login(p1,KA); wait_on(p1)
     for k,nm in ((KF,'부F'),(KG,'부G')):
-        p1.evaluate("openAdd()"); p1.wait_for_selector('#newAccKey'); p1.fill('#newAccLabel',nm); p1.fill('#newAccKey',k); p1.click('#newAccBtn'); p1.wait_for_function("accounts().some(a=>a.key==='%s')"%k,timeout=15000); p1.evaluate("closeImport()")
+        p1.evaluate("openAdd()"); p1.wait_for_selector('#newAccKey',state='attached'); p1.evaluate("accAddShow(true)"); p1.fill('#newAccLabel',nm); p1.fill('#newAccKey',k); p1.click('#newAccBtn'); p1.wait_for_function("accounts().some(a=>a.key==='%s')"%k,timeout=15000); p1.evaluate("closeImport()")
     # 예전 버그 상태: 본계정 칸이 4번째 '계정4' + 같은 키의 중복 칸, G 계정은 키가 빠짐
     p1.evaluate("""cs=>{ const A=accounts(); const m=A[0]; m.label='계정4'; const f=A.find(a=>a.key==='%s'), g=A.find(a=>a.key==='%s');
       g.key=''; S.settings.accounts=[f,g,{id:'dup',label:'계정5',key:'%s'},m];
@@ -85,11 +85,18 @@ try:
     check('after list relink: still row1 본계정, 3 rows', A[0]['label']=='본계정' and A[0]['key']==KA2 and len(A)==3, [(a['label'],a['key'][:10]) for a in A])
     html=p1.inner_text('#importModal')
     check("no '키 없음' anywhere", '키 없음' not in html and '키 없음' not in p1.inner_text('body'))
-    lbl=p1.evaluate("(()=>{const i=document.querySelector('[data-acclabel=\"%s\"]'); return [i.value,i.placeholder]})()"%A[2]['id'] if A[2]['key']=='' else "['x','x']")
-    check("keyless row: empty name, placeholder '계정 이름'", lbl==['','계정 이름'], lbl)
+    check('b74: keyless alt row not listed (data kept)', p1.locator('[data-acclabel="%s"]'%A[2]['id']).count()==0 and A[2]['key']=='')
     check("new alt name placeholder '계정 이름'", p1.get_attribute('#newAccLabel','placeholder')=='계정 이름')
     p1.screenshot(path=OUT+'/oct12j_b72_test_modal.png')
-    p1.fill('#newAccLabel',''); p1.fill('#newAccKey',KG); p1.wait_for_timeout(200)
+    # b74: 예비 키 줄·빈 부계정 줄·키 발급 안내 없음 / '+ 계정 추가' → 줄 1개, 취소로 지움
+    check('b74: no spare-key UI, no 키 발급 line', p1.locator('.bkrow,[data-bkadd],.bkin').count()==0 and '예비' not in p1.inner_text('#importModal') and '키 발급' not in p1.inner_text('#importModal'))
+    check('b74: no pre-made empty alt row, + 계정 추가 visible', not p1.is_visible('#accAddRow') and p1.is_visible('#accAddOpen') and p1.locator('#accList .accrow').count()==2, p1.locator('#accList .accrow').count())
+    p1.click('#accAddOpen'); p1.wait_for_timeout(200)
+    check('b74: + 계정 추가 → one new row (name placeholder 계정 이름 + key + 등록)', p1.is_visible('#accAddRow') and p1.get_attribute('#newAccLabel','placeholder')=='계정 이름' and p1.is_visible('#newAccKey') and p1.inner_text('#newAccBtn')=='등록' and not p1.is_visible('#accAddOpen'))
+    p1.screenshot(path=OUT+'/oct12l_b74_test_addrow.png')
+    p1.fill('#newAccLabel','x'); p1.click('#accAddCancel'); p1.wait_for_timeout(200)
+    check('b74: 취소 removes the unsaved row', not p1.is_visible('#accAddRow') and p1.is_visible('#accAddOpen') and p1.input_value('#newAccLabel')=='')
+    p1.evaluate("accAddShow(true)"); p1.fill('#newAccLabel',''); p1.fill('#newAccKey',KG); p1.wait_for_timeout(200)
     check('empty name alone → no warning (only on 등록 click)', not p1.is_visible('#newAccLblErr') and p1.locator('text=계정 이름을 입력해주세요').count()==0)
     p1.click('#newAccBtn'); p1.wait_for_timeout(800)
     check("empty name → red '계정 이름을 입력해주세요', not registered", p1.is_visible('#newAccLblErr') and p1.inner_text('#newAccLblErr')=='계정 이름을 입력해주세요' and not p1.evaluate("accounts().some(a=>a.key==='%s')"%KG))
@@ -97,7 +104,7 @@ try:
     p1.screenshot(path=OUT+'/oct12j_b72_test_nameerr.png')
     p1.type('#newAccLabel','부'); p1.wait_for_timeout(200)
     check('typing a name hides the warning', not p1.is_visible('#newAccLblErr'))
-    p1.fill('#newAccLabel','부G'); p1.click('#newAccBtn'); p1.wait_for_function("accounts().some(a=>a.key==='%s')"%KG,timeout=15000); p1.evaluate("closeImport()"); p1.wait_for_timeout(500)
+    p1.evaluate("accAddShow(true)"); p1.fill('#newAccLabel','부G'); p1.click('#newAccBtn'); p1.wait_for_function("accounts().some(a=>a.key==='%s')"%KG,timeout=15000); p1.evaluate("closeImport()"); p1.wait_for_timeout(500)
     check('key re-registered → hidden characters back', 'c3' in p1.evaluate(SIDE) and len(p1.evaluate("accounts()"))==3, (p1.evaluate(SIDE),p1.evaluate("accounts().map(a=>a.label)")))
     wait_on(p1); p1.evaluate("svSaveNow()"); wait_on(p1); p1.wait_for_timeout(1000)
     # 다른 PC 에서 새 키로 로그인 → 금고에 예전 본계정 키 없음

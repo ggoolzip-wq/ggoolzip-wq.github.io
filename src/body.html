@@ -69,10 +69,10 @@
     <section class="addsec">
       <div class="addsec-h"><b>🔑 넥슨 API 키</b> <span id="accKeyTotal" class="regok keycnt" hidden></span></div>
       <div id="accList"></div>
-      <div class="accadd"><input id="newAccLabel" class="pin" maxlength="12" placeholder="계정 이름" aria-label="계정 이름">
-        <input id="newAccKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="live_… API 키 붙여넣기" aria-label="API 키">
-        <button class="btn sm" id="newAccBtn">+ API 키 추가</button></div>
-      <div class="muted tiny">키 발급: <a href="https://openapi.nexon.com" target="_blank" rel="noopener">openapi.nexon.com</a> → 마이페이지 → 애플리케이션 상세에서 복사.</div>
+      <div class="accadd" id="accAddRow" hidden><input id="newAccLabel" class="pin" maxlength="12" placeholder="계정 이름" aria-label="계정 이름">
+        <input id="newAccKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="API키 입력" aria-label="API 키">
+        <button class="btn sm" id="newAccBtn">등록</button><button class="btn sm plain" id="accAddCancel" title="이 줄 지우기">취소</button></div>
+      <button class="btn sm ghost accaddopen" id="accAddOpen">+ 계정 추가</button>
       <div class="optlines compact" id="accOpts"></div>
     </section>
     <section class="addsec" id="impSec">

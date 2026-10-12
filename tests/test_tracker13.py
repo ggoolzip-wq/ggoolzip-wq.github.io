@@ -31,7 +31,7 @@ try:
     # 1) + 추가 → 빈 상태 → 본계정 키 추가 → 목록 → 전체 선택 추가
     pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show')
     check('empty modal: key form focused, list hidden', pg.is_hidden('#impSec') and pg.evaluate("document.activeElement.id")=='newAccKey')
-    pg.fill('#newAccLabel','본계정'); pg.fill('#newAccKey',KM); pg.press('#newAccKey','Enter'); wait_list(pg)
+    pg.evaluate("accAddShow(true)"); pg.fill('#newAccLabel','본계정'); pg.fill('#newAccKey',KM); pg.press('#newAccKey','Enter'); wait_list(pg)
     n1=pg.locator('#impList .imp-item').count()
     check('after adding key, its characters listed', n1==len(ACC[KM]) and '본계정' in pg.inner_text('#impTitle'), (n1,pg.inner_text('#impMsg')))
     check('key not shown, 등록 완료 with green check', pg.locator('#accList .kmask').count()==0 and '등록 완료' in pg.inner_text('#accList') and 'live_' not in pg.inner_text('#accList'), pg.inner_text('#accList'))
@@ -45,7 +45,7 @@ try:
     pg.evaluate("syncing=false; renderHeaderSync()")
     # 2) 두 번째 계정
     pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); wait_list(pg)
-    pg.fill('#newAccLabel','부계정'); pg.fill('#newAccKey',KA); pg.click('#newAccBtn'); wait_list(pg)
+    pg.evaluate("accAddShow(true)"); pg.fill('#newAccLabel','부계정'); pg.fill('#newAccKey',KA); pg.click('#newAccBtn'); wait_list(pg)
     rows=pg.eval_on_selector_all('#accList .accrow','e=>e.map(x=>[x.querySelector(".acclbl").value,x.classList.contains("on")])')
     check('2 accounts listed, new one selected', rows==[['본계정',False],['부계정',True]], rows)
     check('부계정 chars listed', pg.locator('#impList .imp-item').count()==len(ACC[KA]))

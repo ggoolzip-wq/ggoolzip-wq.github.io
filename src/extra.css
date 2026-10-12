@@ -903,3 +903,7 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 /* b72: 계정 이름 필수 경고 */
 .lblerr{color:#ff5a5a;font-weight:600;font-size:.85rem;margin:4px 0 2px 4px}
 .accrow .lblerr{flex-basis:100%;order:9}
+
+/* b74 */
+.accadd[hidden],.accaddopen[hidden]{display:none}
+.accaddopen{margin:4px 0 6px}

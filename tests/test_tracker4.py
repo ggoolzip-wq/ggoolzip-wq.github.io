@@ -76,7 +76,7 @@ with sync_playwright() as p:
     # add main account key via the unified '+ 추가' modal
     pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show'); pg.wait_for_timeout(600)
     pg.fill(f'#importModal [data-acclabel="{s["settings"]["accounts"][0]["id"]}"]','부계정'); pg.press(f'#importModal [data-acclabel="{s["settings"]["accounts"][0]["id"]}"]','Tab'); pg.wait_for_timeout(100)
-    pg.fill('#newAccLabel','본계정'); pg.fill('#newAccKey',KM); pg.click('#newAccBtn'); pg.wait_for_timeout(900)
+    pg.evaluate("accAddShow(true)"); pg.fill('#newAccLabel','본계정'); pg.fill('#newAccKey',KM); pg.click('#newAccBtn'); pg.wait_for_timeout(900)
     print('A5 key add auto-listed chars:', pg.inner_text('#impMsg'), '| items', pg.locator('#impList .imp-item').count(), '| accounts in modal:', pg.locator('#accList .accrow').count(), '| masked:', pg.eval_on_selector_all('#accList .kmask','e=>e.map(x=>x.textContent)'))
     pg.click('#impClose')
     pg.click('#syncBtn'); wait_sync(pg); s=st(pg)

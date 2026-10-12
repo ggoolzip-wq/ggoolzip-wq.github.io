@@ -626,3 +626,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 서버가 세션을 거부(401/403)할 때의 '다시 로그인' 안내는 그대로 (별도 경로, 변경 없음).
 - 테스트: test_tracker53 에 로그아웃 직후·새로고침 후 토스트 없음 확인 추가. 52·53·55 통과.
 - 스크린샷: /workspace/maple-boss-tracker/oct12k_b73_before_logout.png, oct12k_b73_after_logout.png, oct12k_b73_test_logout.png
+
+## b74 — 캐릭터 추가 창: 예비 키 삭제 · '+ 계정 추가' · 키 발급 안내 삭제 (2026-10-12)
+- **예비 API 키 기능 UI 전부 삭제** (bkRow 줄·이름·등록·삭제). 기존 데이터: `normState` 와 `svAfterLogin` 에서 a.bk/a.bkLabel 버림, 금고 복원 안 함. 금고에 예비 키가 있으면(`L.mainBk`/sub.bk) `svBkPurge` → 다음 `svSyncSubKeys` 가 예비 키 없이 다시 올려 서버 금고·등록부(keyreg)에서도 빠짐. 429 때 예비 키로 다시 보내는 코드는 bk 가 없으니 동작 안 함(코드는 남김).
+- **부계정 추가 줄**: 미리 만들어진 빈 입력 줄 없음. 목록 = 본계정 + 키 등록된 부계정만 (키 없는 부계정 칸은 목록에 안 보임 — b72 빈 칸 표시를 대체. 데이터·캐릭터 연결은 유지, 같은 계정 키를 넣으면 keyRelink 로 그 칸에 다시 붙음). 아래 '+ 계정 추가' → `#accAddRow` 한 줄(이름 placeholder '계정 이름' + 'API키 입력' + 등록 + 취소). 등록 때 이름 비면 b72 빨간 경고. 취소·등록 완료·창 닫기 → 줄 지우고 숨김. 키가 하나도 없으면(구글 드라이브 모드) 줄을 바로 보여 줌. `accAddShow(on)`.
+- '키 발급: openapi.nexon.com …' 안내 줄 삭제.
+- 테스트: test_tracker55 에 b74 확인 추가. test36(예비 키 전용) 삭제·run_all 에서 뺌. 46·48·49 는 예비 키 기대값 제거, 4·5·13·23·49–55 는 '+ 계정 추가'로 줄 열고 입력. 통과: 4 5 23 24 29 46 48 49 50 51 52 53 54 55 (13 은 예전부터 :8787 문제).
+- 스크린샷: /workspace/maple-boss-tracker/oct12l_b74_before_modal.png, oct12l_b74_after_modal.png, oct12l_b74_after_addrow.png, oct12l_b74_test_addrow.png

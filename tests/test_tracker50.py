@@ -65,7 +65,7 @@ try:
     pg2.goto(f'http://127.0.0.1:{PORT}/index.html'); pg2.evaluate("localStorage.clear()"); pg2.reload(); pg2.wait_for_timeout(500)
     ea=pg2.inner_text('.empty-attrib') if pg2.locator('.empty-attrib').count() else ''
     check('github.io mode: no gate, attribution on first run', pg2.locator('#svGate').count()==0 and ea==ATTRIB and ATTRIB in pg2.inner_text('.foot'))
-    pg2.click('#addCharBtn'); pg2.wait_for_selector('#newAccKey')
+    pg2.click('#addCharBtn'); pg2.wait_for_selector('#newAccKey',state='attached')
     check('github.io mode: + 추가 = normal key modal (no main-key-only section)', pg2.locator('#svMainSec').count()==0 and pg2.is_visible('#newAccKey'))
     check('no page errors', not errs, errs[:3])
     b.close()
