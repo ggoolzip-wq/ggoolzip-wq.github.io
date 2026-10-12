@@ -50,6 +50,12 @@
    - 스크린샷: /workspace/maple-boss-tracker/oct12_before_side_*_bottom.png → oct12_after_side_*_bottom.png (맨 아래로 스크롤한 보스 현황).
 - 전체 테스트(run_all.sh) 2026-10-12: 새 실패 없음. 이번 변경 전 HEAD 에서도 실패하던 것: test_tracker8·10·16(타임아웃), 9·30(푸터 문구), 13·14·15(예전 UI 기대값). test16 은 타임아웃 때문에 낮은 창 검사까지 못 감.
 
+## 2026-10-12 b62-배포 (Worker 배포 완료)
+- 2026-10-12 10:35 KST 메이플 봇이 Worker `ggoolzip-sync` 배포 완료(Version 82680d9f). 사용자가 박스 브라우저에서 Cloudflare(980330k@naver.com) 로그인 → wrangler OAuth. wrangler login 의 콜백이 오래된 탭 요청(state 불일치)으로 계속 실패해서, 같은 client_id·PKCE 로 직접 받는 스크립트(/tmp/cfl/login.mjs)로 토큰을 받아 ~/.config/.wrangler/config/default.toml 에 저장함. Node 22 는 ~/.n22/bin.
+- 기존 secret(ID_PEPPER, SITE_PASS_HASH)은 Cloudflare 에 그대로 남아 있어 재설정 불필요. D1 schema 실행 안 함.
+- 이 배포로 b62 의 4(서버 부분)·5·6·7 이 켜졌고, 6(전원 로그아웃)이 새 Worker 첫 요청 때 자동으로 일어남(데이터 삭제 없음).
+- 사용자 할 일: 부계정 키가 다 있는 PC 에서 초대 비밀번호 + 본계정 키로 다시 로그인 → 전체 키가 서버 금고로 올라감.
+
 ## 2026-10-11 b53 (사용자 요청 10개 일괄) — 다음 봇 인수인계
 작업 전 `gh auth status` 로 GitHub 로그인(ggoolzip-wq) 확인 필요. 로그인이 없으면 사용자에게 `gh auth login`(기기 코드 승인)을 부탁할 것. 수정은 `src/` 만, `python3 tools/build.py` 후 `git pull --rebase` → 일반 push(강제 push 금지).
 1. **반짝이 가루** (`src/extra.css` `.spk`): 예전 ✦ 두 개 → `.spk::before/::after` 두 겹의 아주 작은 radial-gradient 점들이 글자 전체 위에서 어긋난 주기(`spkd1` 1.1s, `spkd2` 1.4s, steps)로 깜빡·위치 이동. 모션 줄이기면 정지. 1~3위 이름(`.spk`)에 적용.
