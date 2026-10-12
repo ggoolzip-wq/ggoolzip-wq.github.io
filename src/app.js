@@ -1701,11 +1701,13 @@ function rankTable(kind,id,title,heads,rows,opt={}){
     ${sl.map(([o,r])=>{ const m=medal(r); return `<tr class="rk${r}${m?' md-'+m:''}"><td>${rankNo(r)}</td><td><span class="rkname ${m?'md-'+m:''}">${m&&o.ico?`<span class="rkico">${o.ico}</span>`:''}<span class="${m?'spk':''}${m&&o.col?' '+o.col:''}">${o.name}</span></span></td>${o.cells.map(c=>`<td class="num">${c}</td>`).join('')}</tr>`; }).join('')||`<tr><td colspan="${n+1}" class="muted">기록 없음</td></tr>`}${rankPad(sl.length,rows.length,n+1)}
     </tbody></table></div>${rankPager(kind,rows.length)}</div>`; }
 rankPage.boss=1; rankPage.epic=1; rankPage.chaos=1; rankPage.miss=1;
-function bossKills(T){ const R={};
-  const go=p=>{ (p.bosses||[]).forEach((t,i)=>{ const m=/^(.+?)\((.+?)\)(?:\/(\d+)인)?/.exec(t); if(!m) return; const b=BOSSES.find(x=>x.name===m[1]); const d=DK[m[2]]; if(!b||!d) return;
+/* zosu-crystal: 결정석 보스왕 = 그 보스가 쌓아준 누적 메소 내림차순 → 같으면 난이도(익스트림>하드=카오스>노말>이지) → 처치 횟수 → 비싼 보스.
+ * 키 삭제된 계정(goneAcc·키 없음 = charShown false)의 캐릭터는 visibleCharIds() 로 제외(규칙 9; totalData 의 visHist 와 같은 기준, 한 번 더 확인). */
+function bossKills(T){ const R={}, VI=visibleCharIds();
+  const go=p=>{ if(!p||!p.id||!VI.has(p.id)) return; (p.bosses||[]).forEach((t,i)=>{ const m=/^(.+?)\((.+?)\)(?:\/(\d+)인)?/.exec(t); if(!m) return; const b=BOSSES.find(x=>x.name===m[1]); const d=DK[m[2]]; if(!b||!d) return;
     const k=b.id+'|'+d, o=R[k]||(R[k]={b,d,n:0,meso:0}); o.n++; const v=p.bvals&&p.bvals[i]!=null?+p.bvals[i]:Math.floor(price(b,d)/Math.max(1,+m[3]||1)); o.meso+=v||0; }); };
   T.weeks.forEach(w=>(w.perChar||[]).forEach(go)); T.months.forEach(m=>(m.perChar||[]).forEach(go));
-  return Object.values(R).sort((a,b)=>b.n-a.n||diffRank(a.d)-diffRank(b.d)||price(b.b,b.d)-price(a.b,a.d)); }
+  return Object.values(R).sort((a,b)=>b.meso-a.meso||diffRank(a.d)-diffRank(b.d)||b.n-a.n||price(b.b,b.d)-price(a.b,a.d)); }
 function bossKingHtml(T){ const R=bossKills(T);
   return rankTable('boss','bossKing',`${R[0]?`<span class="hbi">${bossIcon(R[0].b)}</span>`:miniIcon('meso')} 결정석 보스왕`,['보스','처치 당한 횟수','쌓아준 누적 메소량'],
     R.map(o=>({ico:bossIcon(o.b),name:bossDiffHtml(o.b,o.d),cells:[`<b>${o.n}회</b>`,meso(o.meso)]}))); }

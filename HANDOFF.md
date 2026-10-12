@@ -14,6 +14,12 @@
 9. **합계·표·차트는 보이는 캐릭터만** (2026-10-12 b82 사용자 요청): 모든 탭(지금·앞으로)의 합계·순위·표·차트는 `visibleCharIds()`(= `vchars()`, 키가 등록된 계정의 캐릭터 + 계정 없는 수동 캐릭터)에 든 캐릭터만 센다. 지난 기록은 `visHist(h)` 로 걸러 합계를 다시 계산(저장된 기록은 절대 지우지 않음 → 키를 다시 넣으면 합계 복귀). 새 집계 코드는 `totalData()` 를 쓰거나 같은 헬퍼를 쓸 것.
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## 2026-10-13 zosu-crystal (결정석 보스왕 = 누적 메소 순, 브랜치 zosu-crystal — main 미병합)
+1. 결정석 분석 탭 '결정석 보스왕'(`bossKills`/`bossKingHtml`) 정렬: 처치 횟수 → **그 보스가 쌓아준 누적 메소(`o.meso`, bvals·파티 나눔 적용) 내림차순**. 메소가 같으면 난이도 `diffRank`(익스트림 > 하드 = 카오스 > 노말 > 이지) → 처치 횟수 많은 순 → 결정석 비싼 보스. 표 열(보스·처치 당한 횟수·쌓아준 누적 메소량)·제목 아이콘(1위 보스)은 그대로.
+2. 키 삭제된 계정 제외: `bossKills` 안에서도 `visibleCharIds()`(= `charShown`: `goneAcc`(settings.goneAccs) 또는 키 없는 계정이면 숨김, 규칙 9)에 없는 캐릭터 기록을 건너뜀. totalData 의 `visHist` 와 같은 기준이라 화면 결과는 원래도 제외됐고, 이건 직접 호출 때도 보장하는 이중 확인.
+3. 테스트: 신규 **test_tracker78**(포트 8886, run_all.sh 에 추가) — 메소순(5억 1회 > 3억 3회), 1억 동점 난이도 순, 키 없는 계정·goneAccs 계정 캐릭터 제외, 키 다시 넣으면 복귀. `MBT_ROOT`/`MBT_SHOT`/`MBT_NOCHECK` 로 다른 빌드 스크린샷 가능. test41 보스왕 기대값은 데이터상 메소순과 같아 그대로 통과. 전체 run_all.sh(81개 스크립트: tracker 4~78 + upcoming·feed·sunday·server) 통과, exit 0 (CHROME=/usr/bin/google-chrome).
+4. 스크린샷(모의 데이터): /workspace/zosu/shots/crystal-before.png (origin/main: 스우(하드) 3회 1위) · crystal-after.png (윌(하드) 5억 1위).
+
 ## 2026-10-12 b103 (zosu-ui 브랜치 병합, 7a032b3)
 1. 로그인 전(서버 모드, 세션 토큰 없음) 첫 화면: 오른쪽 위 로그인 버튼(`#gBtn`) 숨김(`gdRender`: `b.hidden=SV_ON&&!svTok()`). 가운데 '캐릭터 추가'가 로그인 길. 로그인 뒤 헤더(로그아웃·관리자)는 그대로. 구글 드라이브 모드(서버 아님)는 변경 없음.
 2. '+ 추가' 본계정 키 칸(`svMainRender`, placeholder 'API키 입력') 아래 작은 글씨 한 줄 `.svmapi`: 'API 발급 : https://openapi.nexon.com/ko/my-application/create-app/' (새 탭, rel=noopener). URL = NEXON Open API 사이트 메뉴 '마이 페이지 > 애플리케이션 등록' 링크(로그인 필요 → 넥슨 로그인 후 그 페이지로 돌아옴).
