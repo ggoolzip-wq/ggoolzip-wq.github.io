@@ -3961,7 +3961,12 @@ async function svSeenFlush(){ if(!seenPush.size||!svTok()) return; const ids=[..
 function svSeenApply(ids){ let ch=false; (ids||[]).forEach(x=>{ if(!feedSeen.has(x)){ feedSeen.add(x); ch=true; } }); if(ch){ feedSaveSeen(); renderFeed(); } }
 async function svSeenPull(){ if(!SV_ON||!svTok()) return;
   try{ const r=await svFetch('/api/seen'); const srv=new Set(r.ids||[]); svSeenApply(r.ids); const mine=[...feedSeen].filter(x=>!srv.has(x)); if(mine.length){ mine.forEach(x=>seenPush.add(x)); svSeenFlush(); } }catch(e){} }
-const feedUnseen=t=>feedItems(t).filter(x=>!feedSeen.has(x.id)).length;
+// b70: 올린 날짜(없으면 처음 수집한 시각 seen)가 7일 지난 글은 안 읽었어도 N·탭 숫자에서 빠짐. 날짜를 모르면 예전처럼. 렌더할 때마다(5분마다 feedLoad 포함) 다시 계산
+const FEED_NEW_DAYS=7;
+const feedTime=x=>{ const t=Date.parse(x&&x.date||''); if(!isNaN(t)) return t; const u=Date.parse(x&&x.seen||''); return isNaN(u)?NaN:u; };
+const feedFresh=(x,now=Date.now())=>{ const t=feedTime(x); return isNaN(t)||now-t<=FEED_NEW_DAYS*864e5; };
+const feedIsNew=(x,now)=>!feedSeen.has(x.id)&&feedFresh(x,now);
+const feedUnseen=t=>{ const now=Date.now(); return feedItems(t).filter(x=>feedIsNew(x,now)).length; };
 function feedSaveSeen(){ // feed 에 아직 있는 글만 기억 (무한히 커지지 않게)
   const live=new Set(FEED_TABS.flatMap(([t])=>feedItems(t).map(x=>x.id)));
   const keep=feed.data?[...feedSeen].filter(id=>live.has(id)):[...feedSeen];
@@ -3992,7 +3997,7 @@ function renderFeed(){
   let note='';
   if(src&&src.ok===false) note=`<div class="fnote" title="${esc(src.error||'')}">⚠ 수집 실패${src.lastOkAt?` · 마지막 성공 ${esc(fdFull(src.lastOkAt))}`:''}</div>`;
   const now=Date.now(), rows=items.slice((feed.page-1)*per,feed.page*per).map(x=>{
-    const isNew=!feedSeen.has(x.id), exp=x.end&&Date.parse(x.end)<now;
+    const isNew=feedIsNew(x,now), exp=x.end&&Date.parse(x.end)<now;
     const tip=`${x.title}\n${fdFull(x.date)}${x.end?`\n수령 기한 ~${fdFull(x.end)}${exp?' (종료)':''}`:''}`;
     return `<li><a class="fit${exp?' exp':''}" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" data-fid="${esc(x.id)}" title="${esc(tip)}">${isNew?'<span class="fnew">N</span>':''}<span class="ftt">${esc(x.title)}</span>${x.end?`<span class="fend">~${esc(fdShort(x.end))}</span>`:''}<span class="fdt">${esc(fdShort(x.date))}</span></a></li>`; }).join('');
   const body=feed.err?`<div class="fempty">${esc(feed.err)}</div>`:!feed.data?`<div class="fempty">불러오는 중…</div>`:items.length?`<ul class="flist">${rows}</ul>`:`<div class="fempty">아직 소식이 없습니다</div>`;

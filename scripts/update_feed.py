@@ -644,7 +644,7 @@ def main():
     _HAVE_MINOR.clear(); _HAVE_MINOR.update(int(x["id"].split(":")[1]) for x in items.get("patch", []) if str(x.get("id", "")).startswith("minor:"))
     run_all = os.environ.get("FEED_ALL") == "1" or os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
     minute = datetime.datetime.now(datetime.timezone.utc).minute
-    added = 0; flipped = False
+    added = 0; flipped = False; stamped = 0
     for k, fn in SOURCES:
         lst = items.setdefault(k, []); prev = srcs.get(k, {})
         s = {"label": LABELS[k], "ok": prev.get("ok", True), "checkedAt": prev.get("checkedAt", ""), "lastOkAt": prev.get("lastOkAt", ""), "error": prev.get("error", "")}
@@ -657,6 +657,9 @@ def main():
             if k == "patch":
                 _PATCH_NEW[:] = [x for x in new if str(x["id"]).startswith("update:")]
             n = merge(lst, new)
+            for x in lst:  # b70: 날짜 없는 글은 처음 수집한 시각(seen) 기록 → 사이트가 7일 지나면 N 표시 안 함
+                if not x.get("date") and not x.get("seen"):
+                    x["seen"] = now_iso(); stamped += 1
             if k == "patch":
                 m = apply_minor(lst, _MINOR, wm); n += m
             added += n
@@ -689,7 +692,7 @@ def main():
     except Exception:
         pass
     wm_changed = (old.get("state", {}).get("watermarks") != wm)
-    changed = bool(added or flipped or stale or wm_changed or sun_changed)  # 워터마크 저장 안 하면 같은 공지 detail 을 매번 다시 호출하게 됨
+    changed = bool(added or flipped or stale or wm_changed or sun_changed or stamped)  # 워터마크 저장 안 하면 같은 공지 detail 을 매번 다시 호출하게 됨
     if changed:
         feed["updatedAt"] = now_iso()
         with open(OUT, "w", encoding="utf-8") as f:
