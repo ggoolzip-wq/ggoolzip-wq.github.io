@@ -998,3 +998,9 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .admm .admprice .admprice-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .admm .admprice .admprice-h .tiny{flex:1}
 .admm .admprice ol{margin:4px 0 0 18px;padding:0}
+/* b96: 캐릭터 정보 — 프리미엄 PC방 훈장 경고 줄 (훈장 아이콘 + 왼쪽 위 빨간 ! 삼각형) */
+.medalrow{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:8px 10px;border-radius:10px;background:rgba(220,30,50,.12);border:1px solid rgba(255,80,90,.35)}
+.medalrow .mdico{position:relative;flex:none;width:32px;height:32px}
+.medalrow .mdico img{width:32px;height:32px;display:block;image-rendering:pixelated}
+.medalrow .mdtri{position:absolute;left:-5px;top:-5px;width:16px;height:14px;background:#e3192d;clip-path:polygon(50% 0,100% 100%,0 100%);color:#fff;font:900 10px/16px sans-serif;text-align:center;filter:drop-shadow(0 0 1px #000)}
+.medalrow .mdtxt{font-size:1.06rem;font-weight:700;color:#ffb3b8}

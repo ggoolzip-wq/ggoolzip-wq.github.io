@@ -794,6 +794,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - 쿠키: `fetch(credentials:'include')`로 브라우저가 쿠키를 붙일 뿐입니다. 쿠키와 세션은 읽지도 내보내지도 않습니다. host_permissions는 api.mskr.nexon.com뿐입니다.
 - **다리:** content.js(bossmaple.pages.dev, localhost)와 페이지가 window.postMessage로 주고받습니다(src 'bossmaple-page' ↔ 'bossmaple-ext'; ping/hello, refresh → prices, takePending).
   - 팝업의 '최저가 갱신'은 예비용입니다. 결과는 다음에 대시보드가 열릴 때 넘어갑니다.
+  - 설치방법.txt에 공용 PC(PC방) 안내를 넣었습니다: 다 쓴 뒤 넥슨 로그아웃, 확장 삭제.
 - **대시보드:** 👑 관리자 창 맨 위 '경매장 최저가'에 '최저가 갱신' 버튼이 있습니다. 확장이 없으면 '크롬 확장을 먼저 설치해주세요'와 설치 단계를 보여 줍니다.
   - 관리자가 페이지를 열었고 확장이 있으면 하루 한 번(KST 날짜 기준) 자동으로 실행합니다.
   - 대상: 칠흑·여명·광휘·해머·보장·연마석 세트(혼돈의 칠흑 장신구 상자·응축된 힘의 결정석 제외).
@@ -850,3 +851,12 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - test_server_b94에 b95/b95u 항목 추가: 삭제 → 다시 추가 성공, 대표 삭제 → 부계정 연결·금고·keyreg가 비고 대표 키 재로그인은 그대로, D1에 키 원본 없음.
   - 신규 test_tracker69(UI, 포트 8899): 삭제 → 숨김·키가 저장되지 않음 → 같은 키 다시 → 같은 칸으로 다시 보임 → 대표 삭제 → 모든 키 삭제·숨김.
   - 스크린샷: /workspace/maple-boss-tracker/oct12z_approval_after_altdel.png, oct12z_approval_after_readd.png.
+
+## b96 — 캐릭터 정보: 프리미엄 PC방 훈장 경고 줄
+- 보스 현황 왼쪽 캐릭터 정보 카드에서, 주간 보스 수익·주간 보스 처치·이번 달 월간 보스 칸 바로 위에 경고 줄을 보여 줍니다. 조건은 `c.medal.bad`(b86의 현재+프리셋 1~3 감지 그대로)입니다.
+  - 문구: '프리미엄 PC방 훈장을 착용한 캐릭터 입니다.'(조금 큰 글씨).
+  - 아이콘: 실제 '프리미엄 PC방' 훈장 아이콘입니다(maplestory.io KMS 389 item 1142145, `src/assets/itemicons/1142145.png` → itemicons.json 'pcmedal'). 왼쪽 위에 빨간 '!' 삼각형을 겹칩니다.
+  - title에 어느 프리셋인지 적습니다.
+- 다른 캐릭터에는 나오지 않습니다.
+- 테스트: test_tracker71(포트 8896).
+- 주의: tools/build_items.py에는 넣지 않았습니다. 다시 돌리면 'emo_' 아이콘이 빠지므로 itemicons.json에 직접 추가했습니다.
