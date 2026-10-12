@@ -11,7 +11,7 @@
  * b68 (2026-10-12): 가입 승인 — 처음 보는 대표 키로 /api/login → users + approval(pending: 대표 캐릭터 이름·월드·레벨·요청 시각) + accounts(계정 해시)만
  *   만들고 세션·금고·데이터 없음 → {status:'pending', pending:{...}}. 거절·차단 → 403 rejected|blocked (세션도 막힘). approval 행이 없는 사용자 = 승인됨(기존 사용자).
  *   관리자(secret ADMIN_USER = users.id): GET /api/admin/users → {users:[{id,status,name,world,level,chars,...}]},
- *   POST /api/admin/decide {user, action: approve|reject|block|unblock}. 관리자가 아니면 403 not_admin.
+ *   POST /api/admin/decide {user, action: approve|reject|kick (block|unblock 은 예전 호환)}. b78: kick = 그 사용자의 등록 키·데이터·세션 전부 삭제(넥슨 계정이 완전히 풀려 나중에 새로 가입 가능). 관리자가 아니면 403 not_admin.
  * 초대 비밀번호(친구 전용, b67 에서 폐지): 로그인 전에 기기마다 한 번 POST /api/invite {pass} → 기기 표(device ticket, 365일).
  *   서버는 비밀번호 해시만 secret SITE_PASS_HASH 로 보관 (= sha256('ggoolzip-invite:' + 앞뒤 공백 뺀 비밀번호), 대소문자 구분).
  *   SITE_PASS_HASH 가 없으면 로그인 전부 거부(fail closed). 비밀번호를 바꾸면 기존 기기 표로는 새 로그인이 안 됨(이미 로그인한 세션은 유지).
@@ -251,6 +251,8 @@ const passVer = env => String(env.SITE_PASS_HASH || '').toLowerCase().slice(0, 1
 let adminCache = null;
 const adminId = env => env.ADMIN_USER || adminCache || '';
 async function loadAdmin(env) { if (env.ADMIN_USER) return; const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_user'").first(); adminCache = r ? r.v : null; }
+// b78: user_id 로 사용자에 묶인 표 전부 (계정 삭제·강퇴 공통)
+const USER_TABLES = ['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen', 'approval', 'cp'];
 const STATUS_MSG = { pending: '승인 대기 중이에요 — 관리자가 승인하면 사용할 수 있어요', rejected: '가입 요청이 거절되었습니다', blocked: '이 계정은 이용이 차단되었습니다' };
 async function userInfo(env, uid) { // 관리자 목록용: 대표 캐릭터·캐릭터 수 (승인 요청 기록이 있으면 그것, 없으면 저장된 데이터에서)
   const st = await env.DB.prepare('SELECT size, saved_at, data FROM state WHERE user_id=?').bind(uid).first();
@@ -479,6 +481,13 @@ async function route(req, env) {
     }
     if (p === '/api/admin/decide' && M === 'POST') {
       const b = await readBody(req), uid = String(b.user || ''), act = String(b.action || '');
+      if (act === 'kick') { // b78: 강퇴 — 사용자 행과 user_id 로 연결된 모든 표에서 삭제 (acct_role·keyreg 가 지워져 같은 넥슨 계정·키로 새로 가입 가능)
+        if (uid === me.userId || uid === adminId(env)) throw new HttpError(400, 'self', '관리자 자신은 강퇴할 수 없습니다');
+        const u = await env.DB.prepare('SELECT id FROM users WHERE id=?').bind(uid).first();
+        if (!u) throw new HttpError(404, 'no_user', '없는 사용자');
+        await env.DB.batch(USER_TABLES.map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(uid)).concat(env.DB.prepare('DELETE FROM users WHERE id=?').bind(uid)));
+        return json(200, { ok: true, user: uid, status: 'kicked' });
+      }
       const to = { approve: 'ok', unblock: 'ok', reject: 'rejected', block: 'blocked' }[act];
       if (!to) throw new HttpError(400, 'bad_action', '알 수 없는 동작');
       if (uid === me.userId) throw new HttpError(400, 'self', '관리자 자신은 바꿀 수 없습니다');
@@ -492,7 +501,7 @@ async function route(req, env) {
     throw new HttpError(404, 'not_found', '없는 주소');
   }
   if (p === '/api/account' && M === 'DELETE') {
-    await env.DB.batch(['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen', 'approval'].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(me.userId))
+    await env.DB.batch(USER_TABLES.map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(me.userId))
       .concat(env.DB.prepare('DELETE FROM users WHERE id=?').bind(me.userId)));
     return json(200, { ok: true });
   }

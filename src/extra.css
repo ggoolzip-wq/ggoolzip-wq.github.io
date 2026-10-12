@@ -926,3 +926,6 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 /* b77 */
 .admhdr{margin-right:6px;background:#1d1d23!important;border-color:#1d1d23!important;color:#ffcc4d!important;font-weight:800}
 .admhdr[hidden]{display:none}
+
+/* b78 */
+.admpages{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:8px}

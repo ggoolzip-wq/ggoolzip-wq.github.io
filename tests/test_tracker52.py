@@ -84,7 +84,7 @@ try:
     check("admin modal: 승인 대기 lists 캐릭F with 승인/거절; admin row tagged 관리자", '승인 대기' in t and '캐릭F' in t and p2.locator('[data-adm=approve]').count()==1 and p2.locator('[data-adm=reject]').count()==1 and '관리자' in t, t)
     p2.screenshot(path=os.path.join(OUT,'oct12f_admin.png'))
     p2.click('[data-adm=approve]'); p2.wait_for_function("document.querySelector('#admBody').innerText.includes('대기 중인 요청이 없어요')",timeout=8000)
-    check('approve → moves to 사용 중 with 차단 button', p2.locator('[data-adm=block]').count()==1)
+    check('approve → moves to 사용 중 with 강퇴 button (no 차단)', p2.locator('[data-adm=kick]').count()==1 and p2.locator('[data-adm=block]').count()==0)
     # 새 사람: 승인 확인 → 로그인 → 평소 캐릭터 추가 창
     p1.evaluate("openAdd()"); p1.click('#svPendCheck'); wait_on(p1,keep=True)
     p1.wait_for_selector('#accList .accrow .regok',timeout=15000)
@@ -92,15 +92,33 @@ try:
     p1.evaluate("closeImport()"); p1.evaluate("gdMenu(true)"); p1.wait_for_timeout(200)
     check('non-admin: no 관리자 button', p1.locator('#svAdminBtn').count()==0 and not p1.evaluate("!!document.querySelector('#svAdminHdr')&&!document.querySelector('#svAdminHdr').hidden"))
     # 관리자: 차단 → 새 사람의 다음 요청에서 로그아웃
-    p2.click('[data-adm=block]'); p2.wait_for_selector('#admBody [data-adm=unblock]',timeout=8000)
+    # b78: 강퇴 (확인 창 → 등록 키·데이터 전부 삭제)
+    UF=[r['id'] for r in dev.sql("SELECT id FROM users") if r['id']!=UADM][0]
+    dlg=[]; p2.once('dialog',lambda d:dlg.append(d.message))
+    p2.screenshot(path=os.path.join(OUT,'oct12p_b78_test_admin.png'))
+    p2.click('[data-adm=kick]'); p2.wait_for_function("!document.querySelector('#admBody [data-adm=kick]')",timeout=8000)
+    check('kick confirm text with name', dlg and '정말 강퇴할까요? 이 사용자의 등록 키와 데이터가 모두 삭제됩니다.' in dlg[0] and '캐릭F' in dlg[0], dlg)
+    left={t:dev.sql(f"SELECT COUNT(*) n FROM {t} WHERE user_id='{UF}'")[0]['n'] for t in ['state','state_history','sessions','accounts','keyvault2','keyreg','acct_role','seen','approval']}
+    check('kick → all user rows deleted', sum(left.values())==0 and dev.sql(f"SELECT COUNT(*) n FROM users WHERE id='{UF}'")[0]['n']==0, left)
     p1.evaluate("svFetch('/api/state/meta').catch(()=>{})"); p1.wait_for_timeout(800)
-    check('blocked → this PC loses session (cannot store)', not p1.evaluate('svTok()'))
+    check('kicked → this PC loses session', not p1.evaluate('svTok()'))
+    r=jpost('/api/login',{'key':KF}); check('kicked Nexon account can sign up again → new pending user', r.get('status')=='pending' and r.get('newUser') and dev.sql("SELECT COUNT(*) n FROM users")[0]['n']>=2, {k:r.get(k) for k in ('status','newUser')})
+    kself=jpost('/api/admin/decide',{'user':UADM,'action':'kick'},p2.evaluate('svTok()')); check('admin cannot kick self', kself.get('error')=='self', kself)
+    nid=[x['id'] for x in dev.sql("SELECT id FROM users") if x['id']!=UADM][0]; jpost('/api/admin/decide',{'user':nid,'action':'kick'},p2.evaluate('svTok()'))
     # ---- 또 다른 새 사람(PC3): 거절 ----
     c3,p3=mkctx(b); fresh(p3); p3.click('#addCharBtn'); p3.wait_for_selector('#svMainKey'); p3.fill('#svMainKey',KG); p3.click('#svMainBtn'); p3.wait_for_selector('#svPendCheck',timeout=15000)
     p3.wait_for_timeout(1200); p3.wait_for_function("gd.state!=='connecting'")  # 페이지 열 때 한 번 하는 자동 확인이 끝난 뒤 거절 (안 그러면 그 확인이 먼저 '거절'을 받아 감 — 정상 동작)
-    p2.evaluate("admLoad()"); p2.wait_for_selector('[data-adm=reject]'); p2.click('[data-adm=reject]'); p2.wait_for_function("document.querySelector('#admBody').innerText.includes('거절')",timeout=8000)
+    p2.evaluate("admLoad()"); p2.wait_for_selector('[data-adm=reject]'); p2.click('[data-adm=reject]'); p2.wait_for_function("!document.querySelector('#admBody [data-adm=reject]')",timeout=8000)
+    check('b78: no 차단·거절 section', '차단' not in p2.inner_text('#admBody') and '거절됨' not in p2.inner_text('#admBody'))
     p3.click('#svPendCheck'); p3.wait_for_selector('#svMainSt .keyrej',timeout=8000)
     check("rejected → red '가입 요청이 거절되었습니다', back to main-key input", '거절' in p3.inner_text('#svMainSt') and p3.is_visible('#svMainKey') and not p3.evaluate("localStorage.getItem('mapleBossTracker.svPending')"), p3.inner_text('#svMainSec'))
+    # b78: 사용 중 10명씩 쪽 번호
+    for i in range(12): dev.sql(f"INSERT INTO users (id,created_at,last_login) VALUES ('zz{i:02d}',{i},{i})")
+    p2.evaluate("admLoad()"); p2.wait_for_timeout(1500)
+    n1=p2.locator('#admBody .admsec:nth-of-type(2) .admrow').count(); pages=p2.locator('[data-admpage]').count()
+    p2.screenshot(path=os.path.join(OUT,'oct12p_b78_test_pages.png'))
+    p2.click('[data-admpage="2"]'); p2.wait_for_timeout(200); n2=p2.locator('#admBody .admsec:nth-of-type(2) .admrow').count()
+    check('b78: 사용 중 10 per page + numbered pages', n1==10 and pages>=2 and 0<n2<=10, (n1,pages,n2))
     check('JS 오류 없음', not errs, errs)
     b.close()
 except Exception as e:

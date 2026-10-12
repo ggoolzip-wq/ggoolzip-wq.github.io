@@ -1033,6 +1033,9 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 /* b77 */
 .admhdr{margin-right:6px;background:#1d1d23!important;border-color:#1d1d23!important;color:#ffcc4d!important;font-weight:800}
 .admhdr[hidden]{display:none}
+
+/* b78 */
+.admpages{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:8px}
 </style>
 </head>
 <body>
@@ -4020,19 +4023,22 @@ function renderAdmin(){
   if(!admUsers){ b.innerHTML='<div class="muted">불러오는 중…</div>'; return; }
   const who=u=>`<b>${esc(u.name||'(이름 없음)')}</b><span class="muted">${u.world?' · '+esc(u.world):''}${u.level?' · Lv.'+u.level:''}</span>`;
   const row=(u,info,btns)=>`<div class="admrow" data-admuser="${esc(u.id)}"><div class="admwho">${who(u)}<div class="muted tiny">${info}</div></div><div class="admbtns">${btns}</div></div>`;
-  const P=admUsers.filter(u=>u.status==='pending'), A=admUsers.filter(u=>u.status==='ok'), X=admUsers.filter(u=>u.status==='blocked'||u.status==='rejected');
-  const sec=(t,list,empty,f)=>`<section class="admsec"><h4>${t} <span class="muted">(${list.length})</span></h4>${list.length?list.map(f).join(''):`<div class="muted tiny">${empty}</div>`}</section>`;
+  const P=admUsers.filter(u=>u.status==='pending'), A=admUsers.filter(u=>u.status==='ok'||u.status==='blocked'); // b78: 차단 없음 — 예전 차단 사용자는 '사용 중'에(강퇴 가능), 거절한 요청은 목록에 안 보임
+  const PG=10, np=Math.max(1,Math.ceil(A.length/PG)); admPage=Math.min(Math.max(1,admPage),np); const Ap=A.slice((admPage-1)*PG,admPage*PG);
+  const sec=(t,list,empty,f,shown)=>`<section class="admsec"><h4>${t} <span class="muted">(${list.length})</span></h4>${list.length?(shown||list).map(f).join(''):`<div class="muted tiny">${empty}</div>`}</section>`;
   b.innerHTML=sec('승인 대기',P,'대기 중인 요청이 없어요',u=>row(u,`요청 ${u.requestedAt?hm(u.requestedAt):'-'}`,`<button class="btn sm" data-adm="approve">승인</button><button class="btn sm ghost admno" data-adm="reject">거절</button>`))
-    +sec('사용 중',A,'없음',u=>row(u,`캐릭터 ${u.chars||0} · 데이터 ${Math.ceil((u.size||0)/1024)}KB · 마지막 로그인 ${u.lastLogin?hm(u.lastLogin):'-'}`,u.admin?'<span class="admtag">관리자</span>':`<button class="btn sm ghost admno" data-adm="block">차단</button>`))
-    +sec('차단 · 거절',X,'없음',u=>row(u,`${u.status==='blocked'?'차단':'거절'} ${u.decidedAt?hm(u.decidedAt):''}`,`<button class="btn sm" data-adm="${u.status==='blocked'?'unblock':'approve'}">${u.status==='blocked'?'차단 해제':'승인'}</button>`));
+    +sec('사용 중',A,'없음',u=>row(u,`${u.status==='blocked'?'(예전 차단) ':''}캐릭터 ${u.chars||0} · 데이터 ${Math.ceil((u.size||0)/1024)}KB · 마지막 로그인 ${u.lastLogin?hm(u.lastLogin):'-'}`,u.admin?'<span class="admtag">관리자</span>':`<button class="btn sm ghost admno" data-adm="kick">강퇴</button>`),Ap)
+    +(np>1?`<div class="admpages">${Array.from({length:np},(_,i)=>`<button class="btn sm ${i+1===admPage?'':'ghost'}" data-admpage="${i+1}">${i+1}</button>`).join('')}</div>`:''); // b78: 10명씩 쪽 번호
 }
 async function admDecide(id,action){
   const u=(admUsers||[]).find(x=>x.id===id); const nm=u?.name||'이 사용자';
-  if((action==='block'||action==='reject')&&!confirm(`${nm} — ${action==='block'?'차단할까요? (바로 로그아웃되고 저장이 막혀요. 데이터는 지우지 않아요)':'가입 요청을 거절할까요?'}`)) return;
-  try{ await svFetch('/api/admin/decide',{method:'POST',body:{user:id,action}}); toast({approve:'승인했습니다',reject:'거절했습니다',block:'차단했습니다',unblock:'차단을 풀었습니다'}[action]+` — ${nm}`); }catch(e){ toast(e.message); }
+  if(action==='kick'&&!confirm(`${nm}\n정말 강퇴할까요? 이 사용자의 등록 키와 데이터가 모두 삭제됩니다.`)) return; // b78
+  if(action==='reject'&&!confirm(`${nm} — 가입 요청을 거절할까요?`)) return;
+  try{ await svFetch('/api/admin/decide',{method:'POST',body:{user:id,action}}); toast({approve:'승인했습니다',reject:'거절했습니다',kick:'강퇴했습니다',unblock:'승인했습니다'}[action]+` — ${nm}`); }catch(e){ toast(e.message); }
   await admLoad();
 }
-document.addEventListener('click',e=>{ const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }
+let admPage=1;
+document.addEventListener('click',e=>{ const pg=e.target.closest('[data-admpage]'); if(pg){ admPage=+pg.dataset.admpage; renderAdmin(); return; } const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }
   if(e.target.id==='adminModal') e.target.classList.remove('show'); });
 setTimeout(()=>{ if(!SV_ON) return; if(svTok()&&gdMeta.on) svAdminCheck(); else if(svPend()?.key) svLogin(svPend().key,'',{quiet:true}); gdRender(); },800); // 승인 대기 → 열 때 한 번 다시 확인
 

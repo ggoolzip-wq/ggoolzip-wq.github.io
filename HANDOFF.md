@@ -658,3 +658,11 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 참고: 사용자 데이터 vault:'none' = 서버 금고에 부계정 키 없음(b64 키 초기화 뒤 부계정 키를 다시 등록하지 않음 — 예상된 상태). 계정 칸 4개 중 키 있는 건 본계정 1개뿐 → b72 규칙으로 캐릭터 22명 중 본계정 8명만 보이고 14명은 숨김(데이터 유지, 부계정 키를 '+ 계정 추가'로 다시 넣으면 다시 보임).
 - 테스트: test_tracker52 에 헤더 관리자 버튼(로그아웃 왼쪽, 새로고침 뒤, 비관리자 없음) 추가.
 - 스크린샷: /workspace/maple-boss-tracker/oct12o_b77_before_header.png, oct12o_b77_after_header.png, oct12o_b77_after_reload.png, oct12o_b77_test_header.png
+
+## b78 — 관리자 창: 차단 → 강퇴, 사용 중 10명씩 쪽 번호 (2026-10-12)
+- 서버 `POST /api/admin/decide {action:'kick'}`: 그 사용자의 users 행 + user_id 로 묶인 모든 표(state·state_history·sessions·accounts·keyvault·keyvault2·keyreg·acct_role·seen·approval·cp; `USER_TABLES`, /api/account DELETE 와 공통) 삭제 → 넥슨 계정·키가 완전히 풀려 같은 키로 다시 오면 새 사용자(승인 대기). 관리자 자신·ADMIN_USER 는 강퇴 불가(400 self). block/unblock 동작은 예전 호환으로 서버에 남김(화면에는 없음).
+- 화면: '사용 중'의 [차단] → [강퇴], 누르면 확인 창 '<캐릭터 이름>\n정말 강퇴할까요? 이 사용자의 등록 키와 데이터가 모두 삭제됩니다.'. 아래 '차단 · 거절' 칸 삭제. 예전 '차단' 사용자는 '사용 중'에 '(예전 차단)'으로 보이고 강퇴 가능(지금 라이브에는 0명).
+- 거절(승인 대기의 [거절])은 그대로: 상태 rejected 로 남김(데이터는 처음부터 없음) — 같은 키로 요청을 반복하지 못하게. 목록에는 안 보임. 필요하면 나중에 거절도 삭제 방식으로 바꿀 수 있음.
+- '사용 중' 10명씩 + 쪽 번호 버튼(1, 2, …, 11명 이상일 때만) `admPage`.
+- 배포: D1 전체 백업 /workspace/backup/b78_before_20261012_151637.sql (600) 후 Worker 배포. 라이브에서는 실제 사용자를 강퇴하지 않음 — 버튼·창만 확인, 강퇴 동작은 로컬(test_tracker52)에서 확인.
+- 스크린샷: /workspace/maple-boss-tracker/oct12p_b78_before_admin.png, oct12p_b78_after_admin.png, oct12p_b78_test_admin.png, oct12p_b78_test_pages.png
