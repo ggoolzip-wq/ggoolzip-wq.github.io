@@ -12,6 +12,14 @@
 7. **작업이 끝나면 테스트 결과를 사진으로 자동 전송** (2026-10-12 b70 사용자 요청): 매 작업 끝에 라이브 사이트에서 바뀐 것이 동작하는 모습을 **변경 전/후** 스크린샷으로 `/workspace/maple-boss-tracker/` 에 저장하고, 완료 보고에 그 경로를 넣어 사용자가 묻지 않아도 사진을 보내게 한다(변경 전 화면은 이전 커밋의 index.html 을 라이브 주소로 띄워 재현 가능 — b70 참고).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## 2026-10-12 b71 (캐릭터 추가 창: 처음 등록 칸 = 'API키 입력' + 등록만)
+(src 수정→build→테스트→main 일반 push. Worker 변경 없음. HANDOFF 기록은 항상.)
+1. 로그인 전 '+ 추가' 창의 본계정 등록 칸(`#svMainSec`, `svMainRender`)을 **API 키 입력 하나(placeholder 정확히 'API키 입력') + [등록] 버튼**만으로. 삭제: '🔑 본계정 API 키 등록' 제목, '본계정' 이름 칸, '키 발급: openapi.nexon.com …' 안내 줄. 창 제목 '캐릭터 추가'는 유지.
+2. 오류·'이미 등록된 부계정 API입니다.'·만료 안내는 생길 때만 입력 아래 줄(`#svMainSt`, 평소 hidden). 승인 대기 화면(b68)은 그대로.
+3. `Data based on NEXON Open API` 는 등록 칸 밖 창 아래(`#svMainAttr.svmattrib`) + 페이지 꼬리말에 그대로.
+4. 테스트: test50 에 b71 검사(칸 글자 = '등록'뿐, placeholder, 보이는 컨트롤 = 입력·버튼), test24 문구 검사 수정, 표기 선택자 `.addm .svmattrib`(50·52). 23·24·29·46·50~53 통과.
+5. 규칙 7 사진(라이브, 변경 전/후): /workspace/maple-boss-tracker/oct12i_b71_before_modal.png · oct12i_b71_after_modal.png (전체 화면: oct12i_b71_before_page.png · oct12i_b71_after_page.png).
+
 ## 2026-10-12 b70 (소식 카드: 7일 지난 글은 N·숫자 없음)
 (src 수정→build→테스트→main 일반 push. Worker 변경 없음. HANDOFF 기록은 항상.)
 1. 왼쪽 아래 소식 카드(사료감지/패치내역/테섭/마빡도로시): 글의 올린 날짜(`date`, KST)가 **지금보다 7일 넘게 지난** 글은 안 읽었어도 `N` 표시 없음, 탭 숫자(`.fcnt`)에도 안 셈. 7일 이내 글은 그대로(읽기 전까지 N, 읽음은 서버 동기화). `src/app.js`: `FEED_NEW_DAYS=7`, `feedTime(x)` = date → 없으면 `seen`(처음 수집 시각) → 둘 다 없으면 날짜 모름 = 예전처럼 N, `feedFresh`, `feedIsNew`(N·탭 숫자 공통). 렌더할 때마다 다시 계산 — feedLoad 가 5분마다·탭으로 돌아올 때 다시 그리므로 열어 둔 채로 7일이 지나면 그때 사라짐. 다른 '안 읽은 글 합계'는 없음(탭 숫자뿐).

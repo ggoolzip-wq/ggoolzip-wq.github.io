@@ -894,3 +894,8 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .admm .admno{color:#ff7a7a}
 .admm .admtag{font-size:.8rem;color:#ffb36b;font-weight:600}
 #admBody{max-height:70vh;overflow:auto}
+
+/* b71: 처음 등록 칸 = 입력 + 등록만, NEXON 표기는 칸 밖 */
+#svMainSec .svmrow{margin:0}
+#svMainSec .svmst{min-height:0;margin:6px 0 0 4px}
+#svMainAttr{text-align:center;margin-top:10px;font-size:.78rem}

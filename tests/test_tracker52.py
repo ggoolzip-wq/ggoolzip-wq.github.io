@@ -65,7 +65,7 @@ try:
     t=p1.inner_text('#svMainSec')
     check("new main key → modal '⏳ 승인 대기 중' with main char name·world·level", '승인 대기 중' in t and '캐릭F' in t and '스카니아' in t and 'Lv.280' in t, t)
     check('pending: no session, nothing stored on server, header ⏳ 승인 대기 중', not p1.evaluate('svTok()') and not dev.sql("SELECT 1 FROM state") and not dev.sql("SELECT 1 FROM sessions s JOIN approval a ON a.user_id=s.user_id") and p1.inner_text('#gBtn').strip()=='⏳ 승인 대기 중', p1.inner_text('#gBtn'))
-    check('pending modal keeps NEXON attribution, no key list/char picker', p1.is_visible('#svMainSec .svmattrib') and not p1.is_visible('#accList') and not p1.is_visible('#impSec'))
+    check('pending modal keeps NEXON attribution, no key list/char picker', p1.is_visible('.addm .svmattrib') and not p1.is_visible('#accList') and not p1.is_visible('#impSec'))
     p1.screenshot(path=os.path.join(OUT,'oct12f_pending.png'))
     p1.click('#svPendCheck'); p1.wait_for_timeout(800)
     check('승인 확인 while still pending → stays pending', p1.is_visible('#svPendCheck') and not p1.evaluate('svTok()'))

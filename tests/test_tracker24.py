@@ -51,7 +51,7 @@ try:
     ca,pa=mkctx(b); pa.goto(URL)
     pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));sessionStorage.setItem('t_preset',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); inject(pa); pa.wait_for_timeout(400)
     invite(pa); t=pa.inner_text('#svMainSec')
-    check('b67: main-key-only modal wording: 본계정 API 키', '본계정 API 키' in t and pa.get_attribute('#svMainKey','placeholder').startswith('본계정'), t[:200])
+    check("b71: main-key-only section = input 'API키 입력' + 등록 only", t.strip()=='등록' and pa.get_attribute('#svMainKey','placeholder')=='API키 입력', t[:200])
     pa.fill('#svMainKey',KA); pa.click('#svMainBtn'); wait_on(pa); pa.evaluate('closeImport()')
     acc=st(pa)['settings']['accounts']; check('A: login account marked main', acc[0].get('main') is True, acc)
     pa.evaluate('gdMenu(true)'); pa.wait_for_selector('#gMenu:not([hidden]) #svSubKey')

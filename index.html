@@ -1001,6 +1001,11 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .admm .admno{color:#ff7a7a}
 .admm .admtag{font-size:.8rem;color:#ffb36b;font-weight:600}
 #admBody{max-height:70vh;overflow:auto}
+
+/* b71: 처음 등록 칸 = 입력 + 등록만, NEXON 표기는 칸 밖 */
+#svMainSec .svmrow{margin:0}
+#svMainSec .svmst{min-height:0;margin:6px 0 0 4px}
+#svMainAttr{text-align:center;margin-top:10px;font-size:.78rem}
 </style>
 </head>
 <body>
@@ -2952,10 +2957,15 @@ document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.classList?
 function openAdd(){ openImport(); }
 /* b67: 서버 모드에서 로그인(세션) 전 = 캐릭터 추가 창에 '본계정 API 키 등록'만 (예전 입장 화면의 대표 키 로그인과 같은 일) */
 const svNeedMain=()=>!!SV_ON&&!(svTok()&&gdMeta.on);
+function svMainAttr(on){ // b71: 'Data based on NEXON Open API' — 등록 칸 밖, 창 아래
+  let a=$('#svMainAttr'); if(!on){ a?.remove(); return; }
+  if(!a){ a=document.createElement('div'); a.id='svMainAttr'; a.className='svmattrib muted'; a.textContent='Data based on NEXON Open API'; }
+  $('#svMainSec')?.insertAdjacentElement('afterend',a);
+}
 function svMainRender(){
   const modal=$('#importModal'); if(!modal) return;
   const on=svNeedMain()&&modal.classList.contains('show'); modal.querySelector('.addm')?.classList.toggle('svmain',on);
-  let sec=$('#svMainSec'); if(!on){ sec?.remove(); return; }
+  let sec=$('#svMainSec'); if(!on){ sec?.remove(); svMainAttr(false); return; }
   if(!sec){ sec=document.createElement('section'); sec.className='addsec'; sec.id='svMainSec'; $('#addTitle').insertAdjacentElement('afterend',sec); }
   const busy=gd.state==='connecting', err=gd.svErr, soft=err===SV_RELOGIN||err===SV_NEED_LOGIN, v=$('#svMainKey')?.value||'';
   const pd=svPend();
@@ -2966,13 +2976,12 @@ function svMainRender(){
     <div class="accst svmst" id="svMainSt">${err?`<span class="keyrej${soft?' soft':''}" role="alert">${esc(err)}</span>`:''}</div>
     <div class="toolbar"><button class="btn sm" id="svPendCheck"${busy?' disabled':''}>${busy?'확인 중…':'승인 확인'}</button><button class="btn sm ghost" id="svPendCancel"${busy?' disabled':''}>다른 키로 등록</button></div>
     <div class="svmattrib muted">Data based on NEXON Open API</div>`;
-    return;
+    svMainAttr(false); return;
   }
-  sec.innerHTML=`<div class="addsec-h"><b>🔑 본계정 API 키 등록</b></div>
-    <div class="accrow svmrow"><input class="pin acclbl" value="본계정" disabled aria-label="계정 이름"><input id="svMainKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="본계정 넥슨 API 키 (live_…) 붙여넣기" aria-label="본계정 API 키"${busy?' disabled':''}><button class="btn sm" id="svMainBtn"${busy?' disabled':''}>${busy?'확인 중…':'등록'}</button></div>
-    <div class="accst svmst" id="svMainSt">${err?`<span class="keyrej${soft?' soft':''}" role="alert">${esc(err)}</span>`:''}</div>
-    <div class="muted tiny">키 발급: <a href="https://openapi.nexon.com" target="_blank" rel="noopener">openapi.nexon.com</a> → 마이페이지 → 애플리케이션 상세에서 복사. 다른 PC 에서도 본계정 키만 넣으면 데이터와 부계정 키가 돌아와요.</div>
-    <div class="svmattrib muted">Data based on NEXON Open API</div>`;
+  // b71: 처음 등록 칸 = API 키 입력 하나 + [등록] 만 (안내 문구 없음). 오류·부계정 경고는 생길 때만 아래 줄에. NEXON 표기는 칸 밖(창 아래)
+  sec.innerHTML=`<div class="accrow svmrow"><input id="svMainKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="API키 입력" aria-label="API키 입력"${busy?' disabled':''}><button class="btn sm" id="svMainBtn"${busy?' disabled':''}>${busy?'확인 중…':'등록'}</button></div>
+    ${err?`<div class="accst svmst" id="svMainSt"><span class="keyrej${soft?' soft':''}" role="alert">${esc(err)}</span></div>`:'<div class="accst svmst" id="svMainSt" hidden></div>'}`;
+  svMainAttr(true);
   const inp=$('#svMainKey'); if(inp){ inp.value=v; if(!busy) setTimeout(()=>inp.focus(),0); }
 }
 async function openImport(accId){
