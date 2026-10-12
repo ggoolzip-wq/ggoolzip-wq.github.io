@@ -74,10 +74,13 @@ try:
     except urllib.error.HTTPError as e: code=e.code
     check('server session invalidated (old token → 401), one session fewer', code==401 and len(dev.sql("SELECT 1 FROM sessions"))==n_sess-1, (code,n_sess))
     check('after logout: memory + localStorage fresh (no characters, keys, token, app keys)', fresh_state(p1), (p1.evaluate("[S.characters.length, accounts().length]"), p1.evaluate(APPKEYS)))
+    check('b73: no toast after manual logout', not p1.evaluate("document.querySelector('#toast').classList.contains('show')"), p1.inner_text('#toast'))
+    p1.screenshot(path='/workspace/maple-boss-tracker/oct12k_b73_test_logout.png')
     check('sessionStorage has no app keys', p1.evaluate("Object.keys(sessionStorage).filter(k=>k.startsWith('mapleBossTracker.'))")==[])
     p2.wait_for_timeout(1500)
     check('other tab reloaded to fresh state too', fresh_state(p2), p2.evaluate("S.characters.length"))
     p1.reload(); p1.wait_for_timeout(1500)
+    check('b73: no toast after reload into empty state', not p1.evaluate("document.querySelector('#toast').classList.contains('show')"), p1.inner_text('#toast'))
     check('reload after logout → still fresh, empty dashboard', fresh_state(p1) and p1.is_visible('.empty'))
     p1.click('#addCharBtn'); p1.wait_for_selector('#svMainKey')
     check("'+ 추가' → main-key field only", p1.is_visible('#svMainKey') and not p1.is_visible('#accList') and not p1.is_visible('#newAccKey'))

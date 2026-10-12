@@ -620,3 +620,9 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - '키 없음' 글자 전부 삭제: 키 없는 칸은 상태 비움, 이름 칸 값 비움 + placeholder '계정 이름'(빈 칸처럼), maskKey '' , 동기화 오류 문구 'API 키 미등록'. 등록 캐릭터 수에서 키 없는 계정 제외.
 - 테스트: test_tracker55 (run_all 에 추가). 49/51/53/5 는 부계정 추가 때 이름을 채우도록 수정. 관련 23·24·29·46·48–54 통과, 28 은 예전부터 실패(제목 기대값).
 - 스크린샷: /workspace/maple-boss-tracker/oct12j_b72_before_page.png, _before_modal.png, _after_page.png, _test_modal.png, _test_nameerr.png
+
+## b73 — 직접 로그아웃 때 알림(토스트) 없음 (2026-10-12)
+- `gdLogout`: 서버 모드 '로그아웃했습니다 — 이 PC의 데이터를…' 토스트, 드라이브 모드 '구글 드라이브에서 로그아웃했습니다' 토스트 삭제. 로그아웃 전 저장 중 뜬 '☁ 서버에 저장했습니다' 등도 `toastHide()` 로 바로 숨김. 새로고침 뒤 빈 화면에서도 알림 없음.
+- 서버가 세션을 거부(401/403)할 때의 '다시 로그인' 안내는 그대로 (별도 경로, 변경 없음).
+- 테스트: test_tracker53 에 로그아웃 직후·새로고침 후 토스트 없음 확인 추가. 52·53·55 통과.
+- 스크린샷: /workspace/maple-boss-tracker/oct12k_b73_before_logout.png, oct12k_b73_after_logout.png, oct12k_b73_test_logout.png

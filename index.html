@@ -2181,6 +2181,7 @@ function meso(n){
   let s=''; if(eok) s+=eok.toLocaleString()+'억 '; if(man) s+=man.toLocaleString()+'만'; if(!eok&&!man) s=rest.toLocaleString();
   return s.trim()+' 메소'; // b60: 금액에는 항상 '메소' 단위
 }
+function toastHide(){ clearTimeout(toast._t); $('#toast')?.classList.remove('show'); }
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),3200);}
 const safeImg = u => /^https:\/\/open\.api\.nexon\.com\//.test(u||'') ? u : '';
 const avatar = (c,cls='') => `<div class="avatar ${cls}">${safeImg(c.image)?`<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">`:esc((c.name||'?').slice(0,1))}</div>`;
@@ -3769,7 +3770,7 @@ async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그
       try{ clearTimeout(seenT); await svSeenFlush(); }catch(e){}
     }
     try{ if(svTok()) await svFetch('/api/logout',{method:'POST',noGen:true}); }catch(e){}
-    svWipeAll({broadcast:true}); gd.svErr=''; gdSet('off'); render(); svGate(); toast('로그아웃했습니다 — 이 PC의 데이터를 모두 지웠어요 (서버에는 그대로, 캐릭터 추가에서 본계정 키를 넣으면 불러옵니다)'); return;
+    svWipeAll({broadcast:true}); gd.svErr=''; gdSet('off'); render(); svGate(); toastHide(); return; // b73: 직접 로그아웃 = 알림 없음 (저장 중 뜬 알림도 지움)
   }
   if(gdMeta.on && gdLocalDirty()){
     const ok=gdHasTok() ? await gdPush() : false;
@@ -3778,7 +3779,7 @@ async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그
   try{ if(gd.token&&window.google?.accounts?.oauth2?.revoke) google.accounts.oauth2.revoke(gd.token,()=>{}); }catch(e){}
   clearTimeout(gd.timer); gd.timer=null; gd.token=null; gd.exp=0; gd.fileId=null; sessionStorage.removeItem(GD.TOKEN_KEY);
   gdMeta={}; localStorage.removeItem(GD.META_KEY); localStorage.removeItem(GD_BASE_KEY);
-  gdSet('off'); render(); toast('구글 드라이브에서 로그아웃했습니다');
+  gdSet('off'); render(); toastHide(); // b73
 }
 
 /* =====================================================================
