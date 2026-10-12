@@ -779,3 +779,20 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - 백업: /workspace/maple-boss-tracker/d1backup/b91_pre.sql (2026-10-12 18:04 KST).
 - server/node_modules를 설치했습니다(`cd server && npm install`). 이제 cf_dev 테스트(test_server, 52 등)가 SKIP하지 않고 실제로 돕니다.
 - 테스트: test_tracker67(UI, 모의 목록, 포트 8887), test_server_b91(wrangler dev, 포트 8890/8891).
+
+## b94 — 지운 부계정 키를 대표 키 칸에 넣으면 승인 없이 들어가던 문제 (2026-10-12)
+- 신고: 부계정 키를 지운 뒤 그 키(다른 넥슨 계정)를 '본계정 API키 입력'에 넣었더니 승인 대기 없이 바로 들어감.
+- 운영 D1 조사(키 원본은 보지 않고 해시 앞 8자리만): 그 키의 넥슨 계정은 관리자 데이터가 아니라 **따로 있던 사용자 59c922c2**에 연결돼 있었음. 이 사용자는 2026-10-10 04:27 KST(b68 가입 승인 전)에 그 키로 한 번 로그인해서 생긴 데이터(캐릭터 2개)임. b68은 'approval 행 없음 = 승인됨(예전 사용자)'으로 보기 때문에, 18:59 KST 로그인 때 승인 확인 없이 세션이 나왔음.
+- 같이 찾은 더 큰 구멍: 부계정 삭제(`PUT /api/subkeys`)가 keyreg만 지우고 **accounts 연결은 남겼음**. 관리자 데이터에는 역할도 키 등록도 없는 넥슨 계정 해시 5개가 남아 있었고, 그 키 중 하나를 대표 칸에 넣으면 **관리자 데이터로 로그인**되는 상태였음.
+- 고친 것 (server/worker.js):
+  - `/api/login`: 찾은 연결이 그 사용자의 main 역할이 아니면 처리를 나눔.
+    - 그 사용자에게 다른 역할 기록이 있으면 남은 연결로 보고 accounts(와 sub 역할)를 지운 뒤 새 가입으로 처리함 → 승인 대기.
+    - 그 사용자에게 역할 기록이 하나도 없으면 예전 사용자로 보고, approval 행이 없을 때 pending을 넣음(관리자 제외).
+  - `PUT /api/subkeys`: 목록에서 빠진 sub 역할 계정은 accounts와 acct_role(sub)에서 지움. 역할이 없는 예전 연결과 main은 그대로 둠.
+  - health v 'b94'.
+- 정책 변경: b62의 '지운 부계정 키는 계속 sub_key 403'이 이제 '연결 해제 → 새 가입(승인 대기)'으로 바뀜. test_server.py 기대값을 고쳤음(/api/link로만 붙은 D도 목록 저장 때 해제).
+- 운영 데이터 정리:
+  - 백업: /workspace/maple-boss-tracker/d1backup/oct12z_pre.sql
+  - 59c922c2 → approval pending, 그 사용자의 세션 삭제. 데이터는 유지했고, 관리자 창에서 승인하거나 강퇴하면 됨.
+  - 관리자 데이터에 남아 있던 main이 아닌 연결 5개 삭제(accounts 4개만 남음).
+- 테스트: 신규 test_server_b94(승인 모드, 포트 8894/8895)를 run_all.sh에 넣었음. test_server, test_server_b91, test_server_b94 통과.

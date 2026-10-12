@@ -322,7 +322,7 @@ const stateOut = (row, withData = true) => row
 /* ---------- 라우트 ---------- */
 async function route(req, env) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, ''), M = req.method;
-  if (p === '/api/health') return json(200, { ok: true, v: 'b68' });
+  if (p === '/api/health') return json(200, { ok: true, v: 'b94' });
   await ensureSchema(env); await authEpoch(env); await loadAdmin(env); // 첫 요청 때 강제 로그아웃 기준 시각 확정
   // b67: IP별 요청 제한 (읽기 300/분, 쓰기 120/분) — 세션·사용자별 제한과 별개
   await limit(env, await ipKey(env, req, M === 'GET' ? 'ipr' : 'ipw'), M === 'GET' ? IP_LIMITS.read : IP_LIMITS.write);
@@ -347,7 +347,27 @@ async function route(req, env) {
     const qs = hashes.map(() => '?').join(',');
     const roles = (await env.DB.prepare(`SELECT role FROM acct_role WHERE acct_hash IN (${qs})`).bind(...hashes).all()).results;
     if (roles.some(r => r.role === 'sub') && !roles.some(r => r.role === 'main')) throw new HttpError(403, 'sub_key', SUB_MSG); // 부계정 계정의 (등록 안 된) 다른 키
-    const found = (await env.DB.prepare(`SELECT a.acct_hash, a.user_id, s.saved_at FROM accounts a LEFT JOIN state s ON s.user_id=a.user_id WHERE a.acct_hash IN (${qs})`).bind(...hashes).all()).results;
+    let found = (await env.DB.prepare(`SELECT a.acct_hash, a.user_id, s.saved_at FROM accounts a LEFT JOIN state s ON s.user_id=a.user_id WHERE a.acct_hash IN (${qs})`).bind(...hashes).all()).results;
+    // b94: 대표 키 칸 로그인은 '그 사용자의 대표(main) 계정'으로 연결된 계정만 그 사용자로 들어감.
+    //  - 지운 부계정 등 대표가 아닌 남은 연결(역할 main 아님) → 연결을 지우고 새 가입(승인 대기)으로 처리 (관리자/다른 사용자 데이터로 들어가지 않게)
+    //  - 역할 기록이 전혀 없는 예전(b68 이전) 사용자이고 approval 행도 없으면 → 승인 대기로 바꿈 (자동 승인 방지)
+    if (found.length) {
+      const mainRows = (await env.DB.prepare(`SELECT acct_hash, user_id FROM acct_role WHERE role='main' AND acct_hash IN (${qs})`).bind(...hashes).all()).results;
+      const isMain = f => mainRows.some(r => r.acct_hash === f.acct_hash && r.user_id === f.user_id);
+      const keep = [], stale = [];
+      for (const f of found) {
+        if (isMain(f)) { keep.push(f); continue; }
+        const nr = await env.DB.prepare('SELECT COUNT(*) AS n FROM acct_role WHERE user_id=?').bind(f.user_id).first();
+        if (!nr || !nr.n) { // 역할 기록 없는 예전 사용자
+          if (f.user_id !== adminId(env) && env.AUTO_APPROVE !== '1') { const t = hashes.top || {};
+            await env.DB.prepare("INSERT OR IGNORE INTO approval (user_id,status,name,world,level,requested_at) VALUES (?,'pending',?,?,?,?)").bind(f.user_id, t.name || '', t.world || '', t.level || 0, Date.now()).run(); }
+          keep.push(f);
+        } else stale.push(f);
+      }
+      if (stale.length) await env.DB.batch(stale.flatMap(f => [env.DB.prepare('DELETE FROM accounts WHERE acct_hash=? AND user_id=?').bind(f.acct_hash, f.user_id),
+        env.DB.prepare("DELETE FROM acct_role WHERE acct_hash=? AND user_id=? AND role<>'main'").bind(f.acct_hash, f.user_id)]));
+      found = keep;
+    }
     const now = Date.now(); let userId, newUser = false;
     if (found.length) userId = found.sort((x, y) => (y.saved_at || 0) - (x.saved_at || 0))[0].user_id; // 여러 데이터에 걸쳐 있으면 최근 저장한 쪽
     else {
@@ -426,6 +446,12 @@ async function route(req, env) {
       const bk = await sameAcct(s0.bk, hs, String(s0.label || '부계정').slice(0, 30));
       out.push({ key, ah: hs[0], ...(hs.length > 1 ? { ahs: hs } : {}), label: String(s0.label || '').slice(0, 40), ...(bk ? { bk, ...(s0.bkLabel ? { bkLabel: String(s0.bkLabel).slice(0, 40) } : {}) } : {}) });
     }
+    { // b94: 부계정 목록에서 뺀 계정의 연결(accounts·sub 역할)도 지움 → 그 키로 대표 칸 로그인 시 새 가입(승인 대기)
+      const live = new Set([...mainHashes, ...out.flatMap(o => o.ahs || [o.ah])]); // 부계정(sub) 역할인데 목록에 없는 것만 (역할 없는 예전 연결·main 은 그대로)
+      const gone = (await env.DB.prepare("SELECT acct_hash FROM acct_role WHERE user_id=? AND role='sub'").bind(me.userId).all()).results.map(r => r.acct_hash).filter(h => !live.has(h));
+      if (gone.length) await env.DB.batch(gone.flatMap(h => [env.DB.prepare('DELETE FROM accounts WHERE acct_hash=? AND user_id=?').bind(h, me.userId),
+        env.DB.prepare("DELETE FROM acct_role WHERE acct_hash=? AND user_id=? AND role<>'main'").bind(h, me.userId)]));
+    }
     const vv = { v: 2, subs: out, ...(mainBk ? { mainBk, ...(b.mainBkLabel ? { mainBkLabel: String(b.mainBkLabel).slice(0, 40) } : {}) } : {}) };
     await vault2Seal(env, mainHashes, me.userId, vv);
     await writeRegistry(env, me.userId, mainHashes, vv);
@@ -493,6 +519,21 @@ async function route(req, env) {
           chars: inf.chars, size: inf.size, savedAt: inf.savedAt, createdAt: u.created_at, lastLogin: u.last_login, requestedAt: u.requested_at || 0, decidedAt: u.decided_at || 0, regAt: inf.mainRegAt || u.created_at || 0, alts: inf.alts || [] });
       }
       return json(200, { users: out });
+    }
+    // b93: 관리자 전용 경매장 최저가 (크롬 확장이 관리자 본인 브라우저에서 측정 → 페이지가 저장). {prices:{item:{p:메소, t:측정 ms}}}. 넥슨 세션·쿠키는 오지 않음
+    if (p === '/api/admin/prices' && M === 'GET') {
+      const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'").first(); let v = {}; try { v = r ? JSON.parse(r.v) : {}; } catch (e) {}
+      return json(200, { prices: v });
+    }
+    if (p === '/api/admin/prices' && M === 'PUT') {
+      const b = await readBody(req), inp = b && typeof b.prices === 'object' && b.prices ? b.prices : {};
+      const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'").first(); let cur = {}; try { cur = r ? JSON.parse(r.v) : {}; } catch (e) {}
+      for (const [k, o] of Object.entries(inp).slice(0, 200)) {
+        if (!/^[a-z_0-9]{1,24}$/.test(k) || !o) continue; const pr = Math.round(+o.p), t = Math.round(+o.t);
+        if (!(pr > 0 && pr < 1e15 && t > 0)) continue; if (!cur[k] || cur[k].t <= t) cur[k] = { p: pr, t };
+      }
+      await env.DB.prepare("INSERT INTO meta (k,v) VALUES ('admin_prices',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(cur)).run();
+      return json(200, { prices: cur });
     }
     if (p === '/api/admin/decide' && M === 'POST') {
       const b = await readBody(req), uid = String(b.user || ''), act = String(b.action || '');

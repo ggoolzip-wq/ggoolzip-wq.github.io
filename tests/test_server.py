@@ -80,7 +80,7 @@ try:
     s,b,_=req('PUT','/api/subkeys',{'main':KB,'subs':[{'key':KF,'label':'부1'}]},tok=TA); check('subkeys with a main key not of this data → 403', s==403 and b['error']=='not_main', b)
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KB,'label':'x'}]},tok=TA); check('sub key owned by another user → 409', s==409 and b['error']=='linked_elsewhere', b)
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KF,'label':'부1'},{'key':KG,'label':'부2'},{'key':KA,'label':'dup main'}]},tok=TA)
-    check('store 2 sub keys (main key skipped) → ah returned, linked', s==200 and [x['label'] for x in b['subs']]==['부1','부2'] and len(b['accounts'])==5, b)
+    check('store 2 sub keys (main key skipped) → ah returned, linked', s==200 and [x['label'] for x in b['subs']]==['부1','부2'] and len(b['accounts'])==4, b)  # b94: /api/link 로만 붙은 D(sub) 는 부계정 목록에 없으므로 연결 해제
     vrows=json.dumps(dev.sql("SELECT * FROM keyvault2")); dump=vrows+json.dumps(dev.sql("SELECT data FROM state"))+json.dumps(dev.sql("SELECT * FROM accounts"))
     check('vault holds only ciphertext (no raw main/sub keys)', '"ct"' in vrows and all(k not in dump for k in (KA,KF,KG)) and '부1' not in vrows)
     s,v,_=req('POST','/api/login',{'device':DEV,'key':KA}); check('new device, main key only → sub keys come back', v['vault']=='open' and sorted(x['key'] for x in v['subKeys'])==sorted([KF,KG]) and {x['label'] for x in v['subKeys']}=={'부1','부2'} and all(x['ah'] for x in v['subKeys']), v)
@@ -99,7 +99,7 @@ try:
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'mainBk':BKA,'subs':[{'key':KG,'label':'부2','bk':BKG}]},tok=TA); check('backup keys of same accounts stored', s==200, b)
     vr=json.dumps(dev.sql("SELECT * FROM keyvault2")); check('vault ciphertext only (no backup keys)', BKA not in vr and BKG not in vr)
     s,v,_=req('POST','/api/login',{'device':DEV,'key':KA}); check('login with main → backup keys come back', v['mainBk']==BKA and [x.get('bk') for x in v['subKeys']]==[BKG], v)
-    s,v,_=req('POST','/api/login',{'device':DEV,'key':KF}); check('b62: removed sub key F (no longer registered, but acc-F linked as sub) → still blocked', s==403 and v['error']=='sub_key', v)
+    s,v,_=req('POST','/api/login',{'device':DEV,'key':KF}); check('b94: removed sub key F → unlinked, new separate user (승인 흐름은 test_server_b94), not A data', s==200 and v.get('newUser') and v['user']!=a1['user'], v)
     s,v,_=req('POST','/api/login',{'device':DEV,'key':BKG}); check('b62: sub backup (예비) key login → 403 sub_key', s==403 and v['error']=='sub_key', v)
     s,v,_=req('POST','/api/login',{'device':DEV,'key':BKA}); check('b62: main backup (예비) key login → 403 sub_key', s==403 and v['error']=='sub_key', v)
     # b62: 예전에 부계정 키로 따로 로그인해 생긴 빈 데이터 → 대표 키가 부계정으로 등록하면 옮겨짐 (캐릭터 있는 데이터는 409)
