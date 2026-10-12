@@ -755,3 +755,9 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - 35: 총 아이템 획득량 카드 위치.
   - 57: b87 빈 화면.
 - 결과: run_all의 tracker 4~65와 test_upcoming/feed_*/sunday_*/server가 모두 통과했습니다(2026-10-12 17시경).
+
+## b89 — 보스 득템왕 1~3위 효과 글씨 굵기 2배
+- 1~3위(지역 색 효과 `.rg-*`)의 보스 이름 `.bdn`: 700 → 900(최대) + 같은 색 `-webkit-text-stroke` .6px(검마는 흰 테두리 .5→.8px). 900이 최대라 테두리로 2배 굵기 느낌을 냅니다.
+- 같은 줄의 난이도 표시 `.dlv`(예: '(익스트림)', '(하드)'): 800 → 900 + `-webkit-text-stroke:.6px currentColor`.
+- 4위 이하는 그대로(이름 400, 난이도 800, 테두리 없음).
+- CSS: src/extra.css 끝. 테스트: test_tracker66(포트 8886). 스크린샷: /workspace/maple-boss-tracker/oct12z_b89_before_bossloot.png, oct12z_b89_after_bossloot.png.
