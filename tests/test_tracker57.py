@@ -33,7 +33,7 @@ try:
         hs=pg.evaluate("(()=>{const c=document.querySelector('#salesCard'); return c.scrollWidth>c.clientWidth||document.documentElement.scrollWidth>innerWidth})()")
         check(f'{w}px: one line per row, no horizontal scroll', one and not hs, (one,hs))
         pg.close()
-    pg=b.new_page(); pg.goto(f'http://localhost:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(600); pg.evaluate("tab='loot'; render()")
+    pg=b.new_page(); pg.goto(f'http://localhost:{PORT}/index.html'); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",{**ST,'history':[]}); pg.reload(); pg.wait_for_timeout(600); pg.evaluate("tab='loot'; render()")  # b87: 캐릭터가 없으면 빈 화면이므로 캐릭터 1명·판매 기록 없음
     check('empty: fallback meso icon + title', '아이템 판매 누적 수익' in pg.inner_text('#salesCard h2'))
     check('JS 오류 없음', not errs, errs)
     b.close()

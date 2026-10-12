@@ -105,7 +105,7 @@ try:
     # b31
     pg.evaluate("S.characters[0].drops['kaling|r_white']=1; S.characters[0].dropOut['kaling|r_white']=['r4']; S.history.push({week:'2026-10-01',weeklyOnly:true,total:0,perChar:[{id:'c1',name:'단풍용사',meso:0,bosses:['카링(하드)'],items:{'kaling|chaosbox':1,'seren|mitra':1},outcomes:{'kaling|chaosbox':['cb:sos']}}]}); save(); render()"); pg.wait_for_timeout(200)
     h=pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.textContent.trim())')
-    check('renamed headings', any(x.startswith('📈 주별 누적 결정석 메소') for x in h) and '메소왕' in h and any(x.startswith('득템왕') for x in h), h)
+    check('renamed headings', any(x.startswith('📈 주별 누적 결정석 메소') for x in h) and any(x.endswith('메소왕') for x in h) and any(x.split(' ')[-1]=='득템왕' for x in h), h)  # b88: 제목 앞 아바타 글자(이미지 없을 때) 허용
     order=[x for x in h if x.endswith('에픽빔왕') or x.endswith('보스 별 누적 획득 아이템') or x.endswith('총 아이템 획득량')]
     check('new sections below 에픽빔 in order', len(order)==3 and order[0].endswith('에픽빔왕') and order[1].endswith('획득 아이템') and order[2].endswith('획득량'), order)
     rows=pg.eval_on_selector_all('.bossloot .blrow','e=>e.map(x=>x.innerText.split(String.fromCharCode(10)).join(" "))')

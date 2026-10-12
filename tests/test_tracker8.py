@@ -1,3 +1,4 @@
+import _legacy
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
@@ -16,9 +17,9 @@ with sync_playwright() as p:
     def ch(i,name,bosses,weekly,monthly=None,drops=None):
         return {'id':'c'+str(i),'name':name,'level':280,'job':'히어로','world':'스카니아','isMain':i==1,'ocid':'','bosses':bosses,'weekly':weekly,'monthly':monthly or {},'auto':{},'sync':{},'drops':drops or {}}
     # legacy: c1 already has 2 white boxes from seren without outcomes (pre-feature)
-    chars=[ch(1,'단풍용사',B(lotus=('hard',1),seren=('hard',1),blackmage=('hard',1),kalos=('chaos',1)),{'lotus':True,'seren':True,'kalos':True},{'blackmage':wk},{'seren|r_white':2}),
+    chars=[ch(1,'단풍용사',B(lotus=("hard",1),jinhilla=("hard",1),seren=('hard',1),blackmage=('hard',1),kalos=('chaos',1)),{"lotus":True,"jinhilla":True,"seren":True,"kalos":True},{'blackmage':wk},{'seren|r_white':2}),
            ch(2,'불독메이지',B(slime=('chaos',1)),{'slime':True})]
-    hist=[{'week':'2026-09-24','weeklyOnly':True,'total':1e9,'cleared':3,'crystals':3,'perChar':[{'id':'c1','name':'단풍용사','meso':1e9,'items':{'lotus|r_red':3},'outcomes':{'lotus|r_red':['x','r4']}}]}]
+    hist=[{'week':'2026-09-24','weeklyOnly':True,'total':1e9,'cleared':3,'crystals':3,'perChar':[{'id':'c1','name':'단풍용사','meso':1e9,'items':{'jinhilla|r_black':3},'outcomes':{'jinhilla|r_black':['x','r4']}}]}]
     st={'version':5,'activeId':'c1','characters':chars,'history':hist,'monthHistory':[],'worldOrder':[],'settings':{'weeklyLimit':12,'monthlyLimit':1,'prices':{},'accounts':[],'apiMode':'direct','autoSync':False,'autoEnable':True,'lastSync':0},'period':per}
     pg.evaluate("s=>localStorage.setItem('mapleBossTracker.v1',s)",json.dumps(st)); pg.reload(); pg.wait_for_timeout(400)
     st_=lambda: pg.evaluate("activeChar()")
@@ -26,13 +27,13 @@ with sync_playwright() as p:
     rev0=pg.evaluate("allRevenue().total")
     # cancel paths
     for how in ['x','esc','backdrop']:
-        pg.click('.boss:has-text("스우") [data-drop="lotus|r_red"]'); pg.wait_for_selector('#ringModal.show')
+        pg.click('.boss:has-text("진 힐라") [data-drop="jinhilla|r_black"]'); pg.wait_for_selector('#ringModal.show')
         if how=='x': pg.click('#ringClose')
         elif how=='esc': pg.keyboard.press('Escape')
         else: pg.mouse.click(10,500)
         pg.wait_for_timeout(100); print('C cancel via',how,'→ modal open:', pg.is_visible('#ringModal.show'), '| drops:', st_()['drops'], '| outs:', st_().get('dropOut'))
     # modal screenshot
-    pg.click('.boss:has-text("스우") [data-drop="lotus|r_red"]'); pg.wait_for_selector('#ringModal.show'); pg.wait_for_timeout(200)
+    pg.click('.boss:has-text("진 힐라") [data-drop="jinhilla|r_black"]'); pg.wait_for_selector('#ringModal.show'); pg.wait_for_timeout(200)
     print('M modal:', pg.inner_text('#ringModal .modal').replace('\n',' | '), '| ring icons:', pg.evaluate("[...document.querySelectorAll('#ringModal .ringico img')].map(i=>i.naturalWidth)"))
     pg.screenshot(path=OUT+'ringbox_modal.png')
     # choice r4 → celebrate
@@ -73,7 +74,7 @@ with sync_playwright() as p:
     print('H monthly:', pg.eval_on_selector_all('#view .card:last-child .hitems','e=>e.map(x=>x.innerText.replace(/\\n/g," "))'))
     # totals
     pg.evaluate('pend&&pendSave()'); pg.click('[data-tab="total"]'); pg.wait_for_timeout(100)
-    print('T ring summary:', pg.inner_text('.ringsum'))
+    print('T ring summary:', pg.evaluate("(document.querySelector('.ringsum')||{}).innerText||'(b88: .ringsum 카드 없음 — 반지 요약은 득템 분석으로 이동)'"))
     print('T ring tally:', pg.evaluate("totalData().ring"))
     print('T per item:', pg.eval_on_selector_all('#view table tbody tr','e=>e.map(x=>x.innerText.replace(/\\s+/g," ")).filter(t=>t.includes("반지"))'))
     pg.screenshot(path=OUT+'/shot8_total.png',full_page=True)
@@ -89,8 +90,8 @@ with sync_playwright() as p:
     pg.evaluate("tab='total';syncTabs();render()"); print('A totals after archive:', pg.evaluate("totalData().ring"))
     # mobile
     m=ctx.new_page(); m.add_init_script("new MutationObserver(()=>{const b=document.querySelector('#revModal [data-rv=no]'); if(b) b.click();}).observe(document,{childList:true,subtree:true})"); m.set_viewport_size({'width':390,'height':844}); m.on('pageerror',lambda e:errs.append('m:'+str(e)))
-    m.goto(URL); m.evaluate("s=>localStorage.setItem('mapleBossTracker.v1',s)", json.dumps(st)); m.reload(); m.wait_for_timeout(300)
-    m.click('.boss:has-text("스우") [data-drop="lotus|r_red"]'); m.wait_for_selector('#ringModal.show'); m.wait_for_timeout(150)
+    m.goto(URL); m.evaluate("s=>localStorage.setItem('mapleBossTracker.v1',s)", json.dumps(st)); m.reload(); m.wait_for_timeout(300); m.evaluate("tab='boss';syncTabs();render()")  # b88: 새로고침은 마지막 탭을 복원함
+    m.click('.boss:has-text("진 힐라") [data-drop="jinhilla|r_black"]'); m.wait_for_selector('#ringModal.show'); m.wait_for_timeout(150)
     print('MB modal fits:', m.evaluate("(()=>{const r=document.querySelector('#ringModal .modal').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()"))
     m.screenshot(path=OUT+'/shot8_modal_mobile.png')
     m.click('#ringModal [data-ring="c4"]'); m.wait_for_timeout(600); m.screenshot(path=OUT+'/shot8_congrats_mobile.png')

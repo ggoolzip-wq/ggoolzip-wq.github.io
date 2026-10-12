@@ -1,14 +1,15 @@
+import _legacy
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from playwright.sync_api import sync_playwright
 import json, subprocess, os, time, urllib.request, re
-errs=[]; BASE='http://localhost:8787/index.html'
-env=dict(os.environ, PORT='8787', MBT_FIXTURE_DIR=ROOT+'/tests/fixtures/mock')
-srv=subprocess.Popen(['python3','-m','http.server','8787','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+errs=[]; BASE='http://localhost:8872/index.html'
+env=dict(os.environ, PORT='8872', MBT_FIXTURE_DIR=ROOT+'/tests/fixtures/mock')
+srv=subprocess.Popen(['python3','-m','http.server','8872','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
-    try: urllib.request.urlopen('http://127.0.0.1:8787/index.html',timeout=1); break
+    try: urllib.request.urlopen('http://127.0.0.1:8872/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
 INIT="""
 window.__MBT_GCID='test-client.apps.googleusercontent.com';

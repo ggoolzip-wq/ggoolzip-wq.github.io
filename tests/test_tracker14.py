@@ -1,3 +1,4 @@
+import _legacy
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
@@ -16,11 +17,11 @@ def check(n,c,d=''):
 def shot(loc_or_pg,name,**kw):
     path=os.path.join(OUT,name); loc_or_pg.screenshot(path=path,**kw)
     if SHOTDIR: shutil.copy(path,os.path.join(SHOTDIR,name))
-srv=subprocess.Popen(['python3','-m','http.server','8787','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=subprocess.Popen(['python3','-m','http.server','8875','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
-    try: urllib.request.urlopen('http://127.0.0.1:8787/index.html',timeout=1); break
+    try: urllib.request.urlopen('http://127.0.0.1:8875/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
-URL='http://localhost:8787/index.html'
+URL='http://localhost:8875/index.html'
 IMG='https://open.api.nexon.com/static/maplestory/character/look/mock-'
 def ch(id,name,lv,job,ocid,acc,main=False,img=''):
     return {'id':id,'name':name,'level':lv,'job':job,'world':'스카니아','ocid':ocid,'accId':acc,'isMain':main,'image':(IMG+img) if img else '',
@@ -29,7 +30,7 @@ PRESET={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':[],
   'characters':[ch('c1','단풍용사',287,'히어로','ocid-main','a1',True,'main'),ch('c2','불독메이지',272,'아크메이지(불,독)','ocid-alt1','a1',False,'alt1'),
                 ch('c3','신궁짱',265,'신궁','ocid-alt2','a1',False,'alt2'),ch('c4','부계정비숍',268,'비숍','ocid-b1','a2',False,'b1'),
                 ch('c5','수동캐릭',250,'아델','','',False)],
-  'settings':{'accounts':[{'id':'a1','label':'본계정','key':KM},{'id':'a2','label':'부계정','key':KA}],'autoSync':True,'autoEnable':True,'lastSync':int(time.time()*1000)}}
+  'settings':{'accounts':[{'id':'a1','label':'본계정','key':KM},{'id':'a2','label':'부계정','key':KA}],'autoSync':True,'autoEnable':True,'lastSync':int(time.time()*1000),'guilds':[{'world':'스카니아','name':'봉사활동'}]}}  # b85: 고정 길드 대신 선택한 길드
 sched_calls=lambda: [q.get('ocid') for p,q in CALLS if p.endswith('/scheduler/character-state')]
 guild_calls=lambda: [(q.get('date'),q.get('ranking_type')) for p,q in CALLS if p.endswith('/ranking/guild')]
 def wait_idle(pg): pg.wait_for_function("!dqBusy && !guildBusy && !syncing",timeout=20000); pg.wait_for_timeout(200)
@@ -67,16 +68,16 @@ try:
     pg.mouse.move(5,5); shot(pg,'tab_guild.png')
     # 랭킹 미준비 → 어제로 대체
     GUILD_EMPTY.add(today); g0=len(guild_calls())
-    pg.evaluate("guildC=null; refreshGuild(true)"); wait_idle(pg)
+    pg.evaluate("guildC={}; refreshGuild(true)"); wait_idle(pg)
     gt=pg.inner_text('.gcard'); check('fallback to yesterday when today empty', f'기준 {yday}' in gt and '어제' in gt and '137,591' in gt, (gt,guild_calls()[g0:]))
     GUILD_EMPTY.add(yday); pg.evaluate("refreshGuild(true)"); wait_idle(pg)
     gt=pg.inner_text('.gcard'); check('both empty → message, keeps last data', '찾지 못했습니다' in gt and '137,591' in gt, gt)
     GUILD_EMPTY.clear()
     # 본캐가 여러 명이어도 모두 표시 (현재 UI는 1명) / 없으면 안내
-    pg.evaluate("S.characters.forEach(c=>c.isMain=false); renderGuild()"); check('no main → hint', '본캐로 지정된 캐릭터가 없습니다' in pg.inner_text('#view'))
-    pg.evaluate("S.characters[0].isMain=true; save(); renderGuild()")
+    pg.evaluate("S.settings.suroChars=[]; renderGuild()"); check('no 수로 chars → hint', '+ 캐릭터 추가로' in pg.inner_text('#view'))  # b84: 본캐 대신 고른 캐릭터
+    pg.evaluate("S.settings.suroChars=['c1']; save(); renderGuild()")
     gr=pg.inner_text('#view .card:nth-child(2)')
-    check('본캐 지하 수로 row: only 지하 수로 score (no 플래그 / 주간 미션)', '지하 수로' in gr and '플래그' not in gr and '주간 미션' not in gr, gr)
+    check('지하 수로 row: only 지하 수로 score (no 플래그 / 주간 미션)', '지하 수로' in gr and '플래그' not in gr and '주간 미션' not in gr, gr)
     pth=os.path.join(OUT,'guild_suro_only.png'); pg.locator('#view').screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
     pg.click('[data-tab=guild]'); pg.wait_for_timeout(150)
     # 6) 사이드바 캐릭터 클릭 → 보스 체크로 이동, 기존 탭 정상

@@ -1,3 +1,4 @@
+import _legacy
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
@@ -9,9 +10,9 @@ errs=[]; fails=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d) if d!='' else ''));
     if not c: fails.append(n)
-srv=subprocess.Popen(['python3','-m','http.server','8787','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=subprocess.Popen(['python3','-m','http.server','8871','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
-    try: urllib.request.urlopen('http://127.0.0.1:8787/index.html',timeout=1); break
+    try: urllib.request.urlopen('http://127.0.0.1:8871/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
 base=json.load(open(ROOT+'/prices.json',encoding='utf-8'))
 base_price=lambda name: next(r['new'] for r in base['rows'] if r['boss']==name)
@@ -20,14 +21,14 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     ctx=b.new_context(viewport={'width':1280,'height':1000},locale='ko-KR')
     pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('console',lambda m:errs.append('console:'+m.text) if m.type=='error' and 'Failed to load resource' not in m.text else None)
-    pg.goto('http://localhost:8787/index.html'); pg.wait_for_timeout(300)
+    pg.goto('http://localhost:8871/index.html'); pg.wait_for_timeout(300)
     # 예전 수동 수정 가격이 있는 상태 → 무시/정리되어야 함
     st=json.loads(pg.evaluate("localStorage.getItem('mapleBossTracker.v1')")); st['settings']['prices']={'seren_hard':777,'kalos_chaos':1}; st['settings']['priceSource']={'url':'x'}
     st['characters']=[{'id':'c1','name':'단풍용사','level':287,'job':'히어로','world':'스카니아','isMain':True,'ocid':'','bosses':{'seren':{'enabled':True,'diff':'hard','party':1}},'weekly':{'seren':True},'monthly':{},'auto':{},'sync':{},'drops':{}}]; st['activeId']='c1'
     pg.evaluate("s=>localStorage.setItem('mapleBossTracker.v1',s)",json.dumps(st)); pg.reload(); pg.wait_for_timeout(800)
     pr=lambda b,d: pg.evaluate(f"price(findBoss('{b}'),'{d}')")
     check('old manual overrides cleared', pg.evaluate("Object.keys(S.settings.prices).length")==0 and pr('seren','hard')==base_price('선택받은 세렌 (하드)'), pr('seren','hard'))
-    foot=pg.inner_text('.pricecard .pc-foot'); check('card foot auto line', foot.startswith('공식 패치 노트 기준 자동 갱신\n(마지막 확인 20'), foot)
+    pg.wait_for_function('typeof officialInfo!=="undefined" && !!officialInfo',timeout=8000); pg.evaluate('render()'); foot=pg.inner_text('.pricecard .pc-foot'); check('card foot auto line', foot.startswith('공식 패치 노트 기준 자동 갱신\n(') and '마지막 확인 ' in foot, foot)  # b79: (가격 변동일 …, 마지막 확인 MM.DD HH:MM)
     check('card title has crystal icon', pg.query_selector('.pricecard .pc-head h2 img.ric') is not None)
     check('no 수정 link in card', pg.query_selector('.pricecard [data-tab]') is None)
     check('46 official rows applied', pg.evaluate('officialInfo.applied')==46 and not pg.evaluate('officialInfo.pending.length'))
@@ -51,7 +52,7 @@ try:
     ctx.unroute('**/prices.json*'); pg.reload(); pg.wait_for_timeout(800)
     pg.screenshot(path=''+OUT+'/price_card.png')
     m=ctx.new_page(); m.set_viewport_size({'width':375,'height':812}); m.on('pageerror',lambda e:errs.append(str(e)))
-    m.goto('http://localhost:8787/index.html'); m.wait_for_timeout(600)
+    m.goto('http://localhost:8871/index.html'); m.wait_for_timeout(600)
     check('mobile: card stacks, no overflow', not m.evaluate('document.documentElement.scrollWidth>innerWidth') and m.evaluate("document.querySelector('.pricecard').getBoundingClientRect().top>document.querySelector('.revpanel').getBoundingClientRect().bottom"))
     m.screenshot(path=OUT+'/shot9_mobile.png',full_page=True)
     f=b.new_context().new_page(); f.on('pageerror',lambda e:errs.append(str(e)))

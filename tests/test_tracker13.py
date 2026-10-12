@@ -1,3 +1,4 @@
+import _legacy
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
@@ -11,11 +12,11 @@ errs=[]; fails=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d) if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen(['python3','-m','http.server','8787','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=subprocess.Popen(['python3','-m','http.server','8874','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
-    try: urllib.request.urlopen('http://127.0.0.1:8787/index.html',timeout=1); break
+    try: urllib.request.urlopen('http://127.0.0.1:8874/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
-URL='http://localhost:8787/index.html'
+URL='http://localhost:8874/index.html'
 def wait_list(pg): pg.wait_for_function("!document.querySelector('#impMsg .spin')",timeout=15000); pg.wait_for_timeout(200)
 def wait_sync(pg): pg.wait_for_function("!syncing",timeout=30000); pg.wait_for_timeout(250)
 try:
@@ -30,7 +31,7 @@ try:
     check('sync button hidden without key', pg.is_hidden('#syncBtn'))
     # 1) + 추가 → 빈 상태 → 본계정 키 추가 → 목록 → 전체 선택 추가
     pg.click('#addCharBtn'); pg.wait_for_selector('#importModal.show')
-    check('empty modal: key form focused, list hidden', pg.is_hidden('#impSec') and pg.evaluate("document.activeElement.id")=='newAccKey')
+    pg.wait_for_timeout(200); fe=pg.evaluate("document.activeElement.id"); check('empty modal: key form focused, list hidden', pg.is_hidden('#impSec') and fe in ('newAccKey','newAccLabel'), fe)  # b72: 이름 칸이 먼저(필수)
     pg.evaluate("accAddShow(true)"); pg.fill('#newAccLabel','본계정'); pg.fill('#newAccKey',KM); pg.press('#newAccKey','Enter'); wait_list(pg)
     n1=pg.locator('#impList .imp-item').count()
     check('after adding key, its characters listed', n1==len(ACC[KM]) and '본계정' in pg.inner_text('#impTitle'), (n1,pg.inner_text('#impMsg')))

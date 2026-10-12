@@ -1,4 +1,5 @@
 # 보스 목록 [취소]/[저장] (대기 중인 변경), 드롭 기간당 1회, 드롭 표 정리, '캐릭터 별 기록' 탭, '주간 기록' 탭 삭제 (2026-10-10)
+import _legacy
 import os, sys, json, subprocess, time, urllib.request, shutil
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
@@ -25,13 +26,13 @@ c2=ch('c2','불독메이지',{'lucid':B('hard'),'blackmage':B('hard')},{'lucid':
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
-    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.add_init_script("new MutationObserver(()=>{const b=document.querySelector('#revModal [data-rv=no]'); if(b) b.click();}).observe(document,{childList:true,subtree:true})"); pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.add_init_script("new MutationObserver(()=>{const b=document.querySelector('#revModal [data-rv=no]'); if(b) b.click();}).observe(document,{childList:true,subtree:true})"); pg.on('pageerror',lambda e:errs.append(str(e))); pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.on('console',lambda m: print('console:',m.text) if 'dropClamp' in m.text else None)
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort()); pg.route('**/feed.json*',lambda r:r.fulfill(status=404,body=''))
     pg.goto(URL); wk=pg.evaluate("weekId()")
     H=[{'week':'2026-10-01','weeklyOnly':True,'total':999,'perChar':[{'id':'c1','name':'단풍용사','meso':999,'items':{'seren|mitra':1}}]},
        {'week':'2026-10-08','weeklyOnly':True,'total':5,'perChar':[{'id':'c1','name':'단풍용사','meso':0,'items':{}}]}] if wk>'2026-10-08' else []
-    ST={'version':5,'theme':'dark','activeId':'c1','characters':[c1,c2],'history':H,'monthHistory':[],'worldOrder':[],'settings':{'accounts':[{'id':'a1','label':'본계정','key':''}],'lastSync':int(time.time()*1000)}}
+    ST={'version':5,'theme':'dark','activeId':'c1','characters':[c1,c2],'history':H,'monthHistory':[],'worldOrder':[],'settings':{'accounts':[{'id':'a1','label':'본계정','key':_legacy.LEGACY_KEY}],'lastSync':int(time.time()*1000)}}
     pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.loadSyncAt',String(Date.now()))}",ST); pg.reload(); pg.wait_for_timeout(500)
     d=pg.evaluate("S.characters[0].drops"); o=pg.evaluate("S.characters[0].dropOut")
     check('B migration: counts >1 clamped to 1 (3 entries), ring outcome keeps latest', d=={'seren|mitra':1,'kaling|chaosbox':1,'kaling|r_white':1} and o['kaling|r_white']==['r4'] and pg.evaluate("dropClampN")==3, (d,o))
@@ -95,7 +96,7 @@ try:
     check('에픽빔 section lists non-ring drops', '파풀라투스마크x1' in pg.inner_text('#view').replace(chr(10),'').replace(' ',''))
     k=pg.eval_on_selector_all('#view .stat .k','e=>e.map(x=>[x.textContent.trim(),!!x.querySelector("img")])')
     check('total stats labels: 총 수익 / 주간 보스 누적 / 월간 보스 누적 / 획득 아이템 누적, each with icon', [x[0] for x in k][:3]==['총 수익','주보 누적 메소량','검마 누적 메소량'] and all(x[1] for x in k), k)
-    check('총 수익 title icon + 캐릭터별 누적 main-char avatar (fallback ok)', pg.locator('#view h2:has-text("누적 수입") img').count()==1 and pg.locator('#mesoKing h2 img').count()==1)  # b52: 캐릭터별 누적 → 메소왕
+    check('총 수익 title icon + 캐릭터별 누적 main-char avatar (fallback ok)', pg.locator('#view h2:has-text("누적 수입") img').count()==1 and pg.locator('#mesoKing h2 img, #mesoKing h2 .avatar').count()>=1)  # b52: 캐릭터별 누적 → 메소왕
     pth=os.path.join(OUT,'total_counts.png'); pg.locator('#view').screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
     check('no page errors', not errs, errs[:3])
     b.close()

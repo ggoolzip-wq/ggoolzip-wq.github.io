@@ -1,3 +1,4 @@
+import _legacy
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
@@ -15,11 +16,11 @@ def check(n,c,d=''):
 def shot(loc,name,**kw):
     path=os.path.join(OUT,name); loc.screenshot(path=path,**kw)
     if SHOTDIR: shutil.copy(path,os.path.join(SHOTDIR,name))
-srv=subprocess.Popen(['python3','-m','http.server','8787','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=subprocess.Popen(['python3','-m','http.server','8877','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
-    try: urllib.request.urlopen('http://127.0.0.1:8787/index.html',timeout=1); break
+    try: urllib.request.urlopen('http://127.0.0.1:8877/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
-URL='http://localhost:8787/index.html'
+URL='http://localhost:8877/index.html'
 KST=datetime.timezone(datetime.timedelta(hours=9)); now=datetime.datetime.now(KST)
 iso=lambda d: d.replace(microsecond=0).isoformat()
 def ch(id,name,lv,job,ocid,acc,main=False):

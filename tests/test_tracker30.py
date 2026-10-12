@@ -45,8 +45,8 @@ try:
     check('world tab with 3 chars → buttons hidden', n()==3 and pg.evaluate("document.querySelector('#charPager').hidden"))
     pg.click('[data-wtab="스카니아"]'); pg.wait_for_timeout(150)
     check('world tab back → page 1', btn()[0]==['1',True])
-    pf=pg.inner_text('.pc-foot')
-    check('price foot: (마지막 확인 …) on its own line', '\n(마지막 확인' in pf, pf)
+    pg.wait_for_function('!!officialInfo',timeout=8000); pg.evaluate('render()'); pf=pg.inner_text('.pc-foot')
+    check('price foot: (… 마지막 확인 …) on its own line', '\n(' in pf and '마지막 확인 ' in pf.split('\n')[1], pf)  # b79 형식
     pg.locator('.card:has(.pc-foot)').screenshot(path='/workspace/shots/b37_price.png')
     CEN="s=>{const e=document.querySelector(s);if(!e)return null;const r=e.getBoundingClientRect();return [Math.round(r.left+r.width/2-innerWidth/2),Math.round(r.top+r.height/2-innerHeight/2),Math.round(r.width)]}"
     for (w,h) in [(1920,1080),(1280,800),(375,812)]:
@@ -64,7 +64,7 @@ try:
         pg.click('.svaskbtns [data-k=no]'); pg.wait_for_timeout(80)
     pg.set_viewport_size({'width':1600,'height':1000})
     pg.click('[data-tab="guild"]'); pg.wait_for_timeout(150); pg.reload(); pg.wait_for_timeout(600)
-    check('refresh restores last tab (길드 현황)', pg.locator('[data-tab="guild"].on').count()==1 and pg.evaluate("tab")=='guild' if False else pg.locator('[data-tab="guild"].on').count()==1 and '봉사활동' in pg.inner_text('#view'))
+    check('refresh restores last tab (길드 현황)', pg.locator('[data-tab="guild"].on').count()==1 and pg.evaluate("tab")=='guild' if False else pg.locator('[data-tab="guild"].on').count()==1 and '지하 수로' in pg.inner_text('#view'))  # b85: 고정 길드 삭제
     pg.evaluate("localStorage.setItem('mapleBossTracker.tab','summary')"); pg.reload(); pg.wait_for_timeout(600)
     check('missing saved tab → 보스 현황', pg.locator('[data-tab="boss"].on').count()==1)
     check('no page errors', not errs, errs[:3])

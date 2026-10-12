@@ -6,7 +6,7 @@ fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-PORT=8867
+PORT=8881
 srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
@@ -39,11 +39,11 @@ try:
     txt=pg.inner_text('#view')
     check("no hardcoded '봉사활동'", '봉사활동' not in txt, txt[:200])
     check("'+ 길드 추가' next to title", pg.evaluate("!!document.querySelector('#guildCard h2 #guildAdd')"))
-    pg.click('#guildAdd'); pg.wait_for_timeout(1500)
+    pg.click('#guildAdd'); pg.wait_for_function("document.querySelectorAll('#guildCard .surocand').length===3",timeout=20000)
     cands=pg.evaluate("[...document.querySelectorAll('#guildCard .surocand')].map(e=>e.innerText.replace(/\\s+/g,' ').trim())")
     check('candidates: distinct world+guild of visible chars (C길드 via basic API, hidden H길드 excluded)', len(cands)==3 and any('A길드' in c and '에이, 에이둘' in c for c in cands) and any('C길드' in c and '루나' in c for c in cands) and not any('H길드' in c for c in cands), cands)
     pg.screenshot(path='/workspace/maple-boss-tracker/oct12w_b85_test_guild_picker.png')
-    pg.check('#guildCard .surocand input[value="스카니아|A길드"]'); pg.check('#guildCard .surocand input[value="루나|C길드"]'); pg.click('#guildOk'); pg.wait_for_timeout(1500)
+    pg.check('#guildCard .surocand input[value="스카니아|A길드"]'); pg.check('#guildCard .surocand input[value="루나|C길드"]'); pg.click('#guildOk'); pg.wait_for_function("[...document.querySelectorAll('#guildCard .gblk')].filter(e=>e.innerText.includes('1,000')).length===2",timeout=20000)
     blks=pg.evaluate("[...document.querySelectorAll('#guildCard .gblk')].map(e=>e.innerText.replace(/\\s+/g,' '))")
     check('two guild blocks with 수로·플래그 info', len(blks)==2 and all('1,000' in x and '50' in x and '7' in x and '마스터' in x for x in blks), blks)
     pg.screenshot(path='/workspace/maple-boss-tracker/oct12w_b85_test_guild_added.png')
