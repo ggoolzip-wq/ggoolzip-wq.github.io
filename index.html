@@ -3582,13 +3582,13 @@ async function gdWrite(keepalive){
   gdMeta.fileId=gd.fileId; gdMeta.lastSave=Date.now(); gdMarkSynced(S.updatedAt||0);
 }
 /* ---- 동기화 비교·병합 (2026-10-10) ----
- * 비교(contentSig)에서 빼는 값 = GD_LOCAL_RE: 기기 전용(테마·선택 캐릭터·날짜 period·마지막 동기화 시각) + 자동 갱신 값(캐릭터 sync/이미지/EXP, 계정 상태·키).
+ * 비교(contentSig)에서 빼는 값 = GD_LOCAL_RE: 기기 전용(테마·선택 캐릭터·날짜 period·마지막 동기화 시각) + 자동 갱신 값(캐릭터 sync/이미지/EXP/훈장/길드 — b98, 계정 상태·키).
  *   이 값들은 병합할 때도 '이 PC 값'을 씀(키는 이 PC 에 없으면 드라이브 값).
  * 병합 = 3-way: 마지막으로 맞춘 내용(base, localStorage GD_BASE_KEY) 기준으로 한쪽만 바뀐 항목은 그쪽 값, 양쪽이 같은 항목을 다르게 바꾼 경우만 '충돌'.
  *   캐릭터·계정은 id, 주간/월간 기록은 week/month 로 짝지음. 한쪽 삭제 + 다른 쪽 수정 → 수정본 유지(데이터 안 잃음).
  *   API 로 다시 받는 값(레벨·직업·월드·ocid·계정 배정)과 지난 기록 요약은 충돌이어도 묻지 않음(이 PC 값 / 클리어 많은 쪽). */
 const GD_BASE_KEY=SV_ON?'mapleBossTracker.svbase':'mapleBossTracker.gdbase';
-const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|autoSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp)$|^settings\.accounts\[[^\]]*\]\.(key|bk|status)$/;
+const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|autoSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp|medal|guildAt|guild)$|^settings\.accounts\[[^\]]*\]\.(key|bk|status)$/;
 const GD_SOFT_RE=/^characters\[[^\]]*\]\.(level|job|world|ocid|accId)$/;
 const GD_HIST_RE=/^(history|monthHistory|missW|missM)\[[^\]]*\]$/;
 const GD_KEYED={characters:'id',history:'week',monthHistory:'month',missW:'week',missM:'month','settings.accounts':'id'};
@@ -3606,7 +3606,10 @@ const keysOf=d=>SV_ON?'':((d&&d.settings&&d.settings.accounts)||[]).map(a=>a.id+
 function contentSig(d){ return gdSig(d)+'|'+keysOf(d); } // 키가 바뀌어도 저장은 필요 (비교 화면에는 안 씀)
 const gdPrep=d=>rollPeriod(normState(JSON.parse(JSON.stringify(d||{}))));
 function gdMerge(b,l,r,ctx,p=''){
-  if(p&&GD_LOCAL_RE.test(p)) return l!==undefined&&l!==''&&l!==null?l:r;
+  if(p&&GD_LOCAL_RE.test(p)){ // b98: 넥슨 API에서 자동으로 받아 오는 캐릭터 값은 충돌로 묻지 않음 — 훈장(medal)은 더 최근에 확인한 쪽(at), guildAt 은 큰 쪽, 나머지는 이 기기 값(없으면 상대)
+    if(/\.medal$/.test(p)&&gdIsObj(l)&&gdIsObj(r)) return (+r.at||0)>(+l.at||0)?r:l;
+    if(/\.guildAt$/.test(p)&&typeof l==='number'&&typeof r==='number') return Math.max(l,r);
+    return l!==undefined&&l!==''&&l!==null?l:r; }
   if(gdSame(l,r)) return l;
   if(ctx.base){ if(gdSame(b,l)) return r; if(gdSame(b,r)) return l; }
   if(l===undefined) return r; if(r===undefined) return l; // 한쪽에만 있음(새로 추가 / 삭제 vs 수정) → 있는 쪽 유지

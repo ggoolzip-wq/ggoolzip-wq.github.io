@@ -869,3 +869,13 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - 보스 처치 순위(bossKills): 횟수 → 난이도 → 결정석 가격.
 - itemsInline의 mode 정렬은 난이도가 아니라(분배/블빵) 그대로입니다.
 - 테스트: test_tracker70(포트 8895). 스크린샷: /workspace/maple-boss-tracker/oct12z_diffsort_before.png, oct12z_diffsort_after.png.
+
+## b98 — 넥슨 API 자동 값은 동기화 충돌로 묻지 않음
+- 문제: '어느 데이터를 쓸까요?'에 'zetking - medal', '랑트킹 - guildAt' 같은 항목이 나왔습니다. 두 기기가 각자 넥슨 API에서 다시 받은 값이 달라서였습니다.
+- 캐릭터의 `medal`(b86 훈장 확인), `guildAt`, `guild`(b85 길드 후보)를 GD_LOCAL_RE에 넣었습니다.
+  - 그래서 비교 서명(contentSig)에서 빠지고, 충돌 목록에도 나오지 않습니다.
+  - 병합 규칙: medal은 `at`이 더 최근인 쪽, guildAt은 큰 값, guild는 이 기기 값(비어 있으면 상대 값).
+  - 이미 있던 sync/image/exp와 같은 방식입니다.
+- level/job/world는 넣지 않았습니다. 수동 캐릭터는 사용자가 직접 고치는 값이라 다른 기기의 수정이 사라집니다(test17). API 캐릭터는 두 기기 값이 보통 같아서 충돌이 나지 않습니다.
+- 수로 데이터(settings.suroChars)와 길드 목록(settings.guilds)은 사용자가 고르는 값이라 그대로 둡니다.
+- 테스트: test_tracker72(포트 8897), test17/test47 통과.
