@@ -1466,7 +1466,7 @@ function totalData(){
     const cc=p.id&&S.characters.find(x=>x.id===p.id);
     for(const [ik,n] of Object.entries(p.items||{})){ const {slot,it,mode}=parseIK(ik); const b=findBoss(slot); if(!b||!ITEMS[it]||!(+n>0)) continue; const sf=mode?'@'+mode:''; // 블빵승리/패배는 따로 집계
       const dl=tags[b.name]||(cc&&cc.bosses[slot]?.diff?D[cc.bosses[slot].diff]:'');
-      const bk=slot+'|'+dl, o=byBoss[bk]||(byBoss[bk]={slot,dl,items:{}}); let u=+n;
+      const bk=slot+'|'+dl, o=byBoss[bk]||(byBoss[bk]={slot,dl,items:{},cnt:0}); let u=+n; o.cnt+=+n; // b83: cnt = 드롭 표에 기록한 아이템 수(1개=1회)
       if(isRing(it)) ((p.outcomes||{})[ik]||[]).forEach(q=>{ if(q==='gl') o.items['g_life'+sf]=(o.items['g_life'+sf]||0)+1; });
       if(it==='chaosbox') ((p.outcomes||{})[ik]||[]).forEach(q=>{ if(/^cb:/.test(q)&&ITEMS[q.slice(3)]&&u>0){ o.items[q+sf]=(o.items[q+sf]||0)+1; u--; } });
       if(u>0) o.items[it+sf]=(o.items[it+sf]||0)+u; } };
@@ -1489,6 +1489,19 @@ const lootChips = (m,top) => `<span class="loots">${Object.keys(m).filter(k=>m[k
 function ringExp(T){ const e={r4:0,c4:0}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); const p=ring4(it); if(p){ e.r4+=I.n*p.r4/100; e.c4+=I.n*p.c4/100; } }); return e; }
 const fmtExp=v=>(Math.round(v*100)/100).toFixed(2);
 const ringExpHtml=T=>{ const e=ringExp(T); return `<span class="ringexp">기댓값 리4 ${fmtExp(e.r4)}개 · 컨4 ${fmtExp(e.c4)}개</span>`; };
+/* b83: 보스 득템왕 — 보스(난이도)별 득템 횟수 순위. 1~3위 보스 이름 색: 아케인리버 이전 = 흰색, 아케인리버 = 연두(검은 마법사 = 검정+밝은 테두리),
+ * 세르니움·아르크스·오디움·도원경 = 하늘→파랑, 아르테리아 이후 = 분홍→핫핑크 (반짝임은 다른 순위 표와 같은 .spk) */
+const BOSS_REGION={lucid:'arc',will:'arc',dusk:'arc',jinhilla:'arc',dunkel:'arc',blackmage:'bm',seren:'gr1',kalos:'gr1',adversary:'gr1',kaling:'gr1',star:'gr2',limbo:'gr2',baldrix:'gr2',bellona:'gr2',jupiter:'gr2'};
+
+function bossLootKingHtml(T){
+  const rows=Object.values(T.byBoss||{}).filter(o=>o.cnt>0).map(o=>({...o,b:findBoss(o.slot),d:DK[o.dl]})).filter(o=>o.b).sort((a,b)=>b.cnt-a.cnt||BOSSES.indexOf(b.b)-BOSSES.indexOf(a.b)||(a.dl||'').localeCompare(b.dl||''));
+  const sl=rankSlice('bloot',rows);
+  const nm=o=>`<span class="bdn">${esc(o.b.name)}</span>${o.d?` <span class="dlv dlv-${DIFF_CLS[o.d]||''}">(${D[o.d]||o.dl})</span>`:o.dl?` <span class="muted">(${esc(o.dl)})</span>`:''}`;
+  const chips=m=>`<span class="blkchips">${Object.keys(m).filter(k=>m[k]>0).sort(itemCmp).map(k=>`<span class="blkchip" title="${esc(lootName(k))}">${/^cb:/.test(k)?miniIcon('chaosbox'):''}${lootIco(k)}<span class="ln">${esc(lootName(k))}</span>${m[k]>1?`<b class="lx">${xN(m[k])}</b>`:''}</span>`).join('')}</span>`;
+  return `<div class="card kingcard" id="bossLootKing"><h2>${rows[0]?`<span class="hbi">${bossIcon(rows[0].b)}</span>`:miniIcon('bliss')} 보스 득템왕</h2><div class="blkwrap"><table class="ranktbl blktbl"><thead><tr><th>순위</th><th>보스</th><th class="num">득템 횟수</th><th>득템 목록</th></tr></thead><tbody>
+    ${sl.map(([o,r])=>{ const m=medal(r), rg=m?(BOSS_REGION[o.b.id]?'rg-'+BOSS_REGION[o.b.id]:'rg-old'):''; return `<tr class="rk${r}${m?' md-'+m:''}"><td>${rankNo(r)}</td><td class="blkb"><span class="rkname ${m?'md-'+m:''}">${m?`<span class="rkico">${bossIcon(o.b)}</span>`:''}<span class="${m?'spk ':''}${rg}">${nm(o)}</span></span></td><td class="num"><b>${o.cnt}회</b></td><td class="blkl">${chips(o.items)}</td></tr>`; }).join('')||'<tr><td colspan="4" class="muted">기록 없음</td></tr>'}${rankPad(sl.length,rows.length,4)}
+    </tbody></table></div>${rankPager('bloot',rows.length)}</div>`;
+}
 function bossLootHtml(T){
   const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; };
   const rows=Object.values(T.byBoss||{}).filter(o=>Object.values(o.items).some(n=>n>0)).sort((a,b)=>bi(a.slot)-bi(b.slot)||a.dl.localeCompare(b.dl));
@@ -1549,7 +1562,7 @@ function weekChart(rows, opts={}){
 }
 const perCharItems = list => (list||[]).filter(p=>itemSum(p.items)).map(p=>`<div class="hitems"><b>${esc(p.name)}</b> ${itemsInline(p.items,{outs:p.outcomes,byBoss:true,diffOf:tagDiff(p,S.characters.find(x=>x.id===p.id))})}</div>`).join('');
 /* ---------- 메소왕 / 득템왕 / 블빵 (수익 분석) ---------- */
-let rankPage={meso:1,loot:1}; const RANK_PER=10;
+let rankPage={meso:1,loot:1,bloot:1}; const RANK_PER=10;
 const medal = r => r===1?'gold':r===2?'silver':r===3?'bronze':'';
 const crown = '<span class="crown" aria-hidden="true">👑</span>';
 function rankName(o,r,extra){ const c=S.characters.find(x=>x.id===o.id); const m=medal(r);
@@ -1712,6 +1725,7 @@ function renderLoot(){
   </div>
   ${salesHtml(T)}
   ${kingHtml(T,'loot')}
+  ${bossLootKingHtml(T)}
   ${epicKingHtml(T)}
   ${missingHtml(T)}
   ${bbangHtml(T)}

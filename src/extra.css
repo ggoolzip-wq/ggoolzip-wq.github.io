@@ -929,3 +929,23 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 
 /* b78 */
 .admpages{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:8px}
+
+/* b83: 보스 득템왕 */
+#bossLootKing .blkwrap{overflow:hidden}
+#bossLootKing .blktbl{table-layout:fixed;width:100%}
+#bossLootKing .blktbl th:nth-child(1){width:56px}#bossLootKing .blktbl th:nth-child(2){width:38%}#bossLootKing .blktbl th:nth-child(3){width:72px}
+#bossLootKing td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bossLootKing .blkb .rkname{display:inline-flex;align-items:center;gap:4px;max-width:100%;overflow:hidden}
+#bossLootKing .blkb .bicon{width:20px;height:20px}
+#bossLootKing .blkchips{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;min-width:0}
+#bossLootKing .blkchip{display:inline-flex;align-items:center;gap:2px;flex:none;font-size:.82rem}
+#bossLootKing .blkchip img,#bossLootKing .blkchip .lootico{width:18px;height:18px}
+#bossLootKing .rg-old .bdn{color:#fff}
+#bossLootKing .rg-arc .bdn{color:#a6f36b}
+#bossLootKing .rg-bm .bdn{color:#000;-webkit-text-stroke:.5px rgba(255,255,255,.85);text-shadow:0 0 3px rgba(255,255,255,.9),0 0 8px rgba(190,170,255,.7)}
+#bossLootKing .rg-gr1 .bdn{background:linear-gradient(90deg,#8fdcff,#2f6bff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#bossLootKing .rg-gr2 .bdn{background:linear-gradient(90deg,#ffb3d9,#ff1f8f);-webkit-background-clip:text;background-clip:text;color:transparent}
+@media (max-width:600px){#bossLootKing .blkchip .ln{display:none}}
+@media (max-width:600px){#bossLootKing .blktbl th:nth-child(1){width:34px}#bossLootKing .blktbl th:nth-child(2){width:52%}#bossLootKing .blktbl th:nth-child(3){width:48px}#bossLootKing .blkb .rkico{display:none}#bossLootKing td{padding-left:4px;padding-right:4px}}
+#bossLootKing th{white-space:nowrap;overflow:hidden;text-overflow:clip}
+@media (max-width:600px){#bossLootKing th{font-size:.7rem}#bossLootKing .blktbl th:nth-child(1){width:40px}#bossLootKing .blktbl th:nth-child(3){width:56px}}

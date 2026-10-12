@@ -691,3 +691,16 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - `visibleCharIds()` / `visHist(h,ids)` 추가(규칙 9). `totalData()` 의 주간·월간 기록(지난 기록 + 이번 주/달)을 보이는 캐릭터 id 로 걸러 total·cleared·crystals·items 다시 계산 → 결정석 분석(누적 수입·주별 차트·보스왕·빠뜨린 보스메소…), 득템 분석(누적 득템·득템왕·에픽빔왕·판매 수익·블빵…) 등 totalData 를 쓰는 모든 표·차트. 빠뜨린 보스 계산(missW)도 숨은 캐릭터 제외. b72 의 '지난 기록은 숨은 캐릭터도 합산' 결정을 대체.
 - 기록(S.history·monthHistory)은 그대로 저장 — 키를 다시 등록하면 합계 복귀(test_tracker60). 기록 안에 id 가 없거나 지금 목록에 없는(삭제된) 캐릭터 기록도 빠짐.
 - 스크린샷: /workspace/maple-boss-tracker/oct12t_b82_before_total.png, _before_loot.png (라이브 이전: 숨은 캐릭터 포함), oct12t_b82_after_total.png, _after_loot.png, oct12t_b82_test_total.png
+
+## b83 — 득템 분석 '보스 득템왕' 카드
+- 득템왕과 에픽빔왕 사이에 새 카드(`bossLootKingHtml`, #bossLootKing)를 추가했습니다. 열은 순위 / 보스(난이도) / 득템 횟수 / 득템 목록(아이콘 칩, 이름은 툴팁)입니다.
+- 득템 횟수: totalData의 byBoss[slot|dl].cnt를 씁니다. 드롭 표에 기록한 아이템 1개가 1회입니다. 반지 결과로 생기는 파생 아이템은 세지 않습니다. 규칙 9에 따라 보이는 캐릭터만 집계합니다.
+- 제목 아이콘은 1위 보스 초상화입니다. 1~3위 보스 이름은 지역 색(`BOSS_REGION`)을 씁니다.
+  - 아케인 이전: 흰색
+  - 아케인: 연두
+  - 검은 마법사: 검정 글자에 밝은 테두리/글로우
+  - 세르니움~도원경(gr1): 하늘→파랑 그라데이션
+  - 아르테리아 이후(gr2): 분홍→핫핑크 그라데이션
+  - 여기에 .spk 반짝임이 붙습니다.
+- table-layout: fixed와 nowrap/ellipsis로 한 행을 한 줄로 유지하고 가로 스크롤을 없앴습니다. 600px 이하에서는 칩 이름과 행 아이콘을 숨깁니다. 페이지는 10개씩(rankPage.bloot)입니다.
+- 테스트: test_tracker61.
