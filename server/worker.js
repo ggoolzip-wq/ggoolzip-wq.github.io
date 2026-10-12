@@ -6,7 +6,9 @@
  * 데이터: 사용자별 JSON 1개 (state). rev 로 동시 저장 충돌 감지(409 → 브라우저가 3-way 병합 후 다시 저장).
  *   저장 전에 settings.apiKey · settings.accounts[].key 를 서버에서도 한 번 더 지움(원본 키가 절대 저장되지 않게).
  *
- * 초대 비밀번호(친구 전용): 로그인 전에 기기마다 한 번 POST /api/invite {pass} → 기기 표(device ticket, 365일).
+ * b67 (2026-10-12): 초대 비밀번호 폐지 — /api/login 은 기기 표를 확인하지 않음(누구나 넥슨 키로 가입). 대신 IP별 요청 제한·새 데이터 생성 제한·
+ *   데이터 크기 512KB·본문 크기 제한 (위 상수). 아래 초대 비밀번호 설명은 예전 기록 (/api/invite 는 예전 클라이언트용으로만 남음).
+ * 초대 비밀번호(친구 전용, b67 에서 폐지): 로그인 전에 기기마다 한 번 POST /api/invite {pass} → 기기 표(device ticket, 365일).
  *   서버는 비밀번호 해시만 secret SITE_PASS_HASH 로 보관 (= sha256('ggoolzip-invite:' + 앞뒤 공백 뺀 비밀번호), 대소문자 구분).
  *   SITE_PASS_HASH 가 없으면 로그인 전부 거부(fail closed). 비밀번호를 바꾸면 기존 기기 표로는 새 로그인이 안 됨(이미 로그인한 세션은 유지).
  * 사용량 제한: 로그인·초대 IP별, 읽기/저장은 세션별·사용자별(한 사람이 다른 사람 몫을 다 쓰지 못하게).
@@ -41,9 +43,19 @@
  *    사용자 데이터(state·history·금고)는 그대로 — 다시 로그인하면 돌아옴.
  */
 const SESSION_DAYS = 365;
-const MAX_BODY = 1_800_000;          // D1 한 행 최대 2MB
-const HISTORY_KEEP = 10;
-const LOGIN_LIMIT = { n: 30, windowMs: 10 * 60e3 };
+// b67: 초대 비밀번호 없이 열린 서비스 → 크기·횟수 제한 (Cloudflare 무료 플랜 D1 기준)
+const MAX_STATE = 512 * 1024;        // 사용자 데이터(state JSON) 최대 512KB (서버에서 키 제거한 뒤 길이)
+const MAX_BODY = MAX_STATE + 64 * 1024; // PUT /api/state 요청 본문 최대 (data + 감싸는 값)
+const MAX_SMALL_BODY = 64 * 1024;    // 그 밖의 요청 본문 최대
+const HISTORY_KEEP = 10;             // 복구용 저장본 최대 10개 (사용자당)
+const MAX_ACCTS = 40;                // 한 데이터에 연결하는 넥슨 계정 최대
+const LOGIN_LIMIT = { n: 30, windowMs: 10 * 60e3 };           // 로그인 시도 (IP별)
+const NEWUSER_LIMIT = { n: 10, windowMs: 86400e3 };           // b67: 새 데이터(계정) 만들기 IP별 하루 10개
+const NEWUSER_ALL = { n: 300, windowMs: 86400e3 };            // b67: 전체 하루 300개 (IP 바꿔 가며 남용 방지)
+const IP_LIMITS = {                                           // b67: IP별 (1분 창) — 로그인한 요청 포함 모든 요청
+  read:  { n: 300, windowMs: 60e3 },
+  write: { n: 120, windowMs: 60e3 },
+};
 const INVITE_LIMIT = { n: 10, windowMs: 10 * 60e3 };          // 초대 비밀번호 시도 (IP별)
 const LIMITS = {                                               // 세션별·사용자별 (1분 창)
   read:  { n: 90, windowMs: 60e3 },                            //   GET (앱은 1분에 1~2번 확인)
@@ -221,12 +233,7 @@ const rateLimit = async (env, req) => limit(env, await ipKey(env, req, 'login'),
 const normPass = p => String(p || '').trim(); // 앞뒤 공백만 제거 (대소문자 구분)
 function sameHex(a, b) { a = String(a || '').toLowerCase(); b = String(b || '').toLowerCase(); if (a.length !== b.length || !a.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }
 const passVer = env => String(env.SITE_PASS_HASH || '').toLowerCase().slice(0, 12); // 비밀번호가 바뀌면 달라짐 → 예전 기기 표 무효
-async function checkDevice(env, device) {
-  if (!env.SITE_PASS_HASH) throw new HttpError(503, 'not_configured', '서버 설정이 아직 끝나지 않았습니다 (초대 비밀번호 미설정)');
-  if (!/^[A-Za-z0-9_-]{20,100}$/.test(String(device || ''))) throw new HttpError(403, 'need_invite', '초대 비밀번호를 먼저 입력해 주세요');
-  const d = await env.DB.prepare('SELECT created_at, expires_at, pass_ver FROM devices WHERE ticket_hash=?').bind(await sha256hex(device)).first();
-  if (!d || d.expires_at < Date.now() || d.pass_ver !== passVer(env) || d.created_at < await authEpoch(env)) throw new HttpError(403, 'need_invite', '초대 비밀번호를 다시 입력해 주세요 (비밀번호가 바뀌었거나 만료됨)');
-}
+// (b67: checkDevice — 초대 비밀번호 기기 표 확인 — 삭제. 로그인은 기기 표 없이)
 
 /* ---------- 세션 ---------- */
 async function auth(env, req) {
@@ -256,11 +263,11 @@ function stripKeys(data) {
   }
   return data;
 }
-async function readBody(req) {
+async function readBody(req, max = MAX_SMALL_BODY) {
   const len = +req.headers.get('Content-Length') || 0;
-  if (len > MAX_BODY) throw new HttpError(413, 'too_large', '데이터가 너무 큽니다');
+  if (len > max) throw new HttpError(413, 'too_large', `데이터가 너무 큽니다 (최대 ${Math.round(max / 1024)}KB)`);   // 본문을 읽기 전에 거부
   const t = await req.text();
-  if (t.length > MAX_BODY) throw new HttpError(413, 'too_large', '데이터가 너무 큽니다');
+  if (t.length > max) throw new HttpError(413, 'too_large', `데이터가 너무 큽니다 (최대 ${Math.round(max / 1024)}KB)`);
   try { return JSON.parse(t || '{}'); } catch (e) { throw new HttpError(400, 'bad_json', 'JSON 형식 오류'); }
 }
 const stateRow = (env, uid) => env.DB.prepare('SELECT rev, updated_at, saved_at, size, data FROM state WHERE user_id=?').bind(uid).first();
@@ -271,10 +278,12 @@ const stateOut = (row, withData = true) => row
 /* ---------- 라우트 ---------- */
 async function route(req, env) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, ''), M = req.method;
-  if (p === '/api/health') return json(200, { ok: true, v: 'b62' });
+  if (p === '/api/health') return json(200, { ok: true, v: 'b67' });
   await ensureSchema(env); await authEpoch(env); // 첫 요청 때 강제 로그아웃 기준 시각 확정
+  // b67: IP별 요청 제한 (읽기 300/분, 쓰기 120/분) — 세션·사용자별 제한과 별개
+  await limit(env, await ipKey(env, req, M === 'GET' ? 'ipr' : 'ipw'), M === 'GET' ? IP_LIMITS.read : IP_LIMITS.write);
 
-  if (p === '/api/invite' && M === 'POST') {
+  if (p === '/api/invite' && M === 'POST') { // b67: 더 이상 필요 없음 (예전 화면이 캐시된 브라우저용으로만 남김 — 로그인은 기기 표를 확인하지 않음)
     if (!env.SITE_PASS_HASH) throw new HttpError(503, 'not_configured', '서버 설정이 아직 끝나지 않았습니다 (초대 비밀번호 미설정)');
     await limit(env, await ipKey(env, req, 'invite'), INVITE_LIMIT, '비밀번호 시도가 너무 많습니다 — 10분 뒤 다시 시도하세요');
     const b = await readBody(req);
@@ -287,7 +296,7 @@ async function route(req, env) {
   if (p === '/api/login' && M === 'POST') {
     await rateLimit(env, req);
     const b = await readBody(req);
-    await checkDevice(env, b.device);
+    // b67: 초대 비밀번호(기기 표) 확인 없음 — 누구나 넥슨 키로 로그인/가입. (device 값은 예전 클라이언트가 보내도 무시)
     // b62: 부계정/예비 키로 등록된 키는 로그인 불가 (넥슨 호출 전에 해시로 확인)
     if (await env.DB.prepare('SELECT 1 FROM keyreg WHERE key_hash=?').bind(await keyHash(env, b.key)).first()) throw new HttpError(403, 'sub_key', SUB_MSG);
     const hashes = await nexonAccounts(env, b.key);
@@ -297,7 +306,10 @@ async function route(req, env) {
     const found = (await env.DB.prepare(`SELECT a.acct_hash, a.user_id, s.saved_at FROM accounts a LEFT JOIN state s ON s.user_id=a.user_id WHERE a.acct_hash IN (${qs})`).bind(...hashes).all()).results;
     const now = Date.now(); let userId, newUser = false;
     if (found.length) userId = found.sort((x, y) => (y.saved_at || 0) - (x.saved_at || 0))[0].user_id; // 여러 데이터에 걸쳐 있으면 최근 저장한 쪽
-    else { userId = crypto.randomUUID(); newUser = true; await env.DB.prepare('INSERT INTO users (id,created_at,last_login) VALUES (?,?,?)').bind(userId, now, now).run(); }
+    else {
+      await limit(env, await ipKey(env, req, 'newuser'), NEWUSER_LIMIT, '이 네트워크에서 오늘 새로 만들 수 있는 데이터 수를 넘었습니다 — 내일 다시 시도하세요');
+      await limit(env, 'newuser:all', NEWUSER_ALL, '오늘 새 가입이 많아 잠시 막혀 있습니다 — 내일 다시 시도하세요');
+      userId = crypto.randomUUID(); newUser = true; await env.DB.prepare('INSERT INTO users (id,created_at,last_login) VALUES (?,?,?)').bind(userId, now, now).run(); }
     if (!newUser) await env.DB.prepare('UPDATE users SET last_login=? WHERE id=?').bind(now, userId).run();
     const owned = new Set(found.map(f => f.acct_hash));
     const ins = hashes.filter(h => !owned.has(h)).map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, userId, now));
@@ -322,6 +334,7 @@ async function route(req, env) {
     const qs = hashes.map(() => '?').join(',');
     const other = (await env.DB.prepare(`SELECT user_id FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hashes, me.userId).all()).results;
     if (other.length) throw new HttpError(409, 'linked_elsewhere', '이 넥슨 계정은 이미 다른 데이터에 연결되어 있습니다');
+    if ((await acctList(env, me.userId)).length + hashes.length > MAX_ACCTS) throw new HttpError(400, 'too_many_accounts', `한 데이터에 넥슨 계정은 ${MAX_ACCTS}개까지`);
     await env.DB.batch(hashes.map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, me.userId, now))
       .concat(hashes.map(h => env.DB.prepare("INSERT OR IGNORE INTO acct_role (acct_hash,user_id,role) VALUES (?,?,'sub')").bind(h, me.userId))));
     return json(200, { accounts: hashes, all: await acctList(env, me.userId) });
@@ -332,6 +345,7 @@ async function route(req, env) {
     const subsIn = Array.isArray(b.subs) ? b.subs : [];
     if (subsIn.length > 20) throw new HttpError(400, 'too_many_subs', '부계정 키는 20개까지');
     const mine = new Set(await acctList(env, me.userId));
+    if (mine.size > MAX_ACCTS) throw new HttpError(400, 'too_many_accounts', `한 데이터에 넥슨 계정은 ${MAX_ACCTS}개까지`);
     const mainHashes = await nexonAccounts(env, b.main);
     if (!mainHashes.some(h => mine.has(h))) throw new HttpError(403, 'not_main', '대표 키가 이 데이터의 계정이 아닙니다');
     const mainKey = String(b.main).trim(), now = Date.now(), out = [], seen = new Set();
@@ -388,11 +402,11 @@ async function route(req, env) {
   if (p === '/api/state/meta' && M === 'GET') return json(200, stateOut(await env.DB.prepare('SELECT rev, updated_at, saved_at FROM state WHERE user_id=?').bind(me.userId).first(), false));
   if (p === '/api/state' && M === 'GET') return json(200, stateOut(await stateRow(env, me.userId)));
   if (p === '/api/state' && M === 'PUT') {
-    const b = await readBody(req);
+    const b = await readBody(req, MAX_BODY);
     const d = b.data;
     if (!d || typeof d !== 'object' || !Array.isArray(d.characters)) throw new HttpError(400, 'bad_state', '데이터 형식이 올바르지 않습니다 (characters 없음)');
     const text = JSON.stringify(stripKeys(d)), now = Date.now(), base = Math.max(0, parseInt(b.baseRev) || 0), upd = Math.max(0, +b.updatedAt || 0);
-    if (text.length > MAX_BODY) throw new HttpError(413, 'too_large', '데이터가 너무 큽니다');
+    if (text.length > MAX_STATE) throw new HttpError(413, 'too_large', `데이터가 너무 큽니다 (최대 ${MAX_STATE / 1024}KB, 지금 ${Math.ceil(text.length / 1024)}KB)`);
     const r = base === 0
       ? await env.DB.prepare('INSERT INTO state (user_id,rev,updated_at,saved_at,size,data) VALUES (?,1,?,?,?,?) ON CONFLICT(user_id) DO NOTHING').bind(me.userId, upd, now, text.length, text).run()
       : await env.DB.prepare('UPDATE state SET rev=rev+1, updated_at=?, saved_at=?, size=?, data=? WHERE user_id=? AND rev=?').bind(upd, now, text.length, text, me.userId, base).run();

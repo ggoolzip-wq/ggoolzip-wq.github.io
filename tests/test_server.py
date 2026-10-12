@@ -27,12 +27,12 @@ try:
     s,_,h=req('GET','/api/health',origin='http://localhost:8787'); check('CORS allows localhost (tests)', h.get('Access-Control-Allow-Origin')=='http://localhost:8787', h)
     s,b,h=req('GET','/api/health',origin='https://evil.example'); check('other origin rejected (403, no ACAO)', s==403 and 'Access-Control-Allow-Origin' not in h, (s,h))
     # 초대 비밀번호 (기기당 한 번)
-    s,b,_=req('POST','/api/login',{'key':KA}); check('login without invite device → 403 need_invite', s==403 and b['error']=='need_invite', b)
+    s,b,_=req('POST','/api/login',{'key':KE}); check('b67: login without invite device → 200 (초대 비밀번호 폐지)', s==200 and b.get('token'), b)
     s,b,_=req('POST','/api/invite',{'pass':'wrong'}); check('wrong invite password → 403 bad_invite', s==403 and b['error']=='bad_invite', b)
     s,b,_=req('POST','/api/invite',{'pass':'test invite 7'}); check('invite password is case-sensitive', s==403, b)
     s,b,_=req('POST','/api/invite',{'pass':'  '+cf_dev.TEST_PASS+' '}); DEV=b.get('device',''); check('correct invite (spaces trimmed) → device ticket', s==200 and len(DEV)>=40, b)
     rows=json.dumps(dev.sql("SELECT * FROM devices")); check('device ticket stored only as hash', DEV not in rows and cf_dev.TEST_PASS not in rows)
-    s,b,_=req('POST','/api/login',{'key':KA,'device':'x'*43}); check('fake device ticket → need_invite', s==403 and b['error']=='need_invite', b)
+    s,b,_=req('POST','/api/login',{'key':KE,'device':'x'*43}); check('b67: unknown/old device value ignored → 200', s==200 and b.get('token'), b)
     # 로그인
     s,b,_=req('POST','/api/login',{'device':DEV,'key':'live_WRONG_0123456789abcdef'}); check('invalid key → 401 invalid_key', s==401 and b['error']=='invalid_key', b)
     s,b,_=req('POST','/api/login',{'device':DEV,'key':'short'}); check('malformed key → 400', s==400 and b['error']=='bad_key', b)
@@ -59,17 +59,22 @@ try:
     s,b,_=req('PUT','/api/state',{'baseRev':0,'updatedAt':333,'data':st},tok=TA); check('baseRev 0 when state exists → 409', s==409, s)
     s,b,_=req('PUT','/api/state',{'baseRev':2,'updatedAt':333,'data':{'nope':1}},tok=TA); check('invalid state rejected', s==400 and b['error']=='bad_state', b)
     s,b,_=req('PUT','/api/state',raw=b'{"baseRev":2,"data":{"characters":[],"x":"'+b'a'*1900000+b'"}}',tok=TA); check('too large → 413', s==413, s)
+    # b67: 데이터 크기 상한 512KB (본문 576KB 이하라도 저장되는 data 가 512KB 넘으면 거부) · 큰 본문은 읽기 전에 거부
+    s,b,_=req('PUT','/api/state',{'baseRev':2,'updatedAt':9,'data':{'characters':[],'x':'a'*(530*1024)}},tok=TA); check('b67: state over 512KB → 413 (max 512KB)', s==413 and b['error']=='too_large' and '512KB' in b['message'], b)
+    s,b,_=req('PUT','/api/state',{'baseRev':2,'updatedAt':9,'data':{'characters':[],'x':'a'*(500*1024)}},tok=TA); check('b67: state just under 512KB → saved', s==200 and b['rev']==3, b)
+    s,b,_=req('PUT','/api/state',{'baseRev':3,'updatedAt':222,'data':{**st,'updatedAt':222}},tok=TA); check('b67: back to small state', s==200 and b['rev']==4, b)
+    s,b,_=req('POST','/api/keycheck',raw=b'{"key":"'+b'k'*(70*1024)+b'"}',tok=TA); check('b67: other endpoints: body over 64KB → 413', s==413, (s,b))
     # 다른 사용자는 서로 분리
     s,bb,_=req('POST','/api/login',{'device':DEV,'key':KB}); TB=bb['token']; check('user B: new user, different id', bb['newUser'] and bb['user']!=a1['user'], bb)
     s,b,_=req('GET','/api/state',tok=TB); check('user B cannot see A data', b['rev']==0 and b['data'] is None, b)
     s,b,_=req('PUT','/api/state',{'baseRev':0,'updatedAt':5,'data':{'characters':[{'id':'b1','name':'B캐릭'}]}},tok=TB); s,b,_=req('GET','/api/state',tok=TA)
-    check('A data unchanged by B save', b['data']['characters'][0]['name']=='단풍용사' and b['rev']==2, b)
+    check('A data unchanged by B save', b['data']['characters'][0]['name']=='단풍용사' and b['rev']==4, b)
     # 같은 사람의 다른 넥슨 계정 연결
     s,b,_=req('POST','/api/link',{'device':DEV,'key':KD},tok=TA); check('link key D to A', s==200 and len(b['all'])==2, b)
     s,d,_=req('POST','/api/login',{'device':DEV,'key':KD}); check('b62: login with linked sub account D → 403 sub_key (부계정)', s==403 and d['error']=='sub_key' and d['message']=='이미 등록된 부계정 API입니다.', d)
     s,b,_=req('POST','/api/link',{'device':DEV,'key':KB},tok=TA); check('link B (owned by another user) → 409', s==409 and b['error']=='linked_elsewhere', b)
     s,ac,_=req('POST','/api/login',{'device':DEV,'key':KAC}); check('key with accounts A+C → A data, C auto-linked', ac['user']==a1['user'] and len(ac['accounts'])==2, ac)
-    s,me,_=req('GET','/api/me',tok=TA); check('me: 3 linked accounts, ≥4 sessions', len(me['accounts'])==3 and me['sessions']>=3 and me['rev']==2, me)
+    s,me,_=req('GET','/api/me',tok=TA); check('me: 3 linked accounts, ≥4 sessions', len(me['accounts'])==3 and me['sessions']>=3 and me['rev']==4, me)
     # 부계정 키 금고: 대표 키(A)로 암호화 보관 → 다른 기기에서 대표 키만으로 로그인하면 되돌아옴
     KF,KG='live_KEY_F_0123456789abcdef','live_KEY_G_0123456789abcdef'
     s,b,_=req('PUT','/api/subkeys',{'main':KB,'subs':[{'key':KF,'label':'부1'}]},tok=TA); check('subkeys with a main key not of this data → 403', s==403 and b['error']=='not_main', b)
@@ -111,7 +116,7 @@ try:
     s,b,_=req('POST','/api/keycheck',{'key':KG},tok=TA); check('b64: keycheck own sub key → 200', s==200 and b['ok'], b)
     s,b,_=req('POST','/api/keycheck',{'key':BKG},tok=TA); check('b64: keycheck own spare key → 200', s==200, b)
     s,b,_=req('POST','/api/keycheck',{'key':KG}); check('b64: keycheck without session → 401', s==401, b)
-    dev.sql("DELETE FROM rate WHERE k LIKE 'login:%'")
+    dev.sql("DELETE FROM rate WHERE k LIKE 'login:%' OR k LIKE 'ip%'")
     # b62: 예전 v1 금고(대표 키 문자열로 암호화) → 대표 키 로그인 때 v2 로 자동 이전, 그 뒤엔 재발급 키로도 열림
     uid=dev.sql(f"SELECT user_id FROM accounts WHERE acct_hash='{a1['accounts'][0]}'")[0]['user_id']
     sealed=json.loads(subprocess.run([os.path.join(cf_dev.NODE_BIN,'node'),os.path.join(os.path.dirname(os.path.abspath(__file__)),'v1seal.mjs'),KA,uid,json.dumps({'v':1,'subs':[{'key':KG,'label':'부2','bk':BKG}],'mainBk':BKA})],capture_output=True,text=True).stdout)
@@ -133,7 +138,7 @@ try:
     before=dev.sql(f"SELECT rev,data FROM state WHERE user_id='{uid}'")
     s1,_,_=req('GET','/api/state',tok=oldtok); s2,b2,_=req('POST','/api/login',{'device':olddev,'key':KA})
     check('b62: session created before epoch → 401', s1==401, s1)
-    check('b62: device ticket before epoch → need_invite (password again)', s2==403 and b2['error']=='need_invite', b2)
+    check('b67: old device ticket is ignored now (login works without invite)', s2==200 and b2.get('token'), b2)
     s3,b3,_=req('GET','/api/state',tok=v['token']); check('b62: data untouched by forced logout; new session works', s3==200 and b3['rev']==before[0]['rev'] and json.dumps(b3['data'],ensure_ascii=False,separators=(',',':'))==before[0]['data'] or (s3==200 and b3['rev']==before[0]['rev']), (s3,b3.get('rev'),before[0]['rev']))
     # 로그아웃
     s,b,_=req('POST','/api/logout',tok=TA2); s2,b2,_=req('GET','/api/state',tok=TA2); s3,_,_=req('GET','/api/state',tok=TA)
@@ -150,7 +155,7 @@ try:
     n=dev.sql(f"SELECT COUNT(*) AS n FROM state_history h JOIN accounts a ON a.user_id=h.user_id WHERE a.acct_hash='{x['accounts'][0]}'")[0]['n']
     check('history keeps last 10 revisions', n==10, n)
     # 세션별 읽기 제한 (90회/분) — 다른 세션은 영향 없음
-    dev.sql("DELETE FROM rate WHERE k LIKE 'login:%'")  # b62: 위 검사로 로그인 횟수가 늘어 IP 제한 초기화
+    dev.sql("DELETE FROM rate WHERE k LIKE 'login:%' OR k LIKE 'ip%'")  # b62: 위 검사로 로그인 횟수가 늘어 IP 제한 초기화
     s,x2,_=req('POST','/api/login',{'device':DEV,'key':KA}); t1=x2['token']; s,x3,_=req('POST','/api/login',{'device':DEV,'key':KA}); t2=x3['token']
     codes=[req('GET','/api/state/meta',tok=t1)[0] for _ in range(95)]
     s9,b9,h9=req('GET','/api/state/meta',tok=t1); s10,_,_=req('GET','/api/state/meta',tok=t2)
@@ -166,10 +171,21 @@ try:
     # 로그인 시도 제한 (30회/10분)
     codes=[req('POST','/api/login',{'device':DEV,'key':'live_WRONG_0123456789abcdef'})[0] for _ in range(30)]
     check('login rate limit → 429 too_many', 429 in codes and req('POST','/api/login',{'device':DEV,'key':KA})[1]['error']=='too_many', codes[-5:])
+    # b67: 새 데이터 만들기 IP별 하루 10개 / IP별 쓰기 120회/분
+    dev.sql("DELETE FROM rate"); NK=[f'live_NEWUSER_{i:02d}_0123456789ab' for i in range(11)]
+    for i,k in enumerate(NK): MN.KEYS[k]=[f'acc-new-{i}']
+    codes=[req('POST','/api/login',{'key':k})[0] for k in NK[:10]]; s11,b11,_=req('POST','/api/login',{'key':NK[10]})
+    check('b67: 10 new users per IP per day, 11th → 429', codes==[200]*10 and s11==429 and b11['error']=='too_many', (codes,s11,b11))
+    s,b,_=req('POST','/api/login',{'key':KA}); check('b67: existing user can still log in from that IP', s==200 and not b['newUser'], b)
+    dev.sql("DELETE FROM rate")
+    wc=[req('POST','/api/logout')[0] for _ in range(121)]
+    check('b67: per-IP write limit 120/min → 429 (even without a session)', wc[:120].count(401)==120 and wc[120]==429, (wc.count(401),wc[-1]))
+    s,b,_=req('GET','/api/health'); check('health not rate-limited', s==200)
+    dev.sql("DELETE FROM rate")
     # SITE_PASS_HASH 없음 → 로그인 전부 거부 (fail closed)
     dev.stop(); dev=cf_dev.Dev(WP,NP,no_pass=True)
     s1,b1,_=req('POST','/api/invite',{'pass':cf_dev.TEST_PASS}); s2,b2,_=req('POST','/api/login',{'key':KA,'device':DEV})
-    check('no SITE_PASS_HASH → invite/login refused (503 not_configured)', s1==503 and s2==503 and b2['error']=='not_configured', (s1,s2))
+    check('b67: no SITE_PASS_HASH → invite 503 (legacy) but login works', s1==503 and s2==200 and b2.get('token'), (s1,s2,b2))
 except Exception as e:
     import traceback; traceback.print_exc(); errs.append(str(e))
 finally:

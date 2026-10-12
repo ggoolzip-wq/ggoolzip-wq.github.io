@@ -39,10 +39,11 @@ def mkctx(b):
     return ctx,pg
 st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1'))")
 keyset=lambda s: sorted(x for a in s['settings']['accounts'] for x in (a.get('key'),a.get('bk')) if x)
-def wait_on(pg,t=15000): pg.wait_for_function("gd.state==='on'&&!gd.busy&&!gd.timer",timeout=t); pg.wait_for_timeout(200)
-def invite(pg):
-    pg.wait_for_selector('#svGate #svInvite'); pg.fill('#svGate #svInvite',cf_dev.TEST_PASS); pg.click('#svGate #svInviteBtn'); pg.wait_for_selector('#svGate #svKey')
-def login(pg,key): pg.fill('#svGate #svKey',key); pg.click('#svGate #svLoginBtn')
+def wait_on(pg,t=15000): pg.wait_for_function("gd.state==='on'&&!gd.busy&&!gd.timer",timeout=t); pg.wait_for_timeout(200); pg.evaluate("closeImport()")
+def invite(pg): pass  # b67: 초대 비밀번호 폐지 (호환용 빈 함수)
+def login(pg,key):  # b67: 캐릭터 추가 창의 '본계정 API 키 등록'으로 로그인
+    if not pg.evaluate("document.querySelector('#importModal').classList.contains('show')"): pg.evaluate("openAdd()")
+    pg.wait_for_selector('#svMainKey'); pg.fill('#svMainKey',key); pg.click('#svMainBtn')
 def jpost(path,body,tok=None):
     r=urllib.request.Request(API+path,data=json.dumps(body).encode(),method=body.pop('_m','POST') if isinstance(body,dict) and '_m' in body else 'POST',headers={'Content-Type':'application/json',**({'Authorization':'Bearer '+tok} if tok else {})})
     try: return json.loads(urllib.request.urlopen(r).read())
@@ -51,7 +52,7 @@ try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     # 다른 사람 데이터 I (캐릭터 있음)
-    dvI=jpost('/api/invite',{'pass':cf_dev.TEST_PASS})['device']; tI=jpost('/api/login',{'key':KI,'device':dvI})['token']
+    tI=jpost('/api/login',{'key':KI})['token']
     rq=urllib.request.Request(API+'/api/state',data=json.dumps({'baseRev':0,'updatedAt':1,'data':{'characters':[{'id':'x','name':'남의캐릭'}]}}).encode(),method='PUT',headers={'Content-Type':'application/json','Authorization':'Bearer '+tI}); urllib.request.urlopen(rq)
     # ---- 집 PC(H): 키 전부 있는 예전 상태 (초기화 전) → 로그인·금고 보관 ----
     ch_,ph=mkctx(b); ph.goto(URL)
@@ -66,7 +67,7 @@ try:
     cp,pp=mkctx(b); pp.goto(URL)
     dump=ph.evaluate("JSON.stringify({...localStorage})")  # PC방 = 예전 버전으로 로그인해 둔 기기 (키·세션·금고 표시 그대로, 초기화 표시 없음)
     pp.evaluate("d=>{localStorage.clear();const o=JSON.parse(d);for(const k in o) localStorage.setItem(k,o[k]);localStorage.removeItem('mapleBossTracker.keyReset')}",dump)
-    pp.reload(); pp.wait_for_selector('#svGate #svKey',timeout=15000); pp.wait_for_timeout(300)
+    pp.reload(); pp.wait_for_function("!svTok()&&typeof gd!=='undefined'",timeout=15000); pp.wait_for_timeout(300)
     sp=st(pp)
     check('P: 새 버전 첫 실행 → 이 기기 키(대표·부계정·예비) 전부 비움', keyset(sp)==[] and not any(a.get('bkLabel') for a in sp['settings']['accounts']), keyset(sp))
     check('P: 계정 칸(id·이름)·캐릭터·연결(accId) 그대로', [a['id'] for a in sp['settings']['accounts']]==['a1','a2','a3'] and [(c['name'],c['accId']) for c in sp['characters']]==[(c['name'],c['accId']) for c in json.loads(json.loads(dump)['mapleBossTracker.v1'])['characters']] and [c['accId'] for c in sp['characters']]==['a1','a2','a3'], [(c['name'],c.get('accId')) for c in sp['characters']])
@@ -74,7 +75,7 @@ try:
     login(pp,KA); wait_on(pp); pp.wait_for_timeout(500)
     sp=st(pp); a1=[a for a in sp['settings']['accounts'] if a['id']=='a1'][0]
     check('P: 대표 키 로그인 → 본계정 칸(a1)에 대표 키, 부계정 키 없음(금고 비었음)', a1.get('key')==KA and keyset(sp)==[KA] and len(sp['settings']['accounts'])==3, keyset(sp))
-    pp.reload(); pp.wait_for_timeout(800); check('P: 다시 열어도 또 지우지 않음 (1번만)', keyset(st(pp))==[KA] and pp.locator('#svGate').count()==0)
+    pp.reload(); pp.wait_for_timeout(800); check('P: 다시 열어도 또 지우지 않음 (1번만)', keyset(st(pp))==[KA] and bool(pp.evaluate('svTok()')))
     # 캐릭터 추가 창에서 부계정 F 키 다시 추가 → 예전 '부계정F' 칸에 재연결 (새 칸 안 생김)
     pp.evaluate("openAdd()"); pp.wait_for_selector('#newAccKey')
     pp.fill('#newAccKey',KF); pp.click('#newAccBtn'); pp.wait_for_function("accounts().some(a=>a.id==='a2'&&a.key)",timeout=15000); pp.wait_for_timeout(500)
@@ -93,7 +94,7 @@ try:
     pp.evaluate("closeImport()"); check('P: 창 닫으면 빨간 글 사라짐', pp.locator('#accRej').count()==0)
     # ---- 집 PC(H): 예전 키가 남아 있던 기기 → 새 버전 열면 비우고, 대표 키 로그인으로 PC방에서 다시 등록한 것만 복원 ----
     ph.evaluate("()=>localStorage.removeItem('mapleBossTracker.keyReset')")  # (집 PC 는 아직 새 버전을 연 적 없음)
-    ph.reload(); ph.wait_for_selector('#svGate #svKey',timeout=15000)
+    ph.reload(); ph.wait_for_function("!svTok()&&typeof gd!=='undefined'",timeout=15000); ph.wait_for_timeout(300)
     check('H: 새 버전 첫 실행 → 예전 키 전부 비움', keyset(st(ph))==[], keyset(st(ph)))
     login(ph,KA); wait_on(ph); ph.wait_for_timeout(800)
     sh=st(ph)

@@ -90,8 +90,8 @@ try:
         check(f'{w}px guild: no horizontal overflow', pg.evaluate(NOOVF), pg.evaluate(OVFD))
         if w==375: shot(pg,'tab_guild_mobile.png',full_page=True)
     # 8) 라이트 테마도 깨지지 않음
-    pg.set_viewport_size({'width':1366,'height':900}); pg.click('#themeBtn'); pg.click('[data-tab=guild]'); wait_idle(pg)
-    check('light theme renders', pg.evaluate("document.documentElement.dataset.theme")=='light' and pg.locator('.gtile').count()>=1)
+    pg.set_viewport_size({'width':1366,'height':900}); pg.click('[data-tab=guild]'); wait_idle(pg)
+    check('b67: dark only, no theme toggle', pg.evaluate("document.documentElement.dataset.theme")=='dark' and pg.locator('#themeBtn').count()==0)
     check('일퀘 현황 탭 없음', pg.locator('[data-tab=daily]').count()==0 and not pg.evaluate("typeof renderDaily!=='undefined'"))
     b.close()
 finally:

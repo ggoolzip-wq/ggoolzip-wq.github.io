@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -159,7 +159,6 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .expl{display:flex;align-items:center;gap:5px;height:9px;margin-top:2px}
 .expbar{flex:1;max-width:120px;height:3px;border-radius:2px;background:rgba(127,127,127,.22);overflow:hidden}
 .expbar>i{display:block;height:100%;background:#9BE84A;border-radius:2px;box-shadow:0 0 4px rgba(155,232,74,.55)}
-[data-theme=light] .expbar>i{background:#7ED321;box-shadow:none}
 .exppct{font-size:.62rem;line-height:9px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* 보스 체크 탭: 본문 + 오른쪽 수익 패널 */
@@ -606,13 +605,6 @@ html.gated body>*:not(#svGate):not(#toast){visibility:hidden}
 #svGate .svghelp .muted{color:#9a9aa8}
 /* b66: NEXON Open API 표기 — 화면 하단 고정(스크롤 없이 보임), 기존 .foot 과 같은 작은 muted */
 #svGate .svgattrib{position:absolute;left:12px;right:12px;bottom:14px;margin:0;text-align:center;font-size:.78rem;color:#9a9aa8;line-height:1.3;pointer-events:none}
-html[data-theme="light"] #svGate{background:#f5f0ea;color:#2b2118}
-html[data-theme="light"] #svGate .svgbox{background:#fff;border-color:#eadfd2;box-shadow:0 12px 40px rgba(0,0,0,.1)}
-html[data-theme="light"] #svGate .svgd .muted,
-html[data-theme="light"] #svGate .svghelp .muted{color:#8a7765}
-html[data-theme="light"] #svGate .svgr input{background:#fff;color:#2b2118;border-color:#d9cbbd}
-html[data-theme="light"] #svGate .svghelp{color:#5a4a3a}
-html[data-theme="light"] #svGate .svgattrib{color:#8a7765}
 .empty-attrib{text-align:center;margin-top:14px;font-size:.78rem}
 .svwarn{background:#7a2e1f!important;color:#ffd9cc!important;border-color:#b5482f!important;font-size:.78rem;margin-right:6px}
 .svask{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -987,6 +979,16 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 #salesCard .sl{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 2px;border-bottom:1px solid var(--line)}
 #salesCard .sl:last-child{border-bottom:0}
 #salesCard .slm{color:#ff4fa3;white-space:nowrap}
+
+/* b67: 서버 모드 로그인 전 — 캐릭터 추가 창에 '본계정 API 키 등록'만 (#svMainSec) */
+.addm.svmain>.addsec:not(#svMainSec){display:none}
+#svMainSec .svmrow{flex-wrap:nowrap}
+#svMainSec #svMainKey{flex:1;min-width:0;text-align:left}
+#svMainSec .svmst{min-height:1.3em;margin:0 0 6px 4px;white-space:normal}
+.keyrej{color:#ff5a5a;font-weight:600;font-size:.9rem}
+.keyrej.soft{color:var(--muted);font-weight:400;font-size:.82rem}
+#svMainSec .svmattrib{text-align:center;margin-top:12px;font-size:.78rem}
+#svMainSec a{color:#ffb36b}
 </style>
 </head>
 <body>
@@ -999,7 +1001,6 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
     <div class="hspace"></div>
     <div class="gwrap"><button class="hbtn gbtn" id="gBtn" aria-haspopup="true" aria-expanded="false">☁ 구글 로그인</button>
       <div class="gmenu" id="gMenu" hidden role="dialog" aria-label="구글 드라이브 동기화"></div></div>
-    <button class="hbtn" id="themeBtn" title="테마 전환">🌙 다크</button>
   </div>
   <nav class="tabs" id="tabs">
     <button data-tab="boss" class="on">보스 현황</button>
@@ -2153,11 +2154,7 @@ const avatar = (c,cls='') => `<div class="avatar ${cls}">${safeImg(c.image)?`<im
 const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','guild']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
 let tab=(()=>{ try{ const t=localStorage.getItem(TAB_KEY); return TABS.includes(t)?t:'boss'; }catch(e){ return 'boss'; } })(), bossFilter='weekly', editMode=false;
 
-function applyTheme(){
-  const dark = S.theme ? S.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.dataset.theme = dark?'dark':'light';
-  $('#themeBtn').textContent = dark?'☀️ 라이트':'🌙 다크';
-}
+function applyTheme(){ document.documentElement.dataset.theme='dark'; } // b67: 다크 전용 (라이트 모드·테마 버튼 삭제, 저장된 테마·시스템 설정 무시)
 function render(){ if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),guild:renderGuild})[tab](); if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); renderResetInfo(); }
@@ -2934,8 +2931,25 @@ document.addEventListener('click',e=>{ const t=e.target.closest('[data-bkadd],[d
 document.addEventListener('change',e=>{ const id=e.target.dataset?.bklabel; if(!id) return; const a=accById(id); if(a){ a.bkLabel=e.target.value.trim()||a.label+' 예비'; save(); } });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.classList?.contains('bkin')){ e.preventDefault(); bkAdd(e.target.id.slice(5)); } });
 function openAdd(){ openImport(); }
+/* b67: 서버 모드에서 로그인(세션) 전 = 캐릭터 추가 창에 '본계정 API 키 등록'만 (예전 입장 화면의 대표 키 로그인과 같은 일) */
+const svNeedMain=()=>!!SV_ON&&!(svTok()&&gdMeta.on);
+function svMainRender(){
+  const modal=$('#importModal'); if(!modal) return;
+  const on=svNeedMain()&&modal.classList.contains('show'); modal.querySelector('.addm')?.classList.toggle('svmain',on);
+  let sec=$('#svMainSec'); if(!on){ sec?.remove(); return; }
+  if(!sec){ sec=document.createElement('section'); sec.className='addsec'; sec.id='svMainSec'; $('#addTitle').insertAdjacentElement('afterend',sec); }
+  const busy=gd.state==='connecting', err=gd.svErr, soft=err===SV_RELOGIN||err===SV_NEED_LOGIN, v=$('#svMainKey')?.value||'';
+  sec.innerHTML=`<div class="addsec-h"><b>🔑 본계정 API 키 등록</b></div>
+    <div class="accrow svmrow"><input class="pin acclbl" value="본계정" disabled aria-label="계정 이름"><input id="svMainKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="본계정 넥슨 API 키 (live_…) 붙여넣기" aria-label="본계정 API 키"${busy?' disabled':''}><button class="btn sm" id="svMainBtn"${busy?' disabled':''}>${busy?'확인 중…':'등록'}</button></div>
+    <div class="accst svmst" id="svMainSt">${err?`<span class="keyrej${soft?' soft':''}" role="alert">${esc(err)}</span>`:''}</div>
+    <div class="muted tiny">키 발급: <a href="https://openapi.nexon.com" target="_blank" rel="noopener">openapi.nexon.com</a> → 마이페이지 → 애플리케이션 상세에서 복사. 다른 PC 에서도 본계정 키만 넣으면 데이터와 부계정 키가 돌아와요.</div>
+    <div class="svmattrib muted">Data based on NEXON Open API</div>`;
+  const inp=$('#svMainKey'); if(inp){ inp.value=v; if(!busy) setTimeout(()=>inp.focus(),0); }
+}
 async function openImport(accId){
   const modal=$('#importModal'), wasOpen=modal.classList.contains('show');
+  if(svNeedMain()){ modal.classList.add('show'); impAccId=null; accChars=[]; svMainRender(); return; }
+  svMainRender(); // (로그인 상태면 본계정 등록 칸 제거)
   const usable=accounts().filter(a=>a.key);
   let a=(accById(accId)?.key&&accById(accId))||usable.find(x=>x.id===impAccId)||usable[0];
   modal.classList.add('show');
@@ -2996,7 +3010,7 @@ async function addAccount(){
   $('#newAccKey').value=''; $('#newAccLabel').value='';
   openImport(a.id); render();
 }
-function closeImport(){ $('#importModal').classList.remove('show'); accRej=null; accRejShow(); }
+function closeImport(){ $('#importModal').classList.remove('show'); accRej=null; accRejShow(); svMainRender(); if(SV_ON&&gd.svErr&&!svTok()) gd.svErr=''; }
 function renderImportList(){
   const min=parseInt($('#impMin').value)||0, w=$('#impWorld').value, q=normName($('#impQ').value);
   const have=new Set(S.characters.map(c=>c.ocid).filter(Boolean)), haveName=new Set(S.characters.map(c=>c.name));
@@ -3080,18 +3094,18 @@ const SV_ON = (()=>{ let u=SYNC_API_URL;
     u=localStorage.getItem('mapleBossTracker.syncApi')||u;
   }catch(e){} return String(u||'').replace(/\/+$/,''); })();
 const SV_TOKEN_KEY='mapleBossTracker.svToken', SV_DEVICE_KEY='mapleBossTracker.svDevice', SV_SUBSIG_KEY='mapleBossTracker.svSubSig', SV_USER_KEY='mapleBossTracker.svUser'; // svUser = 이 기기에서 마지막으로 로그인한 서버 사용자 (다른 사용자로 로그인하면 이 PC 데이터를 올리지 않고 비움) // svDevice = 초대 비밀번호를 통과한 기기 표 (로그아웃해도 유지)
-const svDev=()=>{ try{ return localStorage.getItem(SV_DEVICE_KEY)||''; }catch(e){ return ''; } };
+// (b67: svDev — 초대 비밀번호 기기 표 — 더 이상 쓰지 않음. 예전 기기의 mapleBossTracker.svDevice 값은 남아 있어도 무시)
 const svTok=()=>{ try{ return localStorage.getItem(SV_TOKEN_KEY)||''; }catch(e){ return ''; } };
-const SV_RELOGIN='로그인이 만료되었어요 — 초대 비밀번호와 대표 키로 다시 로그인해 주세요 (데이터는 서버와 이 PC에 그대로 있어요)';
+const SV_RELOGIN='로그인이 만료되었어요 — 캐릭터 추가(+ 추가)에서 본계정 API 키로 다시 로그인해 주세요 (데이터는 서버와 이 PC에 그대로 있어요)';
 const SV_VAULT_KEY='mapleBossTracker.svVault', SV_KEYERR_KEY='mapleBossTracker.svKeyErr'; // b62: 이 기기 로그인 때 금고 상태(open|none|locked) · 마지막 키 보관 오류
-const SV_NEED_LOGIN='로그인이 필요해요 — 상단 ☁ 버튼에서 넥슨 API 키로 로그인하면 이어서 동기화돼요 (바꾼 내용은 이 PC에 그대로 있어요)';
+const SV_NEED_LOGIN='로그인이 필요해요 — 캐릭터 추가(+ 추가)에서 본계정 API 키를 등록하면 이어서 동기화돼요 (바꾼 내용은 이 PC에 그대로 있어요)';
 async function svFetch(path,opt={}){
   const tok=svTok(); if(!tok&&!opt.noAuth) throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'});
   let r;
   try{ r=await fetch(SV_ON+path,{method:opt.method||'GET',keepalive:!!opt.keepalive,headers:{'Content-Type':'application/json',...(opt.noAuth?{}:{Authorization:'Bearer '+tok})},body:opt.body===undefined?undefined:JSON.stringify(opt.body)}); }
   catch(e){ throw Object.assign(new Error('동기화 서버에 연결하지 못했습니다 (인터넷 연결 확인)'),{type:'network'}); }
   let b=null; try{ b=await r.json(); }catch(e){}
-  if(r.status===401&&!opt.noAuth){ localStorage.removeItem(SV_TOKEN_KEY); gd.svErr=SV_RELOGIN; setTimeout(()=>svGate(),0); throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'}); }
+  if(r.status===401&&!opt.noAuth){ localStorage.removeItem(SV_TOKEN_KEY); gd.svErr=SV_RELOGIN; setTimeout(()=>{ gdRender(); if($('#importModal')?.classList.contains('show')) openImport(); },0); throw Object.assign(new Error(SV_NEED_LOGIN),{type:'interaction_required'}); }
   if(r.status===409&&opt.allow409) return {conflict:true,...b};
   if(!r.ok) throw Object.assign(new Error((b&&b.message)||`동기화 서버 오류 (HTTP ${r.status})`),{status:r.status,code:b&&b.error});
   return b;
@@ -3136,10 +3150,7 @@ function gdRender(){
   }
   const st=$('#gdStatus'); if(st) st.innerHTML=gdStatusHtml();
 }
-function svLoginHtml(){ // 서버 모드 로그인: (기기당 한 번) 초대 비밀번호 → 이 PC 에 등록된 키로 / 새 키 입력 (키는 화면에 표시하지 않음)
-  if(!svDev()) return `<div class="svlogin"><div class="muted tiny" style="margin:0 0 6px"><b>초대 비밀번호</b>를 넣어 주세요 (이 기기에서 한 번만).</div>
-    <div class="row" style="display:flex;gap:6px"><input class="pin" id="svInvite" type="password" autocomplete="off" placeholder="초대 비밀번호" style="flex:1;min-width:0;text-align:left"><button class="btn sm" id="svInviteBtn">확인</button></div>
-    ${gd.svErr?`<div class="impmsg warn" style="margin-top:6px">${esc(gd.svErr)}</div>`:''}</div>`;
+function svLoginHtml(){ // 서버 모드 로그인 (☁ 메뉴): 이 PC 에 등록된 키로 / 새 키 입력 (키는 화면에 표시하지 않음). b67: 초대 비밀번호 없음 — 주 입구는 캐릭터 추가 창
   const ks=accounts().filter(a=>a.key).sort((x,y)=>(y.main?1:0)-(x.main?1:0));
   return `<div class="svlogin"><div class="muted tiny" style="margin:0 0 6px"><b>대표 키</b>(본계정 넥슨 Open API 키)로 로그인하세요. 다른 기기에서도 대표 키만 넣으면 데이터와 등록한 <b>부계정 키</b>가 그대로 돌아와요. 대표 키 자체는 서버에 저장되지 않아요.</div>
     ${ks.length?`<div class="toolbar">${ks.map(a=>`<button class="btn sm" data-svlogin="${a.id}">${esc(a.label)} 키를 대표 키로 로그인</button>`).join('')}</div>`:''}
@@ -3191,6 +3202,7 @@ function gdMenu(open){
 }
 function gdHeaderClick(){ if(gd.state==='conflict'&&gd.pending){ gdMenu(false); return gdReask(); }
   if(SV_ON&&svTok()&&gdMeta.on){ gdMenu(false); return gdLogout(); } // 서버 모드: 헤더 버튼 = 로그아웃
+  if(SV_ON){ gdMenu(false); return openAdd(); } // b67: 로그인 안 함 → 캐릭터 추가 창(본계정 키 등록)
   if(!SV_ON&&gd.state==='reconnect'&&gdMeta.on&&gdUsable()){ gdMenu(false); return gdLogin(); } // [☁ 다시 연결] 한 번 누르면 바로 로그인 → 동기화
   gdMenu(); }
 function gdLoadLib(){
@@ -3516,13 +3528,13 @@ async function gdPush(opts={}){
   }catch(e){ gdFail(e,opts.manual); return false; }
   finally{ gd.ia=false; gd.busy=false; if(gd.again){ gd.again=false; gdChanged(); } }
 }
-function gdLogin(){ $('#driveModal').classList.remove('show'); if(SV_ON){ gdMenu(true); setTimeout(()=>$('#svKey')?.focus(),0); return; } gdConnect(true); }
+function gdLogin(){ $('#driveModal').classList.remove('show'); if(SV_ON){ openAdd(); return; } gdConnect(true); }
 /* ---- 서버 모드: 로그인 · 키 연결 · 드라이브에서 가져오기 ---- */
 async function svLogin(key,accId){
   key=String(key||'').trim(); if(!key){ gd.svErr='API 키를 넣어 주세요'; return gdRender(); }
-  gd.svErr=''; gdSet('connecting','넥슨 API 키 확인 중…'); if($('#svGate')) svGate();
+  gd.svErr=''; gdSet('connecting','넥슨 API 키 확인 중…'); svMainRender();
   try{
-    const b=await svFetch('/api/login',{method:'POST',noAuth:true,body:{key,device:svDev(),label:(navigator.userAgentData?.platform||navigator.platform||'').slice(0,30)}});
+    const b=await svFetch('/api/login',{method:'POST',noAuth:true,body:{key,label:(navigator.userAgentData?.platform||navigator.platform||'').slice(0,30)}});
     localStorage.setItem(SV_TOKEN_KEY,b.token);
     // 이 PC 데이터 주인 확인: 다른 사용자 → 비우고 서버 데이터만 / 같은 사용자 → 그대로 맞춤 / 이 기기 첫 로그인 → 물어봄
     const prev=localStorage.getItem(SV_USER_KEY);
@@ -3536,44 +3548,18 @@ async function svLogin(key,accId){
     if(same&&localStorage.getItem(GD_BASE_KEY)) gdMeta={...gdMeta,on:true}; else { gdMeta={on:true}; localStorage.removeItem(GD_BASE_KEY); }
     gdSaveMeta(); gd.remoteRev=undefined; gd.fileId=null;
     await gdConnect(true);
-    svGate();
     svAfterLogin();
+    if($('#importModal').classList.contains('show')) openImport(); // b67: 캐릭터 추가 창에서 로그인 → 평소 창(키 목록·캐릭터 목록)으로
     if(gd.state==='on') toast('☁ 로그인했습니다'+(b.newUser?' — 이 데이터를 서버에 저장합니다':''));
     svSeenPull();
-  }catch(e){ if(e.code==='need_invite') localStorage.removeItem(SV_DEVICE_KEY); gd.svErr=e.code==='sub_key'?'이미 등록된 부계정 API입니다.':e.message; gdSet('off'); if($('#svGate')) svGate(); else gdMenu(true); }
+  }catch(e){ gd.svErr=e.code==='sub_key'?'이미 등록된 부계정 API입니다.':e.message; gdSet('off'); if($('#importModal').classList.contains('show')) svMainRender(); else gdMenu(true); }
 }
 function svWipeLocal(){ // 이 브라우저의 보스 데이터 비우기 (테마·기기 표·서버 주소는 유지)
   const th=S.theme; clearTimeout(gd.timer); gd.timer=null; localStorage.removeItem(GD_BASE_KEY); localStorage.removeItem(SV_SUBSIG_KEY);
   const d=defaultState(); d.theme=th; gdLoad(d); lastSig=contentSig(S);
 }
-function svGate(){ // 서버 모드 입장 화면: ① 초대 비밀번호 → ② 대표 키 → ③ 로그인 성공 후에만 사이트 내용 (세션이 있으면 바로 사이트)
-  let g=$('#svGate');
-  if(!SV_ON||(svTok()&&gdMeta.on)){ if(g){ g.remove(); document.documentElement.classList.remove('gated'); } return; }
-  if(!g){ g=document.createElement('div'); g.id='svGate'; document.body.appendChild(g); document.documentElement.classList.add('gated'); }
-  const err=gd.svErr?`<div class="svgerr" role="alert">${esc(gd.svErr)}</div>`:'';
-  const step=svDev()?2:1, busy=gd.state==='connecting';
-  g.innerHTML=`<div class="svgbox" data-step="${step}"><div class="svgt">보스 캐릭터 관리</div>${step===1
-    ?`<div class="svgd"><b>초대 비밀번호</b>를 넣어 주세요.<br><span class="muted">이 기기에서 한 번만 물어봐요.</span></div>
-      <div class="svgr"><input class="pin" id="svInvite" type="password" autocomplete="off" placeholder="초대 비밀번호"><button class="btn sm" id="svInviteBtn">확인</button></div>`
-    :`<div class="svgd"><b>대표 키</b>(본계정 넥슨 Open API 키)로 로그인하세요.<br><span class="muted">대표 키는 서버에 저장되지 않아요. 등록한 부계정 키는 다른 기기에서도 대표 키만 넣으면 돌아와요.</span></div>
-      <div class="svgr"><input class="pin" id="svKey" type="password" autocomplete="off" placeholder="대표 키 붙여넣기"${busy?' disabled':''}><button class="btn sm" id="svLoginBtn"${busy?' disabled':''}>${busy?'확인 중…':'로그인'}</button></div>
-      <details class="svghelp" open><summary>넥슨 API 키 받는 법</summary><ol>
-        <li><a href="https://openapi.nexon.com/ko/" target="_blank" rel="noopener">openapi.nexon.com</a> 에서 넥슨 ID로 로그인</li>
-        <li>내 애플리케이션 → <b>애플리케이션 등록</b></li>
-        <li>게임은 <b>메이플스토리</b>, 타입은 <b>개발 단계</b>(서비스명만 입력) → 약관 동의 후 등록</li>
-        <li>애플리케이션 상세 화면의 <b>API Key</b>를 복사해 위에 붙여넣기</li></ol>
-        <div class="muted">넥슨 계정마다 키가 따로 있어요 (부계정은 로그인 후 따로 추가).</div></details>`}
-    ${err}</div>
-    <div class="svgattrib">Data based on NEXON Open API</div>`;
-  setTimeout(()=>$(step===1?'#svGate #svInvite':'#svGate #svKey')?.focus(),0);
-}
-async function svInvite(pass){
-  if(!String(pass||'').trim()){ gd.svErr='초대 비밀번호를 넣어 주세요'; return gdMenu(true); }
-  gd.svErr='';
-  try{ const b=await svFetch('/api/invite',{method:'POST',noAuth:true,body:{pass}}); localStorage.setItem(SV_DEVICE_KEY,b.device); toast('초대 확인 완료 — 이제 넥슨 API 키로 로그인하세요'); }
-  catch(e){ gd.svErr=e.message; }
-  if($('#svGate')) return svGate();
-  gdMenu(true); setTimeout(()=>$(svDev()?'#svKey':'#svInvite')?.focus(),0);
+function svGate(){ // b67: 입장 화면(초대 비밀번호·대표 키) 폐지 — 바로 대시보드. 예전 화면이 남아 있으면 지움 (호출하는 곳 호환용)
+  $('#svGate')?.remove(); document.documentElement.classList.remove('gated');
 }
 // 로그인에 쓴 키를 계정에 연결: 그 계정의 ah(서버 계정 해시) 기록 / 내려받은 데이터에서 같은 ah 계정에 키 채움 / 없으면 새 계정
 function svAfterLogin(){
@@ -3678,7 +3664,7 @@ async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그
     try{ if(svTok()) await svFetch('/api/logout',{method:'POST'}); }catch(e){}
     clearTimeout(gd.timer); gd.timer=null; gd.fileId=null; gd.remoteRev=undefined; localStorage.removeItem(SV_TOKEN_KEY); localStorage.removeItem(SV_SUBSIG_KEY); localStorage.removeItem(SV_VAULT_KEY); localStorage.removeItem(SV_KEYERR_KEY);
     gdMeta={}; localStorage.removeItem(GD.META_KEY); localStorage.removeItem(GD_BASE_KEY);
-    svWipeLocal(); gd.svErr=''; gdSet('off'); render(); svGate(); toast('로그아웃했습니다 (이 PC의 보스 데이터도 지웠어요 — 다시 로그인하면 서버에서 불러옵니다)'); return;
+    svWipeLocal(); gd.svErr=''; gdSet('off'); render(); svGate(); toast('로그아웃했습니다 (이 PC의 보스 데이터도 지웠어요 — 캐릭터 추가에서 본계정 키를 넣으면 서버에서 불러옵니다)'); return;
   }
   if(gdMeta.on && gdLocalDirty()){
     const ok=gdHasTok() ? await gdPush() : false;
@@ -3756,8 +3742,8 @@ document.addEventListener('click',e=>{
     case 'pendSave': pendSave(); break;
     case 'gdLogin': gdLogin(); break;
     case 'svSubBtn': svAddSub($('#svSubKey')?.value); break;
-    case 'svInviteBtn': svInvite(($('#svGate #svInvite')||$('#svInvite'))?.value); break;
-    case 'svLoginBtn': if($('#svGate')){ svLogin($('#svGate #svKey')?.value); break; } svLogin($('#svKey')?.value); break;
+    case 'svMainBtn': svLogin($('#svMainKey')?.value); break;
+    case 'svLoginBtn': svLogin($('#svKey')?.value); break;
     case 'svImportDrive': gdMenu(false); svImportDrive(); break;
     case 'gdLogout': gdLogout(false); break;
     case 'gdSaveNow': gdPush({manual:true}); break;
@@ -3786,7 +3772,7 @@ document.addEventListener('pointerdown',e=>{ const t=e.target.closest?.('[data-t
   if(e.pointerType==='touch'){ tipTouchAt=t?Date.now():0; if(t){ tipShow(t); clearTimeout(tipTimer); tipTimer=setTimeout(tipHide,3000); } else tipHide(); } },true);
 let tipKbd=false; // 키보드(Tab)로 칩에 왔을 때만 포커스로 표시/숨김 — 클릭·터치 뒤 다시 그려질 때 툴팁이 사라지지 않게
 document.addEventListener('keydown',e=>{ if(e.key==='Tab') tipKbd=true; },true);
-document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='svKey'){ e.preventDefault(); svLogin(e.target.value); } if(e.key==='Enter'&&e.target.id==='svSubKey'){ e.preventDefault(); svAddSub(e.target.value); } if(e.key==='Enter'&&e.target.id==='svInvite'){ e.preventDefault(); svInvite(e.target.value); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='svMainKey'){ e.preventDefault(); svLogin(e.target.value); return; } if(e.key==='Enter'&&e.target.id==='svKey'){ e.preventDefault(); svLogin(e.target.value); } if(e.key==='Enter'&&e.target.id==='svSubKey'){ e.preventDefault(); svAddSub(e.target.value); } if(e.key==='Enter'&&e.target.id==='svInvite'){ e.preventDefault(); svInvite(e.target.value); } });
 document.addEventListener('pointerdown',()=>{ tipKbd=false; },true);
 document.addEventListener('focusin',e=>{ if(!tipKbd) return; const t=e.target.closest?.('[data-tip]'); if(t) tipShow(t); });
 document.addEventListener('focusout',()=>{ if(tipKbd) tipHide(); });
@@ -3812,7 +3798,6 @@ $('#addCharBtn').onclick=()=>openAdd();
 $('#fCancel').onclick=closeCharModal; $('#fSave').onclick=saveChar; $('#fDelete').onclick=deleteChar; $('#fLookup').onclick=lookupByName;
 $('#charModal').addEventListener('click',e=>{ if(e.target.id==='charModal') closeCharModal(); });
 document.addEventListener('keydown',e=>{ if(!$('#charModal').classList.contains('show')) return; if(e.key==='Escape') closeCharModal(); if(e.key==='Enter'&&e.target.id!=='fName') saveChar(); if(e.key==='Enter'&&e.target.id==='fName') (hasApi()?lookupByName():saveChar()); });
-$('#themeBtn').onclick=()=>{ const dark=document.documentElement.dataset.theme==='dark'; S.theme=dark?'light':'dark'; save(); applyTheme(); };
 
 // 드라이브 저장용 직렬화 (withKeys=true: API 키 포함 / false: 비교용, 키 제외)
 function backupData(withKeys){
@@ -3834,6 +3819,7 @@ function applyData(d){
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
 load();
+if(S.theme!=null) S.theme=null; // b67: 예전에 저장된 테마(라이트/다크) 선택 삭제 — 항상 다크
 /* b64 (2026-10-12): 등록된 API 키 전체 초기화 (사용자 요청) — 서버 모드 기기마다 이 버전을 처음 열 때 한 번:
  *  이 기기에 저장된 대표·부계정·예비 키(settings.accounts[].key/bk/bkLabel)만 비움. 계정 칸(id·이름·ah)과 캐릭터·기록·수익 등은 그대로.
  *  금고 상태 표시도 지우고, 키가 있던 기기는 세션도 지워 대표 키로 다시 로그인하게 함(같은 사용자 → 저장 안 한 변경 유지·3-way 병합).

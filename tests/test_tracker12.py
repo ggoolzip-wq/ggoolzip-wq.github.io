@@ -65,7 +65,7 @@ try:
     check('warning disappears after 검마 clear', ov()['c1']=='★ 이번 주 보스 완료')
     pg.evaluate("(()=>{const c=S.characters.find(c=>c.id==='c2');delete c.weekly[Object.keys(c.weekly)[0]];save();render();})()"); pg.wait_for_timeout(150)
     check('overlay gone below 12', ov()['c2'] is None)
-    pg.click('#themeBtn'); pg.wait_for_timeout(150); pg.locator('#charList').screenshot(path=OUT+'/stamp_dark.png'); pg.click('#themeBtn')
+    pg.locator('#charList').screenshot(path=OUT+'/stamp_dark.png')  # b67: 다크 전용 (테마 버튼 없음)
     pg.evaluate("(()=>{S.period.week='2000-01-01';save();})()"); pg.reload(); pg.wait_for_timeout(600)
     check('overlay gone after weekly reset', all(v is None for v in ov().values()), ov())
     m=ctx.new_page(); m.set_viewport_size({'width':375,'height':812}); m.on('pageerror',lambda e:errs.append(str(e)))

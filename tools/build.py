@@ -27,7 +27,7 @@ if os.path.exists(os.path.join(SRC, 'worldicons.json')):  # 공식 월드 아이
     s = s.replace('/*__WORLD_ICONS__*/{}', json.dumps(js('worldicons.json'), separators=(',', ':'), ensure_ascii=False))
 css = rd('style_v1.css').replace('</style>', rd('extra.css') + '</style>')
 LOGO = js('logo.json')  # 주황버섯 (mob 1210102, maplestory.io KMS 389 mob icon)
-head = ('<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n'
+head = ('<!DOCTYPE html>\n<html lang="ko" data-theme="dark">\n<head>\n<meta charset="UTF-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>보스 캐릭터 관리</title>\n'
         f'<link rel="icon" type="image/png" sizes="32x32" href="{LOGO["s32"]}">\n'
         f'<link rel="icon" type="image/png" sizes="16x16" href="{LOGO["s16"]}">\n'

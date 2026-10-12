@@ -39,8 +39,7 @@ st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1'
 server_state=lambda: dev.sql("SELECT rev, data FROM state")
 def wait_on(pg,t=15000): pg.wait_for_function("gd.state==='on'&&!gd.busy&&!gd.timer",timeout=t); pg.wait_for_timeout(150)
 KF='live_KEY_F_0123456789abcdef'
-def invite(pg):
-    pg.wait_for_selector('#svGate #svInvite'); pg.fill('#svGate #svInvite',cf_dev.TEST_PASS); pg.click('#svGate #svInviteBtn'); pg.wait_for_selector('#svGate #svKey')
+def invite(pg): pass  # b67: 초대 비밀번호 폐지
 def shot(pg,name):
     pg.evaluate('gdMenu(true)'); pg.wait_for_timeout(200); pth=os.path.join(OUT,name); pg.locator('#gMenu').screenshot(path=pth)
     if SHOTDIR: shutil.copy(pth,SHOTDIR)
@@ -48,24 +47,25 @@ KB='live_KEY_B_0123456789abcdef'
 def chars_of(u):
     rows=dev.sql("SELECT s.data FROM state s JOIN accounts a ON a.user_id=s.user_id WHERE a.acct_hash='%s'"%u)
     return [c['name'] for c in json.loads(rows[0]['data'])['characters']] if rows else None
-def login(pg,key):
-    pg.wait_for_selector('#svGate #svKey'); pg.fill('#svGate #svKey',key); pg.press('#svGate #svKey','Enter'); wait_on(pg)
+def login(pg,key):  # b67: 캐릭터 추가 창 → 본계정 API 키 등록
+    if not pg.evaluate("document.querySelector('#importModal').classList.contains('show')"): pg.evaluate('openAdd()')
+    pg.wait_for_selector('#svMainKey'); pg.fill('#svMainKey',key); pg.press('#svMainKey','Enter'); wait_on(pg); pg.evaluate('closeImport()')
 def nusers(): return dev.sql("SELECT COUNT(*) n FROM users")[0]['n']
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     ca,pa=mkctx(b); pa.goto(URL)
     pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
-    check('gate shown before any content', pa.is_visible('#svGate') and pa.evaluate("document.elementFromPoint(640,400).closest('#svGate')!==null"))
+    check('b67: no gate — dashboard shown right away', pa.locator('#svGate').count()==0 and pa.is_visible('#charList'))
     shot(pa,'x') if False else None
     pth=os.path.join(OUT,'sv_entry_gate.png'); pa.screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
     def gshot(n): pth=os.path.join(OUT,n); pa.screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
     pa.evaluate("localStorage.setItem('mapleBossTracker.v1',JSON.stringify({...JSON.parse(localStorage.getItem('mapleBossTracker.v1')),theme:'dark'}))")
-    gshot('gate_1_invite.png'); invite(pa); gshot('gate_2_main_key.png')
-    check('step 2: still blank (content hidden), main key box', pa.evaluate("document.documentElement.classList.contains('gated')") and pa.is_visible('#svGate #svKey'))
+    pa.evaluate('openAdd()'); pa.wait_for_selector('#svMainKey'); gshot('b67_main_key_modal.png')
+    check('b67: + 추가 → main-key-only modal', pa.is_visible('#svMainKey') and not pa.is_visible('#accList') and not pa.is_visible('#impSec'))
     # 1) 이 기기 첫 로그인 (A) → 질문 → 예 → 올림
     login(pa,KA); ah_a=st(pa)['settings']['accounts'][0]['ah']
-    gshot('gate_3_site.png'); check('step 3: site visible after main-key login', pa.locator('#svGate').count()==0 and pa.is_visible('#charList'))
+    gshot('b67_site.png'); check('step 3: site visible after main-key login', pa.locator('#svGate').count()==0 and pa.is_visible('#charList'))
     # 세션이 있는 기기: 새로고침하면 바로 사이트
     pa.reload(); pa.wait_for_timeout(800); check('valid session → reload goes straight to site', pa.locator('#svGate').count()==0, pa.locator('#svGate').count())
     check('first login: asked "이 PC 데이터를 이 계정으로 올릴까요?" and uploaded on yes', any('이 계정으로 올릴까요' in m for m in dialogs) and chars_of(ah_a)==['단풍용사','불독메이지'], (dialogs,chars_of(ah_a)))
@@ -77,7 +77,7 @@ try:
     # 3) 로그아웃 없이 사용자 바꿈 (세션 토큰만 사라진 경우) → 이 PC(B) 데이터를 A 에 합치지 않음
     pa.evaluate("S.characters.push({...S.characters[0]||{},id:'cb',name:'B캐릭',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}});save();svSaveNow()"); pa.wait_for_timeout(1500); wait_on(pa)
     check('B saved its own char', chars_of(ah_b)==['B캐릭'], chars_of(ah_b))
-    pa.evaluate("localStorage.removeItem('mapleBossTracker.svToken');gdMeta={};gdSaveMeta();gdSet('off');svGate()")
+    pa.evaluate("localStorage.removeItem('mapleBossTracker.svToken');gdMeta={};gdSaveMeta();gdSet('off')")
     n=len(dialogs); login(pa,KA)
     check('switch B→A without logout: local B data wiped, A data loaded, nothing merged', [c['name'] for c in st(pa)['characters']]==['단풍용사','불독메이지'] and chars_of(ah_a)==['단풍용사','불독메이지'] and chars_of(ah_b)==['B캐릭'] and len(dialogs)==n, ([c['name'] for c in st(pa)['characters']],chars_of(ah_a)))
     check('2 users total, A and B separate', nusers()==2, nusers())
@@ -97,9 +97,9 @@ try:
     check('save fails → small warning chip, still logged in', pc.evaluate('!!svTok()') and pc.is_visible('#svWarn') and pc.text_content('#gBtn')=='로그아웃', pc.evaluate('gd.state'))
     pc.unroute(API+'/api/state'); pc.click('#pendSave'); pc.wait_for_timeout(1500)
     check('저장 button saves to server', chars_of(ah_a)[0]=='바뀐이름' and not pc.evaluate('svUnsaved()'), chars_of(ah_a))
-    pc.evaluate("S.characters[0].name='버릴이름';save()"); n=len(dialogs); pc.click('#gBtn'); pc.wait_for_selector('#svGate #svKey',timeout=8000)
+    pc.evaluate("S.characters[0].name='버릴이름';save()"); n=len(dialogs); pc.click('#gBtn'); pc.wait_for_function("!svTok()",timeout=8000); pc.wait_for_timeout(300)
     check('logout with unsaved changes → no prompt, changes discarded, local cleared', pc.locator('#svAsk').count()==0 and len(dialogs)==n and chars_of(ah_a)[0]=='바뀐이름' and st(pc)['characters']==[])
-    login(pc,KA); n=len(dialogs); pc.click('#gBtn'); pc.wait_for_selector('#svGate #svKey',timeout=8000)
+    login(pc,KA); n=len(dialogs); pc.click('#gBtn'); pc.wait_for_function("!svTok()",timeout=8000); pc.wait_for_timeout(300)
     check('logout with nothing unsaved → no prompt', pc.locator('#svAsk').count()==0 and len(dialogs)==n)
     check('no google popup, no page errors', not popups and not errs, (popups,errs[:3]))
     b.close()

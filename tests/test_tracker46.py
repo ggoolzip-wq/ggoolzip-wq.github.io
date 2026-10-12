@@ -38,10 +38,11 @@ def mkctx(b):
     pg.on('console',lambda m:errs.append('console:'+m.text) if m.type=='error' and 'Failed to load resource' not in m.text and 'net::' not in m.text else None)
     return ctx,pg
 st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1'))")
-def wait_on(pg,t=15000): pg.wait_for_function("gd.state==='on'&&!gd.busy&&!gd.timer",timeout=t); pg.wait_for_timeout(200)
-def invite(pg):
-    pg.wait_for_selector('#svGate #svInvite'); pg.fill('#svGate #svInvite',cf_dev.TEST_PASS); pg.click('#svGate #svInviteBtn'); pg.wait_for_selector('#svGate #svKey')
-def login(pg,key): pg.fill('#svGate #svKey',key); pg.click('#svGate #svLoginBtn')
+def wait_on(pg,t=15000): pg.wait_for_function("gd.state==='on'&&!gd.busy&&!gd.timer",timeout=t); pg.wait_for_timeout(200); pg.evaluate("closeImport()")
+def invite(pg): pass  # b67: 초대 비밀번호 폐지 (호환용 빈 함수)
+def login(pg,key):  # b67: 캐릭터 추가 창의 '본계정 API 키 등록'으로 로그인
+    if not pg.evaluate("document.querySelector('#importModal').classList.contains('show')"): pg.evaluate("openAdd()")
+    pg.wait_for_selector('#svMainKey'); pg.fill('#svMainKey',key); pg.click('#svMainBtn')
 def fresh(b):
     c,p=mkctx(b); p.goto(URL); p.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",API); p.reload(); p.wait_for_timeout(400); return c,p
 keyset=lambda s: sorted(x for a in s['settings']['accounts'] for x in (a.get('key'),a.get('bk')) if x)
@@ -75,24 +76,22 @@ try:
     # ---- 새 기기 C: 부계정 키 / 예비 키 → 빨간 글, 로그인 안 됨 ----
     cc,pc=fresh(b); invite(pc)
     for k,nm in ((KF,'부계정 키'),(BKG,'부계정 예비 키'),(BKA,'본계정 예비 키')):
-        login(pc,k); pc.wait_for_selector('#svGate .svgerr',timeout=10000); pc.wait_for_timeout(200)
-        t=pc.inner_text('#svGate .svgerr'); col=pc.evaluate("getComputedStyle(document.querySelector('#svGate .svgerr')).color")
-        check(f'C: {nm} 로그인 → 빨간 \'이미 등록된 부계정 API입니다.\' + 로그인 안 됨', t.strip()=='이미 등록된 부계정 API입니다.' and col=='rgb(255, 90, 90)' and not pc.evaluate("localStorage.getItem('mapleBossTracker.svToken')") and pc.locator('#svGate').count()==1, (t,col))
-    pc.locator('#svGate .svgbox').screenshot(path='/workspace/maple-boss-tracker/oct12b_subkey_warn.png')
+        login(pc,k); pc.wait_for_selector('#svMainSt .keyrej',timeout=10000); pc.wait_for_timeout(200)
+        t=pc.inner_text('#svMainSt .keyrej'); col=pc.evaluate("getComputedStyle(document.querySelector('#svMainSt .keyrej')).color")
+        check(f'C: {nm} 로그인 → 빨간 \'이미 등록된 부계정 API입니다.\' + 로그인 안 됨', t.strip()=='이미 등록된 부계정 API입니다.' and col=='rgb(255, 90, 90)' and not pc.evaluate("localStorage.getItem('mapleBossTracker.svToken')") and pc.locator('#svMainSec').count()==1, (t,col))
     # ---- 강제 로그아웃: A 의 세션·기기 표를 기준 시각 이전으로 → 다시 열면 입장 화면, 비밀번호부터 ----
     pa.evaluate("()=>{S.characters[0].name='단풍용사2';save();}")  # 저장 안 한 변경(이 PC 에만)
     ep=int(dev.sql("SELECT v FROM meta WHERE k='auth_epoch_b62'")[0]['v'])
-    tok=pa.evaluate("localStorage.getItem('mapleBossTracker.svToken')"); dv=pa.evaluate("localStorage.getItem('mapleBossTracker.svDevice')")
+    tok=pa.evaluate("localStorage.getItem('mapleBossTracker.svToken')")
     dev.sql(f"UPDATE sessions SET created_at={ep-1000} WHERE token_hash='{hashlib.sha256(tok.encode()).hexdigest()}'")
-    dev.sql(f"UPDATE devices SET created_at={ep-1000} WHERE ticket_hash='{hashlib.sha256(dv.encode()).hexdigest()}'")
     before=dev.sql("SELECT rev FROM state")[0]['rev']
-    pa.reload(); pa.wait_for_selector('#svGate .svgerr',timeout=15000); pa.wait_for_timeout(300)
-    check('예전 세션: 새로고침하면 입장 화면 + 다시 로그인 안내', '다시 로그인' in pa.inner_text('#svGate') and not pa.evaluate("localStorage.getItem('mapleBossTracker.svToken')"), pa.inner_text('#svGate')[:200])
+    pa.reload(); pa.wait_for_function("!localStorage.getItem('mapleBossTracker.svToken')",timeout=15000); pa.wait_for_timeout(300)
+    check('예전 세션: 새로고침하면 (입장 화면 없이) 로그아웃 상태 + 다시 로그인 안내', pa.locator('#svGate').count()==0 and '다시 로그인' in pa.evaluate("gd.svErr") and pa.inner_text('#gBtn').strip() in ('☁ 로그인','☁ 다시 로그인'), (pa.evaluate("gd.svErr"),pa.inner_text('#gBtn')))
     sa=st(pa); check('예전 세션: 이 PC 데이터·키는 지우지 않음', sa['characters'][0]['name']=='단풍용사2' and keyset(sa)==sorted([KA,KF,KG,BKA,BKG]), keyset(sa))
     check('예전 세션: 서버 데이터 그대로', dev.sql("SELECT rev FROM state")[0]['rev']==before)
-    login(pa,KA); pa.wait_for_selector('#svGate #svInvite',timeout=10000)
-    check('예전 기기 표 → 초대 비밀번호 다시 입력', pa.locator('#svGate #svInvite').count()==1)
-    invite(pa); login(pa,KA); wait_on(pa); pa.wait_for_timeout(500)
+    pa.click('#gBtn'); pa.wait_for_selector('#svMainSec .keyrej.soft',timeout=5000)
+    check('☁ 로그인 → 캐릭터 추가 창에 본계정 키 칸만 + 다시 로그인 안내', '다시 로그인' in pa.inner_text('#svMainSt') and not pa.is_visible('#accList'))
+    login(pa,KA); wait_on(pa); pa.wait_for_timeout(500)
     sa=st(pa); check('다시 로그인: 묻지 않고 합침, 저장 안 했던 변경 유지, 키 그대로', not pa.evaluate("document.querySelector('#driveModal').classList.contains('show')") and sa['characters'][0]['name']=='단풍용사2' and keyset(sa)==sorted([KA,KF,KG,BKA,BKG]), (sa['characters'][0]['name'],keyset(sa)))
     srvd=json.loads(dev.sql("SELECT data FROM state")[0]['data']); check('다시 로그인 후 서버에도 반영(데이터 손실 없음)', [c['name'] for c in srvd['characters']]==['단풍용사2','부캐F','부캐G'], [c['name'] for c in srvd['characters']])
     # ---- 또 다른 새 기기 D: 강제 로그아웃 뒤에도 대표 키 → 전부 복원 ----

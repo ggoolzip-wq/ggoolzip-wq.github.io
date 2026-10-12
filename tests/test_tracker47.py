@@ -83,7 +83,7 @@ try:
     ws=pg.evaluate("weekSummary(S.period.week).perChar"); revs=[pc.get('revs') for pc in ws if pc.get('revs')]
     check('주간 기록(perChar.revs)에 남음', revs and sum(v['m'] for v in revs[0].values())==550000000, revs)
     # 라이트 테마 + 모바일 화면
-    pg.evaluate("S.theme='light'; save(); applyTheme&&applyTheme(); render()") if pg.evaluate("typeof applyTheme==='function'") else pg.evaluate("S.theme='light'; save(); location.reload()")
+    pg.evaluate("render()")  # b67: 라이트 테마 없음 (다크 전용)
     pg.wait_for_timeout(600); pg.click('[data-tab=boss]'); pg.wait_for_timeout(300)
     pg.evaluate(f"(()=>{{const c=S.characters[0],b=findBoss('kaling'); askRev(c,b,'{kitems[0]}','{kitems[0].split('|')[1]}',null)}})()"); pg.wait_for_selector('#revModal')
     pg.screenshot(path=f'{SHOT}/oct12b_revmodal_light.png'); pg.click('.rvno')

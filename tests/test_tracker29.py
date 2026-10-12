@@ -1,15 +1,12 @@
-# 입장 화면 오류 문구가 보이는지 (투명 배경 + 빨간 글자) — 초대 비밀번호 / 대표 키 단계
+# b67: (예전 입장 화면 오류 문구 검사 → 대체) 캐릭터 추가 창 '본계정 API 키 등록' 오류 문구가 보이는지 — 투명 배경 + 빨간 글자
 import os, sys, json, subprocess, time, urllib.request, shutil
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
-SHOTDIR=os.environ.get('MBT_SHOTDIR')
 from playwright.sync_api import sync_playwright
 errs=[]; fails=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-def shot(loc,name,**kw):
-    pth=os.path.join(OUT,name); loc.screenshot(path=pth,**kw); SHOTDIR and shutil.copy(pth,SHOTDIR)
 PORT=8829
 srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
@@ -17,28 +14,30 @@ for _ in range(50):
     except Exception: time.sleep(0.1)
 URL=f'http://localhost:{PORT}/index.html'
 API='https://fake-sync.example'
+RESP={'login':(401,{'error':'invalid_key','message':'넥슨이 이 API 키를 거부했습니다 (키 확인)'})}
 def fake(route):
     u=route.request.url
-    if u.endswith('/api/invite'): return route.fulfill(status=403,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps({'error':'bad_invite','message':'초대 비밀번호가 맞지 않습니다'}))
-    if u.endswith('/api/login'): return route.fulfill(status=400,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps({'error':'bad_key','message':'넥슨 API 키가 올바르지 않습니다'}))
+    if u.endswith('/api/login'): s,b=RESP['login']; return route.fulfill(status=s,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps(b))
     route.fulfill(status=404,headers={'Access-Control-Allow-Origin':'*'},body='{}')
 def look(pg):
-    return pg.evaluate("(()=>{const e=document.querySelector('#svGate .svgerr');if(!e)return null;const c=getComputedStyle(e),b=getComputedStyle(document.body);return {t:e.textContent,color:c.color,bg:c.backgroundColor,vis:e.offsetHeight>0&&c.opacity==='1'&&c.visibility==='visible'}})()")
+    return pg.evaluate("(()=>{const e=document.querySelector('#svMainSt .keyrej');if(!e)return null;const c=getComputedStyle(e);return {t:e.textContent,color:c.color,bg:c.backgroundColor,vis:e.offsetHeight>0&&c.opacity==='1'&&c.visibility==='visible'}})()")
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     pg=b.new_page(viewport={'width':1280,'height':800},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route(API+'/**',fake); pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
-    pg.goto(URL); pg.evaluate("a=>{localStorage.clear();localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',a)}",API); pg.reload(); pg.wait_for_selector('#svGate #svInvite')
-    pg.fill('#svGate #svInvite','wrong'); pg.press('#svGate #svInvite','Enter'); pg.wait_for_selector('#svGate .svgerr')
+    pg.goto(URL); pg.evaluate("a=>{localStorage.clear();localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',a)}",API); pg.reload(); pg.wait_for_timeout(400)
+    pg.evaluate('openAdd()'); pg.wait_for_selector('#svMainKey')
+    pg.fill('#svMainKey','live_bad_key_value_0123456'); pg.press('#svMainKey','Enter'); pg.wait_for_selector('#svMainSt .keyrej')
     l=look(pg)
-    check('invite: error visible, red #ff5a5a, transparent background', l and '초대 비밀번호' in l['t'] and l['color']=='rgb(255, 90, 90)' and l['bg'] in ('rgba(0, 0, 0, 0)','transparent') and l['vis'], l)
-    pg.screenshot(path=os.path.join(OUT,'b35_gate.png')); shutil.copy(os.path.join(OUT,'b35_gate.png'),'/workspace/shots/b35_gate.png')
-    pg.evaluate("localStorage.setItem('mapleBossTracker.svDevice','dev-ticket'); gd.svErr=''; svGate()"); pg.wait_for_selector('#svGate #svKey')
-    pg.fill('#svGate #svKey','bad_key_value'); pg.press('#svGate #svKey','Enter'); pg.wait_for_selector('#svGate .svgerr')
-    l=look(pg)
-    check('key step: error visible, red, transparent background', l and l['t'] and l['color']=='rgb(255, 90, 90)' and l['bg'] in ('rgba(0, 0, 0, 0)','transparent') and l['vis'], l)
-    pg.screenshot(path=os.path.join(OUT,'b35_gate_key.png')); shutil.copy(os.path.join(OUT,'b35_gate_key.png'),'/workspace/shots/b35_gate_key.png')
+    check('invalid key: clear error, red #ff5a5a, transparent background', l and '거부' in l['t'] and l['color']=='rgb(255, 90, 90)' and l['bg'] in ('rgba(0, 0, 0, 0)','transparent') and l['vis'], l)
+    check('invalid key: no session, still main-key-only', not pg.evaluate('svTok()') and pg.is_visible('#svMainKey') and not pg.is_visible('#accList'))
+    RESP['login']=(403,{'error':'sub_key','message':'이미 등록된 부계정 API입니다.'})
+    pg.fill('#svMainKey','live_sub_key_value_0123456'); pg.click('#svMainBtn'); pg.wait_for_function("document.querySelector('#svMainSt .keyrej')?.textContent==='이미 등록된 부계정 API입니다.'",timeout=5000)
+    l=look(pg); check("alt key as main: red '이미 등록된 부계정 API입니다.' (no '등록 완료')", l and l['color']=='rgb(255, 90, 90)' and '등록 완료' not in pg.inner_text('#svMainSec'), l)
+    pg.locator('#importModal .modal').screenshot(path=os.path.join(OUT,'b67_mainkey_err.png'))
+    pg.evaluate('closeImport()'); pg.evaluate('openAdd()'); pg.wait_for_timeout(100)
+    check('error cleared when the modal is reopened', look(pg) is None)
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

@@ -11,6 +11,18 @@
 6. **작업을 시작할 때마다** 사용 한도량(사용치)을 사용자에게 알리고, 한도 100% 전에 끝낼 수 없는 작업이면 **'한도 때문에 작업 불가'라고 미리** 알린다.
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## 2026-10-12 b67 (초대 비밀번호·입장 화면 폐지 → '캐릭터 추가'에서 본계정 키로 로그인 · 공개 접속 남용 방지 · 다크 전용)
+(src 수정→build→테스트→main 일반 push, Worker 는 `cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`. HANDOFF 기록은 항상.)
+1. **입장 화면(#svGate)·초대 비밀번호 없음**: bossmaple.pages.dev 는 바로 대시보드(로그인 전 = 빈 화면 '캐릭터를 추가하세요'). `svGate()` 는 예전 #svGate 를 지우는 빈 함수, `svInvite`·기기 표 요청 삭제. 예전 b62·b66·친구 초대 설명은 이 항목으로 대체됨.
+2. **로그인·가입 = 왼쪽 위 '캐릭터 추가'(+ 추가)**: 세션이 없으면(`svNeedMain()` = 서버 모드 && !(svTok && gdMeta.on)) 창에 **본계정 API 키 칸 + [등록] 버튼만**(`#svMainSec`, `.addm.svmain` 이 다른 `.addsec` 숨김 — 부계정·예비 키·캐릭터 목록 없음), 아래 키 받는 법 링크와 `Data based on NEXON Open API`. 등록 = 예전 입장 화면 로그인과 같음(POST /api/login: 계정 생성/복원 → 금고 v2 키·데이터·소식 읽음·세션 복원) → 성공하면 같은 창이 **지금까지의 캐릭터 추가 창**으로 바뀜. 부계정/예비 키를 넣으면 '등록 완료' 자리에 빨간 **'이미 등록된 부계정 API입니다.'**(`#svMainSt .keyrej`, #ff5a5a), 잘못된 키는 넥슨 오류 문구 빨간 글. 창을 닫았다 열면 지워짐. ☁ 헤더 '☁ 로그인'·401(만료) 때도 이 창. 로그아웃은 ☁ 메뉴 그대로 → 다시 이 상태. github.io(드라이브 모드)는 변화 없음.
+3. **서버(Worker, health v:'b67')**: 세션 생성에 SITE_PASS 불필요(`checkDevice` 삭제, device 값 무시, /api/invite 는 예전 캐시 클라이언트용으로 남김). 남용 방지(D1 `rate` 고정 창, IP 는 해시): 로그인 **IP당 30회/10분**, 새 사용자 생성 **IP당 10명/일 + 전체 300명/일**, 모든 API **IP당 읽기 300/분·쓰기 120/분**(PC방 공유 IP 고려, 기존 세션별 읽기 90/분·저장 20/분, 사용자별 저장 40/분, keycheck 30/10분은 그대로). 크기: 데이터 **사용자당 최대 512KB**(넘으면 413 '최대 512KB, 지금 NKB'; 현재 사용자 데이터 ≈54KB), 요청 본문 Content-Length 로 먼저 거절(state 576KB, 그 외 64KB), 기록(history) **10개** 유지, 데이터당 넥슨 계정 **40개**(link/subkeys). EPOCH_KEY 그대로 → **기존 세션 강제 로그아웃 없음**, 사용자·데이터 그대로. Worker Version af44c079 (11:38 KST 배포, health v:b67, 배포 뒤 D1 개수 배포 전과 같음·기존 세션 1개 그대로).
+4. **다크 전용**: 오른쪽 위 라이트/다크 버튼(#themeBtn) 삭제, `applyTheme()` 은 항상 dark, build.py 가 `<html data-theme="dark">` 로 출력, 저장된 `S.theme` 은 load 때 지움(prefers-color-scheme 무시). 라이트 전용 CSS(`[data-theme=light] .expbar>i`, `html[data-theme="light"] #svGate…`) 삭제. style_v1.css 의 :root 기본 변수와 `html:not(.dark)` 규칙은 다크에서도 쓰여 남김. 예전 섹션의 '라이트' 색 설명은 이제 무시.
+5. 테스트: test_server(초대 없이 로그인·device 무시, 530KB→413·500KB 저장, 64KB 넘는 본문 413, 새 사용자 11번째 429·기존 사용자 로그인 됨, IP 쓰기 121번째 429), test23·24·25·29·46·49(입장 화면 → 본계정 키 창 흐름), test50(첫 화면·다크 전용 이전·본계정 키 창·모바일·github.io), 신규 **test_tracker51**(처음 온 사람 → 본계정 키만 → 잘못된 키 → 등록 → 일반 창 → 부계정 키 추가 → 로그아웃 → 부계정 키로 로그인 시 빨간 글 → 새 PC 본계정 키로 데이터·키 복원), 12·14·19·47·48 테마 버튼 기대 제거. 전체(run_all.sh) 결과: 새·수정 테스트 전부 통과. 예전부터 실패(이번과 무관, HEAD 에서도 같음): 8·10·16(시간 초과), 9·30(가격 꼬리말 문구), 13·14(박스에 떠 있는 다른 :8787 서버(/workspace/maple-boss-tracker)를 읽음 — 예전 index)·15(예전 UI 기대), 27(아바타), 28(제목 이름).
+6. D1 백업(변경 전): /workspace/backup/b67_before_20261012_112957.json (600). D1 스키마 변경 없음. 스크린샷 /workspace/maple-boss-tracker/oct12e_landing.png, oct12e_mainkey_modal.png, oct12e_mainkey_modal_mobile.png.
+
+### b67-secrets (기록만, 코드 변경 없음)
+- 2026-10-12 11:31 KST 저장소 Actions secrets 를 메이플 봇이 교체: `NEXON_API_KEY` = 사용자의 새 NEXON Open API **SERVICE 등급** 키(500/s, 2,000만/일), `NEXON_API_KEY2` = 사용자의 예비 **개발 등급** 키. 예전 키 삭제. update-feed 워크플로가 새 키로 성공. 박스 환경 사본: `NEXON_SERVICE_KEY`, `NEXON_BACKUP_KEY`. 코드 변경 불필요.
+
 ## 2026-10-12 b64 (등록된 API 키 전체 초기화 · 키 다시 추가 시 예전 계정 칸에 재연결 · 다른 데이터 키 추가 차단)
 (src 수정→build→테스트→main 일반 push, Worker 는 `cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`. HANDOFF 기록은 항상.)
 배경: b62 Worker 배포(10:35) 뒤 사용자가 집 PC(키 전부 있음)보다 먼저 PC방에서 대표 키로 로그인 → 금고 v2 가 부계정 0개 상태로 만들어짐(원격 D1 확인: keyvault2 1행, keyreg 0행, acct_role main 4행). 사용자가 '캐릭터 추가 창의 API 키(대표·부계정·예비) 전부 초기화 후 PC방에서 다시 등록'을 요청·확인.
@@ -24,11 +36,11 @@
 4. **다른 데이터에 묶인 키 추가 차단**: Worker `POST /api/keycheck {key}`(인증, 세션당 30회/10분, 저장 없음) — keyreg 에 다른 사용자 키로 있거나, 그 넥슨 계정이 **캐릭터가 있는** 다른 데이터에 연결돼 있으면 409 `sub_key` '이미 등록된 부계정 API입니다.'(빈 데이터는 /api/subkeys 가 옮기므로 통과). 클라이언트 `addAccount()`(이제 async)·`bkAdd()` 가 저장 전에 `svKeyCheck()` → 거부면 키를 저장하지 않고 키 목록 아래 `#accRej` 줄에 '등록 완료' 자리 대신 빨간 글(#ff5a5a, 600, .9rem = 입장 화면 경고와 같은 모양)만, 예비 키는 bkerr 빨간 글. 창 닫으면 사라짐. 예전 Worker(404)·넥슨 오류면 예전 흐름대로 진행. Worker 배포 Version 4776323e (10:51 KST), EPOCH_KEY 그대로라 강제 로그아웃 없음.
 5. 테스트: test_server.py(b64 keycheck 4개), 신규 **test_tracker49**(초기화 1번만·키만 비움·캐릭터/연결 유지·세션 지움 / 대표 키 로그인 → 본계정 칸 / F·G 다시 추가 → 예전 a2·a3 칸 / 남의 키 → 빨간 글·저장 안 함 / 집 PC 예전 키 → 비운 뒤 대표 키로 PC방 등록분만 복원·중복 칸 없음·금고에 예전 키 안 올라감). 통과: test_server, 4, 5, 23, 24, 25, 29, 36, 46, 49. run_all.sh 에 49 추가.
 6. 사용자 할 일: ① PC방 페이지 새로고침(F5) → 입장 화면 → 대표 키 로그인 ② 캐릭터 추가 창에서 부계정 키를 '+ API 키 추가'로 하나씩, 예비 키는 각 계정 줄의 예비 칸에 등록(2초 뒤 서버 금고에 보관, ☁ 메뉴에 '키 보관 실패'가 없는지 확인) ③ 집 PC: **페이지를 새로고침한 뒤**(예전 버전 탭으로 로그인하면 예전 키가 다시 금고에 올라갈 수 있음) 대표 키로 로그인 → 키가 다 돌아옴.
-## 2026-10-12 b66 (NEXON Open API 표기 — 입장 화면·첫 화면)
+## 2026-10-12 b66 (NEXON Open API 표기 — 입장 화면·첫 화면) **(b67: 초대 비밀번호·입장 화면 폐지 — 지금은 캐릭터 추가 창에서 본계정 키만)**
 (같은 방식: src 수정→build→테스트→`git checkout -- *.png`→`git pull --rebase`→main 일반 push. HANDOFF 기록은 항상.)
 **이유**: 넥슨 Open API 서비스 단계 신청 — 모든 화면에 출처 표기.
 1. **서버 모드 입장 화면**(`#svGate`, bossmaple.pages.dev): 초대 비밀번호 단계·대표 키 로그인 단계 모두 하단에 `Data based on NEXON Open API` (`.svgattrib`). 기존 `.foot` 과 같은 작은 muted·가운데. 화면 하단 고정이라 **스크롤 없이** 1280×800·모바일에서 보임. 키 안내(`details`)가 길어도 `.svgbox` 만 스크롤·표기는 밖.
-2. **다크/라이트**: 라이트면 입장 상자·배경도 라이트 톤, 표기 색 `#8a7765`(=`--muted`). 다크는 `#9a9aa8`.
+2. **다크/라이트**(b67: 다크 전용, 무시): 라이트면 입장 상자·배경도 라이트 톤, 표기 색 `#8a7765`(=`--muted`). 다크는 `#9a9aa8`.
 3. **github.io**(게이트 없음): 메인 `.foot` 에 이미 같은 문구 있음 + 캐릭터 0명 첫 화면(`emptyView`)에도 `.empty-attrib` 로 동일 문구(스크롤 없이 보이도록).
 - 테스트: 신규 **test_tracker50**. 스크린샷 `/workspace/maple-boss-tracker/oct12d_attrib_pass.png` · `oct12d_attrib_key.png`.
 
@@ -54,7 +66,7 @@
 1. **메소왕 제목 아이콘** = 현재 1위 캐릭터 초상화(`kingHtml`: `top1`, `avatar(c,'hking')` 36px). 1위 누적이 0이거나 기록이 없으면 예전 메소 아이콘.
 2. **누적 수입**(결정석 분석 맨 위) · 3. **누적 득템**(득템 분석 맨 위): 두 카드의 `.stats.s3` 에 `kbig` 클래스 → 라벨 앞 아이콘(메소 주머니·보스·검마·에픽빔 1위 아이템·반지 상자·**블링크**) 전부 32×32 같은 크기, 라벨 글자는 `<span class="kt">` 로 감싸 flex `align-items:center` → 아이콘 세로 가운데(실측 차이 0px). CSS `src/extra.css` 끝 b62 블록. 보스 탭 정보 칸(.stats.s3, kbig 없음)은 그대로.
    - 테스트: test_tracker44 에 b62 검사(32px·가운데 ±1px·메소왕 초상화·기록 없으면 메소 아이콘). 스크린샷 /workspace/maple-boss-tracker/before_*.png → oct12b_total_top.png · oct12b_loot_top.png · oct12b_mesoking.png.
-4. **PC방에서 대표 키로 로그인했더니 부계정 키가 없던 문제** — 로그인 구조(정리): bossmaple.pages.dev = 서버 모드. 입장 화면 ① **초대 비밀번호**(기기당 1번, POST /api/invite → localStorage `mapleBossTracker.svDevice`) ② **대표 키**(넥슨 API 키, POST /api/login → 세션 `mapleBossTracker.svToken`). 사용자가 말하는 '비밀번호' = 초대 비밀번호. 데이터(S)는 서버 state 에 키 없이, 키는 **금고**(D1, 암호문)에만.
+4. **PC방에서 대표 키로 로그인했더니 부계정 키가 없던 문제** — 로그인 구조(정리, **b67 에서 ① 폐지·입장 화면 없음 → 캐릭터 추가 창 본계정 키**): bossmaple.pages.dev = 서버 모드. 입장 화면 ① **초대 비밀번호**(기기당 1번, POST /api/invite → localStorage `mapleBossTracker.svDevice`) ② **대표 키**(넥슨 API 키, POST /api/login → 세션 `mapleBossTracker.svToken`). 사용자가 말하는 '비밀번호' = 초대 비밀번호. 데이터(S)는 서버 state 에 키 없이, 키는 **금고**(D1, 암호문)에만.
    - 원인(코드로 확인한 것, 원격 D1 은 자격 증명이 없어 직접 확인 못 함):
      a) 금고(v1)가 **대표 키 문자열 그대로**로 암호화 → 대표 계정의 다른 키(예비 키·재발급 키·계정 2개짜리 키)로 로그인하면 'locked' → 부계정 키 0개. 그 기기에서 키를 하나라도 추가하고 저장하면 금고를 그 작은 목록으로 **덮어씀**.
      b) 키는 내용 비교(contentSig)에서 빠져 있어 **키만 추가하면 저장 대상이 아님** → 금고 업로드(svSyncSubKeys)는 다른 변경으로 [저장]을 눌렀을 때만 실행. 그 전에 다른 PC 로 가면 키 없음.
@@ -62,7 +74,7 @@
      d) 로그인 때 금고가 열리기만 하면 이 PC 키와 같다고 보고 '올림' 표시 → 이 PC 에만 있던 키가 영영 안 올라감.
    - 수정: 서버 **금고 v2** (`keyvault2`, 키 = HKDF(ID_PEPPER + 대표 넥슨 계정 account_id) — account_id 원본은 저장 안 함, 넥슨이 그 계정 키에만 알려 줌 → 대표 계정의 어떤 키로도 열림; v1 은 대표 키 로그인 때 자동 이전) · 키만 바뀌어도 2초 뒤 금고 보관(`save()`→`svKeysSoon`, b62 로그인한 기기만) · 실패하면 '올림' 표시 안 함 + ☁ 메뉴에 '⚠ 키 보관 실패' (`mapleBossTracker.svKeyErr`) · 로그인 때 이 PC 키가 금고에 다 있을 때만 '올림' 표시, 아니면 합친 전체를 다시 올림 · 금고를 못 연 기기(`mapleBossTracker.svVault`='locked')는 금고를 덮어쓰지 않음 · 예비 키 이름(bkLabel)도 금고에 · 부계정이 예전에 따로 로그인해 생긴 **빈** 데이터(캐릭터 0명)에 묶여 있으면 옮김(캐릭터가 있으면 409 유지).
 5. **부계정/예비 키로 로그인 차단**: 서버 `keyreg`(sha256(ID_PEPPER:key:키) → user, 종류 sub|bk — 키 원본 없음) + `acct_role`(계정 해시 → main|sub). 로그인 때 키 해시가 등록부에 있거나, 그 넥슨 계정이 부계정 역할이고 대표 역할 계정이 없으면 403 `sub_key` → 입장 화면 빨간 글 **'이미 등록된 부계정 API입니다.'**(예비 키도 같은 문구 — **대표 계정의 예비 키도 차단**, 사용자 요청대로). 등록부는 부계정 키 저장 때와 대표 키 로그인(금고 열림) 때 다시 씀. /api/link 로 연결한 계정 = sub. 부계정 목록에서 빼도 그 계정은 sub 로 남음(데이터에 연결돼 있으므로).
-6. **강제 로그아웃**: 새 Worker 첫 요청 시각 = D1 meta `auth_epoch_b62` → 그 이전 세션·**기기 표(초대 비밀번호)** 무효 + 한 번 삭제 → 모든 PC 가 초대 비밀번호 + 대표 키 다시 입력. state·history·금고는 안 건드림. 클라이언트: 401 이면 입장 화면 + '로그인이 만료되었어요…' (이 PC 데이터·키는 지우지 않음), 같은 사용자로 다시 로그인하면 기준(base·rev) 유지 → 저장 안 한 변경도 묻지 않고 3-way 병합. 다시 전원 로그아웃 = worker.js `EPOCH_KEY` 이름 바꿔 배포.
+6. **강제 로그아웃**: **(b67: 초대 비밀번호·입장 화면 폐지 — 지금은 캐릭터 추가 창에서 본계정 키만)** 새 Worker 첫 요청 시각 = D1 meta `auth_epoch_b62` → 그 이전 세션·**기기 표(초대 비밀번호)** 무효 + 한 번 삭제 → 모든 PC 가 초대 비밀번호 + 대표 키 다시 입력. state·history·금고는 안 건드림. 클라이언트: 401 이면 입장 화면 + '로그인이 만료되었어요…' (이 PC 데이터·키는 지우지 않음), 같은 사용자로 다시 로그인하면 기준(base·rev) 유지 → 저장 안 한 변경도 묻지 않고 3-way 병합. 다시 전원 로그아웃 = worker.js `EPOCH_KEY` 이름 바꿔 배포.
 7. **소식 읽음 동기화**(추가 요청): 서버 `seen` 표 + `GET/PUT /api/seen`(합집합, 최근 1500개). 로그인·페이지 열 때 서버 읽음과 합치고(이 PC 에만 있던 것도 올림), 글 클릭하면 1.5초 모아 PUT. 서버 모드만(github.io 드라이브 모드는 예전처럼 브라우저별). 예전 Worker 면 404 → 조용히 건너뜀.
    - **배포 상태(2026-10-12)**: 사이트(클라이언트)는 push 로 배포됨 — 예전 Worker 와도 동작(새 기능만 비활성). **Worker 는 배포 못 함**: 박스에 wrangler 로그인·Cloudflare 토큰·ID_PEPPER/SITE_PASS 사본(/home/box/.config/ggoolzip/)이 없음(박스 초기화로 보임). 저장소 secret CLOUDFLARE_API_TOKEN 은 Pages 전용이라 쓰지 않음. → 4(서버 부분)·5·6·7 은 **Worker 배포 순간 적용**되고 6(전원 로그아웃)도 그때 자동으로 일어남. 배포: `cd server && npm install && npx wrangler login && npx wrangler deploy` (Node 22). D1 schema 실행 불필요. 배포 후 할 일: 키가 다 있는 PC(집 PC)에서 초대 비밀번호+대표 키로 다시 로그인 → 그 PC 의 키 전체가 금고 v2 로 올라감 → 다른 PC 는 대표 키만으로 전부 복원.
    - 테스트: test_server.py(b62 항목: 부계정/예비/연결 계정 로그인 403, 재발급·다른 키로 금고 v2 열림, v1→v2 이전, 빈 데이터 옮김/캐릭터 있으면 409, 읽음 합집합, 기준 시각 이전 세션 401·기기 표 need_invite·데이터 그대로; 테스트 도우미 tests/v1seal.mjs), 신규 **test_tracker46**(A: 키만 추가 → 금고·등록부, 읽음 저장 / 새 PC B: 대표 키 → 키 5개·예비 이름·데이터·N 없음 / 새 PC C: 부계정·예비 키 → 빨간 글 / A 예전 세션 → 입장 화면, 이 PC 데이터 유지 → 비밀번호부터 다시 → 저장 안 한 변경 유지·서버 반영 / 새 PC D: 전부 복원), test_tracker24 금고 표 이름 수정. 박스에 Node 22 를 /home/box/.local/node22 에 다시 설치함(wrangler dev 테스트용). 스크린샷 /workspace/maple-boss-tracker/oct12b_subkey_warn.png.
@@ -92,7 +104,7 @@
 - 2026-10-12 10:35 KST 메이플 봇이 Worker `ggoolzip-sync` 배포 완료(Version 82680d9f). 사용자가 박스 브라우저에서 Cloudflare(980330k@naver.com) 로그인 → wrangler OAuth. wrangler login 의 콜백이 오래된 탭 요청(state 불일치)으로 계속 실패해서, 같은 client_id·PKCE 로 직접 받는 스크립트(/tmp/cfl/login.mjs)로 토큰을 받아 ~/.config/.wrangler/config/default.toml 에 저장함. Node 22 는 ~/.n22/bin.
 - 기존 secret(ID_PEPPER, SITE_PASS_HASH)은 Cloudflare 에 그대로 남아 있어 재설정 불필요. D1 schema 실행 안 함.
 - 이 배포로 b62 의 4(서버 부분)·5·6·7 이 켜졌고, 6(전원 로그아웃)이 새 Worker 첫 요청 때 자동으로 일어남(데이터 삭제 없음).
-- 사용자 할 일: 부계정 키가 다 있는 PC 에서 초대 비밀번호 + 본계정 키로 다시 로그인 → 전체 키가 서버 금고로 올라감.
+- 사용자 할 일: **(b67: 초대 비밀번호·입장 화면 폐지 — 지금은 캐릭터 추가 창에서 본계정 키만)** 부계정 키가 다 있는 PC 에서 초대 비밀번호 + 본계정 키로 다시 로그인 → 전체 키가 서버 금고로 올라감.
 
 ## 2026-10-11 b53 (사용자 요청 10개 일괄) — 다음 봇 인수인계
 작업 전 `gh auth status` 로 GitHub 로그인(ggoolzip-wq) 확인 필요. 로그인이 없으면 사용자에게 `gh auth login`(기기 코드 승인)을 부탁할 것. 수정은 `src/` 만, `python3 tools/build.py` 후 `git pull --rebase` → 일반 push(강제 push 금지).
@@ -340,13 +352,15 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 진행 (2026-10-10 03:1x KST): wrangler 로그인 완료(박스). D1 `ggoolzip-sync` 생성(id 0c815aec-…, WNAM) + 스키마 적용. ID_PEPPER 생성 → 박스 /home/box/.config/ggoolzip/ID_PEPPER (600) 백업. **Worker 배포는 막힘**: Cloudflare 계정 이메일 인증 필요(오류 10034) + workers.dev 하위 도메인 등록 필요. CORS 에 https://maple.pages.dev 추가(단 maple.pages.dev 는 이미 다른 사람이 사용 중 — 프로젝트 만들지 않음). 미리 써 보기: `SYNC_TEST_URL`(app.js)에 서버 주소를 넣고 배포하면 `https://ggoolzip-wq.github.io/?sync=test` 로 이 브라우저만 서버 모드, `?sync=off` 로 되돌림.
 - 배포 완료 (2026-10-10 03:27 KST): workers.dev 하위 도메인 `bossmaple` 등록, Worker = https://ggoolzip-sync.bossmaple.workers.dev (ID_PEPPER·SITE_PASS_HASH secret 설정됨). `SYNC_TEST_URL` 에 이 주소 입력 → `?sync=test` 사용 가능. `SYNC_API_URL` 은 아직 비어 있음(실서비스는 구글 드라이브 그대로).
 - 대표 키/부계정 키 (2026-10-10 03:4x KST): 로그인 = 대표 키, 로그인 후 "부계정 키 추가". 부계정 키는 대표 키 HKDF→AES-GCM 으로 암호화해 D1 keyvault 에 보관, 대표 키로 다른 기기 로그인 시 자동 복원 (계정 `main:true` 표시). 원격 스키마 적용 + Worker 재배포 완료. 테스트: test_server.py(금고 8개 항목), test_tracker24.py(브라우저 2대). 자세한 건 server/README.md.
-- 사용자 분리·입장 화면 (2026-10-10 04:1x KST): 원인 = 로그아웃해도 이 PC 데이터가 남고, 새 사용자 첫 로그인 때 "서버 비어 있음 → 이 PC 데이터 올림" 규칙으로 남의 데이터가 올라감. 수정: svUser(이 기기의 마지막 서버 사용자) 기록, 다른 사용자로 로그인하면 이 PC 데이터를 비우고 서버 데이터만 사용, 로그아웃 시 비움, 이 기기 첫 로그인 + 이 PC 데이터 있음 → "이 PC 데이터를 이 계정으로 올릴까요?" 확인. 서버 모드 입장 화면(#svGate): 빈 화면 → 초대 비밀번호 → 대표 키(+API 키 받는 법) → 로그인 성공 후 사이트, 세션 있으면 바로 사이트. test_tracker25.py.
+- 사용자 분리·입장 화면 (2026-10-10 04:1x KST): **(b67: 초대 비밀번호·입장 화면 폐지 — 지금은 캐릭터 추가 창에서 본계정 키만)** 원인 = 로그아웃해도 이 PC 데이터가 남고, 새 사용자 첫 로그인 때 "서버 비어 있음 → 이 PC 데이터 올림" 규칙으로 남의 데이터가 올라감. 수정: svUser(이 기기의 마지막 서버 사용자) 기록, 다른 사용자로 로그인하면 이 PC 데이터를 비우고 서버 데이터만 사용, 로그아웃 시 비움, 이 기기 첫 로그인 + 이 PC 데이터 있음 → "이 PC 데이터를 이 계정으로 올릴까요?" 확인. 서버 모드 입장 화면(#svGate): 빈 화면 → 초대 비밀번호 → 대표 키(+API 키 받는 법) → 로그인 성공 후 사이트, 세션 있으면 바로 사이트. test_tracker25.py.
 - Cloudflare Pages (2026-10-10 04:4x KST): https://bossmaple.pages.dev — 이 주소에서는 서버 동기화가 기본(SYNC_HOSTS, 입장 화면 바로), github.io 는 구글 드라이브 그대로. 배포 = tools/pages_dist.sh → _site → `wrangler pages deploy _site --project-name bossmaple --branch main`. 자동 배포: .github/workflows/deploy-pages.yml (push + 피드/가격/썬데이 워크플로 완료 후) — 저장소 secret CLOUDFLARE_API_TOKEN·CLOUDFLARE_ACCOUNT_ID 필요(없으면 건너뜀). Worker CORS = github.io + bossmaple.pages.dev.
 - 2026-10-10 05:xx KST 대규모 변경: 보스 목록 [취소]/[저장](대기 중 변경은 스냅샷과 비교, 저장 전엔 수익·저장소 미반영, 서버 모드 수동 저장의 유일한 경로) · 자동 저장/로그아웃 경고/beforeunload 없음 · 드롭은 보스·아이템당 기간 1회(예전 2+ → 1로 이전) · 드롭 표에서 보스 장신구(파풀 마크 제외)·여명 세트 제외 · 탭: 보스 현황/캐릭터 별 기록(2026-10-08부터 누적, ★득템)/총 수익(시드링 획득·물욕 누적 획득, 아이콘), 주간 기록 탭 삭제(S.history 는 유지) · 개수 표기 xN · 예상 수익 = 남은 주간(12칸 중) + 미처치 월간 · 일퀘 제목 아이콘, 길드 본캐 행은 지하 수로만 · +추가 모달: 스케줄러 자동추가 옵션·이름으로 직접 추가 삭제 · 보스·난이도는 스케줄러로만. 테스트: test_tracker26·27, test_tracker11 은 다중 개수 전제라 run_all 에서 뺌.
-- **친구 초대 전용 (2026-10-10)**: 기기마다 한 번 초대 비밀번호(POST /api/invite → 기기 표 `mapleBossTracker.svDevice`, 로그아웃해도 유지) → 넥슨 키 로그인. Worker secret `SITE_PASS_HASH` = sha256('ggoolzip-invite:'+비밀번호, 앞뒤 공백만 제거·대소문자 구분), 없으면 로그인 거부. 비밀번호 사본: 박스 /home/box/.config/ggoolzip/SITE_PASS (600, 사용자가 정한 값). 바꾸기: `cd server && bash set-site-pass.sh` (README). 사용량 제한: 세션별 읽기 90/분·저장 20/분, 사용자별 저장 40/분, 초대 시도 IP별 10/10분.
+- **친구 초대 전용 (2026-10-10)**: **(b67: 초대 비밀번호·입장 화면 폐지 — 지금은 캐릭터 추가 창에서 본계정 키만)** 기기마다 한 번 초대 비밀번호(POST /api/invite → 기기 표 `mapleBossTracker.svDevice`, 로그아웃해도 유지) → 넥슨 키 로그인. Worker secret `SITE_PASS_HASH` = sha256('ggoolzip-invite:'+비밀번호, 앞뒤 공백만 제거·대소문자 구분), 없으면 로그인 거부. 비밀번호 사본: 박스 /home/box/.config/ggoolzip/SITE_PASS (600, 사용자가 정한 값). 바꾸기: `cd server && bash set-site-pass.sh` (README). 사용량 제한: 세션별 읽기 90/분·저장 20/분, 사용자별 저장 40/분, 초대 시도 IP별 10/10분.
 - 남은 일: 사용자 Cloudflare 가입 → `npx wrangler login --device`(또는 API 토큰) → d1 create · schema · ID_PEPPER · deploy → 미리 써 보기 → SYNC_API_URL 켜기. 나중 단계(미구현): 매일 18:00 KST cron 으로 maplescouter 헥사환산(캐릭터 1명으로 먼저 시험).
 
 ## 8. 사용자가 정한 동작·취향 (변경 시 사용자 확인 필요)
+- **항상 다크 테마**(2026-10-12 b67 사용자 요청): 라이트 모드·테마 전환 버튼 없음. 새 UI 는 다크만 만들고 확인(라이트 색 추가 금지).
+- **초대 비밀번호 없음**(b67): 누구나 bossmaple.pages.dev 에 들어와 '캐릭터 추가'에서 본계정 키로 가입·로그인.
 - 썬데이 새 글 감시: 매일 10:00~10:20 KST, **5초 간격**(사용자 결정, 최대 240회/일).
 - 데이터 출처는 **넥슨 Open API 우선**, 홈페이지 HTML 스크랩은 API 실패/자료 없음일 때만 대체(2026-10-09 사용자 요청). 호출 수는 하루 한도(개발 키 1,000회) 안에서 — 이미 받은 목록 재사용.
 - 썬데이 카드: 소식 카드 아래, 소식 1/3 : 썬데이 2/3, 이미지는 contain(페이지 길어지면 안 됨) + 이벤트 기간~혜택 부분만 자동 자르기, '☀ 썬데이' 탭 머리글(노란 해), 맨 아래 이번 주 실제 혜택(OCR, 혜택마다 한 줄; 못 읽으면 글 제목). 이미지 클릭 = 라이트박스(공식 사이트로 이동 X, '공지 보기' 링크만).
@@ -496,7 +510,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 🔄 동기화 버튼 → 캐릭터 카드 머리글 아이콘. 페이지 로드 시 자동 동기화(3초 규칙), 주기 자동 동기화 삭제.
 - **Cloudflare Worker + D1** (`server/worker.js`, `schema.sql`, `wrangler.toml`; Worker `ggoolzip-sync.bossmaple.workers.dev`):
   - 로그인 = 넥슨 Open API 키 → Worker 가 검증하고 계정 id 해시로 사용자 식별. **원본 키는 서버에 평문 저장 안 함**. 세션 토큰은 localStorage, 서버엔 해시.
-  - 친구 초대 비밀번호 `SITE_PASS_HASH`(secret, 기기당 1번, 시도 제한, fail closed). 변경: `wrangler secret put SITE_PASS_HASH`. 원문은 `/home/box/.config/ggoolzip/SITE_PASS`(600).
+  - 친구 초대 비밀번호 **(b67: 초대 비밀번호·입장 화면 폐지 — 지금은 캐릭터 추가 창에서 본계정 키만)** `SITE_PASS_HASH`(secret, 기기당 1번, 시도 제한, fail closed). 변경: `wrangler secret put SITE_PASS_HASH`. 원문은 `/home/box/.config/ggoolzip/SITE_PASS`(600).
   - 대표 키/부계정 키: 부계정 키는 대표 키(HKDF→AES-GCM)로 암호화해 서버 금고에. 세션·사용자별 요청 제한.
   - bossmaple.pages.dev 에서는 서버 모드 기본(입장 화면). 다른 사용자로 로그인하면 이 PC 데이터를 올리지 않음, 로그아웃 시 비움.
   - **서버 모드는 자동 저장 없음** — 헤더 [저장]/[취소] (스냅샷 비교), 탭 이동 시 저장 여부 물음.
@@ -525,6 +539,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 결정석 가격: 월간 보스 📅, '(가격 변동일 YYYY-MM-DD, 마지막 확인 YYYY-MM-DD)'. `prices.json.changedAt` = 현재 가격을 정한 패치 노트 날짜(지금 2026-09-17, 공지 813). `update_prices.py` 가 rows 가 실제로 바뀔 때만 changedAt 을 그 공지 날짜로 갱신.
 
 ## 5. 일반 규칙 (사용자 고정 선호 — 반드시 지킬 것)
+- **다크 전용**(b67): 테마 전환 버튼 없음, 라이트 모드 없음.
 - 답변·UI 문구는 **한국어**. 개수 표기는 **xN** (예 x3).
 - **자동 저장 없음**: 서버 모드는 수동 [저장]/[취소]. 드롭 선택 시 토스트 없음.
 - **페이지 나누기는 모두 고정 크기**: 마지막 쪽도 빈 행으로 채워 표 높이가 같고, 페이지 버튼 위치가 절대 안 움직임 (캐릭터 목록 8개, 메소왕/득템왕 10개 `rankPad`). 앞으로 만드는 모든 페이지 UI 에 적용.

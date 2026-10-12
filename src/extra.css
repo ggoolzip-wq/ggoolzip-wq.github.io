@@ -52,7 +52,6 @@ body.is-dragging,body.is-dragging *{cursor:grabbing!important;user-select:none}
 .expl{display:flex;align-items:center;gap:5px;height:9px;margin-top:2px}
 .expbar{flex:1;max-width:120px;height:3px;border-radius:2px;background:rgba(127,127,127,.22);overflow:hidden}
 .expbar>i{display:block;height:100%;background:#9BE84A;border-radius:2px;box-shadow:0 0 4px rgba(155,232,74,.55)}
-[data-theme=light] .expbar>i{background:#7ED321;box-shadow:none}
 .exppct{font-size:.62rem;line-height:9px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* 보스 체크 탭: 본문 + 오른쪽 수익 패널 */
@@ -499,13 +498,6 @@ html.gated body>*:not(#svGate):not(#toast){visibility:hidden}
 #svGate .svghelp .muted{color:#9a9aa8}
 /* b66: NEXON Open API 표기 — 화면 하단 고정(스크롤 없이 보임), 기존 .foot 과 같은 작은 muted */
 #svGate .svgattrib{position:absolute;left:12px;right:12px;bottom:14px;margin:0;text-align:center;font-size:.78rem;color:#9a9aa8;line-height:1.3;pointer-events:none}
-html[data-theme="light"] #svGate{background:#f5f0ea;color:#2b2118}
-html[data-theme="light"] #svGate .svgbox{background:#fff;border-color:#eadfd2;box-shadow:0 12px 40px rgba(0,0,0,.1)}
-html[data-theme="light"] #svGate .svgd .muted,
-html[data-theme="light"] #svGate .svghelp .muted{color:#8a7765}
-html[data-theme="light"] #svGate .svgr input{background:#fff;color:#2b2118;border-color:#d9cbbd}
-html[data-theme="light"] #svGate .svghelp{color:#5a4a3a}
-html[data-theme="light"] #svGate .svgattrib{color:#8a7765}
 .empty-attrib{text-align:center;margin-top:14px;font-size:.78rem}
 .svwarn{background:#7a2e1f!important;color:#ffd9cc!important;border-color:#b5482f!important;font-size:.78rem;margin-right:6px}
 .svask{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -880,3 +872,13 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 #salesCard .sl{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 2px;border-bottom:1px solid var(--line)}
 #salesCard .sl:last-child{border-bottom:0}
 #salesCard .slm{color:#ff4fa3;white-space:nowrap}
+
+/* b67: 서버 모드 로그인 전 — 캐릭터 추가 창에 '본계정 API 키 등록'만 (#svMainSec) */
+.addm.svmain>.addsec:not(#svMainSec){display:none}
+#svMainSec .svmrow{flex-wrap:nowrap}
+#svMainSec #svMainKey{flex:1;min-width:0;text-align:left}
+#svMainSec .svmst{min-height:1.3em;margin:0 0 6px 4px;white-space:normal}
+.keyrej{color:#ff5a5a;font-weight:600;font-size:.9rem}
+.keyrej.soft{color:var(--muted);font-weight:400;font-size:.82rem}
+#svMainSec .svmattrib{text-align:center;margin-top:12px;font-size:.78rem}
+#svMainSec a{color:#ffb36b}

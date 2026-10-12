@@ -39,8 +39,7 @@ st=lambda pg: pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1'
 server_state=lambda: dev.sql("SELECT rev, data FROM state")
 def wait_on(pg,t=15000): pg.wait_for_function("gd.state==='on'&&!gd.busy&&!gd.timer",timeout=t); pg.wait_for_timeout(150)
 KF='live_KEY_F_0123456789abcdef'
-def invite(pg):
-    pg.wait_for_selector('#svGate #svInvite'); pg.fill('#svGate #svInvite',cf_dev.TEST_PASS); pg.click('#svGate #svInviteBtn'); pg.wait_for_selector('#svGate #svKey')
+def invite(pg): pg.evaluate('openAdd()'); pg.wait_for_selector('#svMainKey')  # b67: 초대 비밀번호 없음 → 캐릭터 추가 창 본계정 키 칸
 def shot(pg,name):
     pg.evaluate('gdMenu(true)'); pg.wait_for_timeout(200); pth=os.path.join(OUT,name); pg.locator('#gMenu').screenshot(path=pth)
     if SHOTDIR: shutil.copy(pth,SHOTDIR)
@@ -49,9 +48,9 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     ca,pa=mkctx(b); pa.goto(URL)
     pa.evaluate("([p,api])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pa.reload(); pa.wait_for_timeout(400)
-    invite(pa); t=pa.inner_text('#svGate')
-    check('gate step 2 wording: 대표 키', '대표 키' in t and pa.get_attribute('#svGate #svKey','placeholder').startswith('대표 키'), t[:200])
-    pa.fill('#svGate #svKey',KA); pa.click('#svGate #svLoginBtn'); wait_on(pa)
+    invite(pa); t=pa.inner_text('#svMainSec')
+    check('b67: main-key-only modal wording: 본계정 API 키', '본계정 API 키' in t and pa.get_attribute('#svMainKey','placeholder').startswith('본계정'), t[:200])
+    pa.fill('#svMainKey',KA); pa.click('#svMainBtn'); wait_on(pa); pa.evaluate('closeImport()')
     acc=st(pa)['settings']['accounts']; check('A: login account marked main', acc[0].get('main') is True, acc)
     pa.evaluate('gdMenu(true)'); pa.wait_for_selector('#gMenu:not([hidden]) #svSubKey')
     check('logged-in panel: 부계정 키 추가', pa.inner_text('#svSubBtn')=='부계정 키 추가' and '대표 키: 본계정' in pa.inner_text('#gMenu'), pa.inner_text('#gMenu')[:300])
@@ -64,7 +63,7 @@ try:
     check('server: vault row, ciphertext only (no raw keys anywhere)', len(v)==1 and KA not in dump and KF not in dump, len(v))
     # 기기 B: 대표 키만 입력 → 데이터 + 부계정 키 복원
     cb,pb=mkctx(b); pb.goto(URL); pb.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",API); pb.reload(); pb.wait_for_timeout(400)
-    invite(pb); pb.fill('#svGate #svKey',KA); pb.press('#svGate #svKey','Enter'); wait_on(pb)
+    invite(pb); pb.fill('#svMainKey',KA); pb.press('#svMainKey','Enter'); wait_on(pb); pb.evaluate('closeImport()')
     pb.wait_for_function("accounts().some(a=>a.key==='%s')"%KF,timeout=10000)
     acc=st(pb)['settings']['accounts']
     check('B: main key only → sub key restored automatically', any(a.get('key')==KF for a in acc) and any(a.get('key')==KA and a.get('main') for a in acc) and len(acc)==2, [(a['label'],bool(a.get('key')),a.get('main')) for a in acc])

@@ -92,10 +92,7 @@ try:
         check('newly done char moves to done group (stable)', o2==[x for x in exp if x!='c2'][:5]+['c1','c2','c3','c6','c7','c10'] , o2)
         pg.click('[data-csort="base"]'); pg.wait_for_timeout(150)
         check('기본순 restores saved order', pg.evaluate(ORDER)==base)
-        pg.click('#themeBtn'); pg.wait_for_timeout(150); pg.hover('[data-csort="undone"]'); pg.wait_for_timeout(100)
-        col=pg.evaluate("getComputedStyle(document.querySelector('[data-csort=\"undone\"]')).color")
-        check('light hover deep orange', col=='rgb(201, 90, 0)', col)
-        save_shot(pg,'shot19_layout_light.png')
+        check('b67: no theme toggle (dark only)', pg.locator('#themeBtn').count()==0)
       if vw==1920:
         wt=pg.evaluate("""(()=>{const tabs=[...document.querySelectorAll('#worldTabs .wtab')];return {names:tabs.map(t=>t.dataset.world),txt:document.querySelector('#worldTabs .wtablist').textContent.replace(/\\s+/g,' ').trim(),
           icons:tabs.map(t=>{const i=t.querySelector('img.wico');return i?[i.naturalWidth,i.complete]:null}),on:tabs.filter(t=>t.classList.contains('on')).map(t=>t.dataset.world),
