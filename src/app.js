@@ -263,6 +263,26 @@ function askBbang(c,b,key,apply,cel,disp){
     if(!m){ if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; render(); return; }
     done(m); };
 }
+/* b62-8: 아이템 판매 수익 기록 — 축하 메시지가 나오는 모든 드롭(반지 상자 꽝·블빵패배 제외) 바로 전에 '수익을 기록할까요?'
+ * c.drev / c.mdrev = {'보스|아이템': {m: 내 몫 메소(분배면 ÷인원), a: 입력한 억, p: 나눈 인원, i: 실제 아이템 키(반지 결과 'ring:r4'·칠흑 'cb:…' 포함)}}
+ * 획득 기록(보스·아이템당 기간 1번)마다 따로 저장 → 주간/월간 기록(perChar.revs)으로 넘어감. 제목 아래 안내 문구대로 사용자가 경매장 최저가 시세를 매번 직접 입력. */
+const revMap = (c,type) => type==='monthly' ? (c.mdrev||(c.mdrev={})) : (c.drev||(c.drev={}));
+function askRev(c,b,key,ik,cel){
+  const pty=curParty(c,b.id), md=modeMap(c,b.type)[key]||'', div=pty>1&&md!=='w'&&md!=='n'?pty:1; // 분배(예전 기록 포함) = ÷인원, 1인·블빵승리 = 전부
+  document.querySelector('#revModal')?.remove();
+  const el=document.createElement('div'); el.id='revModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rvTitle');
+  el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">이 아이템의 경매장 최저가 시세를 적어주세요.</div>${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
+    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"><span>억 메소</span></label><button class="btn rvok" data-rv="ok">기록하기</button></div>
+    <button class="btn plain rvno" data-rv="no">아니오</button></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
+  document.body.appendChild(el);
+  let closed=false; const fin=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true); if(cel) cel(); };
+  const ok=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')); if(!(v>0)||v>100000){ $('#rvErr').textContent='금액(억 메소)을 넣어 주세요'; $('#rvAmt').focus(); return; }
+    const cc=S.characters.find(x=>x.id===c.id)||c; revMap(cc,b.type)[key]={m:Math.round(v*1e8/div),a:Math.round(v*1e4)/1e4,p:div,i:ik}; save(); render(); fin(); };
+  const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); fin(); } else if(e.key==='Enter'&&e.target.id==='rvAmt'){ e.preventDefault(); ok(); } };
+  document.addEventListener('keydown',kd,true);
+  el.onclick=e=>{ const t=e.target.closest('[data-rv]'); if(t) return t.dataset.rv==='ok'?ok():fin(); if(e.target===el) fin(); };
+  setTimeout(()=>$('#rvAmt')?.focus(),30);
+}
 function changeDrop(key, delta){
   const c=activeChar(); if(!c) return; const [slot,item]=key.split('|'); const b=findBoss(slot); if(!b||!ITEMS[item]) return;
   if(delta>0 && (+dropMap(c,b.type)[key]||0)>=1) delta=-1; // 보스·아이템당 기간에 1번만: 이미 획득 → 다시 누르면 취소
@@ -270,8 +290,8 @@ function changeDrop(key, delta){
   if(delta>0 && item==='chaosbox'){ openChaos(key); return; } // 칠흑 장신구 상자: 어떤 장신구인지 고른 뒤 +1
   if(delta>0 && isRing(item)){ openRing(key); return; } // 반지 상자는 결과를 고른 뒤 +1
   const m=dropMap(c,b.type);
-  if(delta>0){ askBbang(c,b,key,()=>{ m[key]=1; },()=>celebrate(null,item,b)); return; }
-  const n=0; delete m[key]; delete modeMap(c,b.type)[key];
+  if(delta>0){ askBbang(c,b,key,()=>{ m[key]=1; },()=>askRev(c,b,key,item,()=>celebrate(null,item,b))); return; }
+  const n=0; delete m[key]; delete modeMap(c,b.type)[key]; { const rm=c[b.type==='monthly'?'mdrev':'drev']; if(rm){ delete rm[key]; if(!Object.keys(rm).length) delete c[b.type==='monthly'?'mdrev':'drev']; } } // 빈 {} 를 남기면 [취소]/[저장] 비교가 어긋남
   if(delta<0 && hasOut(item)){ const om=outMap(c,b.type); const l=om[key]; if(l&&l.length) l.pop(); if(!n||(l&&!l.length)) delete om[key]; } // 가장 최근 획득(결과 포함) 취소
   save(); render();
   // (선택/취소 알림 문구 없음 — 2026-10-10)
@@ -295,7 +315,7 @@ function chooseRing(o){
   pendStart(); const m=dropMap(c,b.type);
   if(o==='x'){ m[p.key]=1; const om=outMap(c,b.type); (om[p.key]||(om[p.key]=[])).push('x'); modeMap(c,b.type)[p.key]='n'; save(); render(); return; } // 꽝: 블빵 창 없이 1인처럼 (라벨 없음)
   m[p.key]=1; (outMap(c,b.type)[p.key]||(outMap(c,b.type)[p.key]=[])).push(o); if(curParty(c,b.id)>1) modeMap(c,b.type)[p.key]='s'; save(); render(); // 반지 상자: 블빵 창 없이 항상 분배
-  if(o==='gl') celebrate(null,'g_life',b); else celebrate(o,null,b); return;
+  askRev(c,b,p.key,o==='gl'?'g_life':'ring:'+o,()=>{ if(o==='gl') celebrate(null,'g_life',b); else celebrate(o,null,b); }); return;
   askBbang(c,b,p.key,()=>{},()=>{},
     o==='gl'?{ico:itemIcon('g_life'),name:ITEMS.g_life.n}:o==='x'?{ico:itemIcon(item),name:ITEMS[item].n+' · 꽝'}:{ico:outIcon(o),name:OUT_NAME[o]});
 }
@@ -535,14 +555,14 @@ function resetCore(){
     const sum=weekSummary(S.period.week);
     if(sum.cleared>0 && !S.history.some(h=>h.week===S.period.week)) S.history.push(sum);
     S.history.sort((a,b)=>a.week<b.week?-1:1);
-    S.characters.forEach(c=>{c.weekly={}; c.drops={}; c.dropOut={}; delete c.dmode; for(const k in c.auto) if(findBoss(k)?.type==='weekly') delete c.auto[k];});
+    S.characters.forEach(c=>{c.weekly={}; c.drops={}; c.dropOut={}; delete c.dmode; delete c.drev; for(const k in c.auto) if(findBoss(k)?.type==='weekly') delete c.auto[k];});
     msgs.push('주간 보스가 초기화되었습니다 (지난 주 기록 저장됨)'); changed=true;
   }
   if(S.period.month!==now.month){
     missRecord('m',S.period.month,missNow('m'));
     const ms=monthSummary(S.period.month); if(ms.cleared>0 && !S.monthHistory.some(h=>h.month===ms.month)) S.monthHistory.push(ms);
     S.monthHistory.sort((a,b)=>a.month<b.month?-1:1);
-    S.characters.forEach(c=>{c.monthly={}; c.mdate={}; c.mdrops={}; c.mdropOut={}; delete c.mdmode; for(const k in c.auto) if(findBoss(k)?.type==='monthly') delete c.auto[k];}); msgs.push('월간 보스 초기화'); changed=true; }
+    S.characters.forEach(c=>{c.monthly={}; c.mdate={}; c.mdrops={}; c.mdropOut={}; delete c.mdmode; delete c.mdrev; for(const k in c.auto) if(findBoss(k)?.type==='monthly') delete c.auto[k];}); msgs.push('월간 보스 초기화'); changed=true; }
   if(S.period.day!==now.day) changed=true;
   if(changed) S.period=now;
   return {changed,msgs};
@@ -624,12 +644,13 @@ const partyHtml = (p,m) => p>1 ? ` <span class="ptx ptx-${m||'s'}">(${p}인 ${MO
 function parseIK(k){ const [a,pp]=String(k).split('#'); const mode=/^\d+([wl])$/.exec(pp||'')?.[1]||''; const i=a.indexOf('|'); return {slot:i>=0?a.slice(0,i):'', it:i>=0?a.slice(i+1):a, party:Math.max(1,parseInt(pp)||1), mode}; }
 // 이번 기간 획득 기록 → 현재 파티 인원을 붙인 키
 function charDrops(c,type){
-  const m=type==='monthly'?c.mdrops:c.drops, om=type==='monthly'?c.mdropOut:c.dropOut, I={}, O={};
+  const m=type==='monthly'?c.mdrops:c.drops, om=type==='monthly'?c.mdropOut:c.dropOut, rm=(type==='monthly'?c.mdrev:c.drev)||{}, I={}, O={}, V={};
   for(const [k,n] of Object.entries(m||{})){ if(!(+n>0)) continue; const slot=k.split('|')[0], p=curParty(c,slot), md=p>1?((type==='monthly'?c.mdmode:c.dmode)||{})[k]:'', key=p>1&&md!=='n'?`${k}#${p}${md==='w'||md==='l'?md:''}`:k;
-    I[key]=+n; const l=(om||{})[k]; if(Array.isArray(l)&&l.length) O[key]=l.filter(o=>o==='r4'||o==='c4'||o==='gl'||o==='x'||/^cb:\w+$/.test(o)); }
-  return {items:I, outcomes:O};
+    I[key]=+n; const l=(om||{})[k]; if(Array.isArray(l)&&l.length) O[key]=l.filter(o=>o==='r4'||o==='c4'||o==='gl'||o==='x'||/^cb:\w+$/.test(o));
+    const r=rm[k]; if(r&&+r.m>0) V[key]={m:+r.m,a:+r.a||0,p:+r.p||1,i:String(r.i||k.split('|')[1])}; }
+  return {items:I, outcomes:O, revs:V};
 }
-const charAllDrops = c => { const w=charDrops(c,'weekly'), m=charDrops(c,'monthly'); return {items:{...w.items,...m.items}, outcomes:{...w.outcomes,...m.outcomes}}; };
+const charAllDrops = c => { const w=charDrops(c,'weekly'), m=charDrops(c,'monthly'); return {items:{...w.items,...m.items}, outcomes:{...w.outcomes,...m.outcomes}, revs:{...w.revs,...m.revs}}; };
 const CHAOS_PICK = ['lcm','eye','belt','book','terror','cfe','sos'];
 const hasOut = it => isRing(it)||it==='chaosbox';
 const chaosHtml = (outs,n) => { const l=(outs||[]).filter(o=>/^cb:/.test(o)).map(o=>o.slice(3)).filter(k=>ITEMS[k]);
@@ -642,7 +663,7 @@ function openChaos(key){
   el.onclick=e=>{ const t=e.target.closest('[data-cbpick]'); if(!t&&e.target!==el) return; el.remove(); const k=t?t.dataset.cbpick:'';
     if(!k){ if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; render(); return; }
     const cc=S.characters.find(x=>x.id===c.id); const b=findBoss(key.split('|')[0]); if(!cc||!b) return;
-    pendStart(); askBbang(cc,b,key,()=>{ dropMap(cc,b.type)[key]=1; outMap(cc,b.type)[key]=['cb:'+k]; },()=>celebrate(null,k,b),{ico:itemIcon(k),name:ITEMS[k].n}); };
+    pendStart(); askBbang(cc,b,key,()=>{ dropMap(cc,b.type)[key]=1; outMap(cc,b.type)[key]=['cb:'+k]; },()=>askRev(cc,b,key,'cb:'+k,()=>celebrate(null,k,b)),{ico:itemIcon(k),name:ITEMS[k].n}); };
 }
 const OUT_NAME = {r4:'리스트레인트 링 4레벨', c4:'컨티뉴어스 링 4레벨'};
 const miniIcon = k => ITEM_ICONS[k] ? `<img class="ric" src="${ITEM_ICONS[k]}" alt="" aria-hidden="true">` : '';
@@ -660,13 +681,13 @@ function outHtml(list, n, compact){
 // 주간 기록: 주간 보스 결정석 수익 + 주간 보스 획득 아이템 (월간 보스는 monthSummary 로 따로)
 function weekSummary(wid){
   const a=allRevenue();
-  const perChar=a.per.map(p=>({id:p.c.id, name:p.c.name, job:p.c.job, world:p.c.world, meso:p.r.meso, count:p.r.wlist.length, bosses:p.r.wlist.map(bossTag), bvals:p.r.wlist.map(x=>x.counted?x.value:0), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes)}))(charDrops(p.c,'weekly'))}));
+  const perChar=a.per.map(p=>({id:p.c.id, name:p.c.name, job:p.c.job, world:p.c.world, meso:p.r.meso, count:p.r.wlist.length, bosses:p.r.wlist.map(bossTag), bvals:p.r.wlist.map(x=>x.counted?x.value:0), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes), ...(Object.keys(sp.revs).length?{revs:sp.revs}:{})}))(charDrops(p.c,'weekly'))}));
   return {week:wid, weeklyOnly:true, total:a.total, cleared:a.per.reduce((s,p)=>s+p.r.wlist.length,0), crystals:a.count, items:perChar.reduce((s,p)=>s+itemSum(p.items),0), perChar};
 }
 function monthSummary(mid){
   const a=allRevenue();
   return {month:mid, total:a.monthTotal, cleared:a.per.reduce((s,p)=>s+p.r.mlist.length,0),
-    perChar:a.per.filter(p=>p.r.mlist.length||itemSum(cleanItems(p.c.mdrops))).map(p=>({id:p.c.id, name:p.c.name, meso:p.r.monthMeso, bosses:p.r.mlist.map(bossTag), bvals:p.r.mlist.map(x=>x.counted?x.value:0), mweeks:p.r.mlist.map(x=>typeof p.c.monthly[x.slot]==='string'?p.c.monthly[x.slot]:''), mdates:p.r.mlist.map(x=>(p.c.mdate||{})[x.slot]||''), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes)}))(charDrops(p.c,'monthly'))}))};
+    perChar:a.per.filter(p=>p.r.mlist.length||itemSum(cleanItems(p.c.mdrops))).map(p=>({id:p.c.id, name:p.c.name, meso:p.r.monthMeso, bosses:p.r.mlist.map(bossTag), bvals:p.r.mlist.map(x=>x.counted?x.value:0), mweeks:p.r.mlist.map(x=>typeof p.c.monthly[x.slot]==='string'?p.c.monthly[x.slot]:''), mdates:p.r.mlist.map(x=>(p.c.mdate||{})[x.slot]||''), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes), ...(Object.keys(sp.revs).length?{revs:sp.revs}:{})}))(charDrops(p.c,'monthly'))}))};
 }
 /* 획득 아이템 줄 (모든 화면 공통 형식): [아이콘] 아이템 이름 (N인 분배) ×개수 · 반지 상자는 결과 집계(리4·컨4·꽝·미기록)
  * byBoss: 보스별로 따로 (보스 이름 표시) / 기본: 아이템 + 인원별 합계 */
@@ -683,11 +704,12 @@ function itemsInline(items, opts={}){
   const agg={}, outs={}, meta={};
   for(const [k,n] of Object.entries(items||{})){ const {slot,it,party,mode}=parseIK(k); if(!ITEMS[it]||!(+n>0)) continue;
     const a=(opts.byBoss?slot+'|':'')+it+'#'+party+mode; meta[a]={slot,it,party,mode};
-    agg[a]=(agg[a]||0)+(+n); if(hasOut(it)) (outs[a]=outs[a]||[]).push(...((opts.outs||{})[k]||[])); }
+    agg[a]=(agg[a]||0)+(+n); if(hasOut(it)) (outs[a]=outs[a]||[]).push(...((opts.outs||{})[k]||[]));
+    const rv=(opts.revs||{})[k]; if(rv&&+rv.m>0) meta[a].rev=(meta[a].rev||0)+(+rv.m); }
   const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; }, ii=it=>Object.keys(ITEMS).indexOf(it);
   const ks=Object.keys(agg).sort((x,y)=>{ const X=meta[x], Y=meta[y]; return (opts.byBoss?bi(X.slot)-bi(Y.slot):0) || ii(X.it)-ii(Y.it) || X.party-Y.party || String(X.mode).localeCompare(String(Y.mode)); });
   if(!ks.length) return opts.empty??'';
-  return `<span class="dls">${ks.map(a=>{ const {slot,it,party,mode}=meta[a]; return dropLine(it,party,agg[a],outs[a],opts.byBoss?(findBoss(slot)?.name||''):'',mode,opts.byBoss&&opts.diffOf?opts.diffOf(slot):''); }).join('')}</span>`;
+  return `<span class="dls">${ks.map(a=>{ const {slot,it,party,mode,rev}=meta[a]; const h=dropLine(it,party,agg[a],outs[a],opts.byBoss?(findBoss(slot)?.name||''):'',mode,opts.byBoss&&opts.diffOf?opts.diffOf(slot):''); return rev?`<span class="dlw">${h}<span class="dlrev">${meso(rev)}</span></span>`:h; }).join('')}</span>`;
 }
 const fmtMonth = m => { const [y,mm]=String(m).split('-'); return `${y}년 ${+mm}월`; };
 
@@ -1304,7 +1326,7 @@ function revPanel(a,cur){
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
       <div class="rp-row"><span class="rp-nm">${esc(p.c.name)}${p.c.isMain?' <span class="mainbadge">★</span>':''}</span><b>${meso(pmeso(p))}</b></div>
       <div class="rp-row"><span class="mini"><i style="width:${(pmeso(p)/max*100).toFixed(1)}%"></i></span><span class="muted" style="font-size:.72rem;white-space:nowrap">${p.r.weekly}/${lim}${pm.get(p).any?' · 월간 ✓':''}</span></div>
-      ${(d=>itemsInline(d.items)?`<div class="rp-items">${itemsInline(d.items,{outs:d.outcomes,byBoss:true,diffOf:cfgDiff(p.c)})}</div>`:'')(charAllDrops(p.c))}</div>`).join('')}</div>
+      ${(d=>itemsInline(d.items)?`<div class="rp-items">${itemsInline(d.items,{outs:d.outcomes,revs:d.revs,byBoss:true,diffOf:cfgDiff(p.c)})}</div>`:'')(charAllDrops(p.c))}</div>`).join('')}</div>
   </aside>`;
 }
 // 보스+난이도별 가격 행 (싼 순서) — 보스 체크 탭 가격 카드
@@ -1403,7 +1425,9 @@ function totalData(){
   const chars={}, items={};
   const nameOf=p=>{ const c=p.id&&S.characters.find(x=>x.id===p.id); return c?c.name:p.name; };
   const keyOf=p=>p.id&&S.characters.some(x=>x.id===p.id)?p.id:'n:'+p.name;
-  const ring={r4:0,c4:0,gl:0,x:0,un:0};
+  const ring={r4:0,c4:0,gl:0,x:0,un:0}, sales={}; // b62-8: 아이템 판매 수익 {실제 아이템 키: {n, m}}
+  const addS=p=>{ for(const r of Object.values(p.revs||{})){ if(!r||!(+r.m>0)) continue; const k=String(r.i||''); const o=sales[k]||(sales[k]={n:0,m:0}); o.n++; o.m+=+r.m; } };
+  weeks.forEach(w=>(w.perChar||[]).forEach(addS)); months.forEach(m=>(m.perChar||[]).forEach(addS));
   const add=(p,f)=>{ const k=keyOf(p); const o=chars[k]||(chars[k]={id:k,name:nameOf(p),week:0,month:0,items:{},outs:{},weeks:0}); f(o);
     for(const [ik,n] of Object.entries(p.items||{})){ const {it,party,mode}=parseIK(ik); if(!ITEMS[it]) continue; const a=party>1?it+'#'+party+mode:it; o.items[a]=(o.items[a]||0)+(+n);
       const I=items[a]||(items[a]={n:0,by:{},outs:[]}); I.n+=+n; I.by[o.name]=(I.by[o.name]||0)+(+n);
@@ -1421,7 +1445,7 @@ function totalData(){
   weeks.forEach(w=>(w.perChar||[]).forEach(addB)); months.forEach(m=>(m.perChar||[]).forEach(addB));
   weeks.forEach(w=>(w.perChar||[]).forEach(p=>add(p,o=>{o.week+=p.meso||0; if(p.meso) o.weeks++;})));
   months.forEach(m=>(m.perChar||[]).forEach(p=>add(p,o=>{o.month+=p.meso||0;})));
-  return {weeks,months,wTotal,mTotal,grand:wTotal+mTotal,ring,byBoss,chars:Object.values(chars).sort((a,b)=>(b.week+b.month)-(a.week+a.month)),items:Object.entries(items).sort((a,b)=>b[1].n-a[1].n)};
+  return {weeks,months,wTotal,mTotal,grand:wTotal+mTotal,ring,byBoss,sales,chars:Object.values(chars).sort((a,b)=>(b.week+b.month)-(a.week+a.month)),items:Object.entries(items).sort((a,b)=>b[1].n-a[1].n)};
 }
 // 아이템 칩: 'cb:<장신구>' = 칠흑 상자에서 고른 장신구, 'ring:r4|c4' = 시드링 결과
 const lootSf = k => /@([wl])$/.exec(k)?.[1]||'', lootBase = k => k.replace(/@[wl]$/,'');
@@ -1638,6 +1662,11 @@ function ringCardHtml(T){ return `  <div class="card ringcard"><h2>${miniIcon('r
     ${(()=>{ const R={}; T.items.forEach(([a,I])=>{ const {it,mode}=parseIK(a); if(!isRing(it)) return; const kk=it+(mode?'@'+mode:''); const o=R[kk]||(R[kk]={n:0,outs:[]}); o.n+=I.n; o.outs.push(...I.outs); });
       const ks=Object.keys(R).sort((x,y)=>lootOrd(x)-lootOrd(y));
       return ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${lootIco(k)}<span class="ln">${esc(lootName(k))}${modeTag(k)}</span> <b class="lx">${xN(R[k].n)}</b></span>${outHtml(R[k].outs,R[k].n,true)}</div>`).join('')}</div>`:'<p class="muted">아직 획득한 반지 상자가 없습니다.</p>'; })()}</div>`; }
+// b62-8: 아이템 판매 수익 (드롭 때 '수익을 기록할까요?' 에서 입력한 값, 분배는 내 몫) — 간단 카드 (사용자가 나중에 다듬을 예정)
+function salesHtml(T){ const S_=T.sales||{}, ks=Object.keys(S_).filter(k=>{ try{ return !!lootName(k); }catch(e){ return false; } }).sort((a,b)=>S_[b].m-S_[a].m||itemCmp(a,b)), tot=ks.reduce((x,k)=>x+S_[k].m,0);
+  return `<div class="card" id="salesCard"><h2>${miniIcon('meso')} 아이템 판매 수익</h2>
+    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc">${tot?(tot/1e8).toFixed(1)+'억':'-'}</div><div class="muted">${tot.toLocaleString()} 메소 · ${ks.reduce((x,k)=>x+S_[k].n,0)}건</div></div></div>
+    ${ks.length?`<div class="slist">${ks.map(k=>`<div class="sl"><span class="loot">${lootIco(k)}<span class="ln">${esc(lootName(k))}</span> <b class="lx">${xN(S_[k].n)}</b></span><b class="slm">${meso(S_[k].m)}</b></div>`).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
 function renderLoot(){
   const v=$('#view'); const T=totalData(), L=lootSummary(T);
   v.innerHTML=`<div class="grid"><div class="card" id="lootTop">
@@ -1648,6 +1677,7 @@ function renderLoot(){
       <div class="stat" id="ltBbang"><div class="k"><span class="blk" aria-hidden="true">${miniIcon('blink')}</span><span class="kt">누적 블빵 승리 횟수</span></div><div class="v">${L.wins}회</div></div>
     </div>
   </div>
+  ${salesHtml(T)}
   ${kingHtml(T,'loot')}
   ${epicKingHtml(T)}
   ${missingHtml(T)}
@@ -2262,7 +2292,7 @@ function gdApply(remote,msg){
   if(!SV_ON && (gdKeyDiff(d).push || !remote.withKeys)) gdPush(); // 이 PC에만 있던 키를 드라이브에도 저장 (서버 모드는 키를 저장하지 않음)
   if(msg){ gdSet('on',msg); toast('☁ '+msg); }
 }
-const GD_FIELD={name:'이름',bosses:'보스 설정',weekly:'주간 체크',monthly:'월간 체크',auto:'자동 체크',drops:'획득 아이템',mdrops:'월간 획득 아이템',dropOut:'반지 결과',mdropOut:'반지 결과',isMain:'본캐 지정',
+const GD_FIELD={name:'이름',bosses:'보스 설정',weekly:'주간 체크',monthly:'월간 체크',auto:'자동 체크',drops:'획득 아이템',mdrops:'월간 획득 아이템',dropOut:'반지 결과',mdropOut:'반지 결과',drev:'아이템 판매 수익',mdrev:'아이템 판매 수익',isMain:'본캐 지정',
   worldOrder:'월드 순서',dq:'일퀘 표시 설정',settings:'설정',label:'계정 이름'};
 function gdConfLabel(p,d){
   const m=/^characters\[([^\]]*)\]\.?([^.\[]*)/.exec(p);

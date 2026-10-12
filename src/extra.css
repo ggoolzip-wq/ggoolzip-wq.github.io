@@ -837,3 +837,32 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .stats.kbig .stat .k .kt{display:block;line-height:1.2}
 /* b62: 메소왕 제목 아이콘 = 1위 캐릭터 초상화 */
 .card h2 .avatar.hking{width:36px;height:36px;border-radius:9px;flex:none}
+
+/* b62-8: 수익을 기록할까요? 모달 */
+#revModal{z-index:60}
+.rvbox{max-width:400px}
+.rvbox .rvh{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:1.08rem}
+.rvbox .rvico{width:32px;height:32px;flex:none;display:grid;place-items:center}
+.rvbox .rvico img,.rvbox .rvico .ric{width:32px;height:32px;object-fit:contain}
+.rvbox .rvguide{font-size:.78rem;margin:0 0 12px 40px;line-height:1.4}
+.rvbox .rvname{font-size:.76rem;margin:-8px 0 12px 40px}
+.rvbody{display:flex;align-items:flex-start;gap:12px}
+.rvleft{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:10px}
+.rvin{display:flex;align-items:center;gap:6px;width:100%;white-space:nowrap}
+.rvin input{flex:1;min-width:0;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:1rem;font-weight:700;text-align:right}
+.rvin span{font-weight:700}
+.rvin input::-webkit-outer-spin-button,.rvin input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.rvin input{-moz-appearance:textfield;appearance:textfield}
+.rvok{background:#ff8a1f;min-width:110px}
+.rvno{flex:none;align-self:flex-start;min-height:38px;padding:8px 16px}
+.rverr{color:#ff5a5a;font-size:.8rem;min-height:1em;margin-top:6px;text-align:center}
+@media(max-width:420px){.rvbody{gap:8px}.rvno{padding:8px 12px}}
+/* 이번 주 수익: 기록한 판매 수익 = 아이템 바로 아래, 1pt 작게, 핫핑크 */
+.dlw{display:inline-flex;flex-direction:column;align-items:flex-start;vertical-align:top;white-space:nowrap}
+.dlrev{color:#ff4fa3;font-size:calc(1em - 1pt);font-weight:700;line-height:1.2;padding-left:2px}
+/* 득템 분석: 아이템 판매 수익 */
+#salesCard .stats.s3{grid-template-columns:minmax(0,1fr)}
+#salesCard .slist{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+#salesCard .sl{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 2px;border-bottom:1px solid var(--line)}
+#salesCard .sl:last-child{border-bottom:0}
+#salesCard .slm{color:#ff4fa3;white-space:nowrap}

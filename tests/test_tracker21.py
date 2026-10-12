@@ -30,7 +30,7 @@ try:
       ctx=b.new_context(viewport={'width':1280,'height':900} if not touch else {'width':390,'height':844},locale='ko-KR',has_touch=touch,is_mobile=touch)
       ctx.route('https://accounts.google.com/**',lambda r:r.abort()); ctx.route('https://open.api.nexon.com/**',lambda r:r.abort())
       ctx.route('**/feed.json*',lambda r:r.fulfill(status=404,body=''))
-      pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e)))
+      pg=ctx.new_page(); pg.add_init_script("new MutationObserver(()=>{const b=document.querySelector('#revModal [data-rv=no]'); if(b) b.click();}).observe(document,{childList:true,subtree:true})"); pg.on('pageerror',lambda e:errs.append(str(e)))
       pg.goto(URL); pg.evaluate("p=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p))}",PRESET); pg.reload()
       pg.wait_for_selector('[data-party="kaling"]'); pg.wait_for_timeout(300)
       st=lambda: pg.evaluate("JSON.parse(JSON.stringify(S.characters[0]))")  # 2026-10-10: 드롭 클릭은 [저장] 전까지 대기 중 → 화면 상태(S) 확인

@@ -14,7 +14,7 @@ EMO=['😚','😙','😊','😘','🥳']
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
-    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.add_init_script("new MutationObserver(()=>{const b=document.querySelector('#revModal [data-rv=no]'); if(b) b.click();}).observe(document,{childList:true,subtree:true})"); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",ST); pg.reload(); pg.wait_for_timeout(800)
     rev0=pg.evaluate("charRevenue(S.characters[0]).meso")
     first=pg.evaluate("[...document.querySelectorAll('[data-drop^=\"seren|\"]')].map(e=>e.dataset.drop).find(k=>!/^seren\\|r_/.test(k))")

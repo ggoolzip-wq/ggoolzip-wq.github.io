@@ -25,7 +25,7 @@ c2=ch('c2','불독메이지',{'lucid':B('hard'),'blackmage':B('hard')},{'lucid':
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
-    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.add_init_script("new MutationObserver(()=>{const b=document.querySelector('#revModal [data-rv=no]'); if(b) b.click();}).observe(document,{childList:true,subtree:true})"); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.on('console',lambda m: print('console:',m.text) if 'dropClamp' in m.text else None)
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort()); pg.route('**/feed.json*',lambda r:r.fulfill(status=404,body=''))
     pg.goto(URL); wk=pg.evaluate("weekId()")

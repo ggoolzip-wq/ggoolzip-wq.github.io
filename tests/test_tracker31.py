@@ -25,7 +25,7 @@ c1={'id':'c1','name':'단풍용사','level':285,'job':'히어로','world':'스�
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
-    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.add_init_script("new MutationObserver(()=>{const b=document.querySelector('#revModal [data-rv=no]'); if(b) b.click();}).observe(document,{childList:true,subtree:true})"); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.route('**/prices.json*',lambda r:r.fulfill(status=200,content_type='application/json',body=json.dumps(demo)))
     pg.goto(URL)

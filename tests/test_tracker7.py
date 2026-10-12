@@ -8,7 +8,7 @@ URL='file://'+ROOT+'/index.html'; errs=[]
 with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     ctx=b.new_context(viewport={'width':1280,'height':1000},locale='ko-KR',accept_downloads=True)
-    pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg=ctx.new_page(); pg.add_init_script("new MutationObserver(()=>{const b=document.querySelector('#revModal [data-rv=no]'); if(b) b.click();}).observe(document,{childList:true,subtree:true})"); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.wait_for_timeout(200)
     wk=pg.evaluate('weekId()'); per={'week':wk,'day':pg.evaluate('dayId()'),'month':pg.evaluate('monthId()')}
     B=lambda **kw:{k:{'enabled':True,'diff':v[0],'party':v[1]} for k,v in kw.items()}
@@ -93,7 +93,7 @@ with sync_playwright() as p:
     print('R3 history never trimmed:', len(s['history']), '| startWeek kept:', s['startWeek'])
     # mobile
     data=s
-    m=ctx.new_page(); m.set_viewport_size({'width':390,'height':844}); m.on('pageerror',lambda e:errs.append('m:'+str(e)))
+    m=ctx.new_page(); m.add_init_script("new MutationObserver(()=>{const b=document.querySelector('#revModal [data-rv=no]'); if(b) b.click();}).observe(document,{childList:true,subtree:true})"); m.set_viewport_size({'width':390,'height':844}); m.on('pageerror',lambda e:errs.append('m:'+str(e)))
     m.goto(URL); m.evaluate("s=>localStorage.setItem('mapleBossTracker.v1',s)", json.dumps(st)); m.reload(); m.wait_for_timeout(300)
     m.click('[data-tab="total"]') if m.is_visible('[data-tab="total"]') else m.evaluate("tab='total';syncTabs();render()")
     m.wait_for_timeout(200)

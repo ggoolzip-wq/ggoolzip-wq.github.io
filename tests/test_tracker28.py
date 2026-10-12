@@ -22,7 +22,7 @@ SUN={'id':1,'title':'썬데이 메이플','url':'https://x','image':'https://lwi
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
-    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.add_init_script("new MutationObserver(()=>{const b=document.querySelector('#revModal [data-rv=no]'); if(b) b.click();}).observe(document,{childList:true,subtree:true})"); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.route('**/feed.json*',lambda r:r.fulfill(status=200,content_type='application/json',body=json.dumps({'sunday':SUN,'items':[]})))
     pg.goto(URL)
