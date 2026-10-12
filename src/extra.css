@@ -986,11 +986,3 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 @keyframes mwShine{from{left:-40%}to{left:120%}}
 @keyframes mwFade{0%,55%{opacity:1}75%,90%{opacity:.25}100%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.char .medalwarn,.char .medalwarn::after{animation:none}}
-/* b89: 보스 득템왕 1~3위 효과 이름 굵기 2배 — 700 → 900(최대) + 같은 색 text-stroke로 더 두껍게 */
-#bossLootKing [class*=rg-] .bdn{font-weight:900;-webkit-text-stroke:.6px currentColor}
-#bossLootKing .rg-old .bdn{-webkit-text-stroke:.6px #fff}
-#bossLootKing .rg-arc .bdn{-webkit-text-stroke:.6px #a6f36b}
-#bossLootKing .rg-bm .bdn{-webkit-text-stroke:.8px rgba(255,255,255,.9)}
-#bossLootKing .rg-gr1 .bdn{-webkit-text-stroke:.6px rgba(79,150,255,.9)}
-#bossLootKing .rg-gr2 .bdn{-webkit-text-stroke:.6px rgba(255,95,175,.9)}
-#bossLootKing [class*=rg-] .dlv{font-weight:900;-webkit-text-stroke:.6px currentColor}

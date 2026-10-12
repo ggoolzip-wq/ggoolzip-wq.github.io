@@ -761,3 +761,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 같은 줄의 난이도 표시 `.dlv`(예: '(익스트림)', '(하드)'): 800 → 900 + `-webkit-text-stroke:.6px currentColor`.
 - 4위 이하는 그대로(이름 400, 난이도 800, 테두리 없음).
 - CSS: src/extra.css 끝. 테스트: test_tracker66(포트 8886). 스크린샷: /workspace/maple-boss-tracker/oct12z_b89_before_bossloot.png, oct12z_b89_after_bossloot.png.
+
+## b90 — b89 취소
+- 사용자 요청으로 b89(1~3위 이름·난이도 900 + text-stroke)를 되돌렸습니다. src/extra.css의 b89 규칙을 삭제해 b89 이전과 같습니다(이름 700, 검마 테두리 .5px, 난이도 800/익스트림 900, 테두리 없음).
+- test_tracker66은 이제 이 b89 이전 값을 확인합니다. 스크린샷: /workspace/maple-boss-tracker/oct12z_b90_before_bossloot.png, oct12z_b90_after_bossloot.png.

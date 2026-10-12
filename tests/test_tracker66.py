@@ -1,4 +1,4 @@
-# b89: 보스 득템왕 1~3위 효과 이름 굵기 2배 (b83 데이터 재사용)
+# b90: b89 취소 — 보스 득템왕 1~3위 굵기가 b89 이전 값인지 확인 (b83 데이터 재사용)
 # was b83: 득템 분석 '보스 득템왕' — 득템왕과 에픽빔왕 사이, 보스(난이도)별 득템 횟수 순위, 1위 보스 아이콘, 1~3위 지역 색, 한 줄·가로 스크롤 없음, 숨은 캐릭터 제외
 import os, sys, json, subprocess, time, urllib.request
 from playwright.sync_api import sync_playwright
@@ -34,11 +34,9 @@ try:
     print('WEIGHTS',W)
     if os.environ.get('SHOT'): pg.locator('#bossLootKing').screenshot(path=os.environ['SHOT'])
     top=[x for x in W if x[1]]; rest=[x for x in W if not x[1]]
-    check('top3 effect names weight 900', len(top)==3 and all(x[2]=='900' for x in top), top)
-    check('top3 have text-stroke (heavier)', all(x[3] not in ('0px','') for x in top), top)
-    check('rank 4+ names unchanged (not 900)', rest and all(x[2]!='900' for x in rest), rest)
-    check('top3 difficulty labels weight 900 + stroke', all(x[5]=='900' and x[6] not in ('0px','') for x in top), top)
-    check('rank 4+ difficulty unchanged', all(x[5]=='800' and x[6]=='0px' for x in rest), rest)
+    exp=[['유피테르','spk rg-gr2','700','0px','(하드)','800','0px'],['루시드','spk rg-arc','700','0px','(하드)','800','0px'],['검은 마법사','spk rg-bm','700','0.5px','(익스트림)','900','0px']]
+    check('b90: top3 weights/outlines back to pre-b89', sorted(top)==sorted(exp), top)
+    check('rank 4+ unchanged', all(x[2]=='400' and x[5]=='800' and x[6]=='0px' for x in rest), rest)
     check('JS 오류 없음', not errs, errs)
     b.close()
 except Exception as e:
