@@ -678,3 +678,9 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - `admDecide`: action==='kick' 이면 '강퇴했습니다 — …' 토스트 안 띄움 (승인·거절 알림은 그대로).
 - 테스트: test_tracker52 에 강퇴 직후 토스트 없음 확인 추가. 라이브에서는 실제 사용자를 강퇴하지 않으므로 로컬 서버 화면으로 확인.
 - 스크린샷: /workspace/maple-boss-tracker/oct12r_b80_before_kick.png (로컬, 알림 있음), oct12r_b80_after_kick.png (로컬, 알림 없음)
+
+## b81 — [저장] 즉시 (2026-10-12)
+- 측정(라이브, 실제 데이터 22캐릭·54KB): render 26ms, contentSig 1ms — 화면은 빠름. 느렸던 원인 = [저장] 뒤 서버 저장(구독 키 동기화 + 원격 변경 확인 + PUT, 3번 왕복 ≈0.5s~수 초)이 끝날 때까지 버튼이 켜진 채(svUnsaved) 남고, 탭/캐릭터 이동 확인(예)도 그 저장을 기다렸음.
+- 수정: `pendSave` = 이 PC 에 바로 확정 + '저장이 완료되었습니다.' + 버튼 꺼짐 → `svPushBg()` 가 뒤에서 서버 저장(기다리지 않음). 저장 중(`svPushing`)엔 버튼 꺼둠, 실패하면 버튼 다시 켜지고 헤더 '⚠ 저장 안 됨'(누르면 다시 저장) + 뒤에서 최대 3번 더 시도(1.5·3·4.5초). 탭/캐릭터 이동 '예'도 바로 이동.
+- 테스트: test_tracker59 (서버 1.5초 지연에도 클릭 20ms 안에 확정, 뒤에서 서버 반영, 끊김 → 경고 → 다시 저장). 25·31·53·56 통과.
+- 스크린샷: /workspace/maple-boss-tracker/oct12s_b81_before_save.png (라이브 이전: 저장 뒤에도 버튼 켜짐), oct12s_b81_test_save.png (저장 직후 버튼 꺼짐·완료 문구, 서버 지연 중), oct12s_b81_localtest_save.png

@@ -1654,7 +1654,12 @@ const COMMITTED=fn=>{ if(!pend) return fn(); const live=S; pend.base.activeId=li
 const cRev=c=>COMMITTED(()=>charRevenue(S.characters.find(x=>x.id===c.id)||c));
 function pendCancel(quiet){ if(!pend) return; const keepId=S.activeId; S=pend.base; S.activeId=keepId; pend=null; save(); render(); if(!quiet) toast('변경사항을 취소했습니다'); }
 let pendDoneAt=0; // b75: 보스 목록 [저장] → 취소 버튼 왼쪽에 초록 '저장이 완료되었습니다.' (하단 알림 없음)
-async function pendSave(){ if(!pend&&!svUnsaved()) return; pend=null; save(); pendDoneAt=Date.now(); render(); if(SV_ON&&svTok()&&gdMeta.on){ await svSaveNow(true); render(); }
+// b81: [저장] = 즉시 (이 PC 에 확정·화면·'저장이 완료되었습니다.' 바로). 서버 저장은 뒤에서(svPushBg) — 기다리지 않음, 실패하면 다시 시도 후 헤더 '⚠ 저장 안 됨'
+let svPushing=false; // 뒤에서 서버 저장 중(재시도 포함) — 이동안 [저장]/[취소]는 꺼 둠
+function svPushBg(n=0){ if(!(SV_ON&&svTok()&&gdMeta.on)) return; clearTimeout(svPushBg._t); svPushing=true;
+  const end=()=>{ svPushing=false; if(tab==='boss') render(); else gdRender(); };
+  gdPush({manual:false}).then(ok=>{ gdRender(); if(ok&&!gdLocalDirty()) return end(); end(); if(n<3&&gd.state!=='conflict'&&svTok()) svPushBg._t=setTimeout(()=>{ if(gdLocalDirty()&&!svPushing) svPushBg(n+1); },1500*(n+1)); }).catch(end); } // 실패하면 버튼은 다시 켜고(경고 표시) 뒤에서 몇 번 더 시도
+async function pendSave(){ if(!pend&&!svUnsaved()) return; pend=null; save(); pendDoneAt=Date.now(); svPushBg(); render();
   clearTimeout(pendSave._t); pendSave._t=setTimeout(()=>{ pendDoneAt=0; document.querySelectorAll('.pdone').forEach(e=>e.remove()); },3000); }
 /* b75: 저장 안 한 보스 목록 변경이 있으면 탭 이동·다른 캐릭터 선택 전에 묻기 (그 캐릭터 사진 + 문구, 예=저장 후 이동 / 아니오=버리고 이동 / 바깥 클릭=머무름) */
 function pendGuard(go){ if(!pend) return go(); const c=activeChar();
@@ -2472,7 +2477,7 @@ function renderBoss(){
     <div class="toolbar" style="margin-bottom:10px">
       <div class="seg">${['weekly','monthly'].map(t=>`<button data-filter="${t}" class="${bossFilter===t?'on':''}">${TYPE_LABEL[t]} <span style="opacity:.8">${doneType(t)}/${cntType(t)}</span></button>`).join('')}</div>
       <span style="flex:1"></span>
-      ${(!pend&&pendDoneAt&&Date.now()-pendDoneAt<3000)?'<span class="pdone" role="status">저장이 완료되었습니다.</span>':''}${(on=>`<button class="pbtn pcancel${on?' on':''}" id="pendCancel" ${on?'':'disabled'}>취소</button><button class="pbtn psave${on?' on':''}" id="pendSave" ${on?'':'disabled'}>저장</button>`)(!!pend||svUnsaved())}
+      ${(!pend&&pendDoneAt&&Date.now()-pendDoneAt<3000)?'<span class="pdone" role="status">저장이 완료되었습니다.</span>':''}${(on=>`<button class="pbtn pcancel${on?' on':''}" id="pendCancel" ${on?'':'disabled'}>취소</button><button class="pbtn psave${on?' on':''}" id="pendSave" ${on?'':'disabled'}>저장</button>`)(!!pend||(svUnsaved()&&!svPushing))}
     </div>
     ${bossFilter==='monthly'?'<div class="muted" style="margin-bottom:8px">월간 보스(검은 마법사)는 매월 1일 00:00 초기화되며 월 1회만 처치 가능합니다. 주간 수익과 별도로 「이번 달 월간 보스」 수익으로 집계됩니다.</div>':''}
     <div class="boss-list">${shown.length?shown.map(b=>bossRow(c,b)).join(''):`<div class="empty muted">${c.ocid?`게임 스케줄러에 등록된 ${TYPE_LABEL[bossFilter]}가 없습니다.<br>게임에서 보스를 스케줄러에 등록한 뒤 동기화(↻)하면 자동으로 표시돼요.`:`넥슨 API로 불러온 캐릭터만 보스가 자동 표시돼요.<br>캐릭터 편집에서 API 키 계정에 연결해 주세요.`}</div>`}</div>
