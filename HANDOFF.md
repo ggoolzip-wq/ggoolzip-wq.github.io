@@ -24,6 +24,14 @@
 4. **다른 데이터에 묶인 키 추가 차단**: Worker `POST /api/keycheck {key}`(인증, 세션당 30회/10분, 저장 없음) — keyreg 에 다른 사용자 키로 있거나, 그 넥슨 계정이 **캐릭터가 있는** 다른 데이터에 연결돼 있으면 409 `sub_key` '이미 등록된 부계정 API입니다.'(빈 데이터는 /api/subkeys 가 옮기므로 통과). 클라이언트 `addAccount()`(이제 async)·`bkAdd()` 가 저장 전에 `svKeyCheck()` → 거부면 키를 저장하지 않고 키 목록 아래 `#accRej` 줄에 '등록 완료' 자리 대신 빨간 글(#ff5a5a, 600, .9rem = 입장 화면 경고와 같은 모양)만, 예비 키는 bkerr 빨간 글. 창 닫으면 사라짐. 예전 Worker(404)·넥슨 오류면 예전 흐름대로 진행. Worker 배포 Version 4776323e (10:51 KST), EPOCH_KEY 그대로라 강제 로그아웃 없음.
 5. 테스트: test_server.py(b64 keycheck 4개), 신규 **test_tracker49**(초기화 1번만·키만 비움·캐릭터/연결 유지·세션 지움 / 대표 키 로그인 → 본계정 칸 / F·G 다시 추가 → 예전 a2·a3 칸 / 남의 키 → 빨간 글·저장 안 함 / 집 PC 예전 키 → 비운 뒤 대표 키로 PC방 등록분만 복원·중복 칸 없음·금고에 예전 키 안 올라감). 통과: test_server, 4, 5, 23, 24, 25, 29, 36, 46, 49. run_all.sh 에 49 추가.
 6. 사용자 할 일: ① PC방 페이지 새로고침(F5) → 입장 화면 → 대표 키 로그인 ② 캐릭터 추가 창에서 부계정 키를 '+ API 키 추가'로 하나씩, 예비 키는 각 계정 줄의 예비 칸에 등록(2초 뒤 서버 금고에 보관, ☁ 메뉴에 '키 보관 실패'가 없는지 확인) ③ 집 PC: **페이지를 새로고침한 뒤**(예전 버전 탭으로 로그인하면 예전 키가 다시 금고에 올라갈 수 있음) 대표 키로 로그인 → 키가 다 돌아옴.
+## 2026-10-12 b66 (NEXON Open API 표기 — 입장 화면·첫 화면)
+(같은 방식: src 수정→build→테스트→`git checkout -- *.png`→`git pull --rebase`→main 일반 push. HANDOFF 기록은 항상.)
+**이유**: 넥슨 Open API 서비스 단계 신청 — 모든 화면에 출처 표기.
+1. **서버 모드 입장 화면**(`#svGate`, bossmaple.pages.dev): 초대 비밀번호 단계·대표 키 로그인 단계 모두 하단에 `Data based on NEXON Open API` (`.svgattrib`). 기존 `.foot` 과 같은 작은 muted·가운데. 화면 하단 고정이라 **스크롤 없이** 1280×800·모바일에서 보임. 키 안내(`details`)가 길어도 `.svgbox` 만 스크롤·표기는 밖.
+2. **다크/라이트**: 라이트면 입장 상자·배경도 라이트 톤, 표기 색 `#8a7765`(=`--muted`). 다크는 `#9a9aa8`.
+3. **github.io**(게이트 없음): 메인 `.foot` 에 이미 같은 문구 있음 + 캐릭터 0명 첫 화면(`emptyView`)에도 `.empty-attrib` 로 동일 문구(스크롤 없이 보이도록).
+- 테스트: 신규 **test_tracker50**. 스크린샷 `/workspace/maple-boss-tracker/oct12d_attrib_pass.png` · `oct12d_attrib_key.png`.
+
 ## 2026-10-12 b65 (결정석 가격: 매일 19:00 KST 확인 + 마지막 확인 날짜 갱신)
 (같은 방식: 최소 수정→`git pull --rebase`→main 일반 push. HANDOFF 기록은 항상. src/·server/ 키 리셋 작업과 겹치지 않게 워크플로·스크립트·HANDOFF 만.)
 1. **스케줄**: `update-prices.yml` cron `17 3 * * 5`(금 12:17 KST 대비) → **`0 10 * * *`(매일 19:00 KST)**. GitHub cron 은 수분~십여 분 늦을 수 있음. `workflow_dispatch` 유지.

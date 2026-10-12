@@ -1265,7 +1265,8 @@ function renderResetInfo(){
   el.innerHTML=`<b>초기화까지 (KST)</b><br>주간(목 00:00): ${untilText(nw-now)}<br>월간(1일 00:00): ${untilText(nm-now)}<br><span style="font-size:.78rem">이번 주: ${fmtWeek(S.period.week)}</span>`;
 }
 function emptyView(){ return `<div class="card empty"><div class="big">🍁</div><h2 style="justify-content:center">캐릭터를 추가해 보세요</h2><p class="muted">넥슨 Open API 키로 내 계정의 본캐·부캐를 한 번에 불러올 수 있어요.</p>
-  <div class="toolbar" style="justify-content:center"><button class="btn" id="importAccBtn">+ 캐릭터 추가 (API 키로 불러오기)</button></div></div>`; }
+  <div class="toolbar" style="justify-content:center"><button class="btn" id="importAccBtn">+ 캐릭터 추가 (API 키로 불러오기)</button></div>
+  <div class="empty-attrib muted">Data based on NEXON Open API</div></div>`; }
 
 function renderBoss(){
   const v=$('#view'); const c=activeChar();
@@ -2456,7 +2457,8 @@ function svGate(){ // 서버 모드 입장 화면: ① 초대 비밀번호 → �
         <li>게임은 <b>메이플스토리</b>, 타입은 <b>개발 단계</b>(서비스명만 입력) → 약관 동의 후 등록</li>
         <li>애플리케이션 상세 화면의 <b>API Key</b>를 복사해 위에 붙여넣기</li></ol>
         <div class="muted">넥슨 계정마다 키가 따로 있어요 (부계정은 로그인 후 따로 추가).</div></details>`}
-    ${err}</div>`;
+    ${err}</div>
+    <div class="svgattrib">Data based on NEXON Open API</div>`;
   setTimeout(()=>$(step===1?'#svGate #svInvite':'#svGate #svKey')?.focus(),0);
 }
 async function svInvite(pass){
