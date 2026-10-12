@@ -216,6 +216,18 @@ async function writeRegistry(env, userId, mainHashes, v) {
   for (const h of mainHashes) st.push(env.DB.prepare("INSERT INTO acct_role (acct_hash,user_id,role,created_at) VALUES (?,?,'main',?) ON CONFLICT(acct_hash) DO UPDATE SET user_id=excluded.user_id, role=excluded.role, created_at=COALESCE(acct_role.created_at, excluded.created_at)").bind(h, userId, now));
   await env.DB.batch(st);
 }
+// b95: 다른 데이터가 '이 넥슨 계정만으로 된' 데이터이고 (캐릭터 없음 | 승인 안 됨(대기·거절·차단)) 이면 부계정으로 옮길 수 있음 (키 주인은 넥슨 확인으로 증명됨).
+//  지운 부계정 키를 대표 칸에 넣어 생긴 승인 대기 데이터(b94) / 예전에 그 키로 따로 로그인해 생긴 데이터 → 부계정 다시 추가가 막히지 않게
+async function absorbable(env, otherId, hs) {
+  if (otherId === adminId(env)) return false;
+  const oa = await acctList(env, otherId); if (!oa.every(h => hs.includes(h))) return false;
+  const ap = await env.DB.prepare('SELECT status FROM approval WHERE user_id=?').bind(otherId).first();
+  if (ap && ap.status !== 'ok') return true;
+  const st = await env.DB.prepare('SELECT data FROM state WHERE user_id=?').bind(otherId).first();
+  let nChars = 0; try { nChars = st ? (JSON.parse(st.data).characters || []).length : 0; } catch (e) {}
+  return nChars === 0;
+}
+const dropUser = (env, uid) => env.DB.batch(USER_TABLES.map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(uid)).concat(env.DB.prepare('DELETE FROM users WHERE id=?').bind(uid)));
 const SUB_MSG = '이미 등록된 부계정 API입니다.';
 async function vaultOpen(env, mainKey, userId) { // 없으면 null, 대표 키가 아니면 false
   const r = await env.DB.prepare('SELECT iv, ct FROM keyvault WHERE user_id=?').bind(userId).first();
@@ -322,7 +334,7 @@ const stateOut = (row, withData = true) => row
 /* ---------- 라우트 ---------- */
 async function route(req, env) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, ''), M = req.method;
-  if (p === '/api/health') return json(200, { ok: true, v: 'b94' });
+  if (p === '/api/health') return json(200, { ok: true, v: 'b95' });
   await ensureSchema(env); await authEpoch(env); await loadAdmin(env); // 첫 요청 때 강제 로그아웃 기준 시각 확정
   // b67: IP별 요청 제한 (읽기 300/분, 쓰기 120/분) — 세션·사용자별 제한과 별개
   await limit(env, await ipKey(env, req, M === 'GET' ? 'ipr' : 'ipw'), M === 'GET' ? IP_LIMITS.read : IP_LIMITS.write);
@@ -405,8 +417,9 @@ async function route(req, env) {
     const b = await readBody(req);
     const hashes = await nexonAccounts(env, b.key), now = Date.now();
     const qs = hashes.map(() => '?').join(',');
-    const other = (await env.DB.prepare(`SELECT user_id FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hashes, me.userId).all()).results;
-    if (other.length) throw new HttpError(409, 'linked_elsewhere', '이 넥슨 계정은 이미 다른 데이터에 연결되어 있습니다');
+    const other = (await env.DB.prepare(`SELECT DISTINCT user_id FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hashes, me.userId).all()).results;
+    for (const o of other) if (await absorbable(env, o.user_id, hashes)) await dropUser(env, o.user_id); // b95
+    if ((await env.DB.prepare(`SELECT 1 FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hashes, me.userId).first())) throw new HttpError(409, 'linked_elsewhere', '이 넥슨 계정은 이미 다른 데이터에 연결되어 있습니다');
     if ((await acctList(env, me.userId)).length + hashes.length > MAX_ACCTS) throw new HttpError(400, 'too_many_accounts', `한 데이터에 넥슨 계정은 ${MAX_ACCTS}개까지`);
     await env.DB.batch(hashes.map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, me.userId, now))
       .concat(hashes.map(h => env.DB.prepare("INSERT OR IGNORE INTO acct_role (acct_hash,user_id,role,created_at) VALUES (?,?,'sub',?)").bind(h, me.userId, now))));
@@ -434,13 +447,9 @@ async function route(req, env) {
       const hs = await nexonAccounts(env, key);
       const qs = hs.map(() => '?').join(',');
       const other = (await env.DB.prepare(`SELECT DISTINCT user_id FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hs, me.userId).all()).results;
-      for (const o of other) { // b62: 예전에 이 부계정 키로 따로 로그인해서 생긴 '빈' 데이터면 이쪽으로 옮김 (키 주인임은 넥슨 확인으로 증명됨)
-        const oa = await acctList(env, o.user_id), st = await env.DB.prepare('SELECT data FROM state WHERE user_id=?').bind(o.user_id).first();
-        let nChars = 0; try { nChars = st ? (JSON.parse(st.data).characters || []).length : 0; } catch (e) {}
-        if (oa.every(h => hs.includes(h)) && nChars === 0) {
-          await env.DB.batch(['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen'].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(o.user_id))
-            .concat(env.DB.prepare('DELETE FROM users WHERE id=?').bind(o.user_id)));
-        } else throw new HttpError(409, 'linked_elsewhere', `'${String(s0.label || '부계정').slice(0, 30)}' 키의 넥슨 계정은 이미 다른 데이터(캐릭터가 있는 데이터)에 연결되어 있습니다`);
+      for (const o of other) { // b62/b95: 옮길 수 있는 데이터면 지우고 이쪽으로
+        if (await absorbable(env, o.user_id, hs)) await dropUser(env, o.user_id);
+        else throw new HttpError(409, 'linked_elsewhere', `'${String(s0.label || '부계정').slice(0, 30)}' 키의 넥슨 계정은 이미 다른 데이터(캐릭터가 있는 데이터)에 연결되어 있습니다`);
       }
       await env.DB.batch(hs.map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, me.userId, now)));
       const bk = await sameAcct(s0.bk, hs, String(s0.label || '부계정').slice(0, 30));
@@ -464,12 +473,24 @@ async function route(req, env) {
     if (kr && kr.user_id !== me.userId) throw new HttpError(409, 'sub_key', SUB_MSG);         // 다른 데이터에 부계정/예비 키로 등록된 키
     const hs = await nexonAccounts(env, b.key), qs = hs.map(() => '?').join(',');
     const other = (await env.DB.prepare(`SELECT DISTINCT user_id FROM accounts WHERE acct_hash IN (${qs}) AND user_id<>?`).bind(...hs, me.userId).all()).results;
-    for (const o of other) { // /api/subkeys 와 같은 규칙: 그 계정만 있는 '빈' 데이터면 옮길 수 있으므로 통과, 아니면 거부
-      const oa = await acctList(env, o.user_id), st = await env.DB.prepare('SELECT data FROM state WHERE user_id=?').bind(o.user_id).first();
-      let nChars = 0; try { nChars = st ? (JSON.parse(st.data).characters || []).length : 0; } catch (e) {}
-      if (!(oa.every(h => hs.includes(h)) && nChars === 0)) throw new HttpError(409, 'sub_key', SUB_MSG);
-    }
+    for (const o of other) if (!(await absorbable(env, o.user_id, hs))) throw new HttpError(409, 'sub_key', SUB_MSG); // /api/subkeys 와 같은 규칙 (b95)
     return json(200, { ok: true });
+  }
+  if (p === '/api/unlink' && M === 'POST') { // b95: 키 삭제 → 그 키·연결 정보 서버에서 완전히 지움 (계정 해시로 묶인 캐릭터 기록은 클라이언트 데이터에 숨김으로 남음)
+    await limit(env, 'l:' + sk, LIMITS.link);
+    const b = await readBody(req); const st = [];
+    const dropSubs = h => [env.DB.prepare("DELETE FROM accounts WHERE acct_hash=? AND user_id=? AND acct_hash NOT IN (SELECT acct_hash FROM acct_role WHERE user_id=? AND role='main')").bind(h, me.userId, me.userId),
+      env.DB.prepare("DELETE FROM acct_role WHERE acct_hash=? AND user_id=? AND role<>'main'").bind(h, me.userId)];
+    if (b.all) { // 대표 키 삭제 = 부계정 키·예비 키·금고·부계정 연결 전부 (대표 계정 연결(main)은 데이터 주인 표시라 유지)
+      st.push(...['keyvault', 'keyvault2', 'keyreg'].map(t => env.DB.prepare(`DELETE FROM ${t} WHERE user_id=?`).bind(me.userId)));
+      st.push(env.DB.prepare("DELETE FROM accounts WHERE user_id=? AND acct_hash NOT IN (SELECT acct_hash FROM acct_role WHERE user_id=? AND role='main')").bind(me.userId, me.userId),
+        env.DB.prepare("DELETE FROM acct_role WHERE user_id=? AND role<>'main'").bind(me.userId));
+    } else {
+      for (const k of [b.key, b.bk]) if (k) st.push(env.DB.prepare('DELETE FROM keyreg WHERE key_hash=? AND user_id=?').bind(await keyHash(env, k), me.userId));
+      for (const h of (Array.isArray(b.ahs) ? b.ahs : [b.ah]).filter(h => typeof h === 'string' && /^[0-9a-f]{64}$/.test(h)).slice(0, 10)) st.push(...dropSubs(h));
+    }
+    if (st.length) await env.DB.batch(st);
+    return json(200, { ok: true, accounts: await acctList(env, me.userId) });
   }
   if (p === '/api/logout' && M === 'POST') { await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(me.th).run(); return json(200, { ok: true }); }
   if (p === '/api/logout-all' && M === 'POST') { const r = await env.DB.prepare('DELETE FROM sessions WHERE user_id=?').bind(me.userId).run(); return json(200, { ok: true, removed: r.meta?.changes || 0 }); }

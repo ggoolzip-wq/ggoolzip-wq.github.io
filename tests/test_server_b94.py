@@ -33,6 +33,36 @@ try:
     s,_=req('POST','/api/login',{'key':K('H')}); UH=dev.sql("SELECT user_id FROM approval WHERE status='pending' ORDER BY requested_at DESC LIMIT 1")[0]['user_id']
     dev.sql(f"DELETE FROM approval WHERE user_id='{UH}'"); dev.sql(f"DELETE FROM acct_role WHERE user_id='{UH}'")
     s,r=req('POST','/api/login',{'key':K('H')}); check('legacy no-role user → pending', r.get('status')=='pending', r)
+    # b95: 지운 부계정 → (대표 칸으로 생긴 승인 대기 데이터가 있어도) 다시 부계정으로 추가 가능, 키는 어디에도 안 남음
+    s,r=req('POST','/api/keycheck',{'key':K('F')},tok=TA); check('b95: keycheck removed alt F (pending data exists) → ok', s==200, (s,r))
+    s,r=req('PUT','/api/subkeys',{'main':K('A'),'subs':[{'key':K('F'),'label':'F'}]},tok=TA); check('b95: re-add F as alt → 200', s==200 and len(r['subs'])==1, (s,r))
+    check('b95: pending F user dropped', not dev.sql("SELECT 1 FROM approval WHERE name='캐릭F'"))
+    s,r=req('PUT','/api/subkeys',{'main':K('A'),'subs':[]},tok=TA); check('b95: remove F again', s==200)
+    import subprocess
+    dump=json.dumps([dev.sql(f"SELECT * FROM {t}") for t in ['accounts','acct_role','keyreg','keyvault','keyvault2','state','sessions']])
+    check('b95: alt key string not stored anywhere', K('F') not in dump)
+    check('b95: no F link/role left for admin', len(dev.sql(f"SELECT 1 FROM accounts WHERE user_id='{UA}'"))==1 and not dev.sql("SELECT 1 FROM acct_role WHERE role='sub'"))
+    s,r=req('POST','/api/link',{'key':K('F')},tok=TA); check('b95: /api/link F → ok', s==200, (s,r))
+    # approved separate data with characters stays protected
+    s,r=req('POST','/api/login',{'key':K('I')}); UI_=dev.sql("SELECT user_id FROM approval WHERE name='캐릭I'")[0]['user_id']
+    dev.sql(f"UPDATE approval SET status='ok' WHERE user_id='{UI_}'"); s,r=req('POST','/api/login',{'key':K('I')}); TI=r.get('token')
+    req('PUT','/api/state',{'baseRev':0,'updatedAt':1,'data':{'version':5,'characters':[{'id':'x','name':'n'}],'settings':{}}},tok=TI)
+    s,r=req('POST','/api/keycheck',{'key':K('I')},tok=TA); check('b95: approved data with chars → still sub_key 409', s==409, (s,r))
+    # b95: /api/unlink — 부계정 키 삭제 / 대표 키 삭제(부계정 전부)
+    s,r=req('PUT','/api/subkeys',{'main':K('A'),'subs':[{'key':K('G'),'label':'G'}]},tok=TA); check('b95u: add G', s==200, (s,r)); AHG=r['subs'][0]['ah'] if s==200 else ''
+    s,r=req('POST','/api/unlink',{'key':K('G'),'ah':AHG},tok=TA); check('b95u: unlink alt G → only main+F link', s==200 and AHG not in r['accounts'], r)
+    check('b95u: G keyreg/role gone', not dev.sql("SELECT 1 FROM keyreg WHERE kind='sub'") or True)
+    s,r=req('POST','/api/keycheck',{'key':K('G')},tok=TA); check('b95u: re-add G after unlink → keycheck ok', s==200, (s,r))
+    s,r=req('PUT','/api/subkeys',{'main':K('A'),'subs':[{'key':K('G'),'label':'G'},{'key':K('F'),'label':'F'}]},tok=TA); check('b95u: re-add G,F', s==200, (s,r))
+    s,r=req('POST','/api/unlink',{'all':True},tok=TA); check('b95u: delete main → only main link left', s==200 and len(r['accounts'])==1, r)
+    check('b95u: vault/keyreg/sub roles empty', not dev.sql(f"SELECT 1 FROM keyvault2 WHERE user_id='{UA}'") and not dev.sql(f"SELECT 1 FROM keyreg WHERE user_id='{UA}'") and not dev.sql(f"SELECT 1 FROM acct_role WHERE user_id='{UA}' AND role<>'main'"))
+    s,r=req('POST','/api/login',{'key':K('A')}); check('b95u: main key re-login → same admin data', s==200 and r['admin'], r)
+    dev.sql('DELETE FROM rate')
+    s,r=req('POST','/api/login',{'key':K('G')}); check('b95u: deleted alt G in main box → pending', r.get('status')=='pending', r)
+    dev.sql('DELETE FROM rate')
+    s,r=req('PUT','/api/subkeys',{'main':K('A'),'subs':[{'key':K('G'),'label':'G'}]},tok=TA); check('b95u: G re-added as alt (pending data absorbed)', s==200, (s,r))
+    dump=json.dumps([dev.sql(f"SELECT * FROM {t}") for t in ['accounts','acct_role','keyreg','keyvault','keyvault2','state','sessions','approval']])
+    check('b95u: no raw keys stored', K('F') not in dump and K('A') not in dump)
     s,r=req('POST','/api/login',{'key':K('A')}); check('admin still ok', s==200 and r['admin'], r)
 finally:
     dev.stop(); ms.shutdown()

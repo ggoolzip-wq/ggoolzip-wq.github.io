@@ -1995,7 +1995,7 @@ async function openImport(accId){
 //   (키 초기화 뒤 다시 등록할 때 캐릭터 연결(accId)·이름·순서가 그대로 유지되게. 캐릭터 데이터는 건드리지 않음)
 function keyRelink(a,all){
   if(!a?.key) return null; const ids=new Set((all||[]).map(x=>x.ocid).filter(Boolean)); if(!ids.size) return null;
-  const o=accounts().find(x=>x!==a&&!x.key&&S.characters.some(c=>c.accId===x.id&&c.ocid&&ids.has(c.ocid)));
+  const o=accounts().find(x=>x!==a&&!x.key&&a.ah&&x.ah===a.ah)||accounts().find(x=>x!==a&&!x.key&&S.characters.some(c=>c.accId===x.id&&c.ocid&&ids.has(c.ocid))); // b95: 넥슨 계정 해시(ah) 우선
   if(!o) return null;
   if(a.main){ // b72: 본계정(1번 줄)은 그대로 두고, 같은 캐릭터가 붙은 키 없는 예전 칸을 본계정으로 합침 (칸 삭제, 캐릭터 데이터 유지)
     S.characters.forEach(c=>{ if(c.accId===o.id) c.accId=a.id; }); if(o.bk&&!a.bk&&o.bk!==a.key){ a.bk=o.bk; if(o.bkLabel) a.bkLabel=o.bkLabel; }
@@ -2124,6 +2124,7 @@ const SV_ON = (()=>{ let u=SYNC_API_URL;
     u=localStorage.getItem('mapleBossTracker.syncApi')||u;
   }catch(e){} return String(u||'').replace(/\/+$/,''); })();
 const SV_TOKEN_KEY='mapleBossTracker.svToken', SV_DEVICE_KEY='mapleBossTracker.svDevice', SV_SUBSIG_KEY='mapleBossTracker.svSubSig', SV_USER_KEY='mapleBossTracker.svUser'; // svUser = 이 기기에서 마지막으로 로그인한 서버 사용자 (다른 사용자로 로그인하면 이 PC 데이터를 올리지 않고 비움) // svDevice = 초대 비밀번호를 통과한 기기 표 (로그아웃해도 유지)
+try{ if((localStorage.getItem(SV_SUBSIG_KEY)||'').startsWith('[')) localStorage.removeItem(SV_SUBSIG_KEY); }catch(e){} // b95: 예전 서명(키 원본 포함) 지움
 // (b67: svDev — 초대 비밀번호 기기 표 — 더 이상 쓰지 않음. 예전 기기의 mapleBossTracker.svDevice 값은 남아 있어도 무시)
 const svTok=()=>{ try{ return localStorage.getItem(SV_TOKEN_KEY)||''; }catch(e){ return ''; } };
 const SV_PEND_KEY='mapleBossTracker.svPending', SV_ADMIN_KEY='mapleBossTracker.svAdmin'; // b68: 승인 대기 중인 본계정 키 요청(이 기기) · 관리자 여부
@@ -2668,7 +2669,8 @@ function svAfterLogin(){
   if(svMain()&&svSubSig()!==localStorage.getItem(SV_SUBSIG_KEY)) svSyncSubKeys().then(()=>gdRender()).catch(()=>{});
 }
 const svMain=()=>accounts().find(a=>a.main&&a.key)||null;
-const svSubSig=()=>{ const m=svMain(); return m?JSON.stringify([m.key,m.bk||'',m.bkLabel||'',...accounts().filter(a=>a.key&&a!==m&&a.key!==m.key).map(a=>[a.key,a.label,a.bk||'',a.bkLabel||''])]):''; };
+const svSubSig=()=>{ const m=svMain(); if(!m) return ''; const j=JSON.stringify([m.key,m.bk||'',m.bkLabel||'',...accounts().filter(a=>a.key&&a!==m&&a.key!==m.key).map(a=>[a.key,a.label,a.bk||'',a.bkLabel||''])]);
+  let h1=0x811c9dc5,h2=0x9e3779b9; for(let i=0;i<j.length;i++){ const c=j.charCodeAt(i); h1=Math.imul(h1^c,16777619); h2=Math.imul(h2^c,2246822519); } return 'h'+(h1>>>0).toString(36)+(h2>>>0).toString(36)+j.length; }; // b95: 키 원본이 localStorage 에 남지 않게 해시만
 // 부계정 키를 서버 금고에 (대표 키로 암호화) — 바뀌었을 때만. 대표 키가 이 기기에 없으면 예전처럼 연결만.
 let svBkPurge=false; // b74: 금고의 예비 키를 지우려고 한 번 다시 올려야 함
 async function svSyncSubKeys(){
@@ -2809,7 +2811,15 @@ document.addEventListener('click',e=>{
   }
   if(t.dataset.acctest){ if(e.target.closest('input')) return; const a=accById(t.dataset.acctest); if(a&&a.key) openImport(a.id); return; }
   if(t.dataset.accdel){ const a=accById(t.dataset.accdel); if(!a) return; const n=S.characters.filter(c=>c.accId===a.id).length;
-    if(confirm(`'${a.label}' 계정을 삭제할까요?${n?`\n연결된 캐릭터 ${n}명은 삭제되지 않고 '계정 미지정' 상태가 됩니다.`:''}`)){ S.characters.forEach(c=>{ if(c.accId===a.id) delete c.accId; }); S.settings.accounts=accounts().filter(x=>x!==a); if(impAccId===a.id){ impAccId=null; accChars=[]; } save(); render(); if($('#importModal').classList.contains('show')) openImport(); } return; }
+    // b95: 삭제 = API 키(예비 키 포함)만 완전히 지움. 계정 칸(ah = 넥슨 계정 해시)·캐릭터 연결은 남겨 기록은 숨김 → 같은 넥슨 계정 키를 다시 넣으면 그대로 다시 보임.
+    //   대표 키 삭제 = 부계정 키도 전부 삭제. 서버의 키 보관·부계정 연결도 /api/unlink 로 지움.
+    const all=!!a.main||(!accounts().some(x=>x.main)&&accounts()[0]===a), tgt=all?accounts():[a]; // main 표시 없는 예전 데이터 = 첫 줄이 대표
+    if(confirm(`'${a.label}' ${all?'대표 계정과 모든 부계정의':'계정의'} API 키를 삭제할까요?\n캐릭터 기록은 지워지지 않고 숨겨지며, 같은 계정 키를 다시 등록하면 다시 보입니다.`)){
+      const body=all?{all:true}:{key:a.key,bk:a.bk,ah:a.ah,ahs:a.ahs};
+      tgt.forEach(x=>{ x.key=''; delete x.bk; delete x.bkLabel; delete x.status; if(listCache[x.id]) delete listCache[x.id]; });
+      localStorage.removeItem(SV_SUBSIG_KEY); if(impAccId===a.id||all){ impAccId=null; accChars=[]; }
+      if(SV_ON&&svTok()) svFetch('/api/unlink',{method:'POST',body}).catch(e=>toast('⚠ 서버의 키 연결을 지우지 못했어요: '+e.message));
+      save(); render(); if($('#importModal').classList.contains('show')) openImport(); } return; }
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
   switch(t.id){
     case 'editModeBtn': editMode=!editMode; render(); break;

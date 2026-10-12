@@ -796,3 +796,30 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - 59c922c2 → approval pending, 그 사용자의 세션 삭제. 데이터는 유지했고, 관리자 창에서 승인하거나 강퇴하면 됨.
   - 관리자 데이터에 남아 있던 main이 아닌 연결 5개 삭제(accounts 4개만 남음).
 - 테스트: 신규 test_server_b94(승인 모드, 포트 8894/8895)를 run_all.sh에 넣었음. test_server, test_server_b91, test_server_b94 통과.
+
+## b95 — 계정 키 삭제 = 키·연결만 완전히 지움, 기록은 숨김, 같은 계정 다시 연결하면 다시 보임 (2026-10-12)
+- 신고: 캐릭터 추가 창에서 부계정을 지우고 같은 키를 다시 부계정으로 넣으면 '이미 등록된 부계정 API입니다.'가 뜸.
+- 원인:
+  - 그 키의 넥슨 계정에는 따로 생긴 데이터 59c922c2가 있었음. b94에서 승인 대기로 바꾼 사용자이고 캐릭터 2개가 있음.
+  - `/api/keycheck`·`/api/subkeys`는 '캐릭터 없는 빈 데이터'만 옮길 수 있게 해서 409 sub_key가 났음.
+  - 관리자(ef4ca70b) 쪽 서버에는 남은 키나 연결이 없었음: keyreg·금고 0개, sub 역할 0개, accounts 4개 모두 main.
+  - 클라이언트 쪽 문제도 있었음:
+    - 삭제 버튼이 계정 칸을 지우고 캐릭터를 '계정 미지정'으로 바꿔서, 캐릭터가 숨겨지지 않고 다시 보였음.
+    - localStorage `svSubSig`에 키 원본이 JSON으로 들어 있었음.
+- 고친 것:
+  - 서버 `absorbable()`: 다른 데이터가 이 넥슨 계정만으로 되어 있고, 캐릭터가 없거나 승인 안 됨(대기·거절·차단) 상태면 지우고 부계정으로 옮김. 관리자 데이터는 제외. keycheck·subkeys·link에 적용.
+  - 새 `POST /api/unlink` (인증 필요):
+    - `{key,bk,ah}`: 그 키의 keyreg와 main이 아닌 연결·역할을 지움.
+    - `{all:true}`: 대표 키 삭제. 금고(v1·v2), keyreg, main이 아닌 연결·역할을 전부 지움. 대표 계정 연결(main)은 데이터 주인 표시라 남김.
+  - 클라이언트 삭제:
+    - 키·예비 키만 지우고 계정 칸(ah = 넥슨 계정 해시)과 c.accId는 남김. b72/b82 규칙으로 기록은 숨김.
+    - 대표 계정(main, 또는 main 표시 없는 예전 데이터의 첫 줄)을 지우면 모든 계정 키를 지움.
+    - 지운 뒤 /api/unlink를 호출함.
+  - 다시 넣을 때 keyRelink는 ah가 같은 칸을 먼저 찾고, 없으면 예전처럼 ocid로 찾음.
+  - svSubSig는 해시로 바꿨고, 예전 '['로 시작하는 서명은 지움.
+- b94 보안 규칙은 그대로: 지운 계정 키를 대표 칸에 넣으면 새 사용자(승인 대기). 그 뒤 부계정으로 다시 넣으면 그 대기 데이터를 지우고 옮김.
+- 운영 D1: 백업 /workspace/maple-boss-tracker/d1backup/b95_pre.sql. 지울 남은 키·연결은 없었음.
+- 테스트:
+  - test_server_b94에 b95/b95u 항목 추가: 삭제 → 다시 추가 성공, 대표 삭제 → 부계정 연결·금고·keyreg가 비고 대표 키 재로그인은 그대로, D1에 키 원본 없음.
+  - 신규 test_tracker69(UI, 포트 8899): 삭제 → 숨김·키가 저장되지 않음 → 같은 키 다시 → 같은 칸으로 다시 보임 → 대표 삭제 → 모든 키 삭제·숨김.
+  - 스크린샷: /workspace/maple-boss-tracker/oct12z_approval_after_altdel.png, oct12z_approval_after_readd.png.
