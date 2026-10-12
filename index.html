@@ -391,16 +391,18 @@ img.ric{width:16px;height:16px;object-fit:contain;image-rendering:pixelated}
 .tiny{font-size:.76rem}
 @media(max-width:600px){.hbtn .hl{display:none}.gmenu{position:fixed;left:10px;right:10px;top:58px;width:auto}}
 /* ---- '+ 추가' 통합 모달 ---- */
-.modal.wide.addm{max-width:640px;position:relative;max-height:92vh;overflow:auto}
+.modal.wide.addm{max-width:720px;position:relative;max-height:92vh;overflow:auto}
 .addsec{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px;background:var(--panel2)}
-.addsec-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.addsec-h{display:flex;align-items:baseline;gap:8px;flex-wrap:nowrap;margin-bottom:8px;white-space:nowrap}
 .addsec-h .muted{font-size:.78rem}
-.accrow{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:6px;flex-wrap:wrap}
+.addsec-h .keycnt{font-size:.82rem;font-weight:700;color:#3ccf6e;white-space:nowrap}
+.accrow{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:6px;flex-wrap:nowrap}
 .accrow.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-.accrow .acclbl{width:92px;text-align:left}
+.accrow .acclbl{width:92px;text-align:left;flex:none}
 .accrow .kmask{font-size:.78rem;color:var(--muted);background:var(--panel2);padding:2px 6px;border-radius:6px;white-space:nowrap}
-.accrow .accst{font-size:.8rem;flex:1;min-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.accrow .accbtns{display:flex;gap:6px;margin-left:auto}
+.accrow .accst{font-size:.8rem;flex:1;min-width:0;white-space:nowrap}
+.accrow .accst .regok{white-space:nowrap;color:#3ccf6e}
+.accrow .accbtns{display:flex;gap:6px;margin-left:auto;flex:none}
 .okc{color:var(--good,#2e9d5b);font-weight:700}
 .acc-empty{font-size:.85rem;padding:4px 2px 8px}
 .accadd{display:flex;gap:6px;margin:4px 0 6px;flex-wrap:wrap}
@@ -767,6 +769,8 @@ main{max-width:1760px;margin-left:auto;margin-right:auto}
 .quota.over{color:#ff5a5a;font-weight:700}
 .bkrow .acclbl{width:110px}
 .bkrow .acclbl{text-align:left}
+.bkrow .accst{white-space:nowrap;flex:1;min-width:0}
+.bkrow .accst .regok{white-space:nowrap;color:#3ccf6e}
 /* b49: 블빵 */
 .ptx-w{color:#7fd3ff;font-weight:700}
 .ptx-l{color:#8a8f98}
@@ -1044,7 +1048,7 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
     <button class="ringx" id="impClose" aria-label="닫기">✕</button>
     <h3 id="addTitle">캐릭터 추가</h3>
     <section class="addsec">
-      <div class="addsec-h"><b>🔑 넥슨 API 키</b></div>
+      <div class="addsec-h"><b>🔑 넥슨 API 키</b> <span id="accKeyTotal" class="regok keycnt" hidden></span></div>
       <div id="accList"></div>
       <div class="accadd"><input id="newAccLabel" class="pin" maxlength="12" placeholder="계정 이름" aria-label="계정 이름">
         <input id="newAccKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="live_… API 키 붙여넣기" aria-label="API 키">
@@ -2872,21 +2876,27 @@ let accChars=[], impAccId=null, impBusy=null;
 /* 계정 캐릭터 불러오기: 모달을 바로 열고 GET /character/list 결과(목록·0명 안내·오류 코드)를 모달 안에 표시 */
 /* ---------- '+ 추가' 통합 모달: API 키(계정) 관리 + 계정 캐릭터 목록에서 여러 명 선택 추가 ---------- */
 const maskKey = k => !k ? '키 없음' : k.length<=10 ? '••••' : k.slice(0,5)+'••••'+k.slice(-4);
+function linkedOf(a){ return S.characters.filter(c=>c.accId===a.id).length; }
+const regOkHtml = n => `<span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료 · ${n}캐릭 등록 중</span>`;
 function renderAccList(){
   const el=$('#accList'); if(!el) return;
-  el.innerHTML=accounts().length?accounts().map(a=>{
-    const linked=S.characters.filter(c=>c.accId===a.id).length;
-    const stt=!a.key?'<span class="warnc">키 없음</span>':a.status?.ok===false?`<span class="warnc" title="${esc(a.status.msg)}">⚠ 오류</span>`:'<span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료</span>';
+  const accs=accounts();
+  // b63: 키에 연결된(accId) 캐릭터 수만 — 수동 추가·키 없는 캐릭터는 제외
+  const totalLinked=accs.reduce((s,a)=>s+linkedOf(a),0);
+  const ht=$('#accKeyTotal'); if(ht){ ht.textContent=`(총 ${totalLinked}캐릭 등록 중)`; ht.hidden=false; }
+  el.innerHTML=accs.length?accs.map(a=>{
+    const linked=linkedOf(a);
+    const stt=!a.key?'<span class="warnc">키 없음</span>':a.status?.ok===false?`<span class="warnc" title="${esc(a.status.msg)}">⚠ 오류</span>`:regOkHtml(linked);
     return `<div class="accrow ${a.id===impAccId?'on':''}" ${a.key?`data-acctest="${a.id}" title="이 계정의 캐릭터 보기"`:''}><input class="pin acclbl" data-acclabel="${a.id}" value="${esc(a.label)}" maxlength="12" aria-label="계정 이름">
       <span class="accst">${stt}${quotaHtml(a.key,!!a.bk&&bkOn(a))}</span>
-      <span class="accbtns"><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>${a.key?bkRow(a):''}`;
+      <span class="accbtns"><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>${a.key?bkRow(a,linked):''}`;
   }).join(''):'<div class="muted acc-empty">등록된 API 키가 없습니다. 아래에 키를 붙여넣고 <b>+ API 키 추가</b>를 누르면 바로 그 계정의 캐릭터 목록이 나와요.</div>';
-  $('#newAccLabel').placeholder=accounts().length?`부계정${accounts().length}`:'본계정';
+  $('#newAccLabel').placeholder=accs.length?`부계정${accs.length}`:'본계정';
   $('#accOpts').innerHTML=''; // (예전 '스케줄러 보스 자동 추가' 옵션 — 2026-10-10 삭제: 항상 켜짐)
 }
 const bkErr={};
-const bkRow = a => `<div class="bkrow" data-bkrow="${a.id}">${a.bk
-  ? `<input class="pin acclbl" data-bklabel="${a.id}" value="${esc(a.bkLabel||a.label+' 예비')}" maxlength="14" aria-label="예비 키 이름"><span class="accst"><span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료</span>${quotaHtml(a.bk)}${bkOn(a)?' <span class="muted tiny">오늘 사용 중</span>':''}</span><span class="accbtns"><button class="btn sm plain danger" data-bkdel="${a.id}" title="예비 키 삭제">삭제</button></span>`
+const bkRow = (a,linked) => `<div class="bkrow" data-bkrow="${a.id}">${a.bk
+  ? `<input class="pin acclbl" data-bklabel="${a.id}" value="${esc(a.bkLabel||a.label+' 예비')}" maxlength="14" aria-label="예비 키 이름"><span class="accst">${regOkHtml(linked??linkedOf(a))}${quotaHtml(a.bk)}${bkOn(a)?' <span class="muted tiny">오늘 사용 중</span>':''}</span><span class="accbtns"><button class="btn sm plain danger" data-bkdel="${a.id}" title="예비 키 삭제">삭제</button></span>`
   : `<input class="pin acclbl" id="bkLb-${a.id}" maxlength="14" placeholder="${esc(a.label)} 예비" aria-label="예비 키 이름"><input class="pin bkin" id="bkIn-${a.id}" type="password" autocomplete="off" spellcheck="false" placeholder="같은 넥슨 계정의 다른 API 키" aria-label="예비 API 키"><button class="btn sm plain" data-bkadd="${a.id}">등록</button>`}
   ${bkErr[a.id]?`<div class="bkerr" role="alert">${esc(bkErr[a.id])}</div>`:''}</div>`;
 // 계정 id 목록: 같은 넥슨 계정인지 비교용 (키 값은 저장·표시하지 않음)
