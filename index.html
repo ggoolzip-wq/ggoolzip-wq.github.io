@@ -1101,6 +1101,10 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .admm .admalts[hidden]{display:none}
 .admm .admalt{padding-left:22px;background:rgba(255,255,255,.025)}
 .admm .admkick-sp{display:inline-block;width:52px}
+/* b93: 관리자 창 — 경매장 최저가 */
+.admm .admprice .admprice-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admm .admprice .admprice-h .tiny{flex:1}
+.admm .admprice ol{margin:4px 0 0 18px;padding:0}
 </style>
 </head>
 <body>
@@ -1496,9 +1500,10 @@ const revMap = (c,type) => type==='monthly' ? (c.mdrev||(c.mdrev={})) : (c.drev|
 function askRev(c,b,key,ik,cel){
   const pty=curParty(c,b.id), md=modeMap(c,b.type)[key]||'', div=pty>1&&md!=='w'&&md!=='n'?pty:1; // 분배(예전 기록 포함) = ÷인원, 1인·블빵승리 = 전부
   document.querySelector('#revModal')?.remove();
+  const ap=admPriceOf(ik); // b93: 관리자만 — 크롬 확장이 측정한 경매장 최저가로 미리 채움 (수정 가능)
   const el=document.createElement('div'); el.id='revModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rvTitle');
-  el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">이 아이템의 경매장 최저가 시세를 적어주세요.</div>${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
-    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"><span>억 메소</span></label><button class="btn rvok" data-rv="ok">기록하기</button></div>
+  el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`최저가 측정 시간 - ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
+    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><button class="btn rvok" data-rv="ok">기록하기</button></div>
     <button class="btn plain rvno" data-rv="no">아니오</button></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
   document.body.appendChild(el);
   let closed=false; const fin=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true); if(cel) cel(); };
@@ -1507,7 +1512,7 @@ function askRev(c,b,key,ik,cel){
   const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); fin(); } else if(e.key==='Enter'&&e.target.id==='rvAmt'){ e.preventDefault(); ok(); } };
   document.addEventListener('keydown',kd,true);
   el.onclick=e=>{ const t=e.target.closest('[data-rv]'); if(t) return t.dataset.rv==='ok'?ok():fin(); }; // b75: 바깥(배경) 클릭은 아무것도 안 함
-  setTimeout(()=>$('#rvAmt')?.focus(),30);
+  setTimeout(()=>{ const i=$('#rvAmt'); if(i){ i.focus(); if(ap) i.select(); } },30);
 }
 function changeDrop(key, delta){
   const c=activeChar(); if(!c) return; const [slot,item]=key.split('|'); const b=findBoss(slot); if(!b||!ITEMS[item]) return;
@@ -4176,7 +4181,7 @@ window.addEventListener('pagehide',()=>{ if(!SV_ON&&(gd.timer||gdLocalDirty())) 
 /* b68: 가입 승인 — 관리자(서버가 사용자 id 로 확인)만 목록·승인/거절/차단. 처음 연 기기에서도 관리자 버튼이 보이게 /api/me 로 확인 */
 async function svAdminCheck(){ if(!SV_ON||!svTok()||!gdMeta.on) return; try{ const r=await svFetch('/api/me'); localStorage.setItem(SV_ADMIN_KEY,r.admin?'1':'0'); gdRender(); const m=$('#gMenu'); if(m&&!m.hidden) gdMenu(true); }catch(e){} }
 let admUsers=null, admErr='';
-async function openAdmin(){ $('#adminModal').classList.add('show'); admErr=''; renderAdmin(); await admLoad(); }
+async function openAdmin(){ $('#adminModal').classList.add('show'); admErr=''; renderAdmin(); admPriceLoad().then(renderAdmPrice); await admLoad(); }
 async function admLoad(){ try{ admUsers=(await svFetch('/api/admin/users')).users||[]; admErr=''; }catch(e){ admErr=e.message; } renderAdmin(); }
 function renderAdmin(){
   const b=$('#admBody'); if(!b) return;
@@ -4187,12 +4192,13 @@ function renderAdmin(){
   const P=admUsers.filter(u=>u.status==='pending'), A=admUsers.filter(u=>u.status==='ok'||u.status==='blocked'); // b78: 차단 없음 — 예전 차단 사용자는 '사용 중'에(강퇴 가능), 거절한 요청은 목록에 안 보임
   const PG=10, np=Math.max(1,Math.ceil(A.length/PG)); admPage=Math.min(Math.max(1,admPage),np); const Ap=A.slice((admPage-1)*PG,admPage*PG);
   const sec=(t,list,empty,f,shown)=>`<section class="admsec"><h4>${t} <span class="muted">(${list.length})</span></h4>${list.length?(shown||list).map(f).join(''):`<div class="muted tiny">${empty}</div>`}</section>`;
-  b.innerHTML=sec('승인 대기',P,'대기 중인 요청이 없어요',u=>row(u,`요청 ${u.requestedAt?hm(u.requestedAt):'-'}`,`<button class="btn sm" data-adm="approve">승인</button><button class="btn sm ghost admno" data-adm="reject">거절</button>`))
+  b.innerHTML=`<div class="admsec admprice" id="admPrice"></div>`+sec('승인 대기',P,'대기 중인 요청이 없어요',u=>row(u,`요청 ${u.requestedAt?hm(u.requestedAt):'-'}`,`<button class="btn sm" data-adm="approve">승인</button><button class="btn sm ghost admno" data-adm="reject">거절</button>`))
     +sec('사용 중',A,'없음',u=>{ const al=u.alts||[], op=admOpen.has(u.id); // b91: 부계정은 본계정 아래 접힘(▽/△), 강퇴 없음, 등록 날짜(KST)
       const tg=al.length?`<button class="admtg" data-admalt="${esc(u.id)}" aria-expanded="${op}" title="부계정 ${al.length}개 ${op?'접기':'펼치기'}">${op?'△':'▽'} 부계정 ${al.length}</button>`:'';
       return row(u,`${u.status==='blocked'?'(예전 차단) ':''}캐릭터 ${u.chars||0} · 데이터 ${Math.ceil((u.size||0)/1024)}KB · 마지막 로그인 ${u.lastLogin?hm(u.lastLogin):'-'}`,`${tg}${admReg(u.regAt)}${u.admin?'<span class="admtag">관리자</span>':`<button class="btn sm ghost admno" data-adm="kick">강퇴</button>`}`)
         +(al.length?`<div class="admalts"${op?'':' hidden'}>${al.map(a=>`<div class="admrow admalt"><div class="admwho"><span class="muted">└</span> <b>${esc(a.label||'부계정')}</b><span class="muted">${a.name?' · '+esc(a.name):''}${a.world?' · '+esc(a.world):''}${a.level?' · Lv.'+a.level:''}</span><div class="muted tiny">부계정 · 캐릭터 ${a.chars||0}</div></div><div class="admbtns">${admReg(a.regAt)}<span class="admkick-sp"></span></div></div>`).join('')}</div>`:''); },Ap)
     +(np>1?`<div class="admpages">${Array.from({length:np},(_,i)=>`<button class="btn sm ${i+1===admPage?'':'ghost'}" data-admpage="${i+1}">${i+1}</button>`).join('')}</div>`:''); // b78: 10명씩 쪽 번호
+  renderAdmPrice();
 }
 async function admDecide(id,action){
   const u=(admUsers||[]).find(x=>x.id===id); const nm=u?.name||'이 사용자';
@@ -4201,6 +4207,44 @@ async function admDecide(id,action){
   try{ await svFetch('/api/admin/decide',{method:'POST',body:{user:id,action}}); if(action!=='kick') toast({approve:'승인했습니다',reject:'거절했습니다',kick:'강퇴했습니다',unblock:'승인했습니다'}[action]+` — ${nm}`); }catch(e){ toast(e.message); }
   await admLoad();
 }
+/* b93: 관리자 전용 경매장 최저가 (개인용, 넥슨 약관 위험을 사용자가 감수하기로 함) — extension/ 크롬 확장이 관리자 본인 크롬의 경매장 세션으로 검색,
+ * 이 페이지와 window.postMessage 로만 주고받음(src 'bossmaple-page' ↔ 'bossmaple-ext'). 결과 {item, lowestPrice(메소), time} → /api/admin/prices (서버는 관리자만).
+ * 쿠키·세션은 페이지·서버로 오지 않음. 수익 기록 창에서 금액 자동 채움 + '최저가 측정 시간 - YYYY-MM-DD HH:mm'(KST). */
+const ADM_PRICE_KEY='mapleBossTracker.admPrices', ADM_PRICE_DAY_KEY='mapleBossTracker.admPriceDay';
+const PRICE_SETS=new Set(['칠흑','여명','광휘','해머','보장','연마석']), PRICE_SKIP=new Set(['chaosbox','cfs']);
+const priceItems=()=>Object.entries(ITEMS).filter(([k,v])=>PRICE_SETS.has(v.set)&&!PRICE_SKIP.has(k)).map(([k,v])=>({key:k,name:v.n}));
+const kstStamp=t=>new Date(t+9*3600e3).toISOString().slice(0,16).replace('T',' ');
+const admPrices=()=>{ try{ return JSON.parse(localStorage.getItem(ADM_PRICE_KEY)||'{}')||{}; }catch(e){ return {}; } };
+function admPriceOf(ik){ if(!svIsAdmin()) return null; const k=String(ik||'').replace(/^cb:/,''), o=admPrices()[k]; return o&&+o.p>0&&+o.t>0?o:null; }
+let extVer='', admPriceMsg='', admPriceBusy=false;
+function admPriceSave(P){ const cur=admPrices(); for(const [k,o] of Object.entries(P||{})) if(o&&+o.p>0&&(!cur[k]||cur[k].t<=o.t)) cur[k]={p:+o.p,t:+o.t}; try{ localStorage.setItem(ADM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
+async function admPriceLoad(){ if(!svIsAdmin()) return; try{ admPriceSave((await svFetch('/api/admin/prices')).prices); }catch(e){} }
+async function admPriceGot(m){
+  admPriceBusy=false;
+  if(!m.ok){ admPriceMsg=`⚠ ${esc(m.error||'실패')}`; renderAdmPrice(); return; }
+  const P={}; for(const r of m.results||[]) if(ITEMS[r.item]&&+r.lowestPrice>0) P[r.item]={p:Math.round(+r.lowestPrice),t:+r.time||Date.now()};
+  admPriceSave(P); try{ localStorage.setItem(ADM_PRICE_DAY_KEY,dayId()); }catch(e){}
+  try{ const r=await svFetch('/api/admin/prices',{method:'PUT',body:{prices:P}}); admPriceSave(r.prices); }catch(e){ admPriceMsg=`⚠ 서버 저장 실패: ${esc(e.message)}`; renderAdmPrice(); return; }
+  admPriceMsg=`${Object.keys(P).length}개 갱신 (새 검색 ${m.posts||0}회, 남은 검색 ${m.remaining??'?'}회)${m.stop?' · '+esc(m.stop):''}${(m.skipped||[]).length?` · 못 찾음 ${m.skipped.length}개`:''}`; renderAdmPrice();
+}
+function admPriceRun(auto){
+  if(!svIsAdmin()||admPriceBusy) return;
+  if(!extVer){ if(auto) return; admPriceBusy=true; admPriceMsg='확장 확인 중…'; renderAdmPrice(); window.postMessage({src:'bossmaple-page',type:'ping'},location.origin);
+    setTimeout(()=>{ admPriceBusy=false; if(extVer) return admPriceRun(); admPriceMsg='noext'; renderAdmPrice(); },1200); return; }
+  admPriceBusy=true; admPriceMsg='경매장에서 검색 중…'; renderAdmPrice();
+  window.postMessage({src:'bossmaple-page',type:'refresh',reqId:String(Date.now()),items:priceItems()},location.origin);
+}
+function renderAdmPrice(){
+  const el=$('#admPrice'); if(!el) return;
+  const P=admPrices(), ts=Object.values(P).map(o=>o.t), last=ts.length?Math.max(...ts):0;
+  const msg=admPriceMsg==='noext'?`<div class="impmsg warn">크롬 확장을 먼저 설치해주세요<ol class="tiny"><li>bossmaple-price-ext.zip 을 풀어 폴더를 만듭니다</li><li>크롬 주소창에 chrome://extensions 입력</li><li>오른쪽 위 '개발자 모드' 켜기</li><li>'압축해제된 확장 프로그램을 로드합니다' → 그 폴더 선택</li><li>https://auction.maplestory.nexon.com 에 로그인한 뒤 이 페이지를 새로고침</li></ol></div>`:admPriceMsg?`<div class="muted tiny">${admPriceMsg}</div>`:'';
+  el.innerHTML=`<div class="admprice-h"><b>경매장 최저가</b><span class="muted tiny">${last?`마지막 측정 ${kstStamp(last)} · ${Object.keys(P).length}개`:'아직 없음'}${extVer?' · 확장 연결됨':''}</span><button class="btn sm" id="admPriceBtn" ${admPriceBusy?'disabled':''}>최저가 갱신</button></div>${msg}`;
+}
+window.addEventListener('message',e=>{ if(e.source!==window||e.origin!==location.origin) return; const m=e.data; if(!m||m.src!=='bossmaple-ext') return;
+  if(m.type==='hello'){ const first=!extVer; extVer=String(m.version||'1'); if(first&&svIsAdmin()){ window.postMessage({src:'bossmaple-page',type:'takePending'},location.origin); admPriceLoad().then(()=>{ if(localStorage.getItem(ADM_PRICE_DAY_KEY)!==dayId()) admPriceRun(true); }); } renderAdmPrice(); }
+  if(m.type==='prices') admPriceGot(m); });
+document.addEventListener('click',e=>{ if(e.target.closest('#admPriceBtn')) admPriceRun(); });
+setTimeout(()=>window.postMessage({src:'bossmaple-page',type:'ping'},location.origin),0); // 확장이 먼저 인사했어도 다시 확인
 let admPage=1; const admOpen=new Set(); // b91: 펼친 본계정 id
 const admReg=t=>`<span class="admreg muted tiny">등록 날짜 : ${t?new Date(t+9*3600e3).toISOString().slice(0,10):'-'}</span>`; // KST
 document.addEventListener('click',e=>{ const at=e.target.closest('[data-admalt]'); if(at){ const id=at.dataset.admalt; admOpen.has(id)?admOpen.delete(id):admOpen.add(id); renderAdmin(); return; } const pg=e.target.closest('[data-admpage]'); if(pg){ admPage=+pg.dataset.admpage; renderAdmin(); return; } const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }

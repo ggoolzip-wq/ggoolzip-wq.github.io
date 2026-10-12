@@ -105,6 +105,7 @@ try:
     # b62: 예전에 부계정 키로 따로 로그인해 생긴 빈 데이터 → 대표 키가 부계정으로 등록하면 옮겨짐 (캐릭터 있는 데이터는 409)
     KH,KI='live_KEY_H_0123456789abcdef','live_KEY_I_0123456789abcdef'; TA=req('POST','/api/login',{'device':DEV,'key':KA})[1]['token']  # 새 세션 (부계정 등록 요청 제한 10회/10분/세션)
     s,h1,_=req('POST','/api/login',{'device':DEV,'key':KH}); check('H alone → new (empty) user', h1['newUser'], h1)
+    dev.sql("DELETE FROM rate WHERE k LIKE 'newuser:%'")  # b94 이후 KF 로그인도 새 사용자 → 하루 새 데이터 제한(IP별)에 걸리지 않게 초기화
     s,i1,_=req('POST','/api/login',{'device':DEV,'key':KI}); req('PUT','/api/state',{'baseRev':0,'updatedAt':1,'data':{'characters':[{'id':'x','name':'I캐릭'}]}},tok=i1['token'])
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'mainBk':BKA,'subs':[{'key':KG,'label':'부2','bk':BKG},{'key':KI,'label':'부I'}]},tok=TA); check('sub key whose account has its own characters → 409 (not moved)', s==409 and b['error']=='linked_elsewhere', b)
     s,b,_=req('PUT','/api/subkeys',{'main':KA,'mainBk':BKA,'subs':[{'key':KG,'label':'부2','bk':BKG},{'key':KH,'label':'부H'}]},tok=TA); check('empty orphan data of sub key H → moved, vault stored', s==200 and len(b['subs'])==2, b)

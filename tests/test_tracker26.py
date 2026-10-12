@@ -4,6 +4,7 @@ ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspa
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
 SHOTDIR=os.environ.get('MBT_SHOTDIR')
 from playwright.sync_api import sync_playwright
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _legacy  # b95: 키 없는 계정 캐릭터 숨김(b72/b82) → 가짜 키
 errs=[]; fails=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
@@ -18,7 +19,7 @@ def B(d,p=1): return {'enabled':True,'diff':d,'party':p}
 c1={'id':'c1','name':'단풍용사','level':287,'job':'히어로','world':'스카니아','ocid':'ocid-main','accId':'a1','isMain':True,'image':'',
     'bosses':{'lotus':B('hard',2),'will':B('hard',3),'kaling':B('normal',1)},'weekly':{'kaling':True},'monthly':{},'auto':{},'drops':{'lotus|h_ear':1},'sync':{}}
 c2={'id':'c2','name':'수동캐','level':200,'job':'비숍','world':'스카니아','ocid':'','accId':'','isMain':False,'image':'','bosses':{'lucid':B('hard')},'weekly':{},'monthly':{},'auto':{},'drops':{},'sync':{}}
-ST={'version':5,'theme':'dark','activeId':'c1','characters':[c1,c2],'history':[],'monthHistory':[],'worldOrder':[],'settings':{'accounts':[{'id':'a1','label':'본계정','key':''}],'lastSync':int(time.time()*1000)}}
+ST={'version':5,'theme':'dark','activeId':'c1','characters':[c1,c2],'history':[],'monthHistory':[],'worldOrder':[],'settings':{'accounts':[{'id':'a1','label':'본계정','key':_legacy.LEGACY_KEY}],'lastSync':int(time.time()*1000)}}
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
@@ -53,3 +54,4 @@ try:
 finally:
     srv.terminate()
 print('FAILS:',fails)
+sys.exit(1 if fails or errs else 0)

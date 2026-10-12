@@ -33,6 +33,11 @@ try:
     req('PUT','/api/subkeys',{'main':KA,'subs':[{'key':KF,'label':'부계정F'}]},tok=TA)
     s,u=req('GET','/api/admin/users',tok=TA); A=[x for x in u['users'] if x['id']==UA][0]
     check('re-saving subkeys keeps original regAt', A['alts'][0]['regAt']==t0, (t0,A['alts']))
+    # b93: /api/admin/prices (관리자만)
+    s,r=req('GET','/api/admin/prices',tok=TB); check('b93: non-admin prices → 403', s==403, (s,r))
+    s,r=req('PUT','/api/admin/prices',{'prices':{'eye':{'p':2928000000,'t':1000},'BAD KEY':{'p':1,'t':1},'x':{'p':-5,'t':1}}},tok=TA); check('b93: admin PUT keeps valid only', s==200 and r['prices']=={'eye':{'p':2928000000,'t':1000}}, r)
+    req('PUT','/api/admin/prices',{'prices':{'eye':{'p':1,'t':500},'belt':{'p':3900000000,'t':2000}}},tok=TA)
+    s,r=req('GET','/api/admin/prices',tok=TA); check('b93: older time ignored, merge', r['prices']=={'eye':{'p':2928000000,'t':1000},'belt':{'p':3900000000,'t':2000}}, r)
 finally:
     dev.stop(); ms.shutdown()
 print('FAILS:',fails); sys.exit(1 if fails else 0)

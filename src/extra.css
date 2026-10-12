@@ -994,3 +994,7 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .admm .admalts[hidden]{display:none}
 .admm .admalt{padding-left:22px;background:rgba(255,255,255,.025)}
 .admm .admkick-sp{display:inline-block;width:52px}
+/* b93: 관리자 창 — 경매장 최저가 */
+.admm .admprice .admprice-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admm .admprice .admprice-h .tiny{flex:1}
+.admm .admprice ol{margin:4px 0 0 18px;padding:0}

@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "bossmaple 경매장 최저가",
+  "description": "개인용: 내 크롬에 로그인된 메이플 경매장에서 드롭 아이템 최저가를 찾아 bossmaple 대시보드에 넘겨줍니다. 쿠키는 읽지 않습니다.",
+  "version": "1.0.0",
+  "background": { "service_worker": "background.js", "type": "module" },
+  "host_permissions": ["https://api.mskr.nexon.com/*"],
+  "permissions": ["storage"],
+  "action": { "default_title": "경매장 최저가 갱신", "default_popup": "popup.html" },
+  "content_scripts": [{
+    "matches": ["https://bossmaple.pages.dev/*", "http://localhost/*", "http://127.0.0.1/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }]
+}

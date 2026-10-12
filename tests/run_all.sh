@@ -3,7 +3,7 @@
 # 크롬 경로를 쓰려면 CHROME=/usr/bin/google-chrome. 스크린샷은 tests/out/
 cd "$(dirname "$0")/.."
 mkdir -p tests/out; fail=0
-for n in 4 5 6 7 8 9 10 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 69; do
+for n in 4 5 6 7 8 9 10 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 34 35 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69; do
   echo "== test_tracker$n"; python3 tests/test_tracker$n.py > tests/out/r$n.log 2>&1 || fail=1
   grep -E 'FAIL|ERRORS|Error' tests/out/r$n.log | tail -3
 done
@@ -11,4 +11,5 @@ for t in upcoming feed_minor feed_sunday feed_keys sunday_ocr sunday_watch serve
   echo "== test_$t"; python3 tests/test_$t.py > tests/out/r_$t.log 2>&1 || fail=1
   grep -E 'FAIL' tests/out/r_$t.log | tail -3
 done
+echo "== test_ext_core"; (PATH=$HOME/.n22/bin:$PATH node tests/test_ext_core.mjs > tests/out/r_ext_core.log 2>&1) || fail=1; grep FAIL tests/out/r_ext_core.log | tail -3
 exit $fail

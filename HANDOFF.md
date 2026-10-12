@@ -780,6 +780,33 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - server/node_modules를 설치했습니다(`cd server && npm install`). 이제 cf_dev 테스트(test_server, 52 등)가 SKIP하지 않고 실제로 돕니다.
 - 테스트: test_tracker67(UI, 모의 목록, 포트 8887), test_server_b91(wrangler dev, 포트 8890/8891).
 
+## b93 — 관리자 전용 경매장 최저가 (크롬 확장, 개인용)
+- **위험 (사용자가 감수하기로 결정):** 넥슨 경매장 웹 API(api.mskr.nexon.com)는 공개 API가 아닙니다. 이용약관 위반 위험이 있는 개인용 도구이며, 관리자(ADMIN_USER) 한 사람만 씁니다.
+- **크롬 확장** `extension/` (Manifest V3, 빌드 없음). 묶음: /workspace/maple-boss-tracker/bossmaple-price-ext.zip, 설치 방법은 `extension/설치방법.txt`.
+  - chrome://extensions → 개발자 모드 → '압축해제된 확장 프로그램을 로드합니다'.
+  - 엔드포인트와 헤더는 github.com/oyc0401/maple-auction-mcp(2026-07 실측)를 따릅니다:
+    - GET /v1/accounts, /accounts/{id}/gameWorlds/{w}/characters로 최고 레벨 캐릭터를 찾습니다.
+    - GET /market/web/daily-limit으로 남은 검색 횟수를 봅니다.
+    - POST /market/web/items/searches/tool-tip(exactMatch 이름 검색, 1회 소진)으로 새 검색을 만듭니다.
+    - GET /searches/{searchKey}/tool-tip?sortType=PRICE_PER_ITEM_ASC는 횟수를 쓰지 않습니다.
+    - 헤더: x-platform PC_WEB, x-client-version 1.0.1, x-device-id.
+  - 검색 줄이기: 아이템마다 searchKey를 저장해 두었다가 다음에는 GET으로 다시 봅니다. 만료됐을 때만 POST합니다. 남은 검색이 10회 미만이거나 429가 오면 멈춥니다. 첫 실행은 약 26회 소진입니다.
+  - 쿠키: `fetch(credentials:'include')`로 브라우저가 쿠키를 붙일 뿐입니다. 쿠키와 세션은 읽지도 내보내지도 않습니다. host_permissions는 api.mskr.nexon.com뿐입니다.
+- **다리:** content.js(bossmaple.pages.dev, localhost)와 페이지가 window.postMessage로 주고받습니다(src 'bossmaple-page' ↔ 'bossmaple-ext'; ping/hello, refresh → prices, takePending).
+  - 팝업의 '최저가 갱신'은 예비용입니다. 결과는 다음에 대시보드가 열릴 때 넘어갑니다.
+- **대시보드:** 👑 관리자 창 맨 위 '경매장 최저가'에 '최저가 갱신' 버튼이 있습니다. 확장이 없으면 '크롬 확장을 먼저 설치해주세요'와 설치 단계를 보여 줍니다.
+  - 관리자가 페이지를 열었고 확장이 있으면 하루 한 번(KST 날짜 기준) 자동으로 실행합니다.
+  - 대상: 칠흑·여명·광휘·해머·보장·연마석 세트(혼돈의 칠흑 장신구 상자·응축된 힘의 결정석 제외).
+  - 결과 {item, lowestPrice(메소), time}은 PUT /api/admin/prices로 보냅니다(관리자만, D1 meta 'admin_prices', 더 새로운 시각만 덮어씀). localStorage 'mapleBossTracker.admPrices'에도 둡니다.
+  - '수익을 기록할까요?' 창(관리자만): 금액 칸을 최근 최저가(억)로 채우고 전체 선택합니다(수정 가능). 제목 아래에 '최저가 측정 시간 - YYYY-MM-DD HH:mm'(KST)을 씁니다. 값이 없으면 예전 안내 문구입니다.
+- **확인 안 됨:** 실제 넥슨 경매장(로그인 세션 없음)에서는 시험하지 못했습니다. 응답 모양(searchKey, items[].itemName/pricePerItem, search.remaining)은 MCP 소스 기준입니다.
+  - 실제 크롬에 확장을 로드해 보는 시험도 못 했습니다. 브랜드 크롬은 --load-extension을 막습니다.
+  - 테스트는 모의로만 했습니다: test_ext_core.mjs(모의 경매장 API), test_tracker68(가짜 content script 흉내, 포트 8893), test_server_b91의 b93 부분.
+- 함께 고친 것:
+  - 관리자 창의 최저가 칸은 `<div>`입니다. `.admsec:nth-of-type(2)` = '사용 중'이 그대로라 test52, test67이 통과합니다.
+  - test_tracker26은 키 없는 계정 숨김(b72/b82) 때문에 실패하고 있었습니다. `_legacy.LEGACY_KEY`를 넣고, 실패하면 종료 코드 1을 냅니다.
+  - test_server: b94 이후 KF 로그인도 새 사용자를 만듭니다. 그래서 KI 로그인이 하루 새 데이터 제한(IP별 'newuser')에 걸렸습니다. 그 앞에서 newuser 카운터만 지웁니다.
+
 ## b94 — 지운 부계정 키를 대표 키 칸에 넣으면 승인 없이 들어가던 문제 (2026-10-12)
 - 신고: 부계정 키를 지운 뒤 그 키(다른 넥슨 계정)를 '본계정 API키 입력'에 넣었더니 승인 대기 없이 바로 들어감.
 - 운영 D1 조사(키 원본은 보지 않고 해시 앞 8자리만): 그 키의 넥슨 계정은 관리자 데이터가 아니라 **따로 있던 사용자 59c922c2**에 연결돼 있었음. 이 사용자는 2026-10-10 04:27 KST(b68 가입 승인 전)에 그 키로 한 번 로그인해서 생긴 데이터(캐릭터 2개)임. b68은 'approval 행 없음 = 승인됨(예전 사용자)'으로 보기 때문에, 18:59 KST 로그인 때 승인 확인 없이 세션이 나왔음.
