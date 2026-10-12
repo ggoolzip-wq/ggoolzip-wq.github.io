@@ -2875,7 +2875,7 @@ async function admDecide(id,action){
   const u=(admUsers||[]).find(x=>x.id===id); const nm=u?.name||'이 사용자';
   if(action==='kick'&&!confirm(`${nm}\n정말 강퇴할까요? 이 사용자의 등록 키와 데이터가 모두 삭제됩니다.`)) return; // b78
   if(action==='reject'&&!confirm(`${nm} — 가입 요청을 거절할까요?`)) return;
-  try{ await svFetch('/api/admin/decide',{method:'POST',body:{user:id,action}}); toast({approve:'승인했습니다',reject:'거절했습니다',kick:'강퇴했습니다',unblock:'승인했습니다'}[action]+` — ${nm}`); }catch(e){ toast(e.message); }
+  try{ await svFetch('/api/admin/decide',{method:'POST',body:{user:id,action}}); if(action!=='kick') toast({approve:'승인했습니다',reject:'거절했습니다',kick:'강퇴했습니다',unblock:'승인했습니다'}[action]+` — ${nm}`); }catch(e){ toast(e.message); }
   await admLoad();
 }
 let admPage=1;

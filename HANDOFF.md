@@ -673,3 +673,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 현재 prices.json 의 checkedAt 은 오늘 Action 실행 시각(커밋 57a3549, 10:53:33 KST)으로 채움 — 다음 19:00 실행부터 자동.
 - 테스트: test_tracker58 (run_all 추가), test_upcoming 기대값(날짜 → ISO) 수정.
 - 스크린샷: /workspace/maple-boss-tracker/oct12q_b79_before_foot.png, oct12q_b79_after_foot.png, oct12q_b79_test_foot.png
+
+## b80 — 관리자 강퇴 뒤 하단 알림 없음 (2026-10-12)
+- `admDecide`: action==='kick' 이면 '강퇴했습니다 — …' 토스트 안 띄움 (승인·거절 알림은 그대로).
+- 테스트: test_tracker52 에 강퇴 직후 토스트 없음 확인 추가. 라이브에서는 실제 사용자를 강퇴하지 않으므로 로컬 서버 화면으로 확인.
+- 스크린샷: /workspace/maple-boss-tracker/oct12r_b80_before_kick.png (로컬, 알림 있음), oct12r_b80_after_kick.png (로컬, 알림 없음)

@@ -96,7 +96,9 @@ try:
     UF=[r['id'] for r in dev.sql("SELECT id FROM users") if r['id']!=UADM][0]
     dlg=[]; p2.once('dialog',lambda d:dlg.append(d.message))
     p2.screenshot(path=os.path.join(OUT,'oct12p_b78_test_admin.png'))
-    p2.click('[data-adm=kick]'); p2.wait_for_function("!document.querySelector('#admBody [data-adm=kick]')",timeout=8000)
+    p2.evaluate('toastHide()'); p2.click('[data-adm=kick]'); p2.wait_for_function("!document.querySelector('#admBody [data-adm=kick]')",timeout=8000)
+    p2.wait_for_timeout(300); p2.screenshot(path=os.path.join(OUT,'oct12r_b80_%s_kick.png'%os.environ.get('SHOT','test')))
+    check('b80: no toast after kick', not p2.evaluate("document.querySelector('#toast').classList.contains('show')"), p2.inner_text('#toast'))
     check('kick confirm text with name', dlg and '정말 강퇴할까요? 이 사용자의 등록 키와 데이터가 모두 삭제됩니다.' in dlg[0] and '캐릭F' in dlg[0], dlg)
     left={t:dev.sql(f"SELECT COUNT(*) n FROM {t} WHERE user_id='{UF}'")[0]['n'] for t in ['state','state_history','sessions','accounts','keyvault2','keyreg','acct_role','seen','approval']}
     check('kick → all user rows deleted', sum(left.values())==0 and dev.sql(f"SELECT COUNT(*) n FROM users WHERE id='{UF}'")[0]['n']==0, left)
