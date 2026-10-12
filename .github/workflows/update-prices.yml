@@ -2,7 +2,7 @@ name: 결정석 가격 자동 갱신
 
 on:
   schedule:
-    - cron: "17 3 * * 5"   # 주 1회 금 03:17 UTC (12:17 KST) — 대비용. 평소엔 5분 피드 작업(update_feed.py)이 테섭→본섭 순서로 갱신
+    - cron: "0 10 * * *"   # 매일 10:00 UTC (19:00 KST) — 가격 확인 + 마지막 확인(checkedAt) 갱신. 피드(update_feed)의 새 공지 촉발 경로는 그대로
   workflow_dispatch:
 
 permissions:

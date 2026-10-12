@@ -11,6 +11,13 @@
 6. **작업을 시작할 때마다** 사용 한도량(사용치)을 사용자에게 알리고, 한도 100% 전에 끝낼 수 없는 작업이면 **'한도 때문에 작업 불가'라고 미리** 알린다.
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## 2026-10-12 b65 (결정석 가격: 매일 19:00 KST 확인 + 마지막 확인 날짜 갱신)
+(같은 방식: 최소 수정→`git pull --rebase`→main 일반 push. HANDOFF 기록은 항상. src/·server/ 키 리셋 작업과 겹치지 않게 워크플로·스크립트·HANDOFF 만.)
+1. **스케줄**: `update-prices.yml` cron `17 3 * * 5`(금 12:17 KST 대비) → **`0 10 * * *`(매일 19:00 KST)**. GitHub cron 은 수분~십여 분 늦을 수 있음. `workflow_dispatch` 유지.
+2. **마지막 확인**: `update_prices.py` 가 확인 성공 시 가격 동일해도 `checkedAt=오늘(KST)` 로 쓰고 커밋(b40부터 이미 매 성공마다 — 7일 하트비트 아님). 사이트 결정석 가격 카드 `(…, 마지막 확인 YYYY-MM-DD)` 가 이를 표시.
+3. **피드 경로 유지**: `update_feed.py` 의 테섭/패치 새 글 → 가격 확인·`checkedAt`/`upcoming`/본섭 적용은 그대로(워크플로 미변경).
+4. 확인: Actions → 결정석 가격 자동 갱신 → Run workflow → 끝나면 `prices.json` checkedAt=오늘, 라이브 카드 '마지막 확인' = 오늘.
+
 ## 2026-10-12 b63 (캐릭터 추가 모달: 키별·전체 등록 캐릭터 수)
 (같은 방식: src 수정→build→테스트→`git checkout -- *.png`→`git pull --rebase`→main 일반 push. HANDOFF 기록은 항상.)
 1. **캐릭터 추가(+ 추가) 모달** 키 행: 활성화된 키의 `등록 완료` 옆에 ` · N캐릭 등록 중` (N = 그 계정 `accId` 로 연결된 대시보드 캐릭터 수). 본계정·부계정·예비 키 모두 동일(예비 키는 같은 계정 수). 0도 표시(`· 0캐릭 등록 중`).
@@ -181,7 +188,7 @@ feed.json               소식 피드 (GitHub Action이 5분마다 확인, 새 �
 README.md               사용자용 사용법 (한국어)
 HANDOFF.md              이 문서
 .nojekyll               Jekyll 처리 끔
-.github/workflows/update-prices.yml   매일 03:17 UTC 가격 갱신 + workflow_dispatch
+.github/workflows/update-prices.yml   매일 10:00 UTC(19:00 KST) 가격 갱신 + workflow_dispatch (b65)
 .github/workflows/sunday-watch.yml    매일 09:45/09:50 KST 예약 → 10:00~10:20 KST 5초마다 썬데이 새 글 확인(scripts/sunday_watch.py) + workflow_dispatch(test_minutes, pretend_new)
 .github/workflows/update-feed.yml     5분마다 소식 수집(scripts/update_feed.py) + workflow_dispatch, secret NEXON_API_KEY(+ 예비 NEXON_API_KEY2) 사용
 scripts/sunday_watch.py 썬데이 새 글 감시(10:00~10:20 KST, 5초 간격, API 우선·홈페이지 대체, 찾으면 바로 처리) — sunday-watch.yml 에서 실행
@@ -261,8 +268,9 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 앱의 지역별 수행 레벨(DQ_ITEMS.lv): 260/265/270/275/280/285/290/295 — 레벨 미달은 칸 대신 🔒 줄. 기어드락 295는 실측상 285·288 캐릭터 모두 state 0이라 일관되지만 공식 확인은 안 됨.
 
 ## 6. 결정석 가격 자동 갱신
-- `.github/workflows/update-prices.yml`: 매일 03:17 UTC(12:17 KST) + 수동 실행. `scripts/update_prices.py`가 https://maplestory.nexon.com/News/Update 목록을 최신순으로 훑어 '강렬한 힘의 결정' 가격표가 있는 공지를 찾아 `prices.json`(rows: boss/old/new/effective, source url/title/date, checkedAt, fetchedAt) 갱신. 내용이 바뀌었을 때만 커밋(가격 동일하면 7일마다 checkedAt만).
-- 사이트는 로드 시 `./prices.json?d=날짜`를 받아 보스·난이도 이름 매칭 후 적용. 적용일(effective)이 미래면 그날까지 대기. 실패 시 캐시/내장 가격(2026-09-17 공지) 사용.
+- `.github/workflows/update-prices.yml`: **매일 10:00 UTC(19:00 KST)** + 수동 실행(b65). `scripts/update_prices.py`가 https://maplestory.nexon.com/News/Update 목록을 최신순으로 훑어 '강렬한 힘의 결정' 가격표가 있는 공지를 찾아 `prices.json`(rows: boss/old/new/effective, source url/title/date, checkedAt, fetchedAt) 갱신. **확인 성공 때마다 `checkedAt`(마지막 확인)=오늘(KST)로 갱신·커밋**(가격이 같아도 — 카드가 신선해 보이도록). 가격 rows 가 바뀔 때만 `changedAt` 갱신.
+- **피드 경로 유지(b39)**: `update_feed.py` 가 테섭/패치 새 글을 보면 가격 확인·`checkedAt` 갱신(또는 upcoming/본섭 적용). 매일 19:00 스케줄과 병행 — 피드 워크플로는 건드리지 않음.
+- 사이트는 로드 시 `./prices.json?d=날짜`를 받아 보스·난이도 이름 매칭 후 적용. 적용일(effective)이 미래면 그날까지 대기. 실패 시 캐시/내장 가격(2026-09-17 공지) 사용. 카드 문구: `(가격 변동일 …, 마지막 확인 YYYY-MM-DD)` ← `checkedAt`.
 - 가격은 **보스당 한 줄, 수정 UI 없음**, 출처 라벨 없음. 오른쪽 '결정석 가격' 카드(강렬한 힘의 결정 (주간) 아이콘, 싼 순서)에 작게 '마지막 확인 날짜'.
 - 테스트 픽스처: `tests/fixtures/`(공식 공지 813 사본, 46행). 이 작업 박스에서는 nexon.com 접속이 막혀 실서버 확인 불가였음 — Action 실행 결과는 GitHub Actions 탭에서 확인.
 
@@ -418,7 +426,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 ## 2026-10-10 b39 — 결정석 가격 갱신 방식 (비용 절약)
 - **5분 피드 작업(update_feed.py)이 주 경로**: 테섭 새 글 → 본문 전체에서 결정석 표 찾기(test_prices). 있으면 prices.json `upcoming` 에 1회 저장, 없으면 `checkedAt`(마지막 확인)만 오늘(KST)로. 실서버 가격은 그대로.
 - **본섭 적용(patch_prices)**: 패치내역 소스(notice-update)에 새 `update:` 글이 나오고 `upcoming` 이 있을 때만 그 공지 본문을 받아 가격표(20줄 이상, 값 정상)로 실서버 rows/source 갱신 + `upcoming` 삭제. 예정 가격이 없으면 본문을 받지 않음.
-- **update-prices.yml**: 매일 → 주 1회(금 12:17 KST) 대비용으로 축소. 지우지 않은 이유: 테섭을 거치지 않고 본섭에 바로 들어간 가격 변경·피드 작업이 놓친 경우(실패/차단)를 일주일 안에 잡아 주고, 7일 하트비트로 '마지막 확인'도 유지. 금요일 = 목요일 정기 패치 다음 날.
+- **update-prices.yml**: (b39) 주 1회 대비 → **(b65) 다시 매일 19:00 KST**. 본섭 직접 변경·피드 누락 보완 + 매일 `checkedAt` 갱신. 피드의 새 공지 촉발 경로는 그대로.
 - **사이트**: `upcoming` 이 있으면 결정석 가격 카드에 탭 '가격 / 패치 후 예상 주간 수익'. 후자는 캐릭터별 주간 상위 12개 + 월간 보스(fullExpected)를 예정 가격으로 다시 계산(withUpcoming)하고 현재 가격 대비 증감(+초록/−빨강)과 합계. upcoming 이 없어지면 탭 자동으로 사라짐. 테스트: test_upcoming.py(6·7), test_tracker31(로컬 10% 데모, 스크린샷 b39_*).
 - b39: 에픽빔 합계 숫자 광선(::before/::after, 회전, EP_DUR) 삭제 → 숫자 자체에 진주빛 그라데이션(흰→하늘→연보라, eppearl 3.2s 반짝임) + 흰/하늘/보라 drop-shadow 글로우. 모션 줄이기 시 정지.
 

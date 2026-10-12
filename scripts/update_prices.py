@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""결정석 가격 자동 갱신 (GitHub Actions 에서 매일 실행, 표준 라이브러리만 사용)
+"""결정석 가격 자동 갱신 (GitHub Actions 매일 19:00 KST + 피드 새 공지 촉발, 표준 라이브러리만 사용)
 
 maplestory.nexon.com 업데이트 공지 목록을 최신순으로 확인해 '강렬한 힘의 결정' 가격표가 있는
 가장 최근 공지를 찾고(scripts/nexon_prices.py 파서), 사이트 루트의 prices.json 을 갱신합니다.
@@ -18,7 +18,7 @@ _OLD_UP = None
 
 OUT = os.path.join(ROOT, "prices.json")
 MIN_ROWS = 20          # 이보다 적으면 파싱이 잘못된 것으로 보고 저장하지 않음
-HEARTBEAT_DAYS = 7     # 내용이 같아도 이 주기마다 '마지막 확인' 날짜 갱신
+HEARTBEAT_DAYS = 7     # (미사용·호환) b40/b65: 확인 성공 때마다 checkedAt=오늘 — 7일 주기 아님
 KST = datetime.timezone(datetime.timedelta(hours=9))
 
 
