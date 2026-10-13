@@ -937,3 +937,6 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - **스크린샷**: oct12z_b104_before/after_admin.png, oct12z_b104_before/after_revmodal.png
 - **확인 못 한 것**: 실제 Cloudflare 에서 maple.ai.kr 이 Worker 요청을 막지 않는지(로컬 curl 은 200), 관리자 실제 계정으로 버튼 누르기(MAPLE_ADMIN_KEY 안 씀). 페이지 구조가 바뀌면 '시세 표를 읽지 못했습니다' 오류로 보임.
 - b105 병합 스크린샷(main): /workspace/maple-boss-tracker/oct13_b105_before_bossking.png · oct13_b105_after_bossking.png
+
+## b106 (2026-10-13)
+- 최저가 갱신: 요청 전 무작위 대기(1.2~4.5초) 제거, 누르면 바로 채워짐. 서버는 여전히 하루 1회만 maple.ai.kr 접속(같은 날 캐시).

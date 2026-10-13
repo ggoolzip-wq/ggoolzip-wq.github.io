@@ -3047,12 +3047,11 @@ function admPriceSave(P){ const cur=admPrices(); for(const [k,o] of Object.entri
 async function admPriceLoad(){ if(!svIsAdmin()) return; try{ admPriceSave((await svFetch('/api/admin/prices')).prices); }catch(e){} }
 // 페이지 값(억, 본섭) → {우리 키: {p: 메소, t}} — 본섭 값이 없거나 0 이하면 넣지 않음
 function maiMap(items,t){ const P={}; for(const [k,c] of Object.entries(MAI_CODE)){ const v=+(items?.[c]?.main); if(v>0) P[k]={p:Math.round(v*1e8),t}; } return P; }
-// 사람처럼: 누를 때마다 실행 배율(1.0~1.5)을 새로 뽑고, 그 안에서 1.2~3초 무작위로 기다린 뒤 요청 (최소 1초 이상)
-const humanWait=()=>{ const f=1+Math.random()*0.5; return sleep(Math.max(1000,Math.round((1200+Math.random()*1800)*f))); };
+// b106: 대기 없이 바로 요청 (하루 1회 접속, 같은 날은 캐시)
 async function admPriceRun(){
   if(!svIsAdmin()||admPriceBusy) return;
   admPriceBusy=true; admPriceMsg='maple.ai.kr 시세 받는 중…'; renderAdmPrice();
-  try{ await humanWait();
+  try{
     const r=await svFetch('/api/admin/maple-prices'); const P=maiMap(r.items,+r.fetchedAt||Date.now());
     const miss=Object.keys(MAI_CODE).filter(k=>!P[k]).length;
     admPriceSave(P);
