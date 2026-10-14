@@ -41,13 +41,13 @@ try:
     c0['monthly']={}; c0['weekly']={}
     pg.evaluate("s=>{localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",st); pg.reload(); pg.wait_for_timeout(900)
     tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(g=>g.dataset.tip)")
-    check('차트: 지난 주(잡은 주)에만 월간 5천만 포함, 이번 주엔 없음', len(tips)==2 and '1.5억'.replace('1.5억','') is not None and '월간 보스 1개' in tips[0] and '월간 보스' not in tips[1], tips)
+    check('b135 차트(이번 주만): 지난 주에 잡은 월간 보스는 안 보임', all('월간 보스' not in t for t in tips), tips)
     # 이번 주에 잡은 월간 보스 → 이번 주 점에 포함
     c0['monthly']={'blackmage':None}
     pg.evaluate("s=>{const x=JSON.parse(JSON.stringify(s));x.characters[0].monthly={blackmage:'__W__'};x.monthHistory=[];localStorage.setItem('mapleBossTracker.v1',JSON.stringify(x))}",st); pg.reload(); pg.wait_for_timeout(500)
     pg.evaluate("()=>{S.characters[0].monthly.blackmage=S.period.week;save();render()}"); pg.wait_for_timeout(400)
     tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(g=>g.dataset.tip)")
-    check('차트: 이번 주에 잡은 월간 보스 이번 주 점에 포함', '월간 보스 1개' in tips[-1] and '(이번 주)' in tips[-1], tips)
+    check('차트: 이번 주에 잡은 월간 보스 이번 주 점에 포함', '월간 보스 1개' in ''.join(tips) and '오늘' in tips[-1], tips)
     # 툴팁 말풍선
     pg.locator('.linechart .lpt circle').last.scroll_into_view_if_needed(); pg.locator('.linechart .lpt circle').last.hover(force=True); pg.wait_for_timeout(300)
     tb=pg.evaluate("(()=>{const e=document.querySelector('#mbtTip');if(!e)return null;const r=e.getBoundingClientRect(),c=getComputedStyle(e),a=getComputedStyle(e,'::after');return [e.classList.contains('show'),r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,parseFloat(c.borderTopLeftRadius),c.boxShadow!=='none',a.content,e.innerText.includes('누적')]})()")

@@ -76,7 +76,7 @@ try:
     pg.click('[data-tab="total"]'); pg.wait_for_timeout(500)
     if not NOCHK:
         tip=pg.evaluate("document.querySelector('.linechart .lpt:last-of-type')?.dataset.tip||''")
-        check('2 그래프 말풍선: 결정석/아이템 판매 2줄', '\n결정석 : ' in tip and '\n아이템 판매 : ' in tip and tip.index('포함')<tip.index('결정석 :') and '44억' in tip.split('아이템 판매 : ')[1].split('\n')[0], tip)
+        check('2 그래프 말풍선: 결정석/아이템 판매 2줄', '\n결정석 : ' in tip and '\n아이템 판매 : ' in tip and '이번 주 누적' in tip, tip)
         mw=pg.evaluate("(()=>{const T=totalData();const w=T.weeks[T.weeks.length-1];return [(w.total||0)+((monthlyByWeek(T)[w.week]||{}).meso||0), meso((w.total||0)+((monthlyByWeek(T)[w.week]||{}).meso||0))]})()")
         row=pg.evaluate("[...document.querySelectorAll('.card')].find(c=>c.querySelector('h2')?.textContent.includes('전체 주 목록'))?.querySelector('tbody tr td:nth-child(4)')?.textContent")
         check('5 전체 주 목록: 검마 결정석 + 검마 판매 포함', row==mw[1] and mw[0]>pg.evaluate("totalData().weeks.slice(-1)[0].total"), (row,mw))

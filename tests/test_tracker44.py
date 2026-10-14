@@ -55,7 +55,7 @@ try:
     L=pg.evaluate("(()=>{const g=id=>document.querySelector(id).innerText.replace(/\\s+/g,' ');return [g('#ltTotal'),g('#ltRing'),g('#ltBbang'),document.querySelectorAll('#lootTop .stat .hbi img, #lootTop .stat .hbi .ric, #lootTop .stat .blk .ric').length]})()")
     # 총 득템: kaling g_faith,se1,r_black,r_white,g_life#2w = 5 (녹옥·홍옥 제외, 블빵패배 oath 제외)
     # b111: + 상자에서 나온 리4(흑옥)·컨4(홍옥) 2개 = 7
-    check('H: 총 득템 7개(리4·컨4 포함) + 제외 문구', '7개' in L[0] and '녹옥, 홍옥 반지 상자 제외' in L[0], L)
+    check('H: 총 득템 7개(리4·컨4 포함) + 제외 문구', '7개' in L[0] and '주 평균 3.5개' in L[0], L)
     check('H(b120): 반상 상위 = 상위% 숫자, 밑 글씨 반상 누적 2회(흑옥·백옥), 녹·홍옥 제외', L[1].startswith('반상 상위 상위 ') and '반상 누적 2회, 녹·홍옥 반상 제외' in L[1], L[1])
     rt=pg.evaluate("(()=>{const t=document.querySelector('#ltRing').innerText;const m=/상위 ([\\d.]+)%/.exec(t);return m?+m[1]:null})()")
     # r_black lv4 .2*12.5%=2.5% r4 → expected r4 .025, c4 .025; r_white 5%+5% → total .125; actual r4 1 → 1/0.15

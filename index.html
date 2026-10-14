@@ -2053,7 +2053,7 @@ function resetCore(){
     const sum=weekSummary(S.period.week);
     if(sum.cleared>0 && !S.history.some(h=>h.week===S.period.week)) S.history.push(sum);
     S.history.sort((a,b)=>a.week<b.week?-1:1);
-    S.characters.forEach(c=>{c.weekly={}; c.drops={}; c.dropOut={}; delete c.dmode; delete c.drev; for(const k in c.auto) if(findBoss(k)?.type==='weekly') delete c.auto[k];});
+    S.characters.forEach(c=>{c.weekly={}; c.wat={}; c.drops={}; c.dropOut={}; delete c.dmode; delete c.drev; for(const k in c.auto) if(findBoss(k)?.type==='weekly') delete c.auto[k];});
     msgs.push('주간 보스가 초기화되었습니다 (지난 주 기록 저장됨)'); changed=true;
   }
   if(S.period.month!==now.month){
@@ -2422,7 +2422,7 @@ function applyScheduler(c, data){
       }
       seen[b.id]=true;
       c.bosses[b.id]={enabled:true,diff,party:cfg?.party||1}; clampParty(c,b.id);
-      if(b.type==='weekly'){ if(!c.weekly[b.id]) checked++; c.weekly[b.id]=true; }
+      if(b.type==='weekly'){ if(!c.weekly[b.id]){ checked++; (c.wat||(c.wat={}))[b.id]=Date.now(); } c.weekly[b.id]=true; }
       else { if(!c.monthly[b.id]) checked++; c.monthly[b.id]=c.monthly[b.id]||S.period.week; (c.mdate||(c.mdate={}))[b.id]=(c.mdate||{})[b.id]||kstDay(); }
       c.auto[b.id]=true;
     } else if(reg){ // 스케줄러에 등록된 보스 = 이 캐릭터의 보스 (난이도도 API 값, 파티 인원은 유지)
@@ -3239,6 +3239,28 @@ function monthlyByWeek(T){
     if(!keys.includes(wk)){ const c=keys.filter(x=>String(x).startsWith(m.month)); wk=c.length?c[c.length-1]:''; } if(!wk) continue;
     const o=M[wk]||(M[wk]={n:0,meso:0,cry:0,sale:0}); o.meso+=+r.m; o.sale+=+r.m; } }));
   return M; }
+function thisWeekChart(T){ // b135: 주간 메소 그래프 = 이번 주만, 목 0시(KST) 0 → 날짜별 누적. 시간 기록(c.wat, b135 부터)이 없는 처치·판매는 목요일에 합산
+  const ws=weekStartMs(), dayOf=t=>t&&t>=ws?Math.min(6,Math.floor((t-ws)/864e5)):0, today=dayOf(Date.now());
+  const z=()=>[0,0,0,0,0,0,0], B=z(), Cr=z(), Sa=z(), Mn=z(), Mm=z(), vis=new Set(vchars().map(c=>c.id)); let known=0;
+  const dd=ds=>ds?dayOf(Date.parse(ds+'T12:00:00+09:00')):0;
+  for(const c of S.characters) if(vis.has(c.id)){ const r=charRevenue(c), at=c.wat||{};
+    r.wlist.filter(x=>x.counted).forEach(x=>{ const i=dayOf(at[x.slot]); Cr[i]+=x.value; known+=x.value; });
+    r.mlist.filter(x=>x.counted&&c.monthly[x.slot]===S.period.week).forEach(x=>{ const i=dd((c.mdate||{})[x.slot]); Cr[i]+=x.value; Mn[i]++; Mm[i]+=x.value; known+=x.value; });
+    for(const [k,v] of Object.entries(c.drev||{})){ if(!v||!(+v.m>0)) continue; const i=dayOf(at[parseIK(k).slot]); Sa[i]+=+v.m; known+=+v.m; } }
+  const cur=T.weeks.find(w=>w.cur)||{}, MW=monthlyByWeek(T)[cur.week]||{}, all=(cur.total||0)+(MW.meso||0); if(all>known) Sa[0]+=all-known;
+  for(let i=0;i<7;i++) B[i]=Cr[i]+Sa[i];
+  const DN=['목','금','토','일','월','화','수'], W=640, Hh=220, pl=50, pr=14, pt=24, pb=30, bw=(W-pl-pr)/7;
+  let s=0; const cums=B.map(v=>s+=v).slice(0,today+1), cmax=Math.max(1,s);
+  const X=i=>pl+i*bw+bw/2, Y=v=>Hh-pb-(Hh-pb-pt)*v/cmax;
+  const grid=[0,.5,1].map(f=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(cmax*f).toFixed(1)}" y2="${Y(cmax*f).toFixed(1)}" stroke="currentColor" opacity="${f?'.08':'.18'}"/><text x="${pl-6}" y="${(Y(cmax*f)+3.5).toFixed(1)}" text-anchor="end" font-size="10">${f?(cmax*f/1e8).toFixed(1)+'억':'0'}</text>`).join('');
+  const pts=[`${pl},${Y(0)}`,...cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`)].join(' ');
+  const d0=Date.parse(cur.week+'T00:00:00+09:00')||ws, md=i=>{ const d=new Date(d0+i*864e5+KST_MS); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; };
+  const xl=DN.map((n,i)=>`<text x="${X(i).toFixed(1)}" y="${Hh-pb+16}" text-anchor="middle"${i===today?' font-weight="700"':''}>${n} ${md(i)}</text>`).join('');
+  const dots=cums.map((v,i)=>`<g class="lpt" data-tip="${esc(`${md(i)} (${DN[i]})${i===today?' 오늘':''}\n이날 ${meso(B[i])}${Mn[i]?`\n  └ 월간 보스 ${Mn[i]}개 ${meso(Mm[i])} 포함`:''}\n결정석 : ${meso(Cr[i])}\n아이템 판매 : ${meso(Sa[i])}\n이번 주 누적 ${meso(v)}`)}"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/><circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${i===today?4.5:3.2}" fill="#2f7fd8"/></g>`).join('');
+  return `<div class="muted" style="font-size:.75rem;margin:-4px 0 4px">이번 주만 · 목요일 0시(KST)에 0부터</div><div class="chart linechart" id="weekLine" data-total="${s}"><svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="이번 주 메소 그래프">${grid}
+    <polyline fill="none" stroke="#2f7fd8" stroke-width="2.5" stroke-linejoin="round" points="${pts}"/>${dots}${xl}
+    <text x="${W-pr}" y="14" text-anchor="end" fill="#2f7fd8" font-size="11">이번 주 ${meso(s)}</text></svg></div>`;
+}
 function cumLineChart(rows0,T){
   const MW=T?monthlyByWeek(T):{}; const rows=rows0.map(r=>{ const m=MW[r.week]||{}; return {...r,mm:m.meso||0,mn:m.n||0,cry:(r.crys??r.total??0)+(m.cry||0),sale:(r.isale||0)+(m.sale||0),total:(r.total||0)+(m.meso||0)}; });
   const n=rows.length, pl=44, pr=14, pt=26, pb=36, Hh=240, bw=Math.max(34,(640-pl-pr)/Math.max(1,n)), W=Math.max(640,pl+pr+n*bw);
@@ -3418,12 +3440,12 @@ function renderTotal(){
   v.innerHTML=`<div class="grid"><div class="card">
     <h2>${miniIcon('ipc')} 누적 수입 <span class="muted" style="font-weight:500">${fmtWeek(S.startWeek).split(' ~')[0]}부터 · ${nW}주</span></h2>
     <div class="stats s3 kbig">
-      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc">${(n=>(n/1e8).toFixed(1)+'억')(T.grand)}</div><div class="muted">${T.grand.toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc">${(n=>(n/1e8).toFixed(1)+'억')(T.grand)}</div><div class="muted" id="grandAvg">주 평균 ${Math.round(T.grand/Math.max(1,nW)).toLocaleString()} 메소</div></div>
       <div class="stat"><div class="k"><span class="hbi">${bossIcon(bk?bk.b:findBoss('kaling'))}</span><span class="kt">주보 누적 메소량</span></div><div class="v">${(n=>(n/1e8).toFixed(1)+'억')(T.wTotal)}</div><div class="muted">주 평균 ${avg.toLocaleString()} 메소</div></div>
       <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="kt">검마 누적 메소량</span></div><div class="v">${T.mTotal?(n=>(n/1e8).toFixed(1)+'억')(T.mTotal):'-'}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()} 메소</div></div>
     </div>
   </div>
-  <div class="card"><h2>📈 주간 메소 그래프</h2>${cumLineChart(T.weeks,T)}</div>
+  <div class="card"><h2>📈 주간 메소 그래프</h2>${thisWeekChart(T)}</div>
   ${kingHtml(T,'meso')}
   ${bossKingHtml(T)}
   ${missHtml()}
@@ -3466,14 +3488,14 @@ function salesHtml(T){ // b76: '아이템 판매 누적 수익' — 아이템·�
   const best=Object.keys(top).sort((a,b)=>top[b]-top[a]||itemCmp(a,b))[0];
   const ico=best?`<span class="hbi">${lootIco(best)}</span>`:miniIcon('meso'), pl=p=>p>1?`${p}인 분배`:'1인';
   return `<div class="card" id="salesCard"><h2>${ico} 아이템 판매 누적 수익</h2>
-    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc">${tot?(tot/1e8).toFixed(1)+'억 메소':'-'}</div><div class="muted">${tot.toLocaleString()} 메소 · ${ks.reduce((x,k)=>x+S_[k].n,0)}건</div></div></div>
+    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc">${tot?(tot/1e8).toFixed(1)+'억 메소':'-'}</div><div class="muted" id="salesAvg">주 평균 ${Math.round(tot/Math.max(1,T.weeks.length)).toLocaleString()} 메소</div></div></div>
     ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot">${lootIco(i)}<span class="ln">${esc(lootName(i))}</span> <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm">${meso(o.m)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
 function renderLoot(){
   const v=$('#view'); const T=totalData(), L=lootSummary(T);
   v.innerHTML=`<div class="grid"><div class="card" id="lootTop">
     <h2>${itemIcon('genesis')} 누적 득템</h2>
     <div class="stats s3 kbig">
-      <div class="stat" id="ltTotal"><div class="k"><span class="hbi">${L.epicIco}</span><span class="kt">총 득템</span></div><div class="v acc">${L.items}개</div><div class="muted" style="font-size:.7rem">녹옥, 홍옥 반지 상자 제외</div></div>
+      <div class="stat" id="ltTotal"><div class="k"><span class="hbi">${L.epicIco}</span><span class="kt">총 득템</span></div><div class="v acc">${L.items}개</div><div class="muted" style="font-size:.7rem" id="itemsAvg">주 평균 ${(Math.round(L.items/Math.max(1,T.weeks.length)*10)/10).toLocaleString()}개</div></div>
       <div class="stat" id="ltRing"><div class="k"><span class="hbi">${L.boxIco}</span><span class="kt">반상 상위</span></div><div class="v">${topPct(L.ringTop)}</div><div class="muted" style="font-size:.7rem">반상 누적 ${L.rings}회, 녹·홍옥 반상 제외</div></div>
       <div class="stat" id="ltBbang"><div class="k"><span class="blk" aria-hidden="true">${miniIcon('blink')}</span><span class="kt">블빵 상위</span></div><div class="v">${topPct(L.bbTop)}</div>${L.bbRows.length?`<div class="muted bbrows" style="font-size:.7rem">${L.bbRows.join(', ')}</div>`:''}</div>
     </div>
@@ -4508,7 +4530,7 @@ document.addEventListener('click',e=>{
     const s=t.dataset.check,b=findBoss(s);
     if(b.type==='weekly'){
       if(c.weekly[s]){ delete c.weekly[s]; delete c.auto[s]; }
-      else { if(weeklyCount(c)>=S.settings.weeklyLimit){ toast(`주간 보스는 캐릭터당 ${S.settings.weeklyLimit}개까지 처치할 수 있습니다`); return; } c.weekly[s]=true; }
+      else { if(weeklyCount(c)>=S.settings.weeklyLimit){ toast(`주간 보스는 캐릭터당 ${S.settings.weeklyLimit}개까지 처치할 수 있습니다`); return; } c.weekly[s]=true; (c.wat||(c.wat={}))[s]=Date.now(); }
     } else {
       if(c.monthly[s]){ delete c.monthly[s]; if(c.mdate) delete c.mdate[s]; delete c.auto[s]; }
       else { if(monthlyCount(c)>=S.settings.monthlyLimit){ toast(`월간 보스는 월 ${S.settings.monthlyLimit}회까지입니다`); return; } c.monthly[s]=S.period.week; (c.mdate||(c.mdate={}))[s]=kstDay(); }

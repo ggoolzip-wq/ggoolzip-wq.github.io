@@ -62,7 +62,7 @@ try:
     hs=pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.innerText.trim())')
     check("그래프 제목 '주간 메소 그래프'", any(h.endswith('주간 메소 그래프') for h in hs), hs)
     tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(g=>g.dataset.tip)")
-    check('주간 메소 그래프: 지난 주 = 주간(3.5억) + 그 주에 잡은 검마 결정석·아이템(35억)', len(tips)==2 and pg.evaluate(f"meso({350000000+3500000000})") in tips[0], tips)
+    check('b135 주간 메소 그래프: 이번 주만 — 지난 주(38.5억) 점 없음', tips and not any(pg.evaluate(f"meso({350000000+3500000000})") in t for t in tips) and '이번 주 누적' in tips[-1], tips)
     mk=pg.evaluate("[...document.querySelectorAll('#mesoKing th')].map(x=>x.innerText)"); mr=pg.evaluate("[...document.querySelectorAll('#mesoKing tbody tr')].map(r=>[...r.cells].map(c=>c.innerText.trim()))")
     check("메소왕 열 '누적 주간 메소량'·'누적 월간 메소량'", mk==['순위','캐릭터','누적 주간 메소량','누적 월간 메소량','누적 합계'], mk)
     c1w=100000000+50000000+lc+100000000; c1m=500000000+3000000000
