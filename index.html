@@ -2403,7 +2403,12 @@ function applyScheduler(c, data){
     const done=isDone(r), reg=flagOn(r.registration_flag);
     const cfg=c.bosses[b.id];
     if(done){
-      if((b.type==='weekly'&&staleWeek)||(b.type==='monthly'&&staleMonth)) continue;
+      // b133: 지난 주/달 완료로 남은 응답이면 이번 클리어로 치지 않음. 예전에 continue 만 해서 registration_flag 를
+      //  못 보고 seen 에 안 넣음 → 목 리셋(c.weekly={}) 직후 동기화 때 '스케줄러에 없다'로 등록이 전부 꺼졌음.
+      if((b.type==='weekly'&&staleWeek)||(b.type==='monthly'&&staleMonth)){
+        if(reg){ seen[b.id]=true; c.bosses[b.id]={enabled:true,diff,party:cfg?.party||1}; clampParty(c,b.id); }
+        continue;
+      }
       seen[b.id]=true;
       c.bosses[b.id]={enabled:true,diff,party:cfg?.party||1}; clampParty(c,b.id);
       if(b.type==='weekly'){ if(!c.weekly[b.id]) checked++; c.weekly[b.id]=true; }
@@ -2413,8 +2418,9 @@ function applyScheduler(c, data){
       seen[b.id]=true; c.bosses[b.id]={enabled:true,diff,party:cfg?.party||1}; clampParty(c,b.id);
     }
   }
-  // 보스 목록은 스케줄러만 따름: 응답에 보스 목록이 있으면, 거기 없는 보스는 끔 (이번 주/달 이미 체크한 건 유지, 파티 인원·드롭 기록은 남김)
-  if(Array.isArray(data?.boss_contents)&&data.boss_contents.length) for(const [id,cfg] of Object.entries(c.bosses||{})){
+  // 보스 목록은 스케줄러만 따름: 매칭된 보스가 1개라도 있을 때만, 거기 없는 보스는 끔 (이번 주/달 이미 체크한 건 유지, 파티·드롭 기록은 남김).
+  // b133: boss_contents 가 일일만 있거나 매칭 실패만 있으면 seen 이 비어 전부 끄던 것 방지 — 매칭된 게 있을 때만 끔.
+  if(Object.keys(seen).length) for(const [id,cfg] of Object.entries(c.bosses||{})){
     if(!cfg?.enabled||seen[id]) continue; const b=findBoss(id); if(!b) continue;
     if(isDone(c,b)) continue; cfg.enabled=false;
   }

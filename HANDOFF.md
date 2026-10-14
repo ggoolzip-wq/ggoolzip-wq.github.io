@@ -15,6 +15,15 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b133 (2026-10-15) — 목요일 주간 리셋 후 보스 등록이 사라지던 버그
+- 시간(KST): 00:19–00:30 (조사·코딩 약 6분 / 테스트 약 5분)
+- **원인**: `resetCore` 는 `c.weekly`(클리어)만 비우고 `c.bosses`(등록)는 건드리지 않음 = 정상. 그 직후 페이지 열 때 `syncAll` → `applyScheduler` 가 등록을 지움.
+  1. 넥슨 응답 date 가 아직 지난 주이고 `complete_flag` 가 true 인 보스: `staleWeek` 이면 `continue` 만 해서 **registration_flag 를 안 보고** `seen` 에 안 넣음 → 아래에 '스케줄러에 없다'로 `enabled=false`. 리셋으로 `weekly` 가 비어 `isDone` 보호도 없음.
+  2. `boss_contents.length > 0` 이면 매칭된 주간 보스가 0개여도(일일만 등) 등록된 주간 보스를 전부 끔.
+- **수정**: (1) stale 완료여도 `registration_flag` 있으면 등록 유지(클리어는 안 침). (2) `seen` 에 매칭된 보스가 1개 이상일 때만 목록에 없는 등록을 끔.
+- **데이터 복구**: 코드는 등록을 '삭제'하지 않고 `enabled:false` 로 바꿈(파티·diff 값은 남음). D1 `state_history` 에 사용자당 최근 10개 저장본이 있음 → 리셋 직전 rev 가 남아 있으면 복구 가능(운영자가 D1 조회·복원, **라이브 데이터는 사용자 확인 없이 건드리지 않음**). 이미 넥슨 스케줄러에 보스가 다시 등록돼 있으면 🔄 동기화로도 복구됨.
+- test97 추가(포트 8914). 스크린샷 `b133_{before,after}_{before_reset,after_stale_sync}.png`.
+
 ## b132 (2026-10-14) — 가입 승인(관리자 승인) 임시 끄기 + 켜고 끄는 스위치
 - 시간(KST): 23:31–23:58 (코딩 약 9분 / 테스트 약 18분, 전체 테스트·서버 테스트 포함)
 - 예전(b68~): 처음 보는 대표 키로 로그인 → `approval(pending)` 행 + 세션 없음 → '⏳ 승인 대기 중', 관리자가 [승인] 해야 사용. 대기·거절·차단이면 세션도 403. 프런트는 서버 응답(status:'pending' / 403 pending)만 따름 — 프런트에 따로 막는 곳 없음.
