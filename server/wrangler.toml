@@ -19,6 +19,8 @@ database_id = "0c815aec-cfbc-4205-af28-d7dddb3d5074"   # 2026-10-10 생성 (regi
 ALLOWED_ORIGINS = "https://ggoolzip-wq.github.io,https://bossmaple.pages.dev"
 ALLOW_LOCALHOST = "1"          # http://localhost:* / http://127.0.0.1:* 허용 (테스트용)
 NEXON_BASE = "https://open.api.nexon.com"
+# b132 (2026-10-14 23:31 KST 사용자 요청): 가입 승인 스위치. "0" = 끔(누구나 키 넣으면 바로 사용), "1" = 켬(관리자 승인 필요). 다시 켜려면 "1" 로 바꾸고 npx wrangler deploy
+APPROVAL_REQUIRED = "0"
 
 # 나중 단계(아직 구현 안 함): 매일 18:00 KST(= 09:00 UTC) maplescouter 헥사환산 가져오기
 # [triggers]

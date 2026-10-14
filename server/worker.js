@@ -268,6 +268,12 @@ const adminId = env => env.ADMIN_USER || adminCache || '';
 async function loadAdmin(env) { if (env.ADMIN_USER) return; const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_user'").first(); adminCache = r ? r.v : null; }
 // b78: user_id 로 사용자에 묶인 표 전부 (계정 삭제·강퇴 공통)
 const USER_TABLES = ['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen', 'approval', 'cp'];
+/* b132: 가입 승인 스위치 — wrangler.toml [vars] APPROVAL_REQUIRED = "0" 이면 승인 끔(누구나 넥슨 키로 바로 사용), "1"(또는 없음)이면 승인 켬(b68 흐름).
+ *  끔: 새 가입에 approval(pending) 행을 만들지 않고, 이미 대기(pending)인 사용자도 바로 로그인·세션 사용 가능. approval 행은 지우거나 바꾸지 않음 →
+ *  다시 "1" 로 켜면 그때 대기였던 사용자는 다시 대기. 거절(rejected)·차단(blocked) 은 끔 상태에서도 그대로 막음(관리자가 직접 내린 결정). 승인 코드는 그대로 둠.
+ *  AUTO_APPROVE=1 은 로컬 테스트 전용(예전 그대로) — 이것도 승인 끔과 같게 취급. */
+const approvalOn = env => env.APPROVAL_REQUIRED !== '0' && env.AUTO_APPROVE !== '1';
+const gated = (env, st) => !!st && st !== 'ok' && !(st === 'pending' && !approvalOn(env));
 const STATUS_MSG = { pending: '승인 대기 중이에요 — 관리자가 승인하면 사용할 수 있어요', rejected: '가입 요청이 거절되었습니다', blocked: '이 계정은 이용이 차단되었습니다' };
 // b102: 관리자 목록용 — 순수 계산 (D1 은 /api/admin/users 에서 표 전체를 한 번씩만 읽음, 사용자마다 쿼리하던 N+1 제거)
 // 부계정 = 저장 데이터의 계정 칸 중 서버에 살아 있는 부계정 연결(acct_role role<>'main')이 있는 것만. 키를 지운 칸·키 없는 칸은 안 보임 (b102 사용자 규칙: 삭제한 부계정은 어디에도 안 남음)
@@ -313,7 +319,7 @@ async function auth(env, req) {
   const th = await sha256hex(m[1]), now = Date.now();
   const s = await env.DB.prepare('SELECT s.user_id, s.created_at, s.last_used, s.expires_at, a.status FROM sessions s LEFT JOIN approval a ON a.user_id=s.user_id WHERE s.token_hash=?').bind(th).first();
   if (!s || s.expires_at < now || s.created_at < await authEpoch(env)) { if (s) await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(th).run(); throw new HttpError(401, 'no_session', '로그인이 만료되었습니다 — 다시 로그인하세요'); }
-  if (s.status && s.status !== 'ok' && s.user_id !== adminId(env)) { await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(th).run(); throw new HttpError(403, s.status, STATUS_MSG[s.status] || STATUS_MSG.blocked); } // b68
+  if (gated(env, s.status) && s.user_id !== adminId(env)) { await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(th).run(); throw new HttpError(403, s.status, STATUS_MSG[s.status] || STATUS_MSG.blocked); } // b68
   if (now - s.last_used > DAY) await env.DB.prepare('UPDATE sessions SET last_used=?, expires_at=? WHERE token_hash=?').bind(now, now + SESSION_DAYS * DAY, th).run();
   return { userId: s.user_id, th };
 }
@@ -387,7 +393,7 @@ async function route(req, env) {
         if (isMain(f)) { keep.push(f); continue; }
         const nr = await env.DB.prepare('SELECT COUNT(*) AS n FROM acct_role WHERE user_id=?').bind(f.user_id).first();
         if (!nr || !nr.n) { // 역할 기록 없는 예전 사용자
-          if (f.user_id !== adminId(env) && env.AUTO_APPROVE !== '1') { const t = hashes.top || {};
+          if (f.user_id !== adminId(env) && approvalOn(env)) { const t = hashes.top || {};
             await env.DB.prepare("INSERT OR IGNORE INTO approval (user_id,status,name,world,level,requested_at) VALUES (?,'pending',?,?,?,?)").bind(f.user_id, t.name || '', t.world || '', t.level || 0, Date.now()).run(); }
           keep.push(f);
         } else stale.push(f);
@@ -403,18 +409,18 @@ async function route(req, env) {
       await limit(env, 'newuser:all', NEWUSER_ALL, '오늘 새 가입이 많아 잠시 막혀 있습니다 — 내일 다시 시도하세요');
       userId = crypto.randomUUID(); newUser = true; const t = hashes.top || {};
       await env.DB.batch([env.DB.prepare('INSERT INTO users (id,created_at,last_login) VALUES (?,?,?)').bind(userId, now, now)]   // b68: 새 가입 = 승인 대기 (최소 기록만)
-        .concat(env.AUTO_APPROVE === '1' ? [] : [env.DB.prepare("INSERT INTO approval (user_id,status,name,world,level,requested_at) VALUES (?,'pending',?,?,?,?)").bind(userId, t.name || '', t.world || '', t.level || 0, now)])); } // AUTO_APPROVE=1 = 로컬 테스트 전용 (운영 wrangler.toml 에 넣지 말 것)
+        .concat(!approvalOn(env) ? [] : [env.DB.prepare("INSERT INTO approval (user_id,status,name,world,level,requested_at) VALUES (?,'pending',?,?,?,?)").bind(userId, t.name || '', t.world || '', t.level || 0, now)])); } // AUTO_APPROVE=1 = 로컬 테스트 전용 (운영 wrangler.toml 에 넣지 말 것)
     if (!newUser) await env.DB.prepare('UPDATE users SET last_login=? WHERE id=?').bind(now, userId).run();
     const owned = new Set(found.map(f => f.acct_hash));
     const ins = hashes.filter(h => !owned.has(h)).map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, userId, now));
     if (ins.length) await env.DB.batch(ins);
     // b68: 승인 안 된 사용자 = 세션·금고·데이터 없음. 대기 중이면 요청 정보만 돌려줌 (클라이언트가 '승인 대기 중' 표시, 나중에 같은 키로 다시 확인)
     const ap = userId === adminId(env) ? null : await env.DB.prepare('SELECT status, name, world, level, requested_at FROM approval WHERE user_id=?').bind(userId).first();
-    if (ap && ap.status === 'pending') {
+    if (ap && ap.status === 'pending' && approvalOn(env)) {
       const t = hashes.top; if (t && !ap.name) await env.DB.prepare('UPDATE approval SET name=?, world=?, level=? WHERE user_id=?').bind(t.name, t.world, t.level, userId).run();
       return json(200, { status: 'pending', newUser, user: userId.slice(0, 8), pending: { name: ap.name || t?.name || '', world: ap.world || t?.world || '', level: ap.level || t?.level || 0, requestedAt: ap.requested_at } });
     }
-    if (ap && ap.status !== 'ok') throw new HttpError(403, ap.status, STATUS_MSG[ap.status] || STATUS_MSG.blocked);
+    if (ap && gated(env, ap.status)) throw new HttpError(403, ap.status, STATUS_MSG[ap.status] || STATUS_MSG.blocked);
     const token = await newSession(env, userId, b.label);
     const row = await stateRow(env, userId);
     const v = newUser ? null : await vaultOpenAny(env, b.key, hashes, userId);

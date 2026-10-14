@@ -7,7 +7,7 @@ def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP'); print('FAILS: []'); sys.exit(0)
-NP, WP = 8895, 8894
+NP, WP = 8795, 8794
 def req(m,path,body=None,tok=None):
     h={'Content-Type':'application/json','Origin':'https://bossmaple.pages.dev',**({'Authorization':'Bearer '+tok} if tok else {})}
     r=urllib.request.Request(f'http://127.0.0.1:{WP}{path}',data=json.dumps(body).encode() if body is not None else None,method=m,headers=h)

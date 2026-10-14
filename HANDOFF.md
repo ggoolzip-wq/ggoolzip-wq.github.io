@@ -15,6 +15,16 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b132 (2026-10-14) — 가입 승인(관리자 승인) 임시 끄기 + 켜고 끄는 스위치
+- 시간(KST): 23:31–23:58 (코딩 약 9분 / 테스트 약 18분, 전체 테스트·서버 테스트 포함)
+- 예전(b68~): 처음 보는 대표 키로 로그인 → `approval(pending)` 행 + 세션 없음 → '⏳ 승인 대기 중', 관리자가 [승인] 해야 사용. 대기·거절·차단이면 세션도 403. 프런트는 서버 응답(status:'pending' / 403 pending)만 따름 — 프런트에 따로 막는 곳 없음.
+- **스위치**: `server/wrangler.toml` `[vars] APPROVAL_REQUIRED = "0"` → 승인 끔(지금). 다시 켜려면 `"1"` 로 바꾸고 `cd server && npx wrangler deploy` (Node 22 필요: /home/box/.local/node22/bin). 코드: worker.js `approvalOn(env)` · `gated(env,status)`.
+- 끔일 때: 새 가입에 approval 행을 만들지 않음 → 바로 세션·저장. 이미 대기(pending)인 사용자도 바로 로그인·세션 사용(approval 행은 지우거나 바꾸지 않음 → 다시 켜면 그 사람들은 다시 대기). 거절(rejected)·차단(blocked)은 끔이어도 그대로 막음(관리자가 직접 내린 결정). 끔 동안 가입한 사용자는 approval 행이 없으므로 다시 켜도 '승인됨'(b68 이전 사용자와 같음) — 막으려면 관리자 화면에서 강퇴.
+- 승인 코드(관리자 승인 화면·/api/admin/decide·대기 화면)는 그대로 둠.
+- 테스트: test_server_b132 (켬→끔→다시 켬, 같은 로컬 D1) 추가. cf_dev: approval=True 이면 APPROVAL_REQUIRED=1 명시(운영 toml 이 0 이라서), `persist=` 로 같은 D1 재사용. test_server_b94 포트 8895/8894 → 8795/8794 (8894 를 다른 것이 쓰고 있었음).
+- 참고: 이 상자에 Node 22 가 없어서 지금까지 서버(wrangler) 테스트가 전부 SKIP 이었음 → 이번에 /home/box/.local/node22 설치. 그랬더니 test_tracker23·25·46·49 가 **b132 이전 코드(HEAD)에서도** 실패함(동기화 자동 저장·부계정 캐릭터 이름 관련) — b132 와 무관, 아직 안 고침.
+- UI 변경 없음 → 스크린샷 없음.
+
 ## b131 (2026-10-14) — 이번 주 수익: 같은 보스·난이도 아이템 묶기
 - 시간(KST): 22:00–22:07 (코딩 약 3분 / 테스트 약 4분, 전체 테스트 포함)
 - 캐릭터별 보상 줄(`itemsInline` opts.bpic): 같은 보스·난이도끼리 `.dl.dlg` 1묶음 — 보스 줄(bossPic 20px + 배지 9px, 이름, 난이도) 1번, 그 밑에 아이템(`.dl.dli`)을 세로로(보스 이름 위치에 맞춰 30px 들여씀), **합친 금액**(`.dlrev`)은 마지막 아이템 바로 밑 1번.

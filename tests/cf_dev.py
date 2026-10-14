@@ -8,12 +8,13 @@ NODE_BIN=os.environ.get('WRANGLER_NODE_BIN','/home/box/.local/node22/bin')  # wr
 def available():
     return os.path.exists(os.path.join(SERVER,'node_modules','.bin','wrangler')) and os.path.exists(os.path.join(NODE_BIN,'node'))
 class Dev:
-    def __init__(self,port,nexon_port,no_pass=False,approval=False,extra=None):  # b68: approval=False → AUTO_APPROVE=1 (예전 테스트는 승인 없이), True → 가입 승인 흐름
-        self.port=port; self.dir=tempfile.mkdtemp(prefix='cfdev'); env=dict(os.environ,PATH=NODE_BIN+':'+os.environ.get('PATH',''),WRANGLER_SEND_METRICS='false',CI='1')
+    def __init__(self,port,nexon_port,no_pass=False,approval=False,extra=None,persist=None):  # b132: persist = 예전 Dev.dir 재사용(같은 D1로 설정만 바꿔 다시 띄움)
+         # b68: approval=False → AUTO_APPROVE=1 (예전 테스트는 승인 없이), True → 가입 승인 흐름
+        self.port=port; self.dir=persist or tempfile.mkdtemp(prefix='cfdev'); env=dict(os.environ,PATH=NODE_BIN+':'+os.environ.get('PATH',''),WRANGLER_SEND_METRICS='false',CI='1')
         w=os.path.join(SERVER,'node_modules','.bin','wrangler')
-        subprocess.run([w,'d1','execute','ggoolzip-sync','--local','--persist-to',self.dir,'--file=schema.sql'],cwd=SERVER,env=env,check=True,capture_output=True)
+        if not persist: subprocess.run([w,'d1','execute','ggoolzip-sync','--local','--persist-to',self.dir,'--file=schema.sql'],cwd=SERVER,env=env,check=True,capture_output=True)
         self.log=open(os.path.join(self.dir,'dev.log'),'w')
-        self.p=subprocess.Popen([w,'dev','--local','--ip','127.0.0.1','--port',str(port),'--persist-to',self.dir,'--var',f'NEXON_BASE:http://127.0.0.1:{nexon_port}',*([] if no_pass else ['--var',f'SITE_PASS_HASH:{TEST_PASS_HASH}']),*([] if approval else ['--var','AUTO_APPROVE:1']),*[x for k,v in (extra or {}).items() for x in ('--var',f'{k}:{v}')],'--show-interactive-dev-session=false'],
+        self.p=subprocess.Popen([w,'dev','--local','--ip','127.0.0.1','--port',str(port),'--persist-to',self.dir,'--var',f'NEXON_BASE:http://127.0.0.1:{nexon_port}',*([] if no_pass else ['--var',f'SITE_PASS_HASH:{TEST_PASS_HASH}']),*((['--var','APPROVAL_REQUIRED:1'] if 'APPROVAL_REQUIRED' not in (extra or {}) else []) if approval else ['--var','AUTO_APPROVE:1']),*[x for k,v in (extra or {}).items() for x in ('--var',f'{k}:{v}')],'--show-interactive-dev-session=false'],
                                 cwd=SERVER,env=env,stdout=self.log,stderr=subprocess.STDOUT,start_new_session=True)
         for _ in range(120):
             try: urllib.request.urlopen(f'http://127.0.0.1:{port}/api/health',timeout=1); return
