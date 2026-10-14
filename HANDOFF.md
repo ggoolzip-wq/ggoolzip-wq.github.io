@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b127 (2026-10-14) — 보스 드랍 테이블 난이도 = 게임 스케줄러 난이도 그림
+- 시간(KST): 20:31–20:41 (코딩 약 5분 / 테스트 약 5분, 전체 테스트 포함)
+- 이번 주 보스 행(보스 드랍 테이블)의 글자 난이도 pill → `diffImg(d)` 그림 (원본 68×18 그대로, `image-rendering:pixelated`). 다른 표(이번 주 수익·득템왕 등)는 그대로.
+- 출처(위컴알): https://media.maplestorywiki.net/yetidb/Boss_UI_Difficulty_-_Easy.png · …_Normal.png · …_Hard.png · …_Chaos.png · …_Extreme.png → `itemicons.json` `dif_easy…dif_extreme`.
+- 글자 난이도는 화면 밖 `.sr` 로 남김(innerText·검색·스크린리더, 예전 테스트 호환), title 도 난이도.
+- test95 (포트 8912) 추가, test42 의 "예전 pill 유지" 확인을 새 그림 확인으로 바꿈. 스크린샷 `b127_{before,after}_{row_lucid,row_slime,row_will,row_kaling,list}.png`, `b127_after_all_diffs.png`, 비교 `b127_diff_icons_side_by_side.png`.
+
 ## b126 (2026-10-14) — 이번 주 수익 아이템 줄: 보스 이름 앞에 보스 아이콘
 - 시간(KST): 20:23–20:31 (코딩 약 3분 / 테스트 약 5분, 전체 테스트 2번 — 첫 번째에서 inline-flex 때문에 줄 높이 29px로 test35·37·42 실패 → 인라인 + 위아래 음수 margin 으로 줄 높이 26px 이하 유지)
 - 이번 주 수익의 기록 아이템 줄(보스 · 아이템 · 판매 금액)에서 보스 이름 앞에 `bossPic(b,diff,false)` (= `bossIcon()` v4 아이콘 + 난이도 배지, 테두리 없음).

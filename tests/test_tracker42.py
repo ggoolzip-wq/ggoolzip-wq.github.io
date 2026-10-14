@@ -81,9 +81,9 @@ try:
     pg.set_viewport_size({'width':1280,'height':800}); pg.wait_for_timeout(500)
     pr=pg.evaluate("[[...document.querySelectorAll('.pricecard .pc-row')].every(r=>r.getBoundingClientRect().height<30),[...document.querySelectorAll('.pricecard .pc-nm')].every(n=>n.scrollWidth<=n.clientWidth+1)]")
     check('1280px 결정석 가격 한 줄·잘림 없음', all(pr), pr)
-    # 캐릭터 정보 보스 표는 예전 표기
-    bp=pg.evaluate("document.querySelector('.boss-list .bn .pill').innerText")
-    check('캐릭터 정보 보스 표: 예전 pill 표기 유지', bp in ('하드','노말'), bp)
+    # b127: 보스 드랍 테이블은 스케줄러 난이도 그림 (글자는 .sr)
+    bp=pg.evaluate("(e=>e&&[e.querySelector('.sr').innerText,!!e.querySelector('img')])(document.querySelector('.boss-list .bn .dimg'))")
+    check('보스 드랍 테이블: 난이도 그림 + 숨은 글자', bp and bp[0] in ('하드','노말') and bp[1], bp)
     # 녹옥 칩 (스우 노말)
     pg.evaluate("s=>{const x=JSON.parse(localStorage.getItem('mapleBossTracker.v1'));x.characters[0].bosses.lotus={enabled:true,diff:'normal',party:1};x.activeId='c0';localStorage.setItem('mapleBossTracker.v1',JSON.stringify(x))}"); pg.reload(); pg.wait_for_timeout(700)
     jc=pg.evaluate("(()=>{const l=[...document.querySelectorAll('.drop.off')].filter(e=>/녹옥/.test(e.innerText||e.title));return [l.length,l[0]&&l[0].getAttribute('aria-disabled'),document.querySelectorAll('.drop[data-drop*=r_green]').length]})()")

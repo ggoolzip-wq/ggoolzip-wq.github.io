@@ -1617,6 +1617,9 @@ function priceCard(){
     <div class="pc-foot muted">${esc(priceAutoText())}</div>
   </aside>`;
 }
+/* b127: 보스 드랍 테이블(이번 주 보스 행) 난이도 = 게임 보스 스케줄러 난이도 그림 (원본 68×18 픽셀 그대로).
+ * 출처: media.maplestorywiki.net/yetidb/Boss_UI_Difficulty_-_{Easy,Normal,Hard,Chaos,Extreme}.png (위컴알). 글자는 화면 밖 sr 로 남김(검색·테스트·스크린리더) */
+const diffImg=d=>ITEM_ICONS['dif_'+d]?`<span class="dimg" title="${D[d]}"><img src="${ITEM_ICONS['dif_'+d]}" alt="" width="68" height="18" aria-hidden="true"><span class="sr">${D[d]}</span></span>`:`<span class="pill">${D[d]}</span>`;
 function isDone(c,b){ return b.type==='weekly'?!!c.weekly[b.id]:!!c.monthly[b.id]; }
 function bossRow(c,b){
   const slot=b.id; const cfg=c.bosses[slot]||{enabled:false,diff:b.diffs[0],party:1};
@@ -1630,7 +1633,7 @@ function bossRow(c,b){
     </div>`;
   }
   return `<div class="boss ${done?'done':''}">
-    <div class="grow"><div class="bn">${bossPic(b,diff)}${esc(b.name)} <span class="pill">${D[diff]}</span>
+    <div class="grow"><div class="bn">${bossPic(b,diff)}${esc(b.name)} ${diffImg(diff)}
       ${cr&&!cr.counted?'<span class="pill err">한도 초과</span>':''}</div>
       ${dropsHtml(b,diff,c)}
     </div>
