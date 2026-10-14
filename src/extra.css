@@ -1208,6 +1208,8 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .chart.lux .cline{stroke-dasharray:1;stroke-dashoffset:1;animation:cdraw 1.1s cubic-bezier(.6,.05,.3,1) .05s forwards}
 .chart.lux .carea{opacity:0;animation:cfade .9s ease .35s forwards}
 .chart.lux .lpt,.chart.lux .mpt,.chart.lux .cval{opacity:0;animation:cfade .45s ease var(--d,.2s) forwards}
+/* b139: 화면에 들어오기 전엔 멈춤(.inview 붙으면 시작) */
+.chart.lux:not(.inview) .cline,.chart.lux:not(.inview) .carea,.chart.lux:not(.inview) .lpt,.chart.lux:not(.inview) .mpt,.chart.lux:not(.inview) .cval{animation-play-state:paused}
 @keyframes cdraw{to{stroke-dashoffset:0}}@keyframes cfade{to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.chart.lux .cline,.chart.lux .carea,.chart.lux .lpt,.chart.lux .mpt,.chart.lux .cval{animation:none;opacity:1;stroke-dashoffset:0}}
 #mbtTip.ctip{background:linear-gradient(160deg,rgba(38,31,24,.97),rgba(20,18,16,.97));border:1px solid rgba(255,179,71,.4);box-shadow:0 12px 32px rgba(0,0,0,.55),0 0 22px rgba(255,154,60,.18);color:#efe4d4;border-radius:12px;padding:10px 13px}

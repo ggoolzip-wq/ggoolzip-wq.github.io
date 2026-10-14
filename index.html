@@ -1315,6 +1315,8 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .chart.lux .cline{stroke-dasharray:1;stroke-dashoffset:1;animation:cdraw 1.1s cubic-bezier(.6,.05,.3,1) .05s forwards}
 .chart.lux .carea{opacity:0;animation:cfade .9s ease .35s forwards}
 .chart.lux .lpt,.chart.lux .mpt,.chart.lux .cval{opacity:0;animation:cfade .45s ease var(--d,.2s) forwards}
+/* b139: 화면에 들어오기 전엔 멈춤(.inview 붙으면 시작) */
+.chart.lux:not(.inview) .cline,.chart.lux:not(.inview) .carea,.chart.lux:not(.inview) .lpt,.chart.lux:not(.inview) .mpt,.chart.lux:not(.inview) .cval{animation-play-state:paused}
 @keyframes cdraw{to{stroke-dashoffset:0}}@keyframes cfade{to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.chart.lux .cline,.chart.lux .carea,.chart.lux .lpt,.chart.lux .mpt,.chart.lux .cval{animation:none;opacity:1;stroke-dashoffset:0}}
 #mbtTip.ctip{background:linear-gradient(160deg,rgba(38,31,24,.97),rgba(20,18,16,.97));border:1px solid rgba(255,179,71,.4);box-shadow:0 12px 32px rgba(0,0,0,.55),0 0 22px rgba(255,154,60,.18);color:#efe4d4;border-radius:12px;padding:10px 13px}
@@ -2115,6 +2117,12 @@ function missChart(rows, kind){
       <text class="cxl" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle" font-size="10">${r.date}</text></g>`).join('')}</svg></div>`;
 }
 let chartUid=0;
+/* b139: 그래프 그려지는 애니메이션은 화면에 들어올 때 시작 (그 전엔 멈춤·숨김). 렌더로 새로 생긴 .chart.lux 를 MutationObserver 로 잡아 IntersectionObserver 에 등록 */
+(()=>{ if(typeof document==='undefined') return; const inv=el=>el.classList.add('inview');
+  const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ inv(e.target); io.unobserve(e.target); } }),{threshold:.25}):null;
+  const scan=root=>(root.querySelectorAll?root.querySelectorAll('.chart.lux:not(.inview)'):[]).forEach(el=>io?io.observe(el):inv(el));
+  const start=()=>{ scan(document); new MutationObserver(ms=>{ for(const m of ms) for(const n of m.addedNodes) if(n.nodeType===1){ if(n.matches?.('.chart.lux')) scan(n.parentNode); else scan(n); } }).observe(document.body,{childList:true,subtree:true}); };
+  if(document.body) start(); else document.addEventListener('DOMContentLoaded',start); })();
 const missIcon = '<span class="missic" aria-hidden="true">!</span>', missIconM = '<span class="missic red" aria-hidden="true">!</span>';
 function missHtml(){ return `<div class="card"><h2>${missIcon} 지금까지 빠뜨린 보스메소는? (주간 Ver)</h2>${missChart(S.missW||[],'w')}</div>
   <div class="card"><h2>${missIconM} 지금까지 빠뜨린 보스메소는? (월간 Ver)</h2>${missChart(S.missM||[],'m')}</div>`; }

@@ -632,6 +632,12 @@ function missChart(rows, kind){
       <text class="cxl" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle" font-size="10">${r.date}</text></g>`).join('')}</svg></div>`;
 }
 let chartUid=0;
+/* b139: 그래프 그려지는 애니메이션은 화면에 들어올 때 시작 (그 전엔 멈춤·숨김). 렌더로 새로 생긴 .chart.lux 를 MutationObserver 로 잡아 IntersectionObserver 에 등록 */
+(()=>{ if(typeof document==='undefined') return; const inv=el=>el.classList.add('inview');
+  const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ inv(e.target); io.unobserve(e.target); } }),{threshold:.25}):null;
+  const scan=root=>(root.querySelectorAll?root.querySelectorAll('.chart.lux:not(.inview)'):[]).forEach(el=>io?io.observe(el):inv(el));
+  const start=()=>{ scan(document); new MutationObserver(ms=>{ for(const m of ms) for(const n of m.addedNodes) if(n.nodeType===1){ if(n.matches?.('.chart.lux')) scan(n.parentNode); else scan(n); } }).observe(document.body,{childList:true,subtree:true}); };
+  if(document.body) start(); else document.addEventListener('DOMContentLoaded',start); })();
 const missIcon = '<span class="missic" aria-hidden="true">!</span>', missIconM = '<span class="missic red" aria-hidden="true">!</span>';
 function missHtml(){ return `<div class="card"><h2>${missIcon} 지금까지 빠뜨린 보스메소는? (주간 Ver)</h2>${missChart(S.missW||[],'w')}</div>
   <div class="card"><h2>${missIconM} 지금까지 빠뜨린 보스메소는? (월간 Ver)</h2>${missChart(S.missM||[],'m')}</div>`; }
