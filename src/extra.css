@@ -1189,8 +1189,6 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .chart.lux{position:relative;padding:6px 4px 2px;border-radius:14px;background:radial-gradient(120% 90% at 50% 0%,rgba(255,154,60,.07),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0));box-shadow:inset 0 0 0 1px rgba(255,190,120,.08)}
 .chart.lux .ctot{position:absolute;top:10px;right:14px;display:flex;align-items:baseline;gap:6px;padding:4px 10px;border-radius:999px;background:linear-gradient(135deg,rgba(255,154,60,.18),rgba(255,217,120,.08));border:1px solid rgba(255,179,71,.35);box-shadow:0 0 18px rgba(255,154,60,.15);font-size:.72rem;color:#d9c3a5;z-index:1}
 .chart.lux .ctot b{font-size:.8rem;color:#ffd27a;letter-spacing:.01em}
-.chart.lux .cg{stroke:#fff;stroke-opacity:.06;stroke-dasharray:3 5}
-.chart.lux .cg0{stroke-opacity:.18;stroke-dasharray:none}
 .chart.lux .cax{fill:#8f8577;font-size:10px;font-variant-numeric:tabular-nums}
 .chart.lux .cxl{fill:#9a8f80;font-size:11px}
 .chart.lux .cxl.cur{fill:#ffc06a;font-weight:700}.chart.lux .cxl.sub{font-size:10px;font-weight:500}
@@ -1253,3 +1251,37 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 [data-theme="dark"] #mbtTip{background:linear-gradient(160deg,rgba(38,31,24,.97),rgba(20,18,16,.97));border-color:rgba(255,179,71,.35);box-shadow:0 12px 32px rgba(0,0,0,.55),0 0 18px rgba(255,154,60,.12)}
 [data-theme="dark"] header .hbtn{background:linear-gradient(180deg,rgba(255,154,60,.16),rgba(255,154,60,.06));border-color:rgba(255,179,71,.45);color:#ffd9a3}
 [data-theme="dark"] header .hbtn:hover{background:linear-gradient(180deg,rgba(255,154,60,.26),rgba(255,154,60,.1));box-shadow:0 0 14px rgba(255,154,60,.25)}
+
+/* b140: 더 고급스럽게 — 금속 골드, 노이즈 질감, 유리 카드, 세련된 글로우·구분선 (다크만, 배치 그대로) */
+[data-theme="dark"]{--gold-metal:linear-gradient(135deg,#fff1c4 0%,#ffd27a 22%,#c98a2e 48%,#ffe3a1 70%,#b8782a 100%);--gold-line:linear-gradient(90deg,transparent,rgba(255,210,122,.55) 20%,rgba(255,236,190,.85) 50%,rgba(255,210,122,.55) 80%,transparent)}
+[data-theme="dark"] body{background:
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .85 0 0 0 0 .6 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+  radial-gradient(1100px 520px at 50% -160px,rgba(255,170,70,.13),transparent 70%),
+  radial-gradient(900px 600px at 100% 100%,rgba(140,80,30,.10),transparent 70%),
+  linear-gradient(180deg,#1a1510,#120e0b) fixed}
+[data-theme="dark"] header{background:linear-gradient(180deg,rgba(44,33,23,.92),rgba(24,18,13,.92));box-shadow:0 8px 28px rgba(0,0,0,.5)}
+[data-theme="dark"] header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--gold-line);box-shadow:0 0 12px rgba(255,190,100,.45);pointer-events:none}
+[data-theme="dark"] header .logo{background:var(--gold-metal);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 8px rgba(255,180,80,.35));letter-spacing:.04em}
+[data-theme="dark"] nav.tabs button.on{border-image:linear-gradient(90deg,transparent,#ffd978 20%,#fff1c4 50%,#ffd978 80%,transparent) 1;filter:drop-shadow(0 2px 6px rgba(255,180,80,.35))}
+[data-theme="dark"] .card{position:relative;background:linear-gradient(165deg,rgba(255,236,200,.055),rgba(255,255,255,.012) 38%,rgba(0,0,0,.08)),rgba(34,27,21,.82);backdrop-filter:blur(10px) saturate(120%);-webkit-backdrop-filter:blur(10px) saturate(120%);border:1px solid rgba(255,196,120,.16);box-shadow:inset 0 1px 0 rgba(255,230,180,.09),inset 0 -1px 0 rgba(0,0,0,.35),0 14px 40px rgba(0,0,0,.42),0 0 0 1px rgba(0,0,0,.25)}
+[data-theme="dark"] .card::before{content:"";position:absolute;left:18px;right:18px;top:0;height:1px;background:var(--gold-line);opacity:.55;pointer-events:none;border-radius:1px}
+[data-theme="dark"] .card h2{color:#f8e9cf;text-shadow:0 1px 0 rgba(0,0,0,.5),0 0 18px rgba(255,180,90,.12)}
+[data-theme="dark"] .stat{background:linear-gradient(155deg,rgba(255,200,120,.09),rgba(255,255,255,.015) 55%,rgba(0,0,0,.1)),rgba(30,24,18,.9);border-color:rgba(255,196,120,.2);box-shadow:inset 0 1px 0 rgba(255,230,180,.08),0 6px 18px rgba(0,0,0,.25)}
+[data-theme="dark"] .stat .v.acc{background:var(--gold-metal);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 10px rgba(255,180,80,.3))}
+[data-theme="dark"] .boss{background:linear-gradient(100deg,rgba(255,220,170,.045),rgba(255,255,255,.008) 45%,rgba(0,0,0,.06)),rgba(36,29,22,.88);border-color:rgba(255,196,120,.14);box-shadow:inset 0 1px 0 rgba(255,230,180,.05)}
+[data-theme="dark"] .boss:hover{border-color:rgba(255,206,130,.42);box-shadow:inset 0 1px 0 rgba(255,230,180,.08),0 0 22px rgba(255,160,70,.16)}
+[data-theme="dark"] .boss.done{background:linear-gradient(100deg,rgba(60,200,120,.2),rgba(47,163,107,.06) 60%),rgba(30,34,26,.9);border-color:rgba(110,225,150,.55);box-shadow:inset 0 1px 0 rgba(190,255,210,.1),0 0 20px rgba(60,200,120,.16)}
+[data-theme="dark"] .char.on{border-color:transparent;background:linear-gradient(rgba(52,36,22,.95),rgba(40,28,18,.95)) padding-box,var(--gold-metal) border-box;box-shadow:0 0 22px rgba(255,170,70,.22)}
+[data-theme="dark"] .btn:not(.ghost):not(.plain):not(.danger){background-image:linear-gradient(180deg,#ffd27a,#f59a35 55%,#d9741c);box-shadow:inset 0 1px 0 rgba(255,250,230,.55),inset 0 -1px 0 rgba(120,50,0,.35),0 4px 16px rgba(255,150,50,.28);color:#2a1606;text-shadow:0 1px 0 rgba(255,235,200,.4)}
+[data-theme="dark"] th{color:transparent;background-image:var(--gold-metal);-webkit-background-clip:text;background-clip:text;border-bottom:1px solid rgba(255,196,120,.3)}
+[data-theme="dark"] thead tr{background:linear-gradient(180deg,rgba(255,200,120,.06),transparent)}
+[data-theme="dark"] tbody tr:hover{background:linear-gradient(90deg,transparent,rgba(255,170,70,.07),transparent)}
+[data-theme="dark"] hr{border:0;height:1px;background:var(--gold-line);opacity:.5}
+[data-theme="dark"] #mbtTip,[data-theme="dark"] #mbtTip.ctip{backdrop-filter:blur(10px);background:linear-gradient(160deg,rgba(48,37,26,.93),rgba(20,16,12,.95));border:1px solid rgba(255,206,130,.45);box-shadow:inset 0 1px 0 rgba(255,235,190,.15),0 14px 36px rgba(0,0,0,.6),0 0 26px rgba(255,160,70,.2)}
+/* b140: 그래프 격자 — 골드 그라데이션 격자(속성 stroke 사용), 굵은 빛나는 기준선, 눈금 */
+.chart.lux line.cg:not(.cg0){stroke-dasharray:4 4;stroke-width:1.1}
+.chart.lux line.cg0{stroke-width:2;filter:drop-shadow(0 0 4px rgba(255,180,80,.55))}
+.chart.lux .cyax{stroke-width:1.6}
+.chart.lux .ctick,.chart.lux .cytk{stroke:#ffd27a;stroke-opacity:.6;stroke-width:1.4}
+.chart.lux .cax{fill:#c9a978}
+.chart.lux .cxl{fill:#bba88c}
