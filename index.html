@@ -1117,8 +1117,9 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 .gblk-h .gmark{width:17px;height:17px;image-rendering:pixelated;vertical-align:-2px;margin-right:6px;flex:none;display:inline-block}
 .gblk-h .gmark0{font-size:15px;line-height:17px;text-align:center}
 /* zosu: 🔄 동기화 끝 → 버튼 옆 초록 '새로고침 완료!' (3초 뒤 서서히 사라짐) */
-.syncdone{color:#4ade80;font-size:13px;font-weight:600;margin-left:6px;transition:opacity .6s;opacity:1}
-.syncdone.out{opacity:0}
+.syncdone{color:#4ade80;font-size:12px;font-weight:600;margin-left:6px;white-space:nowrap;letter-spacing:-.2px;flex:0 0 auto}
+.syncdone.run{color:#9aa3b2}.syncdone.part{color:#f5a524}.syncdone.fail{color:#f87171}
+.charh{white-space:nowrap}
 /* zosu-ui: 로그인 전 '+ 추가' 본계정 키 칸 아래 'API 발급 : 링크' 한 줄 */
 .svmapi{margin-top:6px;font-size:11.5px;line-height:1.4;overflow-wrap:anywhere}
 .svmapi a{color:inherit;text-decoration:underline}
@@ -2209,7 +2210,7 @@ const SYNC_CONC=6, SYNC_LIST_TTL_MS=10*60e3, SYNC_BASIC_TTL_MS=10*60e3, SYNC_MED
 const LOAD_SYNC_GAP_MS=3e3, LOAD_SYNC_KEY='mapleBossTracker.loadSyncAt'; // 페이지 열 때 자동 동기화 최소 간격 (아래 loadSyncDue)
 async function syncAll(opts={}){
   if(syncing) return; if(!hasApi()){ if(!opts.silent) toast('+ 추가에서 넥슨 API 키를 먼저 등록하세요'); return; }
-  syncing=true; renderHeaderSync(); let total=0, errs=0, assigned=0; const badAcc=new Set(), accMsgs=[];
+  syncing=true; renderHeaderSync(); syncLabel('run'); let total=0, errs=0, assigned=0; const badAcc=new Set(), accMsgs=[];
   try{
     // b107: 계정들은 키가 달라 동시에 (같은 키는 rateGate가 초당 5건 이하로). 목록은 10분 안에 받았고 모든 캐릭터 ocid가 있으면 건너뜀
     const vc=vchars(), fresh=a=>{ const L=listCache[a.id]; return L&&L.key===a.key&&Date.now()-L.at<SYNC_LIST_TTL_MS&&!opts.full&&vc.every(c=>c.accId!==a.id||c.ocid); };
@@ -2241,8 +2242,8 @@ async function syncAll(opts={}){
     S.settings.lastSync=Date.now(); save();
     // zosu: 성공 알림(toast) 대신 🔄 버튼 옆 초록 글자 '새로고침 완료!' (몇 초 뒤 사라짐). 실패(일부 캐릭터·계정 오류)는 계속 알림
     if(errs||accMsgs.length) toast((errs?`일부 캐릭터 동기화 실패 ${errs}`:'')+(errs&&accMsgs.length?' · ':'')+(accMsgs.length?`계정 오류: ${accMsgs.join(', ')}`:''));
-    if(!opts.silent) syncDoneFlash();
-  }catch(e){ if(!opts.silent) toast('동기화 실패: '+e.message); save(); }
+    syncLabel(errs||accMsgs.length?'part':'ok');
+  }catch(e){ syncLabel('fail'); if(!opts.silent) toast('동기화 실패: '+e.message); save(); }
   finally{ syncing=false; render(); }
 }
 
@@ -2429,8 +2430,16 @@ function render(){ if(!TABS.includes(tab)) tab='boss'; syncTabs();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length){ $('#view').innerHTML=emptyView(); renderResetInfo(); return; }
   ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),guild:renderGuild})[tab](); if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); renderResetInfo(); }
-function syncDoneFlash(){ const b=$('#syncBtn'); if(!b) return; let f=$('#syncDone'); if(!f){ f=document.createElement('span'); f.id='syncDone'; f.className='syncdone'; f.setAttribute('role','status'); b.after(f); }
-  f.textContent='새로고침 완료!'; f.classList.remove('out'); clearTimeout(syncDoneFlash.t); syncDoneFlash.t=setTimeout(()=>f.classList.add('out'),3000); }
+/* b108: 🔄 옆 상태 글자 — 동기화 중 '새로고침 중입니다..'(회색), 끝나면 초록 '새로고침 완료! HH:mm'(KST, 계속 표시),
+ * 일부 캐릭터·계정 오류면 주황 '일부 실패 HH:mm', 전체 실패면 빨강 '새로고침 실패 HH:mm' (오류 알림 toast 는 예전 그대로). 페이지 열 때 동기화도 같음 */
+let syncLbl=null; // {st:'run'|'ok'|'part'|'fail', at}
+function syncLabel(st,at){ syncLbl={st,at:at||Date.now()}; paintSyncLabel(); }
+function paintSyncLabel(){ const b=$('#syncBtn'); if(!b||!syncLbl||b.hidden) { $('#syncDone')?.remove(); return; }
+  let f=$('#syncDone'); if(!f){ f=document.createElement('span'); f.id='syncDone'; f.setAttribute('role','status'); f.setAttribute('aria-live','polite'); }
+  if(b.nextElementSibling!==f) b.after(f);
+  const k=kst(syncLbl.at), t=pad(k.getUTCHours())+':'+pad(k.getUTCMinutes()), M={run:['새로고침 중입니다..','run'],ok:['새로고침 완료! '+t,''],part:['일부 실패 '+t,'part'],fail:['새로고침 실패 '+t,'fail']}[syncLbl.st];
+  f.className='syncdone'+(M[1]?' '+M[1]:''); if(f.textContent!==M[0]) f.textContent=M[0]; }
+function syncDoneFlash(){ syncLabel('ok'); }
 /* 캐릭터 카드 제목 옆: 🔄 지금 동기화 아이콘 버튼 (API 키가 있을 때만, 넥슨 API 전용 — 구글 드라이브는 헤더 ☁ 버튼) */
 const SYNC_SVG=`<svg class="rot" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 function renderHeaderSync(){
@@ -2439,6 +2448,7 @@ function renderHeaderSync(){
   if(!b.querySelector('svg')) b.innerHTML=SYNC_SVG; // 아이콘만 (2026-10-10: 헤더 → 캐릭터 카드 제목 옆)
   b.title=syncing?'동기화 중…':`지금 동기화 (보스 클리어 자동 체크)\n마지막 동기화: ${st.lastSync?hm(st.lastSync)+' KST':'없음'}\n페이지를 열거나 새로고침할 때 자동 (${LOAD_SYNC_GAP_MS/1e3}초 안에 다시 열면 건너뜀)`;
   b.setAttribute('aria-label',syncing?'동기화 중':`지금 동기화 — 마지막 ${st.lastSync?hm(st.lastSync):'없음'}`);
+  paintSyncLabel();
 }
 
 /* ---------- 사용자 지정 순서 ----------
