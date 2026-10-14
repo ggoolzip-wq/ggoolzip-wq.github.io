@@ -1060,3 +1060,4 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - b112 후속 (15:19 KST): 동기화 서버(Worker ggoolzip-sync) 배포 완료 — 버전 ab5820ec. GET /api/prices 가 로그인 없이 200 + 공용 시세 반환 확인. 이제 모든 사용자·기기가 관리자가 갱신한 같은 시세를 봄.
 
 - b114 배포 (15:31 KST): GitHub secret CLOUDFLARE_API_TOKEN 이 무효(9109)라 deploy-pages 실패 → 봇 컴퓨터에서 새 토큰으로 `wrangler pages deploy` 직접 배포. GitHub secret 교체 필요.
+- b114 후속 (15:32 KST): GitHub secret CLOUDFLARE_API_TOKEN 을 새 토큰으로 교체 → deploy-pages 자동 배포 성공 확인.
