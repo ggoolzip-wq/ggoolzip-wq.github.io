@@ -53,12 +53,14 @@ try:
     # 화면 스크린샷: 메멘토 칩이 있는 첫 보스 행들
     for bid,nm in [('lucid','루시드'),('seren','세렌'),('kaling','카링')]:
         shot(pg.locator('.drops').locator('xpath=..').filter(has_text=nm).last,f'row_{bid}')
+    pg.evaluate("()=>{const d=document.createElement('div');d.id='bmShot';d.style.cssText='position:fixed;top:10px;left:10px;z-index:99999;padding:8px;background:var(--panel)';d.innerHTML='<b>검은 마법사 하드</b>'+dropsHtml(BOSSES.find(b=>b.id==='blackmage'),'hard',null);document.body.appendChild(d)}")
+    shot(pg.locator('#bmShot'),'row_blackmage_hard'); pg.evaluate("()=>document.getElementById('bmShot').remove()")
     shot(pg.locator('body'),'page')
     if not NOCHK:
         check('루시드 하드: 수에큐 8 · 실버 1', INFO.get('lucid')==['메멘토 수상한 에디셔널 큐브 8개','메멘토 실버 큐브 1개'], INFO)
         check('세렌 하드: 수에큐 8 · 골드 2', INFO.get('seren')==['메멘토 수상한 에디셔널 큐브 8개','메멘토 골드 큐브 2개'], INFO)
         check('카링 노멀: 골드 3 (수에큐 미확인 → 비움)', INFO.get('kaling')==['메멘토 골드 큐브 3개'], INFO)
-        check('검마 하드: 실버 8 (수에큐 상충 → 비움)', INFO.get('blackmage')==['메멘토 실버 큐브 8개'], INFO)
+        check('검마 하드: 수에큐 24 · 실버 8 (matsu1207/1173)', INFO.get('blackmage')==['메멘토 수상한 에디셔널 큐브 24개','메멘토 실버 큐브 8개'], INFO)
         check('매그너스 하드: 수에큐 1', INFO.get('magnus')==['메멘토 수상한 에디셔널 큐브 1개'], INFO)
         check('칼로스 카오스: 미확인 → 칩 없음', INFO.get('kalos')==[], INFO)
         n=pg.evaluate("document.querySelectorAll('.drops .memc').length")

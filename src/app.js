@@ -224,8 +224,8 @@ const ETERNAL = {
 };
 const eternalFor = (b,diff) => { const v=ETERNAL[b?.id]?.[diff]; return v?{k:v[0],n:v[1]}:null; };
 /* 확정 지급 메멘토 큐브 개수 (정보 표시 전용: 클릭·집계·수익 기록 없음). b=메멘토 수상한 에디셔널(브론즈 에디셔널) 큐브, s=메멘토 실버 큐브, g=메멘토 골드 큐브
- * 출처: 넥슨 공지 2026-09-17 큐브 지급 변경 표(matsu1207.tistory.com/1346 재수록, hoonjaelab·tamagotch 교차확인), 2026-03-19 도입 표(maple.ai.kr, dreaminfo.tistory.com/1397),
- *       나무위키 '큐브(메이플스토리)' 표 (2026-10-14 열람). 검증 안 된 값(나무위키 ❓, 출처 상충, 표에 없는 상위 난이도)은 넣지 않음 — 비워 둠.
+ * 단일 기준(b125, 사용자 지정): matsu1207.tistory.com/1173 '보스별 메멘토 큐브 획득량 정리' (수정일 2026-09-14, 보스 리워드 개편 반영; 2026-10-14 재열람).
+ * 그 표에 없는 보스·난이도(자쿰, 상위 난이도 등)와 'ㅡ' 칸은 칩 없음.
  * 아이콘(b124): 메멘토 큐브 전용 게임 아이콘 — 아이템 ID 2730034(메멘토 수상한(브론즈) 에디셔널 큐브 200제)·2711032(메멘토 실버 큐브 200제)·2711033(메멘토 골드 큐브 200제),
  *   maplestorywiki.net 'Use Memento … Cube.png' (게임 파일 추출본). 일반 큐브 아이콘 쓰지 말 것. */
 const MEMENTO_N={b:'메멘토 수상한 에디셔널 큐브',s:'메멘토 실버 큐브',g:'메멘토 골드 큐브'};
@@ -235,7 +235,7 @@ const MEMENTO = {
   lucid:{easy:{b:3},normal:{b:5},hard:{b:8,s:1}}, will:{easy:{b:3},normal:{b:5},hard:{b:8,s:1}},
   dusk:{normal:{b:5},chaos:{b:8,s:1}}, dunkel:{normal:{b:5},hard:{b:8,s:1}}, jinhilla:{normal:{b:5},hard:{b:8,s:1}},
   seren:{normal:{b:5,s:2},hard:{b:8,g:2}}, kalos:{easy:{b:8,g:2},normal:{g:3}}, adversary:{easy:{b:8,g:2},normal:{g:3}},
-  kaling:{easy:{b:8,g:2},normal:{g:3}}, star:{normal:{g:3}}, bellona:{easy:{g:2}}, blackmage:{hard:{s:8}}
+  kaling:{easy:{b:8,g:2},normal:{g:3}}, star:{normal:{g:3}}, bellona:{easy:{g:2}}, blackmage:{hard:{b:24,s:8}}
 };
 const mementoFor = (b,diff) => MEMENTO[b?.id]?.[diff]||null;
 const mementoHtml = m => m?['b','s','g'].filter(t=>m[t]).map(t=>`<span class="drop erda memc mc-${t}" aria-label="${esc(MEMENTO_N[t])} ${m[t]}개">${ITEM_ICONS['mc_'+t]?`<img src="${ITEM_ICONS['mc_'+t]}" alt="" aria-hidden="true">`:`<span class="ifb" aria-hidden="true">${'수실골'['bsg'.indexOf(t)]}</span>`}<b class="ecnt">${m[t]}</b></span>`).join(''):'';
