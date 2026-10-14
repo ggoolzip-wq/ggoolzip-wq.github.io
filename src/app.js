@@ -312,7 +312,7 @@ function openRevAll(){
   const c=activeChar(); if(!c) return; document.querySelector('#revAllModal')?.remove(); const rows=revAllRows(c);
   const el=document.createElement('div'); el.id='revAllModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','raTitle');
   el.innerHTML=`<div class="modal rabox"><h3 id="raTitle">수익 기록 전체 수정</h3>
-    <div class="raicons">${rows.map(x=>`<span class="raic" title="${esc(lootName(x.ik))}">${lootIco(x.ik)}</span>`).join('')||'<span class="muted">이번 주·이번 달 체크한 아이템이 없습니다.</span>'}</div>
+    <div class="raicons">${rows.filter((x,i)=>rows.findIndex(y=>icoId(y.ik)===icoId(x.ik))===i).map(x=>`<span class="raic" title="${esc(lootName(x.ik))}">${lootIco(x.ik)}</span>`).join('')||'<span class="muted">이번 주·이번 달 체크한 아이템이 없습니다.</span>'}</div>
     <div class="ralist">${raGroups(c,rows).map(g=>`<div class="ragrp"><span class="rabi" data-boss="${g.b.id}" title="${esc(g.b.name)}${g.d?' '+esc(D[g.d]||''):''}">${bossPic(g.b,g.d)}</span><div class="ragi">${g.items.map(([x,i])=>`<div class="rarow"><span class="raic">${lootIco(x.ik)}</span><span class="raname">${esc(lootName(x.ik))}${x.div>1?` <small class="muted">(${x.div}인 분배)</small>`:''}<small class="ram" data-ram="${i}">${x.m?meso(x.m):''}</small></span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" data-ra="${i}" value="${x.a}" aria-label="${esc(lootName(x.ik))} 판매 금액 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div></div>`).join('')}</div>
     <div class="rverr" id="raErr" role="alert"></div>
     <div class="rabtns"><button class="btn raok" data-rab="ok">전체 수정</button><button class="btn ghost" data-rab="cancel">취소</button></div></div>`;
@@ -1762,6 +1762,8 @@ function totalData(){
   return {weeks,months,wTotal,mTotal,grand:wTotal+mTotal,ring,byBoss,sales,chars:Object.values(chars).sort((a,b)=>(b.week+b.month)-(a.week+a.month)),items:Object.entries(items).sort((a,b)=>b[1].n-a[1].n)};
 }
 // 아이템 칩: 'cb:<장신구>' = 칠흑 상자에서 고른 장신구, 'ring:r4|c4' = 시드링 결과
+/* b117: 아이콘이 같은 아이템인지 (칠흑 상자 결과 cb:·x:·블빵 @w/@l 은 같은 아이템) */
+const icoId = k => lootBase(String(k||'').replace(/^x:/,'')).replace(/^cb:/,'');
 const lootSf = k => /@([wl])$/.exec(k)?.[1]||'', lootBase = k => k.replace(/@[wl]$/,'');
 const lootName0 = k => /^cb:/.test(k)?ITEMS[k.slice(3)].n : k==='ring:r4'?OUT_NAME.r4 : k==='ring:c4'?OUT_NAME.c4 : ITEMS[k].n;
 const lootName = k => /^x:/.test(k)?ITEMS[k.slice(2)].n+' · 꽝':lootName0(lootBase(k));

@@ -73,7 +73,7 @@ try:
     shot(pg.locator('#revAllModal .modal'),'revall')
     ins=pg.locator('.rarow input'); n=ins.count(); vals=['3','',''] 
     for i in range(n): ins.nth(i).fill(['3','4','5'][i])
-    pg.click('.raok'); pg.wait_for_timeout(300)
+    pg.click('.raok'); pg.wait_for_function("!document.querySelector('#revAllModal')",timeout=5000); pg.wait_for_timeout(300)
     d=pg.evaluate(f"(()=>{{const c=S.characters[0];return [c.drev['{keys[0]}'].m,c.drev['{keys[1]}'].m,c.drev['{kk}'].m,c.drev['{kk}'].p,!!pend]}})()")
     check('전체 수정 → 바로 저장(대기 없음), 입력값 = 내 몫 그대로(다시 나누지 않음)', pg.locator('#revAllModal').count()==0 and sorted(d[:3])==sorted([300000000,400000000,500000000]) and d[3]==2 and d[4]==False, d)
     check('저장된 상태(localStorage)에도 반영', pg.evaluate(f"JSON.parse(localStorage.getItem('mapleBossTracker.v1')).characters[0].drev['{kk}'].m")==500000000)
