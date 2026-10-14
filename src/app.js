@@ -1286,6 +1286,29 @@ function renderGuild(){
  * ===================================================================== */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+/* b141: 티르노그 디지털 액션 데미지 스킨(유닛) 골드(B안) 숫자 — 7세그먼트 SVG. 억/만 도 막대로 그린 글자. 정해진 4곳에만.
+ *  진짜 글자는 .tir-sr 에(복사·화면 낭독·innerText), 그림은 aria-hidden. 그라데이션·글로우는 문서에 1번 넣는 #tirDefs 공유 */
+const TIR_SEG={0:'abcdef',1:'bc',2:'abged',3:'abgcd',4:'fgbc',5:'afgcd',6:'afgedc',7:'abc',8:'abcdefg',9:'abcdfg'};
+const tirH=(x1,x2,y,t)=>{ const c=t/2; return `M${x1},${y}L${x1+c},${y-c}L${x2-c},${y-c}L${x2},${y}L${x2-c},${y+c}L${x1+c},${y+c}Z`; };
+const tirV=(x,y1,y2,t)=>{ const c=t/2; return `M${x},${y1}L${x+c},${y1+c}L${x+c},${y2-c}L${x},${y2}L${x-c},${y2-c}L${x-c},${y1+c}Z`; };
+function tirDigit(ch,ox){ const w=46,h=78,t=10,c=5,g=2,m=h/2, on=TIR_SEG[ch]||'';
+  const P={a:tirH(c+g,w-c-g,c,t),g:tirH(c+g,w-c-g,m,t),d:tirH(c+g,w-c-g,h-c,t),f:tirV(c,c+g,m-g,t),b:tirV(w-c,c+g,m-g,t),e:tirV(c,m+g,h-c-g,t),c:tirV(w-c,m+g,h-c-g,t)};
+  return `<g transform="translate(${ox} 0)">${'abcdefg'.split('').filter(k=>ch!=='1'||on.includes(k)).map(k=>`<path d="${P[k]}" class="${on.includes(k)?'tl':'tg'}"/>`).join('')}</g>`; }
+const TIR_UNIT={ // 억 = ㅇ(네모 막대) + ㅓ + ㄱ / 만 = ㅁ + ㅏ + ㄴ  (상자 70×78)
+  '억':[['V',5,8,36],['V',29,8,36],['H',5,29,8],['H',5,29,36],['V',62,3,44],['H',40,58,23],['H',8,62,55],['V',62,55,76]],
+  '만':[['V',5,6,38],['V',31,6,38],['H',5,31,6],['H',5,31,38],['V',44,2,46],['H',48,64,22],['V',8,50,74],['H',8,64,74]]};
+function tirUnit(u,ox){ const t=8; return `<g transform="translate(${ox} 0)">${TIR_UNIT[u].map(([k,a,b,cc])=>`<path class="tu" d="${k==='H'?tirH(a,b,cc,t):tirV(a,b,cc,t)}"/>`).join('')}</g>`; }
+function tirDefs(){ if(document.getElementById('tirDefs')) return; const d=document.createElement('div'); d.innerHTML=`<svg id="tirDefs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="tirG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaf0"/><stop offset=".5" stop-color="#ffe39a"/><stop offset="1" stop-color="#ffb347"/></linearGradient>
+  <linearGradient id="tirU" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset="1" stop-color="#e0952e"/></linearGradient>
+  <filter id="tirF" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="3" result="b"/><feFlood flood-color="#ff8a1e"/><feComposite in2="b" operator="in" result="gl"/><feMerge><feMergeNode in="gl"/><feMergeNode in="gl"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs></svg>`; document.body.appendChild(d.firstChild); }
+function tir(text,cls=''){ const T=String(text); let x=0, parts='';
+  for(const ch of T){ if(ch==='1'){ parts+=tirDigit(ch,x-20); x+=34; } else if(/[0-9]/.test(ch)){ parts+=tirDigit(ch,x); x+=54; } /* 1 은 좁게(빈 왼쪽 칸 없이) */ else if(TIR_UNIT[ch]){ x+=4; parts+=tirUnit(ch,x); x+=76; }
+    else if(ch==='.'||ch===','){ parts+=`<path class="tl" d="M${x+2},${ch==='.'?66:64}h11v11h-11z${ch===','?`M${x+5},77h7l-5,9h-5z`:''}"/>`; x+=18; }
+    else if(ch==='-'){ parts+=`<path class="tl" d="${tirH(x+2,x+40,39,10)}"/>`; x+=48; } else if(ch===' '){ x+=22; } }
+  const W=Math.max(1,x-8);
+  return `<span class="tir ${cls}"><span class="tir-sr">${esc(T)}</span><svg class="tir-g" viewBox="-6 -6 ${W+12} 98" style="--tw:${((W+12)/98).toFixed(3)}" aria-hidden="true" focusable="false">${parts}</svg></span>`; }
+const tirMeso = n => { const t=meso(n); return t.endsWith(' 메소')?tir(t.slice(0,-3))+'<span class="tir-u"> 메소</span>':tir(t); };
 function meso(n){
   n=Math.round(n||0); if(n===0) return '0 메소';
   const eok=Math.floor(n/1e8), man=Math.floor(n%1e8/1e4), rest=n%1e4;
@@ -1303,7 +1326,7 @@ const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','guild']; // �
 let tab=(()=>{ try{ const t=localStorage.getItem(TAB_KEY); return TABS.includes(t)?t:'boss'; }catch(e){ return 'boss'; } })(), bossFilter='weekly', editMode=false;
 
 function applyTheme(){ document.documentElement.dataset.theme='dark'; } // b67: 다크 전용 (라이트 모드·테마 버튼 삭제, 저장된 테마·시스템 설정 무시)
-function render(){ if(!TABS.includes(tab)) tab='boss'; syncTabs();
+function render(){ tirDefs(); if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length){ $('#view').innerHTML=emptyView(); renderResetInfo(); return; }
@@ -1555,7 +1578,7 @@ function renderBoss(){
         return ` <span class="expinc" title="${esc(`남은 예상 수익 — 이번 주 ${ex.done}/${S.settings.weeklyLimit} 처치, 남은 ${ex.left}칸을 아직 안 잡은 보스 중 1인당 결정석 가격 상위로 채울 때\n`+[...ex.list,...ex.mon].map(x=>`· ${x.monthly?'[월간] ':''}${bossTag(x)} ${meso(x.value)}`).join('\n'))}">${miniIcon('ipc')}예상 <b>${meso(ex.meso)}</b><small>(${[ex.list.length?`상위 ${ex.list.length}개`:'',ex.mon.length?`월간 ${ex.mon.length}개`:''].filter(Boolean).join(' + ')})</small>${(u=>u!==null&&u!==ex.meso?`<small class="exp-up">테섭 예정 → ${meso(u)}</small>`:'')(withUpcoming(()=>remainingWeekly(c).meso))}</span>`; })()}</div><div style="margin-top:4px;font-size:.85rem">${syncLine}</div></div></div>
     ${c.medal?.bad?`<div class="medalrow" role="alert" title="'${MEDAL_BAD}' 훈장 착용: ${esc((c.medal.where||[]).join(', '))}"><span class="mdico"><img src="${ITEM_ICONS.pcmedal||''}" alt="${MEDAL_BAD} 훈장" width="32" height="32"><span class="mdtri" aria-hidden="true">!</span></span><span class="mdtxt">프리미엄 PC방 훈장을 착용한 캐릭터 입니다.</span></div>`:''}
     <div class="stats s3">
-      <div class="stat"><div class="k">이번 주 주간 보스 수익</div><div class="v acc">${meso(r.meso+pWeekMonthly({c,r}).meso+pItemSale(c))}</div><div class="muted cisub" id="ciCry">결정석 ${meso(r.meso+pWeekMonthly({c,r}).meso)}</div><div class="muted cisub" id="ciSale">아이템 판매 ${meso(pItemSale(c))}</div></div>
+      <div class="stat"><div class="k">이번 주 주간 보스 수익</div><div class="v acc tirv">${tirMeso(r.meso+pWeekMonthly({c,r}).meso+pItemSale(c))}</div><div class="muted cisub" id="ciCry">결정석 ${meso(r.meso+pWeekMonthly({c,r}).meso)}</div><div class="muted cisub" id="ciSale">아이템 판매 ${meso(pItemSale(c))}</div></div>
       <div class="stat"><div class="k">주간 보스 처치</div><div class="v">${r.weekly} / ${lim}</div><div class="bar ${r.weekly>lim?'over':''}"><i style="width:${Math.min(100,r.weekly/lim*100)}%"></i></div></div>
       <div class="stat"><div class="k">이번달 검마${(ds=>ds.length?` <span class="mdate">(${ds.join(', ')} 격파 완료)</span>`:'')(Object.keys(c.monthly).map(k=>(c.mdate||{})[k]).filter(Boolean).map(d=>`${+d.slice(5,7)}월 ${+d.slice(8,10)}일`))}</div><div class="v">${monthlyCount(c)} / ${S.settings.monthlyLimit}${r.monthMeso?` <span class="mmeso">${meso(r.monthMeso)}</span>`:''}</div><div class="bar"><i style="width:${Math.min(100,monthlyCount(c)/S.settings.monthlyLimit*100)}%"></i></div></div>
       
@@ -1608,7 +1631,7 @@ function revPanel(a,cur){
     <h2>${miniIcon('meso')} 이번 주 수익</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
-      return `<div class="rp-total">${((cry+sale)/1e8).toFixed(1)}억<small> 메소</small></div>
+      return `<div class="rp-total tirv">${tir(((cry+sale)/1e8).toFixed(1)+'억')}<small> 메소</small></div>
     <div class="muted rp-line rp-cry"><span class="rpl">${miniIcon('ipc')} 주보 결정석 ${a.count}개 · ${miniIcon('ipcm')} 검마 결정석 ${wm.n}개</span><b class="rpn">${cry.toLocaleString()}</b></div>
     <div class="muted rp-line rp-sale"><span class="rpl">${topSaleIco()}이번주 획득 아이템 ${n}개</span><b class="rpn">${sale.toLocaleString()}</b></div>${weekRingLine()}`; })()}
     <div class="rp-sec">캐릭터별</div>
@@ -2060,9 +2083,9 @@ function renderTotal(){
   v.innerHTML=`<div class="grid"><div class="card">
     <h2>${miniIcon('ipc')} 누적 수입 <span class="muted" style="font-weight:500">${fmtWeek(S.startWeek).split(' ~')[0]}부터 · ${nW}주</span></h2>
     <div class="stats s3 kbig">
-      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc">${(n=>(n/1e8).toFixed(1)+'억')(T.grand)}</div><div class="muted" id="grandAvg">주 평균 ${Math.round(T.grand/Math.max(1,nW)).toLocaleString()} 메소</div></div>
-      <div class="stat"><div class="k"><span class="hbi">${bossIcon(bk?bk.b:findBoss('kaling'))}</span><span class="kt">주보 누적 메소량</span></div><div class="v">${(n=>(n/1e8).toFixed(1)+'억')(T.wTotal)}</div><div class="muted">주 평균 ${avg.toLocaleString()} 메소</div></div>
-      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="kt">검마 누적 메소량</span></div><div class="v">${T.mTotal?(n=>(n/1e8).toFixed(1)+'억')(T.mTotal):'-'}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc tirv">${tir((T.grand/1e8).toFixed(1)+'억')}</div><div class="muted" id="grandAvg">주 평균 ${Math.round(T.grand/Math.max(1,nW)).toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k"><span class="hbi">${bossIcon(bk?bk.b:findBoss('kaling'))}</span><span class="kt">주보 누적 메소량</span></div><div class="v tirv">${tir((T.wTotal/1e8).toFixed(1)+'억')}</div><div class="muted">주 평균 ${avg.toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="kt">검마 누적 메소량</span></div><div class="v tirv">${tir(T.mTotal?(T.mTotal/1e8).toFixed(1)+'억':'-')}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()} 메소</div></div>
     </div>
   </div>
   <div class="card"><h2>📈 주간 메소 그래프</h2>${cumLineChart(T.weeks,T,{perWeek:1})}</div>
@@ -2108,8 +2131,8 @@ function salesHtml(T){ // b76: '아이템 판매 누적 수익' — 아이템·�
   const best=Object.keys(top).sort((a,b)=>top[b]-top[a]||itemCmp(a,b))[0];
   const ico=best?`<span class="hbi">${lootIco(best)}</span>`:miniIcon('meso'), pl=p=>p>1?`${p}인 분배`:'1인';
   return `<div class="card" id="salesCard"><h2>${ico} 아이템 판매 누적 수익</h2>
-    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc">${tot?(tot/1e8).toFixed(1)+'억 메소':'-'}</div><div class="muted" id="salesAvg">주 평균 ${Math.round(tot/Math.max(1,T.weeks.length)).toLocaleString()} 메소</div></div></div>
-    ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot">${lootIco(i)}<span class="ln">${esc(lootName(i))}</span> <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm">${meso(o.m)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
+    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc tirv">${tot?tir((tot/1e8).toFixed(1)+'억')+'<span class="tir-u"> 메소</span>':tir('-')}</div><div class="muted" id="salesAvg">주 평균 ${Math.round(tot/Math.max(1,T.weeks.length)).toLocaleString()} 메소</div></div></div>
+    ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot">${lootIco(i)}<span class="ln">${esc(lootName(i))}</span> <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm tirv">${tirMeso(o.m)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
 function renderLoot(){
   const v=$('#view'); const T=totalData(), L=lootSummary(T);
   v.innerHTML=`<div class="grid"><div class="card" id="lootTop">

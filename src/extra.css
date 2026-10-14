@@ -1285,3 +1285,15 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .chart.lux .ctick,.chart.lux .cytk{stroke:#ffd27a;stroke-opacity:.6;stroke-width:1.4}
 .chart.lux .cax{fill:#c9a978}
 .chart.lux .cxl{fill:#bba88c}
+
+/* b141: 티르노그 골드 숫자 (정해진 4곳만) */
+.tir{display:inline;position:relative;white-space:nowrap}
+.tir-sr{display:inline-block;width:1px;height:1px;margin-right:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;vertical-align:baseline}
+/* 크기 = 기존 글자와 같게: 숫자 몸통(78/98) = 글자 숫자 높이(≈0.72em), 바닥 = 글자 기준선 */
+.tir-g{display:inline-block;height:.905em;width:calc(.905em * var(--tw));vertical-align:-.13em;overflow:visible;transform:skewX(-6deg)}
+.tir-g .tl{fill:url(#tirG);stroke:rgba(255,230,170,.9);stroke-width:1.2;filter:url(#tirF)}
+.tir-g .tg{fill:rgba(255,190,120,.13)}
+.tir-g .tu{fill:url(#tirU);stroke:rgba(255,220,150,.8);stroke-width:1.2;filter:url(#tirF)}
+.tirv{text-shadow:none!important;background:none!important;-webkit-background-clip:border-box!important;background-clip:border-box!important;filter:none!important}
+.v.tirv .tir-u{color:#ffd27a}
+.tir-u{color:inherit}
