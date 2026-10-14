@@ -1623,7 +1623,7 @@ let pcTab='price', pcKind='cry'; // b112: 가격 카드 탭 — 결정석 가격
 /* b112: 보스 드롭 표에서 수익 기록이 가능한 아이템 — 칠흑 상자 = 고른 장신구, 반지 상자 = 결과(리4·컨4·생명의 연마석). 정렬 = itemCmp(사용자 아이템 우선순위) */
 function revItems(){ const set=new Set();
   BOSSES.forEach(b=>b.diffs.forEach(d=>dropsFor(b,d).forEach(k=>{ if(k==='chaosbox') CHAOS_PICK.forEach(x=>set.add('cb:'+x)); else if(isRing(k)){ set.add('ring:r4'); set.add('ring:c4'); set.add('g_life'); } else set.add(k); })));
-  return [...set].sort(itemCmp); }
+  const seen=new Set(); return [...set].sort(itemCmp).filter(k=>{ const id=priceId(k); if(seen.has(id)) return false; seen.add(id); return true; }); } /* b114: 칠흑 상자 선택(cb:lcm)과 직접 드롭(lcm)은 같은 아이템·같은 시세 → 한 번만 */
 const priceId = k => String(k||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1');
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-pckind]'); if(!t) return; pcKind=t.dataset.pckind; const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } });
 function fullExpected(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit).reduce((s,x)=>s+x.value,0);
@@ -3305,7 +3305,10 @@ function admPriceSave(P){ const cur=admPrices(); for(const [k,o] of Object.entri
  * 받은 값이 비었거나 실패하면 아무것도 안 바꿈(admPriceSave 는 0·빈 값을 무시하고 더 새 시각만 덮음) */
 async function admPriceLoad(){ if(!svIsAdmin()) return; try{ const P=(await svFetch('/api/admin/prices')).prices; if(P&&typeof P==='object'&&Object.keys(P).length){ admPriceSave(P); if(typeof repaintPriceCard==='function'&&pcKind==='item') repaintPriceCard(); } }catch(e){} }
 // 페이지 값(억, 본섭) → {우리 키: {p: 메소, t}} — 본섭 값이 없거나 0 이하면 넣지 않음
-function maiMap(items,t){ const P={}; for(const [k,c] of Object.entries(MAI_CODE)){ const v=+(items?.[c]?.main); if(v>0) P[k]={p:Math.round(v*1e8),t}; } return P; }
+/* b114: 이름이 조금 달라도 맞춤 — 띄어쓰기·':'·괄호·'해머' 빼고, 얼굴장식→얼장·눈장식→눈장 으로 줄여 비교 */
+const maiNorm=n=>String(n||'').replace(/[\s:()\[\]·\-]/g,'').replace(/해머/g,'').replace(/얼굴장식/g,'얼장').replace(/눈장식/g,'눈장').replace(/귀걸이/g,'귀고리');
+function maiMap(items,t){ const P={}, by={}; for(const [n,o] of Object.entries(items||{})) by[maiNorm(n)]=o;
+  for(const [k,c] of Object.entries(MAI_CODE)){ const v=+((items?.[c]||by[maiNorm(c)])?.main); if(v>0) P[k]={p:Math.round(v*1e8),t}; } return P; }
 // b106: 대기 없이 바로 요청 (하루 1회 접속, 같은 날은 캐시)
 async function admPriceRun(){
   if(!svIsAdmin()||admPriceBusy) return;
