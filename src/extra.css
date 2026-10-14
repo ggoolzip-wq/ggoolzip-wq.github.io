@@ -1161,7 +1161,13 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .drop.memc.mc-s .ecnt{background:#7c8794}
 .drop.memc.mc-g .ecnt{background:#c9971c}
 /* b126 이번 주 수익 아이템 줄: 보스 이름 앞 bossPic = .rp-boss 와 같은 20px + 9px 배지 */
-.rp-items .dlb .bpic{margin:-4px 3px -4px 0;vertical-align:middle}
+.rp-items .dlb .bpic{margin:0 3px 0 0;vertical-align:middle}
+/* b128: 금액은 아이템 바로 밑(.dlcol = 아이템 줄 + 금액 세로), 보스 초상화는 위쪽 정렬 → 아이콘·배지가 금액과 겹치지 않음 */
+.rp-items .dl:has(.bpic){display:inline-flex;align-items:flex-start;padding-top:3px;line-height:20px}
+.rp-items .dl:has(.bpic)>.dlb{flex:none;white-space:nowrap}
+.rp-items .dlcol{display:inline-flex;flex-direction:column;align-items:flex-start}
+.rp-items .dlcol>.dlt{line-height:20px}
+.rp-items .dlcol>.dlrev{line-height:15px;padding-left:2px}
 .rp-items .dlb .bicon{width:20px;height:20px;border-radius:4px;margin:0;box-shadow:none}
 .rp-items .dlb .bpic>.dbadge{width:9px;height:9px;line-height:9px;font-size:6.5px;left:-3px;top:-3px;border-radius:2px}
 .rp-items .dlb .dbadge.db-extreme{min-width:9px;padding:0 1px}

@@ -64,6 +64,15 @@ try:
         check('주보 게이지 밑 아이콘과 같은 크기 (아이콘·배지)', R['gauge'] and all(x['sz']==R['gauge'] and x['bd']==R['gb'] for x in L), (R['gauge'],R['gb'],[(x['sz'],x['bd']) for x in L]))
         okSrc=all(any(x['src']==v for v in R['icons'].values()) for x in L if x['t'].startswith(('루시드','카링','선택받은')))
         check('bossIcon() 의 v4 아이콘 사용 + 난이도 배지', okSrc and all('db-' in x['d'] for x in L), [(x['t'],x['d']) for x in L])
+    if not NOCHK:
+        ov=pg.evaluate("""(()=>{const bad=[];const R=e=>e.getBoundingClientRect();
+          const pics=[...document.querySelectorAll('.revpanel .rp-items .bpic')];
+          const others=[...document.querySelectorAll('.revpanel .rp-items .dlrev, .revpanel .rp-items .dlt, .revpanel .rp-items .dlb')];
+          for(const p of pics){ for(const part of [p.querySelector('.bicon'),p.querySelector('.dbadge')]){ if(!part) continue; const a=R(part);
+            for(const o of others){ if(o.contains(p)||o.closest('.dl')===p.closest('.dl')&&!o.classList.contains('dlrev')) continue; const b=R(o);
+              if(a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1) bad.push([part.className,o.className,o.innerText.slice(0,20)]); } } }
+          return bad})()""")
+        check('b128 보스 아이콘·배지가 아래 금액 줄·다른 줄과 안 겹침', not ov, ov[:5])
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

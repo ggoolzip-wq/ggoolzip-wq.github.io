@@ -791,7 +791,9 @@ function itemsInline(items, opts={}){
   const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; }, ii=it=>Object.keys(ITEMS).indexOf(it);
   const ks=Object.keys(agg).sort((x,y)=>{ const X=meta[x], Y=meta[y]; return (opts.byBoss?bi(X.slot)-bi(Y.slot):0) || ii(X.it)-ii(Y.it) || X.party-Y.party || String(X.mode).localeCompare(String(Y.mode)); });
   if(!ks.length) return opts.empty??'';
-  return `<span class="dls">${ks.map(a=>{ const {slot,it,party,mode,rev}=meta[a]; const h=dropLine(it,party,agg[a],outs[a],opts.byBoss?(findBoss(slot)?.name||''):'',mode,opts.byBoss&&opts.diffOf?opts.diffOf(slot):'',opts.bpic&&opts.byBoss?findBoss(slot):null); return rev?`<span class="dlw">${h}<span class="dlrev">${meso(rev)}</span></span>`:h; }).join('')}</span>`;
+  return `<span class="dls">${ks.map(a=>{ const {slot,it,party,mode,rev}=meta[a]; const h=dropLine(it,party,agg[a],outs[a],opts.byBoss?(findBoss(slot)?.name||''):'',mode,opts.byBoss&&opts.diffOf?opts.diffOf(slot):'',opts.bpic&&opts.byBoss?findBoss(slot):null); if(rev&&opts.bpic&&h.includes('<span class="dlt">')){ // b128: 이번 주 수익 — 금액을 보스 초상화 밑이 아니라 아이템(아이콘·이름) 바로 밑에
+      const i=h.lastIndexOf('</span>'); return h.replace('<span class="dlt">','<span class="dlcol"><span class="dlt">').slice(0,i+'<span class="dlcol">'.length)+`<span class="dlrev">${meso(rev)}</span></span>`+'</span>'; }
+    return rev?`<span class="dlw">${h}<span class="dlrev">${meso(rev)}</span></span>`:h; }).join('')}</span>`;
 }
 const fmtMonth = m => { const [y,mm]=String(m).split('-'); return `${y}년 ${+mm}월`; };
 

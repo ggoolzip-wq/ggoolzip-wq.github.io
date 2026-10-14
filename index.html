@@ -1268,7 +1268,13 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .drop.memc.mc-s .ecnt{background:#7c8794}
 .drop.memc.mc-g .ecnt{background:#c9971c}
 /* b126 이번 주 수익 아이템 줄: 보스 이름 앞 bossPic = .rp-boss 와 같은 20px + 9px 배지 */
-.rp-items .dlb .bpic{margin:-4px 3px -4px 0;vertical-align:middle}
+.rp-items .dlb .bpic{margin:0 3px 0 0;vertical-align:middle}
+/* b128: 금액은 아이템 바로 밑(.dlcol = 아이템 줄 + 금액 세로), 보스 초상화는 위쪽 정렬 → 아이콘·배지가 금액과 겹치지 않음 */
+.rp-items .dl:has(.bpic){display:inline-flex;align-items:flex-start;padding-top:3px;line-height:20px}
+.rp-items .dl:has(.bpic)>.dlb{flex:none;white-space:nowrap}
+.rp-items .dlcol{display:inline-flex;flex-direction:column;align-items:flex-start}
+.rp-items .dlcol>.dlt{line-height:20px}
+.rp-items .dlcol>.dlrev{line-height:15px;padding-left:2px}
 .rp-items .dlb .bicon{width:20px;height:20px;border-radius:4px;margin:0;box-shadow:none}
 .rp-items .dlb .bpic>.dbadge{width:9px;height:9px;line-height:9px;font-size:6.5px;left:-3px;top:-3px;border-radius:2px}
 .rp-items .dlb .dbadge.db-extreme{min-width:9px;padding:0 1px}
@@ -2193,7 +2199,9 @@ function itemsInline(items, opts={}){
   const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; }, ii=it=>Object.keys(ITEMS).indexOf(it);
   const ks=Object.keys(agg).sort((x,y)=>{ const X=meta[x], Y=meta[y]; return (opts.byBoss?bi(X.slot)-bi(Y.slot):0) || ii(X.it)-ii(Y.it) || X.party-Y.party || String(X.mode).localeCompare(String(Y.mode)); });
   if(!ks.length) return opts.empty??'';
-  return `<span class="dls">${ks.map(a=>{ const {slot,it,party,mode,rev}=meta[a]; const h=dropLine(it,party,agg[a],outs[a],opts.byBoss?(findBoss(slot)?.name||''):'',mode,opts.byBoss&&opts.diffOf?opts.diffOf(slot):'',opts.bpic&&opts.byBoss?findBoss(slot):null); return rev?`<span class="dlw">${h}<span class="dlrev">${meso(rev)}</span></span>`:h; }).join('')}</span>`;
+  return `<span class="dls">${ks.map(a=>{ const {slot,it,party,mode,rev}=meta[a]; const h=dropLine(it,party,agg[a],outs[a],opts.byBoss?(findBoss(slot)?.name||''):'',mode,opts.byBoss&&opts.diffOf?opts.diffOf(slot):'',opts.bpic&&opts.byBoss?findBoss(slot):null); if(rev&&opts.bpic&&h.includes('<span class="dlt">')){ // b128: 이번 주 수익 — 금액을 보스 초상화 밑이 아니라 아이템(아이콘·이름) 바로 밑에
+      const i=h.lastIndexOf('</span>'); return h.replace('<span class="dlt">','<span class="dlcol"><span class="dlt">').slice(0,i+'<span class="dlcol">'.length)+`<span class="dlrev">${meso(rev)}</span></span>`+'</span>'; }
+    return rev?`<span class="dlw">${h}<span class="dlrev">${meso(rev)}</span></span>`:h; }).join('')}</span>`;
 }
 const fmtMonth = m => { const [y,mm]=String(m).split('-'); return `${y}년 ${+mm}월`; };
 
