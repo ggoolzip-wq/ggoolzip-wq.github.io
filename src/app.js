@@ -650,7 +650,18 @@ function resetCore(){
   return {changed,msgs};
 }
 
-function checkResets(){ const r=resetCore(); const bf=missBackfill(); if(r.changed||bf) missSync(); if(r.changed||bf){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
+/* b134: 2026-10-15 목 리셋 직후 b133 버그로 꺼진 등록 복구 (캐릭터마다 1번, c.b134 표시).
+ *  근거 = 실제 기록만: 지난 주 주간 기록(S.history)의 그 캐릭터 처치 보스 '이름(난이도)'. 꺼져 있거나 없는 보스를 그 난이도로 다시 켬(파티 인원은 남은 값).
+ *  지어낸 값 없음. 이후 이번 주 스케줄러 응답이 오면 그 목록이 우선(목록에 없으면 다시 꺼짐). */
+function b134Restore(){ let n=0; const wk=S.period?.week; if(!wk) return 0;
+  const last=(S.history||[]).filter(h=>h.week&&h.week<wk).sort((a,b)=>a.week<b.week?1:-1)[0]; if(!last) return 0;
+  for(const c of S.characters||[]){ if(c.b134) continue; c.b134=1;
+    const pc=(last.perChar||[]).find(p=>p.id===c.id); if(!pc) continue;
+    for(const t of pc.bosses||[]){ const m=/^(.+?)\((.+?)\)/.exec(t); if(!m) continue; const b=BOSSES.find(x=>x.name===m[1]), d=DK[m[2]];
+      if(!b||b.type!=='weekly'||!b.diffs.includes(d)) continue; const cfg=c.bosses[b.id];
+      if(cfg?.enabled) continue; c.bosses[b.id]={enabled:true,diff:d,party:cfg?.party||1}; clampParty(c,b.id); n++; } }
+  return n; }
+function checkResets(){ const r=resetCore(); if(b134Restore()) r.changed=true; const bf=missBackfill(); if(r.changed||bf) missSync(); if(r.changed||bf){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
 // 다른 상태 객체(드라이브 데이터 등)도 지금 주·월로 넘김 (지난 주 체크 → 기록으로 보관 후 초기화) — 병합 전에 양쪽 기준을 맞춤
 function rollPeriod(x){ const keep=S; try{ S=x; resetCore(); } finally{ S=keep; } return x; }
 
@@ -1004,7 +1015,8 @@ function applyScheduler(c, data){
   }
   // 보스 목록은 스케줄러만 따름: 매칭된 보스가 1개라도 있을 때만, 거기 없는 보스는 끔 (이번 주/달 이미 체크한 건 유지, 파티·드롭 기록은 남김).
   // b133: boss_contents 가 일일만 있거나 매칭 실패만 있으면 seen 이 비어 전부 끄던 것 방지 — 매칭된 게 있을 때만 끔.
-  if(Object.keys(seen).length) for(const [id,cfg] of Object.entries(c.bosses||{})){
+  // b134: 이번 주 응답(date ≥ 이번 주 시작)일 때만 끔 — 접속 안 한 캐릭터의 지난 주 응답(stale)은 등록 판단 근거가 아님(등록은 그대로 둠)
+  if(Object.keys(seen).length && !staleWeek) for(const [id,cfg] of Object.entries(c.bosses||{})){
     if(!cfg?.enabled||seen[id]) continue; const b=findBoss(id); if(!b) continue;
     if(isDone(c,b)) continue; cfg.enabled=false;
   }
