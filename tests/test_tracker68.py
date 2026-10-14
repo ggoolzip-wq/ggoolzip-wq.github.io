@@ -51,7 +51,7 @@ try:
         t0=time.time(); btn.click(); pg.wait_for_timeout(300)
         check('busy message while waiting', 'maple.ai.kr' in pg.inner_text('#admPrice'), pg.inner_text('#admPrice'))
         pg.wait_for_function("!admPriceBusy",timeout=10000)
-        check('human-like: request ≥1s after click (random 1.2~4.5s), exactly 1 request', len(saved['mai'])==1 and 1.0<=saved['mai'][0]-t0<=5.0, [round(x-t0,2) for x in saved['mai']])
+        check('b106: request right after click (no wait), exactly 1 request', len(saved['mai'])==1 and 0<=saved['mai'][0]-t0<=1.0, [round(x-t0,2) for x in saved['mai']])
         check('results saved to Worker (PUT /api/admin/prices)', saved['puts']>=1 and saved['prices'].get('eye',{}).get('p')==2928000000, saved)
         check('status shown in admin window (3 mapped; 데브팬·자석펫 not in map)', '3개 갱신' in pg.inner_text('#admPrice') and '2026-10-12' in pg.inner_text('#admPrice'), pg.inner_text('#admPrice'))
         check('only mapped drop items saved (eye·papmark·ring_r4)', sorted(saved['prices'])==['eye','papmark','ring_r4'], saved['prices'])
