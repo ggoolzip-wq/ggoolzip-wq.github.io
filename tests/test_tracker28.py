@@ -105,7 +105,7 @@ try:
     # b31
     pg.evaluate("S.characters[0].drops['kaling|r_white']=1; S.characters[0].dropOut['kaling|r_white']=['r4']; S.history.push({week:'2026-10-01',weeklyOnly:true,total:0,perChar:[{id:'c1',name:'단풍용사',meso:0,bosses:['카링(하드)'],items:{'kaling|chaosbox':1,'seren|mitra':1},outcomes:{'kaling|chaosbox':['cb:sos']}}]}); save(); render()"); pg.wait_for_timeout(200)
     h=pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.textContent.trim())')
-    check('renamed headings', any(x.startswith('📈 주별 누적 결정석 메소') for x in h) and any(x.endswith('메소왕') for x in h) and any(x.split(' ')[-1]=='득템왕' for x in h), h)  # b88: 제목 앞 아바타 글자(이미지 없을 때) 허용
+    check('renamed headings', any(x.startswith('📈 주간 메소 그래프') for x in h) and any(x.endswith('메소왕') for x in h) and any(x.split(' ')[-1]=='득템왕' for x in h), h)  # b88: 제목 앞 아바타 글자(이미지 없을 때) 허용
     order=[x for x in h if x.endswith('에픽빔왕') or x.endswith('보스 별 누적 획득 아이템') or x.endswith('총 아이템 획득량')]
     check('new sections below 에픽빔 in order', len(order)==3 and order[0].endswith('에픽빔왕') and order[1].endswith('획득 아이템') and order[2].endswith('획득량'), order)
     rows=pg.eval_on_selector_all('.bossloot .blrow','e=>e.map(x=>x.innerText.split(String.fromCharCode(10)).join(" "))')
@@ -118,7 +118,7 @@ try:
     pg.locator('#view').screenshot(path='/workspace/shots/b31.png') if SHOTDIR else None
     # b32
     th=pg.eval_on_selector_all('#mesoKing th','e=>e.map(x=>x.textContent)')
-    check('character table labels renamed', th==['순위','캐릭터','누적 주간 보스메소량','누적 월간 보스메소량','누적 합계'], th)
+    check('character table labels renamed', th==['순위','캐릭터','누적 주간 메소량','누적 월간 메소량','누적 합계'], th)
     rs=pg.inner_text('.ringsum')
     exp4=pg.evaluate("(()=>{const p=ring4('r_white');return [(p.r4/100).toFixed(2),(p.c4/100).toFixed(2)]})()")
     check('시드링: no (결과를 기록한 N회 기준), shows 기댓값 = boxes × official prob', '결과를 기록한' not in rs and f'기댓값 리4 {exp4[0]}개 · 컨4 {exp4[1]}개' in rs, (rs,exp4))

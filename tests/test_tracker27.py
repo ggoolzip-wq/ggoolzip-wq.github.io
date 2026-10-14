@@ -47,9 +47,9 @@ try:
     for slot,name in [('papulatus','drops_papulatus_chaos.png'),('magnus','drops_magnus_hard.png'),('seren','drops_seren_hard.png')]:
         shot(pg.locator('.boss',has=pg.locator(f'[data-party="{slot}"]')),name)
     rp=pg.inner_html('.revpanel'); rt=pg.inner_text('.revpanel')
-    check('income panel: meso icon heading, 검은 마법사 icon (no 🌙), items line between 월간 and 캐릭터별 with chaos-box icon, no +1 hint',
-          pg.locator('.revpanel h2 img').count()==1 and '🌙' not in rt and '🎁' not in rt and '+1' not in rt and pg.locator('.rp-items-n img').count()==1
-          and rp.index('rp-items-n')<rp.index('캐릭터별') and (rp.find('rp-month')<0 or rp.index('rp-month')<rp.index('rp-items-n')), rt[:200])
+    check('income panel: meso icon heading, 검은 마법사 icon (no 🌙), (b110) 결정석 줄(주간·월간 아이콘)+아이템 판매 줄, no +1 hint',
+          pg.locator('.revpanel h2 img').count()==1 and '🌙' not in rt and '🎁' not in rt and '+1' not in rt and pg.locator('.rp-cry img').count()==2
+          and rp.index('rp-sale')<rp.index('캐릭터별') and rp.index('rp-cry')<rp.index('rp-sale'), rt[:200])
     shot(pg.locator('.revpanel'),'income_panel.png')
     # A buttons
     check('취소/저장 disabled by default', pg.is_disabled('#pendCancel') and pg.is_disabled('#pendSave'))

@@ -65,7 +65,7 @@ try:
     pg.click('#pendSave'); pg.wait_for_timeout(200); pg.click('[data-tab="total"]'); pg.wait_for_timeout(300); pg.evaluate("(()=>{if(window.__sh)return;window.__sh=1;const v=document.querySelector('#view');const o=render;window.render=function(){if(tab!=='total')return o.apply(this,arguments);renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()")
     rows=pg.eval_on_selector_all('.bossloot .blrow','e=>e.map(x=>x.innerText.split(String.fromCharCode(10)).join(" "))'); tot=pg.inner_text('.itemtot')
     check('수익 분석: boss row + 총 아이템 획득량 include 생명의 연마석', any(r.startswith('림보') and '생명의 연마석 x1' in r for r in rows) and '생명의 연마석 x1' in tot.replace('\n',' ') and '생명의 보스 반지 상자 x1' in tot.replace('\n',' '), (rows,tot))
-    vt=pg.inner_text('#view'); check('수익 분석: no Drive storage sentence, no stray punctuation', '드라이브' not in vt and '기록).' in vt and '. .' not in vt)
+    vt=pg.inner_text('#view'); check('수익 분석: no Drive storage sentence, no stray punctuation', '드라이브' not in vt and '결정석 판매 금액만' not in vt and '. .' not in vt)
     check('시드링 summary lists 연마석 outcome', '생명의 연마석' in pg.inner_text('.ringsum'))
     pg.click('[data-drop="kaling|chaosbox"]') if False else None
     pg.click('[data-tab="boss"]'); pg.wait_for_timeout(150)

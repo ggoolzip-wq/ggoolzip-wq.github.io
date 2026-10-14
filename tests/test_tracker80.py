@@ -1,4 +1,4 @@
-# b109: 이름 '메이플 보스 수익 기록 - 메보수'·왼쪽 위 '메보수'(→ 이번 주 보스 탭)·파비콘=강렬한 힘의 결정(주간)·탭 이름(이번 주 보스/수익 분석)·
+# b109: 이름 '메보수 - 메이플 보스 수익 기록'·왼쪽 위 '메보수'(→ 이번 주 보스 탭)·파비콘=강렬한 힘의 결정(주간)·탭 이름(이번 주 보스/수익 분석)·
 # '수익을 기록할까요?' [기록하기]/[기록 없이 저장]/[취소]·'수익 기록 전체 수정' 창·월간 보스 안내 문구 삭제.
 # MBT_ROOT/MBT_SHOTDIR/MBT_TAG/MBT_NOCHECK (변경 전 빌드 촬영용)
 import os, sys, time, subprocess
@@ -24,7 +24,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",ST); pg.reload(); pg.wait_for_timeout(800)
     shot(pg.locator('header'),'header')
-    check('사이트 이름', pg.title()=='메이플 보스 수익 기록 - 메보수', pg.title())
+    check('사이트 이름', pg.title()=='메보수 - 메이플 보스 수익 기록', pg.title())
     check("왼쪽 위 '메보수'", pg.inner_text('header .logo').strip()=='메보수', pg.inner_text('header .logo'))
     fav=pg.evaluate("document.querySelector('link[rel=icon]').href.slice(0,60)==document.querySelector('header .logo img').src.slice(0,60)?'':'x'")
     check('파비콘·로고 = 강렬한 힘의 결정 (주간) (logo.json 재생성)', pg.evaluate("document.querySelector('header .logo img').naturalWidth")>0)
@@ -67,6 +67,8 @@ try:
        gap:l.top-ic.bottom,rows:[...document.querySelectorAll('.rarow')].map(r=>[r.querySelector('.raname').innerText,r.querySelector('input').value]),
        center:Math.abs((box.left+box.right)/2-innerWidth/2)<3,btns:[...document.querySelectorAll('.rabtns button')].map(b=>b.innerText),okBg:getComputedStyle(q('.raok')).backgroundColor}})()""")
     check("창 제목·아이콘 한 줄·1.5줄 간격·아이템 3줄(기록 안 한 것 포함)·가운데·[전체 수정](주황)/[취소]", m['title']=='수익 기록 전체 수정' and m['icons']==3 and m['oneRow'] and 18<=m['gap']<=30 and len(m['rows'])==3 and m['center'] and m['btns']==['전체 수정','취소'] and m['okBg']=='rgb(255, 138, 31)', m)
+    bi=pg.evaluate("[...document.querySelectorAll('.rarow')].map(r=>{const e=r.querySelector('.rabi');return e&&e.innerHTML===bossIcon(findBoss(e.dataset.boss))&&e.nextElementSibling.classList.contains('raname')})")
+    check('b110: 아이템 이름 옆 보스 아이콘 (공통 bossIcon)', len(bi)==3 and all(bi), bi)
     check('기존 기록 값 미리 채움(2억), 나머지 빈 칸', sorted(r[1] for r in m['rows'])==['','','2'], m['rows'])
     shot(pg.locator('#revAllModal .modal'),'revall')
     ins=pg.locator('.rarow input'); n=ins.count(); vals=['3','',''] 

@@ -16,13 +16,13 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','boss')}",ST); pg.reload(); pg.wait_for_timeout(800)
     base=pg.evaluate("allRevenue().total"); mm=pg.evaluate("price(findBoss('blackmage'),'hard')")
-    check('월간 클리어 전: 합계 = 주간만, 월간 줄 없음', pg.locator('.rp-mline').count()==0 and pg.locator('.rp-month').count()==0, base)
+    check('월간 클리어 전: 합계 = 주간만, 월간 줄 없음', '검마 결정석 0개' in pg.inner_text('.revpanel') and pg.locator('.rp-month').count()==0, base)
     # 이번 주에 잡음
     pg.evaluate("()=>{const c=S.characters[0];c.monthly.blackmage=S.period.week;save();render()}"); pg.wait_for_timeout(300)
     txt=pg.inner_text('.revpanel'); tot=pg.evaluate("(()=>{const a=allRevenue();return [a.total,a.monthTotal,weekMonthly(a)]})()")
-    check('같은 주: 큰 합계에 월간 포함 + 월간 보스 결정석 1개 줄', tot[1]==mm and tot[2]=={'n':1,'meso':mm} and '월간 보스 결정석 1개' in txt and f"{base+mm:,}" in txt and '(따로 합산)' not in txt, (tot,txt[:200]))
+    check('같은 주: 큰 합계에 월간 포함 + 월간 보스 결정석 1개 줄', tot[1]==mm and tot[2]=={'n':1,'meso':mm} and '검마 결정석 1개' in txt and f"{base+mm:,}" in txt and '(따로 합산)' not in txt, (tot,txt[:200]))
     pc=pg.evaluate("(()=>{const r=document.querySelector('.rp-char');return [r.innerText,r.querySelector('b').innerText]})()")
-    check('같은 주: 월간 줄에 메소 금액 없음, 캐릭터별 금액에 월간 추가 + 월간 ✓', '메소 포함' not in txt and '월간 보스 결정석 1개\n' in txt+'\n' and pc[1]==pg.evaluate(f"meso({base+mm})") and '월간 ✓' in pc[0], (pc,txt[:200]))
+    check('같은 주: 월간 줄에 메소 금액 없음, 캐릭터별 금액에 월간 추가 + 월간 ✓', '메소 포함' not in txt and '검마 결정석 1개' in txt and pc[1]==pg.evaluate(f"meso({base+mm})") and '월간 ✓' in pc[0], (pc,txt[:200]))
     big=pg.inner_text('.rp-total'); check('주황 합계 억 표기 = 합산값', big.replace('\n','').startswith(pg.evaluate(f"(({base}+{mm})/1e8).toFixed(1)")+"억"), big)
     # 이중 계산 없음: 주간 기록/월간 기록 집계는 그대로
     ws=pg.evaluate("[weekSummary(S.period.week).total, monthSummary(S.period.month).total, allRevenue().total]")

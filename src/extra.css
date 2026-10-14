@@ -1036,3 +1036,9 @@ a.logo{color:inherit;text-decoration:none;cursor:pointer}
 .rain{width:150px;flex:none}
 .rabtns{display:flex;gap:8px;justify-content:center;margin-top:12px}
 .raok{background:#ff8a1f;min-width:110px}
+
+/* b110: 이번 주 수익 두 줄 */
+.rp-line{font-size:.72rem;display:flex;align-items:center;gap:3px;white-space:nowrap;line-height:1.5;letter-spacing:-.2px}
+.rp-line .ric{width:16px;height:16px}
+.rabi{width:24px;height:24px;flex:none;display:grid;place-items:center}
+.rabi img,.rabi svg{width:24px;height:24px;object-fit:contain}

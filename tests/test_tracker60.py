@@ -26,14 +26,14 @@ try:
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://localhost:{PORT}/index.html'); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",ST); pg.reload(); pg.wait_for_timeout(800)
     T=lambda: pg.evaluate("(()=>{const T=totalData(); return [T.wTotal-T.weeks[T.weeks.length-1].total, T.chars.map(c=>c.name), Object.keys(T.sales).sort(), T.items.map(x=>x[0]).sort()]})()")
-    t=T(); check('hidden char excluded from totals/rank/sales/items', t[0]==10000000000 and t[1]==['보이는캐'] and t[2]==['belt#1'] and 'eye' not in ' '.join(t[3]), t)
+    t=T(); check('hidden char excluded from totals/rank/sales/items', t[0]==11000000000 and t[1]==['보이는캐'] and t[2]==['belt#1'] and 'eye' not in ' '.join(t[3]), t)
     for tb in ('total','loot'):
         pg.evaluate(f"tab='{tb}'; render()"); pg.wait_for_timeout(200)
         txt=pg.inner_text('#view'); i=txt.find('마력이 깃든 안대'); print('CTX',tb,repr(txt[max(0,i-300):i+40]) if i>=0 else '', '숨는캐' in txt); check(f'{tb} tab: no hidden char name / item', '숨는캐' not in txt)
     pg.evaluate("tab='total'; render()"); pg.screenshot(path='/workspace/maple-boss-tracker/oct12t_b82_test_total.png')
     check('history data kept', pg.evaluate("S.history[0].perChar.length")==2)
     pg.evaluate("accounts()[1].key='live_K2_0123456789abcdefgh'; save(); render()")
-    t=T(); check('key back → sums back', t[0]==15000000000 and sorted(t[1])==['보이는캐','숨는캐'] and t[2]==['belt#1','eye#1'], t)
+    t=T(); check('key back → sums back', t[0]==16500000000 and sorted(t[1])==['보이는캐','숨는캐'] and t[2]==['belt#1','eye#1'], t)
     check('JS 오류 없음', not errs, errs)
     b.close()
 except Exception as e:

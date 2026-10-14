@@ -32,7 +32,7 @@ try:
     check('섹션 순서 (메소왕→득템왕→에픽빔→블빵 승률→이긴→진→보스별→시드링 획득 타율→총 아이템)', all(x>=0 for x in ii) and ii==sorted(ii) and ii[-2]+1==ii[-1] and '캐릭터별 누적' not in ' '.join(hs), list(zip(order,ii)))
     check("시드링: '대박 확률' 없음", '대박 확률' not in pg.inner_text('#view'))
     rows=pg.eval_on_selector_all('#mesoKing tbody tr','e=>e.map(x=>[...x.children].map(td=>td.innerText.replace(/\\s+/g," ").trim()))')
-    check('메소왕: 열 + 누적 합계 내림차순, 10개', pg.eval_on_selector_all('#mesoKing th','e=>e.map(x=>x.innerText)')==['순위','캐릭터','누적 주간 보스메소량','누적 월간 보스메소량','누적 합계'] and len(rows)==10 and rows[0][1].endswith('캐릭00') and rows[1][1].endswith('캐릭11') and rows[2][1].endswith('캐릭10') and rows[9][1].endswith('캐릭03'), rows[:3])
+    check('메소왕: 열 + 누적 합계 내림차순, 10개', pg.eval_on_selector_all('#mesoKing th','e=>e.map(x=>x.innerText)')==['순위','캐릭터','누적 주간 메소량','누적 월간 메소량','누적 합계'] and len(rows)==10 and rows[0][1].endswith('캐릭00') and rows[1][1].endswith('캐릭11') and rows[2][1].endswith('캐릭10') and rows[9][1].endswith('캐릭03'), rows[:3])
     md=pg.evaluate("""[1,2,3,4].map(r=>{const tr=document.querySelector('#mesoKing tbody tr.rk'+r);const n=tr.querySelector('.rkname'),k=tr.querySelector('.rkno');return {cls:tr.className,crownNo:!!k.querySelector('.crown'),crownNm:!!n.querySelector('.crown'),av:!!n.querySelector('.avatar'),col:getComputedStyle(n.querySelector('b')).color,glow:getComputedStyle(k).textShadow!=='none'}})""")
     check('1등: 순위·닉네임 왕관 + 초상화 + 금색 빛', md[0]['crownNo'] and md[0]['crownNm'] and md[0]['av'] and md[0]['col']=='rgb(255, 213, 74)' and md[0]['glow'], md[0])
     check('2등: 초상화 + 은색 빛 (왕관 없음)', md[1]['av'] and not md[1]['crownNo'] and md[1]['col']=='rgb(230, 235, 242)' and md[1]['glow'], md[1])
