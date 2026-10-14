@@ -36,6 +36,9 @@ try:
     pg.route('**/feed.json*',lambda r:r.fulfill(status=200,content_type='application/json',body='{"version":1,"sources":{},"items":{}}'))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','loot')}",ST); pg.reload(); pg.wait_for_timeout(900)
+    if not NOCHK:
+        sz=pg.evaluate('''(()=>{const r=s=>[...new Set([...document.querySelectorAll(s)].map(e=>{const b=e.getBoundingClientRect();return Math.round(b.width)+'x'+Math.round(b.height)}))];return [r('#lootKing .rkav'),r('#bossLootKing .rkico > *'),r('#lootKing .loot img, #lootKing .loot .ric'),r('#bossLootKing .blkchip img, #bossLootKing .blkchip .ric')]})()''')
+        check('b122 보스 득템왕 보스 초상화 = 득템왕 캐릭터 초상화, 득템 목록 아이콘 = 득템왕 아이템 아이콘', sz[0]==sz[1] and sz[2]==sz[3] and len(sz[0])==1 and len(sz[2])==1, sz)
     shot(pg.locator('#lootTop'),'loot_top')
     if NOCHK:  # 변경 전 빌드: 같은 카드 촬영만
         for sel,nm in (('#lootKing','lootking_tip'),('#bossLootKing','bossking'),('#epicCard','epic_tip'),('.itemtot','itemtot'),('.bossloot','bossloot'),('#missItems','missing')): shot(pg.locator(sel).first,nm)
@@ -94,6 +97,9 @@ try:
         r4=[x for x in it if x.startswith(OUT4['r4'])]; c4=[x for x in it if x.startswith(OUT4['c4'])]
         order=pg.evaluate("[...document.querySelectorAll('.itemtot .loot')].map(e=>e.querySelector('.ln').textContent)")
         check('b120 총 아이템 획득량: 위 요약 줄 없음, 리4 x1 · 컨4 x2 = 다른 아이템과 같은 칩, 아이템 순서', pg.locator('#itRingSum').count()==0 and r4==[OUT4['r4']+' x1'] and c4==[OUT4['c4']+' x2'], (it,order))
+        names=pg.evaluate("[...document.querySelectorAll('.itemtot .loot')].map(e=>e.innerText.replace(/\\s+/g,' ').trim())")
+        win=[x for x in names if '블빵승리' in x]; los=[i for i,x in enumerate(names) if '블빵패배' in x]
+        check('b122 총 아이템 획득량: 블빵승리는 같은 아이템과 합침, 블빵패배는 따로 맨 뒤', not win and los and los==list(range(len(names)-len(los),len(names))) and len([x for x in names if x.startswith('1단계 소울 에테르 x')])==1, names)
         shot(pg.locator('.itemtot'),'itemtot')
     # 8) 길드 탭 버튼 위치 · 일퀘 탭 (모의 넥슨 API)
     ctx=b.new_context(viewport={'width':1366,'height':900},locale='ko-KR'); ctx.route('https://open.api.nexon.com/**',handle)

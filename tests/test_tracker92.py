@@ -60,6 +60,18 @@ try:
         rg=L[2]
         check('반지 상자 줄: 가장 많은 상자 아이콘(흑옥·백옥 3개 동점 → 아이템 순서 백옥) 16px + 7개, 결과 0개는 숨김', rg['t'].startswith('반지 상자 7개') and len(rg['ic'])>=1 and all(w==16 for w in rg['ic']) and pg.evaluate("(()=>{const d=document.createElement('div');d.innerHTML=itemIcon('r_white');const a=document.querySelector('.revpanel .rp-ring > :first-child');return !!a&&a.outerHTML===d.firstElementChild.outerHTML})()"), rg)
         check('결과: 리4 1 · 컨4 1 · 연마석 1 · 꽝 2 (0개 숨김)', rg['t']=='반지 상자 7개 리4 1개 컨4 1개 연마석 1개 꽝 2개', rg)
+    pg.evaluate("()=>{const c=S.characters[0];c.dropOut['lucid|r_life']=['gl'];save();render()}"); pg.click('[data-tab=loot]'); pg.wait_for_timeout(600)
+    shot(pg.locator('#lootTop'),'loot_top'); shot(pg.locator('.ringcard'),'ringcard')
+    if not NOCHK:
+        rt=pg.evaluate("document.querySelector('#ltRing').innerText.replace(/\\s+/g,' ')")
+        # 기록한 상자: 흑옥 3(5%) · 백옥 2(10%) · 생명 1(리4+컨4 14.51613×0.7×2 + 연마석 14.51613 = 34.84%) / 성공 r41+c41+gl1 = 3
+        ps=[12.5*.2*2/100]*3+[14.28571*.35*2/100]*2+[(14.51613*.7*2+14.51613)/100]
+        import itertools, math
+        pp=sum(math.prod(ps[i] if r[i] else 1-ps[i] for i in range(6)) for r in itertools.product([0,1],repeat=6) if sum(r)>=3)*100
+        js=pg.evaluate("lootSummary(totalData()).ringTop")
+        check('b122 반상 상위: 생명 상자 연마석도 성공으로 (상자마다 리4+컨4+연마석 확률)', abs(js-pp)<1e-9, (rt,js,pp))
+        ex=pg.evaluate("document.querySelector('.ringcard .ringexp').innerText")
+        check('b122 시드링 기댓값 끝에 연마석 (생명 상자 1개 × 14.51613% = 0.15개)', ex.endswith(' · 연마석 0.15개'), ex)
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

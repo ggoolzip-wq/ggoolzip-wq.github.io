@@ -58,7 +58,7 @@ try:
     pg.click('[data-tab="loot"]'); pg.wait_for_timeout(500); shot(pg.locator('#bossLootKing'),'lootking')
     if not NOCHK:
         w=pg.evaluate("[...document.querySelectorAll('#bossLootKing .rkico .bicon')].map(e=>e.getBoundingClientRect().width)")
-        check('보스 득템왕 아이콘 48px', w and all(abs(x-48)<1 for x in w), w)
+        check('보스 득템왕 아이콘 32px (b122: 테두리 포함 36px = 득템왕 캐릭터 초상화)', w and all(abs(x-32)<1 for x in w), w)
         check('아이콘 = 고화질(픽셀 표시 아님)', pg.evaluate("getComputedStyle(document.querySelector('#bossLootKing .rkico img.bicon')).imageRendering")!='pixelated')
         check('보스 28명 아이콘 모두 75px WebP', pg.evaluate("Promise.all(BOSSES.map(b=>new Promise(r=>{const i=new Image();i.onload=()=>r(i.naturalWidth>=69&&BOSS_ICONS[b.id].startsWith('data:image/webp'));i.onerror=()=>r(false);i.src=BOSS_ICONS[b.id]||'x'}))).then(a=>a.every(Boolean))"))
         L=json.load(open(os.path.join(ROOT,'src','icons.json')))['lotus']

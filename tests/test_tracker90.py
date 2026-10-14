@@ -57,7 +57,7 @@ try:
         ob=pg.evaluate("(()=>{const inv={};for(const k in BOSS_ICONS)inv[BOSS_ICONS[k]]=k;return [...document.querySelector('.revpanel .rp-char').querySelectorAll('.rp-boss img')].map(i=>inv[i.getAttribute('src')]||'?')})()")
         check('이번 주 수익 보스 아이콘 = 보스 드랍 표 순서, 검마 맨 오른쪽', ob==['zakum','lucid','dusk','kaling','star','blackmage'], ob)
     T=pg.evaluate("""()=>{ const P=ik=>ik; const T={chars:[
-      {id:'c1',name:'테스트캐',week:0,month:0,items:{'lucid|r_black':3,'lucid|r_white':1,'lucid|r_life':1},outs:{'lucid|r_black':['r4','x','x']}},
+      {id:'c1',name:'테스트캐',week:0,month:0,items:{'lucid|r_black':3,'lucid|r_white':1,'lucid|r_life':1},outs:{'lucid|r_black':['r4','x','x'],'lucid|r_life':['gl']}},
       {id:'n:가',name:'가캐',week:0,month:0,items:{'lucid|whisper':1,'lucid|r_black':5},outs:{}},
       {id:'n:나',name:'나캐',week:0,month:0,items:{'lucid|g_faith':2},outs:{}},
       {id:'n:다',name:'다캐',week:0,month:0,items:{'lucid|r_white':1},outs:{}}],
@@ -70,11 +70,14 @@ try:
         sub=pg.evaluate("[...document.querySelectorAll('#b118box .kingsub')].map(e=>e.textContent)")
         check('제목 밑 설명 2곳', sub==['(흑옥 0.1점, 백옥 0.2점, 생명 0.4점, 아이템 1점)']*2, sub)
         lk=pg.evaluate("[...document.querySelectorAll('#b118box #lootKing tbody tr')].map(r=>[r.querySelector('.rknm b').textContent,r.querySelector('.sc').textContent,r.querySelector('.sc').className])")
+        gl=pg.evaluate("[...document.querySelectorAll('#b118box #lootKing tbody tr')].map(r=>[r.querySelector('.rknm b').textContent,[...r.querySelectorAll('.loot .ln')].map(e=>e.textContent.trim())])")
+        t1=[x for x in gl if x[0]=='테스트캐'][0][1]
+        check('b122 득템왕: 생명 상자에서 나온 생명의 연마석은 칸 없음, 생명 상자는 있음', '생명의 연마석' not in t1 and '생명의 보스 반지 상자' in t1, t1)
         hh=pg.evaluate("[...document.querySelectorAll('#b118box thead tr')].map(r=>[...r.children].map(e=>e.textContent))")
         check('점수 열: 캐릭터/보스 바로 옆, 득템 횟수 열 없음', hh==[['순위','캐릭터','점수','누적 획득 아이템'],['순위','보스','점수','득템 목록']], hh)
         nm=pg.evaluate("[...document.querySelectorAll('#b118box .rkname')].map(e=>e.textContent)")
         check('이름 옆 (N점)·(N회) 없음', not any('점)' in x or '회)' in x for x in nm), nm)
-        check('득템왕 점수순 (b120 반상 포함: 나 2, 테스트 1.9 = 상자 0.9 + 리4 1, 가 1.5, 다 0.2)', [x[0] for x in lk]==['나캐','테스트캐','가캐','다캐'] and [x[1] for x in lk]==['2점','1.9점','1.5점','0.2점'], lk)
+        check('득템왕 점수순 (b120 반상 포함: 나 2, 테스트 1.9 = 상자 0.9 + 리4 1 (b122: 생명 상자 연마석은 0점), 가 1.5, 다 0.2)', [x[0] for x in lk]==['나캐','테스트캐','가캐','다캐'] and [x[1] for x in lk]==['2점','1.9점','1.5점','0.2점'], lk)
         col=pg.evaluate("[...document.querySelectorAll('#b118box .sc')].map(e=>getComputedStyle(e).color)")
         check('점수 색 금·은·동·흰', col[:4]==['rgb(255, 213, 74)','rgb(217, 222, 230)','rgb(217, 146, 90)','rgb(255, 255, 255)'], col)
         bk=pg.evaluate("[...document.querySelectorAll('#b118box #bossLootKing tbody tr')].map(r=>[r.querySelector('.bdn').textContent,r.querySelector('.sc').textContent])")

@@ -1153,3 +1153,6 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .rp-line .rpl{display:inline-flex;align-items:center;gap:3px;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .rp-line .rpn{margin-left:auto;padding-left:8px;font-weight:600}
 .rp-line.rp-ring{gap:5px}.rp-line.rp-ring img,.rp-line.rp-ring .ric,.rp-line.rp-ring svg{width:16px;height:16px;flex:none}
+/* b122: 보스 득템왕 보스 초상화 = 득템왕 캐릭터 초상화 크기(36px), 득템 목록 아이콘 = 득템왕 누적 획득 아이템 아이콘 크기(20px) */
+#bossLootKing .rkico .bicon,#bossLootKing .rkico img{width:32px;height:32px;max-width:32px;max-height:32px}
+#bossLootKing .blkchip img,#bossLootKing .blkchip .lootico,#bossLootKing .blkchip .ric{width:20px;height:20px}
