@@ -37,7 +37,8 @@ try:
     check('예 on tab switch → saved then moved', pg.evaluate("[!!pend,S.characters[1].bosses.lucid.party,tab!=='boss']")==[False,2,True], pg.evaluate("[!!pend,S.characters[1].bosses.lucid.party,tab]"))
     # 수익 기록 창
     pg.evaluate("askRev(activeChar(),findBoss('lucid'),'lucid|x','pitched_box',null)"); pg.wait_for_timeout(200)
-    pg.mouse.click(5,5); pg.wait_for_timeout(200); check('rev modal: backdrop click does nothing', pg.locator('#revModal').count()==1)
+    pg.mouse.click(5,5); pg.wait_for_timeout(200); check('rev modal: (b110) backdrop click = 취소 → closes', pg.locator('#revModal').count()==0)
+    pg.evaluate("askRev(activeChar(),findBoss('lucid'),'lucid|x','pitched_box',null)"); pg.wait_for_timeout(200)
     pg.click('[data-rv=ok]'); pg.wait_for_timeout(200)
     check("rev empty → '금액을 입력해주세요.' + red border", pg.inner_text('#rvErr')=='금액을 입력해주세요.' and 'inerr' in pg.get_attribute('#rvAmt','class'))
     pg.screenshot(path='/workspace/maple-boss-tracker/oct12m_b75_test_rev.png')
