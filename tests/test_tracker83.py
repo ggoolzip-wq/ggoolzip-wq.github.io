@@ -68,7 +68,7 @@ try:
         check('똥캐 TOP5 = 득템왕과 보스 득템왕 사이', ids.index('lootKing')+1==ids.index('poopKing')==ids.index('bossLootKing')-1, ids)
         pr=pg.evaluate("[...document.querySelectorAll('#poopKing tbody tr')].map(r=>[r.cells[0].innerText.trim(),r.querySelector('.rknm b').innerText.trim(),r.cells[2].innerText.trim(),r.querySelectorAll('.poopav .poop').length,r.querySelectorAll('.fly').length])")
         check('똥캐: 득템 적은 순 1~5위 (이번 0 이 아닌 육번 기준: 이번1·삼번2…)', [x[1] for x in pr]==['이번','삼번','사번','오번','육번'] and [x[2] for x in pr]==['1회','2회','3회','4회','5회'], pr)
-        check('똥캐: 5명 모두 초상화 위 똥 + 파리, 1위 = 💩 (왕관 없음), 메달 색 없음', all(x[3]==1 and x[4]==2 for x in pr) and '💩' in pr[0][0] and pg.locator('#poopKing .crown:not(:has-text("💩"))').count()==0 and pg.locator('#poopKing [class*=md-]').count()==0, pr)
+        check('똥캐: 5명 모두 초상화 위 똥 + 날파리 4(b115), 1위 = 💩 (왕관 없음), 메달 색 없음', all(x[3]==1 and x[4]==4 for x in pr) and '💩' in pr[0][0] and pg.locator('#poopKing .crown:not(:has-text("💩"))').count()==0 and pg.locator('#poopKing [class*=md-]').count()==0, pr)
         check('똥캐: 제목 아이콘 = 1위 초상화 + 똥', pg.locator('#poopKing h2 .poopav .avatar').count()==1 and pg.locator('#poopKing h2 .poop').count()==1)
         shot(pg.locator('#poopKing'),'poop')
         # 4) 보스 득템왕: 칠흑 상자 + 반지 상자 결과

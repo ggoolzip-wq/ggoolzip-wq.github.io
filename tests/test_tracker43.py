@@ -22,7 +22,7 @@ try:
     txt=pg.inner_text('.revpanel'); tot=pg.evaluate("(()=>{const a=allRevenue();return [a.total,a.monthTotal,weekMonthly(a)]})()")
     check('같은 주: 큰 합계에 월간 포함 + 월간 보스 결정석 1개 줄', tot[1]==mm and tot[2]=={'n':1,'meso':mm} and '검마 결정석 1개' in txt and f"{base+mm:,}" in txt and '(따로 합산)' not in txt, (tot,txt[:200]))
     pc=pg.evaluate("(()=>{const r=document.querySelector('.rp-char');return [r.innerText,r.querySelector('b').innerText]})()")
-    check('같은 주: 월간 줄에 메소 금액 없음, 캐릭터별 금액에 월간 추가 + 월간 ✓', '메소 포함' not in txt and '검마 결정석 1개' in txt and pc[1]==pg.evaluate(f"meso({base+mm})") and '월간 ✓' in pc[0], (pc,txt[:200]))
+    check('같은 주: 월간 줄에 메소 금액 없음, 캐릭터별 금액에 월간 추가, 월간 ✓ 대신 검마 결정석 줄(b115)', '메소 포함' not in txt and '검마 결정석 1개' in txt and pc[1]==pg.evaluate(f"meso({base+mm})") and '월간 ✓' not in pc[0] and '검마 결정석' in pg.inner_text('.revpanel .rp-char'), (pc,txt[:200]))
     big=pg.inner_text('.rp-total'); check('주황 합계 억 표기 = 합산값', big.replace('\n','').startswith(pg.evaluate(f"(({base}+{mm})/1e8).toFixed(1)")+"억"), big)
     # 이중 계산 없음: 주간 기록/월간 기록 집계는 그대로
     ws=pg.evaluate("[weekSummary(S.period.week).total, monthSummary(S.period.month).total, allRevenue().total]")
@@ -31,7 +31,7 @@ try:
     pg.evaluate("()=>{const c=S.characters[0];c.monthly.blackmage='2000-01-01';save();render()}"); pg.wait_for_timeout(300)
     txt=pg.inner_text('.revpanel'); tot=pg.evaluate("weekMonthly(allRevenue())")
     pc=pg.evaluate("(()=>{const r=document.querySelector('.rp-char');return [r.innerText,r.querySelector('b').innerText]})()")
-    check('지난 주에 잡은 월간 보스: 캐릭터별 금액·월간 ✓ 없음', '월간 ✓' not in pc[0] and pc[1]==pg.evaluate(f"meso({base})"), pc)
+    check('지난 주에 잡은 월간 보스: 캐릭터별 금액·월간 ✓ 없음', '월간 ✓' not in pc[0] and '검마 결정석 ' not in (pg.inner_text('.revpanel .rp-char').split('주간 결정석')[-1]) and pc[1]==pg.evaluate(f"meso({base})"), pc)
     check('지난 주에 잡은 월간 보스: 이번 주 수익에 미포함', tot['n']==0 and '월간 보스 결정석' not in txt and f"{base:,}" in txt, (tot,txt[:160]))
     # 분석 탭 라인 차트: 월간 보스는 잡은 주에만
     hw='2026-10-01'

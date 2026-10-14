@@ -76,7 +76,7 @@ try:
     check('루시드 행: 결정석·아이템(눈·미트라)·합', lr and lr[3]==M(300000000+lc) and lr[4]==M(150000000) and lr[5]==M(300000000+lc+150000000), lr)
     check('보스 메소왕 정렬 = 누적 메소량 내림차순', br[0][1].startswith('검은 마법사'), br)
     wl=pg.evaluate("[...document.querySelectorAll('#view table')].pop().innerText")
-    check('전체 주 목록 주간 수익에 아이템 판매값', M(lc+100000000) in wl and M(350000000) in wl, wl[:300])
+    check('전체 주 목록 주간 수익에 아이템 판매값 + 그 주 검마 결정석·판매(b115)', M(lc+100000000+bm+200000000) in wl and M(350000000+500000000+3000000000) in wl, wl[:300])
     shot(pg.locator('#view .card').first,'total_top'); shot(pg.locator('#mesoKing'),'mesoking'); shot(pg.locator('#bossKing'),'bossking')
     b.close()
 finally: srv.terminate()

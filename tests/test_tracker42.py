@@ -21,7 +21,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900); pg.evaluate("(()=>{const v=document.querySelector('#view');const o=render;window.render=function(){renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()")
     pri=pg.evaluate("Object.fromEntries(['whisper','h_face','h_ear','genesis','lcm','cfe','eye','chaosbox','g_faith','g_life'].map(k=>[k,itemPri(k)]))")
-    check('순위: 광휘 1 · 해머·창세 1.5 · 루컨마·커포 = 다른 칠흑과 같은 2', pri['whisper']==1 and pri['h_face']==1.5 and pri['h_ear']==1.5 and pri['genesis']==1.5 and pri['lcm']==2 and pri['cfe']==2 and pri['eye']==2 and pri['chaosbox']==2 and pri['g_faith']==2 and pri['g_life']==3, pri)
+    check('순위: 광휘 1 · 해머·창세 1.5 · 루컨마·커포 = 다른 칠흑과 같은 2', pri['whisper']==1 and pri['h_face']==1.5 and pri['h_ear']==1.5 and pri['genesis']==1.5 and pri['lcm']==2 and pri['cfe']==2 and pri['eye']==2 and pri['chaosbox']==2 and pri['g_faith']==3.05 and pri['g_life']==3.1, pri)
     j=pg.evaluate("[dropsFor(findBoss('lotus'),'normal').includes('r_green'), dropsOff(findBoss('lotus'),'normal').includes('r_green'), missingItems(totalData()).some(o=>o.k==='r_green'), dropsFor(findBoss('lotus'),'normal').includes('r_red')]")
     check('녹옥 반지 상자: 회색 칩(비활성) + 못 가진 목록에서 제외', j[0]==False and j[1]==True and j[2]==False, j)
     # 못 가진 아이템: 같은 아이템 모든 보스

@@ -52,14 +52,14 @@ try:
     shot(pg.locator('.boss').first,'bossrow')
     pg.evaluate("openRevAll()"); pg.wait_for_timeout(300); shot(pg.locator('#revAllModal .modal'),'revall')
     if not NOCHK:
-        r=pg.eval_on_selector_all('#revAllModal .rabi',"e=>e.map(x=>[x.dataset.boss,!!x.querySelector('img.bicon')&&x.querySelector('img.bicon').src===BOSS_ICONS[x.dataset.boss],x.querySelector('.dbadge')?.textContent])")
+        r=pg.eval_on_selector_all('#revAllModal .rabi',"e=>e.map(x=>[x.dataset.boss,!!x.querySelector('img.bicon')&&x.querySelector('img.bicon').src===BOSS_ICONS[x.dataset.boss],x.querySelector('.dbadge')?.dataset.d])")
         check('전체 수정: 같은 bossIcon(HP바 초상화) + 난이도 배지', r and all(x[1] for x in r) and [x[2] for x in r if x[0]=='lucid']==['H'] and [x[2] for x in r if x[0]=='kaling']==['N'], r)
     pg.evaluate("document.querySelector('#revAllModal')?.remove()")
     pg.click('[data-tab="loot"]'); pg.wait_for_timeout(500); shot(pg.locator('#bossLootKing'),'lootking')
     if not NOCHK:
         w=pg.evaluate("[...document.querySelectorAll('#bossLootKing .rkico .bicon')].map(e=>e.getBoundingClientRect().width)")
         check('보스 득템왕 아이콘 48px', w and all(abs(x-48)<1 for x in w), w)
-        check('아이콘 = 픽셀 그대로', pg.evaluate("getComputedStyle(document.querySelector('#bossLootKing .rkico img.bicon')).imageRendering")=='pixelated')
+        check('아이콘 = 고화질(픽셀 표시 아님)', pg.evaluate("getComputedStyle(document.querySelector('#bossLootKing .rkico img.bicon')).imageRendering")!='pixelated')
         check('보스 28명 아이콘 모두 75px WebP', pg.evaluate("Promise.all(BOSSES.map(b=>new Promise(r=>{const i=new Image();i.onload=()=>r(i.naturalWidth>=69&&BOSS_ICONS[b.id].startsWith('data:image/webp'));i.onerror=()=>r(false);i.src=BOSS_ICONS[b.id]||'x'}))).then(a=>a.every(Boolean))"))
         L=json.load(open(os.path.join(ROOT,'src','icons.json')))['lotus']
         check('스우 = 1페이즈 파란 눈 초상화', pg.evaluate("BOSS_ICONS.lotus")==L)
