@@ -31,6 +31,7 @@
 - 테스트: 신규 **test_tracker83**(port 8899; 위 항목 전부 + 3인 10판 6승 = 7.7%, 파이썬 계산과 비교). 기대값 수정: 14(탭 순서·일퀘 탭 있음), 35(일퀘 탭 복원), 41(강한 보스 순), 44(총 득템 7개·상위 14.5%·블빵 상위 75%), 61(카드 순서 똥캐). 전체 run_par 1회 통과(test4 직렬 재시도 통과).
 - 스크린샷(테스트 안에서): /workspace/maple-boss-tracker/b111_{before,after}_{loot_top,lootking_tip,bossking,epic_tip,itemtot,bossloot,missing,guild_add,suro_add}.png, b111_after_{poop,daily}.png
 - 작업 시간(KST, 실제 시각): 시작 14:20, 끝 14:34. 코딩 약 6분(14:20~14:26), 테스트·검증 약 8분(관련 테스트·기대값 수정·스크린샷 14:26~14:29, 전체 병렬 1회 14:29~14:32) → 코딩:테스트 ≈ 43:57.
+- 배포: 커밋 249c067 → GitHub Actions 'Deploy Cloudflare Pages' 성공(05:32 UTC = 14:32 KST), https://bossmaple.pages.dev/ 에 새 코드(pbTail·똥캐 TOP5·일퀘 탭) 반영 확인(curl).
 
 ## b110 (2026-10-14) — t26 묶음 2: 아이템 판매값을 모든 수익에 더함 + 사이트 이름 순서 + 전체 수정 창 보스 아이콘
 - 원문 /workspace/requests/t26_request.md 1·2번. 사용자 결정: 수익 기록 안 한 아이템 = 0 (따로 문구 없음). 설명 문구 추가 없음.
