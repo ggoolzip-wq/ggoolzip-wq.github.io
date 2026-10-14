@@ -1267,6 +1267,12 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .drop.memc .ecnt{background:#8a6d3b}
 .drop.memc.mc-s .ecnt{background:#7c8794}
 .drop.memc.mc-g .ecnt{background:#c9971c}
+/* b126 이번 주 수익 아이템 줄: 보스 이름 앞 bossPic = .rp-boss 와 같은 20px + 9px 배지 */
+.rp-items .dlb .bpic{margin:-4px 3px -4px 0;vertical-align:middle}
+.rp-items .dlb .bicon{width:20px;height:20px;border-radius:4px;margin:0;box-shadow:none}
+.rp-items .dlb .bpic>.dbadge{width:9px;height:9px;line-height:9px;font-size:6.5px;left:-3px;top:-3px;border-radius:2px}
+.rp-items .dlb .dbadge.db-extreme{min-width:9px;padding:0 1px}
+.rp-items .dlb:has(.bpic){padding-left:6px}
 </style>
 </head>
 <body>
@@ -2165,8 +2171,8 @@ function monthSummary(mid){
 }
 /* 획득 아이템 줄 (모든 화면 공통 형식): [아이콘] 아이템 이름 (N인 분배) ×개수 · 반지 상자는 결과 집계(리4·컨4·꽝·미기록)
  * byBoss: 보스별로 따로 (보스 이름 표시) / 기본: 아이템 + 인원별 합계 */
-function dropLine(it, party, n, outs, boss, mode, diff){
-  const dtx=diff&&D[diff]?` (${D[diff]})`:'', bh=boss?`<span class="dlb">${esc(boss)}${dlvHtml(diff)?' '+dlvHtml(diff):''}</span>`:'';
+function dropLine(it, party, n, outs, boss, mode, diff, bp){ // b126: bp = 보스 객체 → 이름 앞에 bossPic(아이콘+난이도 배지, 이번 주 수익 주보 게이지 밑과 같은 크기)
+  const dtx=diff&&D[diff]?` (${D[diff]})`:'', bh=boss?`<span class="dlb">${bp?bossPic(bp,diff,false):''}${esc(boss)}${dlvHtml(diff)?' '+dlvHtml(diff):''}</span>`:'';
   const I=ITEMS[it];
   if(it==='chaosbox') return `<span class="dl cbl">${bh}${chaosHtml(outs,n)}${partyHtml(party,mode)}</span>`;
   return `<span class="dl ${party>1?'pty':''}${mode?' md-'+mode:''}" title="${esc((boss?boss+dtx+' · ':'')+I.n+partyTxt(party,mode))} ${xN(n)}">${bh}<span class="dlt">${itemIcon(it)}<span class="dln">${esc(I.n)}${partyHtml(party,mode)}</span> <b class="dlc">${xN(n)}</b>${isRing(it)?' '+outHtml(outs,n,true):''}</span>${it==='chaosbox'?chaosHtml(outs,n):''}</span>`;
@@ -2183,7 +2189,7 @@ function itemsInline(items, opts={}){
   const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; }, ii=it=>Object.keys(ITEMS).indexOf(it);
   const ks=Object.keys(agg).sort((x,y)=>{ const X=meta[x], Y=meta[y]; return (opts.byBoss?bi(X.slot)-bi(Y.slot):0) || ii(X.it)-ii(Y.it) || X.party-Y.party || String(X.mode).localeCompare(String(Y.mode)); });
   if(!ks.length) return opts.empty??'';
-  return `<span class="dls">${ks.map(a=>{ const {slot,it,party,mode,rev}=meta[a]; const h=dropLine(it,party,agg[a],outs[a],opts.byBoss?(findBoss(slot)?.name||''):'',mode,opts.byBoss&&opts.diffOf?opts.diffOf(slot):''); return rev?`<span class="dlw">${h}<span class="dlrev">${meso(rev)}</span></span>`:h; }).join('')}</span>`;
+  return `<span class="dls">${ks.map(a=>{ const {slot,it,party,mode,rev}=meta[a]; const h=dropLine(it,party,agg[a],outs[a],opts.byBoss?(findBoss(slot)?.name||''):'',mode,opts.byBoss&&opts.diffOf?opts.diffOf(slot):'',opts.bpic&&opts.byBoss?findBoss(slot):null); return rev?`<span class="dlw">${h}<span class="dlrev">${meso(rev)}</span></span>`:h; }).join('')}</span>`;
 }
 const fmtMonth = m => { const [y,mm]=String(m).split('-'); return `${y}년 ${+mm}월`; };
 
@@ -2952,7 +2958,7 @@ function revPanel(a,cur){
       <div class="rp-row"><span class="mini"><i style="width:${(pmeso(p)/max*100).toFixed(1)}%"></i></span><span class="muted" style="font-size:.72rem;white-space:nowrap">${p.r.weekly}/${lim}</span></div>
       ${(L=>L.length?`<div class="rp-boss">${L.slice().sort((x,y)=>bossTblOrd(x.slot)-bossTblOrd(y.slot)).map(x=>bossPic(findBoss(x.slot),x.diff,false)).join('')}</div>`:'')([...p.r.wlist,...p.r.mlist.filter(x=>p.c.monthly[x.slot]===S.period.week)])}
       ${(w=>w?`<div class="rp-cl">${miniIcon('ipc')}<span>주간 결정석 ${meso(w)}</span></div>`:'')(p.r.wlist.length?p.r.meso:0)}${(m=>m?`<div class="rp-cl">${miniIcon('ipcm')}<span>검마 결정석 ${meso(m)}</span></div>`:'')(pm.get(p).meso)}${charSaleLine(p.c)}
-      ${(d=>itemsInline(d.items)?`<div class="rp-items">${itemsInline(d.items,{outs:d.outcomes,revs:d.revs,byBoss:true,diffOf:cfgDiff(p.c)})}</div>`:'')(charAllDrops(p.c))}</div>`).join('')}</div>
+      ${(d=>itemsInline(d.items)?`<div class="rp-items">${itemsInline(d.items,{outs:d.outcomes,revs:d.revs,byBoss:true,bpic:true,diffOf:cfgDiff(p.c)})}</div>`:'')(charAllDrops(p.c))}</div>`).join('')}</div>
   </aside>`;
 }
 // 보스+난이도별 가격 행 (싼 순서) — 보스 체크 탭 가격 카드

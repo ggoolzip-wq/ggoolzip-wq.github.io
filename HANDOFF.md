@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b126 (2026-10-14) — 이번 주 수익 아이템 줄: 보스 이름 앞에 보스 아이콘
+- 시간(KST): 20:23–20:31 (코딩 약 3분 / 테스트 약 5분, 전체 테스트 2번 — 첫 번째에서 inline-flex 때문에 줄 높이 29px로 test35·37·42 실패 → 인라인 + 위아래 음수 margin 으로 줄 높이 26px 이하 유지)
+- 이번 주 수익의 기록 아이템 줄(보스 · 아이템 · 판매 금액)에서 보스 이름 앞에 `bossPic(b,diff,false)` (= `bossIcon()` v4 아이콘 + 난이도 배지, 테두리 없음).
+- `dropLine(…, bp)` 8번째 인자 + `itemsInline(…,{bpic:true})` — 이번 주 수익(`.rp-items`)에서만 켬, 다른 표는 그대로.
+- 크기 = 주보 게이지 밑 `.rp-boss` 아이콘과 같게: 아이콘 20×20, 배지 9×9 (extra.css `.rp-items .dlb .bpic`).
+- test94 (포트 8911) 추가. 스크린샷 `b126_{before,after}_{revpanel,rp_items}.png`.
+
 ## b125 (2026-10-14) — 메멘토 큐브 수량: matsu1207/1173 을 단일 기준으로
 - 시간(KST): 19:45–19:52 (코딩 약 3분 / 테스트 약 4분, 전체 테스트 포함)
 - 사용자: https://matsu1207.tistory.com/1173 (수정일 2026-09-14) 이 정확 → 유일한 기준. 표를 다시 읽어 모든 보스·난이도 대조.
