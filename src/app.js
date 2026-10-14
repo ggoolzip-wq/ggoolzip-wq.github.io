@@ -618,13 +618,20 @@ function missChart(rows, kind){
   const n=rows.length, W=Math.max(640,90+n*80), Hh=220, pl=45, pr=45, pt=24, pb=34, max=Math.max(1,...rows.map(r=>r.meso));
   const X=i=>n===1?W/2:pl+(W-pl-pr)*i/(n-1), Y=v=>Hh-pb-(Hh-pb-pt)*v/max;
   const tip=r=>(r.list.length?`${r.date} · 손해 ${meso(r.meso)}\n`+r.list.map(x=>`${x.name}: ${x.n}개 · ${meso(x.meso)}`).join('\n')+`\n합계: ${r.n}개 · ${meso(r.meso)}`+(r.approx?'\n(주간 기록으로 채운 근사값)':''):`${r.date}\n손해 없음`);
-  return `<div class="chart scrollx misschart"><svg viewBox="0 0 ${W} ${Hh}" style="width:${W}px;max-width:${W>640?'none':'100%'}" role="img" aria-label="빠뜨린 보스메소 그래프">
-    <line x1="0" x2="${W}" y1="${Hh-pb}" y2="${Hh-pb}" stroke="currentColor" opacity=".15"/>
-    <polyline fill="none" stroke="#f2c94c" stroke-width="2.5" points="${rows.map((r,i)=>`${X(i).toFixed(1)},${Y(r.meso).toFixed(1)}`).join(' ')}"/>
-    ${rows.map((r,i)=>`<g class="mpt" data-tip="${esc(tip(r))}"><circle cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="14" fill="transparent"/><circle cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="4.5" fill="#f2c94c"/>
-      <text x="${X(i).toFixed(1)}" y="${(Y(r.meso)-10).toFixed(1)}" text-anchor="middle" class="lbl" font-size="10">${r.meso?meso(r.meso).replace(/ .*/,''):'0'}</text>
-      <text x="${X(i).toFixed(1)}" y="${Hh-pb+16}" text-anchor="middle" font-size="10">${r.date}</text></g>`).join('')}</svg></div>`;
+  const u=++chartUid, c=kind==='m'?'#ff6b6b':'#f2c94c', c2=kind==='m'?'#ff9a8a':'#ffe08a', pts=rows.map((r,i)=>`${X(i).toFixed(1)},${Y(r.meso).toFixed(1)}`).join(' ');
+  const grid=[.25,.5,.75,1].map(f=>`<line class="cg" x1="${pl-20}" x2="${W-pr+20}" y1="${Y(max*f).toFixed(1)}" y2="${Y(max*f).toFixed(1)}"/>`).join('');
+  return `<div class="chart scrollx misschart lux ${kind==='m'?'mm':'mw'}"><svg viewBox="0 0 ${W} ${Hh}" style="width:${W}px;max-width:${W>640?'none':'100%'}" role="img" aria-label="빠뜨린 보스메소 그래프">
+    <defs><linearGradient id="mcg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".3"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient>
+    <linearGradient id="mcs${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="${c2}"/></linearGradient>
+    <filter id="mcf${u}" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    ${grid}<line class="cg cg0" x1="${pl-20}" x2="${W-pr+20}" y1="${Hh-pb}" y2="${Hh-pb}"/>
+    ${n>1?`<polygon class="carea" fill="url(#mcg${u})" points="${X(0).toFixed(1)},${Hh-pb} ${pts} ${X(n-1).toFixed(1)},${Hh-pb}"/>`:''}
+    <polyline class="cline" pathLength="1" fill="none" stroke="url(#mcs${u})" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round" filter="url(#mcf${u})" points="${pts}"/>
+    ${rows.map((r,i)=>`<g class="mpt" data-tip="${esc(tip(r))}" style="--d:${(.15+i*.06).toFixed(2)}s;--c:${c}"><circle cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="14" fill="transparent"/><circle class="mdot" cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="4.5"/>
+      <text x="${X(i).toFixed(1)}" y="${(Y(r.meso)-12).toFixed(1)}" text-anchor="middle" class="lbl cval" font-size="10">${r.meso?meso(r.meso).replace(/ .*/,''):'0'}</text>
+      <text class="cxl" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle" font-size="10">${r.date}</text></g>`).join('')}</svg></div>`;
 }
+let chartUid=0;
 const missIcon = '<span class="missic" aria-hidden="true">!</span>', missIconM = '<span class="missic red" aria-hidden="true">!</span>';
 function missHtml(){ return `<div class="card"><h2>${missIcon} 지금까지 빠뜨린 보스메소는? (주간 Ver)</h2>${missChart(S.missW||[],'w')}</div>
   <div class="card"><h2>${missIconM} 지금까지 빠뜨린 보스메소는? (월간 Ver)</h2>${missChart(S.missM||[],'m')}</div>`; }
@@ -1862,19 +1869,22 @@ function thisWeekChart(T){ // b135: 주간 메소 그래프 = 이번 주만, 목
 }
 function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 메소(1주차, 2주차 …), 누적 아님
   const MW=T?monthlyByWeek(T):{}; const rows=rows0.map(r=>{ const m=MW[r.week]||{}; return {...r,mm:m.meso||0,mn:m.n||0,cry:(r.crys??r.total??0)+(m.cry||0),sale:(r.isale||0)+(m.sale||0),total:(r.total||0)+(m.meso||0)}; });
-  const n=rows.length, pl=44, pr=14, pt=26, pb=36, Hh=240, bw=Math.max(34,(640-pl-pr)/Math.max(1,n)), W=Math.max(640,pl+pr+n*bw);
-  let cum=0; const acc=rows.map(r=>cum+=r.total), cums=o.perWeek?rows.map(r=>r.total):acc; const cmax=Math.max(1,...cums);
+  // b138: 고급 다크 스타일 — 오렌지→골드 그라데이션 선 + 은은한 글로우, 오렌지 영역 그라데이션, 점선 격자, 값 라벨(외곽선), 그려지는 애니메이션
+  const n=rows.length, pl=48, pr=18, pt=48, pb=40, Hh=260, bw=Math.max(34,(640-pl-pr)/Math.max(1,n)), W=Math.max(640,pl+pr+n*bw);
+  let cum=0; const acc=rows.map(r=>cum+=r.total), cums=o.perWeek?rows.map(r=>r.total):acc; const cmax=Math.max(1,...cums)*1.08;
   const X=i=>pl+i*bw+bw/2, Y=v=>Hh-pb-(Hh-pb-pt)*v/cmax, step=Math.max(1,Math.ceil(n/(W/60)));
-  const pts=cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
-  const grid=[0,.25,.5,.75,1].map(f=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(cmax*f).toFixed(1)}" y2="${Y(cmax*f).toFixed(1)}" stroke="currentColor" opacity="${f?'.08':'.18'}"/><text x="${pl-6}" y="${(Y(cmax*f)+3.5).toFixed(1)}" text-anchor="end" font-size="10">${f?(cmax*f/1e8).toFixed(1)+'억':'0'}</text>`).join('');
-  const xl=rows.map((r,i)=>i%step===0||r.cur?`<text x="${X(i).toFixed(1)}" y="${Hh-pb+16}" text-anchor="middle">${o.perWeek?`${i+1}주차`:fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(o.perWeek?rows.map((r,i)=>i%step===0||r.cur?`<text x="${X(i).toFixed(1)}" y="${(Y(cums[i])-9).toFixed(1)}" text-anchor="middle" font-size="10" class="lwv">${r.total?(r.total/1e8).toFixed(1)+'억':''}</text>`:'').join(''):'')+(rows[n-1]&&rows[n-1].cur?`<text x="${X(n-1).toFixed(1)}" y="${Hh-pb+30}" text-anchor="middle">이번 주</text>`:'');
+  const pts=cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' '), u=++chartUid;
+  const top=Math.max(1,...cums), grid=[0,.25,.5,.75,1].map(f=>`<line class="cg${f?'':' cg0'}" x1="${pl}" x2="${W-pr}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}"/><text class="cax" x="${pl-8}" y="${(Y(top*f)+3.5).toFixed(1)}" text-anchor="end">${f?(top*f/1e8).toFixed(1)+'억':'0'}</text>`).join('');
+  const xl=rows.map((r,i)=>i%step===0||r.cur?`<text class="cxl${r.cur?' cur':''}" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle">${o.perWeek?`${i+1}주차`:fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(rows[n-1]&&rows[n-1].cur?`<text class="cxl cur sub" x="${X(n-1).toFixed(1)}" y="${Hh-pb+32}" text-anchor="middle">이번 주</text>`:'');
   const tipOf=(r,v)=>`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n결정석 : ${meso(r.cry)}\n아이템 판매 : ${meso(r.sale)}`+`\n누적 ${meso(o.perWeek?acc[rows.indexOf(r)]:v)}`;
-  const dots=cums.map((v,i)=>`<g class="lpt" data-tip="${esc(tipOf(rows[i],v))}"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/><circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?4.5:3.2}" fill="${rows[i].cur?'#ffb066':'#2f7fd8'}" stroke="#fff" stroke-width="1"/></g>${n<=16?`<text x="${X(i).toFixed(1)}" y="${(Y(v)-8).toFixed(1)}" text-anchor="middle" class="lbl" font-size="10" pointer-events="none">${(v/1e8).toFixed(1)}억</text>`:''}`).join('');
-  return `<div class="chart scrollx linechart"><svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
-      <defs><linearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f7fd8" stop-opacity=".35"/><stop offset="1" stop-color="#2f7fd8" stop-opacity="0"/></linearGradient></defs>
-      ${grid}<polygon fill="url(#lcg)" points="${X(0).toFixed(1)},${Y(0)} ${pts} ${X(n-1).toFixed(1)},${Y(0)}"/>
-      <polyline fill="none" stroke="#2f7fd8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${pts}"/>${dots}${xl}
-      <text x="${W-pr}" y="14" text-anchor="end" fill="#2f7fd8" font-size="11">${o.perWeek?`총 누적 ${meso(cum)}`:`누적 ${meso(cmax)}`}</text></svg></div>`;
+  const best=cums.indexOf(top);
+  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" data-tip="${esc(tipOf(rows[i],v))}" style="--d:${(.15+i*.06).toFixed(2)}s"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/><line class="cdrop" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Y(v).toFixed(1)}" y2="${Hh-pb}"/><circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/></g>${n<=16&&v?`<text class="cval${i===best&&n>1?' best':''}" x="${X(i).toFixed(1)}" y="${(Y(v)-12).toFixed(1)}" text-anchor="middle" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s">${(v/1e8).toFixed(1)}억</text>`:''}`).join('');
+  return `<div class="chart scrollx linechart lux"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?cum:Math.max(...cums,0))}</b></div><svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
+      <defs><linearGradient id="lcg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a3c" stop-opacity=".38"/><stop offset=".55" stop-color="#ff9a3c" stop-opacity=".1"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></linearGradient>
+      <linearGradient id="lcs${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff8a3d"/><stop offset=".6" stop-color="#ffb347"/><stop offset="1" stop-color="#ffd978"/></linearGradient>
+      <filter id="lcf${u}" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      ${grid}<polygon class="carea" fill="url(#lcg${u})" points="${X(0).toFixed(1)},${Y(0)} ${pts} ${X(n-1).toFixed(1)},${Y(0)}"/>
+      <polyline class="cline" pathLength="1" fill="none" stroke="url(#lcs${u})" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" filter="url(#lcf${u})" points="${pts}"/>${dots}${xl}</svg></div>`;
 }
 function weekChart(rows, opts={}){
   // rows: [{week,total,cur}] — 막대(주간 수익) + 선택적으로 누적선
@@ -3190,7 +3200,7 @@ let tipEl=null, tipFor=null, tipTimer=0, tipTouchAt=0;
 function tipShow(el){
   if(!tipEl){ tipEl=document.createElement('div'); tipEl.id='mbtTip'; tipEl.setAttribute('role','tooltip'); document.body.appendChild(tipEl); }
   tipFor=el; const [h0,...rest]=String(el.dataset.tip).split('\n'); // 첫 줄 = 굵은 제목(아이템 이름)
-  tipEl.classList.toggle('rich',!!el.dataset.tiphtml);
+  tipEl.classList.toggle('rich',!!el.dataset.tiphtml); tipEl.classList.toggle('ctip',!!el.closest?.('.chart.lux')); // b138
   if(el.dataset.tiphtml) tipEl.innerHTML=el.dataset.tiphtml; /* b111: 아이콘 있는 말풍선 — 우리 코드가 만든 HTML(chaosTip)만 넣음 */ else tipEl.replaceChildren(Object.assign(document.createElement('b'),{className:'tth',textContent:h0}),...(rest.length?['\n'+rest.join('\n')]:[])); tipEl.classList.add('show');
   const r=(el.querySelector?.('[data-tipanchor]')||el).getBoundingClientRect(), w=tipEl.offsetWidth, h=tipEl.offsetHeight, m=8;
   let x=Math.min(Math.max(m,r.left+r.width/2-w/2),innerWidth-w-m), y=r.top-h-10, below=false; if(y<m){ y=Math.min(r.bottom+10,innerHeight-h-m); below=true; }

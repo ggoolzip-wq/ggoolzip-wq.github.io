@@ -1184,3 +1184,31 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .rp-items .dlg>.dlcol>.dlrev{line-height:15px;padding-left:2px}
 .rp-items .dls:has(.dlg){flex-direction:column;flex-wrap:nowrap;gap:5px;align-items:flex-start}
 .rp-items .dls>.dl.dlg{align-self:flex-start;margin:0;text-align:left}
+
+/* b138: 그래프 고급 다크 스타일 (주간 메소 그래프 · 빠뜨린 보스메소 주간/월간 · 그래프 말풍선) */
+.chart.lux{position:relative;padding:6px 4px 2px;border-radius:14px;background:radial-gradient(120% 90% at 50% 0%,rgba(255,154,60,.07),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0));box-shadow:inset 0 0 0 1px rgba(255,190,120,.08)}
+.chart.lux .ctot{position:absolute;top:10px;right:14px;display:flex;align-items:baseline;gap:6px;padding:4px 10px;border-radius:999px;background:linear-gradient(135deg,rgba(255,154,60,.18),rgba(255,217,120,.08));border:1px solid rgba(255,179,71,.35);box-shadow:0 0 18px rgba(255,154,60,.15);font-size:.72rem;color:#d9c3a5;z-index:1}
+.chart.lux .ctot b{font-size:.8rem;color:#ffd27a;letter-spacing:.01em}
+.chart.lux .cg{stroke:#fff;stroke-opacity:.06;stroke-dasharray:3 5}
+.chart.lux .cg0{stroke-opacity:.18;stroke-dasharray:none}
+.chart.lux .cax{fill:#8f8577;font-size:10px;font-variant-numeric:tabular-nums}
+.chart.lux .cxl{fill:#9a8f80;font-size:11px}
+.chart.lux .cxl.cur{fill:#ffc06a;font-weight:700}.chart.lux .cxl.sub{font-size:10px;font-weight:500}
+.chart.lux .cval{fill:#f4e6d2;font-size:10.5px;font-weight:700;paint-order:stroke;stroke:#1b1814;stroke-width:3.5px;stroke-linejoin:round;font-variant-numeric:tabular-nums}
+.chart.lux .cval.best{fill:#ffd27a}
+.chart.lux .lpt circle{fill:#1b1814;stroke:#ffb347;stroke-width:2.2;transition:r .15s,stroke-width .15s;filter:drop-shadow(0 0 4px rgba(255,170,70,.6))}
+.chart.lux .lpt.cur circle{fill:#ffd978;stroke:#fff3d6;stroke-width:1.6;filter:drop-shadow(0 0 7px rgba(255,210,120,.9))}
+.chart.lux .lpt.best circle{stroke:#ffd978}
+.chart.lux .cdrop{stroke:#ffb347;stroke-opacity:0;stroke-dasharray:2 3;transition:stroke-opacity .15s}
+.chart.lux .lpt:hover .cdrop{stroke-opacity:.45}
+.chart.lux .lpt:hover circle{r:6.5;stroke-width:2.6}
+.misschart.lux .mdot{fill:#1b1814;stroke:var(--c);stroke-width:2.2;filter:drop-shadow(0 0 4px var(--c))}
+.misschart.lux .mpt:hover .mdot{r:6.5}
+.misschart.lux .cval{fill:#f4e6d2}
+.chart.lux .cline{stroke-dasharray:1;stroke-dashoffset:1;animation:cdraw 1.1s cubic-bezier(.6,.05,.3,1) .05s forwards}
+.chart.lux .carea{opacity:0;animation:cfade .9s ease .35s forwards}
+.chart.lux .lpt,.chart.lux .mpt,.chart.lux .cval{opacity:0;animation:cfade .45s ease var(--d,.2s) forwards}
+@keyframes cdraw{to{stroke-dashoffset:0}}@keyframes cfade{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.chart.lux .cline,.chart.lux .carea,.chart.lux .lpt,.chart.lux .mpt,.chart.lux .cval{animation:none;opacity:1;stroke-dashoffset:0}}
+#mbtTip.ctip{background:linear-gradient(160deg,rgba(38,31,24,.97),rgba(20,18,16,.97));border:1px solid rgba(255,179,71,.4);box-shadow:0 12px 32px rgba(0,0,0,.55),0 0 22px rgba(255,154,60,.18);color:#efe4d4;border-radius:12px;padding:10px 13px}
+#mbtTip.ctip .tth{color:#ffd27a;letter-spacing:.01em;text-shadow:0 0 10px rgba(255,170,70,.35)}
