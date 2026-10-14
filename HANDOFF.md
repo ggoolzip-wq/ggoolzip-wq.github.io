@@ -15,21 +15,6 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
-## b115 (2026-10-14) — t51 9건: 연마석 순서·그래프/메소왕 말풍선·난이도 네모·주 목록 검마·날파리·고화질 초상화+테두리·호출 한도 해제·이번 주 수익 보스 아이콘
-- 원문: /workspace/requests/t51_request.md (15:43 KST).
-1. **신념의 연마석** 정렬 = 생명의 연마석 바로 위 (`itemCmp` g_faith 3.05 / g_life 3.1).
-2. **주간 메소 그래프** hover: 기존 '주간 수익…월간 보스 … 포함' 바로 아래 `결정석 : …` / `아이템 판매 : …` 2줄(그 주 기록분). `weekSale` + `monthlyByWeek` 의 cry/sale.
-3. **보스 메소왕** '누적 아이템 판매값' hover: 초상화+난이도 네모 · 보스 이름 (난이도) · 구분선 · 이 보스가 준 아이템(분배 표시) 몇 개, 얼마 (`saleTip`).
-4. **난이도 네모**를 보스 아이콘 있는 모든 곳(`bossPic`): 이지 E 파랑 · 노말 N 연두 · 하드 H 빨강 · 카오스 C 검정 · **익스트림 EX**(검정 네모+빨간 글씨). 글자는 `data-d` + `::before`(본문 글자에 안 섞임).
-5. **전체 주 목록**: 그 주에 월간보스(검마) 잡았으면 월간 결정석 + 그 주 기록된 검마 아이템 판매값 합산(다음 주엔 미포함). 차트 tip·주 목록 합계 동일 기준.
-6. **똥캐 TOP5** 날파리: 이름 쪽이 아니라 **초상화 주변**, 작게(7px), 4마리, 더 빠르게(1.1~1.6s).
-7. **보스 초상화 고화질**: 같은 HP바 초상화(b113 선택 유지, 스우 1페이즈 파란 눈)를 Real-ESRGAN(realesr-animevideov3) 업스케일 → 128px WebP. CSS는 픽셀 표시 해제. **HP바 테두리 프레임**(`.bfr`) — 전체 수정·보스 목록·득템왕 등. 이번 주 수익·결정석 가격표는 테두리 없음.
-8. **호출 한도 도달** 배지: 넥슨 호출이 성공(비-429)하면 `quotaOk` 로 한도/초당 제한 표시를 바로 풀고 남은 호출량 다시 표시.
-9. **이번 주 수익** 캐릭터 줄: 잡은 보스 아이콘(+난이도, 테두리 없음) 1줄(넘치면 칸이 넓어짐). 수익 높은 순·순위(1~3위 메달). 주간/검마 결정석 줄(기록 있을 때만). 예전 '월간 ✓' 문구 없음.
-- 테스트: 신규 **test_tracker87**(port 8903). 기대 수정: test43(월간 ✓→검마 결정석 줄), test85(배지 text→data-d, 고화질≠pixelated), test84 소폭. run_all 에 87 추가. 관련·전체 run_par 배포 직전 1회.
-- 스크린샷: /workspace/maple-boss-tracker/b115_{before,after}_{revpanel,pricecard,bossrow,revall,bossking,lootking,poop,revpanel_rank}.png, b115_after_pricecard_items.png, b115_upscale_compare*.png
-- 작업 시간(KST): 코딩·스크린샷 약 15:43~16:01, 검증·HANDOFF·커밋 16:04~16:15. Worker 변경 없음. push는 main 승인 대기.
-
 ## b115 (2026-10-14) — t51 9건 + 추가 요청(이번 주 수익 순위·결정석 줄·가격 확인 날짜·EX 배지)
 - 원문 /workspace/requests/t51_request.md.
 1. 신념의 연마석 = 생명의 연마석 바로 위(itemPri g_faith 3.05 · g_life 3.1, 리4·컨4 다음). 모든 아이템 목록 같은 순서.
@@ -48,6 +33,7 @@
 - 추가: 아이템 가격 탭 맨 아래 '가격 확인 날짜 : YYYY-MM-DD HH:mm'(KST) = 공용 시세 중 가장 최근 시각, 모든 사용자.
 - 테스트: 신규 **test_tracker87**(port 8903): 9건 + 순위·결정석 줄·월간 ✓ 없음·가격 확인 날짜·EX·네모 전체 보임(잘리는 부모 없음)·네모 색. 기대값 수정: 12(320px 줄바꿈), 42(연마석 순위), 43(월간 ✓ → 검마 결정석 줄), 61(테두리 초상화 줄 높이 ≤64), 80(초상화 = bossPic 안), 81(주 목록 검마 포함), 83(날파리 4), 84·85(네모 글자 data-d, 픽셀 표시 아님). 전체 run_par 1회 통과(16:17~16:19).
 - 스크린샷: /workspace/maple-boss-tracker/b115_{before,after}_{revpanel,pricecard,bossrow,revall,bossking,lootking,poop}.png, b115_after_{revpanel_rank,pricecard_items}.png, b115_upscale_compare*.png
+- 배포: 커밋 ca45693 → Cloudflare Pages 성공(16:21 KST), https://bossmaple.pages.dev/ 반영 확인(bossPic·DIFF_BADGE EX·quotaOk).
 - 작업 시간(KST, 실제 시각): 시작 15:43, 끝 16:21. 코딩 약 18분(15:43~15:52 초상화 조사·9건, 15:52~15:58 업스케일·배지·순위, 15:59~16:00 결정석 줄·날짜), 테스트·검증 약 20분(test87·스크린샷 15:46~15:58, 전체 병렬 16:00~16:05 실패 → 고침 16:05~16:14, 16:14 재실행, 16:17~16:19 통과) → 코딩:테스트 ≈ 47:53.
 
 ## b114 (2026-10-14) — 시세 갱신 익셉셔널 해머 · 가격 목록 중복 7개
