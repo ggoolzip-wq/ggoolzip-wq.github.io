@@ -1254,6 +1254,7 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .ranktbl th.scth,.ranktbl td.sctd{text-align:left;padding-left:2px;padding-right:22px;width:1%;white-space:nowrap}
 .sc.sc-gold{color:#ffd54a}.sc.sc-silver{color:#d9dee6}.sc.sc-bronze{color:#d9925a}.sc.sc-w{color:#fff}
 #bossLootKing .blktbl th:nth-child(2){width:240px}@media (max-width:600px){#bossLootKing .blktbl th:nth-child(2){width:52%}} /* b118: 점수 열을 보스 열 가까이 */
+#lootKing td:nth-child(2){white-space:nowrap;width:1%}#lootKing .rkname,#lootKing .rknm,#lootKing .rknm b{white-space:nowrap;word-break:keep-all;flex:none} /* b120: 반상이 늘어도 이름 줄바꿈 없음 */
 </style>
 </head>
 <body>
@@ -3203,6 +3204,12 @@ function lootSc10(items,outs,want){ let t=0;
   for(const [a,n0] of Object.entries(items||{})){ const {it,mode}=parseIK(a); if(!ITEMS[it]||!want(mode)) continue; let n=+n0||0;
     if(isRing(it)) n-=((outs||{})[a]||[]).slice(0,n).filter(o=>o==='x').length; t+=Math.max(0,n)*sc10(it); }
   return t; }
+/* b120: 득템왕 누적 획득 아이템 = 반지 상자(녹옥·홍옥 포함, 꽝 상자도) 그대로 + 상자에서 나온 리4·컨4·생명의 연마석. 점수 = 상자 무게(흑옥 0.1·백옥 0.2·생명 0.4, 녹옥·홍옥 1) + 나온 아이템 1 */
+function kingLoot(items,outs,want){ const m=noBust(lootOf(items,outs,want));
+  const box={}; for(const [a,n0] of Object.entries(items||{})){ const {it,mode}=parseIK(a); if(ITEMS[it]&&want(mode)&&isRing(it)) box[it]=(box[it]||0)+(+n0||0); }
+  for(const k in box) if(box[k]>0) m[k]=box[k]; else delete m[k];
+  return m; }
+const kingSc10 = m => Object.entries(m).reduce((t,[k,n])=>t+n*sc10(lootBase(k)),0);
 const fmtSc = t => `${t/10}점`;
 const scCls = r => 'sc sc-'+(medal(r)||'w');
 const SC_SUB = '<div class="kingsub">(흑옥 0.1점, 백옥 0.2점, 생명 0.4점, 아이템 1점)</div>';
@@ -3210,7 +3217,7 @@ const noBust = m => Object.fromEntries(Object.entries(m).filter(([k])=>!/^x:/.te
 function kingHtml(T,which){
   const ord=orderedChars().map(c=>c.id), oi=o=>{ const i=ord.indexOf(o.id); return i<0?1e6:i; }, tb=(a,b)=>oi(a)-oi(b)||a.name.localeCompare(b.name);
   const mr=T.chars.slice().sort((a,b)=>(b.week+b.month)-(a.week+a.month)||tb(a,b));
-  const lr=T.chars.map(o=>{ const m=noBust(lootOf(o.items,o.outs,md=>md!=='l')); return {...o,loot:m,ln:Object.values(m).reduce((x,y)=>x+y,0),sc:lootSc10(o.items,o.outs,md=>md!=='l')}; }).filter(o=>o.ln>0).sort((a,b)=>b.sc-a.sc||b.ln-a.ln||tb(a,b));
+  const lr=T.chars.map(o=>{ const m=kingLoot(o.items,o.outs,md=>md!=='l'); return {...o,loot:m,ln:Object.values(m).reduce((x,y)=>x+y,0),sc:kingSc10(m)}; }).filter(o=>o.ln>0).sort((a,b)=>b.sc-a.sc||b.ln-a.ln||tb(a,b));
   const top1=mr[0]&&(mr[0].week+mr[0].month)>0&&S.characters.find(x=>x.id===mr[0].id); // b62: 제목 아이콘 = 현재 1위 캐릭터 초상화 (없으면 메소 아이콘)
   const MK=`<div class="card kingcard" id="mesoKing"><h2>${top1?avatar(top1,'hking'):miniIcon('meso')} 메소왕</h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="num">누적 주간 메소량</th><th class="num">누적 월간 메소량</th><th class="num">누적 합계</th></tr></thead><tbody>
     ${rankSlice('meso',mr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)}</td><td class="num">${meso(o.week)}</td><td class="num">${o.month?meso(o.month):'-'}</td><td class="num"><b>${meso(o.week+o.month)}</b></td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('meso',mr).length,mr.length,5)}

@@ -74,7 +74,7 @@ try:
         check('점수 열: 캐릭터/보스 바로 옆, 득템 횟수 열 없음', hh==[['순위','캐릭터','점수','누적 획득 아이템'],['순위','보스','점수','득템 목록']], hh)
         nm=pg.evaluate("[...document.querySelectorAll('#b118box .rkname')].map(e=>e.textContent)")
         check('이름 옆 (N점)·(N회) 없음', not any('점)' in x or '회)' in x for x in nm), nm)
-        check('득템왕 점수순 (나 2점, 가 1.5점, 테스트 0.7점, 다 0.2점)', [x[0] for x in lk]==['나캐','가캐','테스트캐','다캐'] and [x[1] for x in lk]==['2점','1.5점','0.7점','0.2점'], lk)
+        check('득템왕 점수순 (b120 반상 포함: 나 2, 테스트 1.9 = 상자 0.9 + 리4 1, 가 1.5, 다 0.2)', [x[0] for x in lk]==['나캐','테스트캐','가캐','다캐'] and [x[1] for x in lk]==['2점','1.9점','1.5점','0.2점'], lk)
         col=pg.evaluate("[...document.querySelectorAll('#b118box .sc')].map(e=>getComputedStyle(e).color)")
         check('점수 색 금·은·동·흰', col[:4]==['rgb(255, 213, 74)','rgb(217, 222, 230)','rgb(217, 146, 90)','rgb(255, 255, 255)'], col)
         bk=pg.evaluate("[...document.querySelectorAll('#b118box #bossLootKing tbody tr')].map(r=>[r.querySelector('.bdn').textContent,r.querySelector('.sc').textContent])")

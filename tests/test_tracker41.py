@@ -34,7 +34,7 @@ try:
     o=[idx(t) for t in ['메소왕','득템왕','보스 메소왕','에픽빔왕','혼돈의 칠흑 장신구 상자깡','내가 가지지 못한 아이템 목록']]
     check('순서: 메소왕→득템왕→보스왕→에픽빔왕→상자깡→못 가진 아이템, 득템왕 제목 괄호 없음', all(x>=0 for x in o), (o,hs))
     al=pg.evaluate("(()=>{const r=document.querySelector('#lootKing tr.rk1');return [r.children[2].innerText.trim(),!!r.querySelector('.rkcnt')]})()")
-    check('득템왕 점수 = 캐릭터 옆 점수 열 (이름 옆 (N회) 없음)', al==['3점',False] and pg.locator('#lootKing .score').count()==0, al)
+    check('득템왕 점수 = 캐릭터 옆 점수 열 (이름 옆 (N회) 없음)', al==['3.2점',False] and pg.locator('#lootKing .score').count()==0, al)
     sp=pg.evaluate("['#mesoKing','#lootKing','#bossKing','#epicCard'].map(t=>{const e=document.querySelector(t+' tr.rk1 .spk');return e?getComputedStyle(e,'::before').animationName:''})")
     check('1~3위 반짝임 (메소왕·득템왕·보스왕·에픽빔왕)', all(x=='spkd1' for x in sp), sp)
     bk=pg.eval_on_selector_all('#bossKing tbody tr:not(.rkpad)','e=>e.map(x=>[...x.children].map(t=>t.innerText.replace(/\s+/g," ").trim()))')

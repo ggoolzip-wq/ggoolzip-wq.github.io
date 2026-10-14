@@ -1147,3 +1147,4 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .ranktbl th.scth,.ranktbl td.sctd{text-align:left;padding-left:2px;padding-right:22px;width:1%;white-space:nowrap}
 .sc.sc-gold{color:#ffd54a}.sc.sc-silver{color:#d9dee6}.sc.sc-bronze{color:#d9925a}.sc.sc-w{color:#fff}
 #bossLootKing .blktbl th:nth-child(2){width:240px}@media (max-width:600px){#bossLootKing .blktbl th:nth-child(2){width:52%}} /* b118: 점수 열을 보스 열 가까이 */
+#lootKing td:nth-child(2){white-space:nowrap;width:1%}#lootKing .rkname,#lootKing .rknm,#lootKing .rknm b{white-space:nowrap;word-break:keep-all;flex:none} /* b120: 반상이 늘어도 이름 줄바꿈 없음 */

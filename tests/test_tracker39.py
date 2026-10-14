@@ -34,7 +34,7 @@ try:
     i4=[i for i,r in enumerate(rows) if r.endswith('캐릭04') or r.endswith('캐릭05')]
     check('메소왕 동점 → 기본순 (캐릭04 먼저)', len(i4)==2 and rows[i4[0]].endswith('캐릭04'), rows)
     lk=pg.inner_text('#lootKing tbody tr:first-child')
-    check('득템왕 점수 열 3점, 이름 옆 괄호 없음', '3점' in lk and '(3' not in lk, lk)
+    check('득템왕 점수 열 3.2점, 이름 옆 괄호 없음', '3.2점' in lk and '(3' not in lk, lk)
     h1=pg.eval_on_selector('#mesoKing tbody','e=>e.getBoundingClientRect().height'); y1=pg.eval_on_selector('#mesoKing .cpager','e=>e.getBoundingClientRect().top-e.closest(".card").getBoundingClientRect().top')
     pg.click('#mesoKing [data-rkpage="meso|2"]'); pg.wait_for_timeout(200)
     h2=pg.eval_on_selector('#mesoKing tbody','e=>e.getBoundingClientRect().height'); y2=pg.eval_on_selector('#mesoKing .cpager','e=>e.getBoundingClientRect().top-e.closest(".card").getBoundingClientRect().top')
