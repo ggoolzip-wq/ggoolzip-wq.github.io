@@ -1134,3 +1134,8 @@ a.logo{color:inherit;text-decoration:none;cursor:pointer}
 .pc-it img,.pc-it .ric{width:22px;height:22px;object-fit:contain;flex:none}
 .mktbox .ralist{max-height:60vh}
 .quota.sec{color:#f5b041}
+/* b113: 보스 아이콘 = HP바 초상화(픽셀) · 보스 득템왕 아이콘 크게 */
+img.bicon{image-rendering:pixelated;object-fit:contain;background:#0d1626}
+#bossLootKing .blkb .bicon{width:28px;height:28px}
+#bossLootKing .rkico .bicon,#bossLootKing .rkico img{width:48px;height:48px;max-width:48px;max-height:48px}
+#bossLootKing h2 .hbi .bicon,#bossLootKing h2 .hbi img{width:40px;height:40px}

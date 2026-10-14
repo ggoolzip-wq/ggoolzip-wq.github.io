@@ -83,9 +83,8 @@ const BOSSES = [
   {id:'blackmage',name:'검은 마법사',type:'monthly',diffs:['hard','extreme'],aliases:['검마']}
 ];
 const TYPE_LABEL = {weekly:'주간 보스',monthly:'월간 보스'};
-/* 보스 초상화 (64px WebP, base64 내장 — 오프라인 동작). 출처: 게임 내 보스 선택 UI 일러스트("Boss UI - *.png")를
- * MapleStory Fandom Wiki(maplestory.fandom.com) 및 MapleStory Wiki(maplestorywiki.net — 최초의 대적자·찬란한 흉성·발드릭스·림보)에서
- * 받아 얼굴 위주로 잘라 축소. 이미지가 없으면 글자 아이콘으로 대체. */
+/* 보스 아이콘 = 게임 보스 HP바 왼쪽 위 초상화(UI.wz UIWindow MobGage, 25px). 출처: MapleStory Wiki(maplestorywiki.net) 'Mobicon_*.png'
+ * — 3배 확대(픽셀 그대로) WebP base64 내장. 스우 = 1페이즈(파란 눈), 윌 = 1페이즈, 피에르 = 빨강, 더스크 = 거대 괴수 글룸, 듄켈 = 근위대장 다크넬, 흉성 = Malefic Star. 없으면 글자 아이콘. */
 const BOSS_ICONS = /*__BOSS_ICONS__*/{};
 function bossIcon(b){
   const src=BOSS_ICONS[b.id];

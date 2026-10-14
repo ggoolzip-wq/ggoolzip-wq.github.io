@@ -15,6 +15,16 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b113 (2026-10-14) — t26 묶음 5: 보스 아이콘 = 게임 HP바 초상화 · 스우 파란 눈 · 보스 득템왕 아이콘 크게
+- 원문 /workspace/requests/t26_request.md 6번 + swoo_hpbar_icon.png(HP바 왼쪽 위 초상화).
+- 보스 아이콘 28개 전부 교체: 예전 = 보스 선택 UI 일러스트 잘라 낸 것 → **게임 보스 HP바 초상화**(UI.wz UIWindow MobGage, 25px). 출처 MapleStory Wiki(maplestorywiki.net) 'Mobicon_*.png'(WZ 추출본). 3배 확대(픽셀 그대로) WebP lossless base64 → src/icons.json(크기 60KB → 30KB). CSS img.bicon 픽셀 표시(image-rendering:pixelated)·contain.
+  - 고른 것: 스우 = Lotus 1페이즈(**파란 눈**, 첨부 사진과 같음; 2·3페이즈 아님), 윌 = 1페이즈, 피에르 = 빨강, 매그너스 = 노말, 더스크 = 거대 괴수 글룸, 듄켈 = 근위대장 다크넬, 진 힐라 = Verus Hilla, 블러디퀸 = Crimson Queen, 파풀라투스 = 시계, 슬라임 = 가디언 엔젤 슬라임, 흉성 = Malefic Star, 림보 = Limbo Enlightened by Truth, 검은 마법사 = 1번.
+- 같은 bossIcon() 하나만 바꿔서 모든 곳(보스 목록·가격 카드·득템 분석·**수익 기록 전체 수정**)에 그대로 들어감. 전체 수정의 E/N/H/C/X 난이도 배지 그대로.
+- 보스 득템왕 아이콘 크게: 순위 초상화 36→**48px**, 제목 34→40px, 보스 칸 20→28px.
+- 테스트: 신규 **test_tracker85**(port 8901): 전체 수정 초상화 = BOSS_ICONS + 배지 H/N, 득템왕 48px, 픽셀 표시, 28개 모두 WebP ≥69px, 스우 = 1페이즈. 관련 28·44·80·83 통과, 전체 run_par 1회 통과(14:57~14:59).
+- 스크린샷: /workspace/maple-boss-tracker/b113_{before,after}_{bossrow,revall,lootking}.png
+- 작업 시간(KST, 실제 시각): 시작 14:55, 끝 15:00. 코딩 약 3분(14:55~14:57 아이콘 찾기·변환·CSS), 테스트·검증 약 3분(test85·스크린샷·관련 14:57, 전체 병렬 14:57~14:59) → 코딩:테스트 ≈ 50:50.
+
 ## b112 (2026-10-14) — t26 묶음 4: 가격 카드 결정석/아이템 탭 · 관리자 시세 등록 · 익셉셔널 해머 시세 + 추가 요청 4건 + 넥슨 호출 한도 조사
 - 원문 /workspace/requests/t26_request.md 4·5번(시세 부분). 보스 아이콘(WZ)·파란 눈 스우는 묶음 5.
 - 가격 카드: 맨 위 탭 **결정석 가격 / 아이템 가격**(`pcKind`, .pc-kind). 결정석 탭 = 예전 그대로('내가 잡는 보스만 보기' 포함). 아이템 탭 = `revItems()`(드롭 표에서 수익 기록 가능한 아이템: 칠흑 상자 → 장신구 7종, 반지 상자 → 리4·컨4·생명의 연마석) itemCmp 순서, 아이콘·이름·시세, 없으면 '- 메소'. 안내 문구 없음.
