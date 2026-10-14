@@ -84,7 +84,7 @@ const BOSSES = [
 ];
 const TYPE_LABEL = {weekly:'주간 보스',monthly:'월간 보스'};
 /* 보스 아이콘 = 게임 보스 스케줄러 목록의 보스 아이콘(= UI.wz MobGage 초상화, 원본 25~27px; 출처 MapleStory Wiki 'Mobicon_*.png', 스우 = 1페이즈 파란 눈).
- * b116: 최근접 4배(점 느낌 그대로) WebP lossless base64 내장. 없으면 글자 아이콘. */
+ * b117: 사용자 고른 ④ = 최근접 4배 + 진한 외곽선 + 선명·대비 보정(/workspace/upscale5/mk.py m_outline 그대로) WebP(q92) base64. 없으면 글자 아이콘. */
 const BOSS_ICONS = /*__BOSS_ICONS__*/{};
 function bossIcon(b){
   const src=BOSS_ICONS[b.id];
