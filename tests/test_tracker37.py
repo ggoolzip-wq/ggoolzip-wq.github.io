@@ -60,7 +60,8 @@ try:
     check('저장 → 선택이 저장 데이터에 남음', json.loads(pg.evaluate("localStorage.getItem('mapleBossTracker.v1')"))['characters'][0]['dmode']=={'kaling|g_faith':'w','kaling|r_life':'l','kaling|chaosbox':'s'})
     rp=pg.inner_text('.revpanel'); cw=pg.evaluate("getComputedStyle(document.querySelector('.revpanel .ptx-w')).color"); cl=pg.evaluate("getComputedStyle(document.querySelector('.revpanel .ptx-l')).color")
     check('이번 주 수익: (2인 블빵승리) 하늘색 / (2인 블빵패배) 회색 / (2인 분배)', '(2인 블빵승리)' in rp and '(2인 블빵패배)' in rp and '(2인 분배)' in rp and cw=='rgb(127, 211, 255)' and cl=='rgb(138, 143, 152)', (cw,cl))
-    hs=pg.evaluate("[...document.querySelectorAll('.revpanel .dl, .ringouts .dl')].map(e=>{const P=e.parentElement.closest('.rp-items,.ringouts').getBoundingClientRect(),R=e.getBoundingClientRect();return [e.innerText.replace(/\\s+/g,' '),Math.round(R.height),R.right<=P.right+1]})")
+    hs=pg.evaluate("[...document.querySelectorAll('.revpanel .dl:not(.dlg), .ringouts .dl')].map(e=>{const P=e.parentElement.closest('.rp-items,.ringouts').getBoundingClientRect(),R=e.getBoundingClientRect();return [e.innerText.replace(/\\s+/g,' '),Math.round(R.height),R.right<=P.right+1]})")
+    # b131: 같은 보스 묶음(.dlg)은 여러 줄이 정상 → 묶음 안 아이템 줄(.dli)마다 한 줄인지 확인
     # b128: 이번 주 수익 줄에 20px 보스 아이콘+배지(위 3px) → 한 줄 높이 최대 ~31px, 두 줄이면 40px 이상이라 34px 로 판정
     check('b50: 모든 항목(칠흑·블빵 포함)이 한 줄 덩어리, 칸 밖으로 안 나감', hs and all(h<=34 and ok for _,h,ok in hs), hs)
     pg.evaluate("endCelebrate(); document.querySelector('#iconBurst')?.remove()"); pg.locator('.revpanel').screenshot(path='/workspace/shots/b49_income.png')

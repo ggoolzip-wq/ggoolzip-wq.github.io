@@ -10,7 +10,7 @@ def check(n,c,d=''):
     if not c: fails.append(n)
 def shot(loc,name):
     if SHOT:
-        try: loc.screenshot(path=os.path.join(SHOT,f'b126_{TAG}_{name}.png'))
+        try: loc.screenshot(path=os.path.join(SHOT,f"{os.environ.get('MBT_PFX','b126')}_{TAG}"+f'_{name}.png'))
         except Exception as e: print('shot skip',name,str(e)[:80])
 srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
@@ -50,13 +50,14 @@ try:
     pg.evaluate("()=>{localStorage.setItem('mapleBossTracker.svToken','t'.repeat(43));localStorage.setItem('mapleBossTracker.svAdmin','1')}")
     pg.evaluate("s=>{S.characters=s.characters;S.settings.accounts=s.settings.accounts;S.activeId='c1';const c=S.characters[0];c.bosses.blackmage={enabled:true,diff:'extreme',party:1};c.monthly={blackmage:S.period.week};c.mdate={blackmage:'2026-10-08'};c.mdrops={'blackmage|genesis':1};c.mdrev={'blackmage|genesis':{m:3000000000,a:30,p:1,i:'genesis'}};save();render()}",ST); pg.wait_for_timeout(400)
     pg.evaluate("()=>{const c=S.characters[0];c.bosses.seren={enabled:true,diff:'hard',party:1};c.weekly.seren=true;c.drops['seren|r_black']=3;c.drops['seren|r_white']=3;c.drops['lucid|r_life']=1;c.outcomes=c.outcomes||{};save();render()}"); pg.wait_for_timeout(300)
-    pg.evaluate("()=>{const c=S.characters[0];c.dropOut={'seren|r_black':['r4','x','x'],'seren|r_white':['c4','gl']};save();render()}"); pg.wait_for_timeout(300)
+    pg.evaluate("()=>{const c=S.characters[0];c.dropOut={'seren|r_black':['r4','x','x'],'seren|r_white':['c4','gl']};c.drev['seren|r_black']={m:100000000,a:1,p:1,i:'ring:r4'};c.drev['seren|r_white']={m:250000000,a:2.5,p:1,i:'ring:c4'};save();render()}"); pg.wait_for_timeout(300)
+    pg.set_viewport_size({'width':1600,'height':2400}); pg.wait_for_timeout(300)
     shot(pg.locator('.revpanel'),'revpanel')
     shot(pg.locator('.revpanel .rp-items').first,'rp_items')
     if not NOCHK:
         R=pg.evaluate("""(()=>{const box=e=>{const r=e.getBoundingClientRect();return [Math.round(r.width),Math.round(r.height)]};
           const g=document.querySelector('.revpanel .rp-boss .bpic'), gb=g&&g.querySelector('.dbadge');
-          const L=[...document.querySelectorAll('.revpanel .rp-items .dl')].map(d=>{const b=d.querySelector('.dlb'),p=b&&b.querySelector('.bpic'),i=p&&p.querySelector('img.bicon'),bd=p&&p.querySelector('.dbadge');
+          const L=[...document.querySelectorAll('.revpanel .rp-items .dl:not(.dli)')].map(d=>{const b=d.querySelector('.dlb'),p=b&&b.querySelector('.bpic'),i=p&&p.querySelector('img.bicon'),bd=p&&p.querySelector('.dbadge');
             return {t:b?b.innerText.trim():'',pic:!!p,first:!!b&&b.firstElementChild===p,src:i?i.getAttribute('src'):null,sz:i?box(i):null,bd:bd?box(bd):null,d:bd?bd.className:''}});
           return {gauge:g?box(g.querySelector('.bicon')):null,gb:gb?box(gb):null,L,icons:Object.fromEntries(['lucid','kaling','seren'].map(k=>[k,BOSS_ICONS[k]]))}})()""")
         L=R['L']
@@ -73,6 +74,15 @@ try:
               if(a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1) bad.push([part.className,o.className,o.innerText.slice(0,20)]); } } }
           return bad})()""")
         check('b128 보스 아이콘·배지가 아래 금액 줄·다른 줄과 안 겹침', not ov, ov[:5])
+    if not NOCHK:
+        G=pg.evaluate("""[...document.querySelectorAll('.revpanel .rp-items .dl.dlg')].map(g=>{const R=e=>e.getBoundingClientRect();const it=[...g.querySelectorAll('.dli')],rv=g.querySelector(':scope>.dlcol>.dlrev');const last=it[it.length-1];
+          return {b:g.querySelector('.dlb').innerText.replace(/\\s+/g,' ').trim(),n:it.length,pics:g.querySelectorAll('.bpic').length,stack:it.every((e,i)=>!i||R(e).top>=R(it[i-1]).bottom-1)&&it.every(e=>Math.abs(R(e).left-R(it[0]).left)<1),
+            rev:rv?rv.innerText:'',under:rv?(R(rv).top>=R(last).bottom-1&&Math.abs(R(rv).left-R(last).left)<4):null,revLast:rv?g.querySelector('.dlcol').lastElementChild===rv:null}})""")
+        names=[x['b'] for x in G]
+        check('b131 같은 보스·난이도는 1묶음 (보스 아이콘 1번)', len(names)==len(set(names)) and all(x['pics']==1 for x in G), G)
+        lu=[x for x in G if x['b'].startswith('루시드')]; se=[x for x in G if x['b'].startswith('선택받은')]
+        check('b131 루시드 3개·세렌 2개 아이템이 세로로', lu and lu[0]['n']==3 and se and se[0]['n']==2 and all(x['stack'] for x in G), G)
+        check('b131 합친 금액 1번, 마지막 아이템 바로 밑 (세렌 1억+2.5억=3.5억)', se[0]['rev'].startswith('3억 5,000만') and se[0]['under'] and se[0]['revLast'] and all(x['under'] in (None,True) for x in G), G)
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

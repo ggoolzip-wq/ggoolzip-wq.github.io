@@ -1176,3 +1176,11 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .dimg{display:inline-flex;vertical-align:middle;margin-left:4px;position:relative}
 .dimg img{width:68px;height:18px;image-rendering:pixelated;display:block}
 .dimg .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* b131 이번 주 수익: 같은 보스·난이도 묶음 — 보스 줄(아이콘 20px+배지) 1번, 그 밑에 아이템 세로(보스 이름 위치에 맞춤), 합친 금액은 마지막 아이템 밑 */
+.rp-items .dl.dlg{display:flex;flex-direction:column;align-items:flex-start;padding-top:3px;line-height:20px;max-width:100%}
+.rp-items .dlg>.dlb{flex:none;white-space:nowrap}
+.rp-items .dlg>.dlcol{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding-left:30px;margin-top:2px;max-width:calc(100% - 30px)}
+.rp-items .dlg .dl.dli{display:inline-flex;align-items:center;line-height:20px;font-size:inherit;padding:0;margin:0}
+.rp-items .dlg>.dlcol>.dlrev{line-height:15px;padding-left:2px}
+.rp-items .dls:has(.dlg){flex-direction:column;flex-wrap:nowrap;gap:5px;align-items:flex-start}
+.rp-items .dls>.dl.dlg{align-self:flex-start;margin:0;text-align:left}

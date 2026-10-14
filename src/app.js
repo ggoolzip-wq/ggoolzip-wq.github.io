@@ -791,6 +791,13 @@ function itemsInline(items, opts={}){
   const bi=s=>{ const i=BOSSES.findIndex(b=>b.id===s); return i<0?999:i; }, ii=it=>Object.keys(ITEMS).indexOf(it);
   const ks=Object.keys(agg).sort((x,y)=>{ const X=meta[x], Y=meta[y]; return (opts.byBoss?bi(X.slot)-bi(Y.slot):0) || ii(X.it)-ii(Y.it) || X.party-Y.party || String(X.mode).localeCompare(String(Y.mode)); });
   if(!ks.length) return opts.empty??'';
+  if(opts.bpic&&opts.byBoss){ // b131: 이번 주 수익 — 같은 보스·난이도끼리 묶음: 보스 아이콘·이름 1번, 아이템은 세로로, 합친 금액은 마지막 아이템 밑에 1번
+    const G=[]; for(const a of ks){ const sl=meta[a].slot; let g=G[G.length-1]; if(!g||g.slot!==sl) G.push(g={slot:sl,ks:[],rev:0}); g.ks.push(a); g.rev+=meta[a].rev||0; }
+    return `<span class="dls">${G.map(g=>{ const b=findBoss(g.slot), d=opts.diffOf?opts.diffOf(g.slot):'';
+      const bh=`<span class="dlb">${b?bossPic(b,d,false):''}${esc(b?.name||'')}${dlvHtml(d)?' '+dlvHtml(d):''}</span>`;
+      const rows=g.ks.map(a=>{ const {it,party,mode}=meta[a]; return dropLine(it,party,agg[a],outs[a],'',mode,'').replace('<span class="dl','<span class="dl dli'); }).join('');
+      return `<span class="dl dlg">${bh}<span class="dlcol">${rows}${g.rev?`<span class="dlrev">${meso(g.rev)}</span>`:''}</span></span>`; }).join('')}</span>`;
+  }
   return `<span class="dls">${ks.map(a=>{ const {slot,it,party,mode,rev}=meta[a]; const h=dropLine(it,party,agg[a],outs[a],opts.byBoss?(findBoss(slot)?.name||''):'',mode,opts.byBoss&&opts.diffOf?opts.diffOf(slot):'',opts.bpic&&opts.byBoss?findBoss(slot):null); if(rev&&opts.bpic&&h.includes('<span class="dlt">')){ // b128: 이번 주 수익 — 금액을 보스 초상화 밑이 아니라 아이템(아이콘·이름) 바로 밑에
       const i=h.lastIndexOf('</span>'); return h.replace('<span class="dlt">','<span class="dlcol"><span class="dlt">').slice(0,i+'<span class="dlcol">'.length)+`<span class="dlrev">${meso(rev)}</span></span>`+'</span>'; }
     return rev?`<span class="dlw">${h}<span class="dlrev">${meso(rev)}</span></span>`:h; }).join('')}</span>`;

@@ -39,7 +39,7 @@ try:
     pg.wait_for_timeout(300)
     for vw,vh in ((1920,1080),(1280,800),(1200,800)):
       pg.set_viewport_size({'width':vw,'height':vh}); pg.wait_for_timeout(400)
-      r=pg.evaluate("""(()=>{const l=[...document.querySelectorAll('.rcol .dl')];return l.map(e=>{const rs=[...e.getClientRects()];const ts=[...e.querySelectorAll('img,b,span')].map(x=>Math.round(x.getBoundingClientRect().top+x.getBoundingClientRect().height/2));return {t:e.innerText.replace(/\\s+/g,' '),rows:new Set(ts.map(t=>Math.round(t/6))).size,h:Math.round(e.getBoundingClientRect().height)}})})()""")
+      r=pg.evaluate("""(()=>{const l=[...document.querySelectorAll('.rcol .dl:not(.dlg)')];return l.map(e=>{const rs=[...e.getClientRects()];const ts=[...e.querySelectorAll('img,b,span')].map(x=>Math.round(x.getBoundingClientRect().top+x.getBoundingClientRect().height/2));return {t:e.innerText.replace(/\\s+/g,' '),rows:new Set(ts.map(t=>Math.round(t/6))).size,h:Math.round(e.getBoundingClientRect().height)}})})()""")
       check(f'{vw}: 반지 상자 항목이 한 줄 덩어리 (꽝이 다음 줄로 안 떨어짐)', r and all(x['h']<=26 for x in r), r)
       lay=pg.evaluate("(()=>{const m=document.querySelector('main').getBoundingClientRect();const cut=[...document.querySelectorAll('.pricecard .pc-nm')].filter(n=>n.scrollWidth>n.clientWidth+0.5).length;const fs=parseFloat(getComputedStyle(document.querySelector('.pc-row')).fontSize);return {l:Math.round(m.left),r:Math.round(innerWidth-m.right),cut,fs,rcol:document.querySelector('.rcol').getBoundingClientRect().width,hs:document.documentElement.scrollWidth>innerWidth}})()")
       check(f'{vw}: 결정석 가격 안 잘림, 글자 키움, 가운데, 가로 스크롤 없음', lay['cut']==0 and abs(lay['l']-lay['r'])<=1 and not lay['hs'] and (vw<1300 or lay['fs']>=12), lay)
