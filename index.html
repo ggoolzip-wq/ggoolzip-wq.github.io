@@ -1255,6 +1255,11 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .sc.sc-gold{color:#ffd54a}.sc.sc-silver{color:#d9dee6}.sc.sc-bronze{color:#d9925a}.sc.sc-w{color:#fff}
 #bossLootKing .blktbl th:nth-child(2){width:240px}@media (max-width:600px){#bossLootKing .blktbl th:nth-child(2){width:52%}} /* b118: 점수 열을 보스 열 가까이 */
 #lootKing td:nth-child(2){white-space:nowrap;width:1%}#lootKing .rkname,#lootKing .rknm,#lootKing .rknm b{white-space:nowrap;word-break:keep-all;flex:none} /* b120: 반상이 늘어도 이름 줄바꿈 없음 */
+
+/* b121: 이번 주 수익 위 줄 — 글자 왼쪽, 메소 숫자 오른쪽 끝 · 반지 상자 줄 */
+.rp-line .rpl{display:inline-flex;align-items:center;gap:3px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.rp-line .rpn{margin-left:auto;padding-left:8px;font-weight:600}
+.rp-line.rp-ring{gap:5px}.rp-line.rp-ring img,.rp-line.rp-ring .ric,.rp-line.rp-ring svg{width:16px;height:16px;flex:none}
 </style>
 </head>
 <body>
@@ -2893,6 +2898,12 @@ function charSaleLine(c){ const sale=pItemSale(c); if(!(sale>0)) return ''; let 
   for(const [k,r] of L) if(r&&+r.m>0&&(!best||+r.m>best.m)) best={m:+r.m,k,i:r.i||k.split('|')[1]};
   const box=best&&(/^cb:/.test(best.i)||parseIK(best.k).it==='chaosbox'); let ico=''; try{ ico=best?lootIco(box?'chaosbox':best.i):''; }catch(e){}
   return `<div class="rp-cl rp-sl">${ico}<span>이번주 아이템 판매금 ${meso(sale)}</span></div>`; }
+/* b121: 이번 주 반지 상자 줄 — 가장 많이 얻은 상자 아이콘(같으면 아이템 순서 = 생명→백옥→흑옥→녹옥→홍옥) · 상자 수 · 결과(리4·컨4·연마석·꽝, 0개 숨김). 범위 = '이번주 획득 아이템'과 같은 이번 주 주간 드롭 */
+function weekRingLine(){ const by={}, t={r4:0,c4:0,gl:0,x:0}; let n=0;
+  for(const c of vchars()){ const d=charDrops(c,'weekly'); for(const [k,v] of Object.entries(d.items)){ const {it}=parseIK(k); if(!isRing(it)) continue; n+=+v; by[it]=(by[it]||0)+(+v); const o=outTally(d.outcomes[k],v); for(const q in t) t[q]+=o[q]; } }
+  if(!n) return ''; const top=Object.keys(by).sort((x,y)=>by[y]-by[x]||itemCmp(x,y))[0];
+  const R=[['r4','리4'],['c4','컨4'],['gl','연마석'],['x','꽝']].filter(([q])=>t[q]>0).map(([q,l])=>`<span>${l} ${t[q]}개</span>`).join(' ');
+  return `<div class="muted rp-line rp-ring">${itemIcon(top)}<span>반지 상자 ${n}개</span>${R?' '+R:''}</div>`; }
 function weekMonthly(a){ let n=0, meso=0; a.per.forEach(p=>p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week).forEach(x=>{ n++; meso+=x.value; })); return {n,meso}; }
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
 function revPanel(a,cur){
@@ -2906,10 +2917,10 @@ function revPanel(a,cur){
   return `<aside class="revpanel card" aria-label="이번 주 수익 요약">
     <h2>${miniIcon('meso')} 이번 주 수익</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
-    ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+itemSum(c.drops),0);
+    ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
       return `<div class="rp-total">${((cry+sale)/1e8).toFixed(1)}억<small> 메소</small></div>
-    <div class="muted rp-line rp-cry">${cry.toLocaleString()} - ${miniIcon('ipc')} 주보 결정석 ${a.count}개 · ${miniIcon('ipcm')} 검마 결정석 ${wm.n}개</div>
-    <div class="muted rp-line rp-sale">${sale.toLocaleString()} - ${topSaleIco()}이번주 획득 아이템 ${n}개</div>`; })()}
+    <div class="muted rp-line rp-cry"><span class="rpl">${miniIcon('ipc')} 주보 결정석 ${a.count}개 · ${miniIcon('ipcm')} 검마 결정석 ${wm.n}개</span><b class="rpn">${cry.toLocaleString()}</b></div>
+    <div class="muted rp-line rp-sale"><span class="rpl">${topSaleIco()}이번주 획득 아이템 ${n}개</span><b class="rpn">${sale.toLocaleString()}</b></div>${weekRingLine()}`; })()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
       <div class="rp-row rp-top">${(r=>`<span class="rp-rk">${r?rankNo(r):'<span class="rkno"><span class="rkn">-</span></span>'}</span><span class="rp-nm rkname${medal(r)?' md-'+medal(r):''}"><span class="${medal(r)?'spk':''}">${esc(p.c.name)}</span>${p.c.isMain?' <span class="mainbadge">★</span>':''}</span>`)(rk.get(p))}<b>${meso(pmeso(p))}</b></div>
