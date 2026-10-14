@@ -14,7 +14,7 @@ def check(n,c,d=''):
     if not c: fails.append(n)
 def shot(loc,name):
     if SHOT:
-        try: loc.scroll_into_view_if_needed(); loc.screenshot(path=os.path.join(SHOT,f'b111_{TAG}_{name}.png'))
+        try: loc.scroll_into_view_if_needed(); loc.screenshot(path=os.path.join(SHOT,f"{os.environ.get('MBT_PFX','b111')}_{TAG}_{name}.png"))
         except Exception as e: print('shot skip',name,str(e)[:80])
 srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
@@ -45,13 +45,13 @@ try:
         check('pbTail: 3인 10판 6승 = 상위 7.7%', pg.evaluate("topPct(pbTail(Array(10).fill(1/3),6))")=='상위 7.7%', pg.evaluate("pbTail(Array(10).fill(1/3),6)"))
         t=pg.evaluate("[...['#ltTotal','#ltRing','#ltBbang']].map(s=>document.querySelector(s).innerText.replace(/\\s+/g,' '))")
         # 블빵: 3인 6승 4패 → 7.7%
-        check("블빵 카드: '누적 블빵 승리' + 상위 7.7% + '3인 (6승 4패)'", t[2]=='누적 블빵 승리 상위 7.7% 3인 (6승 4패)', t[2])
+        check("블빵 카드: '블빵 상위' + 상위 7.7% + '3인 (6승 4패)' (b120 이름)", t[2]=='블빵 상위 상위 7.7% 3인 (6승 4패)', t[2])
         # 반상(녹옥·홍옥 제외): 흑옥 3(결과 기록 3: r4,x,x) 5% · 백옥 1(c4) 10% → P(X>=2)
         exp=pg.evaluate("pbTail([.05,.05,.05,.1],2)")
         ps=[.05,.05,.05,.1]
         import itertools
         pp=sum((lambda r:__import__('math').prod(ps[i] if r[i] else 1-ps[i] for i in range(4)))(r) for r in itertools.product([0,1],repeat=4) if sum(r)>=2)*100
-        check('리4컨4 상위% = 포아송 이항(흑옥 3·백옥 1, 성공 2) — 파이썬 계산과 같음', abs(exp-pp)<1e-9 and f"리4컨4 상위 {round(pp,1)}%" in t[1] and '녹옥, 홍옥 반지 상자 제외' in t[1], (t[1],pp))
+        check('리4컨4 상위% = 포아송 이항(흑옥 3·백옥 1, 성공 2) — 파이썬 계산과 같음', abs(exp-pp)<1e-9 and t[1]==f"반상 상위 상위 {round(pp,1)}% 반상 누적 4회, 녹·홍옥 반상 제외", (t[1],pp))
         # 총 득템: chaosbox 3 + 흑옥 3 + 백옥 1 + 신념 1 + 홍옥 제외 + oath 6(블빵승리) (se1 패배 제외) + 리4·컨4 3(흑옥 r4, 백옥 c4, 홍옥 c4) = 17
         check('총 득템: 상자 리4·컨4(녹옥·홍옥 포함) 더함, 블빵패배 제외 = 38개 (다른 캐릭터 소울 에테르 21 포함)', '38개' in t[0], t[0])
         # 2) 득템왕: 칠흑 상자 = 상자 하나 + 말풍선
@@ -88,9 +88,12 @@ try:
         check('보스 별 누적 획득 아이템: 강한 보스 먼저 (유피테르 → 스우(익스트림, 흉성 노말 아래) → 카링 → 자쿰)', bl==['유피테르','스우','카링','자쿰'], bl)
         mi=pg.evaluate("missingItems(totalData()).map(o=>bossStr(o.list[0].b,o.list[0].d))")
         check('못 가진 아이템: 강한 보스 먼저, 첫 줄 = 유피테르', mi==sorted(mi) and pg.evaluate("missingItems(totalData())[0].list[0].b.id")=='jupiter', mi[:5])
-        # 7) 총 아이템 획득량: 반상·리4·컨4 따로
-        it=pg.inner_text('#itRingSum').replace('\n',' ')
-        check('총 아이템 획득량: 반지 상자 5개 · 리4 1개 · 컨4 2개', '반지 상자 5개' in it and '리4 1개' in it and '컨4 2개' in it, it)
+        # 7) 총 아이템 획득량 (b120: 요약 줄 삭제, 리4·컨4 = 일반 칩)
+        OUT4=pg.evaluate("({r4:OUT_NAME.r4,c4:OUT_NAME.c4})")
+        it=pg.evaluate("[...document.querySelectorAll('.itemtot .loot')].map(e=>e.innerText.replace(/\\s+/g,' ').trim())")
+        r4=[x for x in it if x.startswith(OUT4['r4'])]; c4=[x for x in it if x.startswith(OUT4['c4'])]
+        order=pg.evaluate("[...document.querySelectorAll('.itemtot .loot')].map(e=>e.querySelector('.ln').textContent)")
+        check('b120 총 아이템 획득량: 위 요약 줄 없음, 리4 x1 · 컨4 x2 = 다른 아이템과 같은 칩, 아이템 순서', pg.locator('#itRingSum').count()==0 and r4==[OUT4['r4']+' x1'] and c4==[OUT4['c4']+' x2'], (it,order))
         shot(pg.locator('.itemtot'),'itemtot')
     # 8) 길드 탭 버튼 위치 · 일퀘 탭 (모의 넥슨 API)
     ctx=b.new_context(viewport={'width':1366,'height':900},locale='ko-KR'); ctx.route('https://open.api.nexon.com/**',handle)

@@ -15,6 +15,15 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b120 (2026-10-14) — 반상 상위 · 블빵 상위 · 총 아이템 획득량 리4/컨4 칩
+- 시간(KST): 17:22–17:29 (코딩 약 4분 / 테스트 약 3분, 전체 테스트 포함)
+- 득템 분석 '누적 득템' 카드: '반상 누적' → '반상 상위', '누적 블빵 승리' → '블빵 상위'.
+- 반상 상위 큰 숫자 = 리4·컨4 운 '상위 X%' (예전엔 밑 작은 글씨에 있던 값, 계산 그대로): 결과를 기록한 흑옥·백옥·생명 상자마다 (리4+컨4 확률, BOX_INFO 공식 확률) 시행 → 포아송 이항분포 P(리4+컨4 ≥ 실제 개수) × 100. 녹옥·홍옥 상자와 블빵패배 상자는 제외. 블빵 상위와 같은 방식(pbTail).
+- 밑 글씨: '반상 누적 N회, 녹·홍옥 반상 제외' (N = 녹·홍옥 빼고 블빵패배 빼고 얻은 반지 상자 수. 결과 미기록 상자는 N에는 들어가고 % 계산에는 안 들어감).
+- 총 아이템 획득량: 위 '반지 상자 N개 · 리4 · 컨4' 요약 줄 삭제, 리4·컨4는 다른 아이템처럼 칩 xN (기존 아이템 순서).
+- 테스트: test44·83 수정 (83 스크린샷 이름 MBT_PFX 지원).
+- 스크린샷: /workspace/maple-boss-tracker/b120_{before,after}_{loot_top,itemtot}.png
+
 ## b119 (2026-10-14) — 일퀘 현황 탭 삭제
 - 시간(KST): 17:15–17:20 (코딩 약 3분 / 테스트 약 3분, 전체 테스트 포함)
 - 지운 것: 탭 버튼(body.html), renderDaily·dqCell·dqState·DQ_TXT·dqChars·DQ_ITEMS·DQ_ICONS·dqIco·MP_CHAR_DAILY, 🔄(#dqSync)·편집·항목/캐릭터 숨김 클릭·키보드 처리, 스케줄러 요약의 일퀘 항목(items) 계산, 일퀘 CSS, src/dqicons.json · tools/build_dqicons.py · build.py 주입. index.html 887KB → 845KB.
