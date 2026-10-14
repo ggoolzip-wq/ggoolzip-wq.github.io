@@ -29,7 +29,7 @@ try:
     pr=lambda b,d: pg.evaluate(f"price(findBoss('{b}'),'{d}')")
     check('old manual overrides cleared', pg.evaluate("Object.keys(S.settings.prices).length")==0 and pr('seren','hard')==base_price('선택받은 세렌 (하드)'), pr('seren','hard'))
     pg.wait_for_function('typeof officialInfo!=="undefined" && !!officialInfo',timeout=8000); pg.evaluate('render()'); foot=pg.inner_text('.pricecard .pc-foot'); check('card foot auto line', foot.startswith('공식 패치 노트 기준 자동 갱신\n(') and '마지막 확인 ' in foot, foot)  # b79: (가격 변동일 …, 마지막 확인 MM.DD HH:MM)
-    check('card title has crystal icon', pg.query_selector('.pricecard .pc-head h2 img.ric') is not None)
+    check('card title(b112: 결정석 가격 탭) has crystal icon', pg.query_selector('.pricecard .pc-kind [data-pckind=cry] img.ric') is not None)
     check('no 수정 link in card', pg.query_selector('.pricecard [data-tab]') is None)
     check('46 official rows applied', pg.evaluate('officialInfo.applied')==46 and not pg.evaluate('officialInfo.pending.length'))
     wk=pg.evaluate("priceRows('weekly').map(r=>r.p)"); shown=pg.eval_on_selector_all('.pricecard .pc-list > .pc-row','e=>e.length')

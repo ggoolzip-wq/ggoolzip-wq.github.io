@@ -545,6 +545,11 @@ async function route(req, env) {
     await env.DB.prepare('INSERT INTO seen (user_id,ids,updated_at) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET ids=excluded.ids, updated_at=excluded.updated_at').bind(me.userId, JSON.stringify(out), Date.now()).run();
     return json(200, { ids: out });
   }
+  // b112: 아이템 시세(관리자가 등록·갱신한 값) 읽기 — 로그인한 사용자 누구나 (득템 가격 카드 '아이템 가격' 탭)
+  if (p === '/api/prices' && M === 'GET') {
+    const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'").first(); let v = {}; try { v = r ? JSON.parse(r.v) : {}; } catch (e) {}
+    return json(200, { prices: v });
+  }
   if (p.startsWith('/api/admin/')) { // b68: 관리자만 (서버에서 사용자 id 로 확인)
     if (!adminId(env) || me.userId !== adminId(env)) throw new HttpError(403, 'not_admin', '관리자만 쓸 수 있습니다');
     if (p === '/api/admin/users' && M === 'GET') { // b102: 쿼리 3개를 한 번에(batch) — 사용자 수와 상관없이 왕복 1번. ?prices=1 이면 최저가도 같이

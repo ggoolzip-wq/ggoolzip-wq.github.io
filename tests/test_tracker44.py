@@ -32,7 +32,7 @@ try:
     pg.evaluate("()=>{const c=S.characters[0];c.monthly.blackmage=S.period.week;c.mdate={blackmage:'2026-10-08'};save();render()}"); pg.wait_for_timeout(300)
     st=pg.inner_text('.stats.s3'); r=pg.evaluate("[cRev(S.characters[0]).meso,price(findBoss('blackmage'),'hard'),meso(cRev(S.characters[0]).meso+price(findBoss('blackmage'),'hard'))]")
     check('C: (이 캐릭터) 제거 + 주간 수익에 이번 주 검마 합산', '(이 캐릭터)' not in st and r[2] in st, (st[:120],r))
-    check('D: 이번 달 월간 보스 옆 (10/8)', '이번 달 월간 보스 (10/8)' in st.replace('\n',' '), st[:200])
+    check('D(b112): 이번달 검마 (10월 8일 격파 완료)', '이번달 검마 (10월 8일 격파 완료)' in st.replace('\n',' '), st[:200])
     pg.evaluate("()=>{const c=S.characters[0];delete c.mdate;save();render()}"); pg.wait_for_timeout(200)
     check('D: 날짜 없는 기존 기록은 날짜 표시 안 함', '(10/8)' not in pg.inner_text('.stats.s3') and pg.evaluate("S.characters[0].mdate!==undefined||true"))
     pg.evaluate("()=>{const c=S.characters[0];c.monthly={};c.mdate={};save();render()}")

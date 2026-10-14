@@ -67,8 +67,8 @@ try:
        gap:l.top-ic.bottom,rows:[...document.querySelectorAll('.rarow')].map(r=>[r.querySelector('.raname').innerText,r.querySelector('input').value]),
        center:Math.abs((box.left+box.right)/2-innerWidth/2)<3,btns:[...document.querySelectorAll('.rabtns button')].map(b=>b.innerText),okBg:getComputedStyle(q('.raok')).backgroundColor}})()""")
     check("창 제목·아이콘 한 줄·1.5줄 간격·아이템 3줄(기록 안 한 것 포함)·가운데·[전체 수정](주황)/[취소]", m['title']=='수익 기록 전체 수정' and m['icons']==3 and m['oneRow'] and 18<=m['gap']<=30 and len(m['rows'])==3 and m['center'] and m['btns']==['전체 수정','취소'] and m['okBg']=='rgb(255, 138, 31)', m)
-    bi=pg.evaluate("[...document.querySelectorAll('.rarow')].map(r=>{const e=r.querySelector('.rabi');return e&&e.innerHTML===bossIcon(findBoss(e.dataset.boss))&&e.nextElementSibling.classList.contains('raname')})")
-    check('b110: 아이템 이름 옆 보스 아이콘 (공통 bossIcon)', len(bi)==3 and all(bi), bi)
+    bi=pg.evaluate("[...document.querySelectorAll('.rarow')].map(r=>{const e=r.closest('.ragrp')?.querySelector(':scope>.rabi');return !!e&&e.innerHTML.startsWith(bossIcon(findBoss(e.dataset.boss)))})")
+    check('b110/b112: 보스 묶음 초상화 = 공통 bossIcon', len(bi)==3 and all(bi), bi)
     check('기존 기록 값 미리 채움(2억), 나머지 빈 칸', sorted(r[1] for r in m['rows'])==['','','2'], m['rows'])
     shot(pg.locator('#revAllModal .modal'),'revall')
     ins=pg.locator('.rarow input'); n=ins.count(); vals=['3','',''] 

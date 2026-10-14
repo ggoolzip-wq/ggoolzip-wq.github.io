@@ -1221,6 +1221,26 @@ a.logo{color:inherit;text-decoration:none;cursor:pointer}
 @media(prefers-reduced-motion:reduce){.fly{animation:none;display:none}}
 @media (max-width:600px){#bossLootKing .blro{display:none}.itsum{gap:4px 10px}.itsum .loot{white-space:nowrap}}
 .fly{width:14px;height:12px}
+/* b112: 수익 기록 전체 수정 — 보스별 묶음(초상화 1번 + 난이도 배지), 아이템 줄은 오른쪽 */
+.ragrp{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.ragrp:last-child{border-bottom:0}
+.ragrp>.rabi{position:relative;width:40px;height:40px}
+.ragrp>.rabi img,.ragrp>.rabi svg,.ragrp>.rabi .bicon{width:40px;height:40px}
+.ragi{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.dbadge{position:absolute;left:-3px;top:-3px;width:14px;height:14px;border-radius:3px;font-size:9px;font-weight:900;line-height:14px;text-align:center;color:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.45)}
+.db-easy{background:#3b82f6}.db-normal{background:#86efac;color:#14532d}.db-hard{background:#dc2626}.db-chaos{background:#111;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.55)}.db-extreme{background:#7c3aed}
+.rpsico{display:inline-flex;vertical-align:-4px;margin-right:3px}
+.rpsico img,.rpsico .ric{width:16px;height:16px;object-fit:contain}
+.cisub{font-size:.72rem;line-height:1.35}
+/* b112: 가격 카드 탭 (결정석 가격 / 아이템 가격) */
+.pc-kind{display:flex;gap:4px;margin:0 0 8px}
+.pc-kind button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;font:inherit;font-size:.86rem;font-weight:800;padding:6px 6px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+.pc-kind button.on{color:var(--text);border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
+.pc-kind button img{width:20px;height:20px;object-fit:contain}
+.pricecard .pc-head{justify-content:flex-end}
+.pc-it img,.pc-it .ric{width:22px;height:22px;object-fit:contain;flex:none}
+.mktbox .ralist{max-height:60vh}
+.quota.sec{color:#f5b041}
 </style>
 </head>
 <body>
@@ -1363,7 +1383,7 @@ const CONFIG = {
   WEEKLY_RESET_DAY: 4,             // 0=일 ... 4=목 (목요일 00:00 KST)
   API_BASE: 'https://open.api.nexon.com',
   API_DELAY_MS: 250,              // (b107 전) 모든 호출 사이 250ms 간격 — 지금은 아래 키별 초당 제한으로 대체
-  API_RATE_N: 5, API_RATE_WIN_MS: 1100 // b107: 키마다 1.1초 안에 최대 5건 시작 (넥슨 개발 단계 키 공식 한도 초당 5건 + 여유). 키가 다르면 동시에
+  API_RATE_N: 4, API_RATE_WIN_MS: 1100 // b112: 5→4 (넥슨 서버 쪽 1초 창에 6건이 몰려 초당 429 나던 것 방지). b107: 키마다 1.1초 안에 최대 5건 시작 (넥슨 개발 단계 키 공식 한도 초당 5건 + 여유). 키가 다르면 동시에
   // (AUTO_SYNC_MIN: 15분마다 자동 동기화 — 2026-10-10 제거. 이제 페이지를 열 때 1회 + 🔄 버튼만)
 };
 
@@ -1649,20 +1669,25 @@ function revAllRows(c){ const rows=[];
     const r=revMap(c,t)[key], ik=r?.i||(last==='r4'||last==='c4'?'ring:'+last:last==='gl'?'g_life':/^cb:/.test(last||'')?last:it);
     const pty=curParty(c,slot), div=pty>1&&md!=='w'&&md!=='n'?pty:1; rows.push({t,key,b,ik,div,m:r&&+r.m>0?+r.m:0,a:r&&+r.m>0?String(Math.round(r.m/1e4)/1e4):''}); } // b110: 칸 = 내 몫(분배 후, 실제로 합산되는 값) 억 단위
   return rows; }
+/* b112: 같은 보스 기록(주간/월간·보스)끼리 묶음 — 보스 초상화 1번 + 그 보스 아이템 줄들. 입력 번호(i)는 rows 순서 그대로 */
+function raGroups(c,rows){ const G=[]; rows.forEach((x,i)=>{ let g=G.find(y=>y.t===x.t&&y.b===x.b); if(!g) G.push(g={t:x.t,b:x.b,d:c.bosses?.[x.b.id]?.diff||'',items:[]}); g.items.push([x,i]); }); return G; }
+// b112: 보스 아이콘 왼쪽 위 난이도 배지 — 이지 E 파랑 · 노말 N 연두 · 하드 H 빨강 · 카오스 C 검정 · 익스트림 X 보라(사용자 미지정 → 다른 색)
+const DIFF_BADGE={easy:'E',normal:'N',hard:'H',chaos:'C',extreme:'X'};
+const diffBadge=d=>DIFF_BADGE[d]?`<span class="dbadge db-${d}" aria-hidden="true">${DIFF_BADGE[d]}</span>`:'';
 function openRevAll(){
   const c=activeChar(); if(!c) return; document.querySelector('#revAllModal')?.remove(); const rows=revAllRows(c);
   const el=document.createElement('div'); el.id='revAllModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','raTitle');
   el.innerHTML=`<div class="modal rabox"><h3 id="raTitle">수익 기록 전체 수정</h3>
     <div class="raicons">${rows.map(x=>`<span class="raic" title="${esc(lootName(x.ik))}">${lootIco(x.ik)}</span>`).join('')||'<span class="muted">이번 주·이번 달 체크한 아이템이 없습니다.</span>'}</div>
-    <div class="ralist">${rows.map((x,i)=>`<div class="rarow"><span class="raic">${lootIco(x.ik)}</span><span class="rabi" data-boss="${x.b.id}" title="${esc(x.b.name)}">${bossIcon(x.b)}</span><span class="raname">${esc(lootName(x.ik))}${x.div>1?` <small class="muted">(${x.div}인 분배)</small>`:''}<small class="ram" data-ram="${i}">${x.m?meso(x.m):''}</small></span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" data-ra="${i}" value="${x.a}" aria-label="${esc(lootName(x.ik))} 판매 금액 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div>
+    <div class="ralist">${raGroups(c,rows).map(g=>`<div class="ragrp"><span class="rabi" data-boss="${g.b.id}" title="${esc(g.b.name)}${g.d?' '+esc(D[g.d]||''):''}">${bossIcon(g.b)}${diffBadge(g.d)}</span><div class="ragi">${g.items.map(([x,i])=>`<div class="rarow"><span class="raic">${lootIco(x.ik)}</span><span class="raname">${esc(lootName(x.ik))}${x.div>1?` <small class="muted">(${x.div}인 분배)</small>`:''}<small class="ram" data-ram="${i}">${x.m?meso(x.m):''}</small></span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" data-ra="${i}" value="${x.a}" aria-label="${esc(lootName(x.ik))} 판매 금액 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div></div>`).join('')}</div>
     <div class="rverr" id="raErr" role="alert"></div>
     <div class="rabtns"><button class="btn raok" data-rab="ok">전체 수정</button><button class="btn ghost" data-rab="cancel">취소</button></div></div>`;
   document.body.appendChild(el);
   const close=()=>{ el.remove(); document.removeEventListener('keydown',kd,true); };
   const ok=()=>{ const vals=[]; for(const inp of el.querySelectorAll('[data-ra]')){ const s=String(inp.value).trim().replace(',','.'), v=s===''?0:parseFloat(s);
-      if(!(v>=0)||v>100000){ $('#raErr').textContent='금액을 확인해주세요.'; markEmpty(inp); inp.focus(); return; } vals.push(v); }
+      if(!(v>=0)||v>100000){ $('#raErr').textContent='금액을 확인해주세요.'; markEmpty(inp); inp.focus(); return; } vals[+inp.dataset.ra]=v; } // b112: 보스별 묶음이라 화면 순서 ≠ rows 순서 → 번호로
     // b110: 입력 = 내 몫 그대로 저장(다시 나누지 않음). 안 바꾼 칸은 원래 값 그대로(반올림 손실 없음)
-    const raw=[...el.querySelectorAll('[data-ra]')].map(i=>String(i.value).trim());
+    const raw=[]; el.querySelectorAll('[data-ra]').forEach(i=>{ raw[+i.dataset.ra]=String(i.value).trim(); });
     const apply=cc=>{ if(!cc) return; rows.forEach((x,i)=>{ const v=vals[i], rm=revMap(cc,x.t);
       if(raw[i]===x.a&&x.m>0) return;
       if(v>0) rm[x.key]={m:Math.round(v*1e8),a:Math.round(v*x.div*1e4)/1e4,p:x.div,i:x.ik}; else delete rm[x.key];
@@ -2240,11 +2265,12 @@ async function nx(path, params={}, keyArg){
 const QUOTA_KEY='mapleBossTracker.callCount', DAILY_LIMIT=1000;
 const keyTag = k => { let h=2166136261; for(const ch of String(k)) { h^=ch.codePointAt(0); h=Math.imul(h,16777619)>>>0; } return h.toString(36); };
 const quotaGet = () => { try{ const q=JSON.parse(localStorage.getItem(QUOTA_KEY)||'null'); if(q&&q.day===dayId()) return q; }catch(e){} return {day:dayId(),c:{},x:{}}; };
-const quotaBump = (k,over) => { const q=quotaGet(), t=keyTag(k); q.c[t]=(q.c[t]||0)+1; if(over) q.x[t]=1; try{ localStorage.setItem(QUOTA_KEY,JSON.stringify(q)); }catch(e){} };
-const quotaOf = k => { const q=quotaGet(), t=keyTag(k); return {used:q.c[t]||0, over:!!q.x[t]||(q.c[t]||0)>=DAILY_LIMIT}; };
+const quotaBump = (k,over,sec) => { const q=quotaGet(), t=keyTag(k); q.c[t]=(q.c[t]||0)+1; if(over) q.x[t]=1; if(sec){ (q.s||(q.s={}))[t]=Date.now(); } try{ localStorage.setItem(QUOTA_KEY,JSON.stringify(q)); }catch(e){} };
+const quotaOf = k => { const q=quotaGet(), t=keyTag(k); return {used:q.c[t]||0, over:!!q.x[t]||(q.c[t]||0)>=DAILY_LIMIT, sec:Date.now()-((q.s||{})[t]||0)<60e3}; };
 const quotaHtml = (k,switched) => { if(!k) return ''; const {used,over}=quotaOf(k), left=Math.max(0,DAILY_LIMIT-used);
-  return `<span class="quota${over?' over':''}" title="이 브라우저에서 오늘(KST) 이 키로 보낸 호출 수로 계산한 추정치">${over?`호출 한도 도달${switched?' → 예비 키 사용 중':''}`:`남은 호출 약 ${left}/${DAILY_LIMIT}`}</span>`; };
-async function nxRaw(path, params={}, keyArg){
+  const sec=!over&&quotaOf(k).sec; // b112: 초당 한도(잠깐) ≠ 오늘 한도
+  return `<span class="quota${over?' over':''}${sec?' sec':''}" title="이 브라우저에서 오늘(KST) 이 키로 보낸 호출 수로 계산한 추정치">${sec?`초당 호출 제한 — 잠시 후 자동 재시도 · 남은 호출 약 ${left}/${DAILY_LIMIT}`:over?`호출 한도 도달${switched?' → 예비 키 사용 중':''}`:`남은 호출 약 ${left}/${DAILY_LIMIT}`}</span>`; };
+async function nxRaw(path, params={}, keyArg, retried){
   const key=(keyArg||'').trim(); if(!key) throw new Error('API 키가 설정되지 않았습니다');
   await rateGate(key);
   const qs=new URLSearchParams(Object.entries(params).filter(([,v])=>v!=null&&v!=='')).toString();
@@ -2252,7 +2278,10 @@ async function nxRaw(path, params={}, keyArg){
   try{ res=await fetch(CONFIG.API_BASE+path+(qs?'?'+qs:''),{headers:{'x-nxopen-api-key':key,'accept':'application/json'}}); }
   catch(e){ const err=new Error('네트워크 오류 — 인터넷 연결 또는 브라우저 확장 프로그램·네트워크의 차단 여부를 확인하세요.'); err.status=0; err.code='NETWORK'; throw err; }
   let body=null; try{ body=await res.json(); }catch(e){}
-  quotaBump(key, res.status===429||body?.error?.name==='OPENAPI00007');
+  const q429=res.status===429||body?.error?.name==='OPENAPI00007';
+  /* b112: 429 는 초당 한도일 때가 대부분 → 1.2초 쉬고 1번 다시. 다시 보내도 429 일 때만 '오늘 한도 도달'(하루 표시·예비 키 전환) */
+  if(q429&&!retried){ quotaBump(key,false,true); await sleep(1200); return nxRaw(path,params,keyArg,true); }
+  quotaBump(key, q429);
   if(!res.ok || !body || typeof body!=='object'){
     const n=body?.error?.name||'', m=body?.error?.message||'';
     const err=new Error(`${API_ERR[n]||(res.ok?'응답을 해석할 수 없습니다':'요청 실패')} (HTTP ${res.status}${n?' · '+n:''})${m?' — '+m:''}`);
@@ -2342,7 +2371,7 @@ function medalFrom(e){
 async function fetchMedal(c,key){ c.medal=medalFrom(await nx('/maplestory/v1/character/item-equipment',{ocid:c.ocid},key)); }
 const medalBand = c => c.medal?.bad&&charShown(c) ? `<div class="medalwarn" title="'${MEDAL_BAD}' 훈장 착용: ${esc(c.medal.where.join(', '))}" aria-label="훈장 잘못 착용중"><span>훈장 잘못 착용중</span></div>` : '';
 let syncing=false;
-const SYNC_CONC=6, SYNC_LIST_TTL_MS=10*60e3, SYNC_BASIC_TTL_MS=10*60e3, SYNC_MEDAL_TTL_MS=6*3600e3; // b107
+const SYNC_CONC=6, SYNC_LIST_TTL_MS=10*60e3, SYNC_BASIC_TTL_MS=10*60e3, SYNC_BASIC_LOAD_TTL_MS=60*60e3 /* b112: 페이지 열 때(자동)는 레벨·이미지 1시간, 🔄 는 10분 */, SYNC_MEDAL_TTL_MS=6*3600e3; // b107
 const LOAD_SYNC_GAP_MS=3e3, LOAD_SYNC_KEY='mapleBossTracker.loadSyncAt'; // 페이지 열 때 자동 동기화 최소 간격 (아래 loadSyncDue)
 async function syncAll(opts={}){
   if(syncing) return; if(!hasApi()){ if(!opts.silent) toast('+ 추가에서 넥슨 API 키를 먼저 등록하세요'); return; }
@@ -2371,7 +2400,7 @@ async function syncAll(opts={}){
       try{ total+=applyScheduler(c, await fetchSched(c,a)); paint(); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
       catch(e){ errs++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
       const now=Date.now();
-      if(opts.full||!(now-(c.sync?.imgAt||0)<SYNC_BASIC_TTL_MS)){ try{ await fetchBasic(c,a.key); paint(); }catch(e){} } // 이미지·레벨·EXP
+      if(opts.full||!(now-(c.sync?.imgAt||0)<(opts.silent?SYNC_BASIC_LOAD_TTL_MS:SYNC_BASIC_TTL_MS))){ try{ await fetchBasic(c,a.key); paint(); }catch(e){} } // 이미지·레벨·EXP
       if(opts.full||!c.medal||!(now-(c.medal.at||0)<SYNC_MEDAL_TTL_MS)){ try{ await fetchMedal(c,a.key); paint(); }catch(e){} } // b86: 훈장(모든 프리셋)
     });
     clearTimeout(rt);
@@ -2900,9 +2929,9 @@ function renderBoss(){
         return ` <span class="expinc" title="${esc(`남은 예상 수익 — 이번 주 ${ex.done}/${S.settings.weeklyLimit} 처치, 남은 ${ex.left}칸을 아직 안 잡은 보스 중 1인당 결정석 가격 상위로 채울 때\n`+[...ex.list,...ex.mon].map(x=>`· ${x.monthly?'[월간] ':''}${bossTag(x)} ${meso(x.value)}`).join('\n'))}">${miniIcon('ipc')}예상 <b>${meso(ex.meso)}</b><small>(${[ex.list.length?`상위 ${ex.list.length}개`:'',ex.mon.length?`월간 ${ex.mon.length}개`:''].filter(Boolean).join(' + ')})</small>${(u=>u!==null&&u!==ex.meso?`<small class="exp-up">테섭 예정 → ${meso(u)}</small>`:'')(withUpcoming(()=>remainingWeekly(c).meso))}</span>`; })()}</div><div style="margin-top:4px;font-size:.85rem">${syncLine}</div></div></div>
     ${c.medal?.bad?`<div class="medalrow" role="alert" title="'${MEDAL_BAD}' 훈장 착용: ${esc((c.medal.where||[]).join(', '))}"><span class="mdico"><img src="${ITEM_ICONS.pcmedal||''}" alt="${MEDAL_BAD} 훈장" width="32" height="32"><span class="mdtri" aria-hidden="true">!</span></span><span class="mdtxt">프리미엄 PC방 훈장을 착용한 캐릭터 입니다.</span></div>`:''}
     <div class="stats s3">
-      <div class="stat"><div class="k">이번 주 주간 보스 수익</div><div class="v acc">${meso(r.meso+pWeekMonthly({c,r}).meso+pItemSale(c))}</div></div>
+      <div class="stat"><div class="k">이번 주 주간 보스 수익</div><div class="v acc">${meso(r.meso+pWeekMonthly({c,r}).meso+pItemSale(c))}</div><div class="muted cisub" id="ciCry">결정석 ${meso(r.meso+pWeekMonthly({c,r}).meso)}</div><div class="muted cisub" id="ciSale">아이템 판매 ${meso(pItemSale(c))}</div></div>
       <div class="stat"><div class="k">주간 보스 처치</div><div class="v">${r.weekly} / ${lim}</div><div class="bar ${r.weekly>lim?'over':''}"><i style="width:${Math.min(100,r.weekly/lim*100)}%"></i></div></div>
-      <div class="stat"><div class="k">이번 달 월간 보스${(ds=>ds.length?` <span class="mdate">(${ds.join(', ')})</span>`:'')(Object.keys(c.monthly).map(k=>(c.mdate||{})[k]).filter(Boolean).map(d=>`${+d.slice(5,7)}/${+d.slice(8,10)}`))}</div><div class="v">${monthlyCount(c)} / ${S.settings.monthlyLimit}${r.monthMeso?` <span class="mmeso">${meso(r.monthMeso)}</span>`:''}</div><div class="bar"><i style="width:${Math.min(100,monthlyCount(c)/S.settings.monthlyLimit*100)}%"></i></div></div>
+      <div class="stat"><div class="k">이번달 검마${(ds=>ds.length?` <span class="mdate">(${ds.join(', ')} 격파 완료)</span>`:'')(Object.keys(c.monthly).map(k=>(c.mdate||{})[k]).filter(Boolean).map(d=>`${+d.slice(5,7)}월 ${+d.slice(8,10)}일`))}</div><div class="v">${monthlyCount(c)} / ${S.settings.monthlyLimit}${r.monthMeso?` <span class="mmeso">${meso(r.monthMeso)}</span>`:''}</div><div class="bar"><i style="width:${Math.min(100,monthlyCount(c)/S.settings.monthlyLimit*100)}%"></i></div></div>
       
     </div>
    </div>
@@ -2921,6 +2950,10 @@ const pWeekMonthly = p => { const l=p.r.mlist.filter(x=>x.counted&&p.c.monthly[x
  * 그 아이템을 판 캐릭터에만, 준 보스 종류대로: 주간 보스 아이템(drev) → 주간, 검은 마법사 아이템(mdrev) → 월간(이번 주 표시는 검마를 잡은 주일 때만, 결정석과 같은 규칙) */
 const revSum = m => Object.values(m||{}).reduce((t,r)=>t+(r&&+r.m>0?+r.m:0),0);
 const pItemSale = c => revSum(c.drev) + Object.entries(c.mdrev||{}).reduce((t,[k,r])=>t+(r&&+r.m>0&&c.monthly?.[k.split('|')[0]]===S.period.week?+r.m:0),0);
+// b112: 이번 주 가장 비싸게 판 아이템의 아이콘 (보이는 캐릭터, pItemSale 과 같은 범위). 판 게 없으면 아이콘 없음
+function topSaleIco(){ let best=null; for(const c of vchars()){ const L=[...Object.entries(c.drev||{}),...Object.entries(c.mdrev||{}).filter(([k])=>c.monthly?.[k.split('|')[0]]===S.period.week)];
+    for(const [k,r] of L) if(r&&+r.m>0&&(!best||+r.m>best.m)) best={m:+r.m,i:r.i||k.split('|')[1]}; }
+  try{ return best?`<span class="rpsico" title="${esc(lootName(best.i))}">${lootIco(best.i)}</span>`:''; }catch(e){ return ''; } }
 function weekMonthly(a){ let n=0, meso=0; a.per.forEach(p=>p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week).forEach(x=>{ n++; meso+=x.value; })); return {n,meso}; }
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
 function revPanel(a,cur){
@@ -2935,7 +2968,7 @@ function revPanel(a,cur){
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+itemSum(c.drops),0);
       return `<div class="rp-total">${((cry+sale)/1e8).toFixed(1)}억<small> 메소</small></div>
     <div class="muted rp-line rp-cry">${cry.toLocaleString()} - ${miniIcon('ipc')} 주보 결정석 ${a.count}개 · ${miniIcon('ipcm')} 검마 결정석 ${wm.n}개</div>
-    <div class="muted rp-line rp-sale">${sale.toLocaleString()} - 이번주 획득 아이템 ${n}개</div>`; })()}
+    <div class="muted rp-line rp-sale">${sale.toLocaleString()} - ${topSaleIco()}이번주 획득 아이템 ${n}개</div>`; })()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
       <div class="rp-row"><span class="rp-nm">${esc(p.c.name)}${p.c.isMain?' <span class="mainbadge">★</span>':''}</span><b>${meso(pmeso(p))}</b></div>
@@ -2954,7 +2987,13 @@ const ckText = v => { const t=v&&/T\d/.test(v)?Date.parse(v):NaN; if(!isFinite(t
 const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신\n(가격 변동일 ${officialInfo.changedAt||'-'}, 마지막 확인 ${ckText(officialInfo.checkedAt)})${Object.keys(officialInfo.upcoming||{}).length?`\n테섭 예정 가격: ${officialInfo.upSource?.title||'테스트 서버 공지'}`:''}${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
 /* 보스 체크 탭 오른쪽: 결정석 가격 (읽기 전용, prices.json 자동 갱신) */
 // 테섭 예정 가격이 있을 때만: 캐릭터별 예상 주간 수익(주간 상위 12 + 월간) 현재 가격 vs 패치 후
-let pcTab='price';
+let pcTab='price', pcKind='cry'; // b112: 가격 카드 탭 — 결정석 가격 / 아이템 가격
+/* b112: 보스 드롭 표에서 수익 기록이 가능한 아이템 — 칠흑 상자 = 고른 장신구, 반지 상자 = 결과(리4·컨4·생명의 연마석). 정렬 = itemCmp(사용자 아이템 우선순위) */
+function revItems(){ const set=new Set();
+  BOSSES.forEach(b=>b.diffs.forEach(d=>dropsFor(b,d).forEach(k=>{ if(k==='chaosbox') CHAOS_PICK.forEach(x=>set.add('cb:'+x)); else if(isRing(k)){ set.add('ring:r4'); set.add('ring:c4'); set.add('g_life'); } else set.add(k); })));
+  return [...set].sort(itemCmp); }
+const priceId = k => String(k||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1');
+document.addEventListener('click',e=>{ const t=e.target.closest('[data-pckind]'); if(!t) return; pcKind=t.dataset.pckind; const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } });
 function fullExpected(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit).reduce((s,x)=>s+x.value,0);
   const m=BOSSES.filter(b=>b.type==='monthly'&&c.bosses[b.id]?.enabled).reduce((s,b)=>{ const cfg=c.bosses[b.id], d=b.diffs.includes(cfg.diff)?cfg.diff:b.diffs[0]; return s+Math.floor(price(b,d)/curParty(c,b.id)); },0);
   return w+m; }
@@ -2969,7 +3008,7 @@ function afterPatchHtml(){
 }
 document.addEventListener('change',e=>{ if(e.target.id!=='pcMine') return; pcMine=e.target.checked; localStorage.setItem('mapleBossTracker.pcMine',pcMine?'1':'0'); const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } });
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]'); if(!t) return; pcTab=t.dataset.pctab; const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } });
-document.addEventListener('click',e=>{ const b=e.target.closest('#dqSync'); if(b&&!b.disabled) refreshSched(dqChars().filter(c=>!S.dq.hide[c.id]),0); }); // 일퀘 🔄 (ttl 0 = 강제)
+document.addEventListener('click',e=>{ const b=e.target.closest('#dqSync'); if(b&&!b.disabled) refreshSched(dqChars().filter(c=>!S.dq.hide[c.id]),60e3); }); // 일퀘 🔄 — b112: 1분 안에 받은 캐릭터는 건너뜀 (연타해도 호출 안 늘어남)
 // 결정석 가격 줄이 안 들어가면 자르지 않고 글자를 조금씩 줄임 (최소 .56rem)
 function fitPriceCard(){ const card=document.querySelector('.pricecard'); if(!card||!card.querySelector('.pc-row')) return;
   // 폭이 허락하는 만큼 크게(최대 14px) → 안 들어가면 0.5px씩 줄임(최소 9px). 자르지 않음
@@ -2978,8 +3017,13 @@ function fitPriceCard(){ const card=document.querySelector('.pricecard'); if(!ca
 function priceCard(){
   const up=(officialInfo&&officialInfo.upcoming)||{};
   const row=r=>{ const u=up[r.k]; return `<div class="pc-row${u?' has-up':''}" title="${esc(r.b.name)} ${D[r.d]} — ${r.p.toLocaleString()} 메소${u?` · 테섭 예정 ${u.toLocaleString()} 메소`:''}">${bossIcon(r.b)}<span class="pc-nm">${esc(r.b.name)} ${dlvHtml(r.d)}</span><b>${meso(r.p)}${u?`<span class="pc-up">테섭 예정 → ${meso(u)}</span>`:''}</b></div>`; };
-  return `<aside class="card pricecard" aria-label="결정석 가격">
-    <div class="pc-head"><h2>${miniIcon('ipc')||'💎'} 결정석 가격</h2><label class="pc-mine"><input type="checkbox" id="pcMine"${pcMine?' checked':''}> 내가 잡는 보스만 보기</label></div>
+  const kt=`<div class="pc-kind" role="tablist"><button type="button" role="tab" data-pckind="cry" class="${pcKind==='cry'?'on':''}" aria-selected="${pcKind==='cry'}">${miniIcon('ipc')} 결정석 가격</button><button type="button" role="tab" data-pckind="item" class="${pcKind==='item'?'on':''}" aria-selected="${pcKind==='item'}">${itemIcon('genesis')} 아이템 가격</button></div>`;
+  if(pcKind==='item'){ const P=itemPrices();
+    return `<aside class="card pricecard" aria-label="아이템 가격">${kt}
+    <div class="pc-list pc-items">${revItems().map(k=>{ const o=P[priceId(k)]; return `<div class="pc-row pc-it" data-pit="${esc(k)}">${lootIco(k)}<span class="pc-nm">${esc(lootName(k))}</span><b>${o?meso(o.p):'- 메소'}</b></div>`; }).join('')}</div>
+  </aside>`; }
+  return `<aside class="card pricecard" aria-label="결정석 가격">${kt}
+    <div class="pc-head"><label class="pc-mine"><input type="checkbox" id="pcMine"${pcMine?' checked':''}> 내가 잡는 보스만 보기</label></div>
     ${Object.keys(up).length?`<div class="pc-tabs" role="tablist"><button type="button" role="tab" data-pctab="price" class="${pcTab==='price'?'on':''}">가격</button><button type="button" role="tab" data-pctab="after" class="${pcTab==='after'?'on':''}">패치 후 예상 주간 수익</button></div>`:''}
     ${Object.keys(up).length&&pcTab==='after'?afterPatchHtml():`<div class="pc-list">${priceRows('weekly').map(row).join('')}${(m=>m.length?`<div class="pc-sep">📅 월간 보스</div>${m.map(row).join('')}`:'')(priceRows('monthly'))}${pcMine&&!priceRows('weekly').length&&!priceRows('monthly').length?'<div class="muted">잡는 보스가 없어요</div>':''}</div>`}
     <div class="pc-foot muted">${esc(priceAutoText())}</div>
@@ -4559,7 +4603,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(!SV_O
 window.addEventListener('pagehide',()=>{ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); });
 
 /* b68: 가입 승인 — 관리자(서버가 사용자 id 로 확인)만 목록·승인/거절/차단. 처음 연 기기에서도 관리자 버튼이 보이게 /api/me 로 확인 */
-async function svAdminCheck(){ if(!SV_ON||!svTok()||!gdMeta.on) return; try{ const r=await svFetch('/api/me'); localStorage.setItem(SV_ADMIN_KEY,r.admin?'1':'0'); gdRender(); const m=$('#gMenu'); if(m&&!m.hidden) gdMenu(true); }catch(e){} }
+async function svAdminCheck(){ if(!SV_ON||!svTok()||!gdMeta.on) return; try{ const r=await svFetch('/api/me'); localStorage.setItem(SV_ADMIN_KEY,r.admin?'1':'0'); gdRender(); if(!itemPriceLoad._at||Date.now()-itemPriceLoad._at>60e3) itemPriceLoad(); const m=$('#gMenu'); if(m&&!m.hidden) gdMenu(true); }catch(e){} }
 let admUsers=null, admErr='';
 /* b102: 관리자 창 즉시 — 지난 목록(이 탭 sessionStorage)으로 바로 그리고 뒤에서 새로 받음. 사용자 목록+최저가 = 요청 1번(/api/admin/users?prices=1) */
 const ADM_CACHE_KEY='mapleBossTracker.admUsers';
@@ -4608,12 +4652,20 @@ const ADM_PRICE_KEY='mapleBossTracker.admPrices';
 // 우리 아이템 키 → maple.ai.kr 페이지의 아이템 코드 (페이지의 <option value=코드>이름</option> 와 맞춰 봄, 2026-10-13)
 const MAI_CODE={lcm:'루컨마',tc:'언더컨트롤',eye:'마깃안',belt:'몽벨',book:'마도서',terror:'거공',cfe:'커포',sos:'고근',genesis:'창뱃',mitra:'미트라',
   whisper:'근원의 속삭임',oath:'죽음의 맹세',bliss:'황홀한 악몽',spirit:'굶주리는 핏빛 원혼',legacy:'불멸의 유산',papmark:'파풀마',g_life:'연마석(스카)',g_faith:'신마석(스카)',
-  ring_r4:'리4',ring_c4:'컨4'}; // 도우미 조사(maple-ai-price-map.json) 18개 + 반지 상자 결과 리스트레인트·컨티뉴어스 링 4레벨. 근사: 마도서·미트라(사이트=장비, 우리=선택 상자), 연마석(스카)·신마석(스카)=생명·신념의 연마석
+  ring_r4:'리4',ring_c4:'컨4',
+  h_face:'익셉셔널 얼장',h_eye:'익셉셔널 눈장',h_belt:'익셉셔널 벨트',h_ear:'익셉셔널 귀고리'}; // b112: 익셉셔널 해머 — 사이트 이름은 '해머' 없이 '익셉셔널 얼굴장식'(코드 얼장/눈장/벨트). 귀고리는 2026-10-13 페이지에 없음 // 도우미 조사(maple-ai-price-map.json) 18개 + 반지 상자 결과 리스트레인트·컨티뉴어스 링 4레벨. 근사: 마도서·미트라(사이트=장비, 우리=선택 상자), 연마석(스카)·신마석(스카)=생명·신념의 연마석
 const kstStamp=t=>new Date(t+9*3600e3).toISOString().slice(0,16).replace('T',' ');
 const admPrices=()=>{ try{ return JSON.parse(localStorage.getItem(ADM_PRICE_KEY)||'{}')||{}; }catch(e){ return {}; } };
 // 반지 상자 결과 'ring:r4'·'ring:c4'(리스트레인트·컨티뉴어스 링 4레벨) → ring_r4·ring_c4, 칠흑 상자 결과 'cb:키' → 키
 function admPriceOf(ik){ if(!svIsAdmin()) return null; const k=String(ik||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1'), o=admPrices()[k]; return o&&+o.p>0&&+o.t>0?o:null; }
 let admPriceMsg='', admPriceBusy=false;
+/* b112: 아이템 시세 = 관리자가 등록·갱신한 값(서버 admin_prices) — 로그인한 사용자 누구나 GET /api/prices 로 읽어 이 기기에 보관. 관리자 기기는 admPrices 와 합침(최신 시각 우선) */
+const ITEM_PRICE_KEY='mapleBossTracker.itemPrices';
+function itemPrices(){ let a={}; try{ a=JSON.parse(localStorage.getItem(ITEM_PRICE_KEY)||'{}')||{}; }catch(e){} const b=svIsAdmin()?admPrices():{}, o={...a};
+  for(const [k,v] of Object.entries(b)) if(v&&+v.p>0&&(!o[k]||+o[k].t<=+v.t)) o[k]=v; for(const k in o) if(!(o[k]&&+o[k].p>0)) delete o[k]; return o; }
+function itemPricePut(P){ try{ localStorage.setItem(ITEM_PRICE_KEY,JSON.stringify(P||{})); }catch(e){} }
+const repaintPriceCard=()=>{ const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } };
+async function itemPriceLoad(){ if(!SV_ON||!svTok()) return; itemPriceLoad._at=Date.now(); try{ const r=await svFetch('/api/prices'); itemPricePut(r.prices); if(pcKind==='item') repaintPriceCard(); }catch(e){} }
 function admPriceSave(P){ const cur=admPrices(); for(const [k,o] of Object.entries(P||{})) if(o&&+o.p>0&&(!cur[k]||cur[k].t<=o.t)) cur[k]={p:+o.p,t:+o.t}; try{ localStorage.setItem(ADM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
 async function admPriceLoad(){ if(!svIsAdmin()) return; try{ admPriceSave((await svFetch('/api/admin/prices')).prices); }catch(e){} }
 // 페이지 값(억, 본섭) → {우리 키: {p: 메소, t}} — 본섭 값이 없거나 0 이하면 넣지 않음
@@ -4626,7 +4678,7 @@ async function admPriceRun(){
     const r=await svFetch('/api/admin/maple-prices'); const P=maiMap(r.items,+r.fetchedAt||Date.now());
     const miss=Object.keys(MAI_CODE).filter(k=>!P[k]).length;
     admPriceSave(P);
-    const sv=await svFetch('/api/admin/prices',{method:'PUT',body:{prices:P}}); admPriceSave(sv.prices);
+    const sv=await svFetch('/api/admin/prices',{method:'PUT',body:{prices:P}}); admPriceSave(sv.prices); itemPricePut(sv.prices); repaintPriceCard();
     admPriceMsg=`${Object.keys(P).length}개 갱신 (maple.ai.kr ${esc(String(r.date||''))} 본섭 시세)${miss?` · 없음 ${miss}개`:''}`;
   }catch(e){ admPriceMsg=`⚠ ${esc(e.message||'실패')}`; }
   admPriceBusy=false; renderAdmPrice();
@@ -4635,14 +4687,38 @@ function renderAdmPrice(){
   const el=$('#admPrice'); if(!el) return;
   const P=admPrices(), ts=Object.values(P).map(o=>o.t), last=ts.length?Math.max(...ts):0;
   const msg=admPriceMsg?`<div class="muted tiny">${admPriceMsg}</div>`:'';
-  el.innerHTML=`<div class="admprice-h"><b>경매장 최저가</b><span class="muted tiny">${last?`마지막 측정 ${kstStamp(last)} · ${Object.keys(P).length}개`:'아직 없음'}</span><button class="btn sm" id="admPriceBtn" ${admPriceBusy?'disabled':''}>최저가 갱신</button></div>${msg}<div class="muted tiny admsrc">출처: <a href="https://maple.ai.kr/blog/item-price-tracker-2026" target="_blank" rel="noopener noreferrer">maple.ai.kr</a> (본섭 일별 시세)</div>`;
+  el.innerHTML=`<div class="admprice-h"><b>경매장 최저가</b><span class="muted tiny">${last?`마지막 측정 ${kstStamp(last)} · ${Object.keys(P).length}개`:'아직 없음'}</span><button class="btn sm" id="admPriceBtn" ${admPriceBusy?'disabled':''}>최저가 갱신</button><button class="btn sm" id="mktBtn">시세 등록</button></div>${msg}<div class="muted tiny admsrc">출처: <a href="https://maple.ai.kr/blog/item-price-tracker-2026" target="_blank" rel="noopener noreferrer">maple.ai.kr</a> (본섭 일별 시세)</div>`;
 }
-document.addEventListener('click',e=>{ if(e.target.closest('#admPriceBtn')) admPriceRun(); });
+document.addEventListener('click',e=>{ if(e.target.closest('#admPriceBtn')) admPriceRun(); if(e.target.closest('#mktBtn')) openMkt(); });
+/* b112: 관리자 '시세 등록' — 수익 기록 가능한 모든 아이템 + 지금 등록된 시세(억 메소), 고친 칸만 저장 → 서버(admin_prices) + 이 기기, 가격 카드 바로 반영 */
+function openMkt(){
+  if(!svIsAdmin()) return; document.querySelector('#mktModal')?.remove(); const P=itemPrices(), L=revItems();
+  const el=document.createElement('div'); el.id='mktModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','mktTitle');
+  const v=k=>{ const o=P[priceId(k)]; return o?String(Math.round(o.p/1e4)/1e4):''; };
+  el.innerHTML=`<div class="modal rabox mktbox"><h3 id="mktTitle">시세 등록</h3>
+    <div class="ralist">${L.map((k,i)=>`<div class="rarow"><span class="raic">${lootIco(k)}</span><span class="raname">${esc(lootName(k))}<small class="ram" data-mkm="${i}">${P[priceId(k)]?meso(P[priceId(k)].p):''}</small></span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="-" data-mk="${i}" data-orig="${v(k)}" value="${v(k)}" aria-label="${esc(lootName(k))} 시세 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div>
+    <div class="rverr" id="mktErr" role="alert"></div>
+    <div class="rabtns"><button class="btn raok" data-mkb="ok">저장</button><button class="btn ghost" data-mkb="cancel">취소</button></div></div>`;
+  document.body.appendChild(el);
+  const close=()=>{ el.remove(); document.removeEventListener('keydown',kd,true); };
+  const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); } };
+  document.addEventListener('keydown',kd,true);
+  el.addEventListener('input',e=>{ const i=e.target.dataset?.mk; if(i==null) return; const x=parseFloat(String(e.target.value).replace(',','.')), o=el.querySelector(`[data-mkm="${i}"]`); if(o) o.textContent=x>0?meso(Math.round(x*1e8)):''; });
+  const ok=async()=>{ const t=Date.now(), out={};
+    for(const inp of el.querySelectorAll('[data-mk]')){ const s=String(inp.value).trim().replace(',','.'); if(s===inp.dataset.orig||s==='') continue; const x=parseFloat(s);
+      if(!(x>0)||x>100000){ $('#mktErr').textContent='금액을 확인해주세요.'; markEmpty(inp); inp.focus(); return; } out[priceId(L[+inp.dataset.mk])]={p:Math.round(x*1e8),t}; }
+    if(!Object.keys(out).length){ close(); return; }
+    admPriceSave(out); itemPricePut({...itemPrices(),...out}); repaintPriceCard(); renderAdmPrice(); close();
+    try{ const sv=await svFetch('/api/admin/prices',{method:'PUT',body:{prices:out}}); admPriceSave(sv.prices); itemPricePut(sv.prices); repaintPriceCard(); renderAdmPrice(); toast(`시세 ${Object.keys(out).length}개 저장`); }
+    catch(e){ toast(`⚠ 시세를 서버에 저장하지 못했어요: ${e.message}`); } };
+  el.onclick=e=>{ if(e.target===el) return close(); const b=e.target.closest('[data-mkb]'); if(b) b.dataset.mkb==='ok'?ok():close(); };
+  setTimeout(()=>el.querySelector('[data-mk]')?.focus(),30);
+}
 let admPage=1; const admOpen=new Set(); // b91: 펼친 본계정 id
 const admReg=t=>`<span class="admreg muted tiny">등록 날짜 : ${t?new Date(t+9*3600e3).toISOString().slice(0,10):'-'}</span>`; // KST
 document.addEventListener('click',e=>{ const at=e.target.closest('[data-admalt]'); if(at){ const id=at.dataset.admalt; admOpen.has(id)?admOpen.delete(id):admOpen.add(id); renderAdmin(); return; } const pg=e.target.closest('[data-admpage]'); if(pg){ admPage=+pg.dataset.admpage; renderAdmin(); return; } const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }
   if(e.target.id==='adminModal') e.target.classList.remove('show'); });
-setTimeout(()=>{ if(!SV_ON) return; if(svTok()&&gdMeta.on) svAdminCheck(); else if(svPend()?.key) svLogin(svPend().key,'',{quiet:true}); gdRender(); },800); // 승인 대기 → 열 때 한 번 다시 확인
+setTimeout(()=>{ if(!SV_ON) return; itemPriceLoad(); if(svTok()&&gdMeta.on) svAdminCheck(); else if(svPend()?.key) svLogin(svPend().key,'',{quiet:true}); gdRender(); },800); // 승인 대기 → 열 때 한 번 다시 확인
 
 /* =====================================================================
  *  소식 피드 (왼쪽 아래 카드)

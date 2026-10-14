@@ -1114,3 +1114,23 @@ a.logo{color:inherit;text-decoration:none;cursor:pointer}
 @media(prefers-reduced-motion:reduce){.fly{animation:none;display:none}}
 @media (max-width:600px){#bossLootKing .blro{display:none}.itsum{gap:4px 10px}.itsum .loot{white-space:nowrap}}
 .fly{width:14px;height:12px}
+/* b112: 수익 기록 전체 수정 — 보스별 묶음(초상화 1번 + 난이도 배지), 아이템 줄은 오른쪽 */
+.ragrp{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.ragrp:last-child{border-bottom:0}
+.ragrp>.rabi{position:relative;width:40px;height:40px}
+.ragrp>.rabi img,.ragrp>.rabi svg,.ragrp>.rabi .bicon{width:40px;height:40px}
+.ragi{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.dbadge{position:absolute;left:-3px;top:-3px;width:14px;height:14px;border-radius:3px;font-size:9px;font-weight:900;line-height:14px;text-align:center;color:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.45)}
+.db-easy{background:#3b82f6}.db-normal{background:#86efac;color:#14532d}.db-hard{background:#dc2626}.db-chaos{background:#111;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.55)}.db-extreme{background:#7c3aed}
+.rpsico{display:inline-flex;vertical-align:-4px;margin-right:3px}
+.rpsico img,.rpsico .ric{width:16px;height:16px;object-fit:contain}
+.cisub{font-size:.72rem;line-height:1.35}
+/* b112: 가격 카드 탭 (결정석 가격 / 아이템 가격) */
+.pc-kind{display:flex;gap:4px;margin:0 0 8px}
+.pc-kind button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;font:inherit;font-size:.86rem;font-weight:800;padding:6px 6px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+.pc-kind button.on{color:var(--text);border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
+.pc-kind button img{width:20px;height:20px;object-fit:contain}
+.pricecard .pc-head{justify-content:flex-end}
+.pc-it img,.pc-it .ric{width:22px;height:22px;object-fit:contain;flex:none}
+.mktbox .ralist{max-height:60vh}
+.quota.sec{color:#f5b041}
