@@ -223,6 +223,21 @@ const ETERNAL = {
   baldrix:{normal:['e_baldrix',1],hard:['e_baldrix',2]}, jupiter:{normal:['e_jupiter',1],hard:['e_jupiter',2]}
 };
 const eternalFor = (b,diff) => { const v=ETERNAL[b?.id]?.[diff]; return v?{k:v[0],n:v[1]}:null; };
+/* 확정 지급 메멘토 큐브 개수 (정보 표시 전용: 클릭·집계·수익 기록 없음). b=메멘토 수상한 에디셔널(브론즈 에디셔널) 큐브, s=메멘토 실버 큐브, g=메멘토 골드 큐브
+ * 출처: 넥슨 공지 2026-09-17 큐브 지급 변경 표(matsu1207.tistory.com/1346 재수록, hoonjaelab·tamagotch 교차확인), 2026-03-19 도입 표(maple.ai.kr, dreaminfo.tistory.com/1397),
+ *       나무위키 '큐브(메이플스토리)' 표 (2026-10-14 열람). 검증 안 된 값(나무위키 ❓, 출처 상충, 표에 없는 상위 난이도)은 넣지 않음 — 비워 둠.
+ * 아이콘: 메멘토 아이콘은 받을 수 없어 같은 등급 KMS 아이콘(수상한 에디셔널·장인의·명장의 큐브, maplestory.io KMS 389)으로 대체. */
+const MEMENTO_N={b:'메멘토 수상한 에디셔널 큐브',s:'메멘토 실버 큐브',g:'메멘토 골드 큐브'};
+const MEMENTO = {
+  magnus:{hard:{b:1}}, pierre:{chaos:{b:1}}, vonbon:{chaos:{b:1}}, queen:{chaos:{b:1}}, vellum:{chaos:{b:1}}, papulatus:{chaos:{b:1}},
+  lotus:{normal:{b:3},hard:{b:6}}, damien:{normal:{b:3},hard:{b:6}}, slime:{normal:{b:3},chaos:{b:8,s:1}},
+  lucid:{easy:{b:3},normal:{b:5},hard:{b:8,s:1}}, will:{easy:{b:3},normal:{b:5},hard:{b:8,s:1}},
+  dusk:{normal:{b:5},chaos:{b:8,s:1}}, dunkel:{normal:{b:5},hard:{b:8,s:1}}, jinhilla:{normal:{b:5},hard:{b:8,s:1}},
+  seren:{normal:{b:5,s:2},hard:{b:8,g:2}}, kalos:{easy:{b:8,g:2},normal:{g:3}}, adversary:{easy:{b:8,g:2},normal:{g:3}},
+  kaling:{easy:{b:8,g:2},normal:{g:3}}, star:{normal:{g:3}}, bellona:{easy:{g:2}}, blackmage:{hard:{s:8}}
+};
+const mementoFor = (b,diff) => MEMENTO[b?.id]?.[diff]||null;
+const mementoHtml = m => m?['b','s','g'].filter(t=>m[t]).map(t=>`<span class="drop erda memc mc-${t}" aria-label="${esc(MEMENTO_N[t])} ${m[t]}개">${ITEM_ICONS['mc_'+t]?`<img src="${ITEM_ICONS['mc_'+t]}" alt="" aria-hidden="true">`:`<span class="ifb" aria-hidden="true">${'수실골'['bsg'.indexOf(t)]}</span>`}<b class="ecnt">${m[t]}</b></span>`).join(''):'';
 function eternalTip(k,n,diff){
   const up=E_UP[k], main=up||k, it=ITEMS[k], party=['e_bellona','e_limbo','e_baldrix','e_jupiter'].includes(main)?'개인보상':'단체보상';
   return `${it.n} ${n}개 (${party})\n`+(up?`2개 → ${ITEMS[up].n} 1개로 교환\n${ITEMS[up].n} 10개 → `:`10개 → `)+`에테르넬 ${E_PART[main]} 중 1개 선택`;
@@ -233,10 +248,11 @@ function itemIcon(k){
 }
 const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
-  const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!eternalFor(b,diff)) return '';
+  const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!eternalFor(b,diff)&&!mementoFor(b,diff)) return '';
   const et=eternalFor(b,diff);
   const erda=(en?`<span class="drop erda" aria-label="솔 에르다의 기운 ${en}개">${itemIcon('erda')}<b class="ecnt">${en}</b></span>`:'')
-    +(et?`<span class="drop erda eter" data-tip="${esc(eternalTip(et.k,et.n,diff))}" aria-label="${esc(ITEMS[et.k].n)} ${et.n}개">${itemIcon(et.k)}<b class="ecnt">${et.n}</b></span>`:'');
+    +(et?`<span class="drop erda eter" data-tip="${esc(eternalTip(et.k,et.n,diff))}" aria-label="${esc(ITEMS[et.k].n)} ${et.n}개">${itemIcon(et.k)}<b class="ecnt">${et.n}</b></span>`:'')
+    +mementoHtml(mementoFor(b,diff));
   const cnt=k=>c?dropCount(c,b,k):0;
   const chip=k=>{const it=ITEMS[k], n=cnt(k);
     return `<span class="drop s-${it.set} ${n?'got':''}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span></span>`;};

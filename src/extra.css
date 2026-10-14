@@ -1156,3 +1156,7 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 /* b122: 보스 득템왕 보스 초상화 = 득템왕 캐릭터 초상화 크기(36px), 득템 목록 아이콘 = 득템왕 누적 획득 아이템 아이콘 크기(20px) */
 #bossLootKing .rkico .bicon,#bossLootKing .rkico img{width:32px;height:32px;max-width:32px;max-height:32px}
 #bossLootKing .blkchip img,#bossLootKing .blkchip .lootico,#bossLootKing .blkchip .ric{width:20px;height:20px}
+/* b123 메멘토 큐브 정보 칩 */
+.drop.memc .ecnt{background:#8a6d3b}
+.drop.memc.mc-s .ecnt{background:#7c8794}
+.drop.memc.mc-g .ecnt{background:#c9971c}
