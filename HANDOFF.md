@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b138 (2026-10-15) — 그래프 고급 다크 스타일 (사용자 미리보기 승인 02:50)
+- 시간(KST): 02:44–03:03 (코딩 약 12분 / 테스트 약 10분). 전체 테스트: 23·25·46·49(기존) + 24(서버 금고 테스트 — b137 빌드에서도 같은 시간 초과, 그래프와 무관) 외 통과.
+- 주간 메소 그래프(주별 1주차·2주차… 유지): 오렌지→골드 그라데이션 선 + 글로우, 오렌지 영역 그라데이션, 점선 격자, 어두운 점+오렌지 테두리(최고 주 골드, 이번 주 빛남), 외곽선 값 라벨, 오른쪽 위 '총 누적' 골드 알약(점 라벨과 안 겹침), 호버 점선 가이드, 그려지는 애니메이션(prefers-reduced-motion 이면 끔).
+- 빠뜨린 보스메소 주간(골드)·월간(빨강): 같은 스타일 + 격자·영역.
+- 그래프 말풍선만 `#mbtTip.ctip` (골드 테두리·글로우). 데이터·동작·테스트 셀렉터(.linechart .lpt circle, .misschart .mpt) 그대로.
+- 스크린샷 `b138_{before,after}_{week_graph,miss_weekly,miss_monthly,tooltip}.png`, 라이브 `b138_live_week_graph.png`.
+
 ## b137 (2026-10-15) — 동기화 후에도 스케줄러 등록 보스가 안 보이던 진짜 원인 (실제 넥슨 응답으로 확인)
 - 시간(KST): 01:47–02:14 (조사·코딩 약 10분 / 테스트 약 17분, 전체 테스트 2번 — 1번째에서 test64 가 빈 응답에도 지난 날짜 조회해 느려져 실패 → 응답 비면 건너뜀)
 - 실제 응답 (`/maplestory/v1/scheduler/character-state`, 사용자 키로 조회, 키는 기록 안 함): `boss_contents` 는 보스×난이도 전 행(약 80행), 각 행 `content_name`, `difficulty`(easy/normal/hard/chaos/extreme), `cycle`(bossDaily/bossWeekly/bossMonthly), `list_order_no`, `registration_flag`("true"/"false"), `complete_flag`("true"/"false"). `clear_flag` 는 없음.
