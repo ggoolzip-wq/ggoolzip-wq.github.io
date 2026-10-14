@@ -1182,7 +1182,7 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .bpic .dbadge{opacity:1;text-shadow:none;-webkit-text-fill-color:currentColor;z-index:2}
 .pc-date{margin-top:6px;text-align:right;font-size:.72rem}
 .bpic .dbadge,.bpic .bicon{animation:none!important;-webkit-background-clip:border-box!important;background-clip:border-box!important;-webkit-text-fill-color:currentColor!important}
-.rp-cl{display:flex;align-items:center;gap:4px;font-size:.74rem;white-space:nowrap;margin-top:3px}.rp-cl .ric{width:16px;height:16px}
+.rp-cl{display:flex;align-items:center;gap:4px;font-size:.74rem;white-space:nowrap;margin-top:3px}.rp-cl .ric,.rp-cl img,.rp-cl svg{width:16px;height:16px;flex:none}
 .dbadge::before{content:attr(data-d)}
 /* b115: 오른쪽 칸 너비는 '순위·이름·금액' 줄과 보스 아이콘 줄만으로 정함 (아이템 줄·가격 카드는 그 너비 안에서 줄바꿈) */
 .rcol>*:not(.revpanel),.revpanel .rp-items,.revpanel .rp-total,.revpanel .rp-line,.revpanel>.muted{contain:inline-size}
@@ -1200,3 +1200,10 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 #bossLootKing .blkb .rkname:has(>.rkico .bpic){overflow:visible;padding-left:5px}
 #bossLootKing .blkb .rkname:has(>.rkico .bpic)>span:last-child{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .pricecard .pc-list{padding-top:3px}
+
+/* b118: 득템 점수 */
+.kingsub{font-size:11px;opacity:.75;margin:-6px 0 6px;font-weight:400}
+.sc{font-weight:700;white-space:nowrap}
+.ranktbl th.scth,.ranktbl td.sctd{text-align:left;padding-left:2px;padding-right:22px;width:1%;white-space:nowrap}
+.sc.sc-gold{color:#ffd54a}.sc.sc-silver{color:#d9dee6}.sc.sc-bronze{color:#d9925a}.sc.sc-w{color:#fff}
+#bossLootKing .blktbl th:nth-child(2){width:240px}@media (max-width:600px){#bossLootKing .blktbl th:nth-child(2){width:52%}} /* b118: 점수 열을 보스 열 가까이 */

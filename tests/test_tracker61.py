@@ -34,7 +34,7 @@ try:
             ids=pg.evaluate("[...document.querySelectorAll('#view .card[id]')].map(c=>c.id)")
             check('order: 득템왕 → 똥캐 TOP5 → 보스 득템왕 → 에픽빔왕 (b111)', 'bossLootKing' in ids and ids.index('lootKing')+1==ids.index('poopKing') and ids.index('poopKing')+1==ids.index('bossLootKing') and ids[ids.index('bossLootKing')+1]=='epicCard', ids)
             rows=pg.evaluate("[...document.querySelectorAll('#bossLootKing tbody tr:not(.rkpad)')].map(r=>[r.cells[1].innerText.trim(),r.cells[2].innerText.trim(),r.querySelectorAll('.blkchip').length,(r.querySelector('[class*=rg-]')||{}).className||''])")
-            check('rows: 루시드 3, 유피테르 3, 검마 2, 칼로스 1 (자쿰 1; hidden char zakum x5 excluded)', [x[1] for x in rows]==['3회','3회','2회','1회','1회'] and '루시드' in rows[0][0]+rows[1][0] and '유피테르' in rows[0][0]+rows[1][0] and '검은 마법사' in rows[2][0], rows)
+            check('rows(점수): 루시드 3, 유피테르 3, 검마 2, 칼로스 1 (자쿰 흑옥 상자 1개 = 0.1점; hidden char zakum x5 excluded)', [x[1] for x in rows]==['3점','3점','2점','1점','0.1점'] and '루시드' in rows[0][0]+rows[1][0] and '유피테르' in rows[0][0]+rows[1][0] and '검은 마법사' in rows[2][0], rows)
             check('difficulty shown', '(하드)' in rows[0][0] and '(익스트림)' in rows[2][0], rows)
             check('top3 region colors: 유피테르 gr2, 루시드 arc, 검마 bm', sorted([rows[0][3],rows[1][3]])==['spk rg-arc','spk rg-gr2'] and rows[2][3]=='spk rg-bm' and rows[3][3]=='', rows)
             check('title icon = rank-1 boss portrait', pg.evaluate("document.querySelector('#bossLootKing h2 .hbi').innerHTML===bossIcon(findBoss((()=>{const t=document.querySelector('#bossLootKing tbody tr').cells[1].innerText; return t.includes('유피테르')?'jupiter':'lucid'})()))"))

@@ -33,10 +33,8 @@ try:
     idx=lambda t: next((i for i,h in enumerate(hs) if h.endswith(t) or h==t),-1)
     o=[idx(t) for t in ['메소왕','득템왕','보스 메소왕','에픽빔왕','혼돈의 칠흑 장신구 상자깡','내가 가지지 못한 아이템 목록']]
     check('순서: 메소왕→득템왕→보스왕→에픽빔왕→상자깡→못 가진 아이템, 득템왕 제목 괄호 없음', all(x>=0 for x in o), (o,hs))
-    al=pg.evaluate("""(()=>{const n=document.querySelector('#lootKing tr.rk1 .rkname b:not(.rkcnt)'),c=document.querySelector('#lootKing tr.rk1 .rkcnt');const a=n.getBoundingClientRect(),b=c.getBoundingClientRect();return [c.innerText,getComputedStyle(n).color,getComputedStyle(c).color,getComputedStyle(n).fontSize,getComputedStyle(c).fontSize,a.bottom,b.bottom,a.top,b.top]})()""")
-    check('득템왕 (N회): 닉네임과 같은 색·크기, 같은 줄(세로 정렬)', al[0]=='(3회)' and al[1]==al[2] and al[3]==al[4] and abs(al[5]-al[6])<1 and abs(al[7]-al[8])<1 and pg.locator('#lootKing .score').count()==0, al)
-    pl=pg.evaluate("getComputedStyle(document.querySelector('#lootKing tr.rk4 .rkcnt')).color==getComputedStyle(document.querySelector('#lootKing tr.rk4 .rkname b')).color") if pg.locator('#lootKing tr.rk4').count() else True
-    check('4위 이하 (N회)도 닉네임과 같은 색', pl)
+    al=pg.evaluate("(()=>{const r=document.querySelector('#lootKing tr.rk1');return [r.children[2].innerText.trim(),!!r.querySelector('.rkcnt')]})()")
+    check('득템왕 점수 = 캐릭터 옆 점수 열 (이름 옆 (N회) 없음)', al==['3점',False] and pg.locator('#lootKing .score').count()==0, al)
     sp=pg.evaluate("['#mesoKing','#lootKing','#bossKing','#epicCard'].map(t=>{const e=document.querySelector(t+' tr.rk1 .spk');return e?getComputedStyle(e,'::before').animationName:''})")
     check('1~3위 반짝임 (메소왕·득템왕·보스왕·에픽빔왕)', all(x=='spkd1' for x in sp), sp)
     bk=pg.eval_on_selector_all('#bossKing tbody tr:not(.rkpad)','e=>e.map(x=>[...x.children].map(t=>t.innerText.replace(/\s+/g," ").trim()))')

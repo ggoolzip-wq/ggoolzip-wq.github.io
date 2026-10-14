@@ -51,6 +51,18 @@ try:
     pg.evaluate("s=>{S.characters=s.characters;S.settings.accounts=s.settings.accounts;S.activeId='c1';const c=S.characters[0];c.bosses.blackmage={enabled:true,diff:'extreme',party:1};c.monthly={blackmage:S.period.week};c.mdate={blackmage:'2026-10-08'};c.mdrops={'blackmage|genesis':1};c.mdrev={'blackmage|genesis':{m:3000000000,a:30,p:1,i:'genesis'}};save();render()}",ST); pg.wait_for_timeout(400)
     pg.evaluate("()=>{const c=S.characters[0];c.drops['kaling|chaosbox']=1;c.drev['kaling|chaosbox']={m:20000000000,a:200,p:1,i:'cb:lcm'};save();render()}"); pg.wait_for_timeout(300)
     shot(pg.locator('.revpanel'),'revpanel'); shot(pg.locator('.boss').first,'bossrow')
+    if SHOT:
+        try: pg.locator('.revpanel .rp-char').first.screenshot(path=os.path.join(SHOT,f'b118_{TAG}_saleicon.png'))
+        except Exception as e: print('shot skip',str(e)[:80])
+    sz=pg.evaluate("(()=>{const ch=document.querySelector('.revpanel .rp-char');if(!ch)return null;const r=e=>{const b=e.getBoundingClientRect();return [Math.round(b.width),Math.round(b.height)]};return [...ch.querySelectorAll('.rp-cl')].map(l=>{const i=l.querySelector('img,svg,.ric');return [l.textContent.trim().split(' ')[0],i?r(i):null]})})()")
+    if not NOCHK:
+        ic=[x[1] for x in (sz or []) if x[1]]
+        check('b118 이번주 아이템 판매금 아이콘 = 결정석 줄 아이콘 크기', len(ic)>=2 and len(set(map(tuple,ic)))==1, sz)
+    ob=pg.evaluate("(()=>{const inv={};for(const k in BOSS_ICONS)inv[BOSS_ICONS[k]]=k;return [...document.querySelectorAll('.revpanel .rp-char')].map(ch=>[...ch.querySelectorAll('.rp-boss img')].map(i=>inv[i.getAttribute('src')]||'?'))})()")
+    if not NOCHK:
+        LV={'zakum':0,'lotus':7,'lucid':10,'dusk':12,'kalos':16,'kaling':18,'star':19,'blackmage':9999}
+        ok=bool(ob) and all(o and o.index('blackmage')==len(o)-1 if 'blackmage' in o else True for o in ob) and all([LV.get(k,0) for k in o if k in LV]==sorted(LV.get(k,0) for k in o if k in LV) for o in ob)
+        check('b118 이번 주 수익 보스 아이콘: 표 순서, 검마 맨 오른쪽', ok and any(len(o)>=3 for o in ob), ob)
     pg.evaluate("openRevAll()"); pg.wait_for_timeout(300); shot(pg.locator('#revAllModal .modal'),'revall')
     if not NOCHK:
         bd=pg.evaluate("[...document.querySelectorAll('#revAllModal .bfr, .boss .bfr')].map(p=>{const a=p.getBoundingClientRect(),b=p.querySelector('img.bicon').getBoundingClientRect();return [b.left-a.left,a.right-b.right,b.top-a.top,a.bottom-b.bottom].map(x=>Math.round(x*10)/10)})")
