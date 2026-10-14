@@ -28,7 +28,7 @@ if os.path.exists(os.path.join(SRC, 'worldicons.json')):  # 공식 월드 아이
 css = rd('style_v1.css').replace('</style>', rd('extra.css') + '</style>')
 LOGO = js("logo.json")  # b109: 강렬한 힘의 결정 (주간) item 4001928 (assets/ringicons/4001928.png) — 예전 주황버섯
 head = ('<!DOCTYPE html>\n<html lang="ko" data-theme="dark">\n<head>\n<meta charset="UTF-8">\n'
-        '<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>메보수 - 메이플 보스 수익 기록</title>\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>메록지 - 메이플 보스 기록 사이트</title>\n'
         f'<link rel="icon" type="image/png" sizes="32x32" href="{LOGO["s32"]}">\n'
         f'<link rel="icon" type="image/png" sizes="16x16" href="{LOGO["s16"]}">\n'
         '<link rel="apple-touch-icon" href="apple-touch-icon.png">\n')

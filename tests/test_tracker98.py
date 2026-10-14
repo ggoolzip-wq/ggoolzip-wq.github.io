@@ -56,7 +56,7 @@ try:
         check('stale 응답: 등록 그대로(스우 켜짐 유지)', pg.evaluate("S.characters[1].bosses.lotus.enabled===true"))
         pg.evaluate("""w=>{applyScheduler(S.characters[1],{date:w+'T00:00+09:00',boss_contents:[
           {content_name:'윌',difficulty:'노말',cycle:'bossWeekly',registration_flag:'true',complete_flag:'false'}]});save()}""",wk)
-        check('이번 주 응답: 목록 기준(스우 끔, 윌 켬)', pg.evaluate("!S.characters[1].bosses.lotus.enabled && S.characters[1].bosses.will.enabled"))
+        check('b136 이번 주 응답: 윌 켬, 스우 등록 유지(안 끔)', pg.evaluate("S.characters[1].bosses.lotus.enabled && S.characters[1].bosses.will.enabled"))
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

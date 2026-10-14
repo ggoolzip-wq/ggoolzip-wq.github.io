@@ -59,7 +59,7 @@ try:
     # 스케줄러에 없는 보스만 끔 (기존 규칙)
     pg.evaluate("""()=>{applyScheduler(S.characters[0],{date:S.period.week+'T00:00+09:00',boss_contents:[
       {content_name:'루시드',difficulty:'하드',cycle:'bossWeekly',registration_flag:'true',complete_flag:'false'}]}); save()}""")
-    check('매칭된 보스 있을 때: 목록에 없는 등록은 끔, 있는 건 유지', pg.evaluate("!S.characters[0].bosses.lotus.enabled && S.characters[0].bosses.lucid.enabled && S.characters[0].bosses.lotus.party===2"))
+    check('b136: 목록에 없는 등록도 유지(동기화는 안 끔)', pg.evaluate("S.characters[0].bosses.lotus.enabled && S.characters[0].bosses.lucid.enabled && S.characters[0].bosses.lotus.party===2"))
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

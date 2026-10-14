@@ -64,7 +64,7 @@ try:
     check('(난이도) 전부 굵게', bw and all(int(x)>=700 for x in bw), bw[:5])
     # 라인 차트
     lc=pg.evaluate("(()=>{const c=document.querySelector('.linechart');return c?[c.querySelectorAll('polyline').length,c.querySelectorAll('rect:not(.lpt rect)').length,c.querySelectorAll('circle').length]:null})()")
-    check('b135: 이번 주 라인 차트(막대 없음, 목~오늘 점)', lc and lc[0]==1 and lc[1]==0 and 1<=lc[2]<=7, lc)
+    check('주별 누적 = 라인 차트(막대 없음, 점 3개(이번 주 포함))', lc==[1,0,3], lc)
     # 시드링
     rs=pg.evaluate("(()=>{const s=document.querySelector('.ringsum'),l=s.querySelector('.rslab'),x=s.querySelector('.ringexp');return [getComputedStyle(s).fontSize,getComputedStyle(l).color,getComputedStyle(l).fontWeight,getComputedStyle(x).fontSize,getComputedStyle(x).color==getComputedStyle(s).color,s.scrollWidth<=s.clientWidth+1,s.getBoundingClientRect().height]})()")
     check('시드링: 글자 크고 굵게, 라벨 초록, 기댓값 작고 무색, 한 줄', float(rs[0][:-2])>=16 and rs[1]=='rgb(63, 208, 122)' and int(rs[2])>=700 and float(rs[3][:-2])<12 and rs[4] and rs[5] and rs[6]<60, rs)

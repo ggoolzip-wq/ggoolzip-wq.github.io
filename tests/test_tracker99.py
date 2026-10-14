@@ -10,7 +10,7 @@ def check(n,c,d=''):
     if not c: fails.append(n)
 def shot(loc,name):
     if SHOT:
-        try: loc.screenshot(path=os.path.join(SHOT,f'b135_{TAG}_{name}.png'))
+        try: loc.screenshot(path=os.path.join(SHOT,f"{os.environ.get('MBT_PFX','b135')}_{TAG}_{name}.png"))
         except Exception as e: print('shot skip',name,str(e)[:80])
 srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
@@ -34,9 +34,10 @@ try:
     pg.evaluate("()=>{S.characters[0].weekly.lucid=true;(S.characters[0].wat={}).lucid=Date.now();save();render()}"); pg.wait_for_timeout(400)
     g=pg.evaluate("[document.querySelector('#grandAvg')?.innerText||'', document.querySelector('#weekLine')?.dataset.total, totalData().grand, totalData().weeks.length, totalData().weeks.find(w=>w.cur).total]")
     check('1 누적 수익(총 수익) 밑: 주 평균 메소', g[0]==f"주 평균 {round(g[2]/g[3]):,} 메소", g)
-    check('4 주간 메소 그래프 = 이번 주만 (지난 주 4억+판매 빠짐)', g[1] is not None and int(g[1])==g[4] and g[4]>0, g)
-    tips=pg.evaluate("[...document.querySelectorAll('#weekLine .lpt')].map(x=>x.dataset.tip)")
-    check('4 점 = 목~오늘, 말풍선 이번 주 누적', 1<=len(tips)<=7 and tips[0].startswith(pg.evaluate("w=>{const d=new Date(w+'T00:00:00+09:00');return (d.getUTCMonth()+1)+'/'+(new Date(d.getTime()+9*36e5).getUTCDate())}",wk)) and '목' in tips[0], tips)
+    tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(x=>x.dataset.tip)")
+    xl=pg.evaluate("[...document.querySelectorAll('.linechart svg > text')].map(t=>t.textContent)")
+    check('b136 그래프: 주마다 점 1개, 점 = 그 주 메소(누적 아님)', len(tips)==2 and '주간 수익 6억' in tips[0] and '주간 수익 5,970만' in tips[1], tips)
+    check('b136 x축 1주차·2주차', '1주차' in xl and '2주차' in xl, xl)
     shot(pg.locator('#view .card').nth(0),'total_card'); shot(pg.locator('#view .card').nth(1),'week_graph')
     pg.evaluate("()=>{localStorage.setItem('mapleBossTracker.tab','loot');location.reload()}"); pg.wait_for_timeout(900)
     t=pg.evaluate("[document.querySelector('#salesAvg')?.innerText||'', document.querySelector('#itemsAvg')?.innerText||'', totalData().weeks.length]")

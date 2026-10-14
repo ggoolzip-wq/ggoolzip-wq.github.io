@@ -986,7 +986,7 @@ function applyScheduler(c, data){
   const unmatched=[]; let checked=0;
   const isDone = r => flagOn(r.complete_flag) || flagOn(r.clear_flag); // 공식 스펙: complete_flag (일부 문서는 clear_flag 표기)
   const rows=(data?.boss_contents||[]).slice().sort((a,b)=>isDone(b)-isDone(a));
-  const seen={};
+  const seen={}, regYes={}, regNo={}; // b136: 스케줄러 등록 목록(registration_flag) — 클리어 여부와 무관
   for(const r of rows){
     const cyc=String(r.cycle||'').toLowerCase();
     if(/daily|일일|일간/.test(cyc)) continue; // 일일 보스는 추적하지 않음
@@ -995,7 +995,8 @@ function applyScheduler(c, data){
     if(!b && isSeasonBoss(r.content_name)) continue; // 시즌 보스(메이린 등)는 추적 대상이 아님 — '매칭 안 된 보스'에서 제외
     if(!b || !diff || !b.diffs.includes(diff)){ unmatched.push(`${r.content_name}(${r.difficulty||'?'})`); continue; }
     if(seen[b.id]) continue;
-    const done=isDone(r), reg=flagOn(r.registration_flag);
+    const done=isDone(r), reg=flagOn(r.registration_flag), hasReg=r.registration_flag!=null&&r.registration_flag!=='';
+    if(reg) regYes[b.id]=b; else if(hasReg&&!done) regNo[b.id]=b;
     const cfg=c.bosses[b.id];
     if(done){
       // b133: 지난 주/달 완료로 남은 응답이면 이번 클리어로 치지 않음. 예전에 continue 만 해서 registration_flag 를
@@ -1016,10 +1017,10 @@ function applyScheduler(c, data){
   // 보스 목록은 스케줄러만 따름: 매칭된 보스가 1개라도 있을 때만, 거기 없는 보스는 끔 (이번 주/달 이미 체크한 건 유지, 파티·드롭 기록은 남김).
   // b133: boss_contents 가 일일만 있거나 매칭 실패만 있으면 seen 이 비어 전부 끄던 것 방지 — 매칭된 게 있을 때만 끔.
   // b134: 이번 주 응답(date ≥ 이번 주 시작)일 때만 끔 — 접속 안 한 캐릭터의 지난 주 응답(stale)은 등록 판단 근거가 아님(등록은 그대로 둠)
-  if(Object.keys(seen).length && !staleWeek) for(const [id,cfg] of Object.entries(c.bosses||{})){
-    if(!cfg?.enabled||seen[id]) continue; const b=findBoss(id); if(!b) continue;
-    if(isDone(c,b)) continue; cfg.enabled=false;
-  }
+  // b136: 동기화 때 등록이 전부 꺼지던 원인 — seen 에 '이번 달 클리어한 검마'(월간)만 있어도 registration_flag 가 안 온(clear_flag 만 온)
+  //  안 잡은 주간 보스를 전부 껐음 (+ isDone(c,b) 가 응답 행용 isDone 에 가려져 '체크한 건 유지'도 안 됐음).
+  //  사용자 규칙: 스케줄러 등록 보스는 항상 라인업에, 클리어 플래그는 클리어 표시만, 목 리셋은 클리어 표시만 지움.
+  //  → 동기화는 등록을 켜기만 하고 절대 끄지 않음 (빼려면 사용자가 직접 끔). regYes/regNo 는 기록용.
   c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:true,msg:'',clear:data?.weekly_boss_clear_count,limit:data?.weekly_boss_clear_limit_count,unmatched,date:d});
   if(data?.character_level) c.level=data.character_level;
   if(data?.character_class) c.job=data.character_class;
@@ -1845,21 +1846,21 @@ function thisWeekChart(T){ // b135: 주간 메소 그래프 = 이번 주만, 목
     <polyline fill="none" stroke="#2f7fd8" stroke-width="2.5" stroke-linejoin="round" points="${pts}"/>${dots}${xl}
     <text x="${W-pr}" y="14" text-anchor="end" fill="#2f7fd8" font-size="11">이번 주 ${meso(s)}</text></svg></div>`;
 }
-function cumLineChart(rows0,T){
+function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 메소(1주차, 2주차 …), 누적 아님
   const MW=T?monthlyByWeek(T):{}; const rows=rows0.map(r=>{ const m=MW[r.week]||{}; return {...r,mm:m.meso||0,mn:m.n||0,cry:(r.crys??r.total??0)+(m.cry||0),sale:(r.isale||0)+(m.sale||0),total:(r.total||0)+(m.meso||0)}; });
   const n=rows.length, pl=44, pr=14, pt=26, pb=36, Hh=240, bw=Math.max(34,(640-pl-pr)/Math.max(1,n)), W=Math.max(640,pl+pr+n*bw);
-  let cum=0; const cums=rows.map(r=>cum+=r.total); const cmax=Math.max(1,cum);
+  let cum=0; const acc=rows.map(r=>cum+=r.total), cums=o.perWeek?rows.map(r=>r.total):acc; const cmax=Math.max(1,...cums);
   const X=i=>pl+i*bw+bw/2, Y=v=>Hh-pb-(Hh-pb-pt)*v/cmax, step=Math.max(1,Math.ceil(n/(W/60)));
   const pts=cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
   const grid=[0,.25,.5,.75,1].map(f=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(cmax*f).toFixed(1)}" y2="${Y(cmax*f).toFixed(1)}" stroke="currentColor" opacity="${f?'.08':'.18'}"/><text x="${pl-6}" y="${(Y(cmax*f)+3.5).toFixed(1)}" text-anchor="end" font-size="10">${f?(cmax*f/1e8).toFixed(1)+'억':'0'}</text>`).join('');
-  const xl=rows.map((r,i)=>i%step===0||r.cur?`<text x="${X(i).toFixed(1)}" y="${Hh-pb+16}" text-anchor="middle">${fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(rows[n-1]&&rows[n-1].cur?`<text x="${X(n-1).toFixed(1)}" y="${Hh-pb+30}" text-anchor="middle">이번 주</text>`:'');
-  const tipOf=(r,v)=>`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n결정석 : ${meso(r.cry)}\n아이템 판매 : ${meso(r.sale)}`+`\n누적 ${meso(v)}`;
+  const xl=rows.map((r,i)=>i%step===0||r.cur?`<text x="${X(i).toFixed(1)}" y="${Hh-pb+16}" text-anchor="middle">${o.perWeek?`${i+1}주차`:fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(o.perWeek?rows.map((r,i)=>i%step===0||r.cur?`<text x="${X(i).toFixed(1)}" y="${(Y(cums[i])-9).toFixed(1)}" text-anchor="middle" font-size="10" class="lwv">${r.total?(r.total/1e8).toFixed(1)+'억':''}</text>`:'').join(''):'')+(rows[n-1]&&rows[n-1].cur?`<text x="${X(n-1).toFixed(1)}" y="${Hh-pb+30}" text-anchor="middle">이번 주</text>`:'');
+  const tipOf=(r,v)=>`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n결정석 : ${meso(r.cry)}\n아이템 판매 : ${meso(r.sale)}`+`\n누적 ${meso(o.perWeek?acc[rows.indexOf(r)]:v)}`;
   const dots=cums.map((v,i)=>`<g class="lpt" data-tip="${esc(tipOf(rows[i],v))}"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/><circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?4.5:3.2}" fill="${rows[i].cur?'#ffb066':'#2f7fd8'}" stroke="#fff" stroke-width="1"/></g>${n<=16?`<text x="${X(i).toFixed(1)}" y="${(Y(v)-8).toFixed(1)}" text-anchor="middle" class="lbl" font-size="10" pointer-events="none">${(v/1e8).toFixed(1)}억</text>`:''}`).join('');
   return `<div class="chart scrollx linechart"><svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
       <defs><linearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f7fd8" stop-opacity=".35"/><stop offset="1" stop-color="#2f7fd8" stop-opacity="0"/></linearGradient></defs>
       ${grid}<polygon fill="url(#lcg)" points="${X(0).toFixed(1)},${Y(0)} ${pts} ${X(n-1).toFixed(1)},${Y(0)}"/>
       <polyline fill="none" stroke="#2f7fd8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${pts}"/>${dots}${xl}
-      <text x="${W-pr}" y="14" text-anchor="end" fill="#2f7fd8" font-size="11">누적 ${meso(cmax)}</text></svg></div>`;
+      <text x="${W-pr}" y="14" text-anchor="end" fill="#2f7fd8" font-size="11">${o.perWeek?`총 누적 ${meso(cum)}`:`누적 ${meso(cmax)}`}</text></svg></div>`;
 }
 function weekChart(rows, opts={}){
   // rows: [{week,total,cur}] — 막대(주간 수익) + 선택적으로 누적선
@@ -2029,7 +2030,7 @@ function renderTotal(){
       <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="kt">검마 누적 메소량</span></div><div class="v">${T.mTotal?(n=>(n/1e8).toFixed(1)+'억')(T.mTotal):'-'}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()} 메소</div></div>
     </div>
   </div>
-  <div class="card"><h2>📈 주간 메소 그래프</h2>${thisWeekChart(T)}</div>
+  <div class="card"><h2>📈 주간 메소 그래프</h2>${cumLineChart(T.weeks,T,{perWeek:1})}</div>
   ${kingHtml(T,'meso')}
   ${bossKingHtml(T)}
   ${missHtml()}
