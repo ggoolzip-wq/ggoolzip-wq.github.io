@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b129 (2026-10-14) — 보스 드랍 테이블: 처치한 보스에 CLEAR 그림
+- 시간(KST): 20:47–20:51 (코딩 약 1분 / 테스트 약 3분, 전체 테스트 포함)
+- 처치한 보스(`isDone`, 행 `.boss.done`)만 난이도 그림 바로 오른쪽에 `clearImg()` — 안 잡은 보스는 그대로.
+- 그림 `itemicons.json` `dif_clear` (68×18 PNG): b127 하드 그림을 바탕으로 같은 테두리·모양, 글자 지우고 밝기 비율 그대로 초록(#2eb852)으로 바꿈. 글자 = 원본 픽셀 글꼴에서 C(카오스)·E(이지)·A·R(하드), L 은 같은 2px 획으로 그림. 흰 글자, `image-rendering:pixelated`, 글자 'CLEAR' 는 화면 밖 `.sr`.
+- 바탕 초록은 처치 칸 배경보다 밝음(test96 확인). 비교 그림 `b129_clear_pill_side_by_side.png`.
+- test96 (포트 8913) 추가. 스크린샷 `b129_{before,after}_{row_lucid,row_kaling,row_will,list}.png`.
+
 ## b128 (2026-10-14) — 이번 주 수익: 금액을 아이템 바로 밑으로 (보스 아이콘과 겹침 해소)
 - 시간(KST): 20:36–20:47 (코딩 약 5분 / 테스트 약 6분, 전체 테스트 포함)
 - b126 의 위아래 음수 margin 때문에 20px 보스 아이콘·배지가 아래 'N억 메소' 줄과 겹쳤음. 사용자 지시(20:38): 금액을 보스 초상화 밑이 아니라 **아이템(아이콘·이름) 바로 밑**에.
