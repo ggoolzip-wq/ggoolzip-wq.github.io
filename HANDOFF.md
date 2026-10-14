@@ -15,6 +15,17 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b116 (2026-10-14) — 스케줄러 보스 아이콘 · 테두리 · 난이도 네모 위치 · 이번주 아이템 판매금 · 날파리
+1. 보스 아이콘 = 게임 **보스 스케줄러** 목록 아이콘(사용자 사진 /workspace/requests/scheduler_icons.png). 사진의 스우(파란 눈)·데미안·슬라임·루시드·윌·더스크·진 힐라·듄켈이 b113 에서 쓴 WZ MobGage 초상화(MapleStory Wiki 'Mobicon_*.png', 25~27px)와 같은 그림 → 그 원본을 그대로 사용(따로 '스케줄러 전용' 이미지는 위키·maplestory.io 에서 못 찾음).
+2. 확대 = **최근접 4배**(점 그대로, 100~108px, WebP lossless). b115 Real-ESRGAN 버전은 뺌. 미리보기 /workspace/maple-boss-tracker/b116_scheduler_icons_preview.png.
+3. 테두리 네 변 같은 두께: 초상화 img 를 block·margin 0 으로(전에는 inline 여백·bicon margin 이 오른쪽에 붙어 두꺼워 보임) → 네 변 2px.
+4. 난이도 네모 = 맨 왼쪽 위(-4px), 테두리에 걸치고 조금 밖으로. 잘리지 않게: 가격 표 목록 위 여백 3px·아이콘 왼쪽 5px, 득템왕 이름칸 overflow 풀고 이름 글자만 말줄임.
+5. 이번 주 수익 캐릭터별 '검마 결정석' 밑 '[아이콘] 이번주 아이템 판매금 …'(pItemSale, 판 게 있을 때만). 아이콘 = 그 캐릭터 이번 주 최고가 판매 아이템, 칠흑 장신구 상자에서 나온 것이면 상자 아이콘.
+6. 똥캐 날파리: 마리마다(캐릭터 id+번호로 정한 난수) 속도 0.8~1.8초·시작 시점 다르게.
+- 테스트: 신규 **test_tracker88**(port 8905): 4배 정수·최근접(4×4 같은 색), 테두리 네 변, 네모 위치·안 잘림(boss/total/loot), 판매금 줄·상자 아이콘·없을 때 없음, 날파리 제각각. 기대값 수정 test87(판매금 줄, ≥100px, 날파리 속도 범위, 네모 '안쪽' 조건 → 안 잘림만). 관련 61·85·34, 전체 run_par 1회 통과(16:38~16:40; test80 병렬 때 1번 흔들림 → 직렬 재시도 통과).
+- 스크린샷: /workspace/maple-boss-tracker/b116_{before,after}_{revpanel,bossrow,revall,poop,lootking}.png, b116_scheduler_icons_preview.png
+- 작업 시간(KST, 실제 시각): 시작 16:35, 끝 16:42. 코딩 약 3분(16:35~16:37 아이콘·CSS·판매금·날파리), 테스트·검증 약 4분(test88·스크린샷·관련 16:37~16:38, 전체 병렬 16:38~16:40, 16:41 배포 확인) → 코딩:테스트 ≈ 43:57.
+
 ## b115 (2026-10-14) — t51 9건 + 추가 요청(이번 주 수익 순위·결정석 줄·가격 확인 날짜·EX 배지)
 - 원문 /workspace/requests/t51_request.md.
 1. 신념의 연마석 = 생명의 연마석 바로 위(itemPri g_faith 3.05 · g_life 3.1, 리4·컨4 다음). 모든 아이템 목록 같은 순서.

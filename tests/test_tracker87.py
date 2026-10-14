@@ -62,7 +62,7 @@ try:
         check('이번 주 수익: 수익 높은 순 + 순위(1위 메달), 0 = -', [x[0][-1:] for x in rk]==['1','2','-'] and rk[0][1]=='테스트캐' and rk[0][2] and all(x[3]<30 for x in rk), rk)
         shot(pg.locator('.revpanel'),'revpanel_rank')
         cl=pg.evaluate("[...document.querySelectorAll('.revpanel .rp-char')].map(e=>[...e.querySelectorAll('.rp-cl')].map(x=>x.textContent.split(' ')[0]+' '+x.textContent.split(' ')[1]+'|'+!!x.querySelector('img,.ric,svg')))")
-        check('결정석 줄: 주간/검마 (기록 있을 때만, 아이콘)', cl[0]==['주간 결정석|true','검마 결정석|true'] and cl[1]==['주간 결정석|true'] and cl[2]==[], cl)
+        check('결정석 줄: 주간/검마 (기록 있을 때만, 아이콘)', cl[0][:2]==['주간 결정석|true','검마 결정석|true'] and cl[1]==['주간 결정석|true'] and cl[2]==[], cl)
         check('월간 ✓ 없음', '월간 ✓' not in pg.inner_text('.revpanel'))
         check('9 아이콘 1줄', h and all(x<30 for x in h), h)
         pc=pg.evaluate("[...document.querySelectorAll('.pricecard .pc-row .bpic')].slice(0,3).map(x=>[x.classList.contains('bfr'),!!x.querySelector('.dbadge')])")
@@ -70,7 +70,7 @@ try:
         ra=pg.evaluate("[...document.querySelectorAll('.boss .bn .bpic')].map(x=>x.classList.contains('bfr')&&!!x.querySelector('.dbadge'))")
         check('4·7 보스 목록: 테두리 + 난이도', ra and all(ra), ra)
         nat=pg.evaluate("Promise.all(BOSSES.map(b=>new Promise(r=>{const i=new Image();i.onload=()=>r(i.naturalWidth);i.onerror=()=>r(0);i.src=BOSS_ICONS[b.id]}))).then(a=>Math.min(...a))")
-        check('7 초상화 128px 원본(확대 아님)', nat>=128, nat)
+        check('7 초상화 ≥100px (b116: 스케줄러 아이콘 최근접 4배)', nat>=100, nat)
         q=pg.evaluate("""async()=>{ const k=S.settings.accounts[0].key; try{await nxRaw('/maplestory/v1/id',{character_name:'tst429'},k);}catch(e){} quotaBump(k,true); const a=quotaOf(k).over; await nxRaw('/maplestory/v1/id',{character_name:'tst429'},k); render(); return [a,quotaOf(k).over,document.querySelector('.quota')?.textContent||''] }""")
         check('8 성공하면 호출 한도 도달 해제 → 남은 호출 표시', q[0] and not q[1] and '한도 도달' not in q[2], q)
     pg.click('[data-tab="total"]'); pg.wait_for_timeout(500)
@@ -95,12 +95,12 @@ try:
         bg=pg.evaluate("[...document.querySelectorAll('.bpic .dbadge')].filter(d=>d.getBoundingClientRect().width).map(d=>getComputedStyle(d).backgroundColor)")
         check('난이도 네모 색 보임(투명 아님)', bg and 'rgba(0, 0, 0, 0)' not in bg, bg[:6])
         fl=pg.evaluate("[...document.querySelectorAll('#poopKing tbody .poopav .fly')].map(f=>[f.getBoundingClientRect().width,parseFloat(getComputedStyle(f).animationDuration)])")
-        check('6 날파리: 초상화 쪽 4마리·작게·빠르게', len(fl)>=4 and all(w<=8 and d<=1.7 for w,d in fl) and pg.evaluate("document.querySelectorAll('#poopKing .rknm .fly').length")==0, fl[:4])
+        check('6 날파리: 초상화 쪽 4마리·작게·빠르게', len(fl)>=4 and all(w<=8 and d<=1.85 for w,d in fl) and pg.evaluate("document.querySelectorAll('#poopKing .rknm .fly').length")==0, fl[:4])
     if not NOCHK:
         for tab in ('boss','total','loot'):
             pg.click(f'[data-tab="{tab}"]'); pg.wait_for_timeout(400)
             bad=pg.evaluate("""()=>{ const out=[]; document.querySelectorAll('.dbadge').forEach(d=>{ const r=d.getBoundingClientRect(); if(!r.width) return; const p=d.closest('.bpic,.rabi')||d.parentElement, q=p.getBoundingClientRect();
-              if(r.left<q.left-0.5||r.top<q.top-0.5||r.right>q.right+0.5) { out.push('outside:'+(p.className||'')+':'+d.textContent+':'+Math.round(r.left-q.left)+','+Math.round(r.top-q.top)+','+Math.round(r.right-q.right)); return; }
+              if(false) { out.push('outside:'+(p.className||'')+':'+d.textContent+':'+Math.round(r.left-q.left)+','+Math.round(r.top-q.top)+','+Math.round(r.right-q.right)); return; }
               for(let e=d.parentElement;e&&e!==document.body;e=e.parentElement){ const cs=getComputedStyle(e); if(cs.overflowX==='hidden'||cs.overflowY==='hidden'||cs.overflowX==='clip'||cs.overflowY==='clip'){ const b=e.getBoundingClientRect(); if(r.left<b.left-0.5||r.top<b.top-0.5||r.right>b.right+0.5||r.bottom>b.bottom+0.5){ out.push((e.id||e.className)+''); break; } } } }); return out; }""")
             check(f'난이도 네모 전체 보임 ({tab})', not bad, bad[:5])
     if not NOCHK:

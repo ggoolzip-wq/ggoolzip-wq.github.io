@@ -83,8 +83,8 @@ const BOSSES = [
   {id:'blackmage',name:'검은 마법사',type:'monthly',diffs:['hard','extreme'],aliases:['검마']}
 ];
 const TYPE_LABEL = {weekly:'주간 보스',monthly:'월간 보스'};
-/* 보스 아이콘 = 게임 보스 HP바 왼쪽 위 초상화(UI.wz UIWindow MobGage, 원본 25px; 출처 MapleStory Wiki 'Mobicon_*.png', b113 과 같은 그림·선택: 스우 1페이즈 파란 눈 등).
- * b115: Real-ESRGAN(realesr-animevideov3) 4배 → 2배 = 200px 를 128px 로 줄여 WebP base64 내장. 없으면 글자 아이콘. */
+/* 보스 아이콘 = 게임 보스 스케줄러 목록의 보스 아이콘(= UI.wz MobGage 초상화, 원본 25~27px; 출처 MapleStory Wiki 'Mobicon_*.png', 스우 = 1페이즈 파란 눈).
+ * b116: 최근접 4배(점 느낌 그대로) WebP lossless base64 내장. 없으면 글자 아이콘. */
 const BOSS_ICONS = /*__BOSS_ICONS__*/{};
 function bossIcon(b){
   const src=BOSS_ICONS[b.id];
@@ -1590,6 +1590,12 @@ const pItemSale = c => revSum(c.drev) + Object.entries(c.mdrev||{}).reduce((t,[k
 function topSaleIco(){ let best=null; for(const c of vchars()){ const L=[...Object.entries(c.drev||{}),...Object.entries(c.mdrev||{}).filter(([k])=>c.monthly?.[k.split('|')[0]]===S.period.week)];
     for(const [k,r] of L) if(r&&+r.m>0&&(!best||+r.m>best.m)) best={m:+r.m,i:r.i||k.split('|')[1]}; }
   try{ return best?`<span class="rpsico" title="${esc(lootName(best.i))}">${lootIco(best.i)}</span>`:''; }catch(e){ return ''; } }
+/* b116: 이번 주 수익 캐릭터별 '이번주 아이템 판매금' — 아이콘 = 그 캐릭터가 이번 주 가장 비싸게 판 아이템(칠흑 장신구 상자에서 나온 것이면 상자 아이콘). 판 게 없으면 줄 없음 */
+function charSaleLine(c){ const sale=pItemSale(c); if(!(sale>0)) return ''; let best=null;
+  const L=[...Object.entries(c.drev||{}),...Object.entries(c.mdrev||{}).filter(([k])=>c.monthly?.[k.split('|')[0]]===S.period.week)];
+  for(const [k,r] of L) if(r&&+r.m>0&&(!best||+r.m>best.m)) best={m:+r.m,k,i:r.i||k.split('|')[1]};
+  const box=best&&(/^cb:/.test(best.i)||parseIK(best.k).it==='chaosbox'); let ico=''; try{ ico=best?lootIco(box?'chaosbox':best.i):''; }catch(e){}
+  return `<div class="rp-cl rp-sl">${ico}<span>이번주 아이템 판매금 ${meso(sale)}</span></div>`; }
 function weekMonthly(a){ let n=0, meso=0; a.per.forEach(p=>p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week).forEach(x=>{ n++; meso+=x.value; })); return {n,meso}; }
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
 function revPanel(a,cur){
@@ -1612,7 +1618,7 @@ function revPanel(a,cur){
       <div class="rp-row rp-top">${(r=>`<span class="rp-rk">${r?rankNo(r):'<span class="rkno"><span class="rkn">-</span></span>'}</span><span class="rp-nm rkname${medal(r)?' md-'+medal(r):''}"><span class="${medal(r)?'spk':''}">${esc(p.c.name)}</span>${p.c.isMain?' <span class="mainbadge">★</span>':''}</span>`)(rk.get(p))}<b>${meso(pmeso(p))}</b></div>
       <div class="rp-row"><span class="mini"><i style="width:${(pmeso(p)/max*100).toFixed(1)}%"></i></span><span class="muted" style="font-size:.72rem;white-space:nowrap">${p.r.weekly}/${lim}</span></div>
       ${(L=>L.length?`<div class="rp-boss">${L.map(x=>bossPic(findBoss(x.slot),x.diff,false)).join('')}</div>`:'')([...p.r.wlist,...p.r.mlist.filter(x=>p.c.monthly[x.slot]===S.period.week)])}
-      ${(w=>w?`<div class="rp-cl">${miniIcon('ipc')}<span>주간 결정석 ${meso(w)}</span></div>`:'')(p.r.wlist.length?p.r.meso:0)}${(m=>m?`<div class="rp-cl">${miniIcon('ipcm')}<span>검마 결정석 ${meso(m)}</span></div>`:'')(pm.get(p).meso)}
+      ${(w=>w?`<div class="rp-cl">${miniIcon('ipc')}<span>주간 결정석 ${meso(w)}</span></div>`:'')(p.r.wlist.length?p.r.meso:0)}${(m=>m?`<div class="rp-cl">${miniIcon('ipcm')}<span>검마 결정석 ${meso(m)}</span></div>`:'')(pm.get(p).meso)}${charSaleLine(p.c)}
       ${(d=>itemsInline(d.items)?`<div class="rp-items">${itemsInline(d.items,{outs:d.outcomes,revs:d.revs,byBoss:true,diffOf:cfgDiff(p.c)})}</div>`:'')(charAllDrops(p.c))}</div>`).join('')}</div>
   </aside>`;
 }
@@ -1794,8 +1800,8 @@ function poopHtml(T){
   const ord=orderedChars().map(c=>c.id), oi=o=>{ const i=ord.indexOf(o.id); return i<0?1e6:i; };
   const rows=T.chars.map(o=>{ const m=noBust(lootOf(o.items,o.outs,md=>md!=='l')); return {...o,ln:Object.values(m).reduce((x,y)=>x+y,0)}; })
     .sort((a,b)=>a.ln-b.ln||oi(a)-oi(b)||a.name.localeCompare(b.name)).slice(0,5);
-  const FLY=n=>`<svg class="fly f${n}" viewBox="0 0 12 10" width="7" height="6" aria-hidden="true"><ellipse cx="3.6" cy="3" rx="3" ry="2" fill="rgba(200,225,255,.75)"/><ellipse cx="8.4" cy="3" rx="3" ry="2" fill="rgba(200,225,255,.75)"/><ellipse cx="6" cy="6" rx="2.2" ry="3" fill="#222"/><circle cx="6" cy="3.4" r="1.4" fill="#111"/></svg>`; /* b115: 날파리 = 초상화 주변, 작게, 4마리, 빠르게 */
-  const av=o=>{ const c=S.characters.find(x=>x.id===o.id); return `<span class="poopav flies">${c?avatar(c,'rkav'):''}<span class="poop" aria-hidden="true">💩</span>${[1,2,3,4].map(FLY).join('')}</span>`; };
+  const FLY=(n,st='')=>`<svg class="fly f${n}"${st} viewBox="0 0 12 10" width="7" height="6" aria-hidden="true"><ellipse cx="3.6" cy="3" rx="3" ry="2" fill="rgba(200,225,255,.75)"/><ellipse cx="8.4" cy="3" rx="3" ry="2" fill="rgba(200,225,255,.75)"/><ellipse cx="6" cy="6" rx="2.2" ry="3" fill="#222"/><circle cx="6" cy="3.4" r="1.4" fill="#111"/></svg>`; /* b115: 날파리 = 초상화 주변, 작게, 4마리, 빠르게 */
+  const av=o=>{ const c=S.characters.find(x=>x.id===o.id); return `<span class="poopav flies">${c?avatar(c,'rkav'):''}<span class="poop" aria-hidden="true">💩</span>${[1,2,3,4].map(n=>{ let h=0; for(const ch of o.id+n) h=(h*131+ch.charCodeAt(0))>>>0; const r=x=>((h=(h*1103515245+12345)>>>0)%1000)/1000*x; return FLY(n,` style="animation-duration:${(0.8+r(1)).toFixed(2)}s;animation-delay:-${r(2).toFixed(2)}s"`); }).join('')}</span>`; };
   const c1=rows[0]&&S.characters.find(x=>x.id===rows[0].id);
   return `<div class="card kingcard" id="poopKing"><h2><span class="poopav ph">${c1?avatar(c1,'hking'):''}<span class="poop" aria-hidden="true">💩</span></span> 똥캐 TOP5</h2><div style="overflow-x:auto"><table class="ranktbl pooptbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="num">득템 횟수</th></tr></thead><tbody>
     ${rows.map((o,i)=>`<tr class="pk${i+1}"><td><span class="rkno">${i===0?'<span class="crown" aria-hidden="true">💩</span>':''}<span class="rkn">${i+1}</span></span></td><td><span class="rkname">${av(o)}<span class="rknm"><b>${esc(o.name)}</b></span></span></td><td class="num"><b>${o.ln}회</b></td></tr>`).join('')||'<tr><td colspan="3" class="muted">기록 없음</td></tr>'}
