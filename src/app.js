@@ -274,12 +274,13 @@ function askRev(c,b,key,ik,cel){
   const ap=admPriceOf(ik); // b104: 관리자만 — maple.ai.kr 시세로 미리 채움 (수정 가능)
   const el=document.createElement('div'); el.id='revModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rvTitle');
   el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`최저가 측정 시간 - ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
-    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><span class="rvbtns"><button class="btn rvok" data-rv="ok">기록하기</button><button class="btn ghost rvcancel" data-rv="cancel">취소하기</button></span></div>
-    <button class="btn plain rvno" data-rv="no">아니오</button></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
+    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><span class="rvbtns"><button class="btn plain rvno" data-rv="no">기록 없이 저장</button><button class="btn ghost rvcancel" data-rv="cancel">취소</button></span></div>
+    <button class="btn rvok" data-rv="ok">기록하기</button></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
   document.body.appendChild(el);
   let closed=false; const fin=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true); if(cel) cel(); };
   const ok=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')); if(!(v>0)||v>100000){ $('#rvErr').textContent='금액을 입력해주세요.'; markEmpty($('#rvAmt')); $('#rvAmt').focus(); return; }
     const cc=S.characters.find(x=>x.id===c.id)||c; revMap(cc,b.type)[key]={m:Math.round(v*1e8/div),a:Math.round(v*1e4)/1e4,p:div,i:ik}; save(); render(); fin(); };
+  // b109: 오른쪽 [기록하기](주황) = 금액 기록 / [기록 없이 저장](예전 '아니오') = 획득은 남기고 수익 기록 없이 축하 / [취소](예전 '취소하기') = 아래 undo
   // zosu-ui: [취소하기] = 이 창을 띄운 아이템 선택 자체를 되돌림(획득·블빵/분배·반지/칠흑 결과·수익 기록 삭제, 축하 없음) — changeDrop 의 취소와 같은 정리
   const undo=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true);
     const cc=S.characters.find(x=>x.id===c.id)||c, t=b.type; delete dropMap(cc,t)[key]; delete modeMap(cc,t)[key]; delete outMap(cc,t)[key];
@@ -289,6 +290,38 @@ function askRev(c,b,key,ik,cel){
   document.addEventListener('keydown',kd,true);
   el.onclick=e=>{ const t=e.target.closest('[data-rv]'); if(t) return t.dataset.rv==='ok'?ok():t.dataset.rv==='cancel'?undo():fin(); }; // b75: 바깥(배경) 클릭은 아무것도 안 함
   setTimeout(()=>{ const i=$('#rvAmt'); if(i){ i.focus(); if(ap) i.select(); } },30);
+}
+/* b109: '수익 기록 전체 수정' — 이 캐릭터가 이번 주/이번 달 체크한 아이템 전부(수익 기록 안 한 것 포함, 블빵패배·반지 상자 꽝 제외 = 수익이 없음)를
+ * 한 창에서 고침. 금액 = 억 메소(분배면 askRev 와 같이 ÷인원). 빈 칸 = 그 아이템 수익 기록 없음(지움). [전체 수정] = 바로 확정(저장 대기·[저장] 없이) →
+ * c.drev/c.mdrev 가 이번 주 수익·수익 분석·득템 분석·주간 기록 넘김에 모두 쓰이므로 모든 표에 반영. 지난 주(history) 기록은 건드리지 않음 */
+function revAllRows(c){ const rows=[];
+  for(const t of ['weekly','monthly']) for(const [key,n] of Object.entries(dropMap(c,t)||{})){ if(!(+n>0)) continue;
+    const [slot,it]=key.split('|'), b=findBoss(slot); if(!b||!ITEMS[it]) continue; const md=modeMap(c,t)[key]||'', outs=outMap(c,t)[key]||[], last=outs[outs.length-1];
+    if(md==='l'||last==='x') continue;
+    const r=revMap(c,t)[key], ik=r?.i||(last==='r4'||last==='c4'?'ring:'+last:last==='gl'?'g_life':/^cb:/.test(last||'')?last:it);
+    const pty=curParty(c,slot), div=pty>1&&md!=='w'&&md!=='n'?pty:1; rows.push({t,key,b,ik,div,a:r&&+r.m>0?(+r.a||Math.round(r.m*div/1e4)/1e4):''}); }
+  return rows; }
+function openRevAll(){
+  const c=activeChar(); if(!c) return; document.querySelector('#revAllModal')?.remove(); const rows=revAllRows(c);
+  const el=document.createElement('div'); el.id='revAllModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','raTitle');
+  el.innerHTML=`<div class="modal rabox"><h3 id="raTitle">수익 기록 전체 수정</h3>
+    <div class="raicons">${rows.map(x=>`<span class="raic" title="${esc(lootName(x.ik))}">${lootIco(x.ik)}</span>`).join('')||'<span class="muted">이번 주·이번 달 체크한 아이템이 없습니다.</span>'}</div>
+    <div class="ralist">${rows.map((x,i)=>`<div class="rarow"><span class="raic">${lootIco(x.ik)}</span><span class="raname">${esc(lootName(x.ik))}${x.div>1?` <small class="muted">(${x.div}인 분배)</small>`:''}</span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" data-ra="${i}" value="${x.a}" aria-label="${esc(lootName(x.ik))} 판매 금액 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div>
+    <div class="rverr" id="raErr" role="alert"></div>
+    <div class="rabtns"><button class="btn raok" data-rab="ok">전체 수정</button><button class="btn ghost" data-rab="cancel">취소</button></div></div>`;
+  document.body.appendChild(el);
+  const close=()=>{ el.remove(); document.removeEventListener('keydown',kd,true); };
+  const ok=()=>{ const vals=[]; for(const inp of el.querySelectorAll('[data-ra]')){ const s=String(inp.value).trim().replace(',','.'), v=s===''?0:parseFloat(s);
+      if(!(v>=0)||v>100000){ $('#raErr').textContent='금액을 확인해주세요.'; markEmpty(inp); inp.focus(); return; } vals.push(v); }
+    const apply=cc=>{ if(!cc) return; rows.forEach((x,i)=>{ const v=vals[i], rm=revMap(cc,x.t);
+      if(v>0) rm[x.key]={m:Math.round(v*1e8/x.div),a:Math.round(v*1e4)/1e4,p:x.div,i:x.ik}; else delete rm[x.key];
+      const rk=x.t==='monthly'?'mdrev':'drev'; if(cc[rk]&&!Object.keys(cc[rk]).length) delete cc[rk]; }); };
+    apply(S.characters.find(x=>x.id===c.id)); if(pend) apply(pend.base?.characters?.find(x=>x.id===c.id)); // 저장 대기 중인 다른 변경과 섞이지 않게 기준 상태에도 같이
+    save(); try{ svPushBg(); }catch(e){} close(); render(); };
+  const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); } else if(e.key==='Enter'&&e.target.dataset?.ra!=null){ e.preventDefault(); ok(); } };
+  document.addEventListener('keydown',kd,true);
+  el.onclick=e=>{ const t=e.target.closest('[data-rab]'); if(t) t.dataset.rab==='ok'?ok():close(); };
+  setTimeout(()=>el.querySelector('[data-ra]')?.focus(),30);
 }
 function changeDrop(key, delta){
   const c=activeChar(); if(!c) return; const [slot,item]=key.split('|'); const b=findBoss(slot); if(!b||!ITEMS[item]) return;
@@ -1436,9 +1469,8 @@ function renderBoss(){
     <div class="toolbar" style="margin-bottom:10px">
       <div class="seg">${['weekly','monthly'].map(t=>`<button data-filter="${t}" class="${bossFilter===t?'on':''}">${TYPE_LABEL[t]} <span style="opacity:.8">${doneType(t)}/${cntType(t)}</span></button>`).join('')}</div>
       <span style="flex:1"></span>
-      ${(!pend&&pendDoneAt&&Date.now()-pendDoneAt<3000)?'<span class="pdone" role="status">저장이 완료되었습니다.</span>':''}${(on=>`<button class="pbtn pcancel${on?' on':''}" id="pendCancel" ${on?'':'disabled'}>취소</button><button class="pbtn psave${on?' on':''}" id="pendSave" ${on?'':'disabled'}>저장</button>`)(!!pend||(svUnsaved()&&!svPushing))}
+      ${(!pend&&pendDoneAt&&Date.now()-pendDoneAt<3000)?'<span class="pdone" role="status">저장이 완료되었습니다.</span>':''}${(on=>`<button class="pbtn prevall on" id="revAllBtn" type="button">수익 기록 전체 수정</button><button class="pbtn pcancel${on?' on':''}" id="pendCancel" ${on?'':'disabled'}>취소</button><button class="pbtn psave${on?' on':''}" id="pendSave" ${on?'':'disabled'}>저장</button>`)(!!pend||(svUnsaved()&&!svPushing))}
     </div>
-    ${bossFilter==='monthly'?'<div class="muted" style="margin-bottom:8px">월간 보스(검은 마법사)는 매월 1일 00:00 초기화되며 월 1회만 처치 가능합니다. 주간 수익과 별도로 「이번 달 월간 보스」 수익으로 집계됩니다.</div>':''}
     <div class="boss-list">${shown.length?shown.map(b=>bossRow(c,b)).join(''):`<div class="empty muted">${c.ocid?`게임 스케줄러에 등록된 ${TYPE_LABEL[bossFilter]}가 없습니다.<br>게임에서 보스를 스케줄러에 등록한 뒤 동기화(↻)하면 자동으로 표시돼요.`:`넥슨 API로 불러온 캐릭터만 보스가 자동 표시돼요.<br>캐릭터 편집에서 API 키 계정에 연결해 주세요.`}</div>`}</div>
    </div></div><div class="rcol">${COMMITTED(()=>revPanel(allRevenue(vchars()),activeChar()))}${priceCard()}<div class="card resetcard"><div class="muted" id="resetInfo"></div></div></div></div>`;
 }
@@ -2907,6 +2939,7 @@ document.addEventListener('click',e=>{
     case 'svWarn': svSaveNow(); break;
     case 'pendCancel': if(pend) pendAsk(); else if(svUnsaved()) toast('이미 이 PC에 반영된 변경이에요 — 저장을 누르면 서버에 저장돼요'); break;
     case 'pendSave': pendSave(); break;
+    case 'revAllBtn': openRevAll(); break;
     case 'gdLogin': gdLogin(); break;
     case 'svSubBtn': svAddSub($('#svSubKey')?.value); break;
     case 'svMainBtn': svLogin($('#svMainKey')?.value); break;
@@ -3007,6 +3040,8 @@ try{ if(SV_ON&&!svTok()&&(S.characters.length||accounts().length||S.history.leng
 if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
 checkResets(); loadOfficialPrices(); save(); applyTheme(); render();
 addEventListener('resize',()=>{ clearTimeout(fitPriceCard._t); fitPriceCard._t=setTimeout(()=>{ fitPriceCard(); fitMiss(); },150); });
+/* b109: 왼쪽 위 '메보수' → '이번 주 보스' 탭 (탭 버튼 클릭과 같은 경로: 저장 안 한 변경 확인 포함) */
+document.getElementById('logoHome')?.addEventListener('click',e=>{ e.preventDefault(); document.querySelector('#tabs [data-tab="boss"]')?.click(); });
 /* 페이지를 열거나 새로고침할 때마다 넥슨 API 동기화 1회 (2026-10-10 사용자 요청) — 🔄 버튼과 같은 syncAll(넥슨 API 전용, 구글 드라이브·로그인 창과 무관).
  * 새로고침을 연달아 해도 API 호출량을 아끼도록: 마지막 동기화(완료) 또는 마지막 '열 때 동기화' 시작이 LOAD_SYNC_GAP_MS(3초, 사용자 결정) 안이면 건너뜀.
  * 시작 시각을 따로 저장(LOAD_SYNC_KEY)하는 이유: 동기화 도중 새로고침하면 lastSync 가 안 바뀌어 매번 다시 시작되기 때문. */

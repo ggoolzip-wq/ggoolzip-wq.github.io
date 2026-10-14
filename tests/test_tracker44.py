@@ -42,7 +42,7 @@ try:
     check('D: 체크하면 오늘(KST) 날짜 저장', bool(md) and re.match(r'\d{4}-\d\d-\d\d$',md), md)
     # E/F/G
     names=pg.evaluate("[...document.querySelectorAll('#tabs button')].map(b=>b.innerText)")
-    check('E: 탭 이름 결정석 분석 · 득템 분석(바로 옆)', names[:3]==['보스 현황','결정석 분석','득템 분석'], names)
+    check('E: 탭 이름 결정석 분석 · 득템 분석(바로 옆)', names[:3]==['이번 주 보스','수익 분석','득템 분석'], names)
     load('total')
     hs=[h.replace('\n',' ').strip() for h in pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.innerText.trim())')]
     check('F/G: 결정석 분석 카드 구성', hs[0].startswith('누적 수입') and any('주별 누적 결정석 메소'==h.replace('📈','').strip() for h in hs) and any(h.endswith('메소왕') for h in hs) and any(h.endswith('결정석 보스왕') for h in hs) and any('빠뜨린' in h for h in hs) and any('전체 주 목록' in h for h in hs) and not any(('득템왕' in h or '에픽빔왕' in h or '시드링' in h or '블빵' in h or '가지지' in h) for h in hs), hs)

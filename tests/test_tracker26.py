@@ -26,7 +26,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort()); pg.route('**/feed.json*',lambda r:r.fulfill(status=404,body=''))
     pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.loadSyncAt',String(Date.now()))}",ST); pg.reload(); pg.wait_for_timeout(500)
-    check("tab renamed '보스 현황'", pg.inner_text('[data-tab="boss"]')=='보스 현황')
+    check("tab renamed '보스 현황'", pg.inner_text('[data-tab="boss"]')=='이번 주 보스')
     check('no ⚙ 보스 선택/난이도 button, no difficulty selector', pg.locator('#editModeBtn').count()==0 and pg.locator('[data-setdiff]').count()==0 and '보스 선택' not in pg.inner_text('#view'))
     check('party selector + drop chips kept', pg.locator('[data-party="lotus"]').count()==1 and pg.locator('.boss .drop').count()>0)
     # 스케줄러 응답: 루시드(하드) 완료, 윌(노말) 등록만, 카링(노말) 등록, 로터스는 목록에 없음

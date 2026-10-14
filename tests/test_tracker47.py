@@ -27,9 +27,9 @@ try:
     g=pg.evaluate("(()=>{const e=document.querySelector('#rvGuide'),h=document.querySelector('.rvh');return {t:e.innerText,fs:parseFloat(getComputedStyle(e).fontSize),hfs:parseFloat(getComputedStyle(h).fontSize),below:e.getBoundingClientRect().top>=h.getBoundingClientRect().bottom-1}})()")
     check("제목 아래 작은 안내 문구 '이 아이템의 경매장 최저가 시세를 적어주세요.'", g['t']=='이 아이템의 경매장 최저가 시세를 적어주세요.' and g['fs']<g['hfs']*0.8 and g['below'], g)
     lay=pg.evaluate("""(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(); const i=r('#rvAmt'),u=r('.rvin span'),ok=r('.rvok'),no=r('.rvno'),l=r('.rvleft');
-      return {sameLine:Math.abs((i.top+i.bottom)/2-(u.top+u.bottom)/2)<4, okBelow:ok.top>=i.bottom-1, okCenter:(c=>Math.abs((ok.left+c.right)/2-(l.left+l.right)/2)<3)(r('.rvcancel')), noRight:no.left>=l.right-1,
+      return {sameLine:Math.abs((i.top+i.bottom)/2-(u.top+u.bottom)/2)<4, okBelow:no.top>=i.bottom-1, okCenter:(c=>Math.abs((no.left+c.right)/2-(l.left+l.right)/2)<3)(r('.rvcancel')), noRight:ok.left>=l.right-1,
         okBg:getComputedStyle(document.querySelector('.rvok')).backgroundColor, unit:document.querySelector('.rvin span').innerText, okTxt:document.querySelector('.rvok').innerText, noTxt:document.querySelector('.rvno').innerText}})()""")
-    check('레이아웃: 입력+억 메소 한 줄, 주황 기록하기+취소하기 아래 가운데, 오른쪽 아니오', lay['sameLine'] and lay['okBelow'] and lay['okCenter'] and lay['noRight'] and lay['okBg']=='rgb(255, 138, 31)' and lay['unit']=='억 메소' and lay['okTxt']=='기록하기' and lay['noTxt']=='아니오', lay)
+    check('레이아웃: 입력+억 메소 한 줄, 주황 기록하기+취소하기 아래 가운데, 오른쪽 아니오', lay['sameLine'] and lay['okBelow'] and lay['okCenter'] and lay['noRight'] and lay['okBg']=='rgb(255, 138, 31)' and lay['unit']=='억 메소' and lay['okTxt']=='기록하기' and lay['noTxt']=='기록 없이 저장', lay)
     pg.screenshot(path=f'{SHOT}/oct12b_revmodal.png')
     pg.click('.rvok'); pg.wait_for_timeout(100)
     check('빈 값 → 오류, 창 유지', pg.locator('#revModal').count()==1 and '금액' in pg.inner_text('#rvErr'))

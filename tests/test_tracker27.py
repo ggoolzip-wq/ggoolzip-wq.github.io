@@ -38,7 +38,7 @@ try:
     check('B migration: counts >1 clamped to 1 (3 entries), ring outcome keeps latest', d=={'seren|mitra':1,'kaling|chaosbox':1,'kaling|r_white':1} and o['kaling|r_white']==['r4'] and pg.evaluate("dropClampN")==3, (d,o))
     # E/D tabs
     tabs=pg.eval_on_selector_all('#tabs [data-tab], nav [data-tab]',"e=>e.map(x=>x.textContent.trim())")
-    check("tabs: 보스 현황 / 수익 분석, no 주간 기록·캐릭터 별 기록", '보스 현황' in tabs and '결정석 분석' in tabs and '캐릭터 별 기록' not in tabs and '주간 기록' not in tabs and '수익 요약' not in tabs, tabs)
+    check("tabs: 보스 현황 / 수익 분석, no 주간 기록·캐릭터 별 기록", '이번 주 보스' in tabs and '수익 분석' in tabs and '캐릭터 별 기록' not in tabs and '주간 기록' not in tabs and '수익 요약' not in tabs, tabs)
     # C drop tables
     def drops_of(slot): return pg.eval_on_selector_all(f'[data-drop^="{slot}|"]',"e=>e.map(x=>x.dataset.drop.split('|')[1])")
     check('papulatus chaos: only 파풀라투스 마크', drops_of('papulatus')==['papmark'], drops_of('papulatus'))

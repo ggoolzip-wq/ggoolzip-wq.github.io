@@ -1019,3 +1019,20 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 /* zosu-ui: 수익 기록 창 [기록하기] 옆 [취소하기] */
 .rvbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .admsrc a{color:inherit;text-decoration:underline}
+
+/* b109 */
+a.logo{color:inherit;text-decoration:none;cursor:pointer}
+.logo .leaf.mush{background:transparent;box-shadow:none;border-radius:0;padding:1px}
+.pbtn.prevall.on{color:#fff}
+.rvbody .rvok{flex:none;align-self:flex-start;min-height:38px;min-width:0;padding:8px 16px}
+.rabox{max-width:440px;width:calc(100vw - 32px)}
+.rabox h3{text-align:center;margin:0 0 10px}
+.raicons{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;justify-content:center;margin-bottom:1.5em}
+.raic{width:32px;height:32px;flex:none;display:grid;place-items:center}
+.raic img,.raic .ric{width:32px;height:32px;object-fit:contain}
+.ralist{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto}
+.rarow{display:flex;align-items:center;gap:8px}
+.raname{flex:1;min-width:0;font-weight:700;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rain{width:150px;flex:none}
+.rabtns{display:flex;gap:8px;justify-content:center;margin-top:12px}
+.raok{background:#ff8a1f;min-width:110px}

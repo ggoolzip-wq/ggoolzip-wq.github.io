@@ -23,8 +23,8 @@ try:
     def cancel_case(name,open_fn,key):
         s0=pg.evaluate(SIG); g0=pg.evaluate("document.querySelectorAll('[data-drop].got').length")
         open_fn(); pg.wait_for_selector('#revModal')
-        bt=pg.evaluate("(()=>{const o=document.querySelector('.rvok'),c=document.querySelector('.rvcancel');if(!c)return null;const a=o.getBoundingClientRect(),z=c.getBoundingClientRect();return {t:c.innerText,next:Math.abs(a.top-z.top)<4&&z.left>=a.right-1}})()")
-        check(f'{name}: 기록하기 옆 취소하기', bt and bt['t']=='취소하기' and bt['next'], bt)
+        bt=pg.evaluate("(()=>{const o=document.querySelector('.rvno'),c=document.querySelector('.rvcancel');if(!c)return null;const a=o.getBoundingClientRect(),z=c.getBoundingClientRect();return {t:c.innerText,next:Math.abs(a.top-z.top)<4&&z.left>=a.right-1}})()")
+        check(f'{name}: (b109) 기록 없이 저장 옆 취소', bt and bt['t']=='취소' and bt['next'], bt)
         pg.click('.rvcancel'); pg.wait_for_timeout(400)
         s1=pg.evaluate(SIG); g1=pg.evaluate("document.querySelectorAll('[data-drop].got').length")
         saved=pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')).characters[0]")

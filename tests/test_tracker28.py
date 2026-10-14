@@ -88,7 +88,7 @@ try:
     pg.click(f'[data-drop="seren|{k0}"]'); pg.wait_for_timeout(200); check('un-click → no toast', pg.locator('#toast.show').count()==0); check('un-click → no burst', pg.locator('#iconBurst').count()==0)
     # 8,9,10
     tabs=pg.eval_on_selector_all('[data-tab]',"e=>e.map(x=>x.textContent.trim())")
-    check("tabs: no 캐릭터 별 기록, '수익 분석'", '캐릭터 별 기록' not in tabs and '결정석 분석' in tabs and '총 수익' not in tabs, tabs)
+    check("tabs: no 캐릭터 별 기록, '수익 분석'", '캐릭터 별 기록' not in tabs and '수익 분석' in tabs and '총 수익' not in tabs, tabs)
     pg.click('[data-tab="total"]'); pg.wait_for_timeout(300); pg.evaluate("(()=>{if(window.__sh)return;window.__sh=1;const v=document.querySelector('#view');const o=render;window.render=function(){if(tab!=='total')return o.apply(this,arguments);renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()")
     av=pg.evaluate("(()=>{const a=document.querySelector('#mesoKing .rkname .avatar');const l=document.querySelector('#charList .avatar');return a&&l?[a.getBoundingClientRect().width,l.getBoundingClientRect().width]:null})()")
     check('1st place portrait in 메소왕 present (b52)', av and av[0]>=30 or abs(av[0]-av[1])<1, av)
