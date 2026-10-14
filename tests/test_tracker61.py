@@ -32,7 +32,7 @@ try:
         pg.evaluate("tab='loot'; render()"); pg.wait_for_timeout(300)
         if w==1280:
             ids=pg.evaluate("[...document.querySelectorAll('#view .card[id]')].map(c=>c.id)")
-            check('order: 득템왕 → 보스 득템왕 → 에픽빔왕', 'bossLootKing' in ids and ids.index('lootKing')+1==ids.index('bossLootKing') and ids[ids.index('bossLootKing')+1]=='epicCard', ids)
+            check('order: 득템왕 → 똥캐 TOP5 → 보스 득템왕 → 에픽빔왕 (b111)', 'bossLootKing' in ids and ids.index('lootKing')+1==ids.index('poopKing') and ids.index('poopKing')+1==ids.index('bossLootKing') and ids[ids.index('bossLootKing')+1]=='epicCard', ids)
             rows=pg.evaluate("[...document.querySelectorAll('#bossLootKing tbody tr:not(.rkpad)')].map(r=>[r.cells[1].innerText.trim(),r.cells[2].innerText.trim(),r.querySelectorAll('.blkchip').length,(r.querySelector('[class*=rg-]')||{}).className||''])")
             check('rows: 루시드 3, 유피테르 3, 검마 2, 칼로스 1 (자쿰 1; hidden char zakum x5 excluded)', [x[1] for x in rows]==['3회','3회','2회','1회','1회'] and '루시드' in rows[0][0]+rows[1][0] and '유피테르' in rows[0][0]+rows[1][0] and '검은 마법사' in rows[2][0], rows)
             check('difficulty shown', '(하드)' in rows[0][0] and '(익스트림)' in rows[2][0], rows)

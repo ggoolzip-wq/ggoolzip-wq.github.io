@@ -54,12 +54,14 @@ try:
     check('H: 득템 분석 구성(누적 득템 맨 위 + 옮겨진 카드)', hs[0]=='누적 득템' and any(h.endswith('득템왕') for h in hs) and any('에픽빔왕' in h for h in hs) and any('시드링' in h for h in hs) and any('블빵 승률' in h for h in hs) and any('가지지' in h for h in hs) and not any('메소왕' in h for h in hs), hs)
     L=pg.evaluate("(()=>{const g=id=>document.querySelector(id).innerText.replace(/\\s+/g,' ');return [g('#ltTotal'),g('#ltRing'),g('#ltBbang'),document.querySelectorAll('#lootTop .stat .hbi img, #lootTop .stat .hbi .ric, #lootTop .stat .blk .ric').length]})()")
     # 총 득템: kaling g_faith,se1,r_black,r_white,g_life#2w = 5 (녹옥·홍옥 제외, 블빵패배 oath 제외)
-    check('H: 총 득템 5개 + 제외 문구', '5개' in L[0] and '녹옥, 홍옥 반지 상자 제외' in L[0], L)
-    check('H: 반상 누적 2회(흑옥·백옥) + 타율 + 제외 문구', '2회' in L[1] and '리4컨4 타율' in L[1] and '녹옥, 홍옥 반지 상자 제외' in L[1], L[1])
-    rt=pg.evaluate("(()=>{const t=document.querySelector('#ltRing').innerText;const m=/타율 ([\\d.]+)%/.exec(t);return m?+m[1]:null})()")
+    # b111: + 상자에서 나온 리4(흑옥)·컨4(홍옥) 2개 = 7
+    check('H: 총 득템 7개(리4·컨4 포함) + 제외 문구', '7개' in L[0] and '녹옥, 홍옥 반지 상자 제외' in L[0], L)
+    check('H: 반상 누적 2회(흑옥·백옥) + 상위% + 제외 문구', '2회' in L[1] and '리4컨4 상위' in L[1] and '녹옥, 홍옥 반지 상자 제외' in L[1], L[1])
+    rt=pg.evaluate("(()=>{const t=document.querySelector('#ltRing').innerText;const m=/상위 ([\\d.]+)%/.exec(t);return m?+m[1]:null})()")
     # r_black lv4 .2*12.5%=2.5% r4 → expected r4 .025, c4 .025; r_white 5%+5% → total .125; actual r4 1 → 1/0.15
-    check('H: 타율 = 실제 ÷ 기댓값', rt is not None and abs(rt-round(100/0.15,1))<0.2, rt)
-    check('H: 누적 블빵 승리 횟수 1회만', '1회' in L[2] and L[2].replace('누적 블빵 승리 횟수','').strip()=='1회', L[2])
+    # b111: 상위% = P(X>=1), 흑옥 5% · 백옥 10% (결과 기록 상자만) → 1-.95*.9 = 14.5%
+    check('H: 리4컨4 상위% = 포아송 이항 P(X>=실제)', rt is not None and abs(rt-14.5)<0.05, rt)
+    check('H: 누적 블빵 승리 = 상위 75% (2인 1승 1패, p=1/2)', L[2].strip()=='누적 블빵 승리 상위 75% 2인 (1승 1패)', L[2])
     check('H: 3칸 아이콘', L[3]>=3, L)
     # b62: 메소왕 제목 = 1위 초상화, 누적 수입/누적 득템 아이콘 32px·글자 세로 가운데
     meas="sel=>[...document.querySelectorAll(sel)].map(k=>{const i=k.querySelector('.ric,.hbi img,.bicon').getBoundingClientRect(),t=k.querySelector('.kt').getBoundingClientRect();return [Math.round(i.width),Math.round(i.height),Math.abs((i.top+i.bottom)/2-(t.top+t.bottom)/2)]})"

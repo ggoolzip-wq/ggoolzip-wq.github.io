@@ -315,24 +315,51 @@ img.ric{width:16px;height:16px;object-fit:contain;image-rendering:pixelated}
 /* ---- 상단 탭: '총 수익' 뒤 짧은 ㅡ 구분선 ---- */
 nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius:2px;background:rgba(255,255,255,.6);margin:0 6px}
 /* ---- 일퀘 현황 ---- */
+.dqtop{margin-bottom:12px}
+.dqtop h2{flex-wrap:wrap;margin:0}
+.dqstat{display:inline-flex;align-items:center;gap:5px;font-weight:500}
+.dqspin{width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sbspin .8s linear infinite}
+.dqedit{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:6px}
+.dqchips{display:flex;flex-wrap:wrap;gap:6px}
+.dqchip{border:1px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:700;cursor:pointer;text-decoration:line-through}
 .dqchip.on{color:var(--text);text-decoration:none;border-color:var(--c);box-shadow:inset 3px 0 0 var(--c)}
+.dqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
 .dqc{padding:12px}
 .dqc.hid{opacity:.45}
+.dqh{display:flex;align-items:center;gap:9px;margin-bottom:10px}
 .dqh .avatar{width:36px;height:36px}
 .dqh .nm{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dqh .meta{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dqh .grow{flex:1;min-width:0}
+.dqcnt{font-size:.78rem;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
 .dqcnt.full{background:var(--ok);border-color:var(--ok);color:#fff}
+.dqeye{padding:3px 8px;font-size:.78rem}
+.dqcells{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.dqi{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:7px 8px 6px 11px;min-height:44px;display:flex;flex-direction:column;justify-content:center;gap:2px;overflow:hidden}
+.dqi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.dqn{font-size:.82rem;font-weight:800;word-break:keep-all;overflow-wrap:anywhere;line-height:1.2}
+.dqs{font-size:.72rem;color:var(--muted);white-space:nowrap;line-height:1.2}
+.dqs em{font-style:normal;font-weight:700}
 .dqi.s-prog .dqs{color:var(--accent);font-weight:700}
 .dqi.s-done .dqs{color:var(--ok);font-weight:700}
 .dqi.s-none{opacity:.55}
 .dqi.off{opacity:.4;border-style:dashed}
 .dqi.off .dqn{text-decoration:line-through}
+.dqi[data-dqc]{cursor:pointer}
+.dqi[data-dqc]:hover{border-color:var(--accent)}
 /* 완료 덮개: 주간 보스 완료 덮개와 같은 처리 (rgba 0,0,0,.55 · 마우스를 올리면 사라짐 · 클릭 통과) */
+.dqov{position:absolute;inset:0;border-radius:inherit;background:rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
   color:#fff;font-weight:800;font-size:.8rem;line-height:1.2;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none;opacity:1;transition:opacity .15s ease;z-index:2;padding:2px 4px}
+.dqov-n{font-size:.78rem;word-break:keep-all}
+.dqov-t{font-size:.72rem}
+.dqov-t b{color:#7dffb0}
 /* 덮개가 있을 때는 원래 글자를 숨겨 겹치지 않게 (마우스를 올리면 덮개가 사라지고 원래 칸이 보임) */
 .dqi.s-done>.dqn,.dqi.s-done>.dqs{opacity:0;transition:opacity .15s ease}
+@media(hover:hover){.dqi:hover .dqov{opacity:0}.dqi.s-done:hover>.dqn,.dqi.s-done:hover>.dqs{opacity:1}}
 .dqlock{font-size:.74rem;margin-top:8px}
+.dqmsg{font-size:.84rem;padding:6px 2px}
+.dqfoot{margin:10px 2px 0}
+@media(max-width:520px){.dqgrid{grid-template-columns:1fr}.dqcells{grid-template-columns:repeat(3,minmax(0,1fr))}.dqtop h2 .dqstat{order:5;width:100%}}
 /* ---- 길드 현황 ---- */
 .gcard h2{flex-wrap:wrap}
 .gmeta{display:flex;align-items:center;gap:10px;font-size:.88rem;margin-bottom:10px}
@@ -356,8 +383,17 @@ nav.tabs .tabsep{flex:none;align-self:center;width:14px;height:2px;border-radius
 .gsc.main b{font-size:1.15rem;color:var(--accent)}
 @media(max-width:520px){.gv{font-size:1.2rem}.grow-r{flex-wrap:wrap}.grow-r .grow{flex-basis:calc(100% - 50px)}.gsc{min-width:0;flex:1;align-items:flex-start}}
 /* 일퀘 칸 지역 아이콘 (이름 왼쪽 20px, 덮개 안에서는 살짝 어둡게) */
+.dqn{display:flex;align-items:center;gap:4px;min-width:0}
+.dqn>span{min-width:0}
+.dqico{width:20px;height:20px;object-fit:contain;flex:none;image-rendering:auto;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+.dqov-n{display:inline-flex;align-items:center;gap:4px}
 .dqov-n .dqico.ov{width:18px;height:18px;opacity:.85}
+.dqi{padding-left:9px}
+@media(max-width:520px){.dqico{width:18px;height:18px}.dqn{gap:3px}}
 /* 일퀘 칸: 모든 상태에서 아이콘+지역명·상태 줄 가운데 정렬 (완료 덮개와 같은 정렬) */
+.dqi{align-items:center;text-align:center;padding:7px 6px 6px 9px}
+.dqn{justify-content:center;max-width:100%}
+.dqs{text-align:center}
 
 /* 소식 피드 카드 (왼쪽 아래) — 높이는 JS(feedFit)가 남은 화면 높이로 맞춤, 안쪽 스크롤 없음 */
 .feedcard{display:flex;flex-direction:column;padding:10px 10px 8px;overflow:hidden;min-height:0}
@@ -1044,3 +1080,37 @@ a.logo{color:inherit;text-decoration:none;cursor:pointer}
 .rabi img,.rabi svg{width:24px;height:24px;object-fit:contain}
 .rasub{text-align:center;font-size:.78rem;margin:-4px 0 10px}
 .ram{display:block;font-size:.72rem;color:var(--muted);font-weight:500}
+
+/* b111: 일퀘 현황 탭 복원 */
+.dqtop .dqsync{margin-left:6px;vertical-align:middle}
+/* b111: 길드·수로 '추가' 고르는 중 — 취소/추가를 '+ … 추가' 버튼 왼쪽에 (아래 줄 없음), 취소는 색 없음 */
+.pickbtns{margin-left:auto;display:inline-flex;gap:6px;align-items:center}
+#guildCard h2 .pickbtns+#guildAdd,#suroCard h2 .pickbtns+#suroAdd{margin-left:6px}
+.pickbtns .btn.plain{background:transparent;border-color:var(--line);color:var(--text)}
+/* b111: 아이콘 말풍선(칠흑 상자 구성) */
+#mbtTip.rich{white-space:normal}
+#mbtTip .ttr{display:flex;align-items:center;gap:5px;white-space:nowrap;margin-top:3px}
+#mbtTip .ttr img{width:20px;height:20px;object-fit:contain}
+.tipname{cursor:help;text-decoration:underline dotted rgba(255,255,255,.35)}
+/* b111: 보스 득템왕 아이콘 크게 · 반지 상자 결과 */
+#bossLootKing .rkico{width:36px;height:36px}
+#bossLootKing .rkico .bicon,#bossLootKing .rkico img{width:36px;height:36px;max-width:36px;max-height:36px}
+#bossLootKing h2 .hbi .bicon,#bossLootKing h2 .hbi img{width:34px;height:34px}
+.blro{font-weight:600;color:var(--muted);font-size:.92em}
+/* b111: 총 아이템 획득량 — 반상·리4·컨4 */
+.itsum{display:flex;flex-wrap:wrap;gap:4px 14px;margin-bottom:8px}
+/* b111: 똥캐 TOP5 */
+.poopav{position:relative;display:inline-block;flex:none}
+.poopav .poop{position:absolute;left:50%;top:-11px;transform:translateX(-50%);font-size:15px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+.poopav.ph{vertical-align:middle;margin-top:8px}
+.poopav.ph .poop{top:-12px;font-size:16px}
+.pooptbl td{padding-top:12px}
+.flies{position:relative;display:inline-block;padding:0 4px}
+.fly{position:absolute;font-size:10px;line-height:1;pointer-events:none;opacity:.85}
+.fly.f1{animation:flyA 2.4s linear infinite}
+.fly.f2{animation:flyB 3.1s linear infinite}
+@keyframes flyA{0%{left:-6px;top:-8px}25%{left:60%;top:-12px}50%{left:100%;top:2px}75%{left:40%;top:14px}100%{left:-6px;top:-8px}}
+@keyframes flyB{0%{left:100%;top:12px}25%{left:30%;top:16px}50%{left:-8px;top:0}75%{left:50%;top:-12px}100%{left:100%;top:12px}}
+@media(prefers-reduced-motion:reduce){.fly{animation:none;display:none}}
+@media (max-width:600px){#bossLootKing .blro{display:none}.itsum{gap:4px 10px}.itsum .loot{white-space:nowrap}}
+.fly{width:14px;height:12px}

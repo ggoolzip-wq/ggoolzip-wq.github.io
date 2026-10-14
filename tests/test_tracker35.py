@@ -23,7 +23,8 @@ try:
     pg=b.new_page(viewport={'width':1920,'height':1080},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.add_init_script(CLOCK); pg.goto(URL)
     pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','daily')}",ST); pg.reload(); pg.wait_for_timeout(900)
-    check('일퀘 탭 없음 + 저장된 daily 탭 → 보스 현황', pg.locator('[data-tab=daily]').count()==0 and pg.evaluate('tab')=='boss' and '일퀘' not in pg.inner_text('header'))
+    check('b111: 일퀘 탭 복원 + 저장된 daily 탭 그대로 열림', pg.locator('[data-tab=daily]').count()==1 and pg.evaluate('tab')=='daily' and pg.locator('#view .dqtop').count()==1)
+    pg.evaluate("localStorage.setItem('mapleBossTracker.tab','boss');tab='boss';syncTabs();render()")
     W=pg.evaluate('S.missW'); M=pg.evaluate('S.missM')
     w=[x for x in W if x['week']=='2026-10-08']
     check('지난 주(10/8~) 기록: zetking 1개(칼로스 카오스 2인), 다잡음 없음, 날짜 2026.10.15', len(w)==1 and w[0]['date']=='2026.10.15' and w[0]['n']==1 and [x['name'] for x in w[0]['list']]==['zetking'] and w[0]['meso']>0, w)
