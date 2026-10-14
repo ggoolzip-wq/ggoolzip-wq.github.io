@@ -10,7 +10,7 @@ def check(n,c,d=''):
     if not c: fails.append(n)
 def shot(loc,name):
     if SHOT:
-        try: loc.screenshot(path=os.path.join(SHOT,f'b123_{TAG}_{name}.png'))
+        try: loc.screenshot(path=os.path.join(SHOT,f"{os.environ.get('MBT_PFX','b123')}_{TAG}_{name}.png"))
         except Exception as e: print('shot skip',name,str(e)[:80])
 srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
@@ -65,6 +65,11 @@ try:
         check('화면 칩 렌더 (주간: 루8·1 + 카3 + 세8·2 + 매1 = 6)', n==6, n)
         tip=pg.evaluate("(()=>{const e=document.querySelector('.drops .memc.mc-g');return [e.getAttribute('aria-label'), !!e.querySelector('img'), e.querySelector('.ecnt').textContent, e.hasAttribute('data-drop')]})()")
         check('골드 칩: 이름(aria, 에르다처럼 툴팁 없음)·공식 아이콘 이미지·개수 배지·클릭 기록 없음', tip[0].startswith('메멘토 골드 큐브') and tip[1] and tip[2] in ('2','3') and not tip[3], tip)
+    if not NOCHK:
+        sz=pg.evaluate("Promise.all(['b','s','g'].map(t=>new Promise(r=>{const i=new Image();i.onload=()=>r([i.naturalWidth,i.naturalHeight]);i.src=ITEM_ICONS['mc_'+t]})))")
+        check('b124 메멘토 전용 아이콘 (35×35, 일반 큐브 30/32px 아님)', all(x==[35,35] for x in sz), sz)
+        same=pg.evaluate("[...document.querySelectorAll('.drops .memc img')].every(i=>Object.values({b:ITEM_ICONS.mc_b,s:ITEM_ICONS.mc_s,g:ITEM_ICONS.mc_g}).includes(i.src))")
+        check('b124 화면 모든 메멘토 칩이 메멘토 아이콘 사용', same)
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

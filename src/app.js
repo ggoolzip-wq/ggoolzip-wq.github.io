@@ -226,7 +226,8 @@ const eternalFor = (b,diff) => { const v=ETERNAL[b?.id]?.[diff]; return v?{k:v[0
 /* 확정 지급 메멘토 큐브 개수 (정보 표시 전용: 클릭·집계·수익 기록 없음). b=메멘토 수상한 에디셔널(브론즈 에디셔널) 큐브, s=메멘토 실버 큐브, g=메멘토 골드 큐브
  * 출처: 넥슨 공지 2026-09-17 큐브 지급 변경 표(matsu1207.tistory.com/1346 재수록, hoonjaelab·tamagotch 교차확인), 2026-03-19 도입 표(maple.ai.kr, dreaminfo.tistory.com/1397),
  *       나무위키 '큐브(메이플스토리)' 표 (2026-10-14 열람). 검증 안 된 값(나무위키 ❓, 출처 상충, 표에 없는 상위 난이도)은 넣지 않음 — 비워 둠.
- * 아이콘: 메멘토 아이콘은 받을 수 없어 같은 등급 KMS 아이콘(수상한 에디셔널·장인의·명장의 큐브, maplestory.io KMS 389)으로 대체. */
+ * 아이콘(b124): 메멘토 큐브 전용 게임 아이콘 — 아이템 ID 2730034(메멘토 수상한(브론즈) 에디셔널 큐브 200제)·2711032(메멘토 실버 큐브 200제)·2711033(메멘토 골드 큐브 200제),
+ *   maplestorywiki.net 'Use Memento … Cube.png' (게임 파일 추출본). 일반 큐브 아이콘 쓰지 말 것. */
 const MEMENTO_N={b:'메멘토 수상한 에디셔널 큐브',s:'메멘토 실버 큐브',g:'메멘토 골드 큐브'};
 const MEMENTO = {
   magnus:{hard:{b:1}}, pierre:{chaos:{b:1}}, vonbon:{chaos:{b:1}}, queen:{chaos:{b:1}}, vellum:{chaos:{b:1}}, papulatus:{chaos:{b:1}},
