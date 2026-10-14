@@ -100,7 +100,7 @@ try:
       'settings':{'accounts':[{'id':'a1','label':'본계정','key':KM}],'lastSync':int(time.time()*1000),'guilds':[]}}
     pg2.goto(f'http://127.0.0.1:{PORT}/index.html'); pg2.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','guild')}",PRE); pg2.reload(); pg2.wait_for_timeout(1500)
     tabs=pg2.eval_on_selector_all('#tabs button',"e=>e.map(x=>x.dataset.tab)")
-    check('일퀘 현황 탭 = 길드 현황 왼쪽', 'daily' in tabs and tabs.index('daily')+1==tabs.index('guild'), tabs)
+    check('b119: 일퀘 현황 탭 없음, 길드 현황 있음', 'daily' not in tabs and 'guild' in tabs, tabs)
     if pg2.locator('#guildAdd').count():
         pg2.click('#guildAdd'); pg2.wait_for_timeout(600)
         g=pg2.evaluate("(()=>{const h=document.querySelector('#guildCard h2'),a=h.querySelector('#guildAdd'),x=h.querySelector('#guildCancel'),o=h.querySelector('#guildOk');return [!!x,!!o,x&&o&&x.getBoundingClientRect().right<=o.getBoundingClientRect().left+1&&o.getBoundingClientRect().right<=a.getBoundingClientRect().left+1,document.querySelectorAll('#guildCard .suropick-b').length,x?getComputedStyle(x).backgroundColor:'']})()")
@@ -111,13 +111,6 @@ try:
         check('캐릭터 추가(수로): 취소·추가 = 버튼 왼쪽', s2[0] and s2[1]==0, s2)
         shot(pg2.locator('#suroCard'),'suro_add')
         pg2.click('#suroCancel'); pg2.wait_for_timeout(200); check('수로 취소 → 닫힘', pg2.locator('#suroCancel').count()==0)
-    if pg2.locator('[data-tab=daily]').count():
-        pg2.click('[data-tab=daily]'); pg2.wait_for_function("!dqBusy",timeout=20000); pg2.wait_for_timeout(1200)
-        if not pg2.locator('.dqc .dqi').count(): pg2.click('#dqSync'); pg2.wait_for_function("!dqBusy",timeout=20000); pg2.wait_for_timeout(800)
-        n=pg2.locator('.dqc[data-dqchar=c1] .dqi').count()
-        check('일퀘 현황: 캐릭터 카드 + 지역 칸 (예전 구현)', pg2.locator('.dqtop').count()==1 and n>=3, n)
-        pg2.click('#dqEditBtn'); pg2.wait_for_timeout(200); check('일퀘 편집 버튼 동작', pg2.locator('.dqedit').count()==1); pg2.click('#dqEditBtn')
-        shot(pg2.locator('#view'),'daily')
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

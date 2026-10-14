@@ -46,9 +46,9 @@ try:
     pg.on('console',lambda m:errs.append('console:'+m.text) if m.type=='error' and 'Failed to load resource' not in m.text and 'gsi' not in m.text else None)
     pg.goto(URL); pg.evaluate("p=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p))}",PRESET); pg.reload(); pg.wait_for_timeout(500)
     today=pg.evaluate('dayId()'); yday=pg.evaluate('dayId(Date.now()-864e5)')
-    # 1) 탭 바: 총 수익 → ㅡ 구분선 → 일퀘 현황 → 길드 현황
+    # 1) 탭 바: 총 수익 → ㅡ 구분선 → 길드 현황 (b119: 일퀘 현황 삭제)
     tabs=pg.eval_on_selector_all('#tabs > *',"e=>e.map(x=>x.tagName==='SPAN'?'|'+x.className:x.textContent.trim())")
-    check('tab order with divider', tabs==['이번 주 보스','수익 분석','득템 분석','|tabsep','일퀘 현황','길드 현황'], tabs)
+    check('tab order with divider', tabs==['이번 주 보스','수익 분석','득템 분석','|tabsep','길드 현황'], tabs)
     sep=pg.evaluate("(()=>{const r=document.querySelector('#tabs .tabsep').getBoundingClientRect(),t=document.querySelector('[data-tab=total]').getBoundingClientRect();return {w:r.width,h:r.height,mid:Math.abs((r.top+r.bottom)/2-(t.top+t.bottom)/2)}})()")
     check('divider is a short horizontal line, vertically centered', 8<=sep['w']<=20 and 1<=sep['h']<=3 and sep['mid']<6, sep)
     check('no API calls before opening tabs', not sched_calls() and not guild_calls(), CALLS)
@@ -93,7 +93,7 @@ try:
     # 8) 라이트 테마도 깨지지 않음
     pg.set_viewport_size({'width':1366,'height':900}); pg.click('[data-tab=guild]'); wait_idle(pg)
     check('b67: dark only, no theme toggle', pg.evaluate("document.documentElement.dataset.theme")=='dark' and pg.locator('#themeBtn').count()==0)
-    check('일퀘 현황 탭 복원 (b111, 길드 현황 왼쪽)', pg.locator('[data-tab=daily]').count()==1 and pg.evaluate("typeof renderDaily==='function'"))
+    check('b119: 일퀘 현황 탭 삭제', pg.locator('[data-tab=daily]').count()==0 and pg.evaluate("typeof renderDaily==='undefined'"))
     b.close()
 finally:
     srv.terminate()

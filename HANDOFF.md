@@ -15,6 +15,14 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b119 (2026-10-14) — 일퀘 현황 탭 삭제
+- 시간(KST): 17:15–17:20 (코딩 약 3분 / 테스트 약 3분, 전체 테스트 포함)
+- 지운 것: 탭 버튼(body.html), renderDaily·dqCell·dqState·DQ_TXT·dqChars·DQ_ITEMS·DQ_ICONS·dqIco·MP_CHAR_DAILY, 🔄(#dqSync)·편집·항목/캐릭터 숨김 클릭·키보드 처리, 스케줄러 요약의 일퀘 항목(items) 계산, 일퀘 CSS, src/dqicons.json · tools/build_dqicons.py · build.py 주입. index.html 887KB → 845KB.
+- 남긴 것: 스케줄러 호출(보스 자동 체크·길드 지하 수로가 같이 씀 — 일퀘 전용 API 호출은 원래 없었음), 저장 데이터 S.dq(동기화 데이터 그대로, 읽기·저장만 유지), .dqlock(길드 실패 줄), dqBusy(스케줄러 갱신 중 표시).
+- 저장된 탭이 'daily'면 이번 주 보스로 열림. 서버 데이터는 건드리지 않음.
+- 테스트: test91(신규, 8908), test14·35·83 일퀘 검사 → 삭제 확인으로 수정.
+- 스크린샷: /workspace/maple-boss-tracker/b119_{before,after}_{tabs,view_saved_daily}.png
+
 ## b118 (2026-10-14) — 득템 점수 · 판매금 아이콘 크기 · 이번 주 수익 보스 아이콘 순서
 - 시간(KST): 16:59–17:12 (코딩 약 7분 / 테스트 약 6분)
 - 득템왕·보스 득템왕 제목 밑 작은 글씨 '(흑옥 0.1점, 백옥 0.2점, 생명 0.4점, 아이템 1점)'.
