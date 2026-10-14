@@ -100,10 +100,22 @@ try:
         check('배지 글자 E N H C X', bd=='ENHCX', bd)
         pg.locator('#revAllModal [data-ra="0"]').fill('7'); pg.locator('#revAllModal [data-rab=ok]').click(); pg.wait_for_timeout(300)
         check('묶어도 입력 번호대로 저장 (첫 칸 = 루시드 근원의 속삭임 7억)', pg.evaluate("S.characters[0].drev['lucid|whisper'].m")==700000000)
+        # 새 기기(집 PC): 이 기기에 시세 없음 → 서버에서 받아 수익 기록 창에 채움, 빈 응답은 지우지 않음
+        pg.evaluate("localStorage.removeItem('mapleBossTracker.admPrices');localStorage.removeItem('mapleBossTracker.itemPrices')")
+        pg.evaluate("admPriceLoad()"); pg.wait_for_timeout(400)
+        pg.evaluate("askRev(S.characters[0],findBoss('lucid'),'lucid|whisper','whisper',()=>{})"); pg.wait_for_timeout(200)
+        check('새 기기: 서버 시세로 수익 기록 칸 채움 (근원의 속삭임 62)', pg.input_value('#rvAmt')=='62', pg.input_value('#rvAmt'))
+        pg.evaluate("document.querySelector('#revModal').remove()")
+        before=pg.evaluate("localStorage.getItem('mapleBossTracker.itemPrices')")
+        pg.evaluate("itemPricePut({});itemPricePut({oath:{p:0,t:9e12}})")
+        check('빈 응답·0 값은 시세를 덮지 않음', pg.evaluate("itemPrices().oath.p")==1250000000 and pg.evaluate("itemPrices().whisper.p")==6200000000)
         # 429 (초당 한도) → 1번 재시도, 하루 한도 표시 아님
         r=pg.evaluate("(async()=>{ const t=Date.now(); const d=await nx('/maplestory/v1/id',{character_name:'tst429'},'live_K9_zzzzzzzzzzzzzzzzzz'); return [d.ocid, Date.now()-t, quotaOf('live_K9_zzzzzzzzzzzzzzzzzz'), quotaHtml('live_K9_zzzzzzzzzzzzzzzzzz')]; })()")
         check('초당 429 → 1.2초 뒤 1번 재시도해서 성공, 오늘 한도 아님, 배지 = 초당 호출 제한', r[0]=='x1' and r[1]>=1150 and len(SRV['nx'])==2 and not r[2]['over'] and '초당 호출 제한' in r[3] and '호출 한도 도달' not in r[3], r)
         check('호출 속도: 키마다 1.1초에 4건', pg.evaluate("CONFIG.API_RATE_N")==4)
+        pg.evaluate("()=>{pend=null;gdMeta.on=true;S.characters[0].level=(S.characters[0].level||200)+1;save();render();}"); pg.wait_for_timeout(300)
+        check('자동 변경(레벨 동기화 등) → 저장/취소 비활성', pg.evaluate("!!document.querySelector('#pendSave')?.disabled && !!document.querySelector('#pendCancel')?.disabled"))
+        pg.evaluate("toast('x')"); check('하단 알림 없음', not pg.evaluate("document.querySelector('#toast').classList.contains('show')"))
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

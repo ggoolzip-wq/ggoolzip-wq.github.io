@@ -210,6 +210,12 @@ try:
     check('b68: approved → login gives session, not admin', s==200 and bb['status']=='ok' and TB and bb['admin'] is False, bb)
     s,b,_=req('GET','/api/admin/users',tok=TB); check('b68: non-admin → 403 not_admin', s==403 and b['error']=='not_admin', b)
     s,b,_=req('POST','/api/admin/decide',{'user':UADM,'action':'block'},tok=TB); check('b68: non-admin cannot decide', s==403, b)
+    # b112: 공용 시세 — 쓰기는 관리자만, 읽기는 누구나(로그인 없이), 0·빈 값 무시
+    s,b,_=req('PUT','/api/admin/prices',{'prices':{'oath':{'p':900000000,'t':5}}},tok=TB); check('b112: non-admin price write → 403', s==403, b)
+    s,b,_=req('PUT','/api/admin/prices',{'prices':{'oath':{'p':900000000,'t':5}}},tok=TADM); check('b112: admin price write', s==200 and b['prices']['oath']['p']==900000000, b)
+    s,b,_=req('PUT','/api/admin/prices',{'prices':{'oath':{'p':0,'t':9}}},tok=TADM); check('b112: 0 never overwrites', b['prices']['oath']['p']==900000000, b)
+    s,b,_=req('GET','/api/prices'); check('b112: shared prices readable without login', s==200 and b['prices']['oath']['p']==900000000, (s,b))
+    s,b,_=req('GET','/api/prices',tok=TB); check('b112: same prices for another user', s==200 and b['prices']['oath']['p']==900000000, (s,b))
     s,b,_=req('PUT','/api/state',{'baseRev':0,'updatedAt':1,'data':{'characters':[]}},tok=TB); check('b68: approved user saves', s==200, b)
     s,b,_=req('POST','/api/admin/decide',{'user':uB,'action':'block'},tok=TADM); check('b68: block', s==200 and b['status']=='blocked', b)
     s,b,_=req('PUT','/api/state',{'baseRev':1,'updatedAt':2,'data':{'characters':[]}},tok=TB); check('b68: blocked → existing session rejected, cannot store', s in (401,403), (s,b))

@@ -45,7 +45,7 @@ try:
         if w==1280:
             pg.evaluate("CONFIG.API_RATE_N=5;CONFIG.API_RATE_WIN_MS=1100")
             mode['fail']=True; pg.evaluate("toastHide()"); pg.evaluate("syncAll()"); pg.wait_for_function("!syncing",timeout=30000); pg.wait_for_timeout(200); f=pg.evaluate(LBL)
-            check('계정 키 오류 → 주황 "일부 실패 HH:mm" + 알림(toast) 그대로', bool(f) and re.fullmatch(r'일부 실패 \d\d:\d\d',f['t']) and f['c']=='rgb(245, 165, 36)' and pg.evaluate("document.querySelector('#toast').classList.contains('show')"), f)
+            check('계정 키 오류 → 주황 "일부 실패 HH:mm" (하단 알림 없음)', bool(f) and re.fullmatch(r'일부 실패 \d\d:\d\d',f['t']) and f['c']=='rgb(245, 165, 36)' and not pg.evaluate("document.querySelector('#toast').classList.contains('show')"), f)
             shot(pg,'1280_partfail')
             pg.route('**/open.api.nexon.com/**',lambda r:r.abort()); pg.evaluate("for(const k in listCache) delete listCache[k]; void syncAll()"); pg.wait_for_function("!syncing",timeout=30000); f=pg.evaluate(LBL)
             check('네트워크 오류 → 빨강 "새로고침 실패 HH:mm"', bool(f) and re.fullmatch(r'새로고침 실패 \d\d:\d\d',f['t']) and f['c']=='rgb(248, 113, 113)', f)

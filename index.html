@@ -2670,7 +2670,7 @@ function meso(n){
 function markEmpty(el,on=true){ if(el) el.classList.toggle('inerr',!!on); return el; }
 document.addEventListener('input',e=>{ const t=e.target; if(t?.classList?.contains('inerr')&&String(t.value).trim()) t.classList.remove('inerr'); },true);
 function toastHide(){ clearTimeout(toast._t); $('#toast')?.classList.remove('show'); }
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),3200);}
+function toast(msg){} /* b112: 하단 알림 전부 없앰 */
 const safeImg = u => /^https:\/\/open\.api\.nexon\.com\//.test(u||'') ? u : '';
 const avatar = (c,cls='') => `<div class="avatar ${cls}">${safeImg(c.image)?`<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">`:esc((c.name||'?').slice(0,1))}</div>`;
 const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','daily','guild']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
@@ -2939,7 +2939,7 @@ function renderBoss(){
     <div class="toolbar" style="margin-bottom:10px">
       <div class="seg">${['weekly','monthly'].map(t=>`<button data-filter="${t}" class="${bossFilter===t?'on':''}">${TYPE_LABEL[t]} <span style="opacity:.8">${doneType(t)}/${cntType(t)}</span></button>`).join('')}</div>
       <span style="flex:1"></span>
-      ${(!pend&&pendDoneAt&&Date.now()-pendDoneAt<3000)?'<span class="pdone" role="status">저장이 완료되었습니다.</span>':''}${(on=>`<button class="pbtn prevall on" id="revAllBtn" type="button">수익 기록 전체 수정</button><button class="pbtn pcancel${on?' on':''}" id="pendCancel" ${on?'':'disabled'}>취소</button><button class="pbtn psave${on?' on':''}" id="pendSave" ${on?'':'disabled'}>저장</button>`)(!!pend||(svUnsaved()&&!svPushing))}
+      ${(!pend&&pendDoneAt&&Date.now()-pendDoneAt<3000)?'<span class="pdone" role="status">저장이 완료되었습니다.</span>':''}${(on=>`<button class="pbtn prevall on" id="revAllBtn" type="button">수익 기록 전체 수정</button><button class="pbtn pcancel${on?' on':''}" id="pendCancel" ${on?'':'disabled'}>취소</button><button class="pbtn psave${on?' on':''}" id="pendSave" ${on?'':'disabled'}>저장</button>`)(!!pend)}
     </div>
     <div class="boss-list">${shown.length?shown.map(b=>bossRow(c,b)).join(''):`<div class="empty muted">${c.ocid?`게임 스케줄러에 등록된 ${TYPE_LABEL[bossFilter]}가 없습니다.<br>게임에서 보스를 스케줄러에 등록한 뒤 동기화(↻)하면 자동으로 표시돼요.`:`넥슨 API로 불러온 캐릭터만 보스가 자동 표시돼요.<br>캐릭터 편집에서 API 키 계정에 연결해 주세요.`}</div>`}</div>
    </div></div><div class="rcol">${COMMITTED(()=>revPanel(allRevenue(vchars()),activeChar()))}${priceCard()}<div class="card resetcard"><div class="muted" id="resetInfo"></div></div></div></div>`;
@@ -4175,7 +4175,7 @@ async function gdResolve(which){
   finally{ gd.ia=false; if(SV_ON) svAfterLogin(); }
 }
 function gdChanged(){
-  if(SV_ON){ gdRender(); return; } // 서버 모드: 자동 저장 없음 (svSaveNow / 로그아웃 창의 [저장 후 로그아웃]으로만 저장)
+  if(SV_ON){ gdRender(); clearTimeout(gdChanged._t); gdChanged._t=setTimeout(()=>{ if(!pend&&gdLocalDirty()&&!svPushing) svPushBg(); },2000); return; } /* b112: 자동 변경(동기화·주간 초기화 등)은 사용자 수정이 아니므로 [저장] 대신 뒤에서 저장 */ // 서버 모드: 자동 저장 없음 (svSaveNow / 로그아웃 창의 [저장 후 로그아웃]으로만 저장)
   if(!gdMeta.on||!gdUsable()||gd.state==='conflict') return;
   if(gd.state==='reconnect'&&!gdHasTok()){ gdRender(); return; } // 로그인 필요 상태: 이 PC 에만 저장, 다시 연결할 때 합쳐서 저장
   clearTimeout(gd.timer); gd.timer=setTimeout(()=>{ gd.timer=null; gdPush(); },GD.DEBOUNCE); gdRender();
@@ -4483,7 +4483,7 @@ document.addEventListener('click',e=>{
     case 'gMenuClose': gdMenu(false); break;
     case 'gBtn': gdHeaderClick(); break;
     case 'svWarn': svSaveNow(); break;
-    case 'pendCancel': if(pend) pendAsk(); else if(svUnsaved()) toast('이미 이 PC에 반영된 변경이에요 — 저장을 누르면 서버에 저장돼요'); break;
+    case 'pendCancel': if(pend) pendAsk(); break;
     case 'pendSave': pendSave(); break;
     case 'revAllBtn': openRevAll(); break;
     case 'gdLogin': gdLogin(); break;
@@ -4603,7 +4603,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(!SV_O
 window.addEventListener('pagehide',()=>{ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); });
 
 /* b68: 가입 승인 — 관리자(서버가 사용자 id 로 확인)만 목록·승인/거절/차단. 처음 연 기기에서도 관리자 버튼이 보이게 /api/me 로 확인 */
-async function svAdminCheck(){ if(!SV_ON||!svTok()||!gdMeta.on) return; try{ const r=await svFetch('/api/me'); localStorage.setItem(SV_ADMIN_KEY,r.admin?'1':'0'); gdRender(); if(!itemPriceLoad._at||Date.now()-itemPriceLoad._at>60e3) itemPriceLoad(); const m=$('#gMenu'); if(m&&!m.hidden) gdMenu(true); }catch(e){} }
+async function svAdminCheck(){ if(!SV_ON||!svTok()||!gdMeta.on) return; try{ const r=await svFetch('/api/me'); localStorage.setItem(SV_ADMIN_KEY,r.admin?'1':'0'); gdRender(); if(!itemPriceLoad._at||Date.now()-itemPriceLoad._at>60e3){ itemPriceLoad(); if(r.admin) admPriceLoad(); } const m=$('#gMenu'); if(m&&!m.hidden) gdMenu(true); }catch(e){} }
 let admUsers=null, admErr='';
 /* b102: 관리자 창 즉시 — 지난 목록(이 탭 sessionStorage)으로 바로 그리고 뒤에서 새로 받음. 사용자 목록+최저가 = 요청 1번(/api/admin/users?prices=1) */
 const ADM_CACHE_KEY='mapleBossTracker.admUsers';
@@ -4657,17 +4657,21 @@ const MAI_CODE={lcm:'루컨마',tc:'언더컨트롤',eye:'마깃안',belt:'몽�
 const kstStamp=t=>new Date(t+9*3600e3).toISOString().slice(0,16).replace('T',' ');
 const admPrices=()=>{ try{ return JSON.parse(localStorage.getItem(ADM_PRICE_KEY)||'{}')||{}; }catch(e){ return {}; } };
 // 반지 상자 결과 'ring:r4'·'ring:c4'(리스트레인트·컨티뉴어스 링 4레벨) → ring_r4·ring_c4, 칠흑 상자 결과 'cb:키' → 키
-function admPriceOf(ik){ if(!svIsAdmin()) return null; const k=String(ik||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1'), o=admPrices()[k]; return o&&+o.p>0&&+o.t>0?o:null; }
+function admPriceOf(ik){ /* b112: 공용 시세 → 모든 사용자 수익 기록 칸 채움 */ const k=String(ik||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1'), o=(typeof itemPrices==='function'?itemPrices():admPrices())[k]; /* b112: 이 기기 + 서버에서 받은 시세 */ return o&&+o.p>0&&+o.t>0?o:null; }
 let admPriceMsg='', admPriceBusy=false;
 /* b112: 아이템 시세 = 관리자가 등록·갱신한 값(서버 admin_prices) — 로그인한 사용자 누구나 GET /api/prices 로 읽어 이 기기에 보관. 관리자 기기는 admPrices 와 합침(최신 시각 우선) */
 const ITEM_PRICE_KEY='mapleBossTracker.itemPrices';
 function itemPrices(){ let a={}; try{ a=JSON.parse(localStorage.getItem(ITEM_PRICE_KEY)||'{}')||{}; }catch(e){} const b=svIsAdmin()?admPrices():{}, o={...a};
   for(const [k,v] of Object.entries(b)) if(v&&+v.p>0&&(!o[k]||+o[k].t<=+v.t)) o[k]=v; for(const k in o) if(!(o[k]&&+o[k].p>0)) delete o[k]; return o; }
-function itemPricePut(P){ try{ localStorage.setItem(ITEM_PRICE_KEY,JSON.stringify(P||{})); }catch(e){} }
+function itemPricePut(P){ if(!P||typeof P!=='object'||!Object.keys(P).length) return; /* b112: 빈 응답으로 지우지 않음 */ let cur={}; try{ cur=JSON.parse(localStorage.getItem(ITEM_PRICE_KEY)||'{}')||{}; }catch(e){}
+  for(const [k,o] of Object.entries(P)) if(o&&+o.p>0&&+o.t>0&&(!cur[k]||+cur[k].t<=+o.t)) cur[k]={p:+o.p,t:+o.t}; // 0·빈 값 무시, 더 새 것만
+  try{ localStorage.setItem(ITEM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
 const repaintPriceCard=()=>{ const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } };
-async function itemPriceLoad(){ if(!SV_ON||!svTok()) return; itemPriceLoad._at=Date.now(); try{ const r=await svFetch('/api/prices'); itemPricePut(r.prices); if(pcKind==='item') repaintPriceCard(); }catch(e){} }
+async function itemPriceLoad(){ if(!SV_ON) return; /* b112: 공용 시세 — 로그인 없이도 */ itemPriceLoad._at=Date.now(); try{ const r=await svFetch('/api/prices',{noAuth:true}); itemPricePut(r.prices); if(pcKind==='item') repaintPriceCard(); }catch(e){} }
 function admPriceSave(P){ const cur=admPrices(); for(const [k,o] of Object.entries(P||{})) if(o&&+o.p>0&&(!cur[k]||cur[k].t<=o.t)) cur[k]={p:+o.p,t:+o.t}; try{ localStorage.setItem(ADM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
-async function admPriceLoad(){ if(!svIsAdmin()) return; try{ admPriceSave((await svFetch('/api/admin/prices')).prices); }catch(e){} }
+/* b112: 다른 기기에서 갱신한 시세를 이 기기로 — 예전엔 관리자 창을 열 때만 받아서, 새 기기(집 PC)에선 수익 기록 창이 빈 칸('0')이었음. 이제 로그인 확인 때마다 받음.
+ * 받은 값이 비었거나 실패하면 아무것도 안 바꿈(admPriceSave 는 0·빈 값을 무시하고 더 새 시각만 덮음) */
+async function admPriceLoad(){ if(!svIsAdmin()) return; try{ const P=(await svFetch('/api/admin/prices')).prices; if(P&&typeof P==='object'&&Object.keys(P).length){ admPriceSave(P); if(typeof repaintPriceCard==='function'&&pcKind==='item') repaintPriceCard(); } }catch(e){} }
 // 페이지 값(억, 본섭) → {우리 키: {p: 메소, t}} — 본섭 값이 없거나 0 이하면 넣지 않음
 function maiMap(items,t){ const P={}; for(const [k,c] of Object.entries(MAI_CODE)){ const v=+(items?.[c]?.main); if(v>0) P[k]={p:Math.round(v*1e8),t}; } return P; }
 // b106: 대기 없이 바로 요청 (하루 1회 접속, 같은 날은 캐시)

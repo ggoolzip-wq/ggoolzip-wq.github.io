@@ -24,7 +24,7 @@ try:
     check("성공: 버튼 옆 초록 '새로고침 완료!'", f and f['t'].startswith('새로고침 완료! ') and f['next'] and f['c']=='rgb(74, 222, 128)', f)
     pg.wait_for_timeout(3800); check('b108: 완료 글자는 계속 보임(시각 포함)', pg.evaluate("getComputedStyle(document.querySelector('#syncDone')).opacity")=='1')
     mode['fail']=True; pg.evaluate("toastHide()"); pg.evaluate("syncAll()"); pg.wait_for_timeout(300)
-    t=pg.inner_text('#toast'); check('실패: 오류 알림은 그대로', pg.evaluate("document.querySelector('#toast').classList.contains('show')") and ('오류' in t or '실패' in t), t)
+    t=pg.inner_text('#toast'); check('실패: 하단 알림 없음(b112)', not pg.evaluate("document.querySelector('#toast').classList.contains('show')"), t)
     src=open(os.path.join(ROOT,'src','app.js'),encoding='utf-8').read()
     check('자동 병합(merged) 알림 toast 없음', 'GD_RES_MSG.merged:' not in src and "toast('☁ '+GD_RES_MSG.pulled)" in src)
     b.close()

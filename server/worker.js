@@ -424,6 +424,11 @@ async function route(req, env) {
       vault: v === null ? 'none' : v === false ? 'locked' : 'open', subKeys: v ? (v.subs || []) : [], mainBk: v ? (v.mainBk || '') : '', mainBkLabel: v ? (v.mainBkLabel || '') : '' });
   }
 
+  // b112: 아이템 시세(관리자가 등록·갱신한 값) 읽기 — 공용 시세 1개 표(D1 meta.admin_prices) — 로그인 없이 누구나·어느 기기나 같은 값. 쓰기는 관리자만(PUT /api/admin/prices, 0·빈 값 무시, 더 새 시각만) (득템 가격 카드 '아이템 가격' 탭)
+  if (p === '/api/prices' && M === 'GET') {
+    const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'").first(); let v = {}; try { v = r ? JSON.parse(r.v) : {}; } catch (e) {}
+    return json(200, { prices: v });
+  }
   const me = await auth(env, req);
   const sk = me.th.slice(0, 32);
   if (M === 'GET') await limit(env, 'r:' + sk, LIMITS.read);
@@ -544,11 +549,6 @@ async function route(req, env) {
     const out = cur.slice(-1500);
     await env.DB.prepare('INSERT INTO seen (user_id,ids,updated_at) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET ids=excluded.ids, updated_at=excluded.updated_at').bind(me.userId, JSON.stringify(out), Date.now()).run();
     return json(200, { ids: out });
-  }
-  // b112: 아이템 시세(관리자가 등록·갱신한 값) 읽기 — 로그인한 사용자 누구나 (득템 가격 카드 '아이템 가격' 탭)
-  if (p === '/api/prices' && M === 'GET') {
-    const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'").first(); let v = {}; try { v = r ? JSON.parse(r.v) : {}; } catch (e) {}
-    return json(200, { prices: v });
   }
   if (p.startsWith('/api/admin/')) { // b68: 관리자만 (서버에서 사용자 id 로 확인)
     if (!adminId(env) || me.userId !== adminId(env)) throw new HttpError(403, 'not_admin', '관리자만 쓸 수 있습니다');

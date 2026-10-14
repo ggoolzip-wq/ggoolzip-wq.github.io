@@ -42,7 +42,7 @@ try:
     pg.wait_for_timeout(900); check('reject: stays gone after server ok', pg.locator('#admBody [data-admuser=p1]').count()==0)
     pg.evaluate("window.__fail=true; void admDecide('p2','approve')"); check('approve: moved to 사용 중 immediately', pg.evaluate("admUsers.find(x=>x.id==='p2').status")=='ok')
     pg.wait_for_timeout(1000)
-    check('failure: rolled back + error toast', pg.evaluate("admUsers.find(x=>x.id==='p2').status")=='pending' and '되돌렸' in pg.inner_text('#toast'), pg.inner_text('#toast'))
+    check('failure: rolled back, no toast', pg.evaluate("admUsers.find(x=>x.id==='p2').status")=='pending' and not pg.evaluate("document.querySelector('#toast').classList.contains('show')"), pg.inner_text('#toast'))
     check('JS 오류 없음', not errs, errs)
     b.close()
 except Exception as e:
