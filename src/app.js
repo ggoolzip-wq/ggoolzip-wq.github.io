@@ -1079,7 +1079,7 @@ async function syncAll(opts={}){
     let rt=0; const paint=()=>{ if(rt) return; rt=setTimeout(()=>{ rt=0; renderChars(); },120); };
     await pool(todo, SYNC_CONC, async([c,a])=>{
       if(!c.ocid){ try{ c.ocid=(await nx('/maplestory/v1/id',{character_name:c.name},a.key)).ocid; }catch(e){ c.sync={...c.sync,ok:false,msg:'ocid 조회 실패: '+e.message}; errs++; return; } }
-      try{ total+=applyScheduler(c, await fetchSched(c,a)); paint(); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
+      try{ total+=await schedApply(c,a); paint(); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
       catch(e){ errs++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
       const now=Date.now();
       if(opts.full||!(now-(c.sync?.imgAt||0)<(opts.silent?SYNC_BASIC_LOAD_TTL_MS:SYNC_BASIC_TTL_MS))){ try{ await fetchBasic(c,a.key); paint(); }catch(e){} } // 이미지·레벨·EXP
@@ -1127,6 +1127,20 @@ function schedSummary(d){
 function schedPut(c,d){ schedC[c.id]=schedSummary(d); lsSet(SCHED_KEY,schedC); }
 function schedErr(c,e){ schedC[c.id]={...(schedC[c.id]||{}),errAt:Date.now(),ok:false,msg:e.message,code:e.code||''}; lsSet(SCHED_KEY,schedC); }
 /* 스케줄러 1회 호출 = 보스 자동 체크(applyScheduler) + 일퀘/길드 요약 저장 (동기화와 같은 경로) */
+/* b137: 실제 넥슨 응답 확인 — 목 리셋 후 이번 주에 아직 접속 안 한 캐릭터는 오늘 응답의 boss_contents 에 주간 보스 행이 아예 없음
+ * (검은 마법사 bossMonthly 2행만; 접속한 캐릭터는 80행, 각 행 registration_flag/complete_flag "true"/"false").
+ * 그래서 등록을 켤 근거가 없어 라인업이 빈 채로 남았음 → 주간 행이 없으면 date= 어제…7일 전 응답(스케줄러 등록 목록)으로 등록만 켬
+ * (지난 주 날짜라 클리어로는 안 침 — applyScheduler 의 staleWeek). 아직 준비 안 된 날짜(OPENAPI00009)는 건너뜀. */
+const hasWeeklyRows = d => (d?.boss_contents||[]).some(r=>/weekly/i.test(String(r.cycle||'')));
+async function schedApply(c,a){
+  const d=await fetchSched(c,a); let n=0;
+  if((d?.boss_contents||[]).length && !hasWeeklyRows(d)) for(let k=1;k<=7;k++){ // 응답 자체가 비면(오류·빈 객체) 건너뜀
+    let p; try{ p=await nx('/maplestory/v1/scheduler/character-state',{ocid:c.ocid,date:dayId(Date.now()-k*864e5)},a.key); }
+    catch(e){ if(e.code==='OPENAPI00009'||e.code==='OPENAPI00004') continue; break; }
+    if(hasWeeklyRows(p)){ const keep=c.sync; n+=applyScheduler(c,p); c.sync=keep; break; }
+  }
+  return n+applyScheduler(c,d);
+}
 async function fetchSched(c,a){
   try{ const d=await nx('/maplestory/v1/scheduler/character-state',{ocid:c.ocid},a.key); schedPut(c,d); return d; }
   catch(e){ schedErr(c,e); throw e; }
@@ -1140,7 +1154,7 @@ async function refreshSched(chars, ttl=DQ_TTL_MS){
   dqBusy=true; renderTabView(); let n=0;
   try{
     for(const c of todo){
-      try{ n+=applyScheduler(c, await fetchSched(c,accOf(c))); }
+      try{ n+=await schedApply(c,accOf(c)); }
       catch(e){ if(e.code==='OPENAPI00007'||e.status===429){ apiPauseUntil=Date.now()+DQ_TTL_MS; break; } if(e.code==='NETWORK') break; }
       renderTabView();
     }

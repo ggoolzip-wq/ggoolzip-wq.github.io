@@ -15,6 +15,16 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b137 (2026-10-15) — 동기화 후에도 스케줄러 등록 보스가 안 보이던 진짜 원인 (실제 넥슨 응답으로 확인)
+- 시간(KST): 01:47–02:14 (조사·코딩 약 16분 / 테스트 약 551분, 전체 테스트 2번 — 1번째에서 test64 가 빈 응답에도 지난 날짜 조회해 느려져 실패 → 응답 비면 건너뜀)
+- 실제 응답 (`/maplestory/v1/scheduler/character-state`, 사용자 키로 조회, 키는 기록 안 함): `boss_contents` 는 보스×난이도 전 행(약 80행), 각 행 `content_name`, `difficulty`(easy/normal/hard/chaos/extreme), `cycle`(bossDaily/bossWeekly/bossMonthly), `list_order_no`, `registration_flag`("true"/"false"), `complete_flag`("true"/"false"). `clear_flag` 는 없음.
+- **원인**: 목 리셋(10/15) 후 이번 주에 아직 접속 안 한 캐릭터는 오늘 응답의 `boss_contents` 가 **2행뿐**(검은 마법사 hard/extreme, bossMonthly) — 주간 보스 행이 아예 없음 (예: 285레벨 캐릭터들). 접속한 캐릭터(림강혼망)는 80행에 registration_flag 정상. 그래서 사이트가 등록을 켤 근거가 없어 라인업이 빈 채(검마만)였음. b136 의 '안 끔'은 맞지만 이미 꺼진 걸 켜지 못함.
+- **수정**: `schedApply()` — 오늘 응답에 주간(cycle 에 weekly) 행이 없으면 `date=` 어제부터 7일 전까지 차례로 조회해 주간 행이 있는 첫 응답의 등록 목록(registration_flag)으로 등록만 켬. 그 날짜는 지난 주라 complete_flag 는 이번 주 클리어로 안 침(staleWeek). 데이터 준비 중(OPENAPI00009, 10/14 실제로 그랬음)·범위 밖은 건너뜀. 그 다음 오늘 응답을 적용(검마 클리어 등). 주간 행이 있는 캐릭터는 추가 호출 없음.
+- 실제 검증 (로컬, 실제 넥슨 응답을 프록시, 라이브 데이터 안 건드림): zetking — 예전 빌드: 검마만 / 새 빌드: 스우(익스)·가엔슬(카오스)·윌·더스크·진힐라·듄켈·세렌(하드)·칼로스·카링·대적자·흉성·벨로나 + 검마. 림강혼망(접속): 12 주간 + 검마, 추가 호출 없음.
+- 사용자 요구(미접속 캐릭터도 목 리셋 후 스케줄러에 저장된 보스 그대로, CLEAR 만 초기화)와 같은 동작. b134(지난 주 기록 복구)·b136(동기화는 안 끔)은 그대로 대비책.
+- 테스트: test101 새로(포트 8921, `tests/fixture_sched_b137.json` = 실제 응답의 boss_contents 만, 이름·키 없음).
+- 스크린샷 `b137_{before,after}_sync_zetking.png` (실제 응답), `b137_after_sync_online.png`, `b137_after_sync_lineup_mock.png`.
+
 ## b136 (2026-10-15) — 주간 메소 그래프 주별 + 동기화가 등록 지우던 버그 + 이름 '메록지'
 - 시간(KST): 01:11–01:40 (코딩 약 14분 / 테스트 약 15분)
 - 1) 주간 메소 그래프: b135 의 이번 주 날짜별 보기 대신 주별 — x축 1주차·2주차…, 점 = 그 주 메소(누적 아님, 월간 보스·아이템 판매 포함), 점 위에 'N억', 오른쪽 위 '총 누적'. `cumLineChart(rows,T,{perWeek:1})`. `thisWeekChart` 는 코드에 남김(미사용).
