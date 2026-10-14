@@ -16,7 +16,7 @@
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
 ## b137 (2026-10-15) — 동기화 후에도 스케줄러 등록 보스가 안 보이던 진짜 원인 (실제 넥슨 응답으로 확인)
-- 시간(KST): 01:47–02:14 (조사·코딩 약 16분 / 테스트 약 551분, 전체 테스트 2번 — 1번째에서 test64 가 빈 응답에도 지난 날짜 조회해 느려져 실패 → 응답 비면 건너뜀)
+- 시간(KST): 01:47–02:14 (조사·코딩 약 10분 / 테스트 약 17분, 전체 테스트 2번 — 1번째에서 test64 가 빈 응답에도 지난 날짜 조회해 느려져 실패 → 응답 비면 건너뜀)
 - 실제 응답 (`/maplestory/v1/scheduler/character-state`, 사용자 키로 조회, 키는 기록 안 함): `boss_contents` 는 보스×난이도 전 행(약 80행), 각 행 `content_name`, `difficulty`(easy/normal/hard/chaos/extreme), `cycle`(bossDaily/bossWeekly/bossMonthly), `list_order_no`, `registration_flag`("true"/"false"), `complete_flag`("true"/"false"). `clear_flag` 는 없음.
 - **원인**: 목 리셋(10/15) 후 이번 주에 아직 접속 안 한 캐릭터는 오늘 응답의 `boss_contents` 가 **2행뿐**(검은 마법사 hard/extreme, bossMonthly) — 주간 보스 행이 아예 없음 (예: 285레벨 캐릭터들). 접속한 캐릭터(림강혼망)는 80행에 registration_flag 정상. 그래서 사이트가 등록을 켤 근거가 없어 라인업이 빈 채(검마만)였음. b136 의 '안 끔'은 맞지만 이미 꺼진 걸 켜지 못함.
 - **수정**: `schedApply()` — 오늘 응답에 주간(cycle 에 weekly) 행이 없으면 `date=` 어제부터 7일 전까지 차례로 조회해 주간 행이 있는 첫 응답의 등록 목록(registration_flag)으로 등록만 켬. 그 날짜는 지난 주라 complete_flag 는 이번 주 클리어로 안 침(staleWeek). 데이터 준비 중(OPENAPI00009, 10/14 실제로 그랬음)·범위 밖은 건너뜀. 그 다음 오늘 응답을 적용(검마 클리어 등). 주간 행이 있는 캐릭터는 추가 호출 없음.
