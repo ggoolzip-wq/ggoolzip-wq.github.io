@@ -15,6 +15,24 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b158 (2026-10-15)
+시작 15:56 KST · 끝 16:34 KST
+- **Orbit 정정**(b156을 반대로 이해했음): 사이트 **전체** = Orbit, 크기 그대로. 제외(Pretendard 유지): 이번 주 보스 탭의 캐릭터 닉네임(#charList .nm, 캐릭터 카드 h2, .rp-nm), 보스 드롭 표(보스 카드 전체 `.card:has(.boss-list)`), 결정석/아이템 가격 카드, 디지털 글자(.tir SVG·MrjUnitKo·로고). Orbit은 글자가 넓고 줄이 높아 `line-height:1.193`(Pretendard normal 값)·`letter-spacing:-.03em` 으로 기존 배치 유지(사이드바 높이·한 줄 표 테스트 19/37/45 통과). 웹폰트 로드 끝나면 fitPriceCard/fitMiss 재실행.
+- 디지털 '억'(숫자 옆, tir): ㄱ 세로획 맨 아래 점 1개 추가(그래프 라벨은 그대로).
+- 디지털 '소'(·'조'): 혼자 내려가 보이던 것 → 글꼴 원래 위치(1칸 위)로, '메'와 위쪽 정렬.
+- '이번 주 수익' 총액 옆 '메소'도 디지털(tir 하나로 '8.38억 메소').
+테스트: 전체 run_par — 23/25/46/49/51(동기화 서버 테스트)만 실패, HEAD 빌드·HEAD worker 로도 같은 실패 → 환경 문제(b147 때와 같음). 나머지 통과. 14번은 새 탭 순서로 갱신.
+스크린샷: /workspace/maple-boss-tracker/b158_cmp_orbit_tab_{boss,total,loot}.png, b158_cmp_{charinfo,week,total,sales}_zoom.png, b158_{before,after}_*.png
+
+## b157 (2026-10-15)
+시작 15:51 KST · 끝 16:34 KST
+- 새 탭 **신창섭 라이브**(길드 현황 옆 '—' 구분선 뒤). 가운데 2열: 왼쪽 넥슨 라이브, 오른쪽 유튜브 @MapleStoryKR. 자동재생 없음(썸네일 ▶ 누르면 iframe 삽입·재생), 각 영상 밑 링크, 아래에 10/15 이후 라이브 제목 목록(링크). 라이브 중이면 탭에 LIVE 배지(빨간 타원·흰 글씨), 끝나면 사라짐.
+- **방식**: Worker `scheduled` cron `* * * * *`(wrangler.toml [triggers]) → `liveCron`: 유튜브 `https://www.youtube.com/@MapleStoryKR/live` HTML 의 `"isLiveNow":true` + canonical `watch?v=ID`·`<meta name=title>`·startTimestamp 파싱 → D1 `live_state`(현재 상태), `live_items`(10/15 이후 본 라이브/예정 기록, 안 보이면 ENDED). 사이트는 `GET /api/live`(D1 읽기만, 작은 JSON, `Cache-Control: public, max-age=15`)만 호출. 외부 요청은 cron 에서만. 브라우저 탭이 보일 때만 30초마다 재조회(visibilitychange 로 숨기면 멈춤, 보이면 즉시 1회).
+- **넥슨 라이브**: live.nexon.com 은 Cloudflare 보안 검사(managed challenge)라 Worker 에서 403. 공개 API(public.api.nexon.com/nexon-live)는 넥슨 웹 내부 키가 필요해 쓰지 않음(사용자 결정 필요) → cron 에서 끔(`NX_ON=false`), 사이트는 대체 화면(▶ 누르면 live.nexon.com/channels/23 새 창). 코드는 `nxCheck()`(__NEXT_DATA__ heroBroadcasts 파싱)로 남김.
+- 사이트 규칙(b87 규칙 10)대로 캐릭터가 없으면 이 탭도 빈 화면.
+- Worker 배포 Version a04e168e (EPOCH 그대로, 새 테이블만 추가, 기존 데이터 변경 없음).
+스크린샷: /workspace/maple-boss-tracker/b157_cmp_header.png, b157_after_live.png (라이브 중 실제 데이터)
+
 ## b156 (2026-10-15)
 시작 15:37 KST · 끝 15:51 KST
 - '이번 주 보스' 탭 한정 Orbit 글씨체(Google Fonts, OFL; 런타임 `<link>` 주입 `orbitFont()`): 캐릭터 닉네임(#charList .nm, 캐릭터 카드 h2, 이번 주 수익 .rp-nm), 보스 드롭 표(.boss-list 전체, .drops), 결정석/아이템 가격 카드(.pricecard). 디지털 글자(.tir) 제외, 크기 그대로. 범위는 `body[data-curtab="boss"]` (body에 data-tab을 쓰면 테스트·탭 셀렉터 `[data-tab=boss]`와 충돌해서 data-curtab 사용).

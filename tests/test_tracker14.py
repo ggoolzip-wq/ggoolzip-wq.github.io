@@ -48,7 +48,7 @@ try:
     today=pg.evaluate('dayId()'); yday=pg.evaluate('dayId(Date.now()-864e5)')
     # 1) 탭 바: 총 수익 → ㅡ 구분선 → 길드 현황 (b119: 일퀘 현황 삭제)
     tabs=pg.eval_on_selector_all('#tabs > *',"e=>e.map(x=>x.tagName==='SPAN'?'|'+x.className:x.textContent.trim())")
-    check('tab order with divider', tabs==['이번 주 보스','수익 분석','득템 분석','|tabsep','길드 현황'], tabs)
+    check('tab order with divider', tabs==['이번 주 보스','수익 분석','득템 분석','|tabsep','길드 현황','|tabsep','신창섭 라이브LIVE'], tabs)
     sep=pg.evaluate("(()=>{const r=document.querySelector('#tabs .tabsep').getBoundingClientRect(),t=document.querySelector('[data-tab=total]').getBoundingClientRect();return {w:r.width,h:r.height,mid:Math.abs((r.top+r.bottom)/2-(t.top+t.bottom)/2)}})()")
     check('divider is a short horizontal line, vertically centered', 8<=sep['w']<=20 and 1<=sep['h']<=3 and sep['mid']<6, sep)
     check('no API calls before opening tabs', not sched_calls() and not guild_calls(), CALLS)

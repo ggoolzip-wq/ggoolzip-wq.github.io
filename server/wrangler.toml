@@ -23,5 +23,5 @@ NEXON_BASE = "https://open.api.nexon.com"
 APPROVAL_REQUIRED = "0"
 
 # 나중 단계(아직 구현 안 함): 매일 18:00 KST(= 09:00 UTC) maplescouter 헥사환산 가져오기
-# [triggers]
-# crons = ["0 9 * * *"]
+[triggers]
+crons = ["* * * * *"]   # b157: 매 1분 신창섭 라이브 감지 (유튜브 @MapleStoryKR, 넥슨 라이브 channels/23)

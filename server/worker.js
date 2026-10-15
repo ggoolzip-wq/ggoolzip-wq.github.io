@@ -353,10 +353,69 @@ const stateOut = (row, withData = true) => row
   ? { rev: row.rev, updatedAt: row.updated_at, savedAt: row.saved_at, ...(withData ? { data: JSON.parse(row.data) } : {}) }
   : { rev: 0, updatedAt: 0, savedAt: 0, ...(withData ? { data: null } : {}) };
 
+
+/* ---------- b157: 신창섭 라이브 감지 (cron 매 1분, 외부 요청은 여기서만) ---------- */
+const LIVE_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36';
+const LIVE_SINCE = Date.parse('2026-10-15T00:00:00+09:00');
+async function liveSchema(env) {
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS live_state (src TEXT PRIMARY KEY, live INTEGER NOT NULL, vid TEXT, title TEXT, url TEXT, thumb TEXT, ok INTEGER NOT NULL, err TEXT, checked_at INTEGER NOT NULL)').run();
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS live_items (src TEXT NOT NULL, vid TEXT NOT NULL, title TEXT, url TEXT, status TEXT, start_at INTEGER, first_seen INTEGER NOT NULL, last_seen INTEGER NOT NULL, PRIMARY KEY (src, vid))').run();
+}
+const unent = t => String(t || '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+async function ytCheck() {
+  const r = await fetch('https://www.youtube.com/@MapleStoryKR/live', { headers: { 'User-Agent': LIVE_UA, 'Accept-Language': 'ko-KR,ko', Cookie: 'CONSENT=YES+1' }, redirect: 'follow' });
+  if (!r.ok) throw new Error('yt ' + r.status);
+  const h = await r.text();
+  const vid = (h.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/) || [])[1] || null;
+  const live = /"isLiveNow":true/.test(h) && !!vid;
+  const upcoming = !live && vid && /"isUpcoming":true/.test(h);
+  const title = unent((h.match(/<meta name="title" content="([^"]*)"/) || [])[1] || '');
+  const st = Date.parse((h.match(/"startTimestamp":"([^"]+)"/) || h.match(/"scheduledStartTime":"(\d+)"/) || [])[1] || '') || null;
+  const items = vid && (live || upcoming) ? [{ vid, title, url: 'https://www.youtube.com/watch?v=' + vid, status: live ? 'LIVE' : 'RESERVE', start_at: st }] : [];
+  return { live, vid: live ? vid : null, title: live ? title : null, url: live ? 'https://www.youtube.com/watch?v=' + vid : 'https://www.youtube.com/@MapleStoryKR/streams', thumb: live ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` : null, items };
+}
+async function nxCheck() {
+  const r = await fetch('https://live.nexon.com/channels/23', { headers: { 'User-Agent': LIVE_UA, 'Accept': 'text/html', 'Accept-Language': 'ko-KR,ko' } });
+  const h = await r.text();
+  const m = h.match(/<script id="__NEXT_DATA__" type="application\/json"[^>]*>([\s\S]*?)<\/script>/);
+  if (!r.ok || !m) throw new Error('nx ' + r.status + (m ? '' : ' no data'));
+  const d = JSON.parse(m[1]); let hero = null;
+  for (const q of d?.props?.pageProps?.dehydratedState?.queries || []) if (q?.state?.data?.heroBroadcasts) { hero = q.state.data.heroBroadcasts; break; }
+  const L = (hero || []).filter(b => String(b.serviceId) === '23');
+  const items = L.map(b => ({ vid: b.pathKey, title: b.title, url: 'https://live.nexon.com/lives/' + encodeURIComponent(b.pathKey).replace(/%3D/g, '='), status: b.status, start_at: b.scheduledAt ? Date.parse(b.scheduledAt) : null, thumb: b.thumbnailUrl }));
+  const on = items.find(b => b.status === 'LIVE');
+  return { live: !!on, vid: on?.vid || null, title: on?.title || null, url: on?.url || 'https://live.nexon.com/channels/23', thumb: on?.thumb || items[0]?.thumb || null, items };
+}
+async function liveCron(env) {
+  try { await liveSchema(env); } catch (e) { console.log('live schema', String(e)); throw e; } const now = Date.now();
+  /* 넥슨 라이브는 Cloudflare 보안 검사(managed challenge)로 Worker 에서 403 → 끔(NX_ON). 공개 API 는 넥슨 내부 키가 필요해 쓰지 않음 */
+  const NX_ON = false;
+  for (const [src, fn] of [['yt', ytCheck], ...(NX_ON ? [['nx', nxCheck]] : [])]) {
+    try {
+      const x = await fn();
+      await env.DB.prepare('INSERT OR REPLACE INTO live_state (src,live,vid,title,url,thumb,ok,err,checked_at) VALUES (?,?,?,?,?,?,1,NULL,?)').bind(src, x.live ? 1 : 0, x.vid, x.title, x.url, x.thumb, now).run();
+      for (const it of x.items) if ((it.start_at || now) >= LIVE_SINCE)
+        await env.DB.prepare('INSERT INTO live_items (src,vid,title,url,status,start_at,first_seen,last_seen) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(src,vid) DO UPDATE SET title=excluded.title,status=excluded.status,start_at=COALESCE(excluded.start_at,live_items.start_at),last_seen=excluded.last_seen').bind(src, it.vid, it.title, it.url, it.status, it.start_at, now, now).run();
+      // 이번에 안 보인 LIVE 항목은 종료 처리
+      await env.DB.prepare("UPDATE live_items SET status='ENDED' WHERE src=? AND status IN ('LIVE','RESERVE') AND last_seen<?").bind(src, now).run();
+    } catch (e) {
+      await env.DB.prepare('INSERT INTO live_state (src,live,ok,err,checked_at) VALUES (?,0,0,?,?) ON CONFLICT(src) DO UPDATE SET ok=0,err=excluded.err,checked_at=excluded.checked_at').bind(src, String(e.message || e).slice(0, 120), now).run();
+    }
+  }
+}
+async function liveRead(env) {
+  await liveSchema(env);
+  const st = (await env.DB.prepare('SELECT src,live,vid,title,url,thumb,ok,err,checked_at FROM live_state').all()).results || [];
+  const items = (await env.DB.prepare('SELECT src,vid,title,url,status,start_at,first_seen FROM live_items ORDER BY COALESCE(start_at,first_seen) DESC LIMIT 40').all()).results || [];
+  const o = { at: Date.now(), list: items }; for (const r of st) o[r.src] = { live: !!r.live, vid: r.vid, title: r.title, url: r.url, thumb: r.thumb, ok: !!r.ok, checked_at: r.checked_at };
+  return new Response(JSON.stringify(o), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=15' } });
+}
+
 /* ---------- 라우트 ---------- */
 async function route(req, env) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, ''), M = req.method;
   if (p === '/api/health') return json(200, { ok: true, v: 'b104' });
+  if (p === '/api/live' && M === 'GET') return liveRead(env); // b157: 라이브 상태 (외부 요청 없음, D1 읽기만)
   await ensureSchema(env); await authEpoch(env); await loadAdmin(env); // 첫 요청 때 강제 로그아웃 기준 시각 확정
   // b67: IP별 요청 제한 (읽기 300/분, 쓰기 120/분) — 세션·사용자별 제한과 별개
   await limit(env, await ipKey(env, req, M === 'GET' ? 'ipr' : 'ipw'), M === 'GET' ? IP_LIMITS.read : IP_LIMITS.write);
@@ -646,5 +705,5 @@ export default {
       return json(500, { error: 'server', message: '서버 오류' }, cors);
     }
   },
-  // async scheduled(event, env, ctx) {}  // 나중 단계: 매일 18:00 KST maplescouter 헥사환산 (아직 구현 안 함)
+  async scheduled(event, env, ctx) { ctx.waitUntil(liveCron(env).catch(e => console.log('liveCron', String(e && e.stack || e)))); }, // b157: 매 1분 라이브 감지
 };

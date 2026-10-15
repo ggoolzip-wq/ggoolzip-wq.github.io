@@ -1239,6 +1239,34 @@ const suroChars=()=>{ const ids=suroIds(); return vchars().filter(c=>ids.include
 function renderTabView(){ if(!vchars().length) return; if(tab==='guild') renderGuild(); }
 const hhmm = t => { const d=kst(t); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
 const num = n => (Number(n)||0).toLocaleString('ko-KR');
+/* ---------- b157: 신창섭 라이브 탭 ----------
+   Worker cron(매 1분)이 유튜브 @MapleStoryKR /live 와 넥슨 라이브 channels/23 을 확인해 D1 에 저장 → 여기서는 /api/live 만 읽음(외부 요청 없음).
+   브라우저 탭이 보일 때만 30초마다 재조회, 다시 보이면 즉시 1회. 영상은 자동재생 없음(썸네일 ▶ 누르면 재생). */
+const LIVE_API='https://ggoolzip-sync.bossmaple.workers.dev/api/live';
+let LIVE=null, liveT=null;
+async function liveFetch(){ try{ const r=await fetch(LIVE_API,{cache:'no-store'}); if(!r.ok) return; LIVE=await r.json(); }catch(e){ return; }
+  const on=!!(LIVE&&((LIVE.yt&&LIVE.yt.live)||(LIVE.nx&&LIVE.nx.live))), b=document.getElementById('liveBadge'); if(b) b.hidden=!on;
+  if(tab==='live'&&!document.querySelector('#view .lvplay.playing')) renderLive(); }
+function livePoll(){ clearInterval(liveT); liveT=null; if(document.visibilityState!=='visible') return; liveFetch(); liveT=setInterval(liveFetch,30000); }
+document.addEventListener('visibilitychange',livePoll);
+const lvDate=t=>{ const d=new Date(t+KST_MS); return `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`; };
+function lvPlayer(src,o){ if(src==='nx'&&!(o&&o.ok)) return `<div class="lvcol"><div class="lvhd">넥슨 라이브 · 메이플스토리<span class="lvoff">새 창</span></div>
+    <a class="lvplay lvext" href="https://live.nexon.com/channels/23" target="_blank" rel="noopener" aria-label="넥슨 라이브 메이플스토리 채널 새 창에서 열기"><div class="lvblank">넥슨 라이브는 사이트에 넣을 수 없어 새 창에서 열려요</div><span class="lvbtn" aria-hidden="true">▶</span></a>
+    <div class="lvt"></div><a class="lvlink" href="https://live.nexon.com/channels/23" target="_blank" rel="noopener">https://live.nexon.com/channels/23</a></div>`;
+  const L=o&&o.live, th=o&&o.thumb, url=(o&&o.url)||(src==='yt'?'https://www.youtube.com/@MapleStoryKR/streams':'https://live.nexon.com/channels/23');
+  const embed=src==='yt'?(L&&o.vid?`https://www.youtube-nocookie.com/embed/${encodeURIComponent(o.vid)}?autoplay=1&rel=0`:''):(L?url:'');
+  return `<div class="lvcol"><div class="lvhd">${src==='yt'?'유튜브 · 메이플스토리 공식':'넥슨 라이브 · 메이플스토리'}${L?'<span class="livebadge">LIVE</span>':'<span class="lvoff">방송 없음</span>'}</div>
+    <div class="lvplay" ${embed?`data-embed="${esc(embed)}" data-src="${src}" role="button" tabindex="0" aria-label="재생"`:''}>${th?`<img src="${esc(th)}" alt="" loading="lazy">`:'<div class="lvblank">지금은 라이브 방송이 없어요</div>'}${embed?'<span class="lvbtn" aria-hidden="true">▶</span>':''}</div>
+    <div class="lvt">${L&&o.title?esc(o.title):''}</div><a class="lvlink" href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a></div>`; }
+function renderLive(){ const v=document.getElementById('view'); const D=LIVE||{}, since=Date.parse('2026-10-15T00:00:00+09:00');
+  const L=(D.list||[]).filter(x=>(x.start_at||x.first_seen)>=since);
+  v.innerHTML=`<div class="lvwrap"><div class="lvgrid">${lvPlayer('nx',D.nx)}${lvPlayer('yt',D.yt)}</div>
+    <div class="card lvlist"><h2>오늘(10/15) 이후 라이브</h2>${L.length?`<ul>${L.map(x=>`<li><span class="lvsrc ${x.src}">${x.src==='yt'?'유튜브':'넥슨'}</span>${x.status==='LIVE'?'<span class="livebadge">LIVE</span>':x.status==='RESERVE'?'<span class="lvoff">예정</span>':''}<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title||x.url)}</a><span class="muted tiny">${lvDate(x.start_at||x.first_seen)}</span></li>`).join('')}</ul>`:'<p class="muted">아직 기록된 라이브가 없어요</p>'}
+    <p class="muted tiny">1분마다 서버가 확인해요${D.at?` · 마지막 확인 ${lvDate(Math.max(D.yt?.checked_at||0,D.nx?.checked_at||0)||D.at)}`:''}</p></div></div>`; }
+document.addEventListener('click',e=>{ const p=e.target.closest('.lvplay[data-embed]'); if(!p||p.classList.contains('playing')) return; p.classList.add('playing');
+  p.innerHTML=`<iframe src="${esc(p.dataset.embed)}" title="라이브 영상" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`; });
+document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('.lvplay[data-embed]')){ e.preventDefault(); e.target.click(); } });
+setTimeout(livePoll,0);
 function renderGuild(){
   const v=$('#view'), g=guildC, mains=suroChars();
   const tile=(lbl,ico,r)=>`<div class="gtile"><div class="gk">${ico} ${lbl}</div>${r?`<div class="gv">${num(r.guild_point)}<small>점</small></div><div class="grk"><b>${num(r.ranking)}</b>위</div>`:`<div class="gv dim">기록 없음</div><div class="grk muted">랭킹 미등록</div>`}</div>`;
@@ -1313,7 +1341,7 @@ const HSEG={
 const hsegD=ch=>(HSEG[ch]||[]).map(([a,b,c,d])=>`M${a},${b}L${c},${d}`).join('');
 /* b153: 점 무늬 픽셀 한글(그래프용) — 96px 글자 + 8단위 점 패턴(userSpace)을 scale로 축소, 바닥 yb 기준 */
 const HDY={'억':72,'메':72,'만':70,'조':80,'소':80};
-const HPIX={"록":[[0,6],[1,0],[1,2],[1,3],[1,4],[1,6],[1,8],[2,0],[2,2],[2,4],[2,6],[2,8],[3,0],[3,2],[3,4],[3,6],[3,8],[4,0],[4,2],[4,4],[4,6],[4,8],[5,0],[5,2],[5,4],[5,5],[5,6],[5,8],[6,0],[6,2],[6,4],[6,6],[6,8],[7,0],[7,2],[7,4],[7,6],[7,8],[8,0],[8,2],[8,4],[8,6],[8,8],[9,0],[9,1],[9,2],[9,4],[9,6],[9,8],[9,9],[9,10],[10,6]],"지":[[0,0],[0,9],[1,0],[1,7],[1,8],[2,0],[2,4],[2,5],[2,6],[3,0],[3,1],[3,2],[3,3],[4,0],[4,4],[4,5],[4,6],[5,0],[5,7],[5,8],[6,0],[6,9],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"조":[[0,10],[1,1],[1,6],[1,10],[2,1],[2,6],[2,10],[3,1],[3,5],[3,10],[4,1],[4,4],[4,10],[5,1],[5,2],[5,3],[5,7],[5,8],[5,9],[5,10],[6,1],[6,4],[6,10],[7,1],[7,5],[7,10],[8,1],[8,6],[8,10],[9,1],[9,6],[9,10],[10,10]],"억":[[0,2],[0,3],[1,1],[1,4],[1,7],[2,0],[2,5],[2,7],[3,0],[3,5],[3,7],[4,0],[4,5],[4,7],[5,1],[5,4],[5,7],[6,2],[6,3],[6,7],[7,2],[7,7],[8,2],[8,7],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,7],[9,8],[9,9],[9,10]],"만":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,0],[1,5],[1,7],[1,8],[1,9],[1,10],[2,0],[2,5],[2,10],[3,0],[3,5],[3,10],[4,0],[4,5],[4,10],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,10],[6,10],[7,10],[8,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,10],[10,3]],"메":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,9],[1,0],[1,9],[2,0],[2,9],[3,0],[3,9],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[5,4],[6,4],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[7,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"소":[[0,10],[1,7],[1,10],[2,6],[2,10],[3,5],[3,10],[4,4],[4,10],[5,1],[5,2],[5,3],[5,7],[5,8],[5,9],[5,10],[6,4],[6,10],[7,5],[7,10],[8,6],[8,10],[9,7],[9,10],[10,10]]};
+const HPIX={"록":[[0,6],[1,0],[1,2],[1,3],[1,4],[1,6],[1,8],[2,0],[2,2],[2,4],[2,6],[2,8],[3,0],[3,2],[3,4],[3,6],[3,8],[4,0],[4,2],[4,4],[4,6],[4,8],[5,0],[5,2],[5,4],[5,5],[5,6],[5,8],[6,0],[6,2],[6,4],[6,6],[6,8],[7,0],[7,2],[7,4],[7,6],[7,8],[8,0],[8,2],[8,4],[8,6],[8,8],[9,0],[9,1],[9,2],[9,4],[9,6],[9,8],[9,9],[9,10],[10,6]],"지":[[0,0],[0,9],[1,0],[1,7],[1,8],[2,0],[2,4],[2,5],[2,6],[3,0],[3,1],[3,2],[3,3],[4,0],[4,4],[4,5],[4,6],[5,0],[5,7],[5,8],[6,0],[6,9],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"조":[[0,9],[1,0],[1,5],[1,9],[2,0],[2,5],[2,9],[3,0],[3,4],[3,9],[4,0],[4,3],[4,9],[5,0],[5,1],[5,2],[5,6],[5,7],[5,8],[5,9],[6,0],[6,3],[6,9],[7,0],[7,4],[7,9],[8,0],[8,5],[8,9],[9,0],[9,5],[9,9],[10,9]],"억":[[0,2],[0,3],[1,1],[1,4],[1,7],[2,0],[2,5],[2,7],[3,0],[3,5],[3,7],[4,0],[4,5],[4,7],[5,1],[5,4],[5,7],[6,2],[6,3],[6,7],[7,2],[7,7],[8,2],[8,7],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,7],[9,8],[9,9],[9,10]],"만":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,0],[1,5],[1,7],[1,8],[1,9],[1,10],[2,0],[2,5],[2,10],[3,0],[3,5],[3,10],[4,0],[4,5],[4,10],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,10],[6,10],[7,10],[8,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,10],[10,3]],"메":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,9],[1,0],[1,9],[2,0],[2,9],[3,0],[3,9],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[5,4],[6,4],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[7,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"소":[[0,9],[1,6],[1,9],[2,5],[2,9],[3,4],[3,9],[4,3],[4,9],[5,0],[5,1],[5,2],[5,6],[5,7],[5,8],[5,9],[6,3],[6,9],[7,4],[7,9],[8,5],[8,9],[9,6],[9,9],[10,9]]};
 /* b154: 디지털 한글 단위 = Fusion Pixel 12px 비트맵을 숫자와 같은 좌표계(SVG)로 그림. 1칸 = 숫자 세그먼트 굵기 t(7), 11칸 = 숫자 높이(바닥 y=78).
    이어진 칸 사이를 2칸마다 끊어(HGAP) 1x 화면에서도 빈 점 틈이 보이게 함 */
 const HGAP=3.6;
@@ -1322,7 +1350,7 @@ function logoDigital(){ const a=document.getElementById('logoHome'); if(!a||a.qu
   const T='메록지', w=T.length*92-8; const tn=[...a.childNodes].find(n=>n.nodeType===3&&n.textContent.trim()===T); if(!tn) return;
   const sp=document.createElement('span'); sp.className='logo-d'; sp.innerHTML=`<span class="tir-sr">${T}</span><svg class="tir-g logo-g" viewBox="-6 -6 ${w+12} 98" style="--tw:${((w+12)/98).toFixed(3)}" aria-hidden="true" focusable="false">${[...T].map((c,i)=>`<path class="tl tk" d="${hpixD(c,i*92)}"/>`).join('')}</svg>`;
   tn.replaceWith(sp); }
-function hpixD(ch,ox,oy=1,c=7,g=HGAP){ const P=HPIX[ch]; if(!P) return ''; const on=new Set(P.map(([x,y])=>x+','+y)), h=g/2;
+function hpixD(ch,ox,oy=1,c=7,g=HGAP,extra){ const P=extra?HPIX[ch].concat(extra):HPIX[ch]; if(!P) return ''; const on=new Set(P.map(([x,y])=>x+','+y)), h=g/2;
   return P.map(([x,y])=>{ let x0=x*c,x1=x0+c,y0=y*c,y1=y0+c;
     if(on.has((x-1)+','+y)&&x%2===0) x0+=h; if(on.has((x+1)+','+y)&&(x+1)%2===0) x1-=h;
     if(on.has(x+','+(y-1))&&y%2===0) y0+=h; if(on.has(x+','+(y+1))&&(y+1)%2===0) y1-=h;
@@ -1340,7 +1368,7 @@ function segLab(str,x,y,anchor,cls,fs=10){ const S=String(str), u=fs*.70*84/78, 
 function tir(text,cls=''){ const T=String(text); let out='', x=0, parts='';
   const flush=()=>{ if(!parts&&!x) return; const W=Math.max(1,x-8); out+=`<svg class="tir-g" viewBox="-6 -6 ${W+12} 98" style="--tw:${((W+12)/98).toFixed(3)}" aria-hidden="true" focusable="false">${parts}</svg>`; parts=''; x=0; };
   for(const ch of T){ if(ch==='1'){ parts+=tirDigit(ch,x-20); x+=34; } else if(/[0-9]/.test(ch)){ parts+=tirDigit(ch,x); x+=54; } /* 1 은 좁게 */
-    else if(HPIX[ch]){ parts+=`<path class="tl tk" d="${hpixD(ch,x+4)}"/>`; x+=92; }
+    else if(HPIX[ch]){ parts+=`<path class="tl tk" d="${hpixD(ch,x+4,1,7,HGAP,ch==='억'?[[9,11]]:null)}"/>`; x+=92; } /* b158: 숫자 옆 '억'은 ㄱ 세로획 맨 아래 점 1개 추가 */
     else if(/[가-힣]/.test(ch)){ flush(); out+=`<span class="tir-k" data-k="${ch}" aria-hidden="true"></span>`; }
     else if(ch==='.'||ch===','){ parts+=`<path class="tl" d="M${x+2},${ch==='.'?66:64}h10v10h-10z${ch===','?`M${x+5},76h6l-5,9h-5z`:''}"/>`; x+=17; }
     else if(ch==='-'){ parts+=`<path class="tl" d="${tirH(x+2,x+40,39,7)}"/>`; x+=48; } else if(ch===' '){ flush(); out+='<span class="tir-sp" aria-hidden="true"></span>'; } }
@@ -1369,16 +1397,16 @@ function toastHide(){ clearTimeout(toast._t); $('#toast')?.classList.remove('sho
 function toast(msg){} /* b112: 하단 알림 전부 없앰 */
 const safeImg = u => /^https:\/\/open\.api\.nexon\.com\//.test(u||'') ? u : '';
 const avatar = (c,cls='') => `<div class="avatar ${cls}">${safeImg(c.image)?`<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">`:esc((c.name||'?').slice(0,1))}</div>`;
-const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','guild']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
+const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','guild','live']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
 let tab=(()=>{ try{ const t=localStorage.getItem(TAB_KEY); return TABS.includes(t)?t:'boss'; }catch(e){ return 'boss'; } })(), bossFilter='weekly', editMode=false;
 
 function applyTheme(){ document.documentElement.dataset.theme='dark'; } // b67: 다크 전용 (라이트 모드·테마 버튼 삭제, 저장된 테마·시스템 설정 무시)
-function orbitFont(){ if(document.getElementById('orbitCss')) return; const l=document.createElement('link'); l.id='orbitCss'; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family=Orbit&display=swap'; document.head.appendChild(l); document.fonts&&document.fonts.addEventListener('loadingdone',()=>{ if(tab==='boss') fitPriceCard(); }); }
+function orbitFont(){ if(document.getElementById('orbitCss')) return; const l=document.createElement('link'); l.id='orbitCss'; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family=Orbit&display=swap'; document.head.appendChild(l); document.fonts&&document.fonts.addEventListener('loadingdone',()=>{ if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); }); }
 function render(){ tirDefs(); logoDigital(); orbitFont(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length){ $('#view').innerHTML=emptyView(); renderResetInfo(); return; }
-  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),guild:renderGuild})[tab](); if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); renderResetInfo(); }
+  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),guild:renderGuild,live:renderLive})[tab](); if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); renderResetInfo(); }
 /* b108: 🔄 옆 상태 글자 — 동기화 중 '새로고침 중입니다..'(회색), 끝나면 초록 '새로고침 완료! HH:mm'(KST, 계속 표시),
  * 일부 캐릭터·계정 오류면 주황 '일부 실패 HH:mm', 전체 실패면 빨강 '새로고침 실패 HH:mm' (오류 알림 toast 는 예전 그대로). 페이지 열 때 동기화도 같음 */
 let syncLbl=null; // {st:'run'|'ok'|'part'|'fail', at}
@@ -1679,7 +1707,7 @@ function revPanel(a,cur){
     <h2>${miniIcon('meso')} 이번 주 수익</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
-      return `<div class="rp-total tirv tpink">${tir(fmtEok(cry+sale))}<small> 메소</small></div>
+      return `<div class="rp-total tirv tpink">${tir(fmtEok(cry+sale)+' 메소')}</div>
     <div class="muted rp-line rp-cry"><span class="rpl">${miniIcon('ipc')} 주보 결정석 ${a.count}개 · ${miniIcon('ipcm')} 검마 결정석 ${wm.n}개</span><b class="rpn">${cry.toLocaleString()}</b></div>
     <div class="muted rp-line rp-sale"><span class="rpl">${topSaleIco()}이번주 획득 아이템 ${n}개</span><b class="rpn">${sale.toLocaleString()}</b></div>${weekRingLine()}`; })()}
     <div class="rp-sec">캐릭터별</div>
@@ -1728,7 +1756,7 @@ document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]');
 function fitPriceCard(){ const card=document.querySelector('.pricecard'); if(!card||!card.querySelector('.pc-row')) return;
   // 폭이 허락하는 만큼 크게(최대 14px) → 안 들어가면 0.5px씩 줄임(최소 9px). 자르지 않음
   const over=()=>[...card.querySelectorAll('.pc-row')].some(r=>{ const n=r.querySelector('.pc-nm'); return n&&n.scrollWidth>n.clientWidth+0.5; });
-  let fs=14; card.style.setProperty('--pcfs',fs+'px'); while(over()&&fs>8){ fs-=0.5; card.style.setProperty('--pcfs',fs+'px'); } }
+  let fs=14; card.style.setProperty('--pcfs',fs+'px'); while(over()&&fs>9){ fs-=0.5; card.style.setProperty('--pcfs',fs+'px'); } }
 function priceCard(){
   const up=(officialInfo&&officialInfo.upcoming)||{};
   const row=r=>{ const u=up[r.k]; return `<div class="pc-row${u?' has-up':''}" title="${esc(r.b.name)} ${D[r.d]} — ${r.p.toLocaleString()} 메소${u?` · 테섭 예정 ${u.toLocaleString()} 메소`:''}">${bossPic(r.b,r.d,false)}<span class="pc-nm">${esc(r.b.name)} ${dlvHtml(r.d)}</span><b>${meso(r.p)}${u?`<span class="pc-up">테섭 예정 → ${meso(u)}</span>`:''}</b></div>`; };
