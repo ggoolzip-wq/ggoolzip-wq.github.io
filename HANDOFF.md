@@ -1474,3 +1474,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 로고 크기: `.logo-d .logo-g` 높이 1.05em → 1.85em (600px 이하 1.55em). 헤더 높이 92px 그대로, 1400px·390px 가로 넘침 없음.
 - 시안: /workspace/maple-boss-tracker/b172_gold_*.png, 전후: b172_cmp_{1400,390}_{header,total}.png
 - 테스트: tests/run_par.py 전부 통과(CHROME=/usr/bin/google-chrome).
+## b175 (2026-10-15 21:09~21:20 KST): 1~3등 효과 글씨 1.3배
+- src/extra.css 끝: 금·은·동(md-gold/silver/bronze) 행의 효과 글씨(.spk: 캐릭터명·보스명·득템왕 상위 아이템명, 이번 주 수익 순위 이름), 순위 숫자(.rkno .rkn), 점수(.sc-gold/silver/bronze)를 font-size:1.3em. 4등 이하 그대로. 중첩 .spk는 1em(이중 확대 방지).
+- 적용 표: 메소왕, 득템왕, 보스 득템왕, 같은 순위 표 템플릿(rankTable 공용), 이번 주 수익 패널 순위 이름(rp-nm).
+- 모바일(≤600px) 메소왕 상위 이름 줄바꿈 금지(한 글자씩 꺾이던 것 방지), 표는 기존 가로 스크롤.
+- 사진 /workspace/maple-boss-tracker/b175_cmp_{1400,390}_{before,after}.png

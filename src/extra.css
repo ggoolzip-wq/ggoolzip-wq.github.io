@@ -1444,3 +1444,7 @@ button.btn,.btn,.pctab,.ftab,[data-pckind],[data-pctab]{border-color:color-mix(i
 .chart .tsv{filter:drop-shadow(0 0 2px rgba(255,200,0,.95)) drop-shadow(0 0 6px rgba(255,200,0,.5))}
 .logo-d .logo-g{height:1.85em;width:calc(1.85em * var(--tw))}
 @media (max-width:600px){.logo-d .logo-g{height:1.55em;width:calc(1.55em * var(--tw))}}
+/* b175: 1~3등 효과 글씨 1.3배 (4등 이하 그대로) */
+.md-gold .spk,.md-silver .spk,.md-bronze .spk,.rkno.md-gold .rkn,.rkno.md-silver .rkn,.rkno.md-bronze .rkn,.sc.sc-gold,.sc.sc-silver,.sc.sc-bronze{font-size:1.3em}
+.md-gold .spk .spk,.md-silver .spk .spk,.md-bronze .spk .spk{font-size:1em}
+@media (max-width:600px){#mesoKing tr[class*=md-] .rknm b.spk{white-space:nowrap;word-break:keep-all}#mesoKing .rkname .rkav{width:28px;height:28px}}
