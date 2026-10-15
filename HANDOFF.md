@@ -1424,3 +1424,9 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 
 - b114 배포 (15:31 KST): GitHub secret CLOUDFLARE_API_TOKEN 이 무효(9109)라 deploy-pages 실패 → 봇 컴퓨터에서 새 토큰으로 `wrangler pages deploy` 직접 배포. GitHub secret 교체 필요.
 - b114 후속 (15:32 KST): GitHub secret CLOUDFLARE_API_TOKEN 을 새 토큰으로 교체 → deploy-pages 자동 배포 성공 확인.
+
+## b169 (2026-10-15 KST) 넥슨 키를 서비스용으로 교체 (값 미기재)
+- GitHub Actions 시크릿 `NEXON_API_KEY`, `NEXON_API_KEY2`(예비 키)를 사용자 제공 서비스용 키(`live_`)로 덮어씀. 값은 어디에도 기록하지 않음.
+- Worker에는 넥슨 키 시크릿 없음(사용자가 보낸 키만 프록시). wrangler.toml엔 NEXON_BASE URL만 있음.
+- 박스의 `NEXON_API_KEY`는 개발용(`test_`) 봇 시크릿이라 에이전트가 변경 불가. 박스 스크립트는 `NEXON_API_KEY_CHECK`(서비스용)를 우선 사용할 것.
+- update-feed workflow_dispatch 1회 실행으로 동작 확인.
