@@ -38,7 +38,7 @@ try:
     ea=pg.inner_text('.empty-attrib') if pg.locator('.empty-attrib').count() else ''; ft=pg.inner_text('.foot')
     check('landing: empty view + footer carry NEXON attribution', ea==ATTRIB and ATTRIB in ft, (ea,ft[:100]))
     check('landing: attribution visible without scrolling', vis_in_vp(pg,'.empty-attrib')['ok'], vis_in_vp(pg,'.empty-attrib'))
-    check('dark only: saved light theme + light OS preference ignored, no toggle, theme removed from storage',
+    check('b179: old saved S.theme ignored → default dark (theme now in mapleBossTracker.theme), no header toggle, S.theme removed',
           pg.evaluate("document.documentElement.dataset.theme")=='dark' and pg.locator('#themeBtn').count()==0 and pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')).theme")==None,
           (pg.evaluate("document.documentElement.dataset.theme"),pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')).theme")))
     check('header: ☁ 로그인 (logged out)', pg.inner_text('#gBtn').strip()=='☁ 로그인', pg.inner_text('#gBtn'))

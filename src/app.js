@@ -292,7 +292,7 @@ function askRev(c,b,key,ik,cel){
   document.querySelector('#revModal')?.remove();
   const ap=admPriceOf(ik); // b104: 관리자만 — maple.ai.kr 시세로 미리 채움 (수정 가능)
   const el=document.createElement('div'); el.id='revModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rvTitle');
-  el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`최저가 측정 시간 - ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
+  el.innerHTML=`<div class="modal rvbox"><button type="button" class="thbtn" data-rv="theme" title="${curTheme()==='light'?'다크 모드로':'라이트 모드로'}" aria-label="${curTheme()==='light'?'다크 모드로':'라이트 모드로'}">${curTheme()==='light'?'🌙':'☀️'}</button><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`최저가 측정 시간 - ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
     <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><span class="rvbtns"><button class="btn plain rvno" data-rv="no">기록 없이 저장</button><button class="btn ghost rvcancel" data-rv="cancel">취소</button></span></div>
     <button class="btn rvok" data-rv="ok">기록하기</button></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
   document.body.appendChild(el);
@@ -307,7 +307,7 @@ function askRev(c,b,key,ik,cel){
     if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; save(); render(); };
   const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); fin(); } else if(e.key==='Enter'&&e.target.id==='rvAmt'){ e.preventDefault(); ok(); } };
   document.addEventListener('keydown',kd,true);
-  el.onclick=e=>{ if(e.target===el) return undo(); const t=e.target.closest('[data-rv]'); if(t) return t.dataset.rv==='ok'?ok():t.dataset.rv==='cancel'?undo():fin(); }; // b110: 바깥(배경) 클릭 = [취소] (체크 되돌림)
+  el.onclick=e=>{ if(e.target===el) return undo(); const t=e.target.closest('[data-rv]'); if(t&&t.dataset.rv==='theme') return toggleTheme(); if(t) return t.dataset.rv==='ok'?ok():t.dataset.rv==='cancel'?undo():fin(); }; // b110: 바깥(배경) 클릭 = [취소] (체크 되돌림)
   setTimeout(()=>{ const i=$('#rvAmt'); if(i){ i.focus(); if(ap) i.select(); } },30);
 }
 /* b110: 아이템 이름 옆에 그 아이템을 준 보스 아이콘 = 공통 bossIcon() (보스 아이콘을 바꾸면 여기도 같이 바뀜)
@@ -1438,7 +1438,11 @@ const avatar = (c,cls='') => `<div class="avatar ${cls}">${safeImg(c.image)?`<im
 const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','guild','live']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
 let tab='boss', /* b166: 새로고침하면 항상 '이번 주 보스' (저장된 마지막 탭·해시 무시) */ bossFilter='weekly', editMode=false;
 
-function applyTheme(){ document.documentElement.dataset.theme='dark'; } // b67: 다크 전용 (라이트 모드·테마 버튼 삭제, 저장된 테마·시스템 설정 무시)
+const THEME_KEY='mapleBossTracker.theme'; // b179: 라이트/다크 선택 (이 브라우저, 기본 다크) — 사용자 요청으로 다크 전용 규칙 해제
+function curTheme(){ try{ return localStorage.getItem(THEME_KEY)==='light'?'light':'dark'; }catch(e){ return 'dark'; } }
+function applyTheme(){ document.documentElement.dataset.theme=curTheme(); }
+function toggleTheme(){ const t=curTheme()==='light'?'dark':'light'; try{ localStorage.setItem(THEME_KEY,t); }catch(e){} applyTheme(); document.querySelectorAll('.thbtn').forEach(b=>{ b.textContent=t==='light'?'🌙':'☀️'; b.title=b.ariaLabel=t==='light'?'다크 모드로':'라이트 모드로'; }); }
+applyTheme();
 function orbitFont(){ if(document.getElementById('orbitCss')) return; const l=document.createElement('link'); l.id='orbitCss'; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family=Orbit&display=swap'; document.head.appendChild(l); document.fonts&&document.fonts.addEventListener('loadingdone',()=>{ if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); }); }
 function render(){ tirDefs(); logoDigital(); orbitFont(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();

@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b179 (2026-10-15) — '수익을 기록할까요?' 창 가운데 정렬 + 라이트/다크 전환 버튼 (21:44~22:00 KST)
+- **다크 전용 규칙 변경(사용자 요청)**: b67부터의 '다크 전용'을 해제. 기본은 여전히 다크, 사용자가 고르면 라이트.
+- 수익 기록 창(`askRev`, `.rvbox`): 제목·최저가 측정 시간·입력줄·버튼 전부 가운데 정렬. 버튼 순서: 입력줄 → [기록 없이 저장][취소] → [기록하기].
+- 창 오른쪽 위 `.thbtn`(☀️/🌙, `data-rv="theme"`) → `toggleTheme()` → `<html data-theme>` 사이트 전체 전환, `localStorage['mapleBossTracker.theme']`에 저장(기기별, 드라이브 동기화 안 함). 예전 `S.theme`는 계속 무시·삭제.
+- 라이트 테마: `:root` 기본 변수(크림/주황) + extra.css 끝 `[data-theme=light]` 덮어쓰기 블록(헤더·카드·모달·탭·세그먼트·글로우 제거). 다크는 그대로.
+- 테스트: `tests/test_b179.py` 추가(run_all 목록), `test_tracker50` 다크 전용 체크 문구 갱신. 병렬 전체 통과(포트 충돌로 실패한 17개는 단독 재실행 통과).
+- 사진: /workspace/maple-boss-tracker/b179_popup_{before,after_dark,after_light}.png, b179_light_{1400,390}.png (로컬 예시 데이터).
 ## b180 (2026-10-15) — 보스 클리어 카드 배경 초록 → 오로라(시안→보라) (21:44~21:58 KST)
 - src/extra.css `[data-theme="dark"] .boss.done`: 배경 linear-gradient(100deg, rgba(40,210,230,.2), rgba(140,90,230,.12) 60%, rgba(140,90,230,.04)) + rgba(20,26,38,.9), 테두리 rgba(150,180,255,.55), 그림자 inset 0 1px 0 rgba(255,255,255,.08), 0 0 20px rgba(110,150,255,.2). b177 시안 20번과 동일.
 - 라이트 테마 대비 `[data-theme="light"] .boss.done` 옅은 오로라(흰 바탕) 추가.

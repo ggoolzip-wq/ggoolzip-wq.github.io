@@ -1464,3 +1464,42 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 .pick-item.on,.accrow.on{border-color:var(--sap)!important;box-shadow:0 0 0 1px var(--sap) inset,0 0 8px rgba(40,110,255,.35)!important}
 .cisub.cione>span{display:inline-block}
 @media (max-width:600px){.cisub.cione{white-space:normal;overflow:visible;font-size:.8rem}}
+
+/* b179: 수익을 기록할까요? — 전체 가운데 정렬 + 오른쪽 위 라이트/다크 전환 버튼 */
+.rvbox{position:relative;text-align:center}
+.rvbox .rvh{justify-content:center;padding:0 34px}
+.rvbox .rvguide,.rvbox .rvname{margin-left:0;margin-right:0;text-align:center}
+.rvbody{flex-direction:column;align-items:center;gap:10px}
+.rvleft{width:100%}
+.rvin{justify-content:center;max-width:300px;margin:0 auto}
+.rvbtns{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
+.rvno,.rvok{align-self:center}
+.thbtn{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-size:16px;line-height:1;display:grid;place-items:center;padding:0}
+.thbtn:hover{border-color:var(--accent)}
+[data-theme="dark"] .thbtn{border-color:rgba(255,179,71,.35);background:rgba(255,255,255,.04)}
+.rvbox .rvbody .rvok,.rvbox .rvbody .rvno{align-self:center}
+.rvbox .rvbody .rvok{min-width:140px}
+/* b179: 라이트 테마 — 다크용 고정 색(헤더 투명·모달 검정·하늘/사파이어 글로우)을 밝은 배경에서 읽히게 덮어씀. 다크는 영향 없음 */
+[data-theme=light] body,[data-theme=light]{background:linear-gradient(180deg,#fbf6f0,#f3ece3)!important;background-attachment:fixed!important}
+[data-theme=light] header{background:linear-gradient(180deg,#ffffff,#fff7ee)!important;color:#2b2118!important;border-bottom:1px solid #eadfd2!important;box-shadow:0 2px 10px rgba(120,70,20,.08)!important}
+[data-theme=light] header .hbtn,[data-theme=light] header button:not(.on){color:#5a4634!important;text-shadow:none!important}
+[data-theme=light] header .hbtn{background:#fff3e4!important;border-color:#ecd6bd!important}
+[data-theme=light] nav.tabs button{color:#7a6552!important;text-shadow:none!important}
+[data-theme=light] nav.tabs button.on{color:#1f5fd6!important;text-shadow:none!important}
+[data-theme=light] .card,[data-theme=light] .modal,[data-theme=light] #mbtTip,[data-theme=light] .ringm,[data-theme=light] .svaskbox{background:#ffffff!important;border:1px solid #eadfd2!important;box-shadow:0 4px 18px rgba(120,70,20,.10)!important;color:#2b2118}
+[data-theme=light] .modal .stat,[data-theme=light] .modal input,[data-theme=light] .modal select,[data-theme=light] input,[data-theme=light] select,[data-theme=light] textarea{background:#fffaf4!important;border-color:#e4d3c0!important;color:#2b2118!important}
+[data-theme=light] .modal-bg{background:rgba(60,40,20,.35)!important}
+[data-theme=light] .card h2,[data-theme=light] .card h3,[data-theme=light] .modal h2,[data-theme=light] .modal h3{text-shadow:none;color:#2b2118}
+[data-theme=light] button.btn,[data-theme=light] .btn,[data-theme=light] .pctab,[data-theme=light] .ftab,[data-theme=light] [data-pckind],[data-theme=light] [data-pctab]{border-color:#e4d3c0!important;box-shadow:none!important}
+[data-theme=light] .btn.plain{background:#fff7ee!important;color:#2b2118!important}
+[data-theme=light] .seg{border-color:#e4d3c0!important}
+[data-theme=light] .seg button{background:#fffaf4!important;color:#6b5848!important;text-shadow:none!important}
+[data-theme=light] .seg button.on{background:#e6efff!important;color:#1f5fd6!important;box-shadow:inset 0 0 0 1px #3d7bff!important;text-shadow:none!important}
+[data-theme=light] .ftab.on,[data-theme=light] .fpg.on,[data-theme=light] .cpg.on,[data-theme=light] .pc-tabs button.on,[data-theme=light] .wtab.on{color:#1f5fd6!important;text-shadow:none!important}
+[data-theme=light] .tgoldv .tir:not(.tsm) .tir-g,[data-theme=light] .chart .tsv{filter:drop-shadow(0 0 1px rgba(120,80,0,.9))!important}
+[data-theme=light] .tir-g .tg{fill:rgba(0,0,0,.05)!important}
+[data-theme=light] .tir-g{filter:drop-shadow(0 0 .6px rgba(0,0,0,.55))}
+[data-theme=light] .muted{color:#7a6552}
+[data-theme=light] .thbtn{background:#fff3e4;border-color:#ecd6bd}
+[data-theme=light] main *{text-shadow:none!important}
+[data-theme=light] main .tir-g{filter:drop-shadow(0 0 .6px rgba(0,0,0,.6))!important}
