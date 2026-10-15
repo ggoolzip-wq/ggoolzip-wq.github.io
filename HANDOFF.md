@@ -15,6 +15,12 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b149 (2026-10-15) — 숫자에도 한글과 같은 시안 글로우
+- 시간(KST): 시작 13:36 · 코딩 13:36–13:38 · 테스트 13:38–13:41(관련 14개 병렬 + 전체 1회 통과) · 배포 13:42
+- 원인: 숫자 글로우가 SVG 안 필터(#tirF, stdDeviation 3)라 viewBox(높이 98)→실제 ~15px 로 줄면서 blur 도 1px 미만이 돼 거의 안 보였음.
+- 수정: `.tir-g{filter:drop-shadow(0 0 3px rgba(40,230,220,.9)) drop-shadow(0 0 8px rgba(40,230,220,.55))}` — 한글 `.tir-k` text-shadow 와 같은 px 값. 세그먼트(.tl)의 SVG 필터는 뺌(이중 글로우 방지).
+- 스크립트: /workspace/scripts/b149shots.py, b149cmp.py, b149tests.sh · 비교: /workspace/maple-boss-tracker/b149_compare.png (+ b149_before/after_*.png, *_zoom.png)
+
 ## b148 (2026-10-15) — 한글 단위(조/억/만/메소)를 숫자와 한 줄로 + 5° 기울임
 - 시간(KST): 시작 13:01 · 코딩 13:01–13:10 · 테스트 13:16–13:20(관련 14개 병렬 + 전체 1회 모두 통과) · 배포 13:21 · 보정 13:22–13:25(첫 배포에 이전 시안 값 -.07/-.11/-.03em 이 실림 → 실측값으로 고침, 관련 6개 재통과)
 - `.tir-k` 를 inline-block 으로 바꾸고 `transform:translateY(var(--ky)) skewX(-5deg)` (숫자 SVG 와 같은 기울기).
