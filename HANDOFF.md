@@ -1488,3 +1488,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 5. 로고 주홍(#tirV #ffd2b8/#ff5a1f/#d9381e, 테두리·빛 255,80,30 계열). 총 판매 수익 = tgoldv(24K 금).
 6. 선택 상태 탭(상단 탭·seg·ftab/fpg/cpg·pc-tabs/pc-kind·wtab·캐릭터 칩) 글로우 → 사파이어(--sap #3d7bff/--sap2 #6aa8ff, 빛 40,110,255). 나머지 Ice Blue Whisper 유지.
 - 테스트 갱신: 19, 30(사파이어 색), 81, 92(검마 줄 분리), 99(끝난 주 평균).
+
+## b178 (2026-10-15 21:38~ KST)
+1. 캐릭터 정보 "이번 주 주간 보스 수익" 큰 숫자 아래 `결정석 N · 아이템 판매 N` 줄(.cisub.cione, #ciCry/#ciSale) 완전 삭제 (src/app.js). CSS 규칙은 무해해서 남김.
+- 테스트 갱신: 84 (줄이 없음을 확인). 전후 사진: /workspace/maple-boss-tracker/b178_cmp_{1400,390}.png (예시 데이터).
+- 테스트: 병렬 전체 실행. test84는 포트 8900을 다른 클론(/workspace/repo)의 남은 http.server가 잡고 있어 오판 → 포트만 바꿔 재실행 통과. test27 "income panel" 실패와 test9 "foot shows new date"는 b178 이전 커밋에서도 같음(기존 문제, 종료코드 0).
