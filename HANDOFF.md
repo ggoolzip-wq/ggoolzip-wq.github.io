@@ -15,6 +15,11 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b160 (2026-10-15) — test_tracker42 결정석 가격 실패 수정 (16:48~17:00 KST)
+- **원인**: Orbit 아님(가격 카드는 Pretendard 예외 그대로). 테섭 1.2.207 공지로 `upcoming`(테섭 예정 가격)이 생겨 유피테르(하드)·카링(익스트림) 행이 **의도된 2줄**(`.pc-row.has-up`, 높이 37px)이 됨 → "모든 행 <30px" 검사가 실패.
+- **수정(테스트만, 화면 변화 없음)**: 한 줄 검사에서 `.has-up` 행 제외, 대신 `.has-up` 행은 <46px·`.pc-up` 잘림 없음 검사 추가. 이름 칸 잘림 검사는 전체 행 유지.
+- **스크린샷**: `/workspace/maple-boss-tracker/b160_after_pricecard.png` (전/후 동일 UI; 스크립트 `/workspace/scripts/b160price.py`).
+
 ## b159 (2026-10-15) — 소식 카드 '테섭' 탭 날짜 오류 수정 (16:20~16:45 KST)
 - **증상**: 오늘(10-15) 올라온 테섭 글 '클라이언트 1.2.207 릴리즈'(test:202)가 09.10 으로 표시.
 - **원인**: `scripts/update_feed.py` `parse_test` 가 목록 전체에 한 정규식 `<a …update/N>…<span>…</span>…<dd>([\d.]+)</dd>` 를 걸었음. 오늘 글은 날짜 칸이 `오후 3:12` 처럼 **시각만** 나와서 `[\d.]+` 가 실패 → `.*?` 가 다음 글들로 넘어가 아래 글(1.2.206, 2026.09.10)의 날짜를 가져감.
