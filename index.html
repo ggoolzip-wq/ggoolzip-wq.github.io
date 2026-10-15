@@ -2915,6 +2915,7 @@ const num = n => (Number(n)||0).toLocaleString('ko-KR');
 const LIVE_API='https://ggoolzip-sync.bossmaple.workers.dev/api/live';
 let LIVE=null, liveT=null;
 async function liveFetch(){ try{ const r=await fetch(LIVE_API,{cache:'no-store'}); if(!r.ok) return; LIVE=await r.json(); }catch(e){ return; }
+  feedSrvApply(LIVE&&LIVE.feed); // b170: 같은 응답에 넥슨 공지 빠른 감시 결과 포함(추가 요청 없음)
   const on=!!(LIVE&&((LIVE.yt&&LIVE.yt.live)||(LIVE.nx&&LIVE.nx.live))), b=document.getElementById('liveBadge'); if(b){ const was=!b.hidden; b.hidden=!on; if(on&&!was) liveReveal(b); }
   if(tab==='live'&&!document.querySelector('#view .lvplay.playing')) renderLive(); }
 /* b161: 모바일에서 탭 줄이 옆으로 넘쳐 '신창섭 라이브' 탭(+LIVE)이 화면 밖이면, 라이브가 켜질 때 한 번 탭 줄을 밀어 보이게 함 */
@@ -5227,9 +5228,13 @@ setTimeout(()=>{ if(!SV_ON) return; itemPriceLoad(); if(svTok()&&gdMeta.on) svAd
  * ===================================================================== */
 const FEED_TABS=[['saryo','사료감지'],['patch','패치내역'],['test','테섭'],['mabbak','마빡도로시']];
 const FEED_LIVE='https://ggoolzip-wq.github.io/feed.json', FEED_SEEN_KEY='mapleBossTracker.feedSeen', FEED_ROW=31, FEED_MOBILE_ROWS=6;
-const feed={data:null,err:'',tab:'saryo',page:1,per:5,at:0};
+const feed={data:null,err:'',tab:'saryo',page:1,per:5,at:0,srv:null,srvKey:''};
 let feedSeen=new Set((()=>{ try{ return JSON.parse(localStorage.getItem(FEED_SEEN_KEY))||[]; }catch(e){ return []; } })());
-const feedItems=t=>((feed.data&&feed.data.items&&feed.data.items[t])||[]);
+/* b170: 서버(Worker)가 서비스 키로 넥슨 공지를 1분 동안 계속 확인한 결과(feed.srv) — /api/live 30초 폴링에 실려 옴. feed.json(5분) 과 id 로 합침 */
+const feedItems=t=>{ const a=(feed.data&&feed.data.items&&feed.data.items[t])||[], b=(feed.srv&&feed.srv.items&&feed.srv.items[t])||[]; if(!b.length) return a;
+  const ids=new Set(a.map(x=>x.id)), extra=b.filter(x=>!ids.has(x.id)); return extra.length?[...extra,...a].sort((x,y)=>String(y.date||'').localeCompare(String(x.date||''))):a; };
+const feedSun=()=>{ const a=feed.data&&feed.data.sunday, b=feed.srv&&feed.srv.sunday; return b&&(!a||+b.id>+a.id)?b:a; };
+function feedSrvApply(f){ if(!f||!f.items) return; const k=JSON.stringify([f.items,f.sunday]); if(k===feed.srvKey) return; feed.srv=f; feed.srvKey=k; renderFeed(); }
 // b62: 읽음 표시를 서버(로그인한 계정)에 합집합으로 보관 → 다른 PC 에서도 이미 본 글은 N 표시 없음 (서버 모드만, 예전 서버면 조용히 건너뜀)
 let seenPush=new Set(), seenT=null;
 function svSeenMark(id){ if(!SV_ON||!svTok()) return; seenPush.add(id); clearTimeout(seenT); seenT=setTimeout(svSeenFlush,1500); }
@@ -5284,7 +5289,7 @@ function renderFeed(){
     const more=pages>5;
     pager=(more?`<button type="button" class="fpg fnav" data-fpage="${feed.page-1}"${feed.page<=1?' disabled':''} aria-label="이전">‹</button>`:'')+nums.join('')+(more?`<button type="button" class="fpg fnav" data-fpage="${feed.page+1}"${feed.page>=pages?' disabled':''} aria-label="다음">›</button>`:''); }
   c.innerHTML=`<div class="ftabs" role="tablist">${tabs}</div>${note}<div class="fbody">${body}</div><div class="fpager">${pager}</div>`;
-  const sc=$('#sunCard'), sid=JSON.stringify(feed.data&&feed.data.sunday||null);
+  const sc=$('#sunCard'), sid=JSON.stringify(feedSun()||null);
   if(sc&&(!sc.innerHTML||sc.dataset.sid!==sid||sc.dataset.loaded!==String(!!feed.data))){ renderSun(); sc.dataset.loaded=String(!!feed.data); }
 }
 /* 썬데이 메이플 카드 (feed.json 의 sunday) — 클릭하면 이벤트 글 */
@@ -5294,10 +5299,10 @@ const sunCropUrl=s=>s&&s.crop?(location.protocol==='file:'?FEED_LIVE.replace(/fe
 function lastMondayKST(now=Date.now()){ const k=new Date(now+9*3600e3); const dow=(k.getUTCDay()+6)%7; return Date.UTC(k.getUTCFullYear(),k.getUTCMonth(),k.getUTCDate()-dow)-9*3600e3; }
 function sunPostTime(s){ const v=s&&(s.date||s.start); if(!v) return NaN; return /^\d{4}-\d{2}-\d{2}$/.test(v)?Date.parse(v+'T00:00:00+09:00'):Date.parse(v); }
 function sunLabel(s,now=Date.now()){ const t=sunPostTime(s); return isFinite(t)&&t<lastMondayKST(now)?'저번 주 혜택':'이번 주 혜택'; }
-setInterval(()=>{ const b=document.querySelector('#sunCard .sunben b'), s=feed.data&&feed.data.sunday; if(b&&s&&b.textContent!==sunLabel(s)) renderSun(); },60e3);
+setInterval(()=>{ const b=document.querySelector('#sunCard .sunben b'), s=feedSun(); if(b&&s&&b.textContent!==sunLabel(s)) renderSun(); },60e3);
 function renderSun(){
   const c=$('#sunCard'); if(!c) return;
-  const s=feed.data&&feed.data.sunday;
+  const s=feedSun();
   let body;
   const src=s&&(sunCropUrl(s)||s.image);
   if(s&&src){
@@ -5314,7 +5319,7 @@ function renderSun(){
 /* 썬데이 이미지 크게 보기 (라이트박스): 바깥 클릭·✕·Esc 로 닫기, 이미지를 누르면 원본 폭으로 확대(스크롤) */
 let sunLbPrev=null;
 function sunLightbox(){
-  const s=feed.data&&feed.data.sunday; if(!s) return;
+  const s=feedSun(); if(!s) return;
   const full=s.image||sunCropUrl(s); if(!full) return;
   sunLbPrev=document.activeElement;
   const when=s.start?fdFull(s.start)+(s.end?' ~ '+fdFull(s.end):''):'';

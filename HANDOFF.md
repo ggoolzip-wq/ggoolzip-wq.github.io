@@ -1435,3 +1435,14 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - Worker에는 넥슨 키 시크릿 없음(사용자가 보낸 키만 프록시). wrangler.toml엔 NEXON_BASE URL만 있음.
 - 박스의 `NEXON_API_KEY`는 개발용(`test_`) 봇 시크릿이라 에이전트가 변경 불가. 박스 스크립트는 `NEXON_API_KEY_CHECK`(서비스용)를 우선 사용할 것.
 - update-feed workflow_dispatch 1회 실행으로 동작 확인.
+
+## b170 (2026-10-15 KST) 넥슨 공지 빠른 감시 — 서비스 키로 서버가 1분 내내 확인
+- 요청: 사용자가 준 넥슨 **서비스용 키**(live_, 초당 500·일 2천만)로 할 수 있는 공용 정보를 전부 1초 주기로.
+- 구조: Worker 시크릿 `NEXON_SVC_KEY`(stdin 으로 등록, 값 미기재) → `server/worker.js` `feedCron`: cron(매 1분)이 깨면 약 55초 동안 `/notice` · `/notice-update` · `/notice-event` 목록을 **한 번에 1개씩 번갈아** 최대 44번 조회(≈1.25초 간격 → 같은 목록 기준 ≈3.75초마다). 응답이 직전과 같으면 문자열 비교만(CPU 절약), 다르면 해석.
+  - 새 글: 업데이트 공지 → 패치내역(`update:N`), 공지 제목 '마이너 패치' → 패치내역(`minor:N`), 공지·이벤트 상세(1회, 회차당 최대 4건)에 '메이플 운영자' 수령 → 사료감지(`notice:N`/`notice-event:N`, 수령 기한 포함), 이벤트 제목 '썬데이 메이플' → 썬데이(썸네일 이미지, OCR 혜택은 나중에 GitHub 이 채움).
+  - D1 `nx_feed`(k: wm 워터마크 / items 탭별 최근 30개 / sunday / chk 확인 시각). 처음엔 지금 목록을 '이미 본 것'으로(백필 없음). id 는 feed.json 과 같은 형식 → 사이트에서 중복 없이 합침.
+  - 엔드포인트: `GET /api/feed`(신규), 그리고 `GET /api/live` 응답에 `feed` 필드 추가.
+- 왜 1초가 아닌가(무료 플랜, 실제 문서 확인 developers.cloudflare.com/workers/platform/limits): cron 1회당 **외부 서브요청 50개**(유튜브 라이브 1개 사용, 상세 조회 여유 4개 → 목록 44개), cron CPU 10ms. 1분 = 60초에 3목록 × 1초 = 180개 필요 → 불가. 유료(월 $5, 서브요청 10,000)면 1초 가능(FEED_MAX_LIST 만 올리면 됨). Durable Object 알람 1초 방식은 무료 DO 요청 10만/일·duration 13,000GB-s/일을 거의 다 써서(86,400 알람/일 ≈ 11,000GB-s) 보류.
+- 사이트(`src/app.js`): 소식은 라이브 폴링(창이 보일 때만 30초, 기존)에 실려 오는 `feed` 를 `feedItems`/`feedSun` 에서 feed.json 과 합침 → **Worker 요청 증가 0**. 30초 근거: 무료 Worker 요청 10만/일 중 cron 1,440 제외, 창을 띄워 둔 방문자 1명이 30초 폴링이면 하루 최대 2,880회 → 동시 상시 접속 약 34명분. 더 짧게 하면 그만큼 수용 인원이 줄어듦.
+- 그대로: GitHub update-feed(5분, 테섭·인벤·썬데이 OCR·결정석 가격표·feed.json 커밋), sunday-watch, update-prices. 캐릭터·길드·스케줄러(사용자 본인 키) 손대지 않음. 유튜브 라이브 감지 그대로(같은 cron 에서 병렬).
+- 테스트: run_par.py 전체 통과(190초), 서버 테스트 Node22 로 따로(test_server·b91·b132 통과), 모의 넥슨으로 feedCron 확인(새 업데이트/마이너/사료/썬데이 감지, 외부 요청 48개 ≤ 50).

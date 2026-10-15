@@ -407,14 +407,85 @@ async function liveRead(env) {
   await liveSchema(env);
   const st = (await env.DB.prepare('SELECT src,live,vid,title,url,thumb,ok,err,checked_at FROM live_state').all()).results || [];
   const items = (await env.DB.prepare('SELECT src,vid,title,url,status,start_at,first_seen FROM live_items ORDER BY COALESCE(start_at,first_seen) DESC LIMIT 40').all()).results || [];
-  const o = { at: Date.now(), list: items }; for (const r of st) o[r.src] = { live: !!r.live, vid: r.vid, title: r.title, url: r.url, thumb: r.thumb, ok: !!r.ok, checked_at: r.checked_at };
+  const o = { at: Date.now(), list: items, feed: await feedRead(env) }; for (const r of st) o[r.src] = { live: !!r.live, vid: r.vid, title: r.title, url: r.url, thumb: r.thumb, ok: !!r.ok, checked_at: r.checked_at };
   return new Response(JSON.stringify(o), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=15' } });
+}
+
+/* ---------- b170: 넥슨 공지 빠른 감시 (서비스 키 NEXON_SVC_KEY, cron 매 1분 → 그 1분 동안 반복) ----------
+   무료 플랜 제약: cron 1회당 외부 서브요청 50개(유튜브 1개 사용) · CPU 10ms. → 1회당 목록 조회 최대 FEED_MAX_LIST 번을 약 55초에 고르게 나눔.
+   /notice · /notice-update · /notice-event 를 번갈아 조회(한 번에 1개) → 같은 응답이면 문자열 비교만(CPU 절약), 바뀌었을 때만 JSON 해석.
+   새 글: 업데이트 → 패치내역, 공지 제목 '마이너 패치' → 패치내역, 공지/이벤트 상세(1회)에 '메이플 운영자' 수령 → 사료감지, 이벤트 제목 '썬데이 메이플' → 썬데이.
+   OCR·결정석 가격·테섭·인벤은 기존 GitHub Actions(5분) 그대로. 사이트는 /api/live(30초 폴링) 응답의 feed 로 받음 → 요청 수 증가 0. */
+const FEED_PATHS = [['notice', 'notice', 'notice/detail'], ['notice-update', 'update_notice', null], ['notice-event', 'event_notice', 'notice-event/detail']];
+const FEED_MAX_LIST = 44, FEED_MAX_DETAIL = 4, FEED_WINDOW = 55000, FEED_CAP = 30;
+const NX_NPC = /메이플\s*운영자|운영자\s*[’'"」』]?\s*NPC/g, NX_RECV = /수령|지급|받기|받으|받아|받을/, NX_EXCL = /수령\s*(?:이\s*)?불가|수령할\s*수\s*없|받을\s*수\s*없|지급되지\s*않|코인\s*(?:샵|상점)|소울\s*(?:교환|조각)|교환\s*(?:하기|해\s*주|할\s*수)/;
+const NX_MINOR = /마이너\s*(?:버전\s*)?(?:\(\s*\d+\s*\)\s*)?패치/, NX_SUNDAY = /썬\s*데\s*이\s*메\s*이\s*플/;
+const nxPlain = h => unent(String(h || '').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+const nxIso = s => { const m = String(s || '').match(/(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/); return m ? `${m[1]}T${m[2]}:00+09:00` : String(s || ''); };
+function nxSaryo(title, body) { const t = `${title} ${body}`; for (const m of t.matchAll(NX_NPC)) { const w = t.slice(Math.max(0, m.index - 100), m.index + m[0].length + 70); if (NX_RECV.test(w) && !NX_EXCL.test(w)) return true; } return false; }
+function nxSaryoEnd(body, y0) {
+  const m = body.match(/수령\s*기간\s*[:：]?\s*(.{0,90}?)~\s*(.{0,70})/); if (!m) return null;
+  const d = m[2].match(/(?:(\d{4})\s*년\s*)?(\d{1,2})\s*월\s*(\d{1,2})\s*일(?:\s*\(\s*\S\s*\))?(?:\s*(오전|오후)\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?)?/); if (!d) return null;
+  const ly = m[1].match(/(\d{4})\s*년/); const y = +(d[1] || (ly && ly[1]) || y0);
+  let hh = 23, mi = 59; if (d[4]) { hh = (+d[5]) % 12 + (d[4] === '오후' ? 12 : 0); mi = +(d[6] || 0); }
+  const p = n => String(n).padStart(2, '0'); return `${y}-${p(+d[2])}-${p(+d[3])}T${p(hh)}:${p(mi)}:00+09:00`;
+}
+async function feedSchema(env) { await env.DB.prepare('CREATE TABLE IF NOT EXISTS nx_feed (k TEXT PRIMARY KEY, v TEXT NOT NULL, at INTEGER NOT NULL)').run(); }
+async function feedState(env) { const o = {}; for (const r of (await env.DB.prepare('SELECT k,v FROM nx_feed').all()).results || []) { try { o[r.k] = JSON.parse(r.v); } catch (e) {} } return o; }
+const feedPut = (env, k, v) => env.DB.prepare('INSERT OR REPLACE INTO nx_feed (k,v,at) VALUES (?,?,?)').bind(k, JSON.stringify(v), Date.now()).run();
+async function nxGet(env, path, q) {
+  const u = `${env.NEXON_BASE || 'https://open.api.nexon.com'}/maplestory/v1/${path}${q ? '?' + new URLSearchParams(q) : ''}`;
+  const r = await fetch(u, { headers: { 'x-nxopen-api-key': env.NEXON_SVC_KEY, accept: 'application/json' } });
+  const t = await r.text(); if (!r.ok) throw new Error(`${path} ${r.status}`); return t;
+}
+async function feedCron(env, t0 = Date.now()) {
+  if (!env.NEXON_SVC_KEY) return;
+  await feedSchema(env); const S = await feedState(env);
+  const wm = S.wm || {}, items = S.items || { saryo: [], patch: [] }, chk = S.chk || {}; let sunday = S.sunday || null;
+  const last = {}; let detail = 0;
+  const add = (tab, x) => { const L = items[tab] = items[tab] || []; if (L.some(y => y.id === x.id)) return; L.push(x); L.sort((a, b) => String(b.date).localeCompare(String(a.date))); L.length = Math.min(L.length, FEED_CAP); };
+  for (let i = 0; i < FEED_MAX_LIST; i++) {
+    const due = t0 + Math.round(i * FEED_WINDOW / FEED_MAX_LIST), wait = due - Date.now();
+    if (wait > 0) await new Promise(r => setTimeout(r, wait));
+    if (Date.now() - t0 > FEED_WINDOW + 3000) break;
+    const [path, key, det] = FEED_PATHS[i % 3]; let txt;
+    try { txt = await nxGet(env, path); chk[path] = { at: Date.now(), ok: 1 }; }
+    catch (e) { chk[path] = { at: Date.now(), ok: 0, err: String(e.message || e).slice(0, 80), lastOk: chk[path]?.lastOk }; continue; }
+    chk[path].lastOk = chk[path].at;
+    if (last[path] === txt) continue; last[path] = txt;
+    let L; try { L = JSON.parse(txt)[key] || []; } catch (e) { continue; }
+    const ids = L.map(x => +x.notice_id || 0), top = Math.max(0, ...ids);
+    if (!(path in wm)) { wm[path] = top; await feedPut(env, 'wm', wm); continue; }
+    const fresh = L.filter(x => +x.notice_id > wm[path]).sort((a, b) => a.notice_id - b.notice_id); if (!fresh.length) continue;
+    let w = wm[path];
+    for (const x of fresh) {
+      const n = +x.notice_id, base = { title: x.title || '', url: x.url || '', date: nxIso(x.date) };
+      if (path === 'notice-update') add('patch', { id: `update:${n}`, ...base });
+      if (path === 'notice' && NX_MINOR.test(base.title)) add('patch', { id: `minor:${n}`, ...base, src: 'minor' });
+      if (path === 'notice-event' && NX_SUNDAY.test(base.title) && (!sunday || n > sunday.id))
+        sunday = { id: n, ...base, url: `https://maplestory.nexon.com/News/Event/${n}`, start: nxIso(x.date_event_start), end: nxIso(x.date_event_end), thumb: x.thumbnail_url || '', image: x.thumbnail_url || '', via: 'server' };
+      if (det) {
+        if (detail >= FEED_MAX_DETAIL) break; // 서브요청 아낌: 남은 글은 다음 회차에
+        detail++;
+        try { const d = JSON.parse(await nxGet(env, det, { notice_id: n })); const body = nxPlain(d.contents);
+          if (nxSaryo(base.title, body)) add('saryo', { id: `${path}:${n}`, ...base, end: nxSaryoEnd(body, +base.date.slice(0, 4) || new Date().getFullYear()), src: path });
+        } catch (e) { break; }
+      }
+      w = n;
+    }
+    if (w > wm[path]) { wm[path] = w; delete last[path]; if (w < top) delete last[path]; await feedPut(env, 'wm', wm); await feedPut(env, 'items', items); if (sunday) await feedPut(env, 'sunday', sunday); }
+  }
+  await feedPut(env, 'chk', chk);
+}
+async function feedRead(env) {
+  try { await feedSchema(env); const S = await feedState(env); return { items: S.items || { saryo: [], patch: [] }, sunday: S.sunday || null, chk: S.chk || {} }; } catch (e) { return null; }
 }
 
 /* ---------- 라우트 ---------- */
 async function route(req, env) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, ''), M = req.method;
   if (p === '/api/health') return json(200, { ok: true, v: 'b104' });
+  if (p === '/api/feed' && M === 'GET') return new Response(JSON.stringify({ at: Date.now(), ...(await feedRead(env)) }), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=5' } }); // b170
   if (p === '/api/live' && M === 'GET') return liveRead(env); // b157: 라이브 상태 (외부 요청 없음, D1 읽기만)
   await ensureSchema(env); await authEpoch(env); await loadAdmin(env); // 첫 요청 때 강제 로그아웃 기준 시각 확정
   // b67: IP별 요청 제한 (읽기 300/분, 쓰기 120/분) — 세션·사용자별 제한과 별개
@@ -705,5 +776,5 @@ export default {
       return json(500, { error: 'server', message: '서버 오류' }, cors);
     }
   },
-  async scheduled(event, env, ctx) { ctx.waitUntil(liveCron(env).catch(e => console.log('liveCron', String(e && e.stack || e)))); }, // b157: 매 1분 라이브 감지
+  async scheduled(event, env, ctx) { ctx.waitUntil(liveCron(env).catch(e => console.log('liveCron', String(e && e.stack || e)))); ctx.waitUntil(feedCron(env).catch(e => console.log('feedCron', String(e && e.stack || e)))); }, // b157: 매 1분 라이브 감지 · b170: 넥슨 공지 빠른 감시
 };
