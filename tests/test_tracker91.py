@@ -52,6 +52,7 @@ try:
     pg.evaluate("()=>{S.dq={off:{cer:1},charOff:{c1:{arcs:1}},hide:{}};save()}"); pg.wait_for_timeout(200)
     shot(pg.locator('nav').first,'tabs')
     pg.evaluate("()=>localStorage.setItem('mapleBossTracker.tab','daily')"); pg.reload(); pg.wait_for_timeout(1200)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     shot(pg.locator('#view'),'view_saved_daily')
     if not NOCHK:
         tabs=pg.evaluate("[...document.querySelectorAll('nav [data-tab]')].map(b=>b.textContent.trim())")

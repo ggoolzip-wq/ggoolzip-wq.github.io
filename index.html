@@ -3064,7 +3064,7 @@ function toast(msg){} /* b112: 하단 알림 전부 없앰 */
 const safeImg = u => /^https:\/\/open\.api\.nexon\.com\//.test(u||'') ? u : '';
 const avatar = (c,cls='') => `<div class="avatar ${cls}">${safeImg(c.image)?`<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">`:esc((c.name||'?').slice(0,1))}</div>`;
 const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','guild','live']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
-let tab=(()=>{ try{ const t=localStorage.getItem(TAB_KEY); return TABS.includes(t)?t:'boss'; }catch(e){ return 'boss'; } })(), bossFilter='weekly', editMode=false;
+let tab='boss', /* b166: 새로고침하면 항상 '이번 주 보스' (저장된 마지막 탭·해시 무시) */ bossFilter='weekly', editMode=false;
 
 function applyTheme(){ document.documentElement.dataset.theme='dark'; } // b67: 다크 전용 (라이트 모드·테마 버튼 삭제, 저장된 테마·시스템 설정 무시)
 function orbitFont(){ if(document.getElementById('orbitCss')) return; const l=document.createElement('link'); l.id='orbitCss'; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family=Orbit&display=swap'; document.head.appendChild(l); document.fonts&&document.fonts.addEventListener('loadingdone',()=>{ if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); }); }

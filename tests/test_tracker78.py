@@ -32,6 +32,7 @@ try:
     pg.route('**/feed.json*',lambda r:r.fulfill(status=200,content_type='application/json',body='{"version":1,"sources":{},"items":{}}'))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://localhost:{PORT}/index.html'); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     pg.evaluate("tab='total'; render()"); pg.wait_for_timeout(300)
     rows=pg.eval_on_selector_all('#bossKing tbody tr:not(.rkpad)','e=>e.map(x=>[...x.children].map(t=>t.innerText.replace(/\\s+/g," ").trim()))')
     print('ROWS',rows)

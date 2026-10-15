@@ -24,6 +24,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     pg=b.new_page(viewport={'width':1280,'height':800},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.evaluate("([s])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','loot')}",[ST]); pg.reload(); pg.wait_for_timeout(900)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     n=pg.evaluate("Math.ceil(missingItems(totalData()).length/RANK_PER)")
     mx=pg.evaluate("Math.max(...missingItems(totalData()).map(o=>missGroups(o.list).length))")
     check('(1) 데이터: 보스 6개 이상 묶인 긴 줄 존재', mx>=6, mx)
@@ -42,6 +43,7 @@ try:
     def side(st,label):
         for vw,vh in [(1366,650),(1280,720),(1024,700),(1280,560)]:
             pg.set_viewport_size({'width':vw,'height':vh}); pg.goto(URL); pg.evaluate("([s])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','boss')}",[st]); pg.reload(); pg.wait_for_timeout(1000)
+            pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
             for t in ['boss','total','loot','guild']:
                 pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(400)
                 sels=['#feedCard','#sunCard']+(['.rcol>.revpanel','.rcol>.pricecard','.rcol>.resetcard'] if t=='boss' else [])
@@ -55,6 +57,7 @@ try:
     # 큰 화면은 예전 그대로: 1명이면 사이드바 sticky, 소식+썬데이가 남은 높이를 채우고 페이지가 안 길어짐, 오른쪽 열 sticky
     for vw,vh in [(1920,1080),(1280,800)]:
         pg.set_viewport_size({'width':vw,'height':vh}); pg.goto(URL); pg.evaluate("([s])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','boss')}",[one]); pg.reload(); pg.wait_for_timeout(1000)
+        pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
         r=pg.evaluate("({flow:document.querySelector('.side-sticky').classList.contains('side-flow'),pos:getComputedStyle(document.querySelector('.rcol')).position,doc:document.scrollingElement.scrollHeight,ih:innerHeight,sun:getComputedStyle(document.querySelector('#sunCard')).display,sb:document.querySelector('#sunCard').getBoundingClientRect().bottom})")
         check(f'(2) {vw}x{vh}: 큰 화면 동작 그대로(sticky, 페이지 안 길어짐, 썬데이 화면 안)', not r['flow'] and r['pos']=='sticky' and r['doc']<=r['ih'] and r['sun']!='none' and r['sb']<=r['ih'], r)
     check('JS 오류 없음', not errs, errs)

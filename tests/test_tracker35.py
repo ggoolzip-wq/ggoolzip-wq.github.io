@@ -23,6 +23,7 @@ try:
     pg=b.new_page(viewport={'width':1920,'height':1080},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.add_init_script(CLOCK); pg.goto(URL)
     pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','daily')}",ST); pg.reload(); pg.wait_for_timeout(900)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     check('b119: 일퀘 탭 삭제 → 저장된 daily 탭은 이번 주 보스로', pg.locator('[data-tab=daily]').count()==0 and pg.evaluate('tab')=='boss' and pg.locator('#view .dqtop').count()==0)
     pg.evaluate("localStorage.setItem('mapleBossTracker.tab','boss');tab='boss';syncTabs();render()")
     W=pg.evaluate('S.missW'); M=pg.evaluate('S.missM')

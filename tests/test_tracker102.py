@@ -33,6 +33,7 @@ try:
         ST={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':H,'monthHistory':[],'missW':MW,'characters':[C],'startWeek':W[0],'period':pg.evaluate("({...S.period})"),'settings':{}}
         pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total');localStorage.setItem('mapleBossTracker.loadSyncAt',String(Date.now()))}",ST)
         pg.reload(); pg.wait_for_timeout(1800)
+        pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
         st=lambda: pg.evaluate("(()=>{const m=document.querySelector('.misschart.lux');const l=m.querySelector('.cline');return [m.classList.contains('inview'),getComputedStyle(l).animationPlayState,+getComputedStyle(m.querySelector('.mpt')).opacity]})()")
         a=st()
         if rm=='no-preference':

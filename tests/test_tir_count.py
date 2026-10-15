@@ -16,6 +16,7 @@ try:
             pg = b.new_page(viewport={"width": w, "height": 900}, reduced_motion=rm); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
             pg.route("https://open.api.nexon.com/**", lambda r: r.abort())
             pg.goto(f"http://127.0.0.1:{PORT}/index.html"); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}", NS["ST"]); pg.reload()
+            pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
             pg.evaluate(NS["SETUP"]); pg.wait_for_timeout(150)
             st = pg.evaluate("[...document.querySelectorAll('.stats .tir[data-tv]')].map(e=>[e.dataset.tk,e.dataset.tanim||'',e.getBoundingClientRect().width,e.style.minWidth])")
             if rm == "reduce":

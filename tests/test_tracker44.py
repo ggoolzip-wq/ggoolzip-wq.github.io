@@ -20,6 +20,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     def load(tab,st=ST):
         pg.goto(URL); pg.evaluate("([s,t])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab',t)}",[st,tab]); pg.reload(); pg.wait_for_timeout(900)
+        pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     load('boss')
     m=pg.evaluate("[meso(0),meso(5000),meso(150000000),meso(60000)]")
     check('A: meso() 단위 메소', m==['0 메소','5,000 메소','1.50억 메소','6만 메소'], m)

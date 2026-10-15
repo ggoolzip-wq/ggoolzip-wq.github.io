@@ -29,6 +29,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900); pg.evaluate("(()=>{const v=document.querySelector('#view');const o=render;window.render=function(){renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()")
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     hs=[h.replace('\n',' ').strip() for h in pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.innerText.trim())')]
     idx=lambda t: next((i for i,h in enumerate(hs) if h.endswith(t) or h==t),-1)
     o=[idx(t) for t in ['메소왕','득템왕','보스 메소왕','에픽빔왕','혼돈의 칠흑 장신구 상자깡','내가 획득 못한 아이템 목록']]

@@ -26,6 +26,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900); pg.evaluate("(()=>{const v=document.querySelector('#view');const o=render;window.render=function(){renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()")
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     hs=[h.replace('\n',' ').strip() for h in pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.innerText.trim())')]
     def idx(t): return next((i for i,h in enumerate(hs) if t in h),-1)
     order=['메소왕','득템왕','에픽빔왕','혼돈의 칠흑 장신구 상자깡','물욕 블빵 승률','블빵 이겨서','블빵 져서','보스 별 누적','시드링 획득 타율','총 아이템 획득량']
@@ -48,6 +49,7 @@ try:
     pg.locator('#lootKing').screenshot(path='/workspace/shots/b53_loot.png'); pg.locator('#epicCard').screenshot(path='/workspace/shots/b53_epic.png')
     pg.locator('#chaosCard').screenshot(path='/workspace/shots/b53_chaos.png'); pg.locator('#bbCard').screenshot(path='/workspace/shots/b53_bbang.png')
     pg.evaluate("localStorage.setItem('mapleBossTracker.tab','boss')"); pg.reload(); pg.wait_for_timeout(900)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     t=pg.inner_text('.rp-total'); check('이번 주 수익 억 한 자리 소수', t.replace('\n','').strip().endswith('억 메소') and '.' in t, t)
     pf=pg.inner_text('#view') if False else pg.content()
     check('월간 보스 📅, 가격 변동일 문구', '📅 월간 보스' in pf and '가격 변동일' in pf, '')

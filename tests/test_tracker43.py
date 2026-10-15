@@ -15,6 +15,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','boss')}",ST); pg.reload(); pg.wait_for_timeout(800)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     base=pg.evaluate("allRevenue().total"); mm=pg.evaluate("price(findBoss('blackmage'),'hard')")
     check('월간 클리어 전: 합계 = 주간만, 월간 줄 없음', '검마 결정석 0개' in pg.inner_text('.revpanel') and pg.locator('.rp-month').count()==0, base)
     # 이번 주에 잡음
@@ -40,11 +41,12 @@ try:
     st['monthHistory']=[{'month':'2026-10','total':50000000,'cleared':1,'perChar':[{'id':'c0','name':'캐릭00','meso':50000000,'bosses':['검은 마법사(하드)'],'bvals':[50000000],'mweeks':[hw],'items':{},'outcomes':{}}]}]
     c0['monthly']={}; c0['weekly']={}
     pg.evaluate("s=>{localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",st); pg.reload(); pg.wait_for_timeout(900)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(g=>g.dataset.tip)")
     check('차트: 지난 주(잡은 주)에만 월간 5천만 포함, 이번 주엔 없음', len(tips)==2 and '1.5억'.replace('1.5억','') is not None and '월간 보스 1개' in tips[0] and '월간 보스' not in tips[1], tips)
     # 이번 주에 잡은 월간 보스 → 이번 주 점에 포함
     c0['monthly']={'blackmage':None}
-    pg.evaluate("s=>{const x=JSON.parse(JSON.stringify(s));x.characters[0].monthly={blackmage:'__W__'};x.monthHistory=[];localStorage.setItem('mapleBossTracker.v1',JSON.stringify(x))}",st); pg.reload(); pg.wait_for_timeout(500)
+    pg.evaluate("s=>{const x=JSON.parse(JSON.stringify(s));x.characters[0].monthly={blackmage:'__W__'};x.monthHistory=[];localStorage.setItem('mapleBossTracker.v1',JSON.stringify(x))}",st); pg.reload(); pg.wait_for_timeout(500); pg.evaluate("tab='total';syncTabs();render()")
     pg.evaluate("()=>{S.characters[0].monthly.blackmage=S.period.week;save();render()}"); pg.wait_for_timeout(400)
     tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(g=>g.dataset.tip)")
     check('차트: 이번 주에 잡은 월간 보스 이번 주 점에 포함', '월간 보스 1개' in tips[-1] and '(이번 주)' in tips[-1], tips)

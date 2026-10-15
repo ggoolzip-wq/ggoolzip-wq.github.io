@@ -64,8 +64,11 @@ try:
         pg.click('.svaskbtns [data-k=no]'); pg.wait_for_timeout(80)
     pg.set_viewport_size({'width':1600,'height':1000})
     pg.click('[data-tab="guild"]'); pg.wait_for_timeout(150); pg.reload(); pg.wait_for_timeout(600)
-    check('refresh restores last tab (길드 현황)', pg.locator('[data-tab="guild"].on').count()==1 and pg.evaluate("tab")=='guild' if False else pg.locator('[data-tab="guild"].on').count()==1 and '지하 수로' in pg.inner_text('#view'))  # b85: 고정 길드 삭제
+    check('b166: refresh always opens 이번 주 보스 (저장된 탭 무시)', pg.locator('[data-tab="boss"].on').count()==1 and pg.evaluate("tab")=='boss')
+    pg.click('[data-tab="guild"]'); pg.wait_for_timeout(300)
+    check('길드 현황 탭 (지하 수로)', pg.locator('[data-tab="guild"].on').count()==1 and '지하 수로' in pg.inner_text('#view'))  # b85: 고정 길드 삭제
     pg.evaluate("localStorage.setItem('mapleBossTracker.tab','summary')"); pg.reload(); pg.wait_for_timeout(600)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     check('missing saved tab → 보스 현황', pg.locator('[data-tab="boss"].on').count()==1)
     check('no page errors', not errs, errs[:3])
     b.close()

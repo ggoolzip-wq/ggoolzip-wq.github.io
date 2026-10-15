@@ -20,6 +20,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST); pg.reload(); pg.wait_for_timeout(900); pg.evaluate("(()=>{const v=document.querySelector('#view');const o=render;window.render=function(){renderLoot();const l=v.innerHTML;o.apply(this,arguments);v.insertAdjacentHTML('beforeend',l)};render()})()")
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     pri=pg.evaluate("Object.fromEntries(['whisper','h_face','h_ear','genesis','lcm','cfe','eye','chaosbox','g_faith','g_life'].map(k=>[k,itemPri(k)]))")
     check('순위: 광휘 1 · 해머·창세 1.5 · 루컨마·커포 = 다른 칠흑과 같은 2', pri['whisper']==1 and pri['h_face']==1.5 and pri['h_ear']==1.5 and pri['genesis']==1.5 and pri['lcm']==2 and pri['cfe']==2 and pri['eye']==2 and pri['chaosbox']==2 and pri['g_faith']==3.05 and pri['g_life']==3.1, pri)
     j=pg.evaluate("[dropsFor(findBoss('lotus'),'normal').includes('r_green'), dropsOff(findBoss('lotus'),'normal').includes('r_green'), missingItems(totalData()).some(o=>o.k==='r_green'), dropsFor(findBoss('lotus'),'normal').includes('r_red')]")
@@ -74,6 +75,7 @@ try:
     check('블빵: 승률 표 마지막 줄선 없음 + 구분선 1개, 위아래 여백', bb[0] in ('0px','-') and bb[1]=='1px' and float(bb[2][:-2])>=14 and float(bb[3][:-2])>=14, bb)
     # 이번 주 수익 / 가격 카드 / 보스 별 누적
     pg.evaluate("s=>{localStorage.setItem('mapleBossTracker.tab','boss')}"); pg.reload(); pg.wait_for_timeout(900)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     rp=pg.evaluate("[...document.querySelectorAll('.revpanel .dlb')].map(e=>e.innerText.trim())")
     check('이번 주 수익: 보스 + (난이도)', '카링 (하드)' in rp and '림보 (노말)' in rp, rp)
     pr=pg.evaluate("[document.querySelectorAll('.pricecard .pc-nm .dlv').length,[...document.querySelectorAll('.pricecard .pc-row:not(.has-up)')].every(r=>r.getBoundingClientRect().height<30),[...document.querySelectorAll('.pricecard .pc-nm')].every(n=>n.scrollWidth<=n.clientWidth+1)]")

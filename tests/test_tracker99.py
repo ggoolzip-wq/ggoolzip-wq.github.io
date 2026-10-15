@@ -31,6 +31,7 @@ try:
     ST={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':[H],'monthHistory':[],'characters':[C],'startWeek':prev,'period':pg.evaluate("({...S.period})"),'settings':{}}
     pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','total')}",ST)
     pg.reload(); pg.wait_for_timeout(900)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     pg.evaluate("()=>{S.characters[0].weekly.lucid=true;(S.characters[0].wat={}).lucid=Date.now();save();render()}"); pg.wait_for_timeout(400)
     g=pg.evaluate("[document.querySelector('#grandAvg')?.innerText||'', document.querySelector('#weekLine')?.dataset.total, totalData().grand, totalData().weeks.length, totalData().weeks.find(w=>w.cur).total]")
     check('1 누적 수익(총 수익) 밑: 주 평균 메소', g[0]==f"주 평균 {round(g[2]/g[3]):,} 메소", g)
@@ -40,6 +41,7 @@ try:
     check('b136 x축 1주차·2주차', '1주차' in xl and '2주차' in xl, xl)
     shot(pg.locator('#view .card').nth(0),'total_card'); shot(pg.locator('#view .card').nth(1),'week_graph')
     pg.evaluate("()=>{localStorage.setItem('mapleBossTracker.tab','loot');location.reload()}"); pg.wait_for_timeout(900)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     t=pg.evaluate("[document.querySelector('#salesAvg')?.innerText||'', document.querySelector('#itemsAvg')?.innerText||'', totalData().weeks.length]")
     check('2 아이템 판매 누적 수익 밑: 주 평균 판매 메소', t[0]==f"주 평균 {round(200000000/t[2]):,} 메소", t)
     check('3 총 득템 밑: 주 평균 아이템 개수', t[1]=='주 평균 0.5개', t)

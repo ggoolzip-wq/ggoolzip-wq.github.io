@@ -36,6 +36,7 @@ try:
     pg.route('**/feed.json*',lambda r:r.fulfill(status=200,content_type='application/json',body='{"version":1,"sources":{},"items":{}}'))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','loot')}",ST); pg.reload(); pg.wait_for_timeout(900)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     if not NOCHK:
         sz=pg.evaluate('''(()=>{const r=s=>[...new Set([...document.querySelectorAll(s)].map(e=>{const b=e.getBoundingClientRect();return Math.round(b.width)+'x'+Math.round(b.height)}))];return [r('#lootKing .rkav'),r('#bossLootKing .rkico > *'),r('#lootKing .loot img, #lootKing .loot .ric'),r('#bossLootKing .blkchip img, #bossLootKing .blkchip .ric')]})()''')
         check('b122 보스 득템왕 보스 초상화 = 득템왕 캐릭터 초상화, 득템 목록 아이콘 = 득템왕 아이템 아이콘', sz[0]==sz[1] and sz[2]==sz[3] and len(sz[0])==1 and len(sz[2])==1, sz)
@@ -108,6 +109,7 @@ try:
       'characters':[dict(ch(1,'단풍용사'),ocid='ocid-main',accId='a1',level=287)],
       'settings':{'accounts':[{'id':'a1','label':'본계정','key':KM}],'lastSync':int(time.time()*1000),'guilds':[]}}
     pg2.goto(f'http://127.0.0.1:{PORT}/index.html'); pg2.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','guild')}",PRE); pg2.reload(); pg2.wait_for_timeout(1500)
+    pg2.wait_for_timeout(300); pg2.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     tabs=pg2.eval_on_selector_all('#tabs button',"e=>e.map(x=>x.dataset.tab)")
     check('b119: 일퀘 현황 탭 없음, 길드 현황 있음', 'daily' not in tabs and 'guild' in tabs, tabs)
     if pg2.locator('#guildAdd').count():

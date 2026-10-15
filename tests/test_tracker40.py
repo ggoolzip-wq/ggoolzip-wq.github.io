@@ -17,6 +17,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     pg=b.new_page(viewport={'width':1920,'height':1080},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(URL); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','boss')}",ST); pg.reload(); pg.wait_for_timeout(1200)
+    pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     pg.evaluate("celebrate(null,'g_faith',findBoss('kaling'))"); pg.wait_for_timeout(300)
     check('축하: 보스 아이콘이 글자 앞, 이모지·🎉 없음', pg.locator('#congrats .cg-big .cg-boss img').count()==1 and pg.locator('#congrats .cg-emo').count()==0 and pg.evaluate("document.querySelector('.cg-big').firstElementChild.className")=='cg-boss')
     pg.evaluate("document.querySelector('#iconBurst')?.remove()"); pg.locator('#congrats .cg-in').screenshot(path='/workspace/shots/b54_celebrate.png'); pg.evaluate("endCelebrate()")
