@@ -1291,24 +1291,21 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&
 const TIR_SEG={0:'abcdef',1:'bc',2:'abged',3:'abgcd',4:'fgbc',5:'afgcd',6:'afgedc',7:'abc',8:'abcdefg',9:'abcdfg'};
 const tirH=(x1,x2,y,t)=>{ const c=t/2; return `M${x1},${y}L${x1+c},${y-c}L${x2-c},${y-c}L${x2},${y}L${x2-c},${y+c}L${x1+c},${y+c}Z`; };
 const tirV=(x,y1,y2,t)=>{ const c=t/2; return `M${x},${y1}L${x+c},${y1+c}L${x+c},${y2-c}L${x},${y2}L${x-c},${y2-c}L${x-c},${y1+c}Z`; };
-function tirDigit(ch,ox){ const w=46,h=78,t=10,c=5,g=2,m=h/2, on=TIR_SEG[ch]||'';
+function tirDigit(ch,ox){ const w=46,h=78,t=7,c=3.5,g=2.5,m=h/2, on=TIR_SEG[ch]||'';
   const P={a:tirH(c+g,w-c-g,c,t),g:tirH(c+g,w-c-g,m,t),d:tirH(c+g,w-c-g,h-c,t),f:tirV(c,c+g,m-g,t),b:tirV(w-c,c+g,m-g,t),e:tirV(c,m+g,h-c-g,t),c:tirV(w-c,m+g,h-c-g,t)};
   return `<g transform="translate(${ox} 0)">${'abcdefg'.split('').filter(k=>ch!=='1'||on.includes(k)).map(k=>`<path d="${P[k]}" class="${on.includes(k)?'tl':'tg'}"/>`).join('')}</g>`; }
-const TIR_UNIT={ // 억 = ㅇ(네모 막대) + ㅓ + ㄱ / 만 = ㅁ + ㅏ + ㄴ  (상자 70×78)
-  '억':[['V',5,8,36],['V',29,8,36],['H',5,29,8],['H',5,29,36],['V',62,3,44],['H',40,58,23],['H',8,62,55],['V',62,55,76]],
-  '만':[['V',5,6,38],['V',31,6,38],['H',5,31,6],['H',5,31,38],['V',44,2,46],['H',48,64,22],['V',8,50,74],['H',8,64,74]]};
-function tirUnit(u,ox){ const t=8; return `<g transform="translate(${ox} 0)">${TIR_UNIT[u].map(([k,a,b,cc])=>`<path class="tu" d="${k==='H'?tirH(a,b,cc,t):tirV(a,b,cc,t)}"/>`).join('')}</g>`; }
 function tirDefs(){ if(document.getElementById('tirDefs')) return; const d=document.createElement('div'); d.innerHTML=`<svg id="tirDefs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <linearGradient id="tirG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaf0"/><stop offset=".5" stop-color="#ffe39a"/><stop offset="1" stop-color="#ffb347"/></linearGradient>
-  <linearGradient id="tirU" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset="1" stop-color="#e0952e"/></linearGradient>
-  <filter id="tirF" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="3" result="b"/><feFlood flood-color="#ff8a1e"/><feComposite in2="b" operator="in" result="gl"/><feMerge><feMergeNode in="gl"/><feMergeNode in="gl"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs></svg>`; document.body.appendChild(d.firstChild); }
-function tir(text,cls=''){ const T=String(text); let x=0, parts='';
-  for(const ch of T){ if(ch==='1'){ parts+=tirDigit(ch,x-20); x+=34; } else if(/[0-9]/.test(ch)){ parts+=tirDigit(ch,x); x+=54; } /* 1 은 좁게(빈 왼쪽 칸 없이) */ else if(TIR_UNIT[ch]){ x+=4; parts+=tirUnit(ch,x); x+=76; }
-    else if(ch==='.'||ch===','){ parts+=`<path class="tl" d="M${x+2},${ch==='.'?66:64}h11v11h-11z${ch===','?`M${x+5},77h7l-5,9h-5z`:''}"/>`; x+=18; }
-    else if(ch==='-'){ parts+=`<path class="tl" d="${tirH(x+2,x+40,39,10)}"/>`; x+=48; } else if(ch===' '){ x+=22; } }
-  const W=Math.max(1,x-8);
-  return `<span class="tir ${cls}"><span class="tir-sr">${esc(T)}</span><svg class="tir-g" viewBox="-6 -6 ${W+12} 98" style="--tw:${((W+12)/98).toFixed(3)}" aria-hidden="true" focusable="false">${parts}</svg></span>`; }
-const tirMeso = n => { const t=meso(n); return t.endsWith(' 메소')?tir(t.slice(0,-3))+'<span class="tir-u"> 메소</span>':tir(t); };
+  <linearGradient id="tirG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6ffff"/><stop offset=".5" stop-color="#9ffbff"/><stop offset="1" stop-color="#4fe6dc"/></linearGradient>
+  <filter id="tirF" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="3.5" result="b"/><feFlood flood-color="#28e6dc"/><feComposite in2="b" operator="in" result="gl"/><feMerge><feMergeNode in="gl"/><feMergeNode in="gl"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs></svg>`; document.body.appendChild(d.firstChild); }
+function tir(text,cls=''){ const T=String(text); let out='', x=0, parts='';
+  const flush=()=>{ if(!parts&&!x) return; const W=Math.max(1,x-8); out+=`<svg class="tir-g" viewBox="-6 -6 ${W+12} 98" style="--tw:${((W+12)/98).toFixed(3)}" aria-hidden="true" focusable="false">${parts}</svg>`; parts=''; x=0; };
+  for(const ch of T){ if(ch==='1'){ parts+=tirDigit(ch,x-20); x+=34; } else if(/[0-9]/.test(ch)){ parts+=tirDigit(ch,x); x+=54; } /* 1 은 좁게 */
+    else if(/[가-힣]/.test(ch)){ flush(); out+=`<span class="tir-k" data-k="${ch}" aria-hidden="true"></span>`; }
+    else if(ch==='.'||ch===','){ parts+=`<path class="tl" d="M${x+2},${ch==='.'?66:64}h10v10h-10z${ch===','?`M${x+5},76h6l-5,9h-5z`:''}"/>`; x+=17; }
+    else if(ch==='-'){ parts+=`<path class="tl" d="${tirH(x+2,x+40,39,7)}"/>`; x+=48; } else if(ch===' '){ flush(); out+='<span class="tir-sp" aria-hidden="true"></span>'; } }
+  flush();
+  return `<span class="tir ${cls}"><span class="tir-sr">${esc(T)}</span>${out}</span>`; }
+const tirMeso = n => tir(meso(n));
 function meso(n){
   n=Math.round(n||0); if(n===0) return '0 메소';
   const eok=Math.floor(n/1e8), man=Math.floor(n%1e8/1e4), rest=n%1e4;
@@ -2131,7 +2128,7 @@ function salesHtml(T){ // b76: '아이템 판매 누적 수익' — 아이템·�
   const best=Object.keys(top).sort((a,b)=>top[b]-top[a]||itemCmp(a,b))[0];
   const ico=best?`<span class="hbi">${lootIco(best)}</span>`:miniIcon('meso'), pl=p=>p>1?`${p}인 분배`:'1인';
   return `<div class="card" id="salesCard"><h2>${ico} 아이템 판매 누적 수익</h2>
-    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc tirv">${tot?tir((tot/1e8).toFixed(1)+'억')+'<span class="tir-u"> 메소</span>':tir('-')}</div><div class="muted" id="salesAvg">주 평균 ${Math.round(tot/Math.max(1,T.weeks.length)).toLocaleString()} 메소</div></div></div>
+    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc tirv">${tot?tir((tot/1e8).toFixed(1)+'억 메소'):tir('-')}</div><div class="muted" id="salesAvg">주 평균 ${Math.round(tot/Math.max(1,T.weeks.length)).toLocaleString()} 메소</div></div></div>
     ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot">${lootIco(i)}<span class="ln">${esc(lootName(i))}</span> <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm tirv">${tirMeso(o.m)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
 function renderLoot(){
   const v=$('#view'); const T=totalData(), L=lootSummary(T);

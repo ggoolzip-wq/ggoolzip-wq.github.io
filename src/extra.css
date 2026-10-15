@@ -1286,14 +1286,16 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .chart.lux .cax{fill:#c9a978}
 .chart.lux .cxl{fill:#bba88c}
 
-/* b141: 티르노그 골드 숫자 (정해진 4곳만) */
+/* b141→b147: 디지털 숫자 (정해진 4곳만) */
 .tir{display:inline;position:relative;white-space:nowrap}
 .tir-sr{display:inline-block;width:1px;height:1px;margin-right:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;vertical-align:baseline}
 /* 크기 = 기존 글자와 같게: 숫자 몸통(78/98) = 글자 숫자 높이(≈0.72em), 바닥 = 글자 기준선 */
-.tir-g{display:inline-block;height:.905em;width:calc(.905em * var(--tw));vertical-align:-.13em;overflow:visible;transform:skewX(-6deg)}
-.tir-g .tl{fill:url(#tirG);stroke:rgba(255,230,170,.9);stroke-width:1.2;filter:url(#tirF)}
-.tir-g .tg{fill:rgba(255,190,120,.13)}
-.tir-g .tu{fill:url(#tirU);stroke:rgba(255,220,150,.8);stroke-width:1.2;filter:url(#tirF)}
+.tir-g{display:inline-block;height:.905em;width:calc(.905em * var(--tw));vertical-align:-.13em;overflow:visible;transform:skewX(-5deg)}
+/* b147: 계산기3(VFD 시안) 숫자 + 한글 단위 = Fusion Pixel 12px (ko) 서브셋(조억만메소), OFL 1.1 — src/fonts/FusionPixel-OFL.txt */
+@font-face{font-family:'MrjUnitKo';src:url(data:font/woff;base64,d09GRgABAAAAAATwAA4AAAAABvQAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABHUE9TAAAEhAAAACAAAAAgRHZMdUdTVUIAAASkAAAAIAAAACBEdkx1T1MvMgAAAxgAAAA6AAAAYAZ9E/ljbWFwAAADVAAAAEAAAABUgClESmdseWYAAAFEAAABRgAAAjjFf2x5aGVhZAAAArQAAAA2AAAANje+GZBoaGVhAAAC+AAAAB4AAAAkEAYKjmhtdHgAAALsAAAADAAAAA4EsAAAbG9jYQAAAqQAAAAOAAAADgHaASptYXhwAAACjAAAABgAAAAgAE8BIm5hbWUAAAOUAAAA2gAAAewmy0APcG9zdAAABHAAAAATAAAAIP+fAGR2aGVhAAAE0AAAAB4AAAAkCo8F3XZtdHgAAATEAAAADAAAAA4EsAAAeJx1kc1Nw0AQhd94g8JPELIiCyGEyMqyOOBbhGiAIwWkgCkgBXBMASmAAlxAjilgC3ABOboA3xIb3jjBEBAj7e6sd/Tmm2cMgI/3waur4DDEFRIg9rEfc8um8TRJ45SnT3w0awqVpSyVsduom+zeXNUUUrdzfmxLbee2U4eKrqLiBfXGnR6VYir1uqnUQTW0I5VcalVXmch2Fc3akVvsNm6i2xXOwejZ9mrXuMU9HvAICHVSEj5zea7sz2ncT16YWxMGmxJRbQj21mim2rx0d6m3K6ntgSylfkdXnytw1s/lcImYTt3gDh6ZsYzZKetmTNInn/2gmH7lrBh68yBI3pbR2mgkp5M9jh7S0grULWizq0hYsH844BvRXHKc9t78dqZjMYqTf73Z+8IO9suodmRMU4QQrUPgfW8KGUIIR4bgE1zLp64AAHicY2BkYGBgY1Rg8GAAASYGNAAACrUAcwAAAAAAKQBOAJUA3AEcAAAAAQAAAAEAAHdpVIlfDzz1AAMEsAAAAADm22oAAAAAAObbagAAAP7UCvAFFAAAAAMAAgAAAAAAAHicY9nAgAQACTYAtXicY2BkYGAV+XeFgYF7BwMQcH1gYGRABYwAXtsDrAAAeJxjYGaZzziBgZWBhQEdpDB+QRdiRGLbAwEDw84zJwpYRf5dYWBgFWHUgSlhimBuAVIKDEwAhHcJiQAAeJxjYGBgYmBgYAZiESDJCKZZGByANA8DB1COZeeZXSEHe45uPVHw/z8DAzLPzdR1nV25lb/5VLA+OAAA44IVKXicnY/BasJAFEVPNFrcdOUHZGmhUzXQQqurCF2LFFq6U1ErTU2IEfU//AI/s6veJIO02RTC8Gbum7nn8ga44p06jtsCZqpCO/jqCl3jmpPVdd44W+0S8G11g7YztLpJ4IwZERFzJGHNig9SPDrMudHp01P53Eq/MOWTV7lDlrkn86ZitzzR1Upzx9467pQR8aWcZ3byrNVtxI2lDizk8egrO1aX3Sb5HJ4SIiZ6X4kKlZj84c0v3lx4c+FNzptSwsD+5EFT9XjU7nNfYS6vlPtfaqVpfwCoXkj5AAB4nGNgZgCD/3MYUhiwAAAunQIDAAABAAAACgAcAB4AAURGTFQACAAEAAAAAP//AAAAAAAAAAEAAAAKABwAHgABREZMVAAIAAQAAAAA//8AAAAAAAB4nGPZwIAEAAk2ALV4nGNgZGBgVvjzgIGBM+Ffwf85HH8Y0AEjAJ2kBngAAA==) format('woff');font-display:block}
+.tir-k{font-family:'MrjUnitKo',monospace;font-weight:400;font-size:.82em;line-height:1;color:#b8fdff;text-shadow:0 0 3px rgba(40,230,220,.9),0 0 8px rgba(40,230,220,.55);-webkit-font-smoothing:none;margin:0 .04em;letter-spacing:0}
+.tir-k::before{content:attr(data-k)}
+.tir-sp{display:inline-block;width:.3em}
+.tir-g .tl{fill:url(#tirG);stroke:rgba(200,255,255,.55);stroke-width:.8;filter:url(#tirF)}
+.tir-g .tg{fill:rgba(60,200,200,.10)}
 .tirv{text-shadow:none!important;background:none!important;-webkit-background-clip:border-box!important;background-clip:border-box!important;filter:none!important}
-.v.tirv .tir-u{color:#ffd27a}
-.tir-u{color:inherit}

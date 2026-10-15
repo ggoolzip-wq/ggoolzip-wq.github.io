@@ -15,6 +15,15 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b147 (2026-10-15) — 디지털 숫자: 계산기3(VFD 시안) + 한글 단위 Fusion Pixel 12px (정해진 4곳만)
+- 시간(KST): 시작 12:17 · 코딩 12:17–12:22 · 테스트 12:22–12:29(관련 14개 병렬 + 전체 1회) · 배포 12:30
+- 적용 위치(이 4곳만): ① 캐릭터 정보 팝업 "이번 주 주간 보스 수익" ② 이번 주 수익 맨 위 숫자 ③ 수익 분석 위 3칸 ④ 득템 분석 아이템 판매(총합 + 품목별).
+- 숫자: `tir()`(b141-preview 기반) — SVG 7세그먼트, 얇은 세그먼트·시안 그라데이션(#e6ffff→#4fe6dc)·시안 글로우(#tirF)·흐린 꺼진 세그먼트·skewX(-5deg). "1"은 좁게.
+- 한글(조/억/만/메소): Fusion Pixel 12px (ko) 서브셋(5글자, woff, extra.css 에 base64 내장, family 'MrjUnitKo'), 같은 시안 글로우. 라이선스 OFL 1.1 → `src/fonts/FusionPixel-OFL.txt` (원본 https://github.com/TakWolf/fusion-pixel-font , Reserved Font Name 없음). 글자는 `::before{content:attr(data-k)}` 로 그려서 innerText 에 안 섞임.
+- 크기: 기존 글자와 같은 높이(숫자 몸통 ≈ 0.72em, 기준선 정렬). 진짜 텍스트는 `.tir-sr`(복사·화면낭독·innerText 그대로 "32.5억 메소").
+- 전체 테스트: 24·46·49(동기화 서버 테스트)는 이전 라이브 index.html 로도 똑같이 실패 → 이번 변경과 무관(환경 문제). 나머지 통과.
+- 스크린샷: /workspace/maple-boss-tracker/b147_before_*.png, b147_after_*.png (charinfo/week/total/sales)
+
 ## b140 (2026-10-15) — 사이트 전체 고급 다크 스타일 (b139 + b140) + 그래프 골드 격자
 - 시간(KST): 03:15–03:26 (코딩 약 5분 / 테스트 약 6분, 글꼴 시안은 전체 테스트 도는 동안). 전체 테스트: 23·24·25·46·49(기존 서버 테스트, 이전 빌드에서도 실패) 외 통과. b139(미리보기)를 그대로 포함해 배포.
 - b139: 다크 헤더·골드 탭/로고, 카드·통계·보스·캐릭터·버튼·입력·표·스크롤바·말풍선에 오렌지/골드 그라데이션·테두리·글로우 (색·테두리·그림자만, 배치·크기 그대로). 그래프 애니메이션은 화면에 들어올 때 시작(IntersectionObserver + MutationObserver, `.chart.lux.inview`), reduced-motion 이면 바로 표시 (test102).
