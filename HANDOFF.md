@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b164 (2026-10-15) — 누적 득템 디지털 범위 정정 + '작은 문구용 디지털' (18:28~18:50 KST)
+- **메인 값만 큰 디지털**: 누적 득템 카드 메인 값(N개, '상위 X%' — '상위' 글자 포함, `tirN(v,'tpct')`)만 하늘색+글로우+1.4배+카운팅.
+- **작은 문구용 디지털 `tsm(text)` (`.tir.tsm`)**: 계산기 숫자 + 점 한글(HPIX) 글씨체·점 무늬만. 색 = 문구 원래 색(`fill:currentColor`), 글로우·꺼진 세그먼트 잔상·카운팅·확대 없음(크기 1em 유지). 적용: 누적 득템(주 평균 N개 / 반상 누적 N회, 녹·홍옥 반상 제외 / 블빵 N인 (N승 N패)), 캐릭터 정보(결정석 …/아이템 판매 …), 수익 분석 3칸(주 평균/월 평균 … 메소), 아이템 판매 카드(주 평균 … 메소). 그래프 안은 제외. (이번 주 수익 패널의 결정석/아이템 줄은 아이콘+일반 숫자라 그대로.)
+- **글리프 추가**: Fusion Pixel 12px ko → HPIX 에 상위주평균월결정석아이템판매반누적녹홍옥제외 ( ) · (스크립트 `/workspace/scripts/b164hpix.py`). 반폭 전진폭 `HADV`.
+- **테스트**: `tests/test_tir_count.py` 에 작은 디지털(같은 크기·원래 색·필터 없음·카운팅 없음·전부 픽셀) / 메인 값만 글로우 / 수익 분석 보조 문구 검사 추가.
+- **스크린샷**: `/workspace/maple-boss-tracker/b164_cmp_{1400,390}_{charinfo,total_cards,sales_card,loot_top}.png`, 글리프 확대 `b164_after_glyphs_zoom.png` (스크립트 `/workspace/scripts/b164.py`, `b162glyph.py`).
+
 ## b162 (2026-10-15) — 디지털 글씨 1.4배 · 카운팅 애니메이션 · 누적 득템 디지털 · 핑크빈 위치 (17:47~18:10 KST)
 - **크기**: 그래프 밖 디지털 글씨 `.tir:not(.logo-d .tir){font-size:1.4em;line-height:1}` (캐릭터 정보 주간보스 메소, 이번 주 수익 맨 위, 수익 분석 3칸, 아이템 판매 카드·표, 누적 득템). 단위는 같은 SVG(HPIX) 안이라 숫자 높이 이하·점 빈틈·글로우·5° 기울기·기준선 유지. 그래프(SVG 안 tirSvg/segLab)·로고는 그대로. 1400/390px 줄바꿈·잘림 검사 통과(390px 판매 표 아이템 이름은 원래처럼 … 말줄임이 조금 더 생김).
 - **카운팅**: `tirN(v, fmt, key, suf)` → `data-tv/tf/tk/ts`. MutationObserver 로 새 `.tir[data-tv]` 를 IntersectionObserver(threshold .3)에 등록 → 보일 때 1.2초 ease-out(cubic) 0→값(같은 포맷: eok/meso/cnt/dec/pct). `TIR_LAST`(key별 마지막 값): 같은 값 재렌더 = 애니메이션 없음, 값 바뀌면 이전→새 값. 도는 동안 최종 폭 min-width 고정, `.tir-sr`(읽기용 글자)는 최종값 유지. `prefers-reduced-motion: reduce` 면 바로 최종값.

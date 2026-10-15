@@ -1396,3 +1396,9 @@ body[data-curtab="boss"] :is(#charList .nm,#charList .nm *,.bosslay h2,.rp-nm,.r
 .tir:not(.logo-d .tir){font-size:1.4em;line-height:1}
 /* b162: 핑크빈 몸통(이미지 x 9~68px, 중심 39/109) 을 문구 가운데로 — 이미지 박스 중심(54.5)보다 15.5px 왼쪽이라 그만큼 오른쪽으로 */
 .lvnone .pinkbean{transform:translateX(calc(109px * 15.5 / 109))}
+
+/* b164: 작은 문구용 디지털(.tsm) — 확대·글로우·잔상(꺼진 세그먼트) 없음, 색 = 문구 원래 색 */
+.tir.tsm{font-size:1em!important;line-height:inherit}
+.tsm .tir-g{filter:none!important}
+.tsm .tir-g .tl{fill:currentColor!important;stroke:none!important}
+.tsm .tir-g .tg{display:none}
