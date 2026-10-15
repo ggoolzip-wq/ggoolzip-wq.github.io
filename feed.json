@@ -1,42 +1,42 @@
 {
  "version": 1,
- "updatedAt": "2026-10-15T15:05:04+09:00",
+ "updatedAt": "2026-10-15T16:27:21+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-10-15T15:04:39+09:00",
-   "lastOkAt": "2026-10-15T15:04:39+09:00",
+   "checkedAt": "2026-10-15T16:26:51+09:00",
+   "lastOkAt": "2026-10-15T16:26:51+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-10-15T15:04:39+09:00",
-   "lastOkAt": "2026-10-15T15:04:39+09:00",
+   "checkedAt": "2026-10-15T16:26:51+09:00",
+   "lastOkAt": "2026-10-15T16:26:51+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
    "ok": true,
-   "checkedAt": "2026-10-15T15:04:41+09:00",
-   "lastOkAt": "2026-10-15T15:04:41+09:00",
+   "checkedAt": "2026-10-15T16:26:53+09:00",
+   "lastOkAt": "2026-10-15T16:26:53+09:00",
    "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-10-15T15:05:04+09:00",
-   "lastOkAt": "2026-10-15T15:05:04+09:00",
+   "checkedAt": "2026-10-15T16:27:18+09:00",
+   "lastOkAt": "2026-10-15T16:27:18+09:00",
    "error": ""
   }
  },
  "state": {
   "watermarks": {
-   "notice": 150284,
+   "notice": 150305,
    "notice-event": 1397,
    "notice-update": 814,
-   "test": 199,
+   "test": 202,
    "inven:5974": 7258005,
    "inven:2304": 48312,
    "inven:2314": 11275,
@@ -79,6 +79,12 @@
    }
   ],
   "test": [
+   {
+    "id": "test:202",
+    "title": "클라이언트 1.2.207 릴리즈",
+    "url": "https://maplestory.nexon.com/Testworld/News/Update/202",
+    "date": "2026-09-10T00:00:00+09:00"
+   },
    {
     "id": "test:199",
     "title": "클라이언트 1.2.206 릴리즈(이벤트, 컨텐츠, 개선사항 및 오류 수정)",

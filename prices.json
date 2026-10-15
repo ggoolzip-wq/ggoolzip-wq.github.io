@@ -250,5 +250,25 @@
  ],
  "checkedAt": "2026-10-14T19:30:27+09:00",
  "fetchedAt": "2026-10-09T11:51:07+0000",
- "changedAt": "2026-09-17"
+ "changedAt": "2026-09-17",
+ "upcoming": {
+  "source": {
+   "url": "https://maplestory.nexon.com/Testworld/News/Update/202",
+   "title": "클라이언트 1.2.207 릴리즈",
+   "date": "2026-09-10"
+  },
+  "rows": [
+   {
+    "boss": "카링(익스트림)",
+    "old": 5387000000,
+    "new": 4845000000
+   },
+   {
+    "boss": "유피테르(하드)",
+    "old": 4845000000,
+    "new": 5387000000
+   }
+  ],
+  "detectedAt": "2026-10-15T16:27:21+09:00"
+ }
 }
