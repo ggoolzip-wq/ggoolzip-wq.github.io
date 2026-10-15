@@ -1732,7 +1732,7 @@ function revPanel(a,cur){
     <h2>${miniIcon('meso')} 이번 주 수익</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
-      return `<div class="rp-total tirv tpink">${tirN(cry+sale,'eok','rp',' 메소')}</div>
+      return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
     <div class="muted rp-line rp-cry"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${tsm(`주보 결정석 ${a.count}개`)}${tsm('·')}</span><span class="rpg">${miniIcon('ipcm')}${tsm(`검마 결정석 ${wm.n}개`)}</span></span><b class="rpn">${tsm(cry.toLocaleString())}</b></div>
     <div class="muted rp-line rp-sale"><span class="rpl">${topSaleIco()}${tsm(`이번주 획득 아이템 ${n}개`)}</span><b class="rpn">${tsm(sale.toLocaleString())}</b></div>${weekRingLine()}`; })()}
     <div class="rp-sec">캐릭터별</div>
@@ -2185,7 +2185,7 @@ function renderTotal(){
   v.innerHTML=`<div class="grid"><div class="card">
     <h2>${miniIcon('ipc')} 누적 수입 <span class="muted" style="font-weight:500">${fmtWeek(S.startWeek).split(' ~')[0]}부터 · ${nW}주</span></h2>
     <div class="stats s3 kbig">
-      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc tirv tpink">${tirN(T.grand,'eok','grand')}</div><div class="muted" id="grandAvg">${tsm('주 평균 '+Math.round(T.grand/Math.max(1,nW)).toLocaleString()+' 메소')}</div></div>
+      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc tirv tgoldv">${tirN(T.grand,'eok','grand')}</div><div class="muted" id="grandAvg">${tsm('주 평균 '+Math.round(T.grand/Math.max(1,nW)).toLocaleString()+' 메소')}</div></div>
       <div class="stat"><div class="k"><span class="hbi">${bossIcon(bk?bk.b:findBoss('kaling'))}</span><span class="kt">주보 누적 메소량</span></div><div class="v tirv">${tirN(T.wTotal,'eok','wTotal')}</div><div class="muted">${tsm('주 평균 '+avg.toLocaleString()+' 메소')}</div></div>
       <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="kt">검마 누적 메소량</span></div><div class="v tirv">${T.mTotal?tirN(T.mTotal,'eok','mTotal'):tir('-')}</div><div class="muted">${tsm('월 평균 '+Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()+' 메소')}</div></div>
     </div>

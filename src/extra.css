@@ -1407,3 +1407,32 @@ body[data-curtab="boss"] :is(#charList .nm,#charList .nm *,.bosslay h2,.rp-nm,.r
 .rp-line .rpg{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
 .rp-line.rp-cry .rpl{flex-wrap:wrap;overflow:visible;row-gap:1px;column-gap:6px}
 .rp-line .tir.tsm{font-size:1.3em!important}
+
+/* b167: 금색 디지털(이번 주 수익 합계·누적 수입 총 수익) — 그래프 계산기4 금색(#tirY)+금색 글로우 */
+.tgoldv .tir:not(.tsm) .tir-g .tl{fill:url(#tirY);stroke:rgba(255,236,190,.6)}
+.tgoldv .tir:not(.tsm) .tir-g .tg{fill:rgba(255,190,90,.10)}
+.tgoldv .tir:not(.tsm) .tir-g{filter:drop-shadow(0 0 3px rgba(255,170,40,.95)) drop-shadow(0 0 8px rgba(255,150,30,.55))}
+/* b167: 사이트 테마 = b166 하늘색 시안 02 'Ice Blue Whisper' (배경 Ink Black, #9fdcff/#fff, 글로우 25%, 테두리 1px) — 모든 탭·팝업·모달·툴팁 */
+
+:root{--n1:#9fdcff;--n2:#ffffff}
+[data-theme=dark] body,[data-theme=dark]{background:radial-gradient(1200px 700px at 50% -200px,rgba(120,200,255,.06),transparent 70%),linear-gradient(180deg,#0b0d10,#050607)!important;background-attachment:fixed!important}
+header{background:transparent!important;border-bottom:1px solid color-mix(in srgb,var(--n1) 55%,transparent)!important;box-shadow:0 1px 14px color-mix(in srgb,var(--n1) 25%,transparent)!important}
+[data-theme=dark] .card,.modal,#mbtTip,.ringm,.svaskbox{background:linear-gradient(180deg,color-mix(in srgb,var(--n1) 5%,transparent),rgba(255,255,255,.01) 40%,color-mix(in srgb,var(--n2) 3%,transparent)),rgba(18,20,24,.86)!important;border:1px solid color-mix(in srgb,var(--n1) 45%,transparent)!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--n1) 10%,transparent) inset,0 0 12px color-mix(in srgb,var(--n1) 18%,transparent),0 10px 28px rgba(0,0,0,.5)!important}
+[data-theme=dark] .card .stat,[data-theme=dark] .card .bossitem,[data-theme=dark] #charList>*,.modal .stat,.modal input,.modal select{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015)),rgba(18,20,24,.86)!important;border-color:color-mix(in srgb,var(--n1) 22%,transparent)!important}
+.modal-bg{background:radial-gradient(900px 600px at 50% 40%,color-mix(in srgb,var(--n1) 8%,rgba(0,0,0,.55)),rgba(0,0,0,.72))!important;backdrop-filter:blur(3px)}
+nav.tabs button.on{color:var(--n1)!important;text-shadow:0 0 8px var(--n1)!important;border-image:linear-gradient(90deg,transparent,var(--n1) 20%,var(--n2) 50%,var(--n1) 80%,transparent) 1!important}
+button.btn,.btn,.pctab,.ftab,[data-pckind],[data-pctab]{border-color:color-mix(in srgb,var(--n2) 50%,transparent)!important;box-shadow:0 0 5px color-mix(in srgb,var(--n2) 23%,transparent)!important}
+.card h2,.card h3,.modal h2,.modal h3{text-shadow:0 0 6px color-mix(in srgb,var(--n1) 38%,transparent)}
+
+/* b167: 토글·세그먼트 버튼(주간/월간 보스, 가격 카드 탭, 소식 탭, 페이지 번호, 월드 탭, 캐릭터 칩 등) 주황 → Ice Blue Whisper */
+:root{--ice:#9fdcff;--ice-soft:rgba(159,220,255,.12)}
+.seg{border-color:color-mix(in srgb,var(--ice) 35%,transparent)!important}
+.seg button{background:rgba(255,255,255,.02)!important;color:#b9c6d2!important}
+.seg button.on{background:linear-gradient(180deg,rgba(159,220,255,.20),rgba(159,220,255,.08))!important;color:#eaf7ff!important;box-shadow:inset 0 0 0 1px rgba(159,220,255,.55),0 0 8px rgba(159,220,255,.28)!important;text-shadow:0 0 6px rgba(159,220,255,.6)}
+.ftab.on,.fpg.on,.cpg.on,.pc-tabs button.on{color:var(--ice)!important;border-color:var(--ice)!important;text-shadow:0 0 6px rgba(159,220,255,.45)}
+.pc-kind button.on{border-color:var(--ice)!important;box-shadow:inset 0 -2px 0 var(--ice),0 0 8px rgba(159,220,255,.25)!important}
+[data-theme="dark"] .wtab:hover,[data-theme="dark"] .wtab.on,.wtab.on{color:var(--ice)!important}
+.rp-char.on,.char.on{border-color:var(--ice)!important;background:var(--ice-soft)!important}
+.pick-item.on,.accrow.on{border-color:var(--ice)!important;box-shadow:0 0 0 1px var(--ice) inset!important}
+[data-theme="dark"] nav.tabs button.on{color:#eaf7ff!important}
+.pbtn.psave.on{color:var(--ice)!important;border-color:var(--ice)!important;background:var(--ice-soft)!important;box-shadow:0 0 8px rgba(159,220,255,.25)!important}
