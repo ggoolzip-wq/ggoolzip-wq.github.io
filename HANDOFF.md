@@ -15,6 +15,16 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b161 (2026-10-15) — 신창섭 라이브: LIVE 배지/영상 안 보이던 문제 (17:04~17:30 KST)
+- **원인 1 (영상 안 뜸)**: b87 규칙 "캐릭터가 없으면 모든 탭 = 빈 화면(캐릭터를 추가해 보세요)"이 라이브 탭에도 걸려, 로그인/캐릭터 없는 사용자는 탭을 눌러도 영상 대신 빈 화면. → `render()`에서 `tab!=='live'` 예외(라이브는 캐릭터와 무관).
+- **원인 2 (LIVE 아이콘 안 보임)**: 배지 자체는 로드 직후 켜졌지만, 좁은 화면(모바일)에선 탭 줄이 옆으로 넘쳐 '신창섭 라이브' 탭이 화면 밖(x≈585px, 화면 390px). → `liveReveal()`: 라이브가 켜지는 순간 탭 줄을 끝으로 밀어 탭+LIVE 가 보이게(폰트 로드 후 재확인).
+- API(/api/live)·CORS 는 정상이었음(yt.live=true, vid IkEDT0Wy8zY).
+- **테스트**: `tests/test_live_nochar.py`(1280/390px, 캐릭터 없음: 로드 직후 배지, 탭 버튼 화면 안, 라이브 화면, 클릭 전 iframe 없음→클릭 후 유튜브 embed), `test_tracker65` 라이브 탭 예외 반영.
+- **넥슨 라이브 상세 링크 조사**: live.nexon.com 페이지·/api/·oembed·sitemap → 박스 403(Cloudflare 챌린지), WebFetch 는 페이지 껍데기만(방송 목록은 JS 렌더), sitemap 500, public.api.nexon.com/nexon-live 는 API 키 필요, robots.txt 가 /api/ 크롤 금지. Worker 직접 fetch 도 b157 에서 403. 우회 없이 가능한 공개 경로 없음 → NX_ON=false 유지.
+- **라이브 탭 배치 변경(사용자 요청)**: 넥슨 라이브 칸 삭제 → 유튜브 영상 중앙(최대 760px), 유튜브 링크 바로 아래 넥슨 라이브 링크(nx 수집이 켜져 방송 중이면 상세 URL, 아니면 https://live.nexon.com/channels/23), 목록 제목 '오늘(10/15) 이후 라이브' → '라이브 저장소'.
+- **라이브 없을 때**: 영상 자리에 핑크빈(메이플 몹 8820001 stand 첫 프레임, maplestory.io 렌더, base64 내장 `PINKBEAN`) + '라이브 일정이 없습니다.' (재생 버튼 없음, LIVE 배지 숨김).
+- **스크린샷**: `/workspace/maple-boss-tracker/b161_after_livetab_off.png`(가짜 '방송 없음' 데이터), `b161_{before,after}_livetab.png`, `b161_{before,after}_{header,live,m390}.png` (스크립트 `/workspace/scripts/b161probe.py`, `b161mob.py`).
+
 ## b160 (2026-10-15) — test_tracker42 결정석 가격 실패 수정 (16:48~17:00 KST)
 - **원인**: Orbit 아님(가격 카드는 Pretendard 예외 그대로). 테섭 1.2.207 공지로 `upcoming`(테섭 예정 가격)이 생겨 유피테르(하드)·카링(익스트림) 행이 **의도된 2줄**(`.pc-row.has-up`, 높이 37px)이 됨 → "모든 행 <30px" 검사가 실패.
 - **수정(테스트만, 화면 변화 없음)**: 한 줄 검사에서 `.has-up` 행 제외, 대신 `.has-up` 행은 <46px·`.pc-up` 잘림 없음 검사 추가. 이름 칸 잘림 검사는 전체 행 유지.

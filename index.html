@@ -1477,6 +1477,7 @@ body[data-curtab="boss"] :is(#charList .nm,#charList .nm *,.bosslay h2,.rp-nm,.r
 .livebadge[hidden]{display:none}
 .lvwrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 .lvgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.lvgrid.lvone{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:760px;margin:0 auto;text-align:center}.lvgrid.lvone>.lvcol{width:100%}
 @media (max-width:800px){.lvgrid{grid-template-columns:1fr}}
 .lvcol{display:flex;flex-direction:column;gap:6px;text-align:center}
 .lvhd{font-weight:700;display:flex;justify-content:center;align-items:center;gap:6px}
@@ -1495,6 +1496,9 @@ body[data-curtab="boss"] :is(#charList .nm,#charList .nm *,.bosslay h2,.rp-nm,.r
 .lvsrc{font-size:.72em;padding:1px 6px;border-radius:6px;background:rgba(255,255,255,.08)}
 .lvsrc.yt{color:#ff6b6b}.lvsrc.nx{color:#5fd4c9}
 .lvext .lvblank{align-items:flex-end;padding-bottom:16px;font-size:.9em}
+
+.lvblank.lvnone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:1.05em}
+.lvnone .pinkbean{width:109px;height:auto;image-rendering:pixelated;filter:drop-shadow(0 0 10px rgba(255,140,200,.35))}
 </style>
 </head>
 <body>
@@ -2867,23 +2871,27 @@ const num = n => (Number(n)||0).toLocaleString('ko-KR');
 const LIVE_API='https://ggoolzip-sync.bossmaple.workers.dev/api/live';
 let LIVE=null, liveT=null;
 async function liveFetch(){ try{ const r=await fetch(LIVE_API,{cache:'no-store'}); if(!r.ok) return; LIVE=await r.json(); }catch(e){ return; }
-  const on=!!(LIVE&&((LIVE.yt&&LIVE.yt.live)||(LIVE.nx&&LIVE.nx.live))), b=document.getElementById('liveBadge'); if(b) b.hidden=!on;
+  const on=!!(LIVE&&((LIVE.yt&&LIVE.yt.live)||(LIVE.nx&&LIVE.nx.live))), b=document.getElementById('liveBadge'); if(b){ const was=!b.hidden; b.hidden=!on; if(on&&!was) liveReveal(b); }
   if(tab==='live'&&!document.querySelector('#view .lvplay.playing')) renderLive(); }
+/* b161: 모바일에서 탭 줄이 옆으로 넘쳐 '신창섭 라이브' 탭(+LIVE)이 화면 밖이면, 라이브가 켜질 때 한 번 탭 줄을 밀어 보이게 함 */
+function liveReveal(b){ const n=b.closest('.tabs'); if(!n||n.scrollWidth<=n.clientWidth+1) return; const go=()=>{ const t=b.parentElement.getBoundingClientRect(), r=n.getBoundingClientRect(); if(t.right>r.right-2||t.left<r.left) n.scrollLeft=n.scrollWidth; }; go(); setTimeout(go,600); setTimeout(go,2000); document.fonts&&document.fonts.addEventListener("loadingdone",go,{once:true}); }
 function livePoll(){ clearInterval(liveT); liveT=null; if(document.visibilityState!=='visible') return; liveFetch(); liveT=setInterval(liveFetch,30000); }
 document.addEventListener('visibilitychange',livePoll);
 const lvDate=t=>{ const d=new Date(t+KST_MS); return `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`; };
+/* b161: 라이브 없을 때 영상 자리 — 핑크빈(메이플 몹 8820001 stand, 출처 maplestory.io 렌더, 사이트 내장) */
+const PINKBEAN='data:image/png;base64,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';
 function lvPlayer(src,o){ if(src==='nx'&&!(o&&o.ok)) return `<div class="lvcol"><div class="lvhd">넥슨 라이브 · 메이플스토리<span class="lvoff">새 창</span></div>
     <a class="lvplay lvext" href="https://live.nexon.com/channels/23" target="_blank" rel="noopener" aria-label="넥슨 라이브 메이플스토리 채널 새 창에서 열기"><div class="lvblank">넥슨 라이브는 사이트에 넣을 수 없어 새 창에서 열려요</div><span class="lvbtn" aria-hidden="true">▶</span></a>
     <div class="lvt"></div><a class="lvlink" href="https://live.nexon.com/channels/23" target="_blank" rel="noopener">https://live.nexon.com/channels/23</a></div>`;
   const L=o&&o.live, th=o&&o.thumb, url=(o&&o.url)||(src==='yt'?'https://www.youtube.com/@MapleStoryKR/streams':'https://live.nexon.com/channels/23');
   const embed=src==='yt'?(L&&o.vid?`https://www.youtube-nocookie.com/embed/${encodeURIComponent(o.vid)}?autoplay=1&rel=0`:''):(L?url:'');
   return `<div class="lvcol"><div class="lvhd">${src==='yt'?'유튜브 · 메이플스토리 공식':'넥슨 라이브 · 메이플스토리'}${L?'<span class="livebadge">LIVE</span>':'<span class="lvoff">방송 없음</span>'}</div>
-    <div class="lvplay" ${embed?`data-embed="${esc(embed)}" data-src="${src}" role="button" tabindex="0" aria-label="재생"`:''}>${th?`<img src="${esc(th)}" alt="" loading="lazy">`:'<div class="lvblank">지금은 라이브 방송이 없어요</div>'}${embed?'<span class="lvbtn" aria-hidden="true">▶</span>':''}</div>
+    <div class="lvplay" ${embed?`data-embed="${esc(embed)}" data-src="${src}" role="button" tabindex="0" aria-label="재생"`:''}>${!L?`<div class="lvblank lvnone"><img class="pinkbean" src="${PINKBEAN}" alt="핑크빈"><span>라이브 일정이 없습니다.</span></div>`:th?`<img src="${esc(th)}" alt="" loading="lazy">`:'<div class="lvblank">지금은 라이브 방송이 없어요</div>'}${embed?'<span class="lvbtn" aria-hidden="true">▶</span>':''}</div>
     <div class="lvt">${L&&o.title?esc(o.title):''}</div><a class="lvlink" href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a></div>`; }
 function renderLive(){ const v=document.getElementById('view'); const D=LIVE||{}, since=Date.parse('2026-10-15T00:00:00+09:00');
   const L=(D.list||[]).filter(x=>(x.start_at||x.first_seen)>=since);
-  v.innerHTML=`<div class="lvwrap"><div class="lvgrid">${lvPlayer('nx',D.nx)}${lvPlayer('yt',D.yt)}</div>
-    <div class="card lvlist"><h2>오늘(10/15) 이후 라이브</h2>${L.length?`<ul>${L.map(x=>`<li><span class="lvsrc ${x.src}">${x.src==='yt'?'유튜브':'넥슨'}</span>${x.status==='LIVE'?'<span class="livebadge">LIVE</span>':x.status==='RESERVE'?'<span class="lvoff">예정</span>':''}<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title||x.url)}</a><span class="muted tiny">${lvDate(x.start_at||x.first_seen)}</span></li>`).join('')}</ul>`:'<p class="muted">아직 기록된 라이브가 없어요</p>'}
+  v.innerHTML=`<div class="lvwrap"><div class="lvgrid lvone">${lvPlayer('yt',D.yt)}${(()=>{ const u=(D.nx&&D.nx.ok&&D.nx.live&&D.nx.url)||'https://live.nexon.com/channels/23'; return `<a class="lvlink lvnx" href="${esc(u)}" target="_blank" rel="noopener">넥슨 라이브: ${esc(u)}</a>`; })()}</div>
+    <div class="card lvlist"><h2>라이브 저장소</h2>${L.length?`<ul>${L.map(x=>`<li><span class="lvsrc ${x.src}">${x.src==='yt'?'유튜브':'넥슨'}</span>${x.status==='LIVE'?'<span class="livebadge">LIVE</span>':x.status==='RESERVE'?'<span class="lvoff">예정</span>':''}<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title||x.url)}</a><span class="muted tiny">${lvDate(x.start_at||x.first_seen)}</span></li>`).join('')}</ul>`:'<p class="muted">아직 기록된 라이브가 없어요</p>'}
     <p class="muted tiny">1분마다 서버가 확인해요${D.at?` · 마지막 확인 ${lvDate(Math.max(D.yt?.checked_at||0,D.nx?.checked_at||0)||D.at)}`:''}</p></div></div>`; }
 document.addEventListener('click',e=>{ const p=e.target.closest('.lvplay[data-embed]'); if(!p||p.classList.contains('playing')) return; p.classList.add('playing');
   p.innerHTML=`<iframe src="${esc(p.dataset.embed)}" title="라이브 영상" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`; });
@@ -3027,7 +3035,7 @@ function orbitFont(){ if(document.getElementById('orbitCss')) return; const l=do
 function render(){ tirDefs(); logoDigital(); orbitFont(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
-  if(!vchars().length){ $('#view').innerHTML=emptyView(); renderResetInfo(); return; }
+  if(!vchars().length&&tab!=='live'){ $('#view').innerHTML=emptyView(); renderResetInfo(); return; } /* b161: 라이브 탭은 캐릭터·로그인 없어도 보임 */
   ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),guild:renderGuild,live:renderLive})[tab](); if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); renderResetInfo(); }
 /* b108: 🔄 옆 상태 글자 — 동기화 중 '새로고침 중입니다..'(회색), 끝나면 초록 '새로고침 완료! HH:mm'(KST, 계속 표시),
  * 일부 캐릭터·계정 오류면 주황 '일부 실패 HH:mm', 전체 실패면 빨강 '새로고침 실패 HH:mm' (오류 알림 toast 는 예전 그대로). 페이지 열 때 동기화도 같음 */
