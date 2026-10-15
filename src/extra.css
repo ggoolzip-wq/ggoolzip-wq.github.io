@@ -1474,7 +1474,7 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 .rvin{justify-content:center;max-width:300px;margin:0 auto}
 .rvbtns{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
 .rvno,.rvok{align-self:center}
-.thbtn{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-size:16px;line-height:1;display:grid;place-items:center;padding:0}
+.thbtn{flex:0 0 auto;margin-left:6px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-size:16px;line-height:1;display:grid;place-items:center;padding:0}
 .thbtn:hover{border-color:var(--accent)}
 [data-theme="dark"] .thbtn{border-color:rgba(255,179,71,.35);background:rgba(255,255,255,.04)}
 .rvbox .rvbody .rvok,.rvbox .rvbody .rvno{align-self:center}
