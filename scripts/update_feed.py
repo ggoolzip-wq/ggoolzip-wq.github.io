@@ -363,6 +363,26 @@ def fix_test_dates(lst, rows):
             x["date"] = d; n += 1
     return n
 
+def fix_upcoming_date(rows, path=None):
+    """b174: prices.json 테섭 예정(upcoming) 출처 날짜도 목록 날짜로 바로잡음.
+    b159 이전 parse_test 버그로 10/15 글이 9/10 으로 저장된 채 남아 있었음(fix_test_dates 는 feed.json 만 고쳤음). 고쳤으면 True"""
+    path = path or PRICES
+    by = {r["url"].rsplit("/", 1)[-1]: r["date"][:10] for r in rows if r.get("date") and r.get("url")}
+    try:
+        with open(path, encoding="utf-8") as f:
+            prices = json.load(f)
+    except Exception:
+        return False
+    src = (prices.get("upcoming") or {}).get("source") or {}
+    d = by.get(str(src.get("url", "")).rstrip("/").rsplit("/", 1)[-1])
+    if not d or str(src.get("date", ""))[:10] == d:
+        return False
+    src["date"] = d
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(prices, f, ensure_ascii=False, indent=1); f.write("\n")
+    log(f"[test-prices] 예정 가격 출처 날짜 보정 → {d}")
+    return True
+
 def src_test(st, wm, run_all, minute):
     _, s = http_get(TEST_URL, proxy=True)
     rows = parse_test(s)
@@ -718,7 +738,11 @@ def main():
         srcs[k] = s
     prices_changed = False
     try:
-        prices_changed = test_prices(_TEST_NEW)
+        prices_changed = fix_upcoming_date(_TEST_ROWS)
+    except Exception as e:
+        log(f"::warning::[test-prices] 날짜 보정 실패: {e}")
+    try:
+        prices_changed = test_prices(_TEST_NEW) or prices_changed
     except Exception as e:
         log(f"::warning::[test-prices] 실패: {e}")
     try:

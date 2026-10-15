@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b174 (2026-10-15) — 테섭 예정 가격 출처 날짜 9/10 → 10/15 바로잡음 + 재발 방지 (21:06~21:14 KST)
+- 확인: Testworld/News/Update/202 '클라이언트 1.2.207 릴리즈' 실제 게시 = 2026-10-15 PM 03:55 (본문 '10월 15일(목) 진행'). prices.json upcoming.source.date 가 2026-09-10 으로 저장돼 있었음.
+- 원인: b159 와 같은 유형. 16:27 에 예정 가격을 저장할 때 옛 parse_test(오늘 글 날짜 칸이 'PM 03:55' 처럼 시각만 → 다음 글 날짜 9/10 을 붙임)가 쓰였고, b159 fix_test_dates 는 feed.json 만 고쳐서 prices.json 에는 틀린 날짜가 남음.
+- 수정: `update_feed.fix_upcoming_date(rows)` — 매 회차 테섭 목록 날짜로 upcoming.source.date 를 바로잡음(다를 때만 씀). prices.json 데이터 2026-10-15 로 수정.
+- 점검: feed.json 테섭(202=10/15, 199·198=9/10)·패치·사료·마빡 날짜 이상 없음. 출처 날짜는 사이트 화면에 표시되지 않음(데이터만).
+- 테스트: test_upcoming b174 체크 4개. 전체 병렬 통과(test_server_b94 포함).
+
 ## b171 (2026-10-15) — 결정석 가격 카드 '마지막 확인' 시각이 테섭·본섭 반영 때 같이 갱신 (20:44~21:05 KST)
 - 원인: `update_feed.test_prices()`가 테섭 예정 가격(upcoming)을 넣을 때 `upcoming.detectedAt`만 쓰고 `checkedAt`은 그대로 둠 → 카드의 '마지막 확인'이 예전 시각. 본섭 경로 `patch_prices()`는 `changedAt`(가격 변동일)을 안 바꿈. 사이트는 `prices.json?d=날짜`를 페이지 열 때 1번만 받음 → 낮에 바뀐 값이 새로고침 전까지 안 보임.
 - 수정: test_prices 반영 시 `checkedAt=지금`; patch_prices 가격이 바뀌면 `changedAt=공지 날짜`; 카드 '마지막 확인' = checkedAt·upcoming.detectedAt 중 늦은 것, 테섭 예정 줄에 '(반영 MM.DD HH:MM)'; prices.json 은 `?t=5분 단위`+no-cache 로 화면이 보일 때 5분마다·탭 복귀 때 다시 받고 내용이 바뀌었을 때만 다시 그림.

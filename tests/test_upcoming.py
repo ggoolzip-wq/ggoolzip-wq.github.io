@@ -61,4 +61,12 @@ check('real 테섭 post replaces demo entirely (prices from post, not random)', 
 update_prices.OUT=P; update_prices._OLD_UP=None
 o=dict(live,checkedAt='2026-10-09'); json.dump(o,open(P,'w'),ensure_ascii=False)
 update_prices.touch(o,'2026-10-10'); check('update_prices touch: unchanged prices → checkedAt today', json.load(open(P))['checkedAt']=='2026-10-10')
+# b174: 예정 가격 출처 날짜가 목록 날짜와 다르면(b159 이전 버그로 9/10 저장) 바로잡음
+o=dict(live,upcoming={'source':{'url':'https://maplestory.nexon.com/Testworld/News/Update/202','title':'t','date':'2026-09-10'},'rows':[{'boss':'x','new':1}],'detectedAt':'2026-10-15T16:27:21+09:00'})
+json.dump(o,open(P,'w'),ensure_ascii=False)
+rows=update_feed.parse_test('<li><a href="/Testworld/News/Update/202"><span>클라이언트 1.2.207 릴리즈</span></a><dd>PM 03:55</dd></li><li><a href="/Testworld/News/Update/199"><span>x</span></a><dd>2026.09.10</dd></li>',today=__import__('datetime').date(2026,10,15))
+check('b174: parse_test 오늘 글(시각만) → 오늘 날짜', rows[0]['date'][:10]=='2026-10-15' and rows[1]['date'][:10]=='2026-09-10', rows)
+check('b174: 예정 가격 출처 날짜 9/10 → 10/15 보정', update_feed.fix_upcoming_date(rows,P) and json.load(open(P))['upcoming']['source']['date']=='2026-10-15')
+check('b174: 이미 맞으면 그대로(파일 안 씀)', update_feed.fix_upcoming_date(rows,P)==False)
+check('b174: 목록에 없는 글이면 그대로', update_feed.fix_upcoming_date(rows[1:],P)==False)
 print('FAILS:',fails); sys.exit(1 if fails else 0)
