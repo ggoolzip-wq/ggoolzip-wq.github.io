@@ -100,7 +100,7 @@ try:
           offDeco:getComputedStyle(tabs[1]).textDecorationLine}})()""")
         check('world tabs: one per world, ㅣ separators, counts', wt['names']==['스카니아','루나','챌린저스2','테스트월드'] and wt['txt'].count('ㅣ')==3 and '스카니아 (11)' in wt['txt'] and '루나 (2)' in wt['txt'], wt['txt'])
         check('official world icons (스카니아/루나/챌린저스2), none for unknown world', wt['icons'][0] and wt['icons'][0][0]==14 and wt['icons'][1] and wt['icons'][2] and wt['icons'][2][0]==13 and wt['icons'][3] is None, wt['icons'])
-        check('active tab bold ice-blue underlined (dark, b167)', wt['on']==['스카니아'] and wt['onStyle'][0]=='rgb(159, 220, 255)' and int(wt['onStyle'][1])>=700 and wt['onStyle'][2]=='underline' and wt['offDeco']=='underline', wt)
+        check('active tab bold sapphire (b176) underlined (dark, b167)', wt['on']==['스카니아'] and wt['onStyle'][0]=='rgb(106, 168, 255)' and int(wt['onStyle'][1])>=700 and wt['onStyle'][2]=='underline' and wt['offDeco']=='underline', wt)
         pg.click('.wtab[data-world="루나"]'); pg.wait_for_timeout(150)
         ids=pg.evaluate(ORDER)
         check('click 루나 → only 루나 chars', ids==['c12','c13'], ids)

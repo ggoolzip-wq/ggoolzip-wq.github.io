@@ -1448,3 +1448,18 @@ button.btn,.btn,.pctab,.ftab,[data-pckind],[data-pctab]{border-color:color-mix(i
 .md-gold .spk,.md-silver .spk,.md-bronze .spk,.rkno.md-gold .rkn,.rkno.md-silver .rkn,.rkno.md-bronze .rkn,.sc.sc-gold,.sc.sc-silver,.sc.sc-bronze{font-size:1.3em}
 .md-gold .spk .spk,.md-silver .spk .spk,.md-bronze .spk .spk{font-size:1em}
 @media (max-width:600px){#mesoKing tr[class*=md-] .rknm b.spk{white-space:nowrap;word-break:keep-all}#mesoKing .rkname .rkav{width:28px;height:28px}}
+/* b176 */
+.cisub.cione{font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.revpanel .rp-line{font-size:.82rem}
+.logo-d .logo-g .tl{fill:url(#tirV)!important;stroke:rgba(255,90,31,.6)!important}
+.logo-d .logo-g{filter:drop-shadow(0 0 2.5px rgba(255,80,30,.95)) drop-shadow(0 0 7px rgba(255,70,20,.55))!important}
+:root{--sap:#3d7bff;--sap2:#6aa8ff}
+nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,255,.9),0 0 16px rgba(40,110,255,.5)!important;border-image:linear-gradient(90deg,transparent,var(--sap) 20%,var(--sap2) 50%,var(--sap) 80%,transparent) 1!important}
+[data-theme="dark"] nav.tabs button.on{color:var(--sap2)!important}
+.seg button.on{background:linear-gradient(180deg,rgba(61,123,255,.24),rgba(61,123,255,.08))!important;color:#dce9ff!important;box-shadow:inset 0 0 0 1px rgba(61,123,255,.7),0 0 10px rgba(40,110,255,.45)!important;text-shadow:0 0 6px rgba(40,110,255,.8)}
+.ftab.on,.fpg.on,.cpg.on,.pc-tabs button.on,[data-theme="dark"] .wtab.on,.wtab.on{color:var(--sap2)!important;border-color:var(--sap)!important;text-shadow:0 0 6px rgba(40,110,255,.75)}
+.pc-kind button.on{border-color:var(--sap)!important;box-shadow:inset 0 -2px 0 var(--sap),0 0 10px rgba(40,110,255,.4)!important}
+.rp-char.on,.char.on{border-color:var(--sap)!important;background:rgba(61,123,255,.12)!important;box-shadow:0 0 10px rgba(40,110,255,.35)!important}
+.pick-item.on,.accrow.on{border-color:var(--sap)!important;box-shadow:0 0 0 1px var(--sap) inset,0 0 8px rgba(40,110,255,.35)!important}
+.cisub.cione>span{display:inline-block}
+@media (max-width:600px){.cisub.cione{white-space:normal;overflow:visible;font-size:.8rem}}
