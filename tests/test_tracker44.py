@@ -22,7 +22,7 @@ try:
         pg.goto(URL); pg.evaluate("([s,t])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab',t)}",[st,tab]); pg.reload(); pg.wait_for_timeout(900)
     load('boss')
     m=pg.evaluate("[meso(0),meso(5000),meso(150000000),meso(60000)]")
-    check('A: meso() 단위 메소', m==['0 메소','5,000 메소','1억 5,000만 메소','6만 메소'], m)
+    check('A: meso() 단위 메소', m==['0 메소','5,000 메소','1.50억 메소','6만 메소'], m)
     pr=pg.evaluate("[...document.querySelectorAll('.pricecard .pc-row b')].every(e=>/메소/.test(e.innerText))")
     check('A: 가격 카드 금액 전부 메소', pr)
     pg.evaluate("()=>{S.characters[0].bosses.lotus.diff='normal';render()}")

@@ -26,9 +26,9 @@ try:
         if w==1280:
             check('title', pg.inner_text('#salesCard h2').strip()=='아이템 판매 누적 수익')
             check('title icon = most-sold item (belt x3)', pg.evaluate("document.querySelector('#salesCard h2 .hbi').innerHTML===lootIco('belt')"))
-            check("total has ' 메소'", pg.inner_text('#salesCard .v.acc')=='32.5억 메소', pg.inner_text('#salesCard .v.acc'))
+            check("total has ' 메소'", pg.inner_text('#salesCard .v.acc')=='32.50억 메소', pg.inner_text('#salesCard .v.acc'))
             rows=pg.evaluate("[...document.querySelectorAll('#salesCard .sl')].map(r=>[r.querySelector('.ln').textContent,r.querySelector('.slp').textContent,r.querySelector('.lx').textContent,r.querySelector('.slm').textContent])")
-            check('rows split by party size', rows==[['마력이 깃든 안대','3인 분배','x1','12억 메소'],['마력이 깃든 안대','1인','x1','9억 메소'],['몽환의 벨트','1인','x2','9억 메소'],['몽환의 벨트','2인 분배','x1','2억 5,000만 메소']], rows)
+            check('rows split by party size', rows==[['마력이 깃든 안대','3인 분배','x1','12.00억 메소'],['마력이 깃든 안대','1인','x1','9.00억 메소'],['몽환의 벨트','1인','x2','9.00억 메소'],['몽환의 벨트','2인 분배','x1','2.50억 메소']], rows)
         one=pg.evaluate("[...document.querySelectorAll('#salesCard .sl')].every(r=>r.getBoundingClientRect().height<40)")
         hs=pg.evaluate("(()=>{const c=document.querySelector('#salesCard'); return c.scrollWidth>c.clientWidth||document.documentElement.scrollWidth>innerWidth})()")
         check(f'{w}px: one line per row, no horizontal scroll', one and not hs, (one,hs))

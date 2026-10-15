@@ -1306,3 +1306,30 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .tir-g{filter:drop-shadow(0 0 3px rgba(40,230,220,.9)) drop-shadow(0 0 8px rgba(40,230,220,.55))}
 .tir-g .tg{fill:rgba(60,200,200,.10)}
 .tirv{text-shadow:none!important;background:none!important;-webkit-background-clip:border-box!important;background-clip:border-box!important;filter:none!important}
+
+/* ===== b150 ===== */
+/* 5) 디지털 한글 단위: 픽셀마다 틈을 둔 점(도트) 무늬로 — 획이 가늘고 고르게 끊어져 보임. 글로우는 부모(drop-shadow)에 둬서 마스크에 안 잘림 */
+.tir-k{text-shadow:none!important;filter:drop-shadow(0 0 2px rgba(40,230,220,1)) drop-shadow(0 0 6px rgba(40,230,220,.7))}
+.tir-k::before{-webkit-mask-image:linear-gradient(to right,#000 82%,transparent 82%),linear-gradient(to bottom,#000 82%,transparent 82%);-webkit-mask-size:calc(1em/12) calc(1em/12);-webkit-mask-composite:source-in;mask-image:linear-gradient(to right,#000 82%,transparent 82%),linear-gradient(to bottom,#000 82%,transparent 82%);mask-size:calc(1em/12) calc(1em/12);mask-composite:intersect}
+/* 6) 핫핑크: 이번 주 수익 총 메소 · 누적 수입 총 수익 */
+.tpink .tir-g .tl{fill:url(#tirP);stroke:rgba(255,210,240,.6)}
+.tpink .tir-g .tg{fill:rgba(255,60,170,.12)}
+.tpink .tir-g{filter:drop-shadow(0 0 3px rgba(255,45,155,.95)) drop-shadow(0 0 8px rgba(255,45,155,.55))}
+.tpink .tir-k{color:#ffc2e6;filter:drop-shadow(0 0 2px rgba(255,45,155,1)) drop-shadow(0 0 6px rgba(255,45,155,.7))}
+/* 2) 그래프 값 라벨 = 계산기4 골드 디지털 */
+.chart .tsv .tl{fill:url(#tirY);stroke:rgba(255,236,190,.6);stroke-width:1}
+.chart .tsv .tg{fill:rgba(255,190,90,.10)}
+.chart .tsv .tsk{font-family:"MrjUnitKo",monospace;fill:url(#tirY);stroke:none}
+.chart .tsv{filter:drop-shadow(0 0 2px rgba(255,140,30,.95)) drop-shadow(0 0 6px rgba(255,140,30,.5))}
+.chart.lux .cval.cvd{stroke:none}
+/* 3) 세로 막대(점 아래 기둥): 그라데이션 + 둥근 위 + 은은한 빛 */
+.chart.lux .cbar{filter:drop-shadow(0 0 6px rgba(255,154,60,.25));transition:opacity .2s;opacity:.85}
+.chart.lux .lpt:hover .cbar,.chart.lux .mpt:hover .cbar{opacity:1}
+.chart.lux .lpt.cur .cbar{opacity:1}
+/* 4) 그래프 안 글자: 아이보리/골드 톤, 정돈된 굵기·자간, 은은한 그림자 */
+.chart.lux text{font-family:inherit;letter-spacing:.04em;font-weight:600;paint-order:stroke;stroke:rgba(10,8,6,.85);stroke-width:2.6px;stroke-linejoin:round;font-variant-numeric:tabular-nums}
+.chart.lux .cxl{fill:#d9c7a4;font-size:10.5px;font-weight:600}
+.chart.lux .cxl.cur{fill:#ffd27a;font-weight:800}
+.chart.lux text[text-anchor="end"]:not(.cxl){fill:#c9b58f;font-size:10px;font-weight:600;letter-spacing:.06em}
+.chart.lux .ctot span{letter-spacing:.12em;color:#e8d5ae;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.chart.lux .ctot b{color:#ffe1a0;text-shadow:0 0 8px rgba(255,170,60,.45),0 1px 2px rgba(0,0,0,.7);letter-spacing:.04em}

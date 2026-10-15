@@ -82,7 +82,7 @@ try:
         check('b131 같은 보스·난이도는 1묶음 (보스 아이콘 1번)', len(names)==len(set(names)) and all(x['pics']==1 for x in G), G)
         lu=[x for x in G if x['b'].startswith('루시드')]; se=[x for x in G if x['b'].startswith('선택받은')]
         check('b131 루시드 3개·세렌 2개 아이템이 세로로', lu and lu[0]['n']==3 and se and se[0]['n']==2 and all(x['stack'] for x in G), G)
-        check('b131 합친 금액 1번, 마지막 아이템 바로 밑 (세렌 1억+2.5억=3.5억)', se[0]['rev'].startswith('3억 5,000만') and se[0]['under'] and se[0]['revLast'] and all(x['under'] in (None,True) for x in G), G)
+        check('b131 합친 금액 1번, 마지막 아이템 바로 밑 (세렌 1억+2.5억=3.5억)', se[0]['rev'].startswith('3.50억') and se[0]['under'] and se[0]['revLast'] and all(x['under'] in (None,True) for x in G), G)
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

@@ -33,7 +33,7 @@ try:
     pg.click('[data-pctab="after"]'); pg.wait_for_timeout(150)
     ds=pg.eval_on_selector_all('.pa-d','e=>e.map(x=>x.textContent)')
     import re
-    check('change + (−x.x%) on rows and total', len(ds)>=2 and all(re.search(r'−[\d억만, ]+ 메소 \(−\d+\.\d%\)$',d) for d in ds), ds[:3])
+    check('change + (−x.x%) on rows and total', len(ds)>=2 and all(re.search(r'−[\d억만,. ]+ 메소 \(−\d+\.\d%\)$',d) for d in ds), ds[:3])
     pg.locator('.pricecard').screenshot(path='/workspace/shots/b40_after_pct.png')
     # 4) 초록 칩
     chip='[data-drop="limbo|r_white"], [data-drop^="limbo|"]'

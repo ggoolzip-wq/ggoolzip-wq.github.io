@@ -23,7 +23,7 @@ try:
     check('같은 주: 큰 합계에 월간 포함 + 월간 보스 결정석 1개 줄', tot[1]==mm and tot[2]=={'n':1,'meso':mm} and '검마 결정석 1개' in txt and f"{base+mm:,}" in txt and '(따로 합산)' not in txt, (tot,txt[:200]))
     pc=pg.evaluate("(()=>{const r=document.querySelector('.rp-char');return [r.innerText,r.querySelector('b').innerText]})()")
     check('같은 주: 월간 줄에 메소 금액 없음, 캐릭터별 금액에 월간 추가, 월간 ✓ 대신 검마 결정석 줄(b115)', '메소 포함' not in txt and '검마 결정석 1개' in txt and pc[1]==pg.evaluate(f"meso({base+mm})") and '월간 ✓' not in pc[0] and '검마 결정석' in pg.inner_text('.revpanel .rp-char'), (pc,txt[:200]))
-    big=pg.inner_text('.rp-total'); check('주황 합계 억 표기 = 합산값', big.replace('\n','').startswith(pg.evaluate(f"(({base}+{mm})/1e8).toFixed(1)")+"억"), big)
+    big=pg.inner_text('.rp-total'); check('주황 합계 억 표기 = 합산값', big.replace('\n','').startswith(pg.evaluate(f"(({base}+{mm})/1e8).toFixed(2)")+"억"), big)
     # 이중 계산 없음: 주간 기록/월간 기록 집계는 그대로
     ws=pg.evaluate("[weekSummary(S.period.week).total, monthSummary(S.period.month).total, allRevenue().total]")
     check('weekSummary/monthSummary/allRevenue 는 그대로(이중 계산 없음)', ws[0]==base and ws[1]==mm and ws[2]==base, ws)

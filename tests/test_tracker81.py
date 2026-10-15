@@ -41,7 +41,7 @@ try:
     # 이번 주 수익
     cry=lc+bm; sale=100000000+200000000
     rt=pg.inner_text('.rp-total').replace('\n',''); l1=pg.inner_text('.rp-cry'); l2=pg.inner_text('.rp-sale')
-    check('이번 주 수익 = 결정석 합 + 아이템 판매값', rt.startswith(f"{(cry+sale)/1e8:.1f}억"), (rt,cry+sale))
+    check('이번 주 수익 = 결정석 합 + 아이템 판매값', rt.startswith(f"{(cry+sale)/1e8:.2f}억"), (rt,cry+sale))
     check("첫째 줄 (b121) '[주간 아이콘] 주보 결정석 N개 · [월간 아이콘] 검마 결정석 M개 … 결정석금액(오른쪽)'", re.sub(r'\s+',' ',l1).strip()==f"주보 결정석 1개 · 검마 결정석 1개 {cry:,}" and pg.locator('.rp-cry img').count()==2, l1)
     check("둘째 줄 (b121) '이번주 획득 아이템 N개 … 판매금액(오른쪽)'", re.sub(r'\s+',' ',l2).strip()==f"이번주 획득 아이템 1개 {sale:,}", l2)
     pcs=pg.evaluate("[...document.querySelectorAll('.rp-char')].map(r=>[r.dataset.id,r.querySelector('b').innerText])")

@@ -82,7 +82,7 @@ try:
     pg.evaluate(f"(()=>{{const c=S.characters[0]; c.drev['{kk}']={{m:{share},a:40,p:3,i:'belt'}}; save(); render();}})()"); pg.wait_for_timeout(200)
     pg.click('#revAllBtn'); pg.wait_for_selector('#revAllModal')
     row=pg.evaluate(f"(()=>{{const r=[...document.querySelectorAll('.rarow')].find(r=>r.querySelector('.raname').innerText.includes('몽환의 벨트'));return r&&{{v:r.querySelector('input').value,t:r.querySelector('.ram').innerText}}}})()")
-    check('전체 수정 창: 40억 3인 분배 → 칸에 내 몫 13.3333(억), 옆에 사이트 형식 금액', row and row['v']=='13.3333' and row['t']==pg.evaluate(f"meso({share})") and '13억' in row['t'], row)
+    check('전체 수정 창: 40억 3인 분배 → 칸에 내 몫 13.3333(억), 옆에 사이트 형식 금액', row and row['v']=='13.3333' and row['t']==pg.evaluate(f"meso({share})") and '13.33억' in row['t'], row)
     pg.click('.raok'); pg.wait_for_timeout(300)
     check('안 바꾸고 전체 수정 → 값 그대로(반올림·재분배 없음)', pg.evaluate(f"S.characters[0].drev['{kk}'].m")==share)
     tot=pg.evaluate(f"(()=>{{const T=totalData();return [revSum(S.characters[0].drev), T.weeks[T.weeks.length-1].isale||0, pItemSale(S.characters[0])]}})()")

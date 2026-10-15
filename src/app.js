@@ -625,11 +625,12 @@ function missChart(rows, kind){
     <linearGradient id="mcs${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="${c2}"/></linearGradient>
     <linearGradient id="mcgr${u}" gradientUnits="userSpaceOnUse" x1="${pl-20}" y1="0" x2="${W-pr+20}" y2="0"><stop offset="0" stop-color="${c2}" stop-opacity=".1"/><stop offset=".5" stop-color="${c2}" stop-opacity=".34"/><stop offset="1" stop-color="${c2}" stop-opacity=".1"/></linearGradient>
     <linearGradient id="mcb${u}" gradientUnits="userSpaceOnUse" x1="${pl-20}" y1="0" x2="${W-pr+20}" y2="0"><stop offset="0" stop-color="${c}" stop-opacity=".15"/><stop offset=".5" stop-color="${c2}"/><stop offset="1" stop-color="${c}" stop-opacity=".15"/></linearGradient>
+    <linearGradient id="mcbar${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c2}" stop-opacity=".5"/><stop offset=".4" stop-color="${c}" stop-opacity=".22"/><stop offset="1" stop-color="${c}" stop-opacity=".03"/></linearGradient>
     <filter id="mcf${u}" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     ${grid}<line class="cg cg0" x1="${pl-20}" x2="${W-pr+20}" y1="${Hh-pb}" y2="${Hh-pb}" stroke="url(#mcb${u})"/>
     ${n>1?`<polygon class="carea" fill="url(#mcg${u})" points="${X(0).toFixed(1)},${Hh-pb} ${pts} ${X(n-1).toFixed(1)},${Hh-pb}"/>`:''}
     <polyline class="cline" pathLength="1" fill="none" stroke="url(#mcs${u})" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round" filter="url(#mcf${u})" points="${pts}"/>
-    ${rows.map((r,i)=>`<g class="mpt" data-tip="${esc(tip(r))}" style="--d:${(.15+i*.06).toFixed(2)}s;--c:${c}"><circle cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="14" fill="transparent"/><circle class="mdot" cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="4.5"/>
+    ${rows.map((r,i)=>`<g class="mpt" data-tip="${esc(tip(r))}" style="--d:${(.15+i*.06).toFixed(2)}s;--c:${c}"><circle cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="14" fill="transparent"/><rect class="cbar" x="${(X(i)-12).toFixed(1)}" y="${Y(r.meso).toFixed(1)}" width="24" height="${Math.max(0,Hh-pb-Y(r.meso)).toFixed(1)}" rx="5" fill="url(#mcbar${u})"/><circle class="mdot" cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="4.5"/>
       <text x="${X(i).toFixed(1)}" y="${(Y(r.meso)-12).toFixed(1)}" text-anchor="middle" class="lbl cval" font-size="10">${r.meso?meso(r.meso).replace(/ .*/,''):'0'}</text>
       <text class="cxl" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle" font-size="10">${r.date}</text></g>`).join('')}</svg></div>`;
 }
@@ -1295,6 +1296,9 @@ function tirDigit(ch,ox){ const w=46,h=78,t=7,c=3.5,g=2.5,m=h/2, on=TIR_SEG[ch]|
   const P={a:tirH(c+g,w-c-g,c,t),g:tirH(c+g,w-c-g,m,t),d:tirH(c+g,w-c-g,h-c,t),f:tirV(c,c+g,m-g,t),b:tirV(w-c,c+g,m-g,t),e:tirV(c,m+g,h-c-g,t),c:tirV(w-c,m+g,h-c-g,t)};
   return `<g transform="translate(${ox} 0)">${'abcdefg'.split('').filter(k=>ch!=='1'||on.includes(k)).map(k=>`<path d="${P[k]}" class="${on.includes(k)?'tl':'tg'}"/>`).join('')}</g>`; }
 function tirDefs(){ if(document.getElementById('tirDefs')) return; const d=document.createElement('div'); d.innerHTML=`<svg id="tirDefs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="tirY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0be"/><stop offset=".55" stop-color="#ffcf6e"/><stop offset="1" stop-color="#f0a532"/></linearGradient>
+  <linearGradient id="tirP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe0f2"/><stop offset=".5" stop-color="#ff7ac8"/><stop offset="1" stop-color="#ff2d9b"/></linearGradient>
+  <pattern id="tirDotY" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".9" y=".9" width="6.2" height="6.2" rx="1" fill="#ffe3a0"/></pattern>
   <linearGradient id="tirG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6ffff"/><stop offset=".5" stop-color="#9ffbff"/><stop offset="1" stop-color="#4fe6dc"/></linearGradient>
   <filter id="tirF" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="3.5" result="b"/><feFlood flood-color="#28e6dc"/><feComposite in2="b" operator="in" result="gl"/><feMerge><feMergeNode in="gl"/><feMergeNode in="gl"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs></svg>`; document.body.appendChild(d.firstChild); }
 function tir(text,cls=''){ const T=String(text); let out='', x=0, parts='';
@@ -1306,8 +1310,17 @@ function tir(text,cls=''){ const T=String(text); let out='', x=0, parts='';
   flush();
   return `<span class="tir ${cls}"><span class="tir-sr">${esc(T)}</span>${out}</span>`; }
 const tirMeso = n => tir(meso(n));
+/* b150: 그래프 값 라벨용 SVG 디지털 글자 (계산기4 골드 숫자 + Fusion Pixel 한글, 한글은 8단위 격자에 맞춘 점 무늬) — (cx, 바닥 y, 숫자 높이 h) */
+function tirSvg(text,cx,yb,h,cls='tgold'){ const T=String(text), k=h/78, P=[]; let x=0;
+  for(const ch of T){ if(ch==='1'){ P.push(tirDigit(ch,x-20)); x+=34; } else if(/[0-9]/.test(ch)){ P.push(tirDigit(ch,x)); x+=54; }
+    else if(/[가-힣]/.test(ch)){ x=Math.ceil(x/8)*8; P.push(`<text class="tsk" x="${x}" y="${/[억메]/.test(ch)?72:80}" style="font-size:96px">${ch}</text>`); x+=/[억메]/.test(ch)?88:96; }
+    else if(ch==='.'||ch===','){ P.push(`<path class="tl" d="M${x+2},66h10v10h-10z"/>`); x+=17; } else if(ch===' '){ x+=24; } }
+  const W=Math.max(1,x-6); return `<g class="tsv ${cls}" transform="translate(${(cx-W*k/2).toFixed(1)} ${(yb-78*k).toFixed(1)}) scale(${k.toFixed(4)}) skewX(-5)" aria-hidden="true">${P.join('')}</g>`; }
+/* b150: 1억 이상은 소수 둘째 자리 억(32.51억), 1조 이상은 조(1.23조) — 사이트 전체 공통 */
+function fmtEok(n){ n=+n||0; const a=Math.abs(n); return a>=1e12?(n/1e12).toFixed(2)+'조':(n/1e8).toFixed(2)+'억'; }
 function meso(n){
   n=Math.round(n||0); if(n===0) return '0 메소';
+  if(Math.abs(n)>=1e8) return fmtEok(n)+' 메소';
   const eok=Math.floor(n/1e8), man=Math.floor(n%1e8/1e4), rest=n%1e4;
   let s=''; if(eok) s+=eok.toLocaleString()+'억 '; if(man) s+=man.toLocaleString()+'만'; if(!eok&&!man) s=rest.toLocaleString();
   return s.trim()+' 메소'; // b60: 금액에는 항상 '메소' 단위
@@ -1628,7 +1641,7 @@ function revPanel(a,cur){
     <h2>${miniIcon('meso')} 이번 주 수익</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
-      return `<div class="rp-total tirv">${tir(((cry+sale)/1e8).toFixed(1)+'억')}<small> 메소</small></div>
+      return `<div class="rp-total tirv tpink">${tir(fmtEok(cry+sale))}<small> 메소</small></div>
     <div class="muted rp-line rp-cry"><span class="rpl">${miniIcon('ipc')} 주보 결정석 ${a.count}개 · ${miniIcon('ipcm')} 검마 결정석 ${wm.n}개</span><b class="rpn">${cry.toLocaleString()}</b></div>
     <div class="muted rp-line rp-sale"><span class="rpl">${topSaleIco()}이번주 획득 아이템 ${n}개</span><b class="rpn">${sale.toLocaleString()}</b></div>${weekRingLine()}`; })()}
     <div class="rp-sec">캐릭터별</div>
@@ -1886,7 +1899,7 @@ function thisWeekChart(T){ // b135: 주간 메소 그래프 = 이번 주만, 목
   const DN=['목','금','토','일','월','화','수'], W=640, Hh=220, pl=50, pr=14, pt=24, pb=30, bw=(W-pl-pr)/7;
   let s=0; const cums=B.map(v=>s+=v).slice(0,today+1), cmax=Math.max(1,s);
   const X=i=>pl+i*bw+bw/2, Y=v=>Hh-pb-(Hh-pb-pt)*v/cmax;
-  const grid=[0,.5,1].map(f=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(cmax*f).toFixed(1)}" y2="${Y(cmax*f).toFixed(1)}" stroke="currentColor" opacity="${f?'.08':'.18'}"/><text x="${pl-6}" y="${(Y(cmax*f)+3.5).toFixed(1)}" text-anchor="end" font-size="10">${f?(cmax*f/1e8).toFixed(1)+'억':'0'}</text>`).join('');
+  const grid=[0,.5,1].map(f=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(cmax*f).toFixed(1)}" y2="${Y(cmax*f).toFixed(1)}" stroke="currentColor" opacity="${f?'.08':'.18'}"/><text x="${pl-6}" y="${(Y(cmax*f)+3.5).toFixed(1)}" text-anchor="end" font-size="10">${f?fmtEok(cmax*f):'0'}</text>`).join('');
   const pts=[`${pl},${Y(0)}`,...cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`)].join(' ');
   const d0=Date.parse(cur.week+'T00:00:00+09:00')||ws, md=i=>{ const d=new Date(d0+i*864e5+KST_MS); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; };
   const xl=DN.map((n,i)=>`<text x="${X(i).toFixed(1)}" y="${Hh-pb+16}" text-anchor="middle"${i===today?' font-weight="700"':''}>${n} ${md(i)}</text>`).join('');
@@ -1902,17 +1915,18 @@ function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 
   let cum=0; const acc=rows.map(r=>cum+=r.total), cums=o.perWeek?rows.map(r=>r.total):acc; const cmax=Math.max(1,...cums)*1.08;
   const X=i=>pl+i*bw+bw/2, Y=v=>Hh-pb-(Hh-pb-pt)*v/cmax, step=Math.max(1,Math.ceil(n/(W/60)));
   const pts=cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' '), u=++chartUid;
-  const top=Math.max(1,...cums), grid=`<line class="cyax" x1="${pl}" x2="${pl}" y1="${pt-6}" y2="${Hh-pb}" stroke="url(#lcv${u})"/>`+cums.map((v,i)=>`<line class="ctick" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Hh-pb}" y2="${Hh-pb+5}"/>`).join('')+[0,.25,.5,.75,1].map(f=>`<line class="cg${f?'':' cg0'}" x1="${pl}" x2="${W-pr}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}" stroke="url(#${f?'lcgr':'lcb'}${u})"/><line class="cytk" x1="${pl-4}" x2="${pl}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}"/><text class="cax" x="${pl-8}" y="${(Y(top*f)+3.5).toFixed(1)}" text-anchor="end">${f?(top*f/1e8).toFixed(1)+'억':'0'}</text>`).join('');
+  const top=Math.max(1,...cums), grid=`<line class="cyax" x1="${pl}" x2="${pl}" y1="${pt-6}" y2="${Hh-pb}" stroke="url(#lcv${u})"/>`+cums.map((v,i)=>`<line class="ctick" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Hh-pb}" y2="${Hh-pb+5}"/>`).join('')+[0,.25,.5,.75,1].map(f=>`<line class="cg${f?'':' cg0'}" x1="${pl}" x2="${W-pr}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}" stroke="url(#${f?'lcgr':'lcb'}${u})"/><line class="cytk" x1="${pl-4}" x2="${pl}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}"/><text class="cax" x="${pl-8}" y="${(Y(top*f)+3.5).toFixed(1)}" text-anchor="end">${f?fmtEok(top*f):'0'}</text>`).join('');
   const xl=rows.map((r,i)=>i%step===0||r.cur?`<text class="cxl${r.cur?' cur':''}" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle">${o.perWeek?`${i+1}주차`:fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(rows[n-1]&&rows[n-1].cur?`<text class="cxl cur sub" x="${X(n-1).toFixed(1)}" y="${Hh-pb+32}" text-anchor="middle">이번 주</text>`:'');
   const tipOf=(r,v)=>`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n결정석 : ${meso(r.cry)}\n아이템 판매 : ${meso(r.sale)}`+`\n누적 ${meso(o.perWeek?acc[rows.indexOf(r)]:v)}`;
   const best=cums.indexOf(top);
-  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" data-tip="${esc(tipOf(rows[i],v))}" style="--d:${(.15+i*.06).toFixed(2)}s"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/><line class="cdrop" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Y(v).toFixed(1)}" y2="${Hh-pb}"/><circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/></g>${n<=16&&v?`<text class="cval${i===best&&n>1?' best':''}" x="${X(i).toFixed(1)}" y="${(Y(v)-12).toFixed(1)}" text-anchor="middle" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s">${(v/1e8).toFixed(1)}억</text>`:''}`).join('');
+  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" data-tip="${esc(tipOf(rows[i],v))}" style="--d:${(.15+i*.06).toFixed(2)}s"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/><rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/><circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/></g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
   return `<div class="chart scrollx linechart lux"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?cum:Math.max(...cums,0))}</b></div><svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
       <defs><linearGradient id="lcg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a3c" stop-opacity=".38"/><stop offset=".55" stop-color="#ff9a3c" stop-opacity=".1"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></linearGradient>
       <linearGradient id="lcs${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff8a3d"/><stop offset=".6" stop-color="#ffb347"/><stop offset="1" stop-color="#ffd978"/></linearGradient>
       <linearGradient id="lcgr${u}" gradientUnits="userSpaceOnUse" x1="${pl}" y1="0" x2="${W-pr}" y2="0"><stop offset="0" stop-color="#ffcf7a" stop-opacity=".28"/><stop offset=".5" stop-color="#ffb347" stop-opacity=".14"/><stop offset="1" stop-color="#ffcf7a" stop-opacity=".03"/></linearGradient>
       <linearGradient id="lcb${u}" gradientUnits="userSpaceOnUse" x1="${pl}" y1="0" x2="${W-pr}" y2="0"><stop offset="0" stop-color="#ffd978"/><stop offset=".55" stop-color="#ff9a3c"/><stop offset="1" stop-color="#ffd978" stop-opacity=".25"/></linearGradient>
       <linearGradient id="lcv${u}" gradientUnits="userSpaceOnUse" x1="0" y1="${pt-6}" x2="0" y2="${Hh-pb}"><stop offset="0" stop-color="#ffd978" stop-opacity="0"/><stop offset="1" stop-color="#ffd978" stop-opacity=".55"/></linearGradient>
+      <linearGradient id="lcbar${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd978" stop-opacity=".55"/><stop offset=".35" stop-color="#ff9a3c" stop-opacity=".28"/><stop offset="1" stop-color="#ff8a3d" stop-opacity=".04"/></linearGradient>
       <filter id="lcf${u}" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
       ${grid}<polygon class="carea" fill="url(#lcg${u})" points="${X(0).toFixed(1)},${Y(0)} ${pts} ${X(n-1).toFixed(1)},${Y(0)}"/>
       <polyline class="cline" pathLength="1" fill="none" stroke="url(#lcs${u})" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" filter="url(#lcf${u})" points="${pts}"/>${dots}${xl}</svg></div>`;
@@ -2080,9 +2094,9 @@ function renderTotal(){
   v.innerHTML=`<div class="grid"><div class="card">
     <h2>${miniIcon('ipc')} 누적 수입 <span class="muted" style="font-weight:500">${fmtWeek(S.startWeek).split(' ~')[0]}부터 · ${nW}주</span></h2>
     <div class="stats s3 kbig">
-      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc tirv">${tir((T.grand/1e8).toFixed(1)+'억')}</div><div class="muted" id="grandAvg">주 평균 ${Math.round(T.grand/Math.max(1,nW)).toLocaleString()} 메소</div></div>
-      <div class="stat"><div class="k"><span class="hbi">${bossIcon(bk?bk.b:findBoss('kaling'))}</span><span class="kt">주보 누적 메소량</span></div><div class="v tirv">${tir((T.wTotal/1e8).toFixed(1)+'억')}</div><div class="muted">주 평균 ${avg.toLocaleString()} 메소</div></div>
-      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="kt">검마 누적 메소량</span></div><div class="v tirv">${tir(T.mTotal?(T.mTotal/1e8).toFixed(1)+'억':'-')}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc tirv tpink">${tir(fmtEok(T.grand))}</div><div class="muted" id="grandAvg">주 평균 ${Math.round(T.grand/Math.max(1,nW)).toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k"><span class="hbi">${bossIcon(bk?bk.b:findBoss('kaling'))}</span><span class="kt">주보 누적 메소량</span></div><div class="v tirv">${tir(fmtEok(T.wTotal))}</div><div class="muted">주 평균 ${avg.toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="kt">검마 누적 메소량</span></div><div class="v tirv">${tir(T.mTotal?fmtEok(T.mTotal):'-')}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()} 메소</div></div>
     </div>
   </div>
   <div class="card"><h2>📈 주간 메소 그래프</h2>${cumLineChart(T.weeks,T,{perWeek:1})}</div>
@@ -2128,7 +2142,7 @@ function salesHtml(T){ // b76: '아이템 판매 누적 수익' — 아이템·�
   const best=Object.keys(top).sort((a,b)=>top[b]-top[a]||itemCmp(a,b))[0];
   const ico=best?`<span class="hbi">${lootIco(best)}</span>`:miniIcon('meso'), pl=p=>p>1?`${p}인 분배`:'1인';
   return `<div class="card" id="salesCard"><h2>${ico} 아이템 판매 누적 수익</h2>
-    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc tirv">${tot?tir((tot/1e8).toFixed(1)+'억 메소'):tir('-')}</div><div class="muted" id="salesAvg">주 평균 ${Math.round(tot/Math.max(1,T.weeks.length)).toLocaleString()} 메소</div></div></div>
+    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc tirv">${tot?tir(fmtEok(tot)+' 메소'):tir('-')}</div><div class="muted" id="salesAvg">주 평균 ${Math.round(tot/Math.max(1,T.weeks.length)).toLocaleString()} 메소</div></div></div>
     ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot">${lootIco(i)}<span class="ln">${esc(lootName(i))}</span> <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm tirv">${tirMeso(o.m)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
 function renderLoot(){
   const v=$('#view'); const T=totalData(), L=lootSummary(T);
