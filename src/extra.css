@@ -1398,7 +1398,12 @@ body[data-curtab="boss"] :is(#charList .nm,#charList .nm *,.bosslay h2,.rp-nm,.r
 .lvnone .pinkbean{transform:translateX(calc(109px * 15.5 / 109))}
 
 /* b164: 작은 문구용 디지털(.tsm) — 확대·글로우·잔상(꺼진 세그먼트) 없음, 색 = 문구 원래 색 */
-.tir.tsm{font-size:1em!important;line-height:inherit}
+.tir.tsm{font-size:1.35em!important;line-height:1} /* b165: 작은 문구용 디지털 1.35배 (너무 작다는 피드백) */
 .tsm .tir-g{filter:none!important}
 .tsm .tir-g .tl{fill:currentColor!important;stroke:none!important}
 .tsm .tir-g .tg{display:none}
+
+/* b165: 이번 주 수익 두 줄 — 작은 디지털이 커져서 좁은 패널에선 결정석 두 묶음이 (자르지 않고) 묶음 단위로 다음 줄로 */
+.rp-line .rpg{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.rp-line.rp-cry .rpl{flex-wrap:wrap;overflow:visible;row-gap:1px;column-gap:6px}
+.rp-line .tir.tsm{font-size:1.3em!important}
