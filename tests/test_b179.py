@@ -20,8 +20,13 @@ try:
   pg.evaluate("askRev(activeChar(),findBoss('lucid'),'lucid|x','pitched_box',null)"); pg.wait_for_timeout(200)
   c=pg.evaluate("""(()=>{const m=document.querySelector('#revModal .modal').getBoundingClientRect(),mc=m.left+m.width/2;
     const cx=s=>{const r=document.querySelector(s).getBoundingClientRect();return Math.abs(r.left+r.width/2-mc)};
-    return [cx('.rvbox .rvguide'),cx('.rvbox .rvok'),cx('.rvbox .rvbtns'),cx('.rvbox .rvin')]})()""")
+    return [cx('.rvbox .rvguide'),cx('.rvbox .rvrow1'),cx('.rvbox .rvrow2'),cx('.rvbox .rvin')]})()""")
   check('popup contents centered',all(v<12 for v in c),c)
+  lay=pg.evaluate("""(()=>{const r=s=>document.querySelector('#revModal '+s).getBoundingClientRect();const o=r('.rvok'),n=r('.rvno'),c=r('.rvcancel');return [Math.abs(o.top-n.top),o.left<n.left,c.top>o.bottom-2]})()""")
+  check('b181 row1 [기록하기][기록 없이 저장], row2 [취소]',lay[0]<4 and lay[1] and lay[2],lay)
+  pg.set_viewport_size({'width':390,'height':800}); pg.wait_for_timeout(150)
+  lay=pg.evaluate("""(()=>{const r=s=>document.querySelector('#revModal '+s).getBoundingClientRect();const o=r('.rvok'),n=r('.rvno');return Math.abs(o.top-n.top)})()""")
+  check('b181 390 row1 stays one line',lay<4,lay); pg.set_viewport_size({'width':1280,'height':900}); pg.wait_for_timeout(150)
   tb=pg.evaluate("(()=>{const m=document.querySelector('#revModal .modal').getBoundingClientRect(),t=document.querySelector('#revModal .thbtn').getBoundingClientRect();return [m.right-t.right,t.top-m.top]})()")
   check('theme button top-right',tb[0]<20 and tb[1]<20,tb)
   pg.click('#revModal .thbtn'); pg.wait_for_timeout(150)

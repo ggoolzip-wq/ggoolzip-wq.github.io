@@ -1610,6 +1610,46 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 [data-theme=light] .thbtn{background:#fff3e4;border-color:#ecd6bd}
 [data-theme=light] main *{text-shadow:none!important}
 [data-theme=light] main .tir-g{filter:drop-shadow(0 0 .6px rgba(0,0,0,.6))!important}
+/* b181: 라이트 전용 — 디지털(점) 글씨를 흰 배경 대비 4.5:1 이상인 같은 계열 진한 색으로, 밝은 글로우 제거. 다크 영향 없음 */
+.rvbox .rvbtns.rvrow1{flex-wrap:nowrap}
+.rvbox .rvrow1 .rvok,.rvbox .rvrow1 .rvno{min-width:0;flex:0 1 auto;white-space:nowrap}
+.rvbox .rvbody .rvok{min-width:120px}
+[data-theme=light] .tir-g .tl{fill:url(#tirGL)!important;stroke:none!important}
+[data-theme=light] .tpink .tir-g .tl{fill:url(#tirPL)!important}
+[data-theme=light] .tgoldv .tir:not(.tsm) .tir-g .tl,[data-theme=light] .chart .tsv .tsk,[data-theme=light] .chart .tsv .tl{fill:url(#tirYL)!important;stroke:none!important}
+[data-theme=light] .chart .tsv.tred .tl{fill:#b3261e!important}
+[data-theme=light] .logo-d .logo-g .tl{fill:url(#tirVL)!important;stroke:none!important}
+[data-theme=light] .tsm .tir-g .tl{fill:currentColor!important}
+[data-theme=light] .tir-k{color:#0a5a8c!important;filter:none!important;text-shadow:none!important}
+[data-theme=light] .tpink .tir-k{color:#a01264!important}
+[data-theme=light] .tgoldv .tir-k,[data-theme=light] .chart .tsv .tir-k{color:#8a6200!important}
+[data-theme=light] .tir-g,[data-theme=light] main .tir-g,[data-theme=light] .tgoldv .tir:not(.tsm) .tir-g,[data-theme=light] .chart .tsv{filter:drop-shadow(0 1px 0 rgba(0,0,0,.12))!important}
+[data-theme=light] header .tir-g,[data-theme=light] .logo-d .logo-g{filter:none!important}
+[data-theme=light] .muted,[data-theme=light] .k,[data-theme=light] .kt,[data-theme=light] th,[data-theme=light] .stat .k{color:#5e4a38!important}
+[data-theme=light] .md-gold,[data-theme=light] .sc.sc-gold{color:#8a6200!important}
+[data-theme=light] .md-silver,[data-theme=light] .sc.sc-silver{color:#55606e!important}
+[data-theme=light] .md-bronze,[data-theme=light] .sc.sc-bronze{color:#8f4a17!important}
+[data-theme=light] .bdn,[data-theme=light] #bossKing .spk,[data-theme=light] #bossLootKing .rg-old .bdn,[data-theme=light] .drop .dn{color:#2b2118!important}
+[data-theme=light] :is(tr.rk1,tr.rk2,tr.rk3) :is(.spk:not(:has(*)),.spk .bdn):not(.dlv){filter:none!important}
+[data-theme=light] .dlv-normal{color:#2e7d17!important}[data-theme=light] .dlv-hard{color:#c4141b!important}[data-theme=light] .dlv-chaos{color:#6a3bc4!important}[data-theme=light] .dlv-easy{color:#0b63a8!important}[data-theme=light] .dlv-extreme{color:#b8320a!important}
+[data-theme=light] .chart.lux .ctot span{color:#6b4800!important}[data-theme=light] .chart.lux .ctot b{color:#8a6200!important}
+[data-theme=light] .char .rev,[data-theme=light] .pill{color:#a84a00!important}
+[data-theme=light] .dlrev,[data-theme=light] .ic-pink{color:#b8136a!important}[data-theme=light] .ic-purple{color:#6a2fc0!important}
+[data-theme=light] .loot .lx,[data-theme=light] .totloot .lx{color:#b00d4a!important}
+[data-theme=light] .lx.aur.epsum{color:#0a5a8c!important;-webkit-text-fill-color:#0a5a8c}
+[data-theme=light] .epgold{background:none!important;-webkit-text-fill-color:#8a6200;color:#8a6200!important}
+[data-theme=light] .pc-up{color:#245f8f!important;opacity:1!important}
+[data-theme=light] .lvlink{color:#0b5cad!important}[data-theme=light] .lvoff{color:#5e4a38!important;background:rgba(0,0,0,.06)!important}[data-theme=light] .lvsrc.yt{color:#b3121b!important}
+[data-theme=light] .missic{color:#8a6200!important}[data-theme=light] .missic.red{color:#c4141b!important}
+[data-theme=light] .chart svg text:not(.tsk){fill:#5e4a38!important;stroke:none!important}
+[data-theme=light] .ftab,[data-theme=light] .sortlink,[data-theme=light] .ord,[data-theme=light] .party,[data-theme=light] .fempty,[data-theme=light] .sunempty span,[data-theme=light] .pc-kind button,[data-theme=light] .pc-tabs button,[data-theme=light] .pc-mine,[data-theme=light] .pc-sep,[data-theme=light] .foot,[data-theme=light] .cpg,[data-theme=light] .slp,[data-theme=light] .job,[data-theme=light] .meta,[data-theme=light] .drag-h,[data-theme=light] .expinc small,[data-theme=light] .pbtn{color:#5e4a38!important}
+[data-theme=light] .expinc b{color:#8a6200!important}
+[data-theme=light] .btn:not(.plain):not(.ghost),[data-theme=light] .rvok{background:#b85600!important;color:#fff!important}
+[data-theme=light] .btn.ghost{color:#5e4a38!important}
+[data-theme=light] .avatar{color:#a84a00!important}
+[data-theme=light] .dl .dlc{color:#a84a00!important}[data-theme=light] .dl .dlb{color:#5e4a38!important}
+[data-theme=light] .drop.erda .ecnt{background:#1f6f80!important}[data-theme=light] .drop.memc .ecnt{background:#6e5428!important}[data-theme=light] .drop.memc.mc-s .ecnt{background:#59636f!important}[data-theme=light] .drop.memc.mc-g .ecnt{background:#7a5a00!important}[data-theme=light] .drop.eter .ecnt{background:#6545c0!important}
+[data-theme=light] .drop.s-광휘{background:color-mix(in srgb,#e7b93c 12%,#fff)!important}[data-theme=light] .drop.s-칠흑{background:color-mix(in srgb,#8a63d2 10%,#fff)!important}[data-theme=light] .drop.s-여명{background:color-mix(in srgb,#5aa9e6 10%,#fff)!important}[data-theme=light] .drop.s-에테르{background:color-mix(in srgb,#b06ad8 8%,#fff)!important}[data-theme=light] .drop.s-반지{background:color-mix(in srgb,#3fae8a 10%,#fff)!important}
 </style>
 </head>
 <body>
@@ -2030,8 +2070,7 @@ function askRev(c,b,key,ik,cel){
   const ap=admPriceOf(ik); // b104: 관리자만 — maple.ai.kr 시세로 미리 채움 (수정 가능)
   const el=document.createElement('div'); el.id='revModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rvTitle');
   el.innerHTML=`<div class="modal rvbox"><button type="button" class="thbtn" data-rv="theme" title="${curTheme()==='light'?'다크 모드로':'라이트 모드로'}" aria-label="${curTheme()==='light'?'다크 모드로':'라이트 모드로'}">${curTheme()==='light'?'🌙':'☀️'}</button><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`최저가 측정 시간 - ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
-    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><span class="rvbtns"><button class="btn plain rvno" data-rv="no">기록 없이 저장</button><button class="btn ghost rvcancel" data-rv="cancel">취소</button></span></div>
-    <button class="btn rvok" data-rv="ok">기록하기</button></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
+    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><span class="rvbtns rvrow1"><button class="btn rvok" data-rv="ok">기록하기</button><button class="btn plain rvno" data-rv="no">기록 없이 저장</button></span><span class="rvbtns rvrow2"><button class="btn ghost rvcancel" data-rv="cancel">취소</button></span></div></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
   document.body.appendChild(el);
   let closed=false; const fin=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true); if(cel) cel(); };
   const ok=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')); if(!(v>0)||v>100000){ $('#rvErr').textContent='금액을 입력해주세요.'; markEmpty($('#rvAmt')); $('#rvAmt').focus(); return; }
@@ -3071,6 +3110,10 @@ function tirDefs(){ if(document.getElementById('tirDefs')) return; const d=docum
   <pattern id="tirDotY" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".5" y=".5" width="7" height="7" rx=".8" fill="#ffe7a8"/></pattern>
   <pattern id="tirDotA" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".5" y=".5" width="7" height="7" rx=".8" fill="#e6cf9c"/></pattern>
   <pattern id="tirDotW" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".5" y=".5" width="7" height="7" rx=".8" fill="#fff1dc"/></pattern>
+  <linearGradient id="tirYL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a87a00"/><stop offset=".55" stop-color="#8a6200"/><stop offset="1" stop-color="#6b4800"/></linearGradient>
+  <linearGradient id="tirVL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d0401c"/><stop offset=".55" stop-color="#b8300f"/><stop offset="1" stop-color="#8f2408"/></linearGradient>
+  <linearGradient id="tirPL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c21c7c"/><stop offset=".5" stop-color="#a01264"/><stop offset="1" stop-color="#7d0e4e"/></linearGradient>
+  <linearGradient id="tirGL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d6fa6"/><stop offset=".5" stop-color="#0a5a8c"/><stop offset="1" stop-color="#084a75"/></linearGradient>
   <linearGradient id="tirG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6ffff"/><stop offset=".5" stop-color="#9ffbff"/><stop offset="1" stop-color="#4fe6dc"/></linearGradient>
   <filter id="tirF" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="3.5" result="b"/><feFlood flood-color="#28e6dc"/><feComposite in2="b" operator="in" result="gl"/><feMerge><feMergeNode in="gl"/><feMergeNode in="gl"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs></svg>`; document.body.appendChild(d.firstChild); }
 /* b152: 디지털 한글 단위(조/억/만/메/소) — 획마다 이어진 세그먼트, 획과 획 사이만 끊김(7세그먼트 방식). 12×12 격자 [x1,y1,x2,y2] */
