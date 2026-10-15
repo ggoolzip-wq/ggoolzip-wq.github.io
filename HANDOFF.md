@@ -15,6 +15,11 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b168 (2026-10-15) — 신창섭 라이브 탭 '1분마다 서버가 확인해요 · 마지막 확인' 문구 삭제 (20:30~20:42 KST)
+- `src/app.js` renderLive(): 라이브 저장소 카드 끝의 `<p class="muted tiny">1분마다 서버가 확인해요 · 마지막 확인 …</p>` 요소 자체 삭제(빈 여백 없음). 라이브 감지(Worker cron 1분)·사이트 30초 폴링은 그대로.
+- 테스트: `tests/test_live_nochar.py`에 문구/요소 없음 체크 추가. 전체 병렬 통과(박스 전용 sync-server 23·25·46·49·51 제외).
+- 시간: 코딩 20:30~20:33, 테스트 20:33~20:42 KST.
+
 ## b167 (2026-10-15) — 사이트 테마 Ice Blue Whisper + 금색 총액 + 토글 하늘색 (19:55~20:25 KST)
 - **테마**: b166 시안 C2 'Ice Blue Whisper'(배경 Ink Black 그라디언트, 주색 #9fdcff/보조 #fff, 글로우 25%, 테두리 1px)를 `src/extra.css` 끝에 고정 적용 — 카드·헤더·탭·버튼·모달(.modal)·모달 배경·툴팁(#mbtTip)·링/저장 확인창 모두. CSS 는 `/workspace/scripts/b166neon_lib.py` 의 `css()` 로 생성.
 - **금색 총액**: '이번 주 수익' 합계(.rp-total)·'누적 수입' 총 수익 `tpink` → `tgoldv`: 숫자·단위 = 그래프 계산기4 금색(#tirY) + 금색 글로우. 작은 문구(.tsm)는 그대로(글로우 없음).

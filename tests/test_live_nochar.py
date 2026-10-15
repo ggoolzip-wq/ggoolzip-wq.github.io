@@ -24,6 +24,7 @@ try:
             check(f"{w}: 캐릭터 없어도 라이브 화면", pg.evaluate("!!document.querySelector('#view .lvgrid')&&!document.querySelector('#view .card.empty')"))
             lay = pg.evaluate("(()=>{const c=[...document.querySelectorAll('#view .lvcol')],v=document.querySelector('#view .lvgrid').getBoundingClientRect(),r=c[0].getBoundingClientRect(),ls=[...document.querySelectorAll('#view .lvlink')].map(a=>a.href);return [c.length,Math.abs((r.left+r.right)/2-(v.left+v.right)/2)<3,ls,document.querySelector('#view .lvlist h2').innerText]})()")
             check(f"{w}: 넥슨 칸 없음·유튜브 중앙·유튜브 링크 아래 넥슨 링크·'라이브 저장소'", lay[0]==1 and lay[1] and len(lay[2])==2 and 'youtube' in lay[2][0] and lay[2][1]=='https://live.nexon.com/channels/23' and lay[3]=='라이브 저장소', lay)
+            check(f"{w}: b168 '1분마다 서버가 확인해요·마지막 확인' 문구 없음(요소 삭제)", pg.evaluate("!/1분마다 서버|마지막 확인/.test(document.querySelector('#view').innerText) && (()=>{const c=document.querySelector('#view .lvlist');const l=c.lastElementChild;return !(l&&l.matches('p.tiny'))})()"))
             check(f"{w}: 클릭 전에는 iframe 없음(자동재생 안 함)", pg.evaluate("!document.querySelector('#view iframe')"))
             pg.click("#view .lvplay[data-embed*='IkEDT0Wy8zY']"); pg.wait_for_timeout(300)
             src = pg.evaluate("(document.querySelector('#view iframe')||{}).src||''")
