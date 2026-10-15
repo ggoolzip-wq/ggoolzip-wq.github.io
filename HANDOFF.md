@@ -15,6 +15,15 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b159 (2026-10-15) — 소식 카드 '테섭' 탭 날짜 오류 수정 (16:20~16:45 KST)
+- **증상**: 오늘(10-15) 올라온 테섭 글 '클라이언트 1.2.207 릴리즈'(test:202)가 09.10 으로 표시.
+- **원인**: `scripts/update_feed.py` `parse_test` 가 목록 전체에 한 정규식 `<a …update/N>…<span>…</span>…<dd>([\d.]+)</dd>` 를 걸었음. 오늘 글은 날짜 칸이 `오후 3:12` 처럼 **시각만** 나와서 `[\d.]+` 가 실패 → `.*?` 가 다음 글들로 넘어가 아래 글(1.2.206, 2026.09.10)의 날짜를 가져감.
+- **수정**: 글(앵커)마다 다음 앵커/`</li>` 까지 따로 잘라 그 글의 `<dd>` 만 읽음(`_list_date`: `yyyy.mm.dd` → 그 날, `오전/오후/AM/PM H:MM` → 오늘+시각). 새로 `fix_test_dates(lst, rows)` — 매 실행마다 저장된 테섭 글 날짜를 목록 날짜와 비교해 **일(day)이 다르면** 바로잡음(로그 `[test] 날짜 보정 N개`, 저장 트리거).
+- **feed.json**: test:202 날짜 2026-09-10 → 2026-10-15T00:00 (다음 수집 때 목록 시각으로 자동 정밀화). test:199/198(1.2.206)은 09-10 유지(목록 첫 페이지 기준 자동 검증됨).
+- **다른 탭 검증(원본 대조)**: 사료감지 notice:150276 10-08 18:12 = Open API ✅ / 패치내역 update:814, minor:150275(10-08 18:11)·150249(10-02 15:02) = 공지 API ✅ / 마빡도로시 inven:5974:7258005 09-30 02:36 = 인벤 원문 ✅ / 테섭 ❌→수정.
+- **테스트**: `tests/test_feed_test_dates.py`(가짜 목록 HTML: 오늘 시각, PM, 날짜형, NEW 표시 제거, 보정 함수).
+- **스크린샷**: `/workspace/maple-boss-tracker/b159_{before,after}_feed_test.png` (스크립트 `/workspace/scripts/b159feed.py`).
+
 ## b158 (2026-10-15)
 시작 15:56 KST · 끝 16:34 KST
 - **Orbit 정정**(b156을 반대로 이해했음): 사이트 **전체** = Orbit, 크기 그대로. 제외(Pretendard 유지): 이번 주 보스 탭의 캐릭터 닉네임(#charList .nm, 캐릭터 카드 h2, .rp-nm), 보스 드롭 표(보스 카드 전체 `.card:has(.boss-list)`), 결정석/아이템 가격 카드, 디지털 글자(.tir SVG·MrjUnitKo·로고). Orbit은 글자가 넓고 줄이 높아 `line-height:1.193`(Pretendard normal 값)·`letter-spacing:-.03em` 으로 기존 배치 유지(사이드바 높이·한 줄 표 테스트 19/37/45 통과). 웹폰트 로드 끝나면 fitPriceCard/fitMiss 재실행.

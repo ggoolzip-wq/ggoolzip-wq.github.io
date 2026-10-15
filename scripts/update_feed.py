@@ -316,18 +316,57 @@ _MINOR = None
 
 # ---------------- 테섭 ----------------
 TEST_URL = "https://maplestory.nexon.com/Testworld/News/Update"
-def parse_test(s):
+def _list_date(d, today):
+    """목록의 날짜 칸 → ISO. 'yyyy.mm.dd' 또는 오늘 글의 '오후 3:12' 형식(시각만)"""
+    d = plain(d or "")
+    dm = re.match(r"(\d{4})\.(\d{1,2})\.(\d{1,2})", d)
+    tm = re.match(r"(AM|PM|오전|오후)?\s*(\d{1,2}):(\d{2})", d, re.I)
+    if dm:
+        return f"{int(dm.group(1)):04d}-{int(dm.group(2)):02d}-{int(dm.group(3)):02d}T00:00:00+09:00"
+    if tm:
+        hh = int(tm.group(2))
+        if tm.group(1):
+            hh = hh % 12 + (12 if tm.group(1).upper() in ("PM", "오후") else 0)
+        return datetime.datetime(today.year, today.month, today.day, hh, int(tm.group(3)), tzinfo=KST).isoformat()
+    return ""
+
+def parse_test(s, today=None):
+    """테섭 업데이트 목록 → [{id, n, title, url, date}].
+    b159: 글마다 따로 자른 뒤 그 글의 <dd> 만 읽음. 예전 정규식은 오늘 글(날짜 칸이 '오후 3:12' 처럼 시각만)에서
+    [0-9.]+ 가 실패하면 다음 글들로 넘어가 엉뚱한 날짜(예: 10/15 글 → 9/10)를 붙였음."""
+    today = today or datetime.datetime.now(KST).date()
     out = []
-    for m in re.finditer(r'<a href="(/testworld/news/update/(\d+))"[^>]*>.*?<span>(.*?)</span>.*?<dd>\s*([\d.]+)\s*</dd>', s, re.S | re.I):
-        title = plain(re.sub(r"<em[^>]*>.*?</em>", "", m.group(3), flags=re.S))
-        y, mo, d = (m.group(4).split(".") + ["", "", ""])[:3]
+    ms = list(re.finditer(r'<a href="(/testworld/news/update/(\d+))"[^>]*>', s, re.I))
+    for i, m in enumerate(ms):
+        end = ms[i + 1].start() if i + 1 < len(ms) else len(s)
+        seg = s[m.end():end]
+        li = seg.lower().find("</li>")
+        if li >= 0:
+            seg = seg[:li]
+        sp = re.search(r"<span[^>]*>(.*?)</span>", seg, re.S)
+        if not sp:
+            continue
+        title = plain(re.sub(r"<em[^>]*>.*?</em>", "", sp.group(1), flags=re.S))
+        dd = re.search(r"<dd[^>]*>(.*?)</dd>", seg, re.S)
         out.append({"id": f"test:{m.group(2)}", "n": int(m.group(2)), "title": title,
-                    "url": f"https://maplestory.nexon.com/Testworld/News/Update/{m.group(2)}", "date": f"{y}-{mo}-{d}T00:00:00+09:00" if d else ""})
+                    "url": f"https://maplestory.nexon.com/Testworld/News/Update/{m.group(2)}", "date": _list_date(dd.group(1) if dd else "", today)})
     return out
+
+_TEST_ROWS = []
+def fix_test_dates(lst, rows):
+    """b159: 이미 저장된 테섭 글의 날짜를 목록 날짜로 바로잡음(날짜(일)가 다를 때만). 고친 개수"""
+    by = {r["id"]: r["date"] for r in rows if r.get("date")}
+    n = 0
+    for x in lst:
+        d = by.get(x.get("id"))
+        if d and (x.get("date") or "")[:10] != d[:10]:
+            x["date"] = d; n += 1
+    return n
 
 def src_test(st, wm, run_all, minute):
     _, s = http_get(TEST_URL, proxy=True)
     rows = parse_test(s)
+    _TEST_ROWS[:] = rows
     if not rows:
         raise FetchError(f"테섭 목록을 읽지 못함(형식 변경 또는 차단, {len(s)} bytes)")
     if "test" not in wm:
@@ -660,6 +699,9 @@ def main():
             for x in lst:  # b70: 날짜 없는 글은 처음 수집한 시각(seen) 기록 → 사이트가 7일 지나면 N 표시 안 함
                 if not x.get("date") and not x.get("seen"):
                     x["seen"] = now_iso(); stamped += 1
+            if k == "test":
+                fx = fix_test_dates(lst, _TEST_ROWS); stamped += fx
+                if fx: log(f"[test] 날짜 보정 {fx}개")
             if k == "patch":
                 m = apply_minor(lst, _MINOR, wm); n += m
             added += n
