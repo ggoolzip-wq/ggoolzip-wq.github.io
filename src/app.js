@@ -1752,7 +1752,9 @@ const priceRows = g => { const mine=pcMine?myBossKeys():null; return priceRows0(
 const priceRows0 = g => BOSSES.filter(b=>b.type===g).flatMap(b=>b.diffs.map(d=>({b,d,k:priceKey(b,d),p:price(b,d)}))).sort((x,y)=>x.p-y.p);
 // b79: '마지막 확인' = KST 'MM.DD HH:MM' (예전 날짜만 있는 값은 'YYYY-MM-DD' 그대로)
 const ckText = v => { const t=v&&/T\d/.test(v)?Date.parse(v):NaN; if(!isFinite(t)) return v||'-'; const d=new Date(t+9*3600e3), p=n=>String(n).padStart(2,'0'); return `${p(d.getUTCMonth()+1)}.${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`; };
-const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신\n(가격 변동일 ${officialInfo.changedAt||'-'}, 마지막 확인 ${ckText(officialInfo.checkedAt)})${Object.keys(officialInfo.upcoming||{}).length?`\n테섭 예정 가격: ${officialInfo.upSource?.title||'테스트 서버 공지'}`:''}${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
+// b171: 마지막 확인 = checkedAt·테섭 예정 반영 시각 중 늦은 것 (예전 prices.json 은 테섭 반영 때 checkedAt 을 안 바꿨음)
+const lastCk = () => { const a=officialInfo.checkedAt||'', b=officialInfo.upAt||''; return (Date.parse(b)||0)>(Date.parse(a)||0)?b:a; };
+const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱신\n(가격 변동일 ${officialInfo.changedAt||'-'}, 마지막 확인 ${ckText(lastCk())})${Object.keys(officialInfo.upcoming||{}).length?`\n테섭 예정 가격: ${officialInfo.upSource?.title||'테스트 서버 공지'}${officialInfo.upAt?` (반영 ${ckText(officialInfo.upAt)})`:''}`:''}${officialInfo.pending.length?` · ${officialInfo.pending.length}개는 ${officialInfo.pending[0].effective}부터 적용`:''}`:'공식 패치 노트 기준 (온라인 주소에서 자동 갱신)';
 /* 보스 체크 탭 오른쪽: 결정석 가격 (읽기 전용, prices.json 자동 갱신) */
 // 테섭 예정 가격이 있을 때만: 캐릭터별 예상 주간 수익(주간 상위 12 + 월간) 현재 가격 vs 패치 후
 let pcTab='price', pcKind='cry'; // b112: 가격 카드 탭 — 결정석 가격 / 아이템 가격
@@ -2558,18 +2560,27 @@ function applyOfficialPrices(pj){
   }
   // 테섭 예정 가격 (pj.upcoming): 실서버 가격은 그대로, 다른 값만 '테섭 예정 → N' 표시
   const upcoming={}; for(const r of (pj.upcoming&&pj.upcoming.rows)||[]){ const m=parseBossLabel(r.boss); const v=Math.round(+r.new); if(m&&v>0){ const k=priceKey(m.b,m.d); if(PRICE_CONFIG[k]!==v) upcoming[k]=v; } }
-  officialInfo={checkedAt:pj.checkedAt||'', changedAt:pj.changedAt||'', source:pj.source||{}, applied, pending, upcoming, upSource:(pj.upcoming&&pj.upcoming.source)||null};
+  officialInfo={checkedAt:pj.checkedAt||'', changedAt:pj.changedAt||'', source:pj.source||{}, applied, pending, upcoming, upSource:(pj.upcoming&&pj.upcoming.source)||null, upAt:(pj.upcoming&&pj.upcoming.detectedAt)||''};
   return changed;
 }
 function loadOfficialPrices(){
   try{ const c=JSON.parse(localStorage.getItem(PRICES_CACHE_KEY)||'null'); if(c) applyOfficialPrices(c); }catch(e){}
   if(!/^https?:$/.test(location.protocol)) return; // 파일로 연 경우: 내장 기본값 사용
-  fetch(`./prices.json?d=${dayId()}`,{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(pj=>{
+  fetchOfficialPrices();
+}
+// b171: 하루 단위(?d=날짜) 주소 대신 5분 단위 + no-cache → 낮에 가격·확인 시각이 바뀌어도 새로 받음. 화면이 보일 때 5분마다·탭 복귀 때 다시 확인, 내용이 같으면 다시 그리지 않음
+let pricesSig='';
+function fetchOfficialPrices(){
+  if(!/^https?:$/.test(location.protocol)) return;
+  fetch(`./prices.json?t=${Math.floor(Date.now()/300000)}`,{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(pj=>{
     if(!pj||!Array.isArray(pj.rows)||!pj.rows.length) return;
-    localStorage.setItem(PRICES_CACHE_KEY,JSON.stringify(pj));
+    const sig=JSON.stringify(pj); if(sig===pricesSig) return; pricesSig=sig;
+    localStorage.setItem(PRICES_CACHE_KEY,sig);
     if(applyOfficialPrices(pj)) save(); render();
   }).catch(()=>{});
 }
+setInterval(()=>{ if(document.visibilityState==='visible') fetchOfficialPrices(); },300000);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') fetchOfficialPrices(); });
 
 /* =====================================================================
  *  동기화 서버 (Cloudflare Workers + D1, server/ 폴더) — 기능 플래그 (2026-10-10, 아직 꺼 둠)

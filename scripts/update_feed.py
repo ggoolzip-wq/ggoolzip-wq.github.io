@@ -400,6 +400,7 @@ def test_prices(new_items, fetch=None):
         if info["rows"]:
             if upcoming.add_upcoming(prices, {"url": it["url"], "title": info["title"] or it["title"], "date": (it.get("date") or "")[:10]}, info["rows"]):
                 changed = True
+                prices["checkedAt"] = now_iso()  # b171: 테섭 예정 가격을 반영하면 '마지막 확인'도 지금으로
         elif str(prices.get("checkedAt", ""))[:10] != today_kst():  # 결정석 변경 없음 → '마지막 확인'만 (b79: 하루 1번, KST 전체 시각)
             prices["checkedAt"] = now_iso(); changed = True
     if changed:
@@ -435,6 +436,8 @@ def patch_prices(new_items, fetch=None):
         log(f"[patch-prices] {it['title'][:40]} → 가격 줄 {len(rows)}개")
         if len(rows) < PATCH_MIN_ROWS or any(not isinstance(r.get("new"), int) or r["new"] <= 0 for r in rows):
             continue
+        if rows != prices.get("rows"):  # b171: 본섭 반영으로 가격이 바뀌면 '가격 변동일'도 그 공지 날짜로
+            prices["changedAt"] = (it.get("date") or "").replace(".", "-")[:10] or today_kst()
         prices.update(source={"url": it["url"], "title": info.get("title") or it["title"], "date": (it.get("date") or "")[:10]},
                       rows=rows, notes=info.get("notes", prices.get("notes", [])), checkedAt=now_iso(), fetchedAt=now_iso())
         prices.pop("upcoming", None)  # 본섭 적용 → 테섭 예정 표시 삭제

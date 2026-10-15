@@ -18,7 +18,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     for ck,want,w in (('2026-10-12T10:00:05Z','10.12 19:00',1280),('2026-10-12T19:00:00+09:00','10.12 19:00',390),('2026-10-11','2026-10-11',1280)):
         pg=b.new_page(viewport={'width':w,'height':900}); pg.on('pageerror',lambda e:errs.append(str(e)))
-        pj=dict(live,checkedAt=ck)
+        pj=dict(live,checkedAt=ck); pj.pop('upcoming',None)  # b171: 테섭 반영 시각(detectedAt)이 더 늦으면 그게 '마지막 확인' → 여기선 checkedAt 형식만 봄
         body=json.dumps(pj); pg.route('**/prices.json*',(lambda bd: lambda r: r.fulfill(status=200,content_type='application/json',body=bd))(body))
         pg.route('**/feed.json*',lambda r:r.fulfill(status=200,content_type='application/json',body='{"version":1,"sources":{},"items":{}}'))
         pg.goto(f'http://localhost:{PORT}/index.html'); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",ST); pg.reload(); pg.wait_for_timeout(1200)

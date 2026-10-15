@@ -22,6 +22,7 @@ for r in info['rows']:
 ch=update_feed.test_prices([{'id':'test:901','title':'테섭 공지2','url':'https://x/Testworld/News/Update/901','date':'2026-10-11T00:00:00+09:00'}],fetch=lambda u: low)
 pj=json.load(open(P))
 check('lower prices → upcoming stored, live rows untouched', ch and len(pj['upcoming']['rows'])>=20 and pj['rows']==live['rows'] and pj['upcoming']['source']['url'].endswith('/901'), (ch,len(pj.get('upcoming',{}).get('rows',[]))))
+check('b171: 테섭 예정 반영 → checkedAt 도 지금(detectedAt 과 같은 분)', pj.get('checkedAt','')[:16]==pj['upcoming']['detectedAt'][:16] and pj['checkedAt'][:10]==update_feed.today_kst(), (pj.get('checkedAt'),pj['upcoming'].get('detectedAt')))
 # 3) 새 글이 없으면 아무것도 안 함
 check('no new test posts → no fetch', update_feed.test_prices([],fetch=lambda u: 1/0)==False)
 # 4) 본섭이 일부 적용 → 그 줄만 삭제, 모두 적용 → upcoming 삭제
@@ -49,6 +50,7 @@ check('patch with no table → unchanged', update_feed.patch_prices(new_patch,fe
 ch=update_feed.patch_prices(new_patch,fetch=lambda u: low); w=json.load(open(P))
 lowmap={upcoming.bkey(r['boss']):r['new'] for r in pj['upcoming']['rows']}
 check('patch applies → live = 테섭 prices, upcoming cleared, source=patch', ch and 'upcoming' not in w and w['source']['url'].endswith('/999') and all(lowmap.get(upcoming.bkey(r['boss']),r['new'])==r['new'] for r in w['rows']))
+check('b171: 본섭 반영 → changedAt=공지 날짜, checkedAt=오늘', w.get('changedAt')=='2026-10-16' and w['checkedAt'][:10]==update_feed.today_kst(), (w.get('changedAt'),w.get('checkedAt')))
 # 8) 데모 예정 가격: 본섭 패치가 와도 무시, 진짜 테섭 글이 오면 데모를 통째로 교체
 demo=dict(live,upcoming={'demo':True,'source':{'title':'[데모]'},'rows':[{'boss':'선택받은 세렌 (하드)','new':1}]})
 json.dump(demo,open(P,'w'),ensure_ascii=False)
