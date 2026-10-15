@@ -1336,3 +1336,18 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 /* ===== b153: 한글 단위 = b150 점 무늬로 복귀. 점(획) 굵기 = 숫자 세그먼트 굵기 (측정: 숫자 t = 0.945 × 한글 1칸, 모든 자리 동일) ===== */
 .tir-k::before{-webkit-mask-image:linear-gradient(to right,#000 94.5%,transparent 94.5%),linear-gradient(to bottom,#000 94.5%,transparent 94.5%);mask-image:linear-gradient(to right,#000 94.5%,transparent 94.5%),linear-gradient(to bottom,#000 94.5%,transparent 94.5%)}
 .chart .hdot text{font-family:"MrjUnitKo",monospace;stroke:none!important;paint-order:normal}
+/* ===== b154: 한글 단위 = 숫자 SVG 안 픽셀 비트맵(1칸 = 숫자 굵기, 11칸 = 숫자 높이), 2칸마다 틈 ===== */
+.chart .hsk{paint-order:normal}
+.chart.lux .cax-k{fill:#c9b58f}
+.chart.lux .mvl-k{fill:#f4e6d2}
+/* b154: 축·빠뜨린 보스 라벨 한글 = 옆 숫자 글자와 같은 높이(.70em)·색·굵기·어두운 외곽선 */
+.chart .hsk{stroke:none}
+.chart .hsk-o{fill:none;stroke:rgba(10,8,6,.85)!important;stroke-linejoin:round}
+.chart.lux .cax-k{fill:#c9b58f;stroke:#c9b58f!important}
+.chart.lux .mvl-k{fill:#f4e6d2;stroke:#f4e6d2!important}
+/* b154: 그래프 글자 작게(축 9px, x축 9.5px), 축 라벨은 왼쪽 여백 안에 */
+.chart.lux .cax{font-size:9px!important;fill:#c9b58f;font-weight:600;letter-spacing:.02em}
+.chart.lux .cxl{font-size:9.5px}
+.chart.lux .cxl.sub{font-size:9px}
+.chart .tsv.tred .tl{fill:#ff9a8a;stroke:rgba(255,200,190,.6)}
+.chart .tsv.tred{filter:drop-shadow(0 0 2px rgba(255,70,60,.95)) drop-shadow(0 0 6px rgba(255,70,60,.5))}
