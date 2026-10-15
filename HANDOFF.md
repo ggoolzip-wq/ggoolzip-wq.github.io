@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b180 (2026-10-15) — 보스 클리어 카드 배경 초록 → 오로라(시안→보라) (21:44~21:58 KST)
+- src/extra.css `[data-theme="dark"] .boss.done`: 배경 linear-gradient(100deg, rgba(40,210,230,.2), rgba(140,90,230,.12) 60%, rgba(140,90,230,.04)) + rgba(20,26,38,.9), 테두리 rgba(150,180,255,.55), 그림자 inset 0 1px 0 rgba(255,255,255,.08), 0 0 20px rgba(110,150,255,.2). b177 시안 20번과 동일.
+- 라이트 테마 대비 `[data-theme="light"] .boss.done` 옅은 오로라(흰 바탕) 추가.
+- CLEAR 배지는 그대로. index.html은 build.py로 재생성(직접 수정 금지: src/extra.css가 원본).
+- 테스트: run_par 전체, test_tracker37(b50 줄바꿈)은 변경 전 main에서도 실패하는 기존 이슈.
+- 사진: /workspace/maple-boss-tracker/b180_cmp_{1400,390}.png
+
 ## b174 (2026-10-15) — 테섭 예정 가격 출처 날짜 9/10 → 10/15 바로잡음 + 재발 방지 (21:06~21:14 KST)
 - 확인: Testworld/News/Update/202 '클라이언트 1.2.207 릴리즈' 실제 게시 = 2026-10-15 PM 03:55 (본문 '10월 15일(목) 진행'). prices.json upcoming.source.date 가 2026-09-10 으로 저장돼 있었음.
 - 원인: b159 와 같은 유형. 16:27 에 예정 가격을 저장할 때 옛 parse_test(오늘 글 날짜 칸이 'PM 03:55' 처럼 시각만 → 다음 글 날짜 9/10 을 붙임)가 쓰였고, b159 fix_test_dates 는 feed.json 만 고쳐서 prices.json 에는 틀린 날짜가 남음.
