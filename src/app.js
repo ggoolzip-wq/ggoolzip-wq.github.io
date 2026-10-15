@@ -1298,7 +1298,9 @@ function tirDigit(ch,ox){ const w=46,h=78,t=7,c=3.5,g=2.5,m=h/2, on=TIR_SEG[ch]|
 function tirDefs(){ if(document.getElementById('tirDefs')) return; const d=document.createElement('div'); d.innerHTML=`<svg id="tirDefs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <linearGradient id="tirY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0be"/><stop offset=".55" stop-color="#ffcf6e"/><stop offset="1" stop-color="#f0a532"/></linearGradient>
   <linearGradient id="tirP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe0f2"/><stop offset=".5" stop-color="#ff7ac8"/><stop offset="1" stop-color="#ff2d9b"/></linearGradient>
-  <pattern id="tirDotY" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".9" y=".9" width="6.2" height="6.2" rx="1" fill="#ffe3a0"/></pattern>
+  <pattern id="tirDotY" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".5" y=".5" width="7" height="7" rx=".8" fill="#ffe7a8"/></pattern>
+  <pattern id="tirDotA" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".5" y=".5" width="7" height="7" rx=".8" fill="#e6cf9c"/></pattern>
+  <pattern id="tirDotW" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".5" y=".5" width="7" height="7" rx=".8" fill="#fff1dc"/></pattern>
   <linearGradient id="tirG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6ffff"/><stop offset=".5" stop-color="#9ffbff"/><stop offset="1" stop-color="#4fe6dc"/></linearGradient>
   <filter id="tirF" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="3.5" result="b"/><feFlood flood-color="#28e6dc"/><feComposite in2="b" operator="in" result="gl"/><feMerge><feMergeNode in="gl"/><feMergeNode in="gl"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs></svg>`; document.body.appendChild(d.firstChild); }
 /* b152: 디지털 한글 단위(조/억/만/메/소) — 획마다 이어진 세그먼트, 획과 획 사이만 끊김(7세그먼트 방식). 12×12 격자 [x1,y1,x2,y2] */
@@ -1309,6 +1311,9 @@ const HSEG={
  '만':[[1.9,1.2,5.1,1.2],[1,2.2,1,5.2],[6,2.2,6,5.2],[1.9,6.2,5.1,6.2],[8.8,.5,8.8,7.2],[9.9,3.7,11.3,3.7],[1.9,8.3,1.9,10.5],[2.9,11.4,10.6,11.4]],
  '메':[[1.9,1.9,4.7,1.9],[1,2.9,1,9.1],[5.6,2.9,5.6,9.1],[1.9,10.1,4.7,10.1],[6.7,5.6,7.4,5.6],[8.4,1,8.4,11],[10.9,.5,10.9,11.5]]};
 const hsegD=ch=>(HSEG[ch]||[]).map(([a,b,c,d])=>`M${a},${b}L${c},${d}`).join('');
+/* b153: 점 무늬 픽셀 한글(그래프용) — 96px 글자 + 8단위 점 패턴(userSpace)을 scale로 축소, 바닥 yb 기준 */
+const HDY={'억':72,'메':72,'만':70,'조':80,'소':80};
+const hdotG=(ch,x,yb,s,pat)=>`<g class="hdot" transform="translate(${(+x).toFixed(1)} ${(yb-78*s).toFixed(1)}) scale(${s.toFixed(4)})"><text x="0" y="${HDY[ch]||76}" style="font-size:96px" fill="url(#${pat})">${ch}</text></g>`;
 const hsegSvg=ch=>`<svg class="hk" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="${hsegD(ch)}"/></svg>`;
 /* 그래프 글자(축·값 라벨): 숫자는 text, 한글 단위는 세그먼트 path. anchor=end|middle, fs=글자 크기 */
 function segLab(str,x,y,anchor,cls,fs=10){ const S=String(str), u=fs*.86, gap=fs*.12;
@@ -1316,12 +1321,12 @@ function segLab(str,x,y,anchor,cls,fs=10){ const S=String(str), u=fs*.86, gap=fs
   const tw=t=>[...t].reduce((a,c)=>a+(/[.,]/.test(c)?.32:c===' '?.3:.64)*fs,0);
   const W=parts.reduce((a,[k,v])=>a+(k==='t'?tw(v):u+gap),0); let cx=anchor==='end'?x-W:anchor==='middle'?x-W/2:x; let out='';
   for(const [k,v] of parts){ if(k==='t'){ out+=`<text class="${cls}" x="${cx.toFixed(1)}" y="${y}" text-anchor="start">${esc(v)}</text>`; cx+=tw(v); }
-    else { out+=`<path class="hsk ${cls}-k" d="${hsegD(v)}" transform="translate(${(cx+gap*.5).toFixed(1)} ${(y-u*.98).toFixed(1)}) scale(${(u/12).toFixed(4)}) skewX(-5)"/>`; cx+=u+gap; } }
+    else { out+=hdotG(v,cx+gap*.5,+y+.5,u/78*.9,cls==='cax'?'tirDotA':'tirDotW'); cx+=u+gap; } }
   return `<g class="seglab" aria-hidden="true">${out}</g>`; }
 function tir(text,cls=''){ const T=String(text); let out='', x=0, parts='';
   const flush=()=>{ if(!parts&&!x) return; const W=Math.max(1,x-8); out+=`<svg class="tir-g" viewBox="-6 -6 ${W+12} 98" style="--tw:${((W+12)/98).toFixed(3)}" aria-hidden="true" focusable="false">${parts}</svg>`; parts=''; x=0; };
   for(const ch of T){ if(ch==='1'){ parts+=tirDigit(ch,x-20); x+=34; } else if(/[0-9]/.test(ch)){ parts+=tirDigit(ch,x); x+=54; } /* 1 은 좁게 */
-    else if(/[가-힣]/.test(ch)){ flush(); out+=`<span class="tir-k" data-k="${ch}" aria-hidden="true">${hsegSvg(ch)}</span>`; }
+    else if(/[가-힣]/.test(ch)){ flush(); out+=`<span class="tir-k" data-k="${ch}" aria-hidden="true"></span>`; }
     else if(ch==='.'||ch===','){ parts+=`<path class="tl" d="M${x+2},${ch==='.'?66:64}h10v10h-10z${ch===','?`M${x+5},76h6l-5,9h-5z`:''}"/>`; x+=17; }
     else if(ch==='-'){ parts+=`<path class="tl" d="${tirH(x+2,x+40,39,7)}"/>`; x+=48; } else if(ch===' '){ flush(); out+='<span class="tir-sp" aria-hidden="true"></span>'; } }
   flush();
@@ -1330,7 +1335,7 @@ const tirMeso = n => tir(meso(n));
 /* b150: 그래프 값 라벨용 SVG 디지털 글자 (계산기4 골드 숫자 + Fusion Pixel 한글, 한글은 8단위 격자에 맞춘 점 무늬) — (cx, 바닥 y, 숫자 높이 h) */
 function tirSvg(text,cx,yb,h,cls='tgold'){ const T=String(text), k=h/78, P=[]; let x=0;
   for(const ch of T){ if(ch==='1'){ P.push(tirDigit(ch,x-20)); x+=34; } else if(/[0-9]/.test(ch)){ P.push(tirDigit(ch,x)); x+=54; }
-    else if(/[가-힣]/.test(ch)){ x+=6; P.push(`<path class="tsk" d="${hsegD(ch)}" transform="translate(${x} 11) scale(5.6)"/>`); x+=74; }
+    else if(/[가-힣]/.test(ch)){ x=Math.ceil(x/8)*8; P.push(hdotG(ch,x,78,1,'tirDotY').replace('class="hdot"','class="hdot tsk"')); x+=/[억메]/.test(ch)?88:96; }
     else if(ch==='.'||ch===','){ P.push(`<path class="tl" d="M${x+2},66h10v10h-10z"/>`); x+=17; } else if(ch===' '){ x+=24; } }
   const W=Math.max(1,x-6); return `<g class="tsv ${cls}" transform="translate(${(cx-W*k/2).toFixed(1)} ${(yb-78*k).toFixed(1)}) scale(${k.toFixed(4)}) skewX(-5)" aria-hidden="true">${P.join('')}</g>`; }
 /* b150: 1억 이상은 소수 둘째 자리 억(32.51억), 1조 이상은 조(1.23조) — 사이트 전체 공통 */
