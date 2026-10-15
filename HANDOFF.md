@@ -16,7 +16,7 @@
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
 ## b148 (2026-10-15) — 한글 단위(조/억/만/메소)를 숫자와 한 줄로 + 5° 기울임
-- 시간(KST): 시작 13:01 · 코딩 13:01–13:10 · 테스트 13:16–13:20(관련 14개 병렬 + 전체 1회 모두 통과) · 배포 13:21
+- 시간(KST): 시작 13:01 · 코딩 13:01–13:10 · 테스트 13:16–13:20(관련 14개 병렬 + 전체 1회 모두 통과) · 배포 13:21 · 보정 13:23–13:31(첫 배포에 이전 시안 값 -.07/-.11/-.03em 이 실림 → 실측값으로 고침, 관련 6개 재통과)
 - `.tir-k` 를 inline-block 으로 바꾸고 `transform:translateY(var(--ky)) skewX(-5deg)` (숫자 SVG 와 같은 기울기).
 - 글자별 올림(실측으로 맞춤: 4배율 스크린샷에서 숫자/한글 잉크의 위·아래 끝 비교, 14px·1.2rem·2rem 모두 ±0.5px): 억·메 -.055em, 만 -.068em(가장 많이), 조·소 -.015em. 크기는 그대로.
 - 스크린샷: /workspace/maple-boss-tracker/b148_before_*.png, b148_after_*.png, 확대본 b148_{before,after}_*_zoom.png, 비교 b148_compare.png (charinfo 에 '만' 보임)
