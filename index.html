@@ -1440,6 +1440,18 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .chart.lux text[text-anchor="end"]:not(.cxl){fill:#c9b58f;font-size:10px;font-weight:600;letter-spacing:.06em}
 .chart.lux .ctot span{letter-spacing:.12em;color:#e8d5ae;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .chart.lux .ctot b{color:#ffe1a0;text-shadow:0 0 8px rgba(255,170,60,.45),0 1px 2px rgba(0,0,0,.7);letter-spacing:.04em}
+/* ===== b152: 디지털 한글 = 획 단위 세그먼트(획 안은 이어짐, 획과 획 사이만 끊김) ===== */
+.tir-k::before{content:none!important}
+.tir-k .hk{display:block;width:1em;height:1em;overflow:visible}
+.tir-k .hk path{fill:none;stroke:currentColor;stroke-width:1.05;stroke-linecap:butt}
+.chart .tsv .tsk{fill:none!important;stroke:url(#tirY)!important;stroke-width:1.3;stroke-linecap:butt}
+.chart .hsk{fill:none;stroke-width:1.4;stroke-linecap:butt;paint-order:normal}
+.chart.lux .cax-k{stroke:#c9b58f}
+.chart.lux .mvl-k{stroke:#f4e6d2}
+.chart.lux .seglab text{paint-order:stroke}
+.tir-k .hk{width:.9em;height:.9em}
+.tir-k[data-k]{--ky:0em}
+.tir-k[data-k="조"],.tir-k[data-k="소"]{--ky:.091em}.tir-k[data-k="억"]{--ky:.015em}.tir-k[data-k="만"]{--ky:.046em}.tir-k[data-k="메"]{--ky:.037em}
 </style>
 </head>
 <body>
@@ -2196,7 +2208,7 @@ function missChart(rows, kind){
     ${n>1?`<polygon class="carea" fill="url(#mcg${u})" points="${X(0).toFixed(1)},${Hh-pb} ${pts} ${X(n-1).toFixed(1)},${Hh-pb}"/>`:''}
     <polyline class="cline" pathLength="1" fill="none" stroke="url(#mcs${u})" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round" filter="url(#mcf${u})" points="${pts}"/>
     ${rows.map((r,i)=>`<g class="mpt" data-tip="${esc(tip(r))}" style="--d:${(.15+i*.06).toFixed(2)}s;--c:${c}"><circle cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="14" fill="transparent"/><rect class="cbar" x="${(X(i)-12).toFixed(1)}" y="${Y(r.meso).toFixed(1)}" width="24" height="${Math.max(0,Hh-pb-Y(r.meso)).toFixed(1)}" rx="5" fill="url(#mcbar${u})"/><circle class="mdot" cx="${X(i).toFixed(1)}" cy="${Y(r.meso).toFixed(1)}" r="4.5"/>
-      <text x="${X(i).toFixed(1)}" y="${(Y(r.meso)-12).toFixed(1)}" text-anchor="middle" class="lbl cval" font-size="10">${r.meso?meso(r.meso).replace(/ .*/,''):'0'}</text>
+      <g class="lbl cval">${segLab(r.meso?meso(r.meso).replace(/ .*/,''):'0',X(i),(Y(r.meso)-12).toFixed(1),'middle','mvl')}</g>
       <text class="cxl" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle" font-size="10">${r.date}</text></g>`).join('')}</svg></div>`;
 }
 let chartUid=0;
@@ -2866,10 +2878,27 @@ function tirDefs(){ if(document.getElementById('tirDefs')) return; const d=docum
   <pattern id="tirDotY" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".9" y=".9" width="6.2" height="6.2" rx="1" fill="#ffe3a0"/></pattern>
   <linearGradient id="tirG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6ffff"/><stop offset=".5" stop-color="#9ffbff"/><stop offset="1" stop-color="#4fe6dc"/></linearGradient>
   <filter id="tirF" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="3.5" result="b"/><feFlood flood-color="#28e6dc"/><feComposite in2="b" operator="in" result="gl"/><feMerge><feMergeNode in="gl"/><feMergeNode in="gl"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs></svg>`; document.body.appendChild(d.firstChild); }
+/* b152: 디지털 한글 단위(조/억/만/메/소) — 획마다 이어진 세그먼트, 획과 획 사이만 끊김(7세그먼트 방식). 12×12 격자 [x1,y1,x2,y2] */
+const HSEG={
+ '조':[[2,1.4,10,1.4],[5.4,2.9,2.4,6.4],[6.6,2.9,9.6,6.4],[6,7.5,6,9.4],[1,10.8,11,10.8]],
+ '소':[[5.3,1,2,6.2],[6.7,2.7,10,6.2],[6,7.5,6,9.4],[1,10.8,11,10.8]],
+ '억':[[2.2,1,5.2,1],[6.4,2.1,6.4,4.9],[5.2,6,2.2,6],[1,4.9,1,2.1],[7.5,3.5,8.7,3.5],[9.8,.5,9.8,7.2],[1.6,8.9,9,8.9],[10.2,10,10.2,11.8]],
+ '만':[[1.9,1.2,5.1,1.2],[1,2.2,1,5.2],[6,2.2,6,5.2],[1.9,6.2,5.1,6.2],[8.8,.5,8.8,7.2],[9.9,3.7,11.3,3.7],[1.9,8.3,1.9,10.5],[2.9,11.4,10.6,11.4]],
+ '메':[[1.9,1.9,4.7,1.9],[1,2.9,1,9.1],[5.6,2.9,5.6,9.1],[1.9,10.1,4.7,10.1],[6.7,5.6,7.4,5.6],[8.4,1,8.4,11],[10.9,.5,10.9,11.5]]};
+const hsegD=ch=>(HSEG[ch]||[]).map(([a,b,c,d])=>`M${a},${b}L${c},${d}`).join('');
+const hsegSvg=ch=>`<svg class="hk" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="${hsegD(ch)}"/></svg>`;
+/* 그래프 글자(축·값 라벨): 숫자는 text, 한글 단위는 세그먼트 path. anchor=end|middle, fs=글자 크기 */
+function segLab(str,x,y,anchor,cls,fs=10){ const S=String(str), u=fs*.86, gap=fs*.12;
+  const parts=[]; let buf=''; for(const ch of S){ if(HSEG[ch]){ if(buf) parts.push(['t',buf]); buf=''; parts.push(['k',ch]); } else buf+=ch; } if(buf) parts.push(['t',buf]);
+  const tw=t=>[...t].reduce((a,c)=>a+(/[.,]/.test(c)?.32:c===' '?.3:.64)*fs,0);
+  const W=parts.reduce((a,[k,v])=>a+(k==='t'?tw(v):u+gap),0); let cx=anchor==='end'?x-W:anchor==='middle'?x-W/2:x; let out='';
+  for(const [k,v] of parts){ if(k==='t'){ out+=`<text class="${cls}" x="${cx.toFixed(1)}" y="${y}" text-anchor="start">${esc(v)}</text>`; cx+=tw(v); }
+    else { out+=`<path class="hsk ${cls}-k" d="${hsegD(v)}" transform="translate(${(cx+gap*.5).toFixed(1)} ${(y-u*.98).toFixed(1)}) scale(${(u/12).toFixed(4)}) skewX(-5)"/>`; cx+=u+gap; } }
+  return `<g class="seglab" aria-hidden="true">${out}</g>`; }
 function tir(text,cls=''){ const T=String(text); let out='', x=0, parts='';
   const flush=()=>{ if(!parts&&!x) return; const W=Math.max(1,x-8); out+=`<svg class="tir-g" viewBox="-6 -6 ${W+12} 98" style="--tw:${((W+12)/98).toFixed(3)}" aria-hidden="true" focusable="false">${parts}</svg>`; parts=''; x=0; };
   for(const ch of T){ if(ch==='1'){ parts+=tirDigit(ch,x-20); x+=34; } else if(/[0-9]/.test(ch)){ parts+=tirDigit(ch,x); x+=54; } /* 1 은 좁게 */
-    else if(/[가-힣]/.test(ch)){ flush(); out+=`<span class="tir-k" data-k="${ch}" aria-hidden="true"></span>`; }
+    else if(/[가-힣]/.test(ch)){ flush(); out+=`<span class="tir-k" data-k="${ch}" aria-hidden="true">${hsegSvg(ch)}</span>`; }
     else if(ch==='.'||ch===','){ parts+=`<path class="tl" d="M${x+2},${ch==='.'?66:64}h10v10h-10z${ch===','?`M${x+5},76h6l-5,9h-5z`:''}"/>`; x+=17; }
     else if(ch==='-'){ parts+=`<path class="tl" d="${tirH(x+2,x+40,39,7)}"/>`; x+=48; } else if(ch===' '){ flush(); out+='<span class="tir-sp" aria-hidden="true"></span>'; } }
   flush();
@@ -2878,7 +2907,7 @@ const tirMeso = n => tir(meso(n));
 /* b150: 그래프 값 라벨용 SVG 디지털 글자 (계산기4 골드 숫자 + Fusion Pixel 한글, 한글은 8단위 격자에 맞춘 점 무늬) — (cx, 바닥 y, 숫자 높이 h) */
 function tirSvg(text,cx,yb,h,cls='tgold'){ const T=String(text), k=h/78, P=[]; let x=0;
   for(const ch of T){ if(ch==='1'){ P.push(tirDigit(ch,x-20)); x+=34; } else if(/[0-9]/.test(ch)){ P.push(tirDigit(ch,x)); x+=54; }
-    else if(/[가-힣]/.test(ch)){ x=Math.ceil(x/8)*8; P.push(`<text class="tsk" x="${x}" y="${/[억메]/.test(ch)?72:80}" style="font-size:96px">${ch}</text>`); x+=/[억메]/.test(ch)?88:96; }
+    else if(/[가-힣]/.test(ch)){ x+=6; P.push(`<path class="tsk" d="${hsegD(ch)}" transform="translate(${x} 11) scale(5.6)"/>`); x+=74; }
     else if(ch==='.'||ch===','){ P.push(`<path class="tl" d="M${x+2},66h10v10h-10z"/>`); x+=17; } else if(ch===' '){ x+=24; } }
   const W=Math.max(1,x-6); return `<g class="tsv ${cls}" transform="translate(${(cx-W*k/2).toFixed(1)} ${(yb-78*k).toFixed(1)}) scale(${k.toFixed(4)}) skewX(-5)" aria-hidden="true">${P.join('')}</g>`; }
 /* b150: 1억 이상은 소수 둘째 자리 억(32.51억), 1조 이상은 조(1.23조) — 사이트 전체 공통 */
@@ -3464,7 +3493,7 @@ function thisWeekChart(T){ // b135: 주간 메소 그래프 = 이번 주만, 목
   const DN=['목','금','토','일','월','화','수'], W=640, Hh=220, pl=50, pr=14, pt=24, pb=30, bw=(W-pl-pr)/7;
   let s=0; const cums=B.map(v=>s+=v).slice(0,today+1), cmax=Math.max(1,s);
   const X=i=>pl+i*bw+bw/2, Y=v=>Hh-pb-(Hh-pb-pt)*v/cmax;
-  const grid=[0,.5,1].map(f=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(cmax*f).toFixed(1)}" y2="${Y(cmax*f).toFixed(1)}" stroke="currentColor" opacity="${f?'.08':'.18'}"/><text x="${pl-6}" y="${(Y(cmax*f)+3.5).toFixed(1)}" text-anchor="end" font-size="10">${f?fmtEok(cmax*f):'0'}</text>`).join('');
+  const grid=[0,.5,1].map(f=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(cmax*f).toFixed(1)}" y2="${Y(cmax*f).toFixed(1)}" stroke="currentColor" opacity="${f?'.08':'.18'}"/>${segLab(f?fmtEok(cmax*f):'0',pl-6,(Y(cmax*f)+3.5).toFixed(1),'end','cax')}`).join('');
   const pts=[`${pl},${Y(0)}`,...cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`)].join(' ');
   const d0=Date.parse(cur.week+'T00:00:00+09:00')||ws, md=i=>{ const d=new Date(d0+i*864e5+KST_MS); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; };
   const xl=DN.map((n,i)=>`<text x="${X(i).toFixed(1)}" y="${Hh-pb+16}" text-anchor="middle"${i===today?' font-weight="700"':''}>${n} ${md(i)}</text>`).join('');
@@ -3480,7 +3509,7 @@ function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 
   let cum=0; const acc=rows.map(r=>cum+=r.total), cums=o.perWeek?rows.map(r=>r.total):acc; const cmax=Math.max(1,...cums)*1.08;
   const X=i=>pl+i*bw+bw/2, Y=v=>Hh-pb-(Hh-pb-pt)*v/cmax, step=Math.max(1,Math.ceil(n/(W/60)));
   const pts=cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' '), u=++chartUid;
-  const top=Math.max(1,...cums), grid=`<line class="cyax" x1="${pl}" x2="${pl}" y1="${pt-6}" y2="${Hh-pb}" stroke="url(#lcv${u})"/>`+cums.map((v,i)=>`<line class="ctick" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Hh-pb}" y2="${Hh-pb+5}"/>`).join('')+[0,.25,.5,.75,1].map(f=>`<line class="cg${f?'':' cg0'}" x1="${pl}" x2="${W-pr}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}" stroke="url(#${f?'lcgr':'lcb'}${u})"/><line class="cytk" x1="${pl-4}" x2="${pl}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}"/><text class="cax" x="${pl-8}" y="${(Y(top*f)+3.5).toFixed(1)}" text-anchor="end">${f?fmtEok(top*f):'0'}</text>`).join('');
+  const top=Math.max(1,...cums), grid=`<line class="cyax" x1="${pl}" x2="${pl}" y1="${pt-6}" y2="${Hh-pb}" stroke="url(#lcv${u})"/>`+cums.map((v,i)=>`<line class="ctick" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Hh-pb}" y2="${Hh-pb+5}"/>`).join('')+[0,.25,.5,.75,1].map(f=>`<line class="cg${f?'':' cg0'}" x1="${pl}" x2="${W-pr}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}" stroke="url(#${f?'lcgr':'lcb'}${u})"/><line class="cytk" x1="${pl-4}" x2="${pl}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}"/>${segLab(f?fmtEok(top*f):'0',pl-8,(Y(top*f)+3.5).toFixed(1),'end','cax')}`).join('');
   const xl=rows.map((r,i)=>i%step===0||r.cur?`<text class="cxl${r.cur?' cur':''}" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle">${o.perWeek?`${i+1}주차`:fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(rows[n-1]&&rows[n-1].cur?`<text class="cxl cur sub" x="${X(n-1).toFixed(1)}" y="${Hh-pb+32}" text-anchor="middle">이번 주</text>`:'');
   const tipOf=(r,v)=>`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n결정석 : ${meso(r.cry)}\n아이템 판매 : ${meso(r.sale)}`+`\n누적 ${meso(o.perWeek?acc[rows.indexOf(r)]:v)}`;
   const best=cums.indexOf(top);

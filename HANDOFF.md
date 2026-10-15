@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b152 (2026-10-15)
+시작 14:32 KST · 끝 14:40 KST (코딩 약 9분 / 테스트·스크린샷 약 -1분)
+- 디지털 한글 단위(조/억/만/메/소): b150 균일 점 마스크 → **획 단위 세그먼트**. 각 획은 끊김 없이 이어지고, 획과 획이 만나는 곳만 틈(7세그먼트 숫자와 같은 방식). `HSEG`(12×12 격자 선분) + `hsegSvg()`; `.tir-k` 안에 aria-hidden SVG로 그려 innerText 영향 없음. 얇은 획(1.05), 글로우·5° 기울임 유지, 바닥선을 숫자 바닥에 맞춤(4× 측정 ±0.5px, --ky 재조정, 크기 .9em).
+- 그래프에도 적용: 주간 메소 그래프 값 라벨(`tirSvg`, 금색 그라데이션 획), y축 라벨(cumLineChart·weekChart, `segLab()` = 숫자 text + 한글 세그먼트), 빠뜨린 보스메소 값 라벨. 말풍선은 디지털이 아니라 일반 글꼴 유지.
+테스트: run_par 전체 통과 (18번 직렬 재시도 통과).
+스크린샷: /workspace/maple-boss-tracker/b152_{before,after}_*.png, 비교 b152_cmp_{charinfo,week,total,sales,chart_weekly}.png
+
 ## b150 (2026-10-15)
 시작 13:53 KST · 끝 14:12 KST (코딩 약 11분 / 테스트·스크린샷 약 8분)
 1. 금액 표기 통일: 1억 이상 소수 둘째 자리 `32.51억`, 1조 이상 `1.23조` — `fmtEok()` 추가, `meso()`·차트 축·말풍선·카드·득템 합계 모두 적용.
