@@ -2306,7 +2306,7 @@ function missChart(rows, kind){
 }
 let chartUid=0;
 /* b139: 그래프 그려지는 애니메이션은 화면에 들어올 때 시작 (그 전엔 멈춤·숨김). 렌더로 새로 생긴 .chart.lux 를 MutationObserver 로 잡아 IntersectionObserver 에 등록 */
-(()=>{ if(typeof document==='undefined') return; const inv=el=>el.classList.add('inview');
+(()=>{ if(typeof document==='undefined') return; const inv=el=>{ el.classList.add('inview'); try{ tsvAnim(el); }catch(e){} };
   const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ inv(e.target); io.unobserve(e.target); } }),{threshold:.25}):null;
   const scan=root=>(root.querySelectorAll?root.querySelectorAll('.chart.lux:not(.inview)'):[]).forEach(el=>io?io.observe(el):inv(el));
   const start=()=>{ scan(document); new MutationObserver(ms=>{ for(const m of ms) for(const n of m.addedNodes) if(n.nodeType===1){ if(n.matches?.('.chart.lux')) scan(n.parentNode); else scan(n); } }).observe(document.body,{childList:true,subtree:true}); };
@@ -3075,7 +3075,19 @@ function tirSvg(text,cx,yb,h,cls='tgold'){ const T=String(text), k=h/78, P=[]; l
   for(const ch of T){ if(ch==='1'){ P.push(tirDigit(ch,x-20)); x+=34; } else if(/[0-9]/.test(ch)){ P.push(tirDigit(ch,x)); x+=54; }
     else if(HPIX[ch]){ P.push(`<path class="tl tk" d="${hpixD(ch,x+4)}"/>`); x+=HADV[ch]||92; }
     else if(ch==='.'||ch===','){ P.push(`<path class="tl" d="M${x+2},66h10v10h-10z"/>`); x+=17; } else if(ch===' '){ x+=24; } }
-  const W=Math.max(1,x-6); return `<g class="tsv ${cls}" transform="translate(${(cx-W*k/2).toFixed(1)} ${(yb-78*k).toFixed(1)}) scale(${k.toFixed(4)}) skewX(-5)" aria-hidden="true">${P.join('')}</g>`; }
+  const W=Math.max(1,x-6), tr=`translate(${(cx-W*k/2).toFixed(1)} ${(yb-78*k).toFixed(1)}) scale(${k.toFixed(4)}) skewX(-5)`; if(arguments[5]) return {tr,inner:P.join('')};
+  return `<g class="tsv ${cls}" transform="${tr}" data-st="${esc(T)}" data-sa="${cx},${yb},${h}" aria-hidden="true">${P.join('')}</g>`; }
+/* b173: 그래프 안 디지털 숫자도 0→최종값 카운팅 (그래프가 화면에 들어올 때). 같은 그래프·자리·값은 탭 전환/새로고침 전까지 다시 안 돎 */
+const TSV_SEEN=new Set();
+function tsvAnim(chart){ if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) return; const sig=chart.className.replace(/\s*inview/,'');
+  chart.querySelectorAll('g.tsv[data-st]').forEach((g,i)=>{ const T=g.dataset.st, key=sig+'|'+i+'|'+T; if(TSV_SEEN.has(key)) return; TSV_SEEN.add(key);
+    const m=/^(-?[\d,]*\.?\d+)(.*)$/.exec(T); if(!m) return; const v=parseFloat(m[1].replace(/,/g,'')); if(!v) return;
+    const dp=(m[1].split('.')[1]||'').length, cm=m[1].includes(','), [cx,yb,h]=g.dataset.sa.split(',').map(Number);
+    const fmt=c=>dp?c.toFixed(dp):cm?Math.round(c).toLocaleString():String(Math.round(c));
+    const set=t=>{ const r=tirSvg(t,cx,yb,h,'',1); g.setAttribute('transform',r.tr); g.innerHTML=r.inner; };
+    const t0=performance.now(), D=1200; g.dataset.tanim='run'; set(fmt(0)+m[2]);
+    const step=now=>{ if(!g.isConnected) return; const q=Math.min(1,(now-t0)/D); if(q>=1){ set(T); g.dataset.tanim='done'; return; } set(fmt(v*(1-Math.pow(1-q,3)))+m[2]); requestAnimationFrame(step); };
+    requestAnimationFrame(step); }); }
 /* b150: 1억 이상은 소수 둘째 자리 억(32.51억), 1조 이상은 조(1.23조) — 사이트 전체 공통 */
 function fmtEok(n){ n=+n||0; const a=Math.abs(n); return a>=1e12?(n/1e12).toFixed(2)+'조':(n/1e8).toFixed(2)+'억'; }
 function meso(n){
@@ -4934,7 +4946,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-cpage],[data-tab],[data-move],[data-wmove],[data-id],[data-edit],[data-filter],[data-check],[data-toggle],[data-setdiff],[data-delhist],[data-acctest],[data-accdel],button[id]');
   if(!t) return;
   const c=activeChar();
-  if(t.dataset.tab){ const go=()=>{ tab=t.dataset.tab; try{ localStorage.setItem(TAB_KEY,tab); }catch(e){} syncTabs(); render(); tabTick(); };
+  if(t.dataset.tab){ const go=()=>{ if(tab!==t.dataset.tab){ TIR_LAST.clear(); TSV_SEEN.clear(); } /* b173: 탭 복귀 시 디지털 숫자 다시 카운팅 */ tab=t.dataset.tab; try{ localStorage.setItem(TAB_KEY,tab); }catch(e){} syncTabs(); render(); tabTick(); };
     // 저장 안 한 변경이 있으면 탭 이동 전에 묻기: 예 = 저장 후 이동 / 아니오 = 스냅샷으로 되돌리고 이동 / 닫기 = 머무름
     if(pend&&t.dataset.tab!==tab){ pendGuard(go); return; }
     go(); return; }
