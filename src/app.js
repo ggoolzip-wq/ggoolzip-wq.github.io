@@ -1328,7 +1328,7 @@ function tirDigit(ch,ox){ const w=46,h=78,t=7,c=3.5,g=2.5,m=h/2, on=TIR_SEG[ch]|
   const P={a:tirH(c+g,w-c-g,c,t),g:tirH(c+g,w-c-g,m,t),d:tirH(c+g,w-c-g,h-c,t),f:tirV(c,c+g,m-g,t),b:tirV(w-c,c+g,m-g,t),e:tirV(c,m+g,h-c-g,t),c:tirV(w-c,m+g,h-c-g,t)};
   return `<g transform="translate(${ox} 0)">${'abcdefg'.split('').filter(k=>ch!=='1'||on.includes(k)).map(k=>`<path d="${P[k]}" class="${on.includes(k)?'tl':'tg'}"/>`).join('')}</g>`; }
 function tirDefs(){ if(document.getElementById('tirDefs')) return; const d=document.createElement('div'); d.innerHTML=`<svg id="tirDefs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <linearGradient id="tirY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0be"/><stop offset=".55" stop-color="#ffcf6e"/><stop offset="1" stop-color="#f0a532"/></linearGradient>
+  <linearGradient id="tirY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6c8"/><stop offset=".55" stop-color="#ffd700"/><stop offset="1" stop-color="#d4af37"/></linearGradient>
   <linearGradient id="tirP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe0f2"/><stop offset=".5" stop-color="#ff7ac8"/><stop offset="1" stop-color="#ff2d9b"/></linearGradient>
   <pattern id="tirDotY" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".5" y=".5" width="7" height="7" rx=".8" fill="#ffe7a8"/></pattern>
   <pattern id="tirDotA" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".5" y=".5" width="7" height="7" rx=".8" fill="#e6cf9c"/></pattern>

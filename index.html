@@ -1543,6 +1543,14 @@ button.btn,.btn,.pctab,.ftab,[data-pckind],[data-pctab]{border-color:color-mix(i
 .pick-item.on,.accrow.on{border-color:var(--ice)!important;box-shadow:0 0 0 1px var(--ice) inset!important}
 [data-theme="dark"] nav.tabs button.on{color:#eaf7ff!important}
 .pbtn.psave.on{color:var(--ice)!important;border-color:var(--ice)!important;background:var(--ice-soft)!important;box-shadow:0 0 8px rgba(159,220,255,.25)!important}
+/* b172: 금색 디지털 = 04 24K 순금(#tirY #fff6c8/#ffd700/#d4af37, 테두리 255,215,0, 빛 255,200,0) — 로고·총 메소·총 수익·그래프 금색 숫자 / 로고 크게 */
+.tgoldv .tir:not(.tsm) .tir-g .tl,.logo-d .logo-g .tl,.chart .tsv .tl{stroke:rgba(255,215,0,.6)}
+.tgoldv .tir:not(.tsm) .tir-g .tg,.chart .tsv .tg{fill:rgba(255,215,0,.10)}
+.tgoldv .tir:not(.tsm) .tir-g{filter:drop-shadow(0 0 3px rgba(255,200,0,.95)) drop-shadow(0 0 8px rgba(255,200,0,.55))}
+.logo-d .logo-g{filter:drop-shadow(0 0 2.5px rgba(255,200,0,.95)) drop-shadow(0 0 7px rgba(255,200,0,.55))}
+.chart .tsv{filter:drop-shadow(0 0 2px rgba(255,200,0,.95)) drop-shadow(0 0 6px rgba(255,200,0,.5))}
+.logo-d .logo-g{height:1.85em;width:calc(1.85em * var(--tw))}
+@media (max-width:600px){.logo-d .logo-g{height:1.55em;width:calc(1.55em * var(--tw))}}
 </style>
 </head>
 <body>
@@ -2998,7 +3006,7 @@ function tirDigit(ch,ox){ const w=46,h=78,t=7,c=3.5,g=2.5,m=h/2, on=TIR_SEG[ch]|
   const P={a:tirH(c+g,w-c-g,c,t),g:tirH(c+g,w-c-g,m,t),d:tirH(c+g,w-c-g,h-c,t),f:tirV(c,c+g,m-g,t),b:tirV(w-c,c+g,m-g,t),e:tirV(c,m+g,h-c-g,t),c:tirV(w-c,m+g,h-c-g,t)};
   return `<g transform="translate(${ox} 0)">${'abcdefg'.split('').filter(k=>ch!=='1'||on.includes(k)).map(k=>`<path d="${P[k]}" class="${on.includes(k)?'tl':'tg'}"/>`).join('')}</g>`; }
 function tirDefs(){ if(document.getElementById('tirDefs')) return; const d=document.createElement('div'); d.innerHTML=`<svg id="tirDefs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <linearGradient id="tirY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0be"/><stop offset=".55" stop-color="#ffcf6e"/><stop offset="1" stop-color="#f0a532"/></linearGradient>
+  <linearGradient id="tirY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6c8"/><stop offset=".55" stop-color="#ffd700"/><stop offset="1" stop-color="#d4af37"/></linearGradient>
   <linearGradient id="tirP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe0f2"/><stop offset=".5" stop-color="#ff7ac8"/><stop offset="1" stop-color="#ff2d9b"/></linearGradient>
   <pattern id="tirDotY" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".5" y=".5" width="7" height="7" rx=".8" fill="#ffe7a8"/></pattern>
   <pattern id="tirDotA" width="8" height="8" patternUnits="userSpaceOnUse"><rect x=".5" y=".5" width="7" height="7" rx=".8" fill="#e6cf9c"/></pattern>

@@ -1466,3 +1466,11 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 매분 자동 갱신 재렌더(같은 탭, 같은 값)는 카운팅 안 함(키 Set 유지). reduced-motion 이면 없음. 카운팅 없던 작은 보조 문구(tsm)는 그대로.
 - 그래프 축 눈금 글자는 tirSvg 가 아니라서(일반 글씨) 대상 아님.
 - 테스트: 신규 `tests/test_tab_recount.py`(포트 8879, run_all.sh 추가) — 첫 진입 카운팅, 같은 탭 재렌더 안 돎, 탭 복귀 직후 run, 끝나면 최종값. 전체 병렬 통과(test58 의 '마지막 확인 2026-10-11' 날짜 검사 4건은 변경 전 main 에서도 실패 — 날짜/가격 데이터 의존, b171 영역).
+
+## b172 (2026-10-15 KST): 금색 디지털 = 24K 순금 + 로고 크게
+- 금색 디지털(로고 '메록지', 이번 주 수익 총 메소, 누적 수입 총 수익, 그래프 금색 숫자) 주황기 제거 → 시안 04 '24K 순금'.
+  - `src/app.js` 그라데이션 `#tirY`: #fff6c8 / #ffd700 / #d4af37 (이전 #fff0be / #ffcf6e / #f0a532).
+  - `src/extra.css` 끝 b172 블록: 테두리 rgba(255,215,0,.6), 빛 rgba(255,200,0,…) (세기·반경은 그대로).
+- 로고 크기: `.logo-d .logo-g` 높이 1.05em → 1.85em (600px 이하 1.55em). 헤더 높이 92px 그대로, 1400px·390px 가로 넘침 없음.
+- 시안: /workspace/maple-boss-tracker/b172_gold_*.png, 전후: b172_cmp_{1400,390}_{header,total}.png
+- 테스트: tests/run_par.py 전부 통과(CHROME=/usr/bin/google-chrome).
