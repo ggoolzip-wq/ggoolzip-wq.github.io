@@ -1392,3 +1392,7 @@ body[data-curtab="boss"] :is(#charList .nm,#charList .nm *,.bosslay h2,.rp-nm,.r
 
 .lvblank.lvnone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:1.05em}
 .lvnone .pinkbean{width:109px;height:auto;image-rendering:pixelated;filter:drop-shadow(0 0 10px rgba(255,140,200,.35))}
+/* b162: 디지털 글씨(숫자+단위, 그래프 밖) 1.4배 — 너무 작다는 피드백. 단위는 같은 SVG 안이라 비율·점 빈틈·글로우·5° 기울기·기준선 그대로. 로고·그래프(SVG 안) 제외 */
+.tir:not(.logo-d .tir){font-size:1.4em;line-height:1}
+/* b162: 핑크빈 몸통(이미지 x 9~68px, 중심 39/109) 을 문구 가운데로 — 이미지 박스 중심(54.5)보다 15.5px 왼쪽이라 그만큼 오른쪽으로 */
+.lvnone .pinkbean{transform:translateX(calc(109px * 15.5 / 109))}

@@ -1345,7 +1345,7 @@ const HSEG={
 const hsegD=ch=>(HSEG[ch]||[]).map(([a,b,c,d])=>`M${a},${b}L${c},${d}`).join('');
 /* b153: 점 무늬 픽셀 한글(그래프용) — 96px 글자 + 8단위 점 패턴(userSpace)을 scale로 축소, 바닥 yb 기준 */
 const HDY={'억':72,'메':72,'만':70,'조':80,'소':80};
-const HPIX={"록":[[0,6],[1,0],[1,2],[1,3],[1,4],[1,6],[1,8],[2,0],[2,2],[2,4],[2,6],[2,8],[3,0],[3,2],[3,4],[3,6],[3,8],[4,0],[4,2],[4,4],[4,6],[4,8],[5,0],[5,2],[5,4],[5,5],[5,6],[5,8],[6,0],[6,2],[6,4],[6,6],[6,8],[7,0],[7,2],[7,4],[7,6],[7,8],[8,0],[8,2],[8,4],[8,6],[8,8],[9,0],[9,1],[9,2],[9,4],[9,6],[9,8],[9,9],[9,10],[10,6]],"지":[[0,0],[0,9],[1,0],[1,7],[1,8],[2,0],[2,4],[2,5],[2,6],[3,0],[3,1],[3,2],[3,3],[4,0],[4,4],[4,5],[4,6],[5,0],[5,7],[5,8],[6,0],[6,9],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"조":[[0,9],[1,0],[1,5],[1,9],[2,0],[2,5],[2,9],[3,0],[3,4],[3,9],[4,0],[4,3],[4,9],[5,0],[5,1],[5,2],[5,6],[5,7],[5,8],[5,9],[6,0],[6,3],[6,9],[7,0],[7,4],[7,9],[8,0],[8,5],[8,9],[9,0],[9,5],[9,9],[10,9]],"억":[[0,2],[0,3],[1,1],[1,4],[1,7],[2,0],[2,5],[2,7],[3,0],[3,5],[3,7],[4,0],[4,5],[4,7],[5,1],[5,4],[5,7],[6,2],[6,3],[6,7],[7,2],[7,7],[8,2],[8,7],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,7],[9,8],[9,9],[9,10]],"만":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,0],[1,5],[1,7],[1,8],[1,9],[1,10],[2,0],[2,5],[2,10],[3,0],[3,5],[3,10],[4,0],[4,5],[4,10],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,10],[6,10],[7,10],[8,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,10],[10,3]],"메":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,9],[1,0],[1,9],[2,0],[2,9],[3,0],[3,9],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[5,4],[6,4],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[7,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"소":[[0,9],[1,6],[1,9],[2,5],[2,9],[3,4],[3,9],[4,3],[4,9],[5,0],[5,1],[5,2],[5,6],[5,7],[5,8],[5,9],[6,3],[6,9],[7,4],[7,9],[8,5],[8,9],[9,6],[9,9],[10,9]]};
+const HPIX={"록":[[0,6],[1,0],[1,2],[1,3],[1,4],[1,6],[1,8],[2,0],[2,2],[2,4],[2,6],[2,8],[3,0],[3,2],[3,4],[3,6],[3,8],[4,0],[4,2],[4,4],[4,6],[4,8],[5,0],[5,2],[5,4],[5,5],[5,6],[5,8],[6,0],[6,2],[6,4],[6,6],[6,8],[7,0],[7,2],[7,4],[7,6],[7,8],[8,0],[8,2],[8,4],[8,6],[8,8],[9,0],[9,1],[9,2],[9,4],[9,6],[9,8],[9,9],[9,10],[10,6]],"지":[[0,0],[0,9],[1,0],[1,7],[1,8],[2,0],[2,4],[2,5],[2,6],[3,0],[3,1],[3,2],[3,3],[4,0],[4,4],[4,5],[4,6],[5,0],[5,7],[5,8],[6,0],[6,9],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"조":[[0,9],[1,0],[1,5],[1,9],[2,0],[2,5],[2,9],[3,0],[3,4],[3,9],[4,0],[4,3],[4,9],[5,0],[5,1],[5,2],[5,6],[5,7],[5,8],[5,9],[6,0],[6,3],[6,9],[7,0],[7,4],[7,9],[8,0],[8,5],[8,9],[9,0],[9,5],[9,9],[10,9]],"억":[[0,2],[0,3],[1,1],[1,4],[1,7],[2,0],[2,5],[2,7],[3,0],[3,5],[3,7],[4,0],[4,5],[4,7],[5,1],[5,4],[5,7],[6,2],[6,3],[6,7],[7,2],[7,7],[8,2],[8,7],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,7],[9,8],[9,9],[9,10]],"만":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,0],[1,5],[1,7],[1,8],[1,9],[1,10],[2,0],[2,5],[2,10],[3,0],[3,5],[3,10],[4,0],[4,5],[4,10],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,10],[6,10],[7,10],[8,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,10],[10,3]],"메":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,9],[1,0],[1,9],[2,0],[2,9],[3,0],[3,9],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[5,4],[6,4],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[7,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"소":[[0,9],[1,6],[1,9],[2,5],[2,9],[3,4],[3,9],[4,3],[4,9],[5,0],[5,1],[5,2],[5,6],[5,7],[5,8],[5,9],[6,3],[6,9],[7,4],[7,9],[8,5],[8,9],[9,6],[9,9],[10,9]],"개":[[0,0],[0,9],[1,0],[1,9],[2,0],[2,8],[3,0],[3,7],[4,0],[4,5],[4,6],[5,0],[5,1],[5,2],[5,3],[5,4],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[7,10],[8,5],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"회":[[0,2],[0,9],[1,2],[1,5],[1,6],[1,9],[2,0],[2,2],[2,4],[2,7],[2,9],[3,0],[3,2],[3,4],[3,7],[3,8],[3,9],[4,0],[4,2],[4,4],[4,7],[4,9],[5,0],[5,2],[5,4],[5,7],[5,9],[6,2],[6,5],[6,6],[6,9],[7,2],[7,9],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"승":[[0,5],[1,3],[1,5],[1,8],[1,9],[2,3],[2,5],[2,7],[2,10],[3,2],[3,5],[3,7],[3,10],[4,2],[4,5],[4,7],[4,10],[5,0],[5,1],[5,5],[5,7],[5,10],[6,2],[6,5],[6,7],[6,10],[7,2],[7,5],[7,7],[7,10],[8,3],[8,5],[8,7],[8,10],[9,3],[9,5],[9,8],[9,9],[10,5]],"패":[[0,0],[0,9],[1,0],[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7],[1,8],[1,9],[2,0],[2,9],[3,0],[3,9],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[5,0],[5,9],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[7,10],[8,5],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"인":[[0,2],[0,3],[1,1],[1,4],[1,7],[1,8],[1,9],[1,10],[2,0],[2,5],[2,10],[3,0],[3,5],[3,10],[4,0],[4,5],[4,10],[5,1],[5,4],[5,10],[6,2],[6,3],[6,10],[7,10],[8,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,10]],"%":[[0,2],[0,7],[0,8],[1,1],[1,3],[1,6],[2,2],[2,4],[2,5],[2,7],[3,3],[3,6],[3,8],[4,1],[4,2],[4,7]]};
 /* b154: 디지털 한글 단위 = Fusion Pixel 12px 비트맵을 숫자와 같은 좌표계(SVG)로 그림. 1칸 = 숫자 세그먼트 굵기 t(7), 11칸 = 숫자 높이(바닥 y=78).
    이어진 칸 사이를 2칸마다 끊어(HGAP) 1x 화면에서도 빈 점 틈이 보이게 함 */
 const HGAP=3.6;
@@ -1372,17 +1372,35 @@ function segLab(str,x,y,anchor,cls,fs=10){ const S=String(str), u=fs*.70*84/78, 
 function tir(text,cls=''){ const T=String(text); let out='', x=0, parts='';
   const flush=()=>{ if(!parts&&!x) return; const W=Math.max(1,x-8); out+=`<svg class="tir-g" viewBox="-6 -6 ${W+12} 98" style="--tw:${((W+12)/98).toFixed(3)}" aria-hidden="true" focusable="false">${parts}</svg>`; parts=''; x=0; };
   for(const ch of T){ if(ch==='1'){ parts+=tirDigit(ch,x-20); x+=34; } else if(/[0-9]/.test(ch)){ parts+=tirDigit(ch,x); x+=54; } /* 1 은 좁게 */
-    else if(HPIX[ch]){ parts+=`<path class="tl tk" d="${hpixD(ch,x+4,1,7,HGAP,ch==='억'?[[9,11]]:null)}"/>`; x+=92; } /* b158: 숫자 옆 '억'은 ㄱ 세로획 맨 아래 점 1개 추가 */
+    else if(HPIX[ch]){ parts+=`<path class="tl tk" d="${hpixD(ch,x+4,1,7,HGAP,ch==='억'?[[9,11]]:null)}"/>`; x+=ch==='%'?46:92; } /* b158: 숫자 옆 '억'은 ㄱ 세로획 맨 아래 점 1개 추가 */
     else if(/[가-힣]/.test(ch)){ flush(); out+=`<span class="tir-k" data-k="${ch}" aria-hidden="true"></span>`; }
     else if(ch==='.'||ch===','){ parts+=`<path class="tl" d="M${x+2},${ch==='.'?66:64}h10v10h-10z${ch===','?`M${x+5},76h6l-5,9h-5z`:''}"/>`; x+=17; }
     else if(ch==='-'){ parts+=`<path class="tl" d="${tirH(x+2,x+40,39,7)}"/>`; x+=48; } else if(ch===' '){ flush(); out+='<span class="tir-sp" aria-hidden="true"></span>'; } }
   flush();
-  return `<span class="tir ${cls}"><span class="tir-sr">${esc(T)}</span>${out}</span>`; }
-const tirMeso = n => tir(meso(n));
+  return `<span class="tir ${cls}"${arguments[2]||''}><span class="tir-sr">${esc(T)}</span>${out}</span>`; }
+/* b162: 디지털 숫자 카운팅 (0→최종값 1.2초 ease-out, 같은 포맷). 화면에 보일 때 시작(IntersectionObserver), 같은 자리(key) 값이 그대로면 재렌더해도 다시 안 돎(바뀌면 이전 값→새 값). 최종 폭으로 고정해 흔들림 없음. prefers-reduced-motion 이면 바로 최종값 */
+const TIR_F={eok:fmtEokSafe, meso:n=>meso(n), cnt:n=>String(Math.round(n)), dec:n=>String(Math.round(n*10)/10), pct:n=>pctNum(n)};
+const pctNum=v=>String(v>=0.1||v===0?(Math.round(v*10)/10):Number(v.toPrecision(1)));
+/* b162: '상위 X%' — 글자 '상위'는 그대로, 숫자+% 만 디지털 */
+const topPctT=(v,key)=>v==null?tir('-'):`<span class="tptx">상위</span> <span class="tirv">${tirN(v,'pct',key,'%')}</span>`; function fmtEokSafe(n){ return fmtEok(n); }
+const TIR_LAST=new Map();
+const tirN=(v,f,key,suf='')=>{ v=+v||0; return tir(TIR_F[f](v)+suf,'',` data-tv="${v}" data-tf="${f}" data-tk="${esc(key)}" data-ts="${esc(suf)}"`); };
+const tirMeso = (n,key) => key?tirN(n,'meso',key):tir(meso(n));
+function tirAnimOne(el){ if(el._tirDone) return; el._tirDone=1; const v=+el.dataset.tv, f=TIR_F[el.dataset.tf], suf=el.dataset.ts||'', k=el.dataset.tk;
+  const from=TIR_LAST.has(k)?TIR_LAST.get(k):0; TIR_LAST.set(k,v); el.dataset.tdone='1';
+  if(from===v||!f||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  const fin=el.innerHTML, w=el.getBoundingClientRect().width; el.style.display='inline-block'; el.style.minWidth=w+'px'; el.style.textAlign=getComputedStyle(el.parentElement).textAlign==='right'?'right':'left';
+  const t0=performance.now(), D=1200, step=now=>{ if(!el.isConnected) return; const q=Math.min(1,(now-t0)/D), e=1-Math.pow(1-q,3);
+    if(q>=1){ el.innerHTML=fin; el.style.minWidth=''; el.style.display=''; el.style.textAlign=''; el.dataset.tanim='done'; return; }
+    const cur=from+(v-from)*e, c=/dec|pct/.test(el.dataset.tf)?cur:Math.abs(v)>=1e4?Math.round(cur/1e4)*1e4:Math.round(cur); const tmp=document.createElement('span'); tmp.innerHTML=tir(f(c)+suf); const sr=el.querySelector('.tir-sr'); el.replaceChildren(...(sr?[sr]:[]),...[...tmp.firstChild.childNodes].slice(1)); requestAnimationFrame(step); };
+  el.dataset.tanim='run'; requestAnimationFrame(step); }
+(()=>{ const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ io.unobserve(e.target); tirAnimOne(e.target); } }),{threshold:.3}):null;
+  const scan=()=>document.querySelectorAll('.tir[data-tv]:not([data-tobs])').forEach(el=>{ el.dataset.tobs='1'; const k=el.dataset.tk, v=+el.dataset.tv; if(TIR_LAST.has(k)&&TIR_LAST.get(k)===v){ el._tirDone=1; el.dataset.tdone='1'; return; } io?io.observe(el):tirAnimOne(el); });
+  let qd=0; new MutationObserver(()=>{ if(qd) return; qd=1; requestAnimationFrame(()=>{ qd=0; scan(); }); }).observe(document.documentElement,{childList:true,subtree:true}); })();
 /* b150: 그래프 값 라벨용 SVG 디지털 글자 (계산기4 골드 숫자 + Fusion Pixel 한글, 한글은 8단위 격자에 맞춘 점 무늬) — (cx, 바닥 y, 숫자 높이 h) */
 function tirSvg(text,cx,yb,h,cls='tgold'){ const T=String(text), k=h/78, P=[]; let x=0;
   for(const ch of T){ if(ch==='1'){ P.push(tirDigit(ch,x-20)); x+=34; } else if(/[0-9]/.test(ch)){ P.push(tirDigit(ch,x)); x+=54; }
-    else if(HPIX[ch]){ P.push(`<path class="tl tk" d="${hpixD(ch,x+4)}"/>`); x+=92; }
+    else if(HPIX[ch]){ P.push(`<path class="tl tk" d="${hpixD(ch,x+4)}"/>`); x+=ch==='%'?46:92; }
     else if(ch==='.'||ch===','){ P.push(`<path class="tl" d="M${x+2},66h10v10h-10z"/>`); x+=17; } else if(ch===' '){ x+=24; } }
   const W=Math.max(1,x-6); return `<g class="tsv ${cls}" transform="translate(${(cx-W*k/2).toFixed(1)} ${(yb-78*k).toFixed(1)}) scale(${k.toFixed(4)}) skewX(-5)" aria-hidden="true">${P.join('')}</g>`; }
 /* b150: 1억 이상은 소수 둘째 자리 억(32.51억), 1조 이상은 조(1.23조) — 사이트 전체 공통 */
@@ -1658,7 +1676,7 @@ function renderBoss(){
         return ` <span class="expinc" title="${esc(`남은 예상 수익 — 이번 주 ${ex.done}/${S.settings.weeklyLimit} 처치, 남은 ${ex.left}칸을 아직 안 잡은 보스 중 1인당 결정석 가격 상위로 채울 때\n`+[...ex.list,...ex.mon].map(x=>`· ${x.monthly?'[월간] ':''}${bossTag(x)} ${meso(x.value)}`).join('\n'))}">${miniIcon('ipc')}예상 <b>${meso(ex.meso)}</b><small>(${[ex.list.length?`상위 ${ex.list.length}개`:'',ex.mon.length?`월간 ${ex.mon.length}개`:''].filter(Boolean).join(' + ')})</small>${(u=>u!==null&&u!==ex.meso?`<small class="exp-up">테섭 예정 → ${meso(u)}</small>`:'')(withUpcoming(()=>remainingWeekly(c).meso))}</span>`; })()}</div><div style="margin-top:4px;font-size:.85rem">${syncLine}</div></div></div>
     ${c.medal?.bad?`<div class="medalrow" role="alert" title="'${MEDAL_BAD}' 훈장 착용: ${esc((c.medal.where||[]).join(', '))}"><span class="mdico"><img src="${ITEM_ICONS.pcmedal||''}" alt="${MEDAL_BAD} 훈장" width="32" height="32"><span class="mdtri" aria-hidden="true">!</span></span><span class="mdtxt">프리미엄 PC방 훈장을 착용한 캐릭터 입니다.</span></div>`:''}
     <div class="stats s3">
-      <div class="stat"><div class="k">이번 주 주간 보스 수익</div><div class="v acc tirv">${tirMeso(r.meso+pWeekMonthly({c,r}).meso+pItemSale(c))}</div><div class="muted cisub" id="ciCry">결정석 ${meso(r.meso+pWeekMonthly({c,r}).meso)}</div><div class="muted cisub" id="ciSale">아이템 판매 ${meso(pItemSale(c))}</div></div>
+      <div class="stat"><div class="k">이번 주 주간 보스 수익</div><div class="v acc tirv">${tirMeso(r.meso+pWeekMonthly({c,r}).meso+pItemSale(c),'ci:'+c.id)}</div><div class="muted cisub" id="ciCry">결정석 ${meso(r.meso+pWeekMonthly({c,r}).meso)}</div><div class="muted cisub" id="ciSale">아이템 판매 ${meso(pItemSale(c))}</div></div>
       <div class="stat"><div class="k">주간 보스 처치</div><div class="v">${r.weekly} / ${lim}</div><div class="bar ${r.weekly>lim?'over':''}"><i style="width:${Math.min(100,r.weekly/lim*100)}%"></i></div></div>
       <div class="stat"><div class="k">이번달 검마${(ds=>ds.length?` <span class="mdate">(${ds.join(', ')} 격파 완료)</span>`:'')(Object.keys(c.monthly).map(k=>(c.mdate||{})[k]).filter(Boolean).map(d=>`${+d.slice(5,7)}월 ${+d.slice(8,10)}일`))}</div><div class="v">${monthlyCount(c)} / ${S.settings.monthlyLimit}${r.monthMeso?` <span class="mmeso">${meso(r.monthMeso)}</span>`:''}</div><div class="bar"><i style="width:${Math.min(100,monthlyCount(c)/S.settings.monthlyLimit*100)}%"></i></div></div>
       
@@ -1711,7 +1729,7 @@ function revPanel(a,cur){
     <h2>${miniIcon('meso')} 이번 주 수익</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
-      return `<div class="rp-total tirv tpink">${tir(fmtEok(cry+sale)+' 메소')}</div>
+      return `<div class="rp-total tirv tpink">${tirN(cry+sale,'eok','rp',' 메소')}</div>
     <div class="muted rp-line rp-cry"><span class="rpl">${miniIcon('ipc')} 주보 결정석 ${a.count}개 · ${miniIcon('ipcm')} 검마 결정석 ${wm.n}개</span><b class="rpn">${cry.toLocaleString()}</b></div>
     <div class="muted rp-line rp-sale"><span class="rpl">${topSaleIco()}이번주 획득 아이템 ${n}개</span><b class="rpn">${sale.toLocaleString()}</b></div>${weekRingLine()}`; })()}
     <div class="rp-sec">캐릭터별</div>
@@ -2164,9 +2182,9 @@ function renderTotal(){
   v.innerHTML=`<div class="grid"><div class="card">
     <h2>${miniIcon('ipc')} 누적 수입 <span class="muted" style="font-weight:500">${fmtWeek(S.startWeek).split(' ~')[0]}부터 · ${nW}주</span></h2>
     <div class="stats s3 kbig">
-      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc tirv tpink">${tir(fmtEok(T.grand))}</div><div class="muted" id="grandAvg">주 평균 ${Math.round(T.grand/Math.max(1,nW)).toLocaleString()} 메소</div></div>
-      <div class="stat"><div class="k"><span class="hbi">${bossIcon(bk?bk.b:findBoss('kaling'))}</span><span class="kt">주보 누적 메소량</span></div><div class="v tirv">${tir(fmtEok(T.wTotal))}</div><div class="muted">주 평균 ${avg.toLocaleString()} 메소</div></div>
-      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="kt">검마 누적 메소량</span></div><div class="v tirv">${tir(T.mTotal?fmtEok(T.mTotal):'-')}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 수익</span></div><div class="v acc tirv tpink">${tirN(T.grand,'eok','grand')}</div><div class="muted" id="grandAvg">주 평균 ${Math.round(T.grand/Math.max(1,nW)).toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k"><span class="hbi">${bossIcon(bk?bk.b:findBoss('kaling'))}</span><span class="kt">주보 누적 메소량</span></div><div class="v tirv">${tirN(T.wTotal,'eok','wTotal')}</div><div class="muted">주 평균 ${avg.toLocaleString()} 메소</div></div>
+      <div class="stat"><div class="k"><span class="hbi">${bossIcon(findBoss('blackmage'))}</span><span class="kt">검마 누적 메소량</span></div><div class="v tirv">${T.mTotal?tirN(T.mTotal,'eok','mTotal'):tir('-')}</div><div class="muted">월 평균 ${Math.round(T.mTotal/Math.max(1,T.months.filter(m=>m.total).length)).toLocaleString()} 메소</div></div>
     </div>
   </div>
   <div class="card"><h2>📈 주간 메소 그래프</h2>${cumLineChart(T.weeks,T,{perWeek:1})}</div>
@@ -2196,8 +2214,8 @@ function lootSummary(T){
   const exp=ex.r4+ex.c4, rate=exp>0?(tl.r4+tl.c4)/exp*100:null;
   const ringTop=ps.length?pbTail(ps,tl.r4+tl.c4+tl.gl):null; // 결과를 기록한 상자만 시행으로 셈
   const bp=[]; let games=0; for(const [n,q] of Object.entries(st)){ const k=+n; if(!(k>=2)) continue; for(let i=0;i<q.w+q.l;i++) bp.push(1/k); games+=q.w+q.l; }
-  const bbTop=games?pbTail(bp,wins):null, bbRows=[2,3,4,5,6].filter(k=>st[k]&&(st[k].w+st[k].l)).map(k=>`${k}인 (${st[k].w}승 ${st[k].l}패)`);
-  return {items,rings,wins,ringTop,bbTop,bbRows,epicIco:ek?lootIco(ek):itemIcon('genesis'),boxIco:itemIcon(bk||'r_black'),rate};
+  const bbTop=games?pbTail(bp,wins):null, bbRows=[2,3,4,5,6].filter(k=>st[k]&&(st[k].w+st[k].l)).map(k=>`${k}인 (${st[k].w}승 ${st[k].l}패)`); const bbRowsT=[2,3,4,5,6].filter(k=>st[k]&&(st[k].w+st[k].l)).map(k=>`${tir(k+'인')} (${tirN(st[k].w,'cnt','lt:bw'+k,'승')} ${tirN(st[k].l,'cnt','lt:bl'+k,'패')})`);
+  return {items,rings,wins,ringTop,bbTop,bbRows,bbRowsT,epicIco:ek?lootIco(ek):itemIcon('genesis'),boxIco:itemIcon(bk||'r_black'),rate};
 }
 function ringCardHtml(T){ return `  <div class="card ringcard"><h2>${miniIcon('ring_restraint')} 시드링 획득 타율</h2>
     ${(()=>{const r=T.ring, rec=r.r4+r.c4+(r.gl||0)+r.x; return rec+r.un?`<div class="ringsum">${miniIcon('ring_continuous')} <b class="rslab">반지 상자 결과</b> : ${[r.r4?`<span class="ro ro-r4">${outIcon('r4')}리4 <b>${xN(r.r4)}</b></span>`:'',r.c4?`<span class="ro ro-c4">${outIcon('c4')}컨4 <b>${xN(r.c4)}</b></span>`:'',r.gl?`<span class="ro ro-gl">${outIcon('gl')}생명의 연마석 <b>${xN(r.gl)}</b></span>`:'',r.x?`<span class="ro ro-x">꽝 <b>${xN(r.x)}</b></span>`:'',r.un?`<span class="ro ro-un">미기록 <b>${xN(r.un)}</b></span>`:''].filter(Boolean).join(' · ')} ${ringExpHtml(T)}</div>`:'';})()}
@@ -2212,16 +2230,16 @@ function salesHtml(T){ // b76: '아이템 판매 누적 수익' — 아이템·�
   const best=Object.keys(top).sort((a,b)=>top[b]-top[a]||itemCmp(a,b))[0];
   const ico=best?`<span class="hbi">${lootIco(best)}</span>`:miniIcon('meso'), pl=p=>p>1?`${p}인 분배`:'1인';
   return `<div class="card" id="salesCard"><h2>${ico} 아이템 판매 누적 수익</h2>
-    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc tirv">${tot?tir(fmtEok(tot)+' 메소'):tir('-')}</div><div class="muted" id="salesAvg">주 평균 ${Math.round(tot/Math.max(1,T.weeks.length)).toLocaleString()} 메소</div></div></div>
-    ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot">${lootIco(i)}<span class="ln">${esc(lootName(i))}</span> <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm tirv">${tirMeso(o.m)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
+    <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc tirv">${tot?tirN(tot,'eok','sales',' 메소'):tir('-')}</div><div class="muted" id="salesAvg">주 평균 ${Math.round(tot/Math.max(1,T.weeks.length)).toLocaleString()} 메소</div></div></div>
+    ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot">${lootIco(i)}<span class="ln">${esc(lootName(i))}</span> <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm tirv">${tirMeso(o.m,'sl:'+k)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
 function renderLoot(){
   const v=$('#view'); const T=totalData(), L=lootSummary(T);
   v.innerHTML=`<div class="grid"><div class="card" id="lootTop">
     <h2>${itemIcon('genesis')} 누적 득템</h2>
     <div class="stats s3 kbig">
-      <div class="stat" id="ltTotal"><div class="k"><span class="hbi">${L.epicIco}</span><span class="kt">총 득템</span></div><div class="v acc">${L.items}개</div><div class="muted" style="font-size:.7rem" id="itemsAvg">주 평균 ${(Math.round(L.items/Math.max(1,T.weeks.length)*10)/10).toLocaleString()}개</div></div>
-      <div class="stat" id="ltRing"><div class="k"><span class="hbi">${L.boxIco}</span><span class="kt">반상 상위</span></div><div class="v">${topPct(L.ringTop)}</div><div class="muted" style="font-size:.7rem">반상 누적 ${L.rings}회, 녹·홍옥 반상 제외</div></div>
-      <div class="stat" id="ltBbang"><div class="k"><span class="blk" aria-hidden="true">${miniIcon('blink')}</span><span class="kt">블빵 상위</span></div><div class="v">${topPct(L.bbTop)}</div>${L.bbRows.length?`<div class="muted bbrows" style="font-size:.7rem">${L.bbRows.join(', ')}</div>`:''}</div>
+      <div class="stat" id="ltTotal"><div class="k"><span class="hbi">${L.epicIco}</span><span class="kt">총 득템</span></div><div class="v acc tirv">${tirN(L.items,'cnt','lt:items','개')}</div><div class="muted" style="font-size:.7rem" id="itemsAvg">주 평균 <span class="tirv">${tirN(Math.round(L.items/Math.max(1,T.weeks.length)*10)/10,'dec','lt:avg','개')}</span></div></div>
+      <div class="stat" id="ltRing"><div class="k"><span class="hbi">${L.boxIco}</span><span class="kt">반상 상위</span></div><div class="v">${topPctT(L.ringTop,'lt:ring')}</div><div class="muted" style="font-size:.7rem">반상 누적 <span class="tirv">${tirN(L.rings,'cnt','lt:rings','회')}</span>, 녹·홍옥 반상 제외</div></div>
+      <div class="stat" id="ltBbang"><div class="k"><span class="blk" aria-hidden="true">${miniIcon('blink')}</span><span class="kt">블빵 상위</span></div><div class="v">${topPctT(L.bbTop,'lt:bb')}</div>${L.bbRowsT.length?`<div class="muted bbrows tirv" style="font-size:.7rem">${L.bbRowsT.join(', ')}</div>`:''}</div>
     </div>
   </div>
   ${salesHtml(T)}

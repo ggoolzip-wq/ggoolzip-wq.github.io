@@ -38,6 +38,8 @@ try:
         pg.click("[data-tab=live]"); pg.wait_for_timeout(500)
         r = pg.evaluate("(()=>{const n=document.querySelector('#view .lvnone'),i=n&&n.querySelector('img.pinkbean');return [document.getElementById('liveBadge').hidden,!!n&&n.innerText.trim(),!!i&&i.naturalWidth>50&&i.src.startsWith('data:image/png'),!document.querySelector('#view .lvplay[data-embed]'),i&&n.querySelector('span')&&i.getBoundingClientRect().bottom<=n.querySelector('span').getBoundingClientRect().top]})()")
         check("라이브 없음: 배지 숨김·문구·핑크빈(내장, 문구 위)·재생 버튼 없음", r[0] and r[1]=="라이브 일정이 없습니다." and r[2] and r[3] and r[4], r)
+        pc = pg.evaluate("(()=>{const i=document.querySelector('.pinkbean').getBoundingClientRect(),t=document.querySelector('.lvnone span').getBoundingClientRect();return [i.left+i.width*39/109,(t.left+t.right)/2]})()")
+        check("핑크빈 몸통 중심 = 문구 가운데(±2px)", abs(pc[0]-pc[1]) <= 2, pc)
         pg.screenshot(path="/workspace/maple-boss-tracker/b161_after_livetab_off.png"); pg.close()
         b.close()
 finally:
