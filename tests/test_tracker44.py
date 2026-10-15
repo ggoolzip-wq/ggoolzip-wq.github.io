@@ -51,7 +51,7 @@ try:
     # H
     load('loot')
     hs=[h.replace('\n',' ').strip() for h in pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.innerText.trim())')]
-    check('H: 득템 분석 구성(누적 득템 맨 위 + 옮겨진 카드)', hs[0]=='누적 득템' and any(h.endswith('득템왕') for h in hs) and any('에픽빔왕' in h for h in hs) and any('시드링' in h for h in hs) and any('블빵 승률' in h for h in hs) and any('가지지' in h for h in hs) and not any('메소왕' in h for h in hs), hs)
+    check('H: 득템 분석 구성(누적 득템 맨 위 + 옮겨진 카드)', hs[0]=='누적 득템' and any(h.endswith('득템왕') for h in hs) and any('에픽빔왕' in h for h in hs) and any('시드링' in h for h in hs) and any('블빵 승률' in h for h in hs) and any('획득 못한' in h for h in hs) and not any('메소왕' in h for h in hs), hs)
     L=pg.evaluate("(()=>{const g=id=>document.querySelector(id).innerText.replace(/\\s+/g,' ');return [g('#ltTotal'),g('#ltRing'),g('#ltBbang'),document.querySelectorAll('#lootTop .stat .hbi img, #lootTop .stat .hbi .ric, #lootTop .stat .blk .ric').length]})()")
     # 총 득템: kaling g_faith,se1,r_black,r_white,g_life#2w = 5 (녹옥·홍옥 제외, 블빵패배 oath 제외)
     # b111: + 상자에서 나온 리4(흑옥)·컨4(홍옥) 2개 = 7

@@ -15,6 +15,19 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b156 (2026-10-15)
+시작 15:37 KST · 끝 15:51 KST
+- '이번 주 보스' 탭 한정 Orbit 글씨체(Google Fonts, OFL; 런타임 `<link>` 주입 `orbitFont()`): 캐릭터 닉네임(#charList .nm, 캐릭터 카드 h2, 이번 주 수익 .rp-nm), 보스 드롭 표(.boss-list 전체, .drops), 결정석/아이템 가격 카드(.pricecard). 디지털 글자(.tir) 제외, 크기 그대로. 범위는 `body[data-curtab="boss"]` (body에 data-tab을 쓰면 테스트·탭 셀렉터 `[data-tab=boss]`와 충돌해서 data-curtab 사용).
+- Orbit이 더 넓어 가격 카드 이름이 잘리던 문제: 웹폰트 로드 완료(`document.fonts` loadingdone) 때 `fitPriceCard()` 재실행, 최소 글자 9→8px. 보스 카드 툴바 버튼은 Orbit 제외(저장 완료 문구 줄바꿈 방지).
+- 문구: '내가 가지지 못한 아이템 목록' → '내가 획득 못한 아이템 목록' (사이트·테스트 41/44).
+테스트: run_par 전체 통과.
+스크린샷: /workspace/maple-boss-tracker/b156_{before,after}_tab_*.png, b156_cmp_tab_boss.png, b156_cmp_boss_zoom.png
+
+## b155 (2026-10-15)
+시작 15:34 KST · 끝 15:37 KST
+- 로고 '메록지'를 디지털 픽셀로(`logoDigital()`): Fusion Pixel 12px ko(v2026.09.25, 기존 5글자와 비트맵 동일 확인) 비트맵 록·지를 HPIX에 추가, MrjUnitKo 서브셋을 조억만메소록지 7글자로 재생성. 숫자와 같은 픽셀 SVG(2칸마다 빈 틈)·5° 기울기, 색은 진한 황금(계산기4 금색 #tirY) + 황금 글로우. 헤더 레이아웃·크기 유지(로고 폭 88.8→93.7px). 실제 글자는 숨긴 .tir-sr + aria-label 유지, 로고의 금색 background-clip 텍스트는 디지털 로고일 때 끔.
+스크린샷: /workspace/maple-boss-tracker/b155_{before,after,cmp}_{header_1x,logo_1x,logo_3x}.png
+
 ## b154 (2026-10-15)
 시작 15:22 KST · 끝 15:34 KST
 - 디지털 한글 단위(조/억/만/메/소): Fusion Pixel 12px 비트맵(`HPIX`)을 숫자와 **같은 SVG 좌표계**에 그림(`hpixD`). 1칸 = 숫자 세그먼트 굵기 7, 11칸 = 숫자 높이 78 → 높이·굵기·색(그라데이션)·글로우·기울기가 옆 숫자와 완전히 같음. 이어진 칸 사이를 2칸마다 3.6단위(1x 화면 ≈0.4~0.5px) 끊어 1x에서도 빈 틈이 보임.

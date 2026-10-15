@@ -1313,10 +1313,15 @@ const HSEG={
 const hsegD=ch=>(HSEG[ch]||[]).map(([a,b,c,d])=>`M${a},${b}L${c},${d}`).join('');
 /* b153: 점 무늬 픽셀 한글(그래프용) — 96px 글자 + 8단위 점 패턴(userSpace)을 scale로 축소, 바닥 yb 기준 */
 const HDY={'억':72,'메':72,'만':70,'조':80,'소':80};
-const HPIX={"조":[[0,10],[1,1],[1,6],[1,10],[2,1],[2,6],[2,10],[3,1],[3,5],[3,10],[4,1],[4,4],[4,10],[5,1],[5,2],[5,3],[5,7],[5,8],[5,9],[5,10],[6,1],[6,4],[6,10],[7,1],[7,5],[7,10],[8,1],[8,6],[8,10],[9,1],[9,6],[9,10],[10,10]],"억":[[0,2],[0,3],[1,1],[1,4],[1,7],[2,0],[2,5],[2,7],[3,0],[3,5],[3,7],[4,0],[4,5],[4,7],[5,1],[5,4],[5,7],[6,2],[6,3],[6,7],[7,2],[7,7],[8,2],[8,7],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,7],[9,8],[9,9],[9,10]],"만":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,0],[1,5],[1,7],[1,8],[1,9],[1,10],[2,0],[2,5],[2,10],[3,0],[3,5],[3,10],[4,0],[4,5],[4,10],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,10],[6,10],[7,10],[8,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,10],[10,3]],"메":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,9],[1,0],[1,9],[2,0],[2,9],[3,0],[3,9],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[5,4],[6,4],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[7,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"소":[[0,10],[1,7],[1,10],[2,6],[2,10],[3,5],[3,10],[4,4],[4,10],[5,1],[5,2],[5,3],[5,7],[5,8],[5,9],[5,10],[6,4],[6,10],[7,5],[7,10],[8,6],[8,10],[9,7],[9,10],[10,10]]};
+const HPIX={"록":[[0,6],[1,0],[1,2],[1,3],[1,4],[1,6],[1,8],[2,0],[2,2],[2,4],[2,6],[2,8],[3,0],[3,2],[3,4],[3,6],[3,8],[4,0],[4,2],[4,4],[4,6],[4,8],[5,0],[5,2],[5,4],[5,5],[5,6],[5,8],[6,0],[6,2],[6,4],[6,6],[6,8],[7,0],[7,2],[7,4],[7,6],[7,8],[8,0],[8,2],[8,4],[8,6],[8,8],[9,0],[9,1],[9,2],[9,4],[9,6],[9,8],[9,9],[9,10],[10,6]],"지":[[0,0],[0,9],[1,0],[1,7],[1,8],[2,0],[2,4],[2,5],[2,6],[3,0],[3,1],[3,2],[3,3],[4,0],[4,4],[4,5],[4,6],[5,0],[5,7],[5,8],[6,0],[6,9],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"조":[[0,10],[1,1],[1,6],[1,10],[2,1],[2,6],[2,10],[3,1],[3,5],[3,10],[4,1],[4,4],[4,10],[5,1],[5,2],[5,3],[5,7],[5,8],[5,9],[5,10],[6,1],[6,4],[6,10],[7,1],[7,5],[7,10],[8,1],[8,6],[8,10],[9,1],[9,6],[9,10],[10,10]],"억":[[0,2],[0,3],[1,1],[1,4],[1,7],[2,0],[2,5],[2,7],[3,0],[3,5],[3,7],[4,0],[4,5],[4,7],[5,1],[5,4],[5,7],[6,2],[6,3],[6,7],[7,2],[7,7],[8,2],[8,7],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,7],[9,8],[9,9],[9,10]],"만":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[1,0],[1,5],[1,7],[1,8],[1,9],[1,10],[2,0],[2,5],[2,10],[3,0],[3,5],[3,10],[4,0],[4,5],[4,10],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[5,10],[6,10],[7,10],[8,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,10],[10,3]],"메":[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,9],[1,0],[1,9],[2,0],[2,9],[3,0],[3,9],[4,0],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[5,4],[6,4],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[7,10],[9,0],[9,1],[9,2],[9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]],"소":[[0,10],[1,7],[1,10],[2,6],[2,10],[3,5],[3,10],[4,4],[4,10],[5,1],[5,2],[5,3],[5,7],[5,8],[5,9],[5,10],[6,4],[6,10],[7,5],[7,10],[8,6],[8,10],[9,7],[9,10],[10,10]]};
 /* b154: 디지털 한글 단위 = Fusion Pixel 12px 비트맵을 숫자와 같은 좌표계(SVG)로 그림. 1칸 = 숫자 세그먼트 굵기 t(7), 11칸 = 숫자 높이(바닥 y=78).
    이어진 칸 사이를 2칸마다 끊어(HGAP) 1x 화면에서도 빈 점 틈이 보이게 함 */
 const HGAP=3.6;
+/* b155: 사이트 이름 로고를 디지털 픽셀(하늘색·글로우·5°)로 */
+function logoDigital(){ const a=document.getElementById('logoHome'); if(!a||a.querySelector('.logo-d')) return; tirDefs();
+  const T='메록지', w=T.length*92-8; const tn=[...a.childNodes].find(n=>n.nodeType===3&&n.textContent.trim()===T); if(!tn) return;
+  const sp=document.createElement('span'); sp.className='logo-d'; sp.innerHTML=`<span class="tir-sr">${T}</span><svg class="tir-g logo-g" viewBox="-6 -6 ${w+12} 98" style="--tw:${((w+12)/98).toFixed(3)}" aria-hidden="true" focusable="false">${[...T].map((c,i)=>`<path class="tl tk" d="${hpixD(c,i*92)}"/>`).join('')}</svg>`;
+  tn.replaceWith(sp); }
 function hpixD(ch,ox,oy=1,c=7,g=HGAP){ const P=HPIX[ch]; if(!P) return ''; const on=new Set(P.map(([x,y])=>x+','+y)), h=g/2;
   return P.map(([x,y])=>{ let x0=x*c,x1=x0+c,y0=y*c,y1=y0+c;
     if(on.has((x-1)+','+y)&&x%2===0) x0+=h; if(on.has((x+1)+','+y)&&(x+1)%2===0) x1-=h;
@@ -1368,7 +1373,8 @@ const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','guild']; // �
 let tab=(()=>{ try{ const t=localStorage.getItem(TAB_KEY); return TABS.includes(t)?t:'boss'; }catch(e){ return 'boss'; } })(), bossFilter='weekly', editMode=false;
 
 function applyTheme(){ document.documentElement.dataset.theme='dark'; } // b67: 다크 전용 (라이트 모드·테마 버튼 삭제, 저장된 테마·시스템 설정 무시)
-function render(){ tirDefs(); if(!TABS.includes(tab)) tab='boss'; syncTabs();
+function orbitFont(){ if(document.getElementById('orbitCss')) return; const l=document.createElement('link'); l.id='orbitCss'; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family=Orbit&display=swap'; document.head.appendChild(l); document.fonts&&document.fonts.addEventListener('loadingdone',()=>{ if(tab==='boss') fitPriceCard(); }); }
+function render(){ tirDefs(); logoDigital(); orbitFont(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length){ $('#view').innerHTML=emptyView(); renderResetInfo(); return; }
@@ -1722,7 +1728,7 @@ document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]');
 function fitPriceCard(){ const card=document.querySelector('.pricecard'); if(!card||!card.querySelector('.pc-row')) return;
   // 폭이 허락하는 만큼 크게(최대 14px) → 안 들어가면 0.5px씩 줄임(최소 9px). 자르지 않음
   const over=()=>[...card.querySelectorAll('.pc-row')].some(r=>{ const n=r.querySelector('.pc-nm'); return n&&n.scrollWidth>n.clientWidth+0.5; });
-  let fs=14; card.style.setProperty('--pcfs',fs+'px'); while(over()&&fs>9){ fs-=0.5; card.style.setProperty('--pcfs',fs+'px'); } }
+  let fs=14; card.style.setProperty('--pcfs',fs+'px'); while(over()&&fs>8){ fs-=0.5; card.style.setProperty('--pcfs',fs+'px'); } }
 function priceCard(){
   const up=(officialInfo&&officialInfo.upcoming)||{};
   const row=r=>{ const u=up[r.k]; return `<div class="pc-row${u?' has-up':''}" title="${esc(r.b.name)} ${D[r.d]} — ${r.p.toLocaleString()} 메소${u?` · 테섭 예정 ${u.toLocaleString()} 메소`:''}">${bossPic(r.b,r.d,false)}<span class="pc-nm">${esc(r.b.name)} ${dlvHtml(r.d)}</span><b>${meso(r.p)}${u?`<span class="pc-up">테섭 예정 → ${meso(u)}</span>`:''}</b></div>`; };
@@ -2106,7 +2112,7 @@ function fitMiss(){ const t=document.querySelector('#missItems .misstbl'); if(!t
     while(!one(l)&&fs>10.5){ fs-=.5; set(); }
     if(!one(l)){ l.classList.add('noico'); fs=13; set(); while(!one(l)&&fs>10){ fs-=.5; set(); } if(!one(l)){ fs=11; set(); } } }); }
 function missingHtml(T){ const L=missingItems(T), sl=rankSlice('miss',L);
-  return `<div class="card" id="missItems"><h2>${L[0]?`<span class="gray">${itemIcon(L[0].k)}</span>`:miniIcon('chaosbox')} 내가 가지지 못한 아이템 목록</h2>
+  return `<div class="card" id="missItems"><h2>${L[0]?`<span class="gray">${itemIcon(L[0].k)}</span>`:miniIcon('chaosbox')} 내가 획득 못한 아이템 목록</h2>
     ${L.length?`<div class="misswrap"><table class="ranktbl misstbl"><tbody>${sl.map(([o])=>`<tr><td class="missb"><div class="missbl">${missGroups(o.list).map(g=>`<span class="missbn"><span class="hbi">${bossIcon(g.b)}</span><span class="bdn">${esc(g.b.name)}</span>${g.ds.map(d=>dlvHtml(d)).join('')}</span>`).join('')}</div></td><td class="missi">${itemIcon(o.k)}</td><td class="missn">${esc(ITEMS[o.k].n)}</td></tr>`).join('')}${rankPad(sl.length,L.length,3)}</tbody></table></div>${rankPager('miss',L.length)}`:'<p class="muted">모든 아이템을 가졌어요!</p>'}</div>`; }
 function bbangStats(T){ const p={}; for(const o of T.chars) for(const [a,n] of Object.entries(o.items||{})){ const {party,mode}=parseIK(a); if(mode!=='w'&&mode!=='l') continue; const q=p[party]||(p[party]={w:0,l:0}); q[mode]+=+n||0; } return p; }
 const blinkIco = cls => `<span class="blk ${cls||''}" aria-hidden="true">${miniIcon('blink')}</span>`;
