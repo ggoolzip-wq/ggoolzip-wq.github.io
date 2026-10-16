@@ -57,7 +57,8 @@ try:
         pp=sum((lambda r:__import__('math').prod(ps[i] if r[i] else 1-ps[i] for i in range(4)))(r) for r in itertools.product([0,1],repeat=4) if sum(r)>=2)*100
         check('리4컨4 상위% = 포아송 이항(흑옥 3·백옥 1, 성공 2) — 파이썬 계산과 같음', abs(exp-pp)<1e-9 and t[1]==f"반상 상위 상위 {round(pp,1)}% 반상 누적 4회, 녹·홍옥 반상 제외", (t[1],pp))
         # 총 득템: chaosbox 3 + 흑옥 3 + 백옥 1 + 신념 1 + 홍옥 제외 + oath 6(블빵승리) (se1 패배 제외) + 리4·컨4 3(흑옥 r4, 백옥 c4, 홍옥 c4) = 17
-        check('총 득템: 상자 리4·컨4(녹옥·홍옥 포함) 더함, 블빵패배 제외 = 38개 (다른 캐릭터 소울 에테르 21 포함)', '38개' in t[0], t[0])
+        check('총 득템: 반지 상자 자체는 전부 제외(b182b, 흑옥3·백옥1 빠짐), 상자 리4·컨4는 더함, 블빵패배 제외 = 34개 (다른 캐릭터 소울 에테르 21 포함)', '34개' in t[0], t[0])
+        check('b182b 총 득템 = 반지 상자 뺀 개수 (lootSummary.items 에 상자 수 없음)', pg.evaluate("(()=>{const T=totalData();let r=0;T.items.forEach(([a,I])=>{const {it,mode}=parseIK(a);if(mode!=='l'&&isRing(it))r+=I.n;});return lootSummary(T).items})()")==34)
         # 2) 득템왕: 칠흑 상자 = 상자 하나 + 말풍선
         lk=pg.evaluate("(()=>{const r=[...document.querySelectorAll('#lootKing tbody tr')].find(r=>r.innerText.includes('일번'));return [r.innerText.replace(/\\s+/g,' '),r.querySelectorAll('[data-tiphtml]').length]})()")
         check('득템왕: 칠흑 장신구 상자 ×3 (장신구 칩 대신), 상자 - 벨트 표기 없음', '혼돈의 칠흑 장신구 상자' in lk[0] and ' - ' not in lk[0] and lk[1]==1, lk)

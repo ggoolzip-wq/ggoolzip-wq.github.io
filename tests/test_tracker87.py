@@ -61,7 +61,7 @@ try:
         rk=pg.evaluate("[...document.querySelectorAll('.revpanel .rp-char')].map(e=>[e.querySelector('.rp-rk')?.textContent.trim(),e.querySelector('.rp-nm b, .rp-nm .spk, .rp-nm span')?.textContent,!!e.querySelector('.rkno.md-gold'),e.querySelector('.rp-top').getBoundingClientRect().height])")
         check('이번 주 수익: 수익 높은 순 + 순위(1위 메달), 0 = -', [x[0][-1:] for x in rk]==['1','2','-'] and rk[0][1]=='테스트캐' and rk[0][2] and all(x[3]<30 for x in rk), rk)
         shot(pg.locator('.revpanel'),'revpanel_rank')
-        cl=pg.evaluate("[...document.querySelectorAll('.revpanel .rp-char')].map(e=>[...e.querySelectorAll('.rp-cl')].map(x=>x.textContent.split(' ')[0]+' '+x.textContent.split(' ')[1]+'|'+!!x.querySelector('img,.ric,svg')))")
+        cl=pg.evaluate("[...document.querySelectorAll('.revpanel .rp-char')].map(e=>[...e.querySelectorAll('.rp-cl:not(.rp-left)')].map(x=>x.textContent.split(' ')[0]+' '+x.textContent.split(' ')[1]+'|'+!!x.querySelector('img,.ric,svg')))")
         check('결정석 줄: 주간/검마 (기록 있을 때만, 아이콘)', cl[0][:2]==['주간 결정석|true','검마 결정석|true'] and cl[1]==['주간 결정석|true'] and cl[2]==[], cl)
         check('월간 ✓ 없음', '월간 ✓' not in pg.inner_text('.revpanel'))
         check('9 아이콘 1줄', h and all(x<30 for x in h), h)

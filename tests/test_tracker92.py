@@ -54,7 +54,7 @@ try:
     shot(pg.locator('.revpanel'),'revpanel')
     shot(pg.locator('.revpanel .rp-total').locator('xpath=..'),'revtop')
     if not NOCHK:
-        L=pg.evaluate("[...document.querySelectorAll('.revpanel .rp-line')].map(e=>{const n=e.querySelector('.rpn'),l=e.querySelector('.rpl');return {t:e.innerText.replace(/\\s+/g,' ').trim(),nr:n?Math.round(n.getBoundingClientRect().right):null,er:Math.round(e.getBoundingClientRect().right),nl:n&&l?n.getBoundingClientRect().left>=l.getBoundingClientRect().right:false,ic:[...e.querySelectorAll('img,svg,.ric')].map(i=>Math.round(i.getBoundingClientRect().width))}})")
+        L=pg.evaluate("[...document.querySelectorAll('.revpanel .rp-line:not(.rp-left)')].map(e=>{const n=e.querySelector('.rpn'),l=e.querySelector('.rpl');return {t:e.innerText.replace(/\\s+/g,' ').trim(),nr:n?Math.round(n.getBoundingClientRect().right):null,er:Math.round(e.getBoundingClientRect().right),nl:n&&l?n.getBoundingClientRect().left>=l.getBoundingClientRect().right:false,ic:[...e.querySelectorAll('img,svg,.ric')].map(i=>Math.round(i.getBoundingClientRect().width))}})")
         check('결정석·아이템 줄: 글자 먼저, 숫자 오른쪽 끝', len(L)>=3 and all(x['nr'] is not None and abs(x['nr']-x['er'])<=2 and x['nl'] for x in L[:2]), L)
         check('이번주 획득 아이템: 반지 상자 제외 (벨트·연마석·맹세 3개)', '이번주 획득 아이템 3개' in L[-2]['t'], L[-2])
         rg=L[-1]

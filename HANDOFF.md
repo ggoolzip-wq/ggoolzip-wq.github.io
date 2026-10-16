@@ -15,6 +15,43 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b189 (2026-10-17) — 보스 탭에서 캐릭터 클릭 때 스크롤 그대로 (02:00 KST)
+- 캐릭터 클릭 처리(data-id): 보스 탭이면 scrollX/Y 저장 → render 뒤 즉시·다음 프레임·80ms 에 되돌림. 테스트 test_b187 (오른쪽 캐릭터별 2개·왼쪽 목록 1개).
+
+## b188 (2026-10-17) — 왼쪽 캐릭터 목록 선택 = 강한 간접등 (01:59 KST)
+- `#charList .char.on`: 사파이어 백라이트(바깥 box-shadow 4겹 + 안쪽 빛 2겹) + 2.8초 은은한 맥박(charGlow), box-shadow 만이라 크기 그대로. 줄인 동작이면 맥박 없음, 라이트 테마 약하게. 사진: /workspace/b182b/b187_after_charlist.png
+
+## b187 (2026-10-17) — 캐릭터 선택 때 카드 등장 애니메이션 (01:58 KST)
+- `charEnter()`(render 의 보스 탭 끝): activeId 가 바뀌었을 때만 `#view.center` 0.7초 → `.card` 0.26초 fade+8px 위로+0.985 확대(cEnter), 2·3번째 0.05·0.1초 늦게. transform/opacity 만(자리 이동·클릭 지연 없음). prefers-reduced-motion 이면 없음. 테스트 tests/test_b187.py (port 8964).
+- 테스트 정리: test_tracker87/88/92 의 이번 주 수익 줄 위치 검사에서 b185 `.rp-left` 줄 제외.
+- 전체 run_par: 실패 5·16·23·25·43·44(구성)·46·47·49·50·76·80·101(듄켈)·server·server_b94 = 변경 전 main 에서도 같은 실패(하나씩 비교함).
+
+## b186 (2026-10-17) — 주간 메소 그래프 = 주마다 막대 4개 + 막대 hover 금빛 테두리·말풍선, 빠뜨린 보스메소 총 누적 (01:54~02:10 KST)
+- `cumLineChart(…,{perWeek:1})`(수익 분석 '주간 메소 그래프')만: 주마다 막대 4개 `.cbar.wb.wb0~3` = 이번주 총 수익(금 #ffd978)·주간 결정석(하늘 #7fd4ff, `r.crys??r.total`)·검마(주홍 #ff6a3d, monthlyByWeek.cry)·아이템 판매(보라 #b48cff). 점·선(총 수익)·값 라벨 그대로, 영역 채우기는 perWeek 에서 뺌. 범례 `.wlegend`.
+- 막대마다 data-tip → 그 막대 바로 위 말풍선(#mbtTip, 꼬리 --ax). hover 때 stroke 대시가 0.55초에 그려지고(wbDraw) 금빛 글로우가 맥박(wbPulse), 나머지 막대 흐리게. `#mbtTip` z-index 최대값(body 직속).
+- `missChart` 주간·월간: 오른쪽 위 `.ctot` '빠뜨린 보스메소 총 누적 N' (주간 메소 '총 누적'과 같은 모양). pt 24→46, Hh 220→236.
+- 테스트: tests/test_b185.py (port 8963) 막대 4개·범례·막대 hover 말풍선 위치/애니메이션·총 누적. 사진: /workspace/b182b/b185_after_{week_chart,week_chart_hover,miss_w,miss_m}.png
+
+## b185 (2026-10-17) — 이번 주 수익: 이번 주 남은 결정석 / 검마 남은 결정석 (01:40~01:55 KST)
+- `leftOf(c)` = remainingWeekly(c) 의 주간 list 합(남은 칸만큼, 안 잡은 보스 1인당 가격 상위) · mon 중 blackmage. 위 카드: 반지 상자 줄 다음 `.rp-line.rp-left` 2줄(합 = 보이는 캐릭터만, 규칙 9), 캐릭터별: 닉네임 줄과 게이지 사이 `.rp-cl.rp-left`. 0이면 줄 없음. 아이콘 ipc 회색 / ipcm 주홍(CSS filter). 기본 글씨체.
+- 테스트: test_b185.py A·B 체크. 사진: /workspace/b182b/b185_after_week_panel.png
+
+## b184 (2026-10-17) — 🔄 동기화 3초 안 (01:28~01:45 KST)
+- 원인(모의 넥슨 API, 키 1개·캐릭터 12명): 🔄 한 번 = 스케줄러 12 + 이번 주 기록 없는 캐릭터 되짚기(최대 7번×캐릭터, 매번 다시) + basic 12 + 훈장 12 + 목록 1 → 4건/1.1초 제한에 막혀 15.6초(다시 누르면 8.9초). 20명이면 22.3초/11.1초.
+- 수정: (1) 보스 체크(스케줄러)가 끝나면 바로 '완료' — 목록(ocid 다 있을 때)·되짚기·basic·훈장은 `syncBg` 로 뒤에서 이어서(같은 rateGate, 끝난 것부터 다시 그림, 다음 🔄 은 syncBg 끝난 뒤 시작). (2) 되짚기 결과를 캐릭터·KST 날짜별로 기억(`lbCache`, 오류는 기억 안 함). 4건/1.1초·429 1회 재시도 그대로.
+- 결과(같은 모의): 12명 15.6→2.4초, 다시 8.9→3.0초(호출 33→12건). 20명 22.3→4.6초 / 11.1→5.2초 — 키 1개당 4건/1.1초라 캐릭터가 ~12명 넘으면 스케줄러 호출만으로 3초를 넘음(계정이 여러 개면 키마다 동시라 더 빠름).
+- 테스트: tests/test_sync_speed.py (port 8962, MBT_SYNC_N 으로 인원).
+
+## b183 (2026-10-17) — 작은 문구 글씨체·크기 (01:28~01:40 KST)
+- `tsm()` = 디지털(tir) → 사이트 기본 글씨체 `<span class="tsmn">` (이번 주 수익 '주보 결정석 N개'·'이번주 획득 아이템 N개'·주 평균 문구 등 전부).
+- 득템 분석 총 득템·반상 상위·블빵 상위 밑 글씨 `.ltcap` 14px (예전 .7rem). 못 가진 아이템 표: 아이템 이름 15px, 보스 줄 fitMiss 시작 13→15px(줄 안 넘게 줄이는 규칙 그대로).
+- 결정석/아이템 가격 카드 밑 `.pc-foot`·`.pc-date` 가 Pretendard 였음 → 기본 글씨체(Orbit 스택).
+- 테스트: tests/test_b183.py (port 8961). 사진: /workspace/b182b/b183_after_{week_card,cry_price,item_price,loot_top,missing}.png
+
+## b182b (2026-10-17) — 총 득템·주 평균에서 반지 상자 전부 제외 (01:24~01:28 KST)
+- `lootSummary().items`: 반지 상자 자체(흑옥·백옥·생명 포함 전부)는 더하지 않음. 상자에서 나온 리4·컨4 는 예전대로 1개씩. 같은 값을 쓰는 '주 평균'(doneAvgs.items)도 같이 바뀜. 다른 표 안 건드림.
+- 테스트: test_tracker83 38→34개 + 체크, test_tracker44 기대값 5개(이 테스트의 다른 항목 '득템 분석 구성'은 변경 전에도 실패).
+
 ## b182 (2026-10-15) — 라이트/다크 전환 버튼을 사이트 헤더 오른쪽 위로 이동 (22:33~22:45 KST)
 - 사용자: "오른쪽 위에 라이트모드 없어" — b179 버튼이 기록 창 안에 있었음 → 헤더 `.hwrap` 맨 오른쪽(👑 관리자·로그아웃/로그인 버튼 오른쪽)에 `#themeBtn.thbtn` (src/body.html). 로그인 전에도 항상 보임.
 - 기록 창 안 버튼·`data-rv=theme` 처리 제거 (가운데 정렬·b181 버튼 배치 유지). `paintThemeBtn()` 이 render 때 ☀️/🌙·title 동기화. 동작(localStorage `mapleBossTracker.theme`, 기본 다크) 그대로.

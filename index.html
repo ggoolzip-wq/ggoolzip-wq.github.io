@@ -1472,7 +1472,7 @@ header .logo:has(.logo-d){background:none!important;-webkit-background-clip:bord
 /* b156 정정: 사이트 전체 = Orbit (Google Fonts, OFL), 크기 그대로. 제외(기존 Pretendard 유지): 이번 주 보스 탭의 캐릭터 닉네임·보스 드롭 표(보스 카드 전체)·결정석/아이템 가격 카드, 디지털 글자(.tir·MrjUnitKo·로고 SVG) */
 html,body{line-height:1.193;letter-spacing:-.03em;font-family:'Orbit',"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif}
 button,input,select,textarea{font-family:inherit}
-body[data-curtab="boss"] :is(#charList .nm,#charList .nm *,.bosslay h2,.rp-nm,.rp-nm *,.card:has(.boss-list),.card:has(.boss-list) *,.pricecard,.pricecard *):not(.tir-k){letter-spacing:normal;font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif}
+body[data-curtab="boss"] :is(#charList .nm,#charList .nm *,.bosslay h2,.rp-nm,.rp-nm *,.card:has(.boss-list),.card:has(.boss-list) *,.pricecard,.pricecard *):not(.tir-k):not(.pc-foot):not(.pc-date){letter-spacing:normal;font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif}
 /* b157: 신창섭 라이브 탭 */
 .livebadge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px/80%;background:#e8202a;color:#fff;font-size:.68em;font-weight:800;letter-spacing:.04em;line-height:1.5;vertical-align:middle;box-shadow:0 0 8px rgba(232,32,42,.55)}
 .livebadge[hidden]{display:none}
@@ -1650,6 +1650,44 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 [data-theme=light] .dl .dlc{color:#a84a00!important}[data-theme=light] .dl .dlb{color:#5e4a38!important}
 [data-theme=light] .drop.erda .ecnt{background:#1f6f80!important}[data-theme=light] .drop.memc .ecnt{background:#6e5428!important}[data-theme=light] .drop.memc.mc-s .ecnt{background:#59636f!important}[data-theme=light] .drop.memc.mc-g .ecnt{background:#7a5a00!important}[data-theme=light] .drop.eter .ecnt{background:#6545c0!important}
 [data-theme=light] .drop.s-광휘{background:color-mix(in srgb,#e7b93c 12%,#fff)!important}[data-theme=light] .drop.s-칠흑{background:color-mix(in srgb,#8a63d2 10%,#fff)!important}[data-theme=light] .drop.s-여명{background:color-mix(in srgb,#5aa9e6 10%,#fff)!important}[data-theme=light] .drop.s-에테르{background:color-mix(in srgb,#b06ad8 8%,#fff)!important}[data-theme=light] .drop.s-반지{background:color-mix(in srgb,#3fae8a 10%,#fff)!important}
+
+/* b183: 작은 문구 기본 글씨체 · 득템 카드 밑 글씨 · 못 가진 아이템 표 글씨 · 가격 카드 밑 글씨 */
+.tsmn{font-family:inherit;font-size:.82rem;letter-spacing:normal;white-space:nowrap}
+#lootTop .stat .ltcap{font-size:14px!important;line-height:1.35;margin-top:4px}
+.pc-foot,.pc-date,body[data-curtab] .pricecard :is(.pc-foot,.pc-date){font-family:'Orbit',"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif!important}
+.misstbl td.missn{font-size:15px}
+
+/* b185: 남은 결정석 줄 — 주간 아이콘 회색, 검마 아이콘 주홍 */
+.rp-left.rl-w .ric,.rp-left.rl-w img,.rp-left.rl-w svg{filter:grayscale(1) brightness(.95)}
+.rp-left.rl-m .ric,.rp-left.rl-m img,.rp-left.rl-m svg{filter:sepia(1) saturate(6) hue-rotate(-25deg) brightness(.95)}
+.rp-cl.rp-left{margin-top:2px;margin-bottom:3px}
+
+/* b186: 주간 메소 막대 4개 + 범례, 툴팁 맨 위 */
+.chart .cbar.wb{opacity:.9}.wb0{fill:#ffd978;background:#ffd978}.wb1{fill:#7fd4ff;background:#7fd4ff}.wb2{fill:#ff6a3d;background:#ff6a3d}.wb3{fill:#b48cff;background:#b48cff}
+.wlegend{display:flex;gap:12px;flex-wrap:nowrap;justify-content:flex-start;font-size:.74rem;color:var(--muted);margin:2px 0 0 60px;white-space:nowrap}
+.wlegend span{display:inline-flex;align-items:center;gap:4px}.wlegend i{display:inline-block;width:10px;height:10px;border-radius:2px}
+#mbtTip{z-index:2147483647!important}
+.misschart{position:relative}
+/* b186: 막대에 마우스 → 금빛 테두리가 그려지며(stroke 대시) 은은하게 맥박, 말풍선은 그 막대 바로 위(#mbtTip, 꼬리 = --ax) */
+.chart .cbar.wb{cursor:pointer;stroke:#ffe9a8;stroke-width:0;stroke-dasharray:1;stroke-dashoffset:1;transition:opacity .2s,filter .25s}
+.chart .lpt:hover .cbar.wb{opacity:.55}
+.chart .lpt .cbar.wb:hover{opacity:1;stroke-width:1.6;animation:wbDraw .55s cubic-bezier(.3,.7,.2,1) forwards,wbPulse 1.6s ease-in-out .55s infinite;filter:drop-shadow(0 0 4px rgba(255,214,120,.95)) drop-shadow(0 0 10px rgba(255,170,60,.55))}
+@keyframes wbDraw{to{stroke-dashoffset:0}}
+@keyframes wbPulse{0%,100%{filter:drop-shadow(0 0 3px rgba(255,214,120,.85)) drop-shadow(0 0 8px rgba(255,170,60,.45))}50%{filter:drop-shadow(0 0 6px rgba(255,230,150,1)) drop-shadow(0 0 16px rgba(255,180,70,.75))}}
+@media (prefers-reduced-motion:reduce){.chart .lpt .cbar.wb:hover{animation:none;stroke-dashoffset:0}}
+/* b187: 캐릭터 선택 등장 애니메이션 */
+@keyframes cEnter{from{opacity:.25;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+#view.center .card{animation:cEnter .26s cubic-bezier(.2,.7,.2,1) both}
+#view.center .card:nth-of-type(2),#view.center .grid>*:nth-child(2) .card{animation-delay:.05s}
+#view.center .card:nth-of-type(3),#view.center .grid>*:nth-child(3) .card{animation-delay:.1s}
+@media (prefers-reduced-motion:reduce){#view.center .card{animation:none}}
+/* b188: 왼쪽 캐릭터 목록 선택 = 강한 간접등 (사파이어 백라이트 + 가장자리 빛, box-shadow 만 → 자리 이동 없음) */
+#charList .char.on{position:relative;z-index:1;border-color:#8fb6ff!important;background:linear-gradient(160deg,rgba(90,150,255,.30),rgba(40,90,220,.14) 60%,rgba(40,90,220,.08))!important;
+  box-shadow:inset 0 0 0 1px rgba(170,205,255,.55),inset 0 0 18px rgba(110,160,255,.35),0 0 0 1px rgba(120,170,255,.8),0 0 14px 2px rgba(70,130,255,.85),0 0 34px 8px rgba(50,110,255,.5),0 0 70px 14px rgba(40,90,255,.25)!important;
+  animation:charGlow 2.8s ease-in-out infinite}
+@keyframes charGlow{50%{box-shadow:inset 0 0 0 1px rgba(190,220,255,.7),inset 0 0 22px rgba(130,175,255,.42),0 0 0 1px rgba(150,190,255,.9),0 0 18px 3px rgba(90,145,255,.95),0 0 42px 10px rgba(60,120,255,.58),0 0 84px 18px rgba(40,90,255,.3)}}
+@media (prefers-reduced-motion:reduce){#charList .char.on{animation:none}}
+[data-theme=light] #charList .char.on{background:linear-gradient(160deg,rgba(90,150,255,.22),rgba(90,150,255,.08))!important;box-shadow:0 0 0 1px rgba(60,110,230,.8),0 0 14px 2px rgba(60,120,255,.55),0 0 34px 8px rgba(60,120,255,.25)!important;animation:none}
 </style>
 </head>
 <body>
@@ -2392,12 +2430,12 @@ function missBackfill(){ let n=0; const cur=weekId(), lim=S.settings.weeklyLimit
 function missSync(){ if(typeof SV_ON!=='undefined'&&SV_ON&&!pend) setTimeout(()=>{ try{ if(svTok()&&gdMeta.on) svSaveNow(); }catch(e){} },1500); }
 function missChart(rows, kind){
   if(!rows.length) return '<p class="muted">아직 기록이 없어요</p>';
-  const n=rows.length, W=Math.max(640,90+n*80), Hh=220, pl=45, pr=45, pt=24, pb=34, max=Math.max(1,...rows.map(r=>r.meso));
+  const n=rows.length, W=Math.max(640,90+n*80), Hh=236, pl=45, pr=45, pt=46, pb=34, /* b186: 위 오른쪽 총 누적 자리 */ max=Math.max(1,...rows.map(r=>r.meso));
   const X=i=>n===1?W/2:pl+(W-pl-pr)*i/(n-1), Y=v=>Hh-pb-(Hh-pb-pt)*v/max;
   const tip=r=>(r.list.length?`${r.date} · 손해 ${meso(r.meso)}\n`+r.list.map(x=>`${x.name}: ${x.n}개 · ${meso(x.meso)}`).join('\n')+`\n합계: ${r.n}개 · ${meso(r.meso)}`+(r.approx?'\n(주간 기록으로 채운 근사값)':''):`${r.date}\n손해 없음`);
   const u=++chartUid, c=kind==='m'?'#ff6b6b':'#f2c94c', c2=kind==='m'?'#ff9a8a':'#ffe08a', pts=rows.map((r,i)=>`${X(i).toFixed(1)},${Y(r.meso).toFixed(1)}`).join(' ');
   const grid=[.25,.5,.75,1].map(f=>`<line class="cg" x1="${pl-20}" x2="${W-pr+20}" y1="${Y(max*f).toFixed(1)}" y2="${Y(max*f).toFixed(1)}" stroke="url(#mcgr${u})"/>`).join('')+rows.map((r,i)=>`<line class="ctick" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Hh-pb}" y2="${Hh-pb+5}"/>`).join('');
-  return `<div class="chart scrollx misschart lux ${kind==='m'?'mm':'mw'}"><svg viewBox="0 0 ${W} ${Hh}" style="width:${W}px;max-width:${W>640?'none':'100%'}" role="img" aria-label="빠뜨린 보스메소 그래프">
+  return `<div class="chart scrollx misschart lux ${kind==='m'?'mm':'mw'}"><div class="ctot"><span>빠뜨린 보스메소 총 누적</span><b>${meso(rows.reduce((t,r)=>t+(+r.meso||0),0))}</b></div><svg viewBox="0 0 ${W} ${Hh}" style="width:${W}px;max-width:${W>640?'none':'100%'}" role="img" aria-label="빠뜨린 보스메소 그래프">
     <defs><linearGradient id="mcg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".3"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient>
     <linearGradient id="mcs${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="${c2}"/></linearGradient>
     <linearGradient id="mcgr${u}" gradientUnits="userSpaceOnUse" x1="${pl-20}" y1="0" x2="${W-pr+20}" y2="0"><stop offset="0" stop-color="${c2}" stop-opacity=".1"/><stop offset=".5" stop-color="${c2}" stop-opacity=".34"/><stop offset="1" stop-color="${c2}" stop-opacity=".1"/></linearGradient>
@@ -2845,18 +2883,19 @@ function medalFrom(e){
 }
 async function fetchMedal(c,key){ c.medal=medalFrom(await nx('/maplestory/v1/character/item-equipment',{ocid:c.ocid},key)); }
 const medalBand = c => c.medal?.bad&&charShown(c) ? `<div class="medalwarn" title="'${MEDAL_BAD}' 훈장 착용: ${esc(c.medal.where.join(', '))}" aria-label="훈장 잘못 착용중"><span>훈장 잘못 착용중</span></div>` : '';
-let syncing=false;
+let syncing=false, syncBg=null;
 const SYNC_CONC=6, SYNC_LIST_TTL_MS=10*60e3, SYNC_BASIC_TTL_MS=10*60e3, SYNC_BASIC_LOAD_TTL_MS=60*60e3 /* b112: 페이지 열 때(자동)는 레벨·이미지 1시간, 🔄 는 10분 */, SYNC_MEDAL_TTL_MS=6*3600e3; // b107
 const LOAD_SYNC_GAP_MS=3e3, LOAD_SYNC_KEY='mapleBossTracker.loadSyncAt'; // 페이지 열 때 자동 동기화 최소 간격 (아래 loadSyncDue)
 async function syncAll(opts={}){
   if(syncing) return; if(!hasApi()){ if(!opts.silent) toast('+ 추가에서 넥슨 API 키를 먼저 등록하세요'); return; }
-  syncing=true; renderHeaderSync(); syncLabel('run'); let total=0, errs=0, assigned=0; const badAcc=new Set(), accMsgs=[];
+  syncing=true; renderHeaderSync(); syncLabel('run'); let total=0, errs=0, assigned=0; const badAcc=new Set(), accMsgs=[], bgList=[];
   try{
     // b107: 계정들은 키가 달라 동시에 (같은 키는 rateGate가 초당 5건 이하로). 목록은 10분 안에 받았고 모든 캐릭터 ocid가 있으면 건너뜀
     const vc=vchars(), fresh=a=>{ const L=listCache[a.id]; return L&&L.key===a.key&&Date.now()-L.at<SYNC_LIST_TTL_MS&&!opts.full&&vc.every(c=>c.accId!==a.id||c.ocid); };
     let netErr=null;
     await Promise.all(accounts().filter(a=>a.key).map(async a=>{
       if(fresh(a)) return;
+      if(!opts.full&&vc.some(c=>c.accId===a.id)&&vc.every(c=>c.accId!==a.id||c.ocid)){ bgList.push(a); return; } // b184: 캐릭터 ocid 가 다 있으면 목록(새 캐릭터 확인)은 뒤에서
       try{ assigned+=assignFromList(a, await listAccount(a)); }
       catch(e){ a.status={ok:false,msg:e.message,at:Date.now()}; badAcc.add(a.id); accMsgs.push(`${a.label}: ${e.message}`); if(/네트워크/.test(e.message)) netErr=e; }
     }));
@@ -2869,16 +2908,24 @@ async function syncAll(opts={}){
       if(!a.key||badAcc.has(a.id)){ errs++; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:`'${a.label}' 계정 API 키 오류: ${a.status?.msg||'API 키 미등록'}`}); continue; }
       todo.push([c,a]);
     }
+    let netN=0; const lb=[], later=[]; if(syncBg) await syncBg; // 앞 동기화의 뒤 작업이 남았으면 끝난 뒤 시작
     let rt=0; const paint=()=>{ if(rt) return; rt=setTimeout(()=>{ rt=0; renderChars(); },120); };
     await pool(todo, SYNC_CONC, async([c,a])=>{
       if(!c.ocid){ try{ c.ocid=(await nx('/maplestory/v1/id',{character_name:c.name},a.key)).ocid; }catch(e){ c.sync={...c.sync,ok:false,msg:'ocid 조회 실패: '+e.message}; errs++; return; } }
-      try{ total+=await schedApply(c,a); paint(); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
-      catch(e){ errs++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
+      try{ total+=await schedApply(c,a,opts.full?null:lb,opts.full); paint(); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
+      catch(e){ errs++; if(e.code==='NETWORK') netN++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
       const now=Date.now();
-      if(opts.full||!(now-(c.sync?.imgAt||0)<(opts.silent?SYNC_BASIC_LOAD_TTL_MS:SYNC_BASIC_TTL_MS))){ try{ await fetchBasic(c,a.key); paint(); }catch(e){} } // 이미지·레벨·EXP
-      if(opts.full||!c.medal||!(now-(c.medal.at||0)<SYNC_MEDAL_TTL_MS)){ try{ await fetchMedal(c,a.key); paint(); }catch(e){} } // b86: 훈장(모든 프리셋)
+      if(opts.full||!(now-(c.sync?.imgAt||0)<(opts.silent?SYNC_BASIC_LOAD_TTL_MS:SYNC_BASIC_TTL_MS))) later.push(()=>fetchBasic(c,a.key)); // 이미지·레벨·EXP
+      if(opts.full||!c.medal||!(now-(c.medal.at||0)<SYNC_MEDAL_TTL_MS)) later.push(()=>fetchMedal(c,a.key)); // b86: 훈장(모든 프리셋)
     });
     clearTimeout(rt);
+    if(todo.length&&netN===todo.length) throw new Error('네트워크 오류 — 인터넷 연결 또는 브라우저 확장 프로그램·네트워크의 차단 여부를 확인하세요.'); // b184: 목록을 뒤로 미뤄도 전부 네트워크 오류면 '새로고침 실패'
+    /* b184: 보스 체크(스케줄러)가 끝나면 바로 '완료' — 되짚기·레벨/이미지·훈장은 뒤에서 이어서 (같은 rateGate = 4건/1.1초 그대로) */
+    if(lb.length||later.length||bgList.length) syncBg=(async()=>{ let bt=0; const bp=()=>{ if(bt) return; bt=setTimeout(()=>{ bt=0; renderChars(); },150); };
+      for(const a of bgList){ try{ if(assignFromList(a, await listAccount(a))) bp(); }catch(e){} }
+      await pool(lb,SYNC_CONC,async([c,a])=>{ try{ if(await schedLookback(c,a)) bp(); }catch(e){} });
+      await pool(later,SYNC_CONC,async f=>{ try{ await f(); bp(); }catch(e){} });
+      clearTimeout(bt); save(); if(!syncing) render(); })().finally(()=>{ syncBg=null; });
     S.settings.lastSync=Date.now(); save();
     // zosu: 성공 알림(toast) 대신 🔄 버튼 옆 초록 글자 '새로고침 완료!' (몇 초 뒤 사라짐). 실패(일부 캐릭터·계정 오류)는 계속 알림
     if(errs||accMsgs.length) toast((errs?`일부 캐릭터 동기화 실패 ${errs}`:'')+(errs&&accMsgs.length?' · ':'')+(accMsgs.length?`계정 오류: ${accMsgs.join(', ')}`:''));
@@ -2925,14 +2972,26 @@ function schedErr(c,e){ schedC[c.id]={...(schedC[c.id]||{}),errAt:Date.now(),ok:
  * 그래서 등록을 켤 근거가 없어 라인업이 빈 채로 남았음 → 주간 행이 없으면 date= 어제…7일 전 응답(스케줄러 등록 목록)으로 등록만 켬
  * (지난 주 날짜라 클리어로는 안 침 — applyScheduler 의 staleWeek). 아직 준비 안 된 날짜(OPENAPI00009)는 건너뜀. */
 const hasWeeklyRows = d => (d?.boss_contents||[]).some(r=>/weekly/i.test(String(r.cycle||'')));
-async function schedApply(c,a){
-  const d=await fetchSched(c,a); let n=0;
-  if((d?.boss_contents||[]).length && !hasWeeklyRows(d)) for(let k=1;k<=7;k++){ // 응답 자체가 비면(오류·빈 객체) 건너뜀
+/* b184: 지난 날짜 되짚기(이번 주 기록 찾기, 최대 7번 호출) 결과는 캐릭터·KST 날짜별로 기억 → 같은 날 다시 🔄 해도 다시 안 부름.
+ * lb 배열을 주면(🔄) 되짚기는 바로 하지 않고 lb 에 넣어 '완료' 표시 뒤 뒤에서 처리 */
+const lbCache={};
+async function schedLookback(c,a,force){ const day=dayId(), hit=lbCache[c.id];
+  if(!force&&hit&&hit.day===day&&hit.ocid===c.ocid){ if(hit.p){ const keep=c.sync; const n=applyScheduler(c,hit.p); c.sync=keep; return n; } return 0; }
+  let found=null;
+  for(let k=1;k<=7;k++){
     let p; try{ p=await nx('/maplestory/v1/scheduler/character-state',{ocid:c.ocid,date:dayId(Date.now()-k*864e5)},a.key); }
-    catch(e){ if(e.code==='OPENAPI00009'||e.code==='OPENAPI00004') continue; break; }
-    if(hasWeeklyRows(p)){ const keep=c.sync; n+=applyScheduler(c,p); c.sync=keep; break; }
+    catch(e){ if(e.code==='OPENAPI00009'||e.code==='OPENAPI00004') continue; return 0; } // 다른 오류는 기억 안 함(다음에 다시)
+    if(hasWeeklyRows(p)){ found=p; break; }
   }
-  return n+applyScheduler(c,d);
+  lbCache[c.id]={day,ocid:c.ocid,p:found};
+  if(!found) return 0; const keep=c.sync; const n=applyScheduler(c,found); c.sync=keep; return n; }
+async function schedApply(c,a,lb,force){
+  const d=await fetchSched(c,a); let n=0;
+  const need=(d?.boss_contents||[]).length && !hasWeeklyRows(d); // 응답 자체가 비면(오류·빈 객체) 건너뜀
+  if(need&&!lb) n+=await schedLookback(c,a,force);
+  n+=applyScheduler(c,d);
+  if(need&&lb){ const h=lbCache[c.id]; if(h&&h.day===dayId()&&h.ocid===c.ocid) n+=await schedLookback(c,a); else lb.push([c,a]); }
+  return n;
 }
 async function fetchSched(c,a){
   try{ const d=await nx('/maplestory/v1/scheduler/character-state',{ocid:c.ocid},a.key); schedPut(c,d); return d; }
@@ -3167,7 +3226,7 @@ const pctNum=v=>String(v>=0.1||v===0?(Math.round(v*10)/10):Number(v.toPrecision(
 /* b162: '상위 X%' — 글자 '상위'는 그대로, 숫자+% 만 디지털 */
 const topPctT=(v,key)=>v==null?tir('-'):`<span class="tirv">${tirN(v,'tpct',key,'%')}</span>`;
 /* b164: 작은 문구용 디지털 — 글씨체(계산기 숫자+점 한글)·점 무늬만, 색=원래 문구 색, 글로우·카운팅·확대 없음 */
-const tsm=t=>tir(t,'tsm'); function fmtEokSafe(n){ return fmtEok(n); }
+const tsm=t=>`<span class="tsmn">${esc(String(t))}</span>`; /* b183: 작은 문구 = 사이트 기본 글씨체(디지털 아님) */ function fmtEokSafe(n){ return fmtEok(n); }
 const TIR_LAST=new Map();
 const tirN=(v,f,key,suf='')=>{ v=+v||0; return tir(TIR_F[f](v)+suf,'',` data-tv="${v}" data-tf="${f}" data-tk="${esc(key)}" data-ts="${esc(suf)}"`); };
 const tirMeso = (n,key) => key?tirN(n,'meso',key):tir(meso(n));
@@ -3226,11 +3285,15 @@ function toggleTheme(){ const t=curTheme()==='light'?'dark':'light'; try{ localS
 applyTheme();
 function paintThemeBtn(){ const t=curTheme(); document.querySelectorAll('.thbtn').forEach(b=>{ b.textContent=t==='light'?'🌙':'☀️'; b.title=t==='light'?'다크 모드로':'라이트 모드로'; b.setAttribute('aria-label',b.title); }); } // b182: 헤더 오른쪽 위 버튼
 function orbitFont(){ if(document.getElementById('orbitCss')) return; const l=document.createElement('link'); l.id='orbitCss'; l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family=Orbit&display=swap'; document.head.appendChild(l); document.fonts&&document.fonts.addEventListener('loadingdone',()=>{ if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); }); }
+/* b187: 캐릭터를 바꿨을 때만 정보 카드·드롭 표 등장 애니메이션 (transform·opacity 만 → 자리 이동·클릭 지연 없음, 줄인 동작 설정이면 없음) */
+let enterFor=null, enterT=0;
+function charEnter(){ const id=S.activeId, v=$('#view'); if(enterFor===id) return; const first=enterFor===null; enterFor=id; if(first||!v) return;
+  v.classList.remove('center'); void v.offsetWidth; v.classList.add('center'); clearTimeout(enterT); enterT=setTimeout(()=>v.classList.remove('center'),700); }
 function render(){ paintThemeBtn(); tirDefs(); logoDigital(); orbitFont(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length&&tab!=='live'){ $('#view').innerHTML=emptyView(); renderResetInfo(); return; } /* b161: 라이브 탭은 캐릭터·로그인 없어도 보임 */
-  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),guild:renderGuild,live:renderLive})[tab](); if(tab==='boss') fitPriceCard(); if(tab==='loot') fitMiss(); renderResetInfo(); }
+  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),guild:renderGuild,live:renderLive})[tab](); if(tab==='boss'){ fitPriceCard(); charEnter(); } if(tab==='loot') fitMiss(); renderResetInfo(); }
 /* b108: 🔄 옆 상태 글자 — 동기화 중 '새로고침 중입니다..'(회색), 끝나면 초록 '새로고침 완료! HH:mm'(KST, 계속 표시),
  * 일부 캐릭터·계정 오류면 주황 '일부 실패 HH:mm', 전체 실패면 빨강 '새로고침 실패 HH:mm' (오류 알림 toast 는 예전 그대로). 페이지 열 때 동기화도 같음 */
 let syncLbl=null; // {st:'run'|'ok'|'part'|'fail', at}
@@ -3517,6 +3580,12 @@ function weekRingLine(){ const by={}, t={r4:0,c4:0,gl:0,x:0}; let n=0;
   if(!n) return ''; const top=Object.keys(by).sort((x,y)=>by[y]-by[x]||itemCmp(x,y))[0];
   const R=[['r4','리4'],['c4','컨4'],['gl','연마석'],['x','꽝']].filter(([q])=>t[q]>0).map(([q,l])=>`<span>${l} ${t[q]}개</span>`).join(' ');
   return `<div class="muted rp-line rp-ring">${itemIcon(top)}<span>반지 상자 ${n}개</span>${R?' '+R:''}</div>`; }
+/* b185: 남은 결정석 — 주간 = remainingWeekly(c).list(남은 칸만큼, 안 잡은 보스 1인당 가격 상위), 검마 = 이번 달 안 잡은 검은 마법사. 보이는 캐릭터만(규칙 9), 0이면 줄 없음 */
+const leftOf = c => { const r=remainingWeekly(c); return {w:r.list.reduce((t,x)=>t+x.value,0), m:r.mon.filter(x=>x.slot==='blackmage').reduce((t,x)=>t+x.value,0)}; };
+const leftLine = (cls,ico,lb,v,big) => v>0?(big?`<div class="muted rp-line rp-left ${cls}"><span class="rpl"><span class="rpg">${ico}<span class="tsmn">${lb}</span></span></span><b class="rpn"><span class="tsmn">${v.toLocaleString()}</span></b></div>`:`<div class="rp-cl rp-left ${cls}">${ico}<span>${lb} ${meso(v)}</span></div>`):'';
+function weekLeftLines(cs){ let w=0,m=0; for(const c of cs){ if(!charShown(c)) continue; const o=leftOf(c); w+=o.w; m+=o.m; }
+  return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',w,1)+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',m,1); }
+function charLeftLines(c){ const o=leftOf(c); return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',o.w)+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',o.m); }
 function weekMonthly(a){ let n=0, meso=0; a.per.forEach(p=>p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week).forEach(x=>{ n++; meso+=x.value; })); return {n,meso}; }
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
 function revPanel(a,cur){
@@ -3533,10 +3602,11 @@ function revPanel(a,cur){
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
       return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
     <div class="muted rp-line rp-cry"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${tsm(`주보 결정석 ${a.count}개`)}</span></span><b class="rpn">${tsm(a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${tsm(`검마 결정석 ${wm.n}개`)}</span></span><b class="rpn">${tsm(wm.meso.toLocaleString())}</b></div>`:''}
-    <div class="muted rp-line rp-sale"><span class="rpl">${topSaleIco()}${tsm(`이번주 획득 아이템 ${n}개`)}</span><b class="rpn">${tsm(sale.toLocaleString())}</b></div>${weekRingLine()}`; })()}
+    <div class="muted rp-line rp-sale"><span class="rpl">${topSaleIco()}${tsm(`이번주 획득 아이템 ${n}개`)}</span><b class="rpn">${tsm(sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
       <div class="rp-row rp-top">${(r=>`<span class="rp-rk">${r?rankNo(r):'<span class="rkno"><span class="rkn">-</span></span>'}</span><span class="rp-nm rkname${medal(r)?' md-'+medal(r):''}"><span class="${medal(r)?'spk':''}">${esc(p.c.name)}</span>${p.c.isMain?' <span class="mainbadge">★</span>':''}</span>`)(rk.get(p))}<b>${meso(pmeso(p))}</b></div>
+      ${charLeftLines(p.c)}
       <div class="rp-row"><span class="mini"><i style="width:${(pmeso(p)/max*100).toFixed(1)}%"></i></span><span class="muted" style="font-size:.72rem;white-space:nowrap">${p.r.weekly}/${lim}</span></div>
       ${(L=>L.length?`<div class="rp-boss">${L.slice().sort((x,y)=>bossTblOrd(x.slot)-bossTblOrd(y.slot)).map(x=>bossPic(findBoss(x.slot),x.diff,false)).join('')}</div>`:'')([...p.r.wlist,...p.r.mlist.filter(x=>p.c.monthly[x.slot]===S.period.week)])}
       ${(w=>w?`<div class="rp-cl">${miniIcon('ipc')}<span>주간 결정석 ${meso(w)}</span></div>`:'')(p.r.wlist.length?p.r.meso:0)}${(m=>m?`<div class="rp-cl">${miniIcon('ipcm')}<span>검마 결정석 ${meso(m)}</span></div>`:'')(pm.get(p).meso)}${charSaleLine(p.c)}
@@ -3804,7 +3874,7 @@ function thisWeekChart(T){ // b135: 주간 메소 그래프 = 이번 주만, 목
     <text x="${W-pr}" y="14" text-anchor="end" fill="#2f7fd8" font-size="11">이번 주 ${meso(s)}</text></svg></div>`;
 }
 function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 메소(1주차, 2주차 …), 누적 아님
-  const MW=T?monthlyByWeek(T):{}; const rows=rows0.map(r=>{ const m=MW[r.week]||{}; return {...r,mm:m.meso||0,mn:m.n||0,cry:(r.crys??r.total??0)+(m.cry||0),sale:(r.isale||0)+(m.sale||0),total:(r.total||0)+(m.meso||0)}; });
+  const MW=T?monthlyByWeek(T):{}; const rows=rows0.map(r=>{ const m=MW[r.week]||{}; return {...r,mm:m.meso||0,mn:m.n||0,wcry:(r.crys??r.total??0),bm:m.cry||0,cry:(r.crys??r.total??0)+(m.cry||0),sale:(r.isale||0)+(m.sale||0),total:(r.total||0)+(m.meso||0)}; });
   // b138: 고급 다크 스타일 — 오렌지→골드 그라데이션 선 + 은은한 글로우, 오렌지 영역 그라데이션, 점선 격자, 값 라벨(외곽선), 그려지는 애니메이션
   const n=rows.length, pl=60, pr=18, pt=48, pb=40, Hh=260, bw=Math.max(34,(640-pl-pr)/Math.max(1,n)), W=Math.max(640,pl+pr+n*bw);
   let cum=0; const acc=rows.map(r=>cum+=r.total), cums=o.perWeek?rows.map(r=>r.total):acc; const cmax=Math.max(1,...cums)*1.08;
@@ -3813,9 +3883,12 @@ function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 
   const top=Math.max(1,...cums), grid=`<line class="cyax" x1="${pl}" x2="${pl}" y1="${pt-6}" y2="${Hh-pb}" stroke="url(#lcv${u})"/>`+cums.map((v,i)=>`<line class="ctick" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Hh-pb}" y2="${Hh-pb+5}"/>`).join('')+[0,.25,.5,.75,1].map(f=>`<line class="cg${f?'':' cg0'}" x1="${pl}" x2="${W-pr}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}" stroke="url(#${f?'lcgr':'lcb'}${u})"/><line class="cytk" x1="${pl-4}" x2="${pl}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}"/>${segLab(f?fmtEok(top*f):'0',pl-8,(Y(top*f)+3.5).toFixed(1),'end','cax',9)}`).join('');
   const xl=rows.map((r,i)=>i%step===0||r.cur?`<text class="cxl${r.cur?' cur':''}" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle">${o.perWeek?`${i+1}주차`:fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(rows[n-1]&&rows[n-1].cur?`<text class="cxl cur sub" x="${X(n-1).toFixed(1)}" y="${Hh-pb+32}" text-anchor="middle">이번 주</text>`:'');
   const tipOf=(r,v)=>`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n결정석 : ${meso(r.cry)}\n아이템 판매 : ${meso(r.sale)}`+`\n누적 ${meso(o.perWeek?acc[rows.indexOf(r)]:v)}`;
+  /* b186: 주간 메소(perWeek) = 주마다 막대 4개 (총 수익 · 주간 결정석 · 검마 · 아이템 판매), 점·선은 총 수익 */
+  const WB_LB=['이번주 총 수익','주간 결정석','검마 수익','아이템 판매수익'];
+  const bwid=Math.max(4,Math.min(9,bw*.17)), wbars=(r,i)=>[r.total,r.wcry,r.bm,r.sale].map((val,k)=>`<rect class="cbar wb wb${k}" pathLength="1" data-tip="${esc(`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n${WB_LB[k]} ${meso(val)}`)}" x="${(X(i)+(k-2)*bwid*1.15+bwid*.075).toFixed(1)}" y="${Y(val).toFixed(1)}" width="${bwid.toFixed(1)}" height="${Math.max(0,Hh-pb-Y(val)).toFixed(1)}" rx="2"/>`).join('');
   const best=cums.indexOf(top);
-  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" data-tip="${esc(tipOf(rows[i],v))}" style="--d:${(.15+i*.06).toFixed(2)}s"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/><rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/><circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/></g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
-  return `<div class="chart scrollx linechart lux"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?cum:Math.max(...cums,0))}</b></div><svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
+  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" data-tip="${esc(tipOf(rows[i],v))}" style="--d:${(.15+i*.06).toFixed(2)}s"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/>${o.perWeek?wbars(rows[i],i):`<rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/>`}<circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/></g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
+  return `<div class="chart scrollx linechart lux"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?cum:Math.max(...cums,0))}</b></div>${o.perWeek?`<div class="wlegend"><span><i class="wb0"></i>이번주 총 수익</span><span><i class="wb1"></i>주간 결정석</span><span><i class="wb2"></i>검마</span><span><i class="wb3"></i>아이템 판매</span></div>`:''}<svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
       <defs><linearGradient id="lcg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a3c" stop-opacity=".38"/><stop offset=".55" stop-color="#ff9a3c" stop-opacity=".1"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></linearGradient>
       <linearGradient id="lcs${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff8a3d"/><stop offset=".6" stop-color="#ffb347"/><stop offset="1" stop-color="#ffd978"/></linearGradient>
       <linearGradient id="lcgr${u}" gradientUnits="userSpaceOnUse" x1="${pl}" y1="0" x2="${W-pr}" y2="0"><stop offset="0" stop-color="#ffcf7a" stop-opacity=".28"/><stop offset=".5" stop-color="#ffb347" stop-opacity=".14"/><stop offset="1" stop-color="#ffcf7a" stop-opacity=".03"/></linearGradient>
@@ -3823,7 +3896,7 @@ function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 
       <linearGradient id="lcv${u}" gradientUnits="userSpaceOnUse" x1="0" y1="${pt-6}" x2="0" y2="${Hh-pb}"><stop offset="0" stop-color="#ffd978" stop-opacity="0"/><stop offset="1" stop-color="#ffd978" stop-opacity=".55"/></linearGradient>
       <linearGradient id="lcbar${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd978" stop-opacity=".55"/><stop offset=".35" stop-color="#ff9a3c" stop-opacity=".28"/><stop offset="1" stop-color="#ff8a3d" stop-opacity=".04"/></linearGradient>
       <filter id="lcf${u}" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-      ${grid}<polygon class="carea" fill="url(#lcg${u})" points="${X(0).toFixed(1)},${Y(0)} ${pts} ${X(n-1).toFixed(1)},${Y(0)}"/>
+      ${grid}${o.perWeek?'':`<polygon class="carea" fill="url(#lcg${u})" points="${X(0).toFixed(1)},${Y(0)} ${pts} ${X(n-1).toFixed(1)},${Y(0)}"/>`}
       <polyline class="cline" pathLength="1" fill="none" stroke="url(#lcs${u})" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" filter="url(#lcf${u})" points="${pts}"/>${dots}${xl}</svg></div>`;
 }
 function weekChart(rows, opts={}){
@@ -3965,9 +4038,9 @@ const missGroups = list => { const g=[]; list.forEach(x=>{ let e=g.find(y=>y.b==
 // → 그래도 안 되면 보스 묶음(이름+난이도) 단위로만 다음 줄(묶음 안은 절대 안 끊김). 아이템 이름은 항상 한 줄.
 function fitMiss(){ const t=document.querySelector('#missItems .misstbl'); if(!t) return;
   const one=l=>{ const k=l.children; return !k.length||k[k.length-1].offsetTop-k[0].offsetTop<2; };
-  t.querySelectorAll('.missbl').forEach(l=>{ l.classList.remove('noico'); let fs=13; const set=()=>l.style.setProperty('--msfs',fs+'px'); set();
+  t.querySelectorAll('.missbl').forEach(l=>{ l.classList.remove('noico'); let fs=15; const set=()=>l.style.setProperty('--msfs',fs+'px'); set();
     while(!one(l)&&fs>10.5){ fs-=.5; set(); }
-    if(!one(l)){ l.classList.add('noico'); fs=13; set(); while(!one(l)&&fs>10){ fs-=.5; set(); } if(!one(l)){ fs=11; set(); } } }); }
+    if(!one(l)){ l.classList.add('noico'); fs=15; set(); while(!one(l)&&fs>10){ fs-=.5; set(); } if(!one(l)){ fs=11; set(); } } }); }
 function missingHtml(T){ const L=missingItems(T), sl=rankSlice('miss',L);
   return `<div class="card" id="missItems"><h2>${L[0]?`<span class="gray">${itemIcon(L[0].k)}</span>`:miniIcon('chaosbox')} 내가 획득 못한 아이템 목록</h2>
     ${L.length?`<div class="misswrap"><table class="ranktbl misstbl"><tbody>${sl.map(([o])=>`<tr><td class="missb"><div class="missbl">${missGroups(o.list).map(g=>`<span class="missbn"><span class="hbi">${bossIcon(g.b)}</span><span class="bdn">${esc(g.b.name)}</span>${g.ds.map(d=>dlvHtml(d)).join('')}</span>`).join('')}</div></td><td class="missi">${itemIcon(o.k)}</td><td class="missn">${esc(ITEMS[o.k].n)}</td></tr>`).join('')}${rankPad(sl.length,L.length,3)}</tbody></table></div>${rankPager('miss',L.length)}`:'<p class="muted">모든 아이템을 가졌어요!</p>'}</div>`; }
@@ -4020,7 +4093,7 @@ function lootSummary(T){
   let items=0, rings=0; const byBox={}, tl={r4:0,c4:0,gl:0}, ex={r4:0,c4:0}, ps=[];
   T.items.forEach(([a,I])=>{ const {it,mode}=parseIK(a); if(mode==='l') return; // 블빵패배는 얻은 게 아님
     if(isRing(it)){ const t=outTally(I.outs,I.n); items+=t.r4+t.c4; // b111: 상자에서 나온 리4·컨4도 득템 1개씩 (녹옥·홍옥 포함)
-      if(RING_NOCOUNT.has(it)) return; items+=I.n; rings+=I.n; byBox[it]=(byBox[it]||0)+I.n;
+      if(RING_NOCOUNT.has(it)) return; rings+=I.n; /* b182b: 반지 상자 자체는 총 득템·평균에서 전부 제외 */ byBox[it]=(byBox[it]||0)+I.n;
       tl.r4+=t.r4; tl.c4+=t.c4; const q=ring4(it); if(q){ if(q.gl) tl.gl+=t.gl; ex.r4+=I.n*q.r4/100; ex.c4+=I.n*q.c4/100; const rec=t.r4+t.c4+t.gl+t.x; for(let i=0;i<rec;i++) ps.push((q.r4+q.c4+q.gl)/100); } } // b122: 생명 상자는 연마석도 성공 (상자 1개 = 리4·컨4·연마석 중 하나가 나올 확률을 합친 성공 확률 1개)
     else items+=I.n; });
   const st=bbangStats(T), wins=Object.values(st).reduce((x,q)=>x+q.w,0);
@@ -4052,9 +4125,9 @@ function renderLoot(){
   v.innerHTML=`<div class="grid"><div class="card" id="lootTop">
     <h2>${itemIcon('genesis')} 누적 득템 ${weekTag(T.weeks.length)}</h2>
     <div class="stats s3 kbig">
-      <div class="stat" id="ltTotal"><div class="k"><span class="hbi">${L.epicIco}</span><span class="kt">총 득템</span></div><div class="v acc tirv">${tirN(L.items,'cnt','lt:items','개')}</div><div class="muted" style="font-size:.7rem" id="itemsAvg">${tsm(avgTxt('주',doneAvgs(T).items,'개'))}</div></div>
-      <div class="stat" id="ltRing"><div class="k"><span class="hbi">${L.boxIco}</span><span class="kt">반상 상위</span></div><div class="v">${topPctT(L.ringTop,'lt:ring')}</div><div class="muted" style="font-size:.7rem">${tsm(`반상 누적 ${L.rings}회, 녹·홍옥 반상 제외`)}</div></div>
-      <div class="stat" id="ltBbang"><div class="k"><span class="blk" aria-hidden="true">${miniIcon('blink')}</span><span class="kt">블빵 상위</span></div><div class="v">${topPctT(L.bbTop,'lt:bb')}</div>${L.bbRowsT.length?`<div class="muted bbrows" style="font-size:.7rem">${tsm(L.bbRows.join(', '))}</div>`:''}</div>
+      <div class="stat" id="ltTotal"><div class="k"><span class="hbi">${L.epicIco}</span><span class="kt">총 득템</span></div><div class="v acc tirv">${tirN(L.items,'cnt','lt:items','개')}</div><div class="muted ltcap" id="itemsAvg">${tsm(avgTxt('주',doneAvgs(T).items,'개'))}</div></div>
+      <div class="stat" id="ltRing"><div class="k"><span class="hbi">${L.boxIco}</span><span class="kt">반상 상위</span></div><div class="v">${topPctT(L.ringTop,'lt:ring')}</div><div class="muted ltcap">${tsm(`반상 누적 ${L.rings}회, 녹·홍옥 반상 제외`)}</div></div>
+      <div class="stat" id="ltBbang"><div class="k"><span class="blk" aria-hidden="true">${miniIcon('blink')}</span><span class="kt">블빵 상위</span></div><div class="v">${topPctT(L.bbTop,'lt:bb')}</div>${L.bbRowsT.length?`<div class="muted bbrows ltcap">${tsm(L.bbRows.join(', '))}</div>`:''}</div>
     </div>
   </div>
   ${salesHtml(T)}
@@ -5084,7 +5157,8 @@ document.addEventListener('click',e=>{
   if(e.target.closest('.drag-h')) return;
   if(t.dataset.edit){ e.stopPropagation(); openCharModal(t.dataset.edit); return; }
   if(t.dataset.id){ const id=t.dataset.id; if(pend&&id!==S.activeId) return pendGuard(()=>{ S.activeId=id; save(); if(['history','total','loot','guild'].includes(tab)) {tab='boss';syncTabs();} render(); });
-    S.activeId=id; save(); if(['history','total','loot','guild'].includes(tab)) {tab='boss';syncTabs();} render(); return; }
+    const sy=scrollY, sx=scrollX, keep=tab==='boss'; S.activeId=id; save(); if(['history','total','loot','guild'].includes(tab)) {tab='boss';syncTabs();} render();
+    if(keep){ const back=()=>{ if(scrollY!==sy||scrollX!==sx) scrollTo(sx,sy); }; back(); requestAnimationFrame(back); setTimeout(back,80); } return; } // b189: 보스 탭에서 캐릭터 클릭 = 스크롤 그대로
   if(t.dataset.filter){ bossFilter=t.dataset.filter; render(); return; }
   if(t.dataset.toggle && c){ const s=t.dataset.toggle,b=findBoss(s); const cfg=c.bosses[s]||(c.bosses[s]={enabled:false,diff:b.diffs[0],party:1}); cfg.enabled=!cfg.enabled; save(); render(); return; }
   if(t.dataset.setdiff && c){

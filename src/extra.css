@@ -1365,7 +1365,7 @@ header .logo:has(.logo-d){background:none!important;-webkit-background-clip:bord
 /* b156 정정: 사이트 전체 = Orbit (Google Fonts, OFL), 크기 그대로. 제외(기존 Pretendard 유지): 이번 주 보스 탭의 캐릭터 닉네임·보스 드롭 표(보스 카드 전체)·결정석/아이템 가격 카드, 디지털 글자(.tir·MrjUnitKo·로고 SVG) */
 html,body{line-height:1.193;letter-spacing:-.03em;font-family:'Orbit',"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif}
 button,input,select,textarea{font-family:inherit}
-body[data-curtab="boss"] :is(#charList .nm,#charList .nm *,.bosslay h2,.rp-nm,.rp-nm *,.card:has(.boss-list),.card:has(.boss-list) *,.pricecard,.pricecard *):not(.tir-k){letter-spacing:normal;font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif}
+body[data-curtab="boss"] :is(#charList .nm,#charList .nm *,.bosslay h2,.rp-nm,.rp-nm *,.card:has(.boss-list),.card:has(.boss-list) *,.pricecard,.pricecard *):not(.tir-k):not(.pc-foot):not(.pc-date){letter-spacing:normal;font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif}
 /* b157: 신창섭 라이브 탭 */
 .livebadge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px/80%;background:#e8202a;color:#fff;font-size:.68em;font-weight:800;letter-spacing:.04em;line-height:1.5;vertical-align:middle;box-shadow:0 0 8px rgba(232,32,42,.55)}
 .livebadge[hidden]{display:none}
@@ -1543,3 +1543,41 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 [data-theme=light] .dl .dlc{color:#a84a00!important}[data-theme=light] .dl .dlb{color:#5e4a38!important}
 [data-theme=light] .drop.erda .ecnt{background:#1f6f80!important}[data-theme=light] .drop.memc .ecnt{background:#6e5428!important}[data-theme=light] .drop.memc.mc-s .ecnt{background:#59636f!important}[data-theme=light] .drop.memc.mc-g .ecnt{background:#7a5a00!important}[data-theme=light] .drop.eter .ecnt{background:#6545c0!important}
 [data-theme=light] .drop.s-광휘{background:color-mix(in srgb,#e7b93c 12%,#fff)!important}[data-theme=light] .drop.s-칠흑{background:color-mix(in srgb,#8a63d2 10%,#fff)!important}[data-theme=light] .drop.s-여명{background:color-mix(in srgb,#5aa9e6 10%,#fff)!important}[data-theme=light] .drop.s-에테르{background:color-mix(in srgb,#b06ad8 8%,#fff)!important}[data-theme=light] .drop.s-반지{background:color-mix(in srgb,#3fae8a 10%,#fff)!important}
+
+/* b183: 작은 문구 기본 글씨체 · 득템 카드 밑 글씨 · 못 가진 아이템 표 글씨 · 가격 카드 밑 글씨 */
+.tsmn{font-family:inherit;font-size:.82rem;letter-spacing:normal;white-space:nowrap}
+#lootTop .stat .ltcap{font-size:14px!important;line-height:1.35;margin-top:4px}
+.pc-foot,.pc-date,body[data-curtab] .pricecard :is(.pc-foot,.pc-date){font-family:'Orbit',"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif!important}
+.misstbl td.missn{font-size:15px}
+
+/* b185: 남은 결정석 줄 — 주간 아이콘 회색, 검마 아이콘 주홍 */
+.rp-left.rl-w .ric,.rp-left.rl-w img,.rp-left.rl-w svg{filter:grayscale(1) brightness(.95)}
+.rp-left.rl-m .ric,.rp-left.rl-m img,.rp-left.rl-m svg{filter:sepia(1) saturate(6) hue-rotate(-25deg) brightness(.95)}
+.rp-cl.rp-left{margin-top:2px;margin-bottom:3px}
+
+/* b186: 주간 메소 막대 4개 + 범례, 툴팁 맨 위 */
+.chart .cbar.wb{opacity:.9}.wb0{fill:#ffd978;background:#ffd978}.wb1{fill:#7fd4ff;background:#7fd4ff}.wb2{fill:#ff6a3d;background:#ff6a3d}.wb3{fill:#b48cff;background:#b48cff}
+.wlegend{display:flex;gap:12px;flex-wrap:nowrap;justify-content:flex-start;font-size:.74rem;color:var(--muted);margin:2px 0 0 60px;white-space:nowrap}
+.wlegend span{display:inline-flex;align-items:center;gap:4px}.wlegend i{display:inline-block;width:10px;height:10px;border-radius:2px}
+#mbtTip{z-index:2147483647!important}
+.misschart{position:relative}
+/* b186: 막대에 마우스 → 금빛 테두리가 그려지며(stroke 대시) 은은하게 맥박, 말풍선은 그 막대 바로 위(#mbtTip, 꼬리 = --ax) */
+.chart .cbar.wb{cursor:pointer;stroke:#ffe9a8;stroke-width:0;stroke-dasharray:1;stroke-dashoffset:1;transition:opacity .2s,filter .25s}
+.chart .lpt:hover .cbar.wb{opacity:.55}
+.chart .lpt .cbar.wb:hover{opacity:1;stroke-width:1.6;animation:wbDraw .55s cubic-bezier(.3,.7,.2,1) forwards,wbPulse 1.6s ease-in-out .55s infinite;filter:drop-shadow(0 0 4px rgba(255,214,120,.95)) drop-shadow(0 0 10px rgba(255,170,60,.55))}
+@keyframes wbDraw{to{stroke-dashoffset:0}}
+@keyframes wbPulse{0%,100%{filter:drop-shadow(0 0 3px rgba(255,214,120,.85)) drop-shadow(0 0 8px rgba(255,170,60,.45))}50%{filter:drop-shadow(0 0 6px rgba(255,230,150,1)) drop-shadow(0 0 16px rgba(255,180,70,.75))}}
+@media (prefers-reduced-motion:reduce){.chart .lpt .cbar.wb:hover{animation:none;stroke-dashoffset:0}}
+/* b187: 캐릭터 선택 등장 애니메이션 */
+@keyframes cEnter{from{opacity:.25;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+#view.center .card{animation:cEnter .26s cubic-bezier(.2,.7,.2,1) both}
+#view.center .card:nth-of-type(2),#view.center .grid>*:nth-child(2) .card{animation-delay:.05s}
+#view.center .card:nth-of-type(3),#view.center .grid>*:nth-child(3) .card{animation-delay:.1s}
+@media (prefers-reduced-motion:reduce){#view.center .card{animation:none}}
+/* b188: 왼쪽 캐릭터 목록 선택 = 강한 간접등 (사파이어 백라이트 + 가장자리 빛, box-shadow 만 → 자리 이동 없음) */
+#charList .char.on{position:relative;z-index:1;border-color:#8fb6ff!important;background:linear-gradient(160deg,rgba(90,150,255,.30),rgba(40,90,220,.14) 60%,rgba(40,90,220,.08))!important;
+  box-shadow:inset 0 0 0 1px rgba(170,205,255,.55),inset 0 0 18px rgba(110,160,255,.35),0 0 0 1px rgba(120,170,255,.8),0 0 14px 2px rgba(70,130,255,.85),0 0 34px 8px rgba(50,110,255,.5),0 0 70px 14px rgba(40,90,255,.25)!important;
+  animation:charGlow 2.8s ease-in-out infinite}
+@keyframes charGlow{50%{box-shadow:inset 0 0 0 1px rgba(190,220,255,.7),inset 0 0 22px rgba(130,175,255,.42),0 0 0 1px rgba(150,190,255,.9),0 0 18px 3px rgba(90,145,255,.95),0 0 42px 10px rgba(60,120,255,.58),0 0 84px 18px rgba(40,90,255,.3)}}
+@media (prefers-reduced-motion:reduce){#charList .char.on{animation:none}}
+[data-theme=light] #charList .char.on{background:linear-gradient(160deg,rgba(90,150,255,.22),rgba(90,150,255,.08))!important;box-shadow:0 0 0 1px rgba(60,110,230,.8),0 0 14px 2px rgba(60,120,255,.55),0 0 34px 8px rgba(60,120,255,.25)!important;animation:none}
