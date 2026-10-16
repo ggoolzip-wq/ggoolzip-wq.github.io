@@ -42,15 +42,14 @@ try:
     pg.evaluate("()=>{window.__cl=[];const v=document.getElementById('view');new MutationObserver(()=>__cl.push(v.className)).observe(v,{attributes:true})}")
     r0=pg.evaluate("(()=>{const c=document.querySelector('#view .card');return c.getBoundingClientRect().top})()")
     pg.locator('.rp-char[data-id=c2]').first.click(); pg.wait_for_timeout(60)
-    a=pg.evaluate("""(()=>{const G=[...document.querySelectorAll('#view .bosslay>.grid>.card')];const an=e=>getComputedStyle(e).animationName;
-      const kids=G.flatMap(c=>[...c.children]).map(e=>[an(e),parseFloat(getComputedStyle(e).animationDelay)]);
-      const still=[...document.querySelectorAll('.revpanel,.revpanel *,.pricecard,.pricecard *')].filter(e=>/holo|cEnter/.test(an(e)+getComputedStyle(e,'::after').animationName)).length;
-      return {view:document.getElementById('view').className,n:G.length,kids,sweep:getComputedStyle(G[0],'::after').animationName,still,rpIn:!!document.querySelector('.bosslay>.grid>.card .revpanel, .bosslay>.grid>.revpanel')}})()""")
-    ks=a['kids']
-    pg.wait_for_timeout(120); shot(pg.locator('#view .bosslay>.grid'),'holo_mid')
-    check('b191 정보 카드·드롭 표: 요소마다 holoIn + 차례로 늦게 + 빛줄기', 'center' in a['view'] and a['n']>=2 and all(k[0]=='holoIn' for k in ks) and len(set(k[1] for k in ks))>=3 and a['sweep']=='holoSweep', a)
-    check('b191 이번 주 수익·가격 표 애니메이션 없음', a['still']==0, a)
-    pg.wait_for_timeout(1700)
+    a=pg.evaluate("""(()=>{const g=document.querySelector('#view .bosslay>.grid');const an=e=>getComputedStyle(e).animationName;
+      const kids=[...g.querySelectorAll('.card,.card *')].filter(e=>/holo|cEnter|scan/.test(an(e))).length;
+      const still=[...document.querySelectorAll('.revpanel,.revpanel *,.pricecard,.pricecard *')].filter(e=>/holo|cEnter|scan/.test(an(e)+getComputedStyle(e,'::after').animationName)).length;
+      return {view:document.getElementById('view').className,grid:an(g),line:getComputedStyle(g,'::after').animationName,dur:getComputedStyle(g).animationDuration,kids,still}})()""")
+    check('b194 정보+드롭 표 한 덩어리 스캔(0.6초, 빛줄기 1개)', 'center' in a['view'] and a['grid']=='scanReveal' and a['line']=='scanLine' and a['dur']=='0.6s' and a['kids']==0, a)
+    check('b194 이번 주 수익·가격 표 애니메이션 없음', a['still']==0, a)
+    pg.wait_for_timeout(250); shot(pg.locator('#view .bosslay'),'scan_mid')
+    pg.wait_for_timeout(1000)
     r1=pg.evaluate("(()=>{const c=document.querySelector('#view .card');return [c.getBoundingClientRect().top,document.getElementById('view').className]})()")
     check('끝나면 클래스 제거·자리 그대로', 'center' not in r1[1] and abs(r1[0]-r0)<1, (r0,r1))
     pg.evaluate("()=>render()"); x=pg.evaluate("document.getElementById('view').className")
@@ -59,7 +58,7 @@ try:
     p2.route('https://open.api.nexon.com/**',lambda r:r.abort()); p2.goto(f'http://127.0.0.1:{PORT}/index.html'); p2.wait_for_timeout(300)
     p2.evaluate("s=>{localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",ST); p2.reload(); p2.wait_for_timeout(900)
     p2.locator('.rp-char[data-id=c2]').first.click(); p2.wait_for_timeout(50)
-    check('줄인 동작 설정 → 애니메이션 없음', p2.evaluate("getComputedStyle(document.querySelector('#view .bosslay>.grid>.card>*')).animationName")=='none')
+    check('줄인 동작 설정 → 애니메이션 없음', p2.evaluate("getComputedStyle(document.querySelector('#view .bosslay>.grid')).animationName")=='none')
     g=pg.evaluate("(()=>{const e=document.querySelector('#charList .char.on'),o=document.querySelector('#charList .char:not(.on)');return [getComputedStyle(e).boxShadow.split('rgba').length,getComputedStyle(e).animationName,e.getBoundingClientRect().height===o.getBoundingClientRect().height]})()")
     check('b188 선택 캐릭터 간접등: 그림자 여러 겹 + 맥박, 높이 같음', g[0]>=5 and g[1]=='charGlow' and g[2], g)
     pg.wait_for_timeout(400)

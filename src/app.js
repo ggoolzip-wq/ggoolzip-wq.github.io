@@ -1276,6 +1276,7 @@ const num = n => (Number(n)||0).toLocaleString('ko-KR');
 const LIVE_API='https://ggoolzip-sync.bossmaple.workers.dev/api/live';
 let LIVE=null, liveT=null;
 async function liveFetch(){ try{ const r=await fetch(LIVE_API,{cache:'no-store'}); if(!r.ok) return; LIVE=await r.json(); }catch(e){ return; }
+  srvPricesApply(LIVE&&LIVE.feed&&LIVE.feed.prices); // b193: Worker 가 1분 안에 읽은 새 공지 가격
   feedSrvApply(LIVE&&LIVE.feed); // b170: 같은 응답에 넥슨 공지 빠른 감시 결과 포함(추가 요청 없음)
   const on=!!(LIVE&&((LIVE.yt&&LIVE.yt.live)||(LIVE.nx&&LIVE.nx.live))), b=document.getElementById('liveBadge'); if(b){ const was=!b.hidden; b.hidden=!on; if(on&&!was) liveReveal(b); }
   if(tab==='live'&&!document.querySelector('#view .lvplay.playing')) renderLive(); }
@@ -1483,7 +1484,7 @@ function orbitFont(){ if(document.getElementById('orbitCss')) return; const l=do
 /* b187: 캐릭터를 바꿨을 때만 정보 카드·드롭 표 등장 애니메이션 (transform·opacity 만 → 자리 이동·클릭 지연 없음, 줄인 동작 설정이면 없음) */
 let enterFor=null, enterT=0;
 function charEnter(){ const id=S.activeId, v=$('#view'); if(enterFor===id) return; const first=enterFor===null; enterFor=id; if(first||!v) return;
-  v.classList.remove('center'); void v.offsetWidth; v.classList.add('center'); clearTimeout(enterT); enterT=setTimeout(()=>v.classList.remove('center'),1400); }
+  v.classList.remove('center'); void v.offsetWidth; v.classList.add('center'); clearTimeout(enterT); enterT=setTimeout(()=>v.classList.remove('center'),800); }
 function render(){ paintThemeBtn(); tirDefs(); logoDigital(); orbitFont(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
@@ -2082,8 +2083,8 @@ function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 
   const WB_LB=['이번주 총 수익','주간 결정석','검마 수익','아이템 판매수익'];
   const bwid=Math.max(4,Math.min(9,bw*.17)), wbars=(r,i)=>[r.total,r.wcry,r.bm,r.sale].map((val,k)=>`<rect class="cbar wb wb${k}" pathLength="1" data-tip="${esc(`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n${WB_LB[k]} ${meso(val)}`)}" x="${(X(i)+(k-2)*bwid*1.15+bwid*.075).toFixed(1)}" y="${Y(val).toFixed(1)}" width="${bwid.toFixed(1)}" height="${Math.max(0,Hh-pb-Y(val)).toFixed(1)}" rx="2"/>`).join('');
   const best=cums.indexOf(top);
-  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" data-tip="${esc(tipOf(rows[i],v))}" style="--d:${(.15+i*.06).toFixed(2)}s"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/>${o.perWeek?wbars(rows[i],i):`<rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/>`}<circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/>${o.perWeek?`<circle class="dhit" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="12" fill="transparent"/>`:''}</g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
-  return `<div class="chart scrollx linechart lux"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?cum:Math.max(...cums,0))}</b></div>${o.perWeek?`<div class="wlegend"><span><i class="wb0"></i>이번주 총 수익</span><span><i class="wb1"></i>주간 결정석</span><span><i class="wb2"></i>검마</span><span><i class="wb3"></i>아이템 판매</span></div>`:''}<svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
+  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" ${o.perWeek?'':`data-tip="${esc(tipOf(rows[i],v))}"`} style="--d:${(.15+i*.06).toFixed(2)}s">${o.perWeek?'':`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/>`}${o.perWeek?wbars(rows[i],i):`<rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/>`}<circle data-tipanchor="1" ${o.perWeek?`class="wdot" data-tip="${esc(tipOf(rows[i],v))}"`:''} cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/></g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
+  return `<div class="chart scrollx linechart lux${o.perWeek?' wk':''}"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?cum:Math.max(...cums,0))}</b></div>${o.perWeek?`<div class="wlegend"><span><i class="wb0"></i>이번주 총 수익</span><span><i class="wb1"></i>주간 결정석</span><span><i class="wb2"></i>검마</span><span><i class="wb3"></i>아이템 판매</span></div>`:''}<svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
       <defs><linearGradient id="lcg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a3c" stop-opacity=".38"/><stop offset=".55" stop-color="#ff9a3c" stop-opacity=".1"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></linearGradient>
       <linearGradient id="lcs${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff8a3d"/><stop offset=".6" stop-color="#ffb347"/><stop offset="1" stop-color="#ffd978"/></linearGradient>
       <linearGradient id="lcgr${u}" gradientUnits="userSpaceOnUse" x1="${pl}" y1="0" x2="${W-pr}" y2="0"><stop offset="0" stop-color="#ffcf7a" stop-opacity=".28"/><stop offset=".5" stop-color="#ffb347" stop-opacity=".14"/><stop offset="1" stop-color="#ffcf7a" stop-opacity=".03"/></linearGradient>
@@ -2642,7 +2643,7 @@ function applyOfficialPrices(pj){
   return changed;
 }
 function loadOfficialPrices(){
-  try{ const c=JSON.parse(localStorage.getItem(PRICES_CACHE_KEY)||'null'); if(c) applyOfficialPrices(c); }catch(e){}
+  try{ const c=JSON.parse(localStorage.getItem(PRICES_CACHE_KEY)||'null'); if(c) applyOfficialPrices(prMerge(c,srvPr())); }catch(e){}
   if(!/^https?:$/.test(location.protocol)) return; // 파일로 연 경우: 내장 기본값 사용
   fetchOfficialPrices();
 }
@@ -2654,10 +2655,23 @@ function fetchOfficialPrices(){
     if(!pj||!Array.isArray(pj.rows)||!pj.rows.length) return;
     const sig=JSON.stringify(pj); if(sig===pricesSig) return; pricesSig=sig;
     localStorage.setItem(PRICES_CACHE_KEY,sig);
-    if(applyOfficialPrices(pj)) save(); render();
+    if(applyOfficialPrices(prMerge(pj,srvPr()))) save(); render();
   }).catch(()=>{});
 }
 setInterval(()=>{ if(document.visibilityState==='visible') fetchOfficialPrices(); },300000);
+/* b193: Worker(매 1분 공지 감시)가 새 업데이트 공지에서 읽은 가격표(feed.prices) — prices.json 보다 공지 id 가 새것이면 줄을 바꾸고,
+ * 아니면 마지막 확인(checkedAt)만 늦은 쪽으로. 테섭 예정(upcoming)은 같은 값이 된 줄을 지움(upcoming.reconcile 과 같음) */
+let srvPrSig='';
+function srvPr(){ try{ return JSON.parse(localStorage.getItem('mapleBossTracker.srvPrices')||'null'); }catch(e){ return null; } }
+function prPostId(u){ return +((String(u||'').match(/\/(\d+)\/?$/)||[])[1]||0); }
+function prMerge(pj,sp){ if(!pj||!sp) return pj; const o={...pj};
+  if(Array.isArray(sp.rows)&&sp.rows.length>=20&&+sp.id>prPostId(pj.source&&pj.source.url)){ o.rows=sp.rows; o.notes=sp.notes||[]; o.source=sp.source||o.source; if(sp.changedAt) o.changedAt=sp.changedAt;
+    if(o.upcoming&&Array.isArray(o.upcoming.rows)){ const k=b=>String(b||'').replace(/\s+/g,''); const live=new Map(o.rows.map(r=>[k(r.boss),r.new])); const keep=o.upcoming.rows.filter(r=>live.get(k(r.boss))!==r.new); o.upcoming=keep.length?{...o.upcoming,rows:keep}:undefined; } }
+  if(sp.checkedAt&&(!o.checkedAt||Date.parse(sp.checkedAt)>Date.parse(o.checkedAt))) o.checkedAt=sp.checkedAt;
+  return o; }
+function srvPricesApply(sp){ if(!sp) return; const sig=JSON.stringify(sp); if(sig===srvPrSig) return; srvPrSig=sig; try{ localStorage.setItem('mapleBossTracker.srvPrices',sig); }catch(e){}
+  let pj=null; try{ pj=JSON.parse(localStorage.getItem(PRICES_CACHE_KEY)||'null'); }catch(e){} if(!pj) return;
+  if(applyOfficialPrices(prMerge(pj,sp))) save(); render(); }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') fetchOfficialPrices(); });
 
 /* =====================================================================

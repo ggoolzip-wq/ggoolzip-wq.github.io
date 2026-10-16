@@ -1568,31 +1568,15 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 @keyframes wbDraw{to{stroke-dashoffset:0}}
 @keyframes wbPulse{0%,100%{filter:drop-shadow(0 0 3px rgba(255,214,120,.85)) drop-shadow(0 0 8px rgba(255,170,60,.45))}50%{filter:drop-shadow(0 0 6px rgba(255,230,150,1)) drop-shadow(0 0 16px rgba(255,180,70,.75))}}
 @media (prefers-reduced-motion:reduce){.chart .lpt .cbar.wb:hover{animation:none;stroke-dashoffset:0}}
-/* b191: 캐릭터 선택 = 정보 카드·드롭 표만 홀로그램처럼 차례로 나타남 (이번 주 수익·가격 표는 애니메이션 없음).
- * 카드 안 요소가 0.06초씩 차례로: 흐림→또렷, 옅은 시안빛이 빠짐 + 카드 위로 옅은 빛줄기 1번 지나감. 깜빡임 없음 */
-@keyframes holoIn{0%{opacity:0;filter:blur(3px) drop-shadow(0 0 6px rgba(120,220,255,.35));transform:translateY(3px)}60%{opacity:.85;filter:blur(.6px) drop-shadow(0 0 4px rgba(120,220,255,.18))}100%{opacity:1;filter:none;transform:none}}
-@keyframes holoSweep{0%{transform:translateY(-100%);opacity:0}25%{opacity:1}100%{transform:translateY(100%);opacity:0}}
-#view.center .bosslay>.grid>.card{position:relative}
-#view.center .bosslay>.grid>.card>*{animation:holoIn .42s cubic-bezier(.25,.7,.25,1) both}
-#view.center .bosslay>.grid>.card::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(180deg,transparent 0,rgba(140,225,255,.07) 45%,rgba(200,245,255,.12) 50%,rgba(140,225,255,.07) 55%,transparent 100%),repeating-linear-gradient(0deg,rgba(140,220,255,.035) 0 1px,transparent 1px 3px);animation:holoSweep .8s ease-out both}
-#view.center .bosslay>.grid>.card:nth-child(2)::after{animation-delay:.12s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(2){animation-delay:0.06s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(3){animation-delay:0.12s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(4){animation-delay:0.18s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(5){animation-delay:0.24s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(6){animation-delay:0.30s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(7){animation-delay:0.36s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(8){animation-delay:0.42s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(9){animation-delay:0.48s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(2){animation-delay:0.18s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(3){animation-delay:0.24s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(4){animation-delay:0.30s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(5){animation-delay:0.36s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(6){animation-delay:0.42s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(7){animation-delay:0.48s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(8){animation-delay:0.54s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(9){animation-delay:0.60s}
-@media (prefers-reduced-motion:reduce){#view.center .bosslay>.grid>.card>*,#view.center .bosslay>.grid>.card::after{animation:none}}
+/* b194: 캐릭터 선택 = 스캔 — 정보 카드+드롭 표(.bosslay>.grid)를 한 덩어리로, 빛줄기 1개가 위→아래로 0.6초 지나가며 그 위쪽만 보임(clip-path).
+ * 이번 주 수익·가격 표(.grid 밖)는 애니메이션 없음. 줄인 동작이면 없음 */
+@keyframes scanReveal{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes scanLine{from{top:0;opacity:1}88%{opacity:1}to{top:100%;opacity:0}}
+#view.center .bosslay>.grid{position:relative;animation:scanReveal .6s cubic-bezier(.35,.1,.25,1) both}
+#view.center .bosslay>.grid::after{content:"";position:absolute;left:-2px;right:-2px;top:0;height:2px;pointer-events:none;z-index:5;border-radius:2px;
+  background:linear-gradient(90deg,transparent,rgba(140,220,255,.85) 15%,#e6f8ff 50%,rgba(140,220,255,.85) 85%,transparent);
+  box-shadow:0 0 8px 2px rgba(110,200,255,.55),0 -10px 18px rgba(110,200,255,.12);animation:scanLine .6s cubic-bezier(.35,.1,.25,1) both}
+@media (prefers-reduced-motion:reduce){#view.center .bosslay>.grid,#view.center .bosslay>.grid::after{animation:none}#view.center .bosslay>.grid::after{display:none}}
 
 /* b188: 왼쪽 캐릭터 목록 선택 = 강한 간접등 (사파이어 백라이트 + 가장자리 빛, box-shadow 만 → 자리 이동 없음) */
 #charList .char.on{position:relative;z-index:1;border-color:#8fb6ff!important;background:linear-gradient(160deg,rgba(90,150,255,.30),rgba(40,90,220,.14) 60%,rgba(40,90,220,.08))!important;
@@ -1602,13 +1586,15 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 @media (prefers-reduced-motion:reduce){#charList .char.on{animation:none}}
 [data-theme=light] #charList .char.on{background:linear-gradient(160deg,rgba(90,150,255,.22),rgba(90,150,255,.08))!important;box-shadow:0 0 0 1px rgba(60,110,230,.8),0 0 14px 2px rgba(60,120,255,.55),0 0 34px 8px rgba(60,120,255,.25)!important;animation:none}
 /* b191: 주간 메소 점 hover = 다른 주 흐리게, 그 주 점·막대 4개 빛 맥박 (막대 hover 는 b186 그대로) */
-.linechart svg:has(.dhit:hover) .lpt:not(:has(.dhit:hover))>*{opacity:.28;transition:opacity .2s}
-.linechart svg:has(.dhit:hover) .cval:not(.best){opacity:.35}
-.linechart .lpt:has(.dhit:hover) .cbar.wb{opacity:1;animation:wbPulse 1.4s ease-in-out infinite}
-.linechart .lpt:has(.dhit:hover) circle[data-tipanchor]{animation:dotPulse 1.4s ease-in-out infinite}
+.linechart svg:has(.wdot:hover) .lpt:not(:has(.wdot:hover))>*{opacity:.28;transition:opacity .2s}
+.linechart svg:has(.wdot:hover) .cval:not(.best){opacity:.35}
+.linechart .lpt:has(.wdot:hover) .cbar.wb{opacity:1;animation:wbPulse 1.4s ease-in-out infinite}
+.linechart .lpt:has(.wdot:hover) circle[data-tipanchor]{animation:dotPulse 1.4s ease-in-out infinite}
 @keyframes dotPulse{0%,100%{filter:drop-shadow(0 0 4px rgba(255,214,120,.9))}50%{filter:drop-shadow(0 0 10px rgba(255,230,150,1)) drop-shadow(0 0 18px rgba(255,180,70,.7))}}
-.linechart .dhit{cursor:pointer}
-@media (prefers-reduced-motion:reduce){.linechart .lpt:has(.dhit:hover) .cbar.wb,.linechart .lpt:has(.dhit:hover) circle[data-tipanchor]{animation:none}}
+.linechart .wdot{cursor:pointer}
+/* b195: 점 크기 그대로(hover 때 안 커짐), hit 영역 = 점 자체 */
+.chart.lux.wk .lpt:hover circle.wdot{r:4;stroke-width:2.2}.chart.lux.wk .lpt.cur:hover circle.wdot{r:5;stroke-width:1.6}
+@media (prefers-reduced-motion:reduce){.linechart .lpt:has(.wdot:hover) .cbar.wb,.linechart .lpt:has(.wdot:hover) circle[data-tipanchor]{animation:none}}
 /* b191: 선택 캐릭터 오른쪽으로 살짝 (모든 칸 오른쪽 6px 여유 → 다른 칸 안 움직임) */
 #charList .char{margin-right:6px;transition:transform .25s cubic-bezier(.3,.7,.2,1),border-color .15s,box-shadow .15s}
 #charList .char.on{transform:translateX(6px)}

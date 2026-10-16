@@ -438,6 +438,38 @@ async function nxGet(env, path, q) {
   const r = await fetch(u, { headers: { 'x-nxopen-api-key': env.NEXON_SVC_KEY, accept: 'application/json' } });
   const t = await r.text(); if (!r.ok) throw new Error(`${path} ${r.status}`); return t;
 }
+/* b193: 결정석 가격 1분 반영 — 새 업데이트 공지(notice-update)가 보이면 그 글 상세(1회)에서 '결정 가격표'를 읽어 nx_feed 'prices' 에 저장.
+   (scripts/nexon_prices.py parse_post 를 옮긴 것: 보스·가격 표 + '결정' 문단의 적용일). 가격표 없는 새 공지도 checkedAt(마지막 확인)만 갱신.
+   사이트는 /api/live 응답 feed.prices 를 prices.json(매일 19:00 Actions) 위에 덮음 — 공지 id 가 더 새것일 때만 줄을 바꿈. 매 분 가격 긁기 없음. */
+const PR_MIN_ROWS = 20;
+const prNum = s => { s = String(s || '').replace(/[,\s]/g, ''); let m = s.match(/^(\d+)(?:메소)?$/); if (m) return +m[1];
+  m = s.match(/^(?:(\d+)억)?(?:(\d+)만)?(\d+)?(?:메소)?$/); if (m && (m[1] || m[2] || m[3])) return (+m[1] || 0) * 1e8 + (+m[2] || 0) * 1e4 + (+m[3] || 0); return null; };
+const prTxt = h => unent(String(h || '').replace(/&nbsp;/gi, ' ').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+function prParse(html) {
+  html = String(html || ''); const rows = [], notes = [];
+  if (!/결정/.test(html)) return { rows, notes };
+  const parts = html.split(/<table\b/i);
+  const paras = h => (h.match(/<(?:p|div|h\d|li)\b[^>]*>[\s\S]*?<\/(?:p|div|h\d|li)>/gi) || []).map(prTxt).filter(Boolean);
+  const addNotes = h => { if (!/결정/.test(h)) return; for (const t of paras(h)) if (/힘의 결정|결정 판매|결정 가격|결정의 판매|결정석/.test(t) && !notes.includes(t)) notes.push(t); };
+  addNotes(parts[0]);
+  for (let i = 1; i < parts.length; i++) {
+    const end = parts[i].search(/<\/table>/i), tb = end < 0 ? parts[i] : parts[i].slice(0, end), after = end < 0 ? '' : parts[i].slice(end);
+    const pv = parts[i - 1].slice(-3000), hd = tb.slice(0, 3000), quick = (hd.includes('보스') && /가격|기존|변경/.test(hd)) || (pv.includes('결정') && pv.includes('가격'));
+    if (!quick) { addNotes(after); continue; } // CPU 아낌: 가격표 후보만 자세히
+    const prevP = paras(pv), ctx = prevP[prevP.length - 1] || '';
+    const T = (tb.match(/<tr\b[\s\S]*?<\/tr>/gi) || []).map(tr => (tr.match(/<t[dh]\b[\s\S]*?<\/t[dh]>/gi) || []).map(prTxt)).filter(r => r.some(Boolean));
+    if (T.length) { const head = T[0].join(' ');
+      const isPrice = (head.includes('보스') && /가격|기존|변경/.test(head)) || (ctx.includes('결정') && ctx.includes('가격'));
+      if (isPrice) { const body = T[0].slice(1).some(c => prNum(c) != null) ? T : T.slice(1);
+        for (const r of body) { if (r.length < 2 || !r[0]) continue; const n = r.slice(1).map(prNum).filter(x => x != null); if (!n.length) continue;
+          rows.push({ boss: r[0], old: n.length > 1 ? n[0] : null, new: n[n.length - 1] }); } } }
+    addNotes(after);
+  }
+  for (const r of rows) for (const n of notes) { const m = n.match(/(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/); const nm = r.boss.replace(/\s*\(.*\)$/, '').trim();
+    if (m && nm && n.includes(nm)) { r.effective = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; r.effective_note = n; } }
+  return { rows, notes };
+}
+const kstIso = (t = Date.now()) => new Date(t + 9 * 3600e3).toISOString().slice(0, 19) + '+09:00';
 async function feedCron(env, t0 = Date.now()) {
   if (!env.NEXON_SVC_KEY) return;
   await feedSchema(env); const S = await feedState(env);
@@ -461,6 +493,15 @@ async function feedCron(env, t0 = Date.now()) {
     for (const x of fresh) {
       const n = +x.notice_id, base = { title: x.title || '', url: x.url || '', date: nxIso(x.date) };
       if (path === 'notice-update') add('patch', { id: `update:${n}`, ...base });
+      if ((path === 'notice-update' || (path === 'notice' && NX_MINOR.test(base.title))) && detail < FEED_MAX_DETAIL) { // b193
+        const pr = S.prices || {}; pr.checkedAt = kstIso();
+        if (path === 'notice-update') { detail++;
+          try { const d = JSON.parse(await nxGet(env, 'notice-update/detail', { notice_id: n })); const P = prParse(d.contents);
+            if (P.rows.length >= PR_MIN_ROWS && n > (+pr.id || 0)) { const same = JSON.stringify((pr.rows || []).map(r => [r.boss, r.new])) === JSON.stringify(P.rows.map(r => [r.boss, r.new]));
+              Object.assign(pr, { id: n, source: { url: `https://maplestory.nexon.com/News/Update/${n}`, title: d.title || base.title, date: String(base.date).slice(0, 10).replace(/-/g, '.') }, rows: P.rows, notes: P.notes, fetchedAt: kstIso(), via: 'worker' });
+              if (!same) pr.changedAt = String(base.date).slice(0, 10); }
+          } catch (e) { console.log('prices', String(e)); } }
+        S.prices = pr; await feedPut(env, 'prices', pr); }
       if (path === 'notice' && NX_MINOR.test(base.title)) add('patch', { id: `minor:${n}`, ...base, src: 'minor' });
       if (path === 'notice-event' && NX_SUNDAY.test(base.title) && (!sunday || n > sunday.id))
         sunday = { id: n, ...base, url: `https://maplestory.nexon.com/News/Event/${n}`, start: nxIso(x.date_event_start), end: nxIso(x.date_event_end), thumb: x.thumbnail_url || '', image: x.thumbnail_url || '', via: 'server' };
@@ -478,7 +519,7 @@ async function feedCron(env, t0 = Date.now()) {
   await feedPut(env, 'chk', chk);
 }
 async function feedRead(env) {
-  try { await feedSchema(env); const S = await feedState(env); return { items: S.items || { saryo: [], patch: [] }, sunday: S.sunday || null, chk: S.chk || {} }; } catch (e) { return null; }
+  try { await feedSchema(env); const S = await feedState(env); return { items: S.items || { saryo: [], patch: [] }, sunday: S.sunday || null, chk: S.chk || {}, prices: S.prices || null }; } catch (e) { return null; }
 }
 
 /* ---------- 라우트 ---------- */

@@ -1675,31 +1675,15 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 @keyframes wbDraw{to{stroke-dashoffset:0}}
 @keyframes wbPulse{0%,100%{filter:drop-shadow(0 0 3px rgba(255,214,120,.85)) drop-shadow(0 0 8px rgba(255,170,60,.45))}50%{filter:drop-shadow(0 0 6px rgba(255,230,150,1)) drop-shadow(0 0 16px rgba(255,180,70,.75))}}
 @media (prefers-reduced-motion:reduce){.chart .lpt .cbar.wb:hover{animation:none;stroke-dashoffset:0}}
-/* b191: 캐릭터 선택 = 정보 카드·드롭 표만 홀로그램처럼 차례로 나타남 (이번 주 수익·가격 표는 애니메이션 없음).
- * 카드 안 요소가 0.06초씩 차례로: 흐림→또렷, 옅은 시안빛이 빠짐 + 카드 위로 옅은 빛줄기 1번 지나감. 깜빡임 없음 */
-@keyframes holoIn{0%{opacity:0;filter:blur(3px) drop-shadow(0 0 6px rgba(120,220,255,.35));transform:translateY(3px)}60%{opacity:.85;filter:blur(.6px) drop-shadow(0 0 4px rgba(120,220,255,.18))}100%{opacity:1;filter:none;transform:none}}
-@keyframes holoSweep{0%{transform:translateY(-100%);opacity:0}25%{opacity:1}100%{transform:translateY(100%);opacity:0}}
-#view.center .bosslay>.grid>.card{position:relative}
-#view.center .bosslay>.grid>.card>*{animation:holoIn .42s cubic-bezier(.25,.7,.25,1) both}
-#view.center .bosslay>.grid>.card::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(180deg,transparent 0,rgba(140,225,255,.07) 45%,rgba(200,245,255,.12) 50%,rgba(140,225,255,.07) 55%,transparent 100%),repeating-linear-gradient(0deg,rgba(140,220,255,.035) 0 1px,transparent 1px 3px);animation:holoSweep .8s ease-out both}
-#view.center .bosslay>.grid>.card:nth-child(2)::after{animation-delay:.12s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(2){animation-delay:0.06s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(3){animation-delay:0.12s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(4){animation-delay:0.18s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(5){animation-delay:0.24s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(6){animation-delay:0.30s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(7){animation-delay:0.36s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(8){animation-delay:0.42s}
-#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(9){animation-delay:0.48s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(2){animation-delay:0.18s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(3){animation-delay:0.24s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(4){animation-delay:0.30s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(5){animation-delay:0.36s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(6){animation-delay:0.42s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(7){animation-delay:0.48s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(8){animation-delay:0.54s}
-#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(9){animation-delay:0.60s}
-@media (prefers-reduced-motion:reduce){#view.center .bosslay>.grid>.card>*,#view.center .bosslay>.grid>.card::after{animation:none}}
+/* b194: 캐릭터 선택 = 스캔 — 정보 카드+드롭 표(.bosslay>.grid)를 한 덩어리로, 빛줄기 1개가 위→아래로 0.6초 지나가며 그 위쪽만 보임(clip-path).
+ * 이번 주 수익·가격 표(.grid 밖)는 애니메이션 없음. 줄인 동작이면 없음 */
+@keyframes scanReveal{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes scanLine{from{top:0;opacity:1}88%{opacity:1}to{top:100%;opacity:0}}
+#view.center .bosslay>.grid{position:relative;animation:scanReveal .6s cubic-bezier(.35,.1,.25,1) both}
+#view.center .bosslay>.grid::after{content:"";position:absolute;left:-2px;right:-2px;top:0;height:2px;pointer-events:none;z-index:5;border-radius:2px;
+  background:linear-gradient(90deg,transparent,rgba(140,220,255,.85) 15%,#e6f8ff 50%,rgba(140,220,255,.85) 85%,transparent);
+  box-shadow:0 0 8px 2px rgba(110,200,255,.55),0 -10px 18px rgba(110,200,255,.12);animation:scanLine .6s cubic-bezier(.35,.1,.25,1) both}
+@media (prefers-reduced-motion:reduce){#view.center .bosslay>.grid,#view.center .bosslay>.grid::after{animation:none}#view.center .bosslay>.grid::after{display:none}}
 
 /* b188: 왼쪽 캐릭터 목록 선택 = 강한 간접등 (사파이어 백라이트 + 가장자리 빛, box-shadow 만 → 자리 이동 없음) */
 #charList .char.on{position:relative;z-index:1;border-color:#8fb6ff!important;background:linear-gradient(160deg,rgba(90,150,255,.30),rgba(40,90,220,.14) 60%,rgba(40,90,220,.08))!important;
@@ -1709,13 +1693,15 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 @media (prefers-reduced-motion:reduce){#charList .char.on{animation:none}}
 [data-theme=light] #charList .char.on{background:linear-gradient(160deg,rgba(90,150,255,.22),rgba(90,150,255,.08))!important;box-shadow:0 0 0 1px rgba(60,110,230,.8),0 0 14px 2px rgba(60,120,255,.55),0 0 34px 8px rgba(60,120,255,.25)!important;animation:none}
 /* b191: 주간 메소 점 hover = 다른 주 흐리게, 그 주 점·막대 4개 빛 맥박 (막대 hover 는 b186 그대로) */
-.linechart svg:has(.dhit:hover) .lpt:not(:has(.dhit:hover))>*{opacity:.28;transition:opacity .2s}
-.linechart svg:has(.dhit:hover) .cval:not(.best){opacity:.35}
-.linechart .lpt:has(.dhit:hover) .cbar.wb{opacity:1;animation:wbPulse 1.4s ease-in-out infinite}
-.linechart .lpt:has(.dhit:hover) circle[data-tipanchor]{animation:dotPulse 1.4s ease-in-out infinite}
+.linechart svg:has(.wdot:hover) .lpt:not(:has(.wdot:hover))>*{opacity:.28;transition:opacity .2s}
+.linechart svg:has(.wdot:hover) .cval:not(.best){opacity:.35}
+.linechart .lpt:has(.wdot:hover) .cbar.wb{opacity:1;animation:wbPulse 1.4s ease-in-out infinite}
+.linechart .lpt:has(.wdot:hover) circle[data-tipanchor]{animation:dotPulse 1.4s ease-in-out infinite}
 @keyframes dotPulse{0%,100%{filter:drop-shadow(0 0 4px rgba(255,214,120,.9))}50%{filter:drop-shadow(0 0 10px rgba(255,230,150,1)) drop-shadow(0 0 18px rgba(255,180,70,.7))}}
-.linechart .dhit{cursor:pointer}
-@media (prefers-reduced-motion:reduce){.linechart .lpt:has(.dhit:hover) .cbar.wb,.linechart .lpt:has(.dhit:hover) circle[data-tipanchor]{animation:none}}
+.linechart .wdot{cursor:pointer}
+/* b195: 점 크기 그대로(hover 때 안 커짐), hit 영역 = 점 자체 */
+.chart.lux.wk .lpt:hover circle.wdot{r:4;stroke-width:2.2}.chart.lux.wk .lpt.cur:hover circle.wdot{r:5;stroke-width:1.6}
+@media (prefers-reduced-motion:reduce){.linechart .lpt:has(.wdot:hover) .cbar.wb,.linechart .lpt:has(.wdot:hover) circle[data-tipanchor]{animation:none}}
 /* b191: 선택 캐릭터 오른쪽으로 살짝 (모든 칸 오른쪽 6px 여유 → 다른 칸 안 움직임) */
 #charList .char{margin-right:6px;transition:transform .25s cubic-bezier(.3,.7,.2,1),border-color .15s,box-shadow .15s}
 #charList .char.on{transform:translateX(6px)}
@@ -3132,6 +3118,7 @@ const num = n => (Number(n)||0).toLocaleString('ko-KR');
 const LIVE_API='https://ggoolzip-sync.bossmaple.workers.dev/api/live';
 let LIVE=null, liveT=null;
 async function liveFetch(){ try{ const r=await fetch(LIVE_API,{cache:'no-store'}); if(!r.ok) return; LIVE=await r.json(); }catch(e){ return; }
+  srvPricesApply(LIVE&&LIVE.feed&&LIVE.feed.prices); // b193: Worker 가 1분 안에 읽은 새 공지 가격
   feedSrvApply(LIVE&&LIVE.feed); // b170: 같은 응답에 넥슨 공지 빠른 감시 결과 포함(추가 요청 없음)
   const on=!!(LIVE&&((LIVE.yt&&LIVE.yt.live)||(LIVE.nx&&LIVE.nx.live))), b=document.getElementById('liveBadge'); if(b){ const was=!b.hidden; b.hidden=!on; if(on&&!was) liveReveal(b); }
   if(tab==='live'&&!document.querySelector('#view .lvplay.playing')) renderLive(); }
@@ -3339,7 +3326,7 @@ function orbitFont(){ if(document.getElementById('orbitCss')) return; const l=do
 /* b187: 캐릭터를 바꿨을 때만 정보 카드·드롭 표 등장 애니메이션 (transform·opacity 만 → 자리 이동·클릭 지연 없음, 줄인 동작 설정이면 없음) */
 let enterFor=null, enterT=0;
 function charEnter(){ const id=S.activeId, v=$('#view'); if(enterFor===id) return; const first=enterFor===null; enterFor=id; if(first||!v) return;
-  v.classList.remove('center'); void v.offsetWidth; v.classList.add('center'); clearTimeout(enterT); enterT=setTimeout(()=>v.classList.remove('center'),1400); }
+  v.classList.remove('center'); void v.offsetWidth; v.classList.add('center'); clearTimeout(enterT); enterT=setTimeout(()=>v.classList.remove('center'),800); }
 function render(){ paintThemeBtn(); tirDefs(); logoDigital(); orbitFont(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
@@ -3938,8 +3925,8 @@ function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 
   const WB_LB=['이번주 총 수익','주간 결정석','검마 수익','아이템 판매수익'];
   const bwid=Math.max(4,Math.min(9,bw*.17)), wbars=(r,i)=>[r.total,r.wcry,r.bm,r.sale].map((val,k)=>`<rect class="cbar wb wb${k}" pathLength="1" data-tip="${esc(`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n${WB_LB[k]} ${meso(val)}`)}" x="${(X(i)+(k-2)*bwid*1.15+bwid*.075).toFixed(1)}" y="${Y(val).toFixed(1)}" width="${bwid.toFixed(1)}" height="${Math.max(0,Hh-pb-Y(val)).toFixed(1)}" rx="2"/>`).join('');
   const best=cums.indexOf(top);
-  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" data-tip="${esc(tipOf(rows[i],v))}" style="--d:${(.15+i*.06).toFixed(2)}s"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/>${o.perWeek?wbars(rows[i],i):`<rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/>`}<circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/>${o.perWeek?`<circle class="dhit" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="12" fill="transparent"/>`:''}</g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
-  return `<div class="chart scrollx linechart lux"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?cum:Math.max(...cums,0))}</b></div>${o.perWeek?`<div class="wlegend"><span><i class="wb0"></i>이번주 총 수익</span><span><i class="wb1"></i>주간 결정석</span><span><i class="wb2"></i>검마</span><span><i class="wb3"></i>아이템 판매</span></div>`:''}<svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
+  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" ${o.perWeek?'':`data-tip="${esc(tipOf(rows[i],v))}"`} style="--d:${(.15+i*.06).toFixed(2)}s">${o.perWeek?'':`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/>`}${o.perWeek?wbars(rows[i],i):`<rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/>`}<circle data-tipanchor="1" ${o.perWeek?`class="wdot" data-tip="${esc(tipOf(rows[i],v))}"`:''} cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/></g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
+  return `<div class="chart scrollx linechart lux${o.perWeek?' wk':''}"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?cum:Math.max(...cums,0))}</b></div>${o.perWeek?`<div class="wlegend"><span><i class="wb0"></i>이번주 총 수익</span><span><i class="wb1"></i>주간 결정석</span><span><i class="wb2"></i>검마</span><span><i class="wb3"></i>아이템 판매</span></div>`:''}<svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
       <defs><linearGradient id="lcg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a3c" stop-opacity=".38"/><stop offset=".55" stop-color="#ff9a3c" stop-opacity=".1"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></linearGradient>
       <linearGradient id="lcs${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff8a3d"/><stop offset=".6" stop-color="#ffb347"/><stop offset="1" stop-color="#ffd978"/></linearGradient>
       <linearGradient id="lcgr${u}" gradientUnits="userSpaceOnUse" x1="${pl}" y1="0" x2="${W-pr}" y2="0"><stop offset="0" stop-color="#ffcf7a" stop-opacity=".28"/><stop offset=".5" stop-color="#ffb347" stop-opacity=".14"/><stop offset="1" stop-color="#ffcf7a" stop-opacity=".03"/></linearGradient>
@@ -4498,7 +4485,7 @@ function applyOfficialPrices(pj){
   return changed;
 }
 function loadOfficialPrices(){
-  try{ const c=JSON.parse(localStorage.getItem(PRICES_CACHE_KEY)||'null'); if(c) applyOfficialPrices(c); }catch(e){}
+  try{ const c=JSON.parse(localStorage.getItem(PRICES_CACHE_KEY)||'null'); if(c) applyOfficialPrices(prMerge(c,srvPr())); }catch(e){}
   if(!/^https?:$/.test(location.protocol)) return; // 파일로 연 경우: 내장 기본값 사용
   fetchOfficialPrices();
 }
@@ -4510,10 +4497,23 @@ function fetchOfficialPrices(){
     if(!pj||!Array.isArray(pj.rows)||!pj.rows.length) return;
     const sig=JSON.stringify(pj); if(sig===pricesSig) return; pricesSig=sig;
     localStorage.setItem(PRICES_CACHE_KEY,sig);
-    if(applyOfficialPrices(pj)) save(); render();
+    if(applyOfficialPrices(prMerge(pj,srvPr()))) save(); render();
   }).catch(()=>{});
 }
 setInterval(()=>{ if(document.visibilityState==='visible') fetchOfficialPrices(); },300000);
+/* b193: Worker(매 1분 공지 감시)가 새 업데이트 공지에서 읽은 가격표(feed.prices) — prices.json 보다 공지 id 가 새것이면 줄을 바꾸고,
+ * 아니면 마지막 확인(checkedAt)만 늦은 쪽으로. 테섭 예정(upcoming)은 같은 값이 된 줄을 지움(upcoming.reconcile 과 같음) */
+let srvPrSig='';
+function srvPr(){ try{ return JSON.parse(localStorage.getItem('mapleBossTracker.srvPrices')||'null'); }catch(e){ return null; } }
+function prPostId(u){ return +((String(u||'').match(/\/(\d+)\/?$/)||[])[1]||0); }
+function prMerge(pj,sp){ if(!pj||!sp) return pj; const o={...pj};
+  if(Array.isArray(sp.rows)&&sp.rows.length>=20&&+sp.id>prPostId(pj.source&&pj.source.url)){ o.rows=sp.rows; o.notes=sp.notes||[]; o.source=sp.source||o.source; if(sp.changedAt) o.changedAt=sp.changedAt;
+    if(o.upcoming&&Array.isArray(o.upcoming.rows)){ const k=b=>String(b||'').replace(/\s+/g,''); const live=new Map(o.rows.map(r=>[k(r.boss),r.new])); const keep=o.upcoming.rows.filter(r=>live.get(k(r.boss))!==r.new); o.upcoming=keep.length?{...o.upcoming,rows:keep}:undefined; } }
+  if(sp.checkedAt&&(!o.checkedAt||Date.parse(sp.checkedAt)>Date.parse(o.checkedAt))) o.checkedAt=sp.checkedAt;
+  return o; }
+function srvPricesApply(sp){ if(!sp) return; const sig=JSON.stringify(sp); if(sig===srvPrSig) return; srvPrSig=sig; try{ localStorage.setItem('mapleBossTracker.srvPrices',sig); }catch(e){}
+  let pj=null; try{ pj=JSON.parse(localStorage.getItem(PRICES_CACHE_KEY)||'null'); }catch(e){} if(!pj) return;
+  if(applyOfficialPrices(prMerge(pj,sp))) save(); render(); }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') fetchOfficialPrices(); });
 
 /* =====================================================================

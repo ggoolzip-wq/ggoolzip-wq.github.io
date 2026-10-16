@@ -35,7 +35,7 @@ try:
     pg.evaluate("()=>{S.characters[0].weekly.lucid=true;(S.characters[0].wat={}).lucid=Date.now();save();render()}"); pg.wait_for_timeout(400)
     g=pg.evaluate("[document.querySelector('#grandAvg')?.innerText||'', document.querySelector('#weekLine')?.dataset.total, totalData().grand, totalData().weeks.length, totalData().weeks.find(w=>w.cur).total]")
     check('1 누적 수익(총 수익) 밑: 주 평균 메소', g[0]==pg.evaluate("avgTxt('주',doneAvgs(totalData()).grand)") and g[0]!=f"주 평균 {round(g[2]/g[3]):,} 메소", g)  # b176: 끝난 주만
-    tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(x=>x.dataset.tip)")
+    tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(x=>(x.querySelector('[data-tip]:not(.cbar)')||x).dataset.tip)")
     xl=pg.evaluate("[...document.querySelectorAll('.linechart svg > text')].map(t=>t.textContent)")
     check('b136 그래프: 주마다 점 1개, 점 = 그 주 메소(누적 아님)', len(tips)==2 and '1주차 총 수익 : 6.00억' in tips[0] and '2주차 총 수익 : 5,970만' in tips[1], tips)
     check('b136 x축 1주차·2주차', '1주차' in xl and '2주차' in xl, xl)

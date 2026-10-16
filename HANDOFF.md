@@ -15,6 +15,23 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b195 (2026-10-17) — 주간 메소 점: hover 때 안 커짐, hit 영역 = 점 자체 (03:43 KST)
+- perWeek 차트(`.linechart.wk`): 열 전체 투명 rect·b191 큰 hit 원(.dhit) 삭제, 말풍선 data-tip 을 점(`circle.wdot`)에 직접. `.lpt:hover circle` 확대 규칙을 wk 에서는 r 4(이번 주 5) 그대로로 덮음. 흐림·맥박은 `:has(.wdot:hover)`. 막대 hover(b186) 그대로.
+- 테스트: test_b185 (점 r 그대로·열 data-tip 없음), test_tracker87/99 말풍선 위치(점의 data-tip).
+
+## b194 (2026-10-17) — 캐릭터 선택 효과: 홀로그램 → 스캔 (03:36 KST)
+- b191 holoIn/holoSweep 삭제. 정보 카드+드롭 표(`.bosslay>.grid`)를 한 덩어리로 clip-path inset(0 0 100% 0)→inset(0) 0.6초(scanReveal) + 같은 속도로 위→아래 시안 빛줄기 2px(::after, scanLine, 끝에서 사라짐). 이번 주 수익·가격 표(.grid 밖)는 없음. reduced-motion 이면 없음. #view.center 0.8초.
+- 테스트: test_b187 (grid scanReveal 0.6s·줄 scanLine·카드 안 애니메이션 0·수익/가격 표 0). 사진: /workspace/b182b/b187_after_scan_mid.png
+- 전체 run_par 는 b193 상태에서 1회(알려진 실패만), b194·b195 는 관련 테스트(b185·b187·b193·42·87·99)만.
+
+## b193 (2026-10-17) — 결정석 가격: 새 업데이트 공지를 Worker 1분 cron 이 바로 읽음 (03:06~03:45 KST)
+- server/worker.js feedCron(b170, NEXON_SVC_KEY, 매 1분): notice-update 에 새 id 가 보이면 그 글만 `notice-update/detail` 1회 → `prParse()`(scripts/nexon_prices.py parse_post 를 JS 로: 보스·가격 표, '결정' 문단 적용일 effective) → 20줄 이상이고 저장된 것보다 새 id 면 nx_feed 'prices' = {id, source, rows, notes, changedAt(가격이 바뀐 때 공지 날짜), checkedAt, via:'worker'}. 새 업데이트/마이너 패치 공지마다 checkedAt(KST) 갱신. 매 분 가격 긁기 없음(새 id 일 때만 상세 1회, FEED_MAX_DETAIL 안).
+- /api/feed·/api/live 의 feed.prices 로 내보냄 → 사이트는 기존 30초 /api/live 폴링으로 받음(요청 수 증가 0). `prMerge(prices.json, feed.prices)`: 공지 id 가 prices.json source 보다 크면 rows·notes·source·changedAt 교체 + 테섭 예정(upcoming) 중 같은 값이 된 줄 삭제(upcoming.reconcile 과 같음), checkedAt 은 늦은 쪽. localStorage 'mapleBossTracker.srvPrices' 보관.
+- 테섭(테스트 월드) 공지는 넥슨 Open API 에 없어 예정 가격은 예전대로 GitHub Actions(update_feed) 경로. 매일 19:00 KST update-prices 워크플로 그대로(다음 날 prices.json 이 같은 공지로 따라옴). repository_dispatch 는 안 씀(새 토큰 비밀값 필요 없음).
+- CPU: 1.1MB 공지 페이지 전체로 재면 prParse 약 6ms(warm)~15ms(첫 실행). API contents 는 본문만이라 더 작음 — 무료 플랜 10ms 를 넘을 수 있는 건 새 업데이트 공지가 올라온 그 1회뿐.
+- 배포: `cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy` (박스에 node 22 가 없어 ~/.n22 에 node v22.20.0 설치). Version a2e08bef.
+- 테스트: tests/test_b193.py (port 8966) prParse = parse_post(46줄·적용일), 사이트 덮어쓰기(새 id → 가격·확인 시각, 옛 id → 확인 시각만).
+
 ## b192 (2026-10-17) — 이번 주 수익 글자색 (03:04 KST)
 - 위: 주보 결정석·이번주 획득 아이템 줄 `.rc-g` 초록 #5fe08a + 금액 앞 '+', 반지 상자 줄 `.rc-y` 노랑 #ffd54a, 남은 결정석 2줄 `.rp-left` 빨강 #ff6b6b + '-'. 캐릭터별: 주간 결정석 초록 '+', 남은/검마 남은 빨강 '-'. 라이트 테마는 진한 초록/황토/빨강. 값 계산은 그대로. 검마 결정석(획득) 줄은 요청에 없어 색 그대로.
 - 테스트: test_b185 색·부호, test_tracker81 '+' 기대값, test_tracker87 말풍선 4줄(b191), test_tracker27 '+1' 안내 검사를 '클릭/획득 +1'로 (이 테스트의 '.rp-cry img 2개' 검사는 변경 전 HEAD 에서도 실패 — 이번 주 검마 미클리어 데이터). test_tir_count 는 b183(작은 문구 기본 글씨체) 이후 옛 기대값이라 실패(run_all 목록 밖).
