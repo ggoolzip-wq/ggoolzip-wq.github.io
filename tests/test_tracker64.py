@@ -16,7 +16,7 @@ def ch(id,name,acc): return {'id':id,'name':name,'level':280,'job':'히어로','
 ST={'version':5,'theme':'dark','activeId':'c2','history':[],'monthHistory':[],'worldOrder':[],'characters':[ch('c1','프리셋범','a1'),ch('c2','정상캐','a1'),ch('c3','현재범','a1'),ch('c4','숨는캐','a2')],
  'settings':{'accounts':[{'id':'a1','label':'본계정','key':'live_K1_0123456789abcdefgh','main':True},{'id':'a2','label':'부','key':''}]}}
 M=lambda n:[{'item_equipment_part':'훈장','item_equipment_slot':'훈장','item_name':n}]
-EQ={'oc1':{'item_equipment':M('THE RED'),'item_equipment_preset_1':M('THE RED'),'item_equipment_preset_2':M('THE RED'),'item_equipment_preset_3':M('프리미엄 PC방')},
+EQ={'oc1':{'preset_no':3,'item_equipment':M('THE RED'),'item_equipment_preset_1':M('THE RED'),'item_equipment_preset_2':M('THE RED'),'item_equipment_preset_3':M('프리미엄 PC방')},
     'oc2':{'item_equipment':M('THE RED'),'item_equipment_preset_1':M('THE RED'),'item_equipment_preset_2':[],'item_equipment_preset_3':M('카오스 벨룸 킬러')},
     'oc3':{'item_equipment':M('프리미엄 PC방'),'item_equipment_preset_1':M('프리미엄 PC방')},'oc4':{'item_equipment':M('프리미엄 PC방')}}
 def nexon(route):

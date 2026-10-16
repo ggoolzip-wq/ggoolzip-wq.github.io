@@ -15,6 +15,11 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b190 (2026-10-17) — 훈장 경고 = 보스 프리셋 기준 (PC방 훈장 또는 훈장 칸 비어 있음) (02:19~02:35 KST)
+- `medalFrom(e)`: item-equipment(같은 1회 호출)의 preset_1~3 중 빈 것 빼고 점수 최고 = 보스 프리셋. 점수 = (보공+방무+데미지+올스탯 %)×10 + 공/마 + 주스탯 최대합÷10 (item_total_option 합). 같으면 현재 preset_no. 그 프리셋 훈장이 '프리미엄 PC방'이거나 없으면 bad (`empty`, `preset`, `v:2`). 프리셋 전부 비면 현재 장비로 판단, 그것도 비면 경고 없음.
+- 예전 캐시(v 없음)는 다음 동기화 때 다시 받음. 경고 UI(.medalwarn·.medalrow) 그대로, 빈 칸이면 '보스 프리셋 N에 훈장이 없는 캐릭터 입니다.'
+- 테스트: tests/test_b190.py (port 8965), test_tracker64 c1 에 preset_no 3 (동점 → 현재 프리셋).
+
 ## b189 (2026-10-17) — 보스 탭에서 캐릭터 클릭 때 스크롤 그대로 (02:00 KST)
 - 캐릭터 클릭 처리(data-id): 보스 탭이면 scrollX/Y 저장 → render 뒤 즉시·다음 프레임·80ms 에 되돌림. 테스트 test_b187 (오른쪽 캐릭터별 2개·왼쪽 목록 1개).
 

@@ -1060,13 +1060,24 @@ async function fetchBasic(c,key){
 /* b86: '프리미엄 PC방' 훈장 감지 — /character/item-equipment 의 item_equipment(현재) + item_equipment_preset_1~3 전부에서
  * item_equipment_slot(또는 part) '훈장' 아이템 이름에 '프리미엄 PC방'이 있으면 c.medal.bad. 동기화 때마다 갱신 (캐릭터당 1회 호출) */
 const MEDAL_BAD='프리미엄 PC방';
+/* b190: 보스 프리셋 = 프리셋 1~3 중 장비 총 옵션 점수가 가장 높은 것(빈 프리셋 제외, 모두 같으면 현재 preset_no).
+ * 점수 = (보공%+방무%+데미지%+올스탯%)×10 + 공격력+마력 + 주스탯(STR/DEX/INT/LUK 중 가장 큰 합)÷10. 그 프리셋 훈장이 '프리미엄 PC방'이거나 비어 있으면 경고 */
+const isMedal = i => i&&(i.item_equipment_slot==='훈장'||i.item_equipment_part==='훈장');
+function presetScore(l){ let p=0, st={str:0,dex:0,int:0,luk:0}; for(const i of l){ const o=i?.item_total_option||{}, n=k=>parseFloat(o[k])||0;
+    p+=(n('boss_damage')+n('ignore_monster_armor')+n('damage')+n('all_stat'))*10+n('attack_power')+n('magic_power'); for(const k in st) st[k]+=n(k); }
+  return p+Math.max(...Object.values(st))/10; }
 function medalFrom(e){
-  const sets=[['현재',e?.item_equipment],['프리셋 1',e?.item_equipment_preset_1],['프리셋 2',e?.item_equipment_preset_2],['프리셋 3',e?.item_equipment_preset_3]];
-  const where=sets.filter(([,l])=>(Array.isArray(l)?l:[]).some(i=>i&&(i.item_equipment_slot==='훈장'||i.item_equipment_part==='훈장')&&String(i.item_name||'').includes(MEDAL_BAD))).map(([n])=>n);
-  return {bad:where.length>0, where, at:Date.now()};
+  const P=[1,2,3].map(k=>({k,l:Array.isArray(e?.[`item_equipment_preset_${k}`])?e[`item_equipment_preset_${k}`].filter(Boolean):[]})).filter(x=>x.l.length);
+  P.forEach(x=>x.sc=presetScore(x.l));
+  let boss=null; if(P.length){ const top=Math.max(...P.map(x=>x.sc)), best=P.filter(x=>x.sc===top); boss=best.length===1?best[0]:(best.find(x=>x.k===+e?.preset_no)||P.find(x=>x.k===+e?.preset_no)||best[0]); }
+  if(!boss){ const cur=Array.isArray(e?.item_equipment)?e.item_equipment:[]; if(!cur.length) return {bad:false,where:[],at:Date.now()}; boss={k:+e?.preset_no||0,l:cur}; }
+  const m=boss.l.find(isMedal), pc=!!m&&String(m.item_name||'').includes(MEDAL_BAD);
+  const nm=boss.k?`보스 프리셋 ${boss.k}`:'현재 장비';
+  return {v:2, bad:pc||!m, empty:!m, preset:boss.k, where:[nm+(m?'':' (훈장 없음)')], at:Date.now()};
 }
+const medalTip = c => c.medal?.empty?`${(c.medal.where||[]).join(', ')} — 훈장 칸 비어 있음`:`'${MEDAL_BAD}' 훈장 착용: ${(c.medal.where||[]).join(', ')}`;
 async function fetchMedal(c,key){ c.medal=medalFrom(await nx('/maplestory/v1/character/item-equipment',{ocid:c.ocid},key)); }
-const medalBand = c => c.medal?.bad&&charShown(c) ? `<div class="medalwarn" title="'${MEDAL_BAD}' 훈장 착용: ${esc(c.medal.where.join(', '))}" aria-label="훈장 잘못 착용중"><span>훈장 잘못 착용중</span></div>` : '';
+const medalBand = c => c.medal?.bad&&charShown(c) ? `<div class="medalwarn" title="${esc(medalTip(c))}" aria-label="훈장 잘못 착용중"><span>훈장 잘못 착용중</span></div>` : '';
 let syncing=false, syncBg=null;
 const SYNC_CONC=6, SYNC_LIST_TTL_MS=10*60e3, SYNC_BASIC_TTL_MS=10*60e3, SYNC_BASIC_LOAD_TTL_MS=60*60e3 /* b112: 페이지 열 때(자동)는 레벨·이미지 1시간, 🔄 는 10분 */, SYNC_MEDAL_TTL_MS=6*3600e3; // b107
 const LOAD_SYNC_GAP_MS=3e3, LOAD_SYNC_KEY='mapleBossTracker.loadSyncAt'; // 페이지 열 때 자동 동기화 최소 간격 (아래 loadSyncDue)
@@ -1100,7 +1111,7 @@ async function syncAll(opts={}){
       catch(e){ errs++; if(e.code==='NETWORK') netN++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
       const now=Date.now();
       if(opts.full||!(now-(c.sync?.imgAt||0)<(opts.silent?SYNC_BASIC_LOAD_TTL_MS:SYNC_BASIC_TTL_MS))) later.push(()=>fetchBasic(c,a.key)); // 이미지·레벨·EXP
-      if(opts.full||!c.medal||!(now-(c.medal.at||0)<SYNC_MEDAL_TTL_MS)) later.push(()=>fetchMedal(c,a.key)); // b86: 훈장(모든 프리셋)
+      if(opts.full||!c.medal||c.medal.v!==2||!(now-(c.medal.at||0)<SYNC_MEDAL_TTL_MS)) later.push(()=>fetchMedal(c,a.key)); // b86: 훈장(모든 프리셋)
     });
     clearTimeout(rt);
     if(todo.length&&netN===todo.length) throw new Error('네트워크 오류 — 인터넷 연결 또는 브라우저 확장 프로그램·네트워크의 차단 여부를 확인하세요.'); // b184: 목록을 뒤로 미뤄도 전부 네트워크 오류면 '새로고침 실패'
@@ -1723,7 +1734,7 @@ function renderBoss(){
       <div style="flex:1;min-width:0"><h2 style="margin:0">${esc(c.name)}${c.isMain?'<span class="mainbadge">★ 본캐</span>':''}</h2>
       <div class="muted">Lv.${esc(c.level||'?')} · ${esc(c.job||'')} · ${esc(worldOf(c))}${(()=>{ const ex=remainingWeekly(c); if(!ex.list.length&&!ex.mon.length) return ''; // 주간 12개 + 월간 다 잡으면 숨김
         return ` <span class="expinc" title="${esc(`남은 예상 수익 — 이번 주 ${ex.done}/${S.settings.weeklyLimit} 처치, 남은 ${ex.left}칸을 아직 안 잡은 보스 중 1인당 결정석 가격 상위로 채울 때\n`+[...ex.list,...ex.mon].map(x=>`· ${x.monthly?'[월간] ':''}${bossTag(x)} ${meso(x.value)}`).join('\n'))}">${miniIcon('ipc')}예상 <b>${meso(ex.meso)}</b><small>(${[ex.list.length?`상위 ${ex.list.length}개`:'',ex.mon.length?`월간 ${ex.mon.length}개`:''].filter(Boolean).join(' + ')})</small>${(u=>u!==null&&u!==ex.meso?`<small class="exp-up">테섭 예정 → ${meso(u)}</small>`:'')(withUpcoming(()=>remainingWeekly(c).meso))}</span>`; })()}</div><div style="margin-top:4px;font-size:.85rem">${syncLine}</div></div></div>
-    ${c.medal?.bad?`<div class="medalrow" role="alert" title="'${MEDAL_BAD}' 훈장 착용: ${esc((c.medal.where||[]).join(', '))}"><span class="mdico"><img src="${ITEM_ICONS.pcmedal||''}" alt="${MEDAL_BAD} 훈장" width="32" height="32"><span class="mdtri" aria-hidden="true">!</span></span><span class="mdtxt">프리미엄 PC방 훈장을 착용한 캐릭터 입니다.</span></div>`:''}
+    ${c.medal?.bad?`<div class="medalrow" role="alert" title="${esc(medalTip(c))}"><span class="mdico"><img src="${ITEM_ICONS.pcmedal||''}" alt="${MEDAL_BAD} 훈장" width="32" height="32"><span class="mdtri" aria-hidden="true">!</span></span><span class="mdtxt">${c.medal.empty?`보스 프리셋${c.medal.preset?" "+c.medal.preset:""}에 훈장이 없는 캐릭터 입니다.`:"프리미엄 PC방 훈장을 착용한 캐릭터 입니다."}</span></div>`:''}
     <div class="stats s3">
       <div class="stat"><div class="k">이번 주 주간 보스 수익</div><div class="v acc tirv">${tirMeso(r.meso+pWeekMonthly({c,r}).meso+pItemSale(c),'ci:'+c.id)}</div></div>
       <div class="stat"><div class="k">주간 보스 처치</div><div class="v">${r.weekly} / ${lim}</div><div class="bar ${r.weekly>lim?'over':''}"><i style="width:${Math.min(100,r.weekly/lim*100)}%"></i></div></div>
