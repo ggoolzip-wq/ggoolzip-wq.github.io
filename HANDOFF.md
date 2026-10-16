@@ -1591,3 +1591,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 대비 검사 스크립트 /workspace/b181/audit.js(+shot.py): 모든 탭·팝업, 1400/390에서 WCAG 4.5:1 미만 요소 185개 → 0개.
 - 수익을 기록할까요? 창: 1줄 [기록하기][기록 없이 저장], 2줄 [취소]. 390px에서도 1줄 유지. tests/test_b179.py 갱신.
 - 테스트: 전체 병렬, 기존 실패 2개(tracker37 b50, tracker84 b178)는 변경 전 코드에서도 실패.
+
+## b196 — 이번 주 수익: 획득 검마 결정석 초록 +
+- 위 요약(rp-cm)·캐릭터별 검마 결정석 줄을 주보 결정석(b192)과 같은 rc-g 초록 + "+" 표기. 표시만 변경.
+- 테스트: test_b185/test_tracker81 기대값 갱신, 점 hover 는 circle.wdot 기준.

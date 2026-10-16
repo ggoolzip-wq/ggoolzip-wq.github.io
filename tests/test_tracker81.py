@@ -43,7 +43,7 @@ try:
     cry=lc+bm; sale=100000000+200000000
     rt=pg.inner_text('.rp-total').replace('\n',''); l1=pg.inner_text('.rp-cry'); l2=pg.inner_text('.rp-sale')
     check('이번 주 수익 = 결정석 합 + 아이템 판매값', rt.startswith(f"{(cry+sale)/1e8:.2f}억"), (rt,cry+sale))
-    check("b176 결정석 줄: 주보 결정석 N개 금액 / 검마 결정석 M개 금액 따로", re.sub(r'\s+',' ',l1).strip()==f"주보 결정석 1개 +{lc:,}" and re.sub(r'\s+',' ',pg.inner_text('.rp-cm')).strip()==f"검마 결정석 1개 {bm:,}" and pg.locator('.rp-cry img').count()==2, l1)
+    check("b176 결정석 줄: 주보 결정석 N개 금액 / 검마 결정석 M개 금액 따로", re.sub(r'\s+',' ',l1).strip()==f"주보 결정석 1개 +{lc:,}" and re.sub(r'\s+',' ',pg.inner_text('.rp-cm')).strip()==f"검마 결정석 1개 +{bm:,}" and pg.locator('.rp-cry img').count()==2, l1)
     check("둘째 줄 (b121) '이번주 획득 아이템 N개 … 판매금액(오른쪽)'", re.sub(r'\s+',' ',l2).strip()==f"이번주 획득 아이템 1개 +{sale:,}", l2)
     pcs=pg.evaluate("[...document.querySelectorAll('.rp-char')].map(r=>[r.dataset.id,r.querySelector('b').innerText])")
     check('캐릭터별 메소에 그 캐릭터 판매값만', dict(pcs)=={'c1':pg.evaluate(f"meso({lc+100000000})"),'c2':pg.evaluate(f"meso({bm+200000000})")}, pcs)
@@ -62,7 +62,7 @@ try:
     check("맨 아래 '결정석 가격은 공식 패치 노트 기준으로 자동 갱신됩니다.' 없음, NEXON 표기 유지", '자동 갱신됩니다' not in pg.inner_text('.foot') and 'NEXON Open API' in pg.inner_text('.foot'), pg.inner_text('.foot'))
     hs=pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.innerText.trim())')
     check("그래프 제목 '주간 메소 그래프'", any(h.endswith('주간 메소 그래프') for h in hs), hs)
-    tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(g=>g.dataset.tip)")
+    tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(g=>g.dataset.tip||(g.querySelector(':scope>circle[data-tip]')||{}).dataset?.tip)")
     check('주간 메소 그래프: 지난 주 = 주간(3.5억) + 그 주에 잡은 검마 결정석·아이템(35억)', len(tips)==2 and pg.evaluate(f"meso({350000000+3500000000})") in tips[0], tips)
     mk=pg.evaluate("[...document.querySelectorAll('#mesoKing th')].map(x=>x.innerText)"); mr=pg.evaluate("[...document.querySelectorAll('#mesoKing tbody tr')].map(r=>[...r.cells].map(c=>c.innerText.trim()))")
     check("메소왕 열 '누적 주간 메소량'·'누적 월간 메소량'", mk==['순위','캐릭터','누적 주간 메소량','누적 월간 메소량','누적 합계'], mk)
