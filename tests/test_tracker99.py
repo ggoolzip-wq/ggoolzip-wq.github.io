@@ -37,7 +37,7 @@ try:
     check('1 누적 수익(총 수익) 밑: 주 평균 메소', g[0]==pg.evaluate("avgTxt('주',doneAvgs(totalData()).grand)") and g[0]!=f"주 평균 {round(g[2]/g[3]):,} 메소", g)  # b176: 끝난 주만
     tips=pg.evaluate("[...document.querySelectorAll('.linechart .lpt')].map(x=>x.dataset.tip)")
     xl=pg.evaluate("[...document.querySelectorAll('.linechart svg > text')].map(t=>t.textContent)")
-    check('b136 그래프: 주마다 점 1개, 점 = 그 주 메소(누적 아님)', len(tips)==2 and '주간 수익 6.00억' in tips[0] and '주간 수익 5,970만' in tips[1], tips)
+    check('b136 그래프: 주마다 점 1개, 점 = 그 주 메소(누적 아님)', len(tips)==2 and '1주차 총 수익 : 6.00억' in tips[0] and '2주차 총 수익 : 5,970만' in tips[1], tips)
     check('b136 x축 1주차·2주차', '1주차' in xl and '2주차' in xl, xl)
     shot(pg.locator('#view .card').nth(0),'total_card'); shot(pg.locator('#view .card').nth(1),'week_graph')
     pg.evaluate("()=>{localStorage.setItem('mapleBossTracker.tab','loot');location.reload()}"); pg.wait_for_timeout(900)

@@ -1675,12 +1675,32 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 @keyframes wbDraw{to{stroke-dashoffset:0}}
 @keyframes wbPulse{0%,100%{filter:drop-shadow(0 0 3px rgba(255,214,120,.85)) drop-shadow(0 0 8px rgba(255,170,60,.45))}50%{filter:drop-shadow(0 0 6px rgba(255,230,150,1)) drop-shadow(0 0 16px rgba(255,180,70,.75))}}
 @media (prefers-reduced-motion:reduce){.chart .lpt .cbar.wb:hover{animation:none;stroke-dashoffset:0}}
-/* b187: 캐릭터 선택 등장 애니메이션 */
-@keyframes cEnter{from{opacity:.25;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
-#view.center .card{animation:cEnter .26s cubic-bezier(.2,.7,.2,1) both}
-#view.center .card:nth-of-type(2),#view.center .grid>*:nth-child(2) .card{animation-delay:.05s}
-#view.center .card:nth-of-type(3),#view.center .grid>*:nth-child(3) .card{animation-delay:.1s}
-@media (prefers-reduced-motion:reduce){#view.center .card{animation:none}}
+/* b191: 캐릭터 선택 = 정보 카드·드롭 표만 홀로그램처럼 차례로 나타남 (이번 주 수익·가격 표는 애니메이션 없음).
+ * 카드 안 요소가 0.06초씩 차례로: 흐림→또렷, 옅은 시안빛이 빠짐 + 카드 위로 옅은 빛줄기 1번 지나감. 깜빡임 없음 */
+@keyframes holoIn{0%{opacity:0;filter:blur(3px) drop-shadow(0 0 6px rgba(120,220,255,.35));transform:translateY(3px)}60%{opacity:.85;filter:blur(.6px) drop-shadow(0 0 4px rgba(120,220,255,.18))}100%{opacity:1;filter:none;transform:none}}
+@keyframes holoSweep{0%{transform:translateY(-100%);opacity:0}25%{opacity:1}100%{transform:translateY(100%);opacity:0}}
+#view.center .bosslay>.grid>.card{position:relative}
+#view.center .bosslay>.grid>.card>*{animation:holoIn .42s cubic-bezier(.25,.7,.25,1) both}
+#view.center .bosslay>.grid>.card::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(180deg,transparent 0,rgba(140,225,255,.07) 45%,rgba(200,245,255,.12) 50%,rgba(140,225,255,.07) 55%,transparent 100%),repeating-linear-gradient(0deg,rgba(140,220,255,.035) 0 1px,transparent 1px 3px);animation:holoSweep .8s ease-out both}
+#view.center .bosslay>.grid>.card:nth-child(2)::after{animation-delay:.12s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(2){animation-delay:0.06s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(3){animation-delay:0.12s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(4){animation-delay:0.18s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(5){animation-delay:0.24s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(6){animation-delay:0.30s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(7){animation-delay:0.36s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(8){animation-delay:0.42s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(9){animation-delay:0.48s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(2){animation-delay:0.18s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(3){animation-delay:0.24s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(4){animation-delay:0.30s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(5){animation-delay:0.36s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(6){animation-delay:0.42s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(7){animation-delay:0.48s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(8){animation-delay:0.54s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(9){animation-delay:0.60s}
+@media (prefers-reduced-motion:reduce){#view.center .bosslay>.grid>.card>*,#view.center .bosslay>.grid>.card::after{animation:none}}
+
 /* b188: 왼쪽 캐릭터 목록 선택 = 강한 간접등 (사파이어 백라이트 + 가장자리 빛, box-shadow 만 → 자리 이동 없음) */
 #charList .char.on{position:relative;z-index:1;border-color:#8fb6ff!important;background:linear-gradient(160deg,rgba(90,150,255,.30),rgba(40,90,220,.14) 60%,rgba(40,90,220,.08))!important;
   box-shadow:inset 0 0 0 1px rgba(170,205,255,.55),inset 0 0 18px rgba(110,160,255,.35),0 0 0 1px rgba(120,170,255,.8),0 0 14px 2px rgba(70,130,255,.85),0 0 34px 8px rgba(50,110,255,.5),0 0 70px 14px rgba(40,90,255,.25)!important;
@@ -1688,6 +1708,26 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 @keyframes charGlow{50%{box-shadow:inset 0 0 0 1px rgba(190,220,255,.7),inset 0 0 22px rgba(130,175,255,.42),0 0 0 1px rgba(150,190,255,.9),0 0 18px 3px rgba(90,145,255,.95),0 0 42px 10px rgba(60,120,255,.58),0 0 84px 18px rgba(40,90,255,.3)}}
 @media (prefers-reduced-motion:reduce){#charList .char.on{animation:none}}
 [data-theme=light] #charList .char.on{background:linear-gradient(160deg,rgba(90,150,255,.22),rgba(90,150,255,.08))!important;box-shadow:0 0 0 1px rgba(60,110,230,.8),0 0 14px 2px rgba(60,120,255,.55),0 0 34px 8px rgba(60,120,255,.25)!important;animation:none}
+/* b191: 주간 메소 점 hover = 다른 주 흐리게, 그 주 점·막대 4개 빛 맥박 (막대 hover 는 b186 그대로) */
+.linechart svg:has(.dhit:hover) .lpt:not(:has(.dhit:hover))>*{opacity:.28;transition:opacity .2s}
+.linechart svg:has(.dhit:hover) .cval:not(.best){opacity:.35}
+.linechart .lpt:has(.dhit:hover) .cbar.wb{opacity:1;animation:wbPulse 1.4s ease-in-out infinite}
+.linechart .lpt:has(.dhit:hover) circle[data-tipanchor]{animation:dotPulse 1.4s ease-in-out infinite}
+@keyframes dotPulse{0%,100%{filter:drop-shadow(0 0 4px rgba(255,214,120,.9))}50%{filter:drop-shadow(0 0 10px rgba(255,230,150,1)) drop-shadow(0 0 18px rgba(255,180,70,.7))}}
+.linechart .dhit{cursor:pointer}
+@media (prefers-reduced-motion:reduce){.linechart .lpt:has(.dhit:hover) .cbar.wb,.linechart .lpt:has(.dhit:hover) circle[data-tipanchor]{animation:none}}
+/* b191: 선택 캐릭터 오른쪽으로 살짝 (모든 칸 오른쪽 6px 여유 → 다른 칸 안 움직임) */
+#charList .char{margin-right:6px;transition:transform .25s cubic-bezier(.3,.7,.2,1),border-color .15s,box-shadow .15s}
+#charList .char.on{transform:translateX(6px)}
+#charList.scroll{overflow-x:hidden}
+@media (prefers-reduced-motion:reduce){#charList .char{transition:none}}
+/* b192: 이번 주 수익 글자색 — 들어온 것 초록(+), 반지 상자 노랑, 남은 결정석 빨강(-) */
+.revpanel .rc-g,.revpanel .rc-g *{color:#5fe08a!important}
+.revpanel .rc-y,.revpanel .rc-y *{color:#ffd54a!important}
+.revpanel .rp-left,.revpanel .rp-left *{color:#ff6b6b!important}
+[data-theme=light] .revpanel .rc-g,[data-theme=light] .revpanel .rc-g *{color:#1a8a43!important}
+[data-theme=light] .revpanel .rc-y,[data-theme=light] .revpanel .rc-y *{color:#a87400!important}
+[data-theme=light] .revpanel .rp-left,[data-theme=light] .revpanel .rp-left *{color:#d42a2a!important}
 </style>
 </head>
 <body>
@@ -3299,7 +3339,7 @@ function orbitFont(){ if(document.getElementById('orbitCss')) return; const l=do
 /* b187: 캐릭터를 바꿨을 때만 정보 카드·드롭 표 등장 애니메이션 (transform·opacity 만 → 자리 이동·클릭 지연 없음, 줄인 동작 설정이면 없음) */
 let enterFor=null, enterT=0;
 function charEnter(){ const id=S.activeId, v=$('#view'); if(enterFor===id) return; const first=enterFor===null; enterFor=id; if(first||!v) return;
-  v.classList.remove('center'); void v.offsetWidth; v.classList.add('center'); clearTimeout(enterT); enterT=setTimeout(()=>v.classList.remove('center'),700); }
+  v.classList.remove('center'); void v.offsetWidth; v.classList.add('center'); clearTimeout(enterT); enterT=setTimeout(()=>v.classList.remove('center'),1400); }
 function render(){ paintThemeBtn(); tirDefs(); logoDigital(); orbitFont(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
@@ -3590,10 +3630,10 @@ function weekRingLine(){ const by={}, t={r4:0,c4:0,gl:0,x:0}; let n=0;
   for(const c of vchars()){ const d=charDrops(c,'weekly'); for(const [k,v] of Object.entries(d.items)){ const {it}=parseIK(k); if(!isRing(it)) continue; n+=+v; by[it]=(by[it]||0)+(+v); const o=outTally(d.outcomes[k],v); for(const q in t) t[q]+=o[q]; } }
   if(!n) return ''; const top=Object.keys(by).sort((x,y)=>by[y]-by[x]||itemCmp(x,y))[0];
   const R=[['r4','리4'],['c4','컨4'],['gl','연마석'],['x','꽝']].filter(([q])=>t[q]>0).map(([q,l])=>`<span>${l} ${t[q]}개</span>`).join(' ');
-  return `<div class="muted rp-line rp-ring">${itemIcon(top)}<span>반지 상자 ${n}개</span>${R?' '+R:''}</div>`; }
+  return `<div class="muted rp-line rp-ring rc-y">${itemIcon(top)}<span>반지 상자 ${n}개</span>${R?' '+R:''}</div>`; }
 /* b185: 남은 결정석 — 주간 = remainingWeekly(c).list(남은 칸만큼, 안 잡은 보스 1인당 가격 상위), 검마 = 이번 달 안 잡은 검은 마법사. 보이는 캐릭터만(규칙 9), 0이면 줄 없음 */
 const leftOf = c => { const r=remainingWeekly(c); return {w:r.list.reduce((t,x)=>t+x.value,0), m:r.mon.filter(x=>x.slot==='blackmage').reduce((t,x)=>t+x.value,0)}; };
-const leftLine = (cls,ico,lb,v,big) => v>0?(big?`<div class="muted rp-line rp-left ${cls}"><span class="rpl"><span class="rpg">${ico}<span class="tsmn">${lb}</span></span></span><b class="rpn"><span class="tsmn">${v.toLocaleString()}</span></b></div>`:`<div class="rp-cl rp-left ${cls}">${ico}<span>${lb} ${meso(v)}</span></div>`):'';
+const leftLine = (cls,ico,lb,v,big) => v>0?(big?`<div class="muted rp-line rp-left ${cls}"><span class="rpl"><span class="rpg">${ico}<span class="tsmn">${lb}</span></span></span><b class="rpn"><span class="tsmn">-${v.toLocaleString()}</span></b></div>`:`<div class="rp-cl rp-left ${cls}">${ico}<span>${lb} -${meso(v)}</span></div>`):'';
 function weekLeftLines(cs){ let w=0,m=0; for(const c of cs){ if(!charShown(c)) continue; const o=leftOf(c); w+=o.w; m+=o.m; }
   return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',w,1)+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',m,1); }
 function charLeftLines(c){ const o=leftOf(c); return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',o.w)+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',o.m); }
@@ -3612,15 +3652,15 @@ function revPanel(a,cur){
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
       return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
-    <div class="muted rp-line rp-cry"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${tsm(`주보 결정석 ${a.count}개`)}</span></span><b class="rpn">${tsm(a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${tsm(`검마 결정석 ${wm.n}개`)}</span></span><b class="rpn">${tsm(wm.meso.toLocaleString())}</b></div>`:''}
-    <div class="muted rp-line rp-sale"><span class="rpl">${topSaleIco()}${tsm(`이번주 획득 아이템 ${n}개`)}</span><b class="rpn">${tsm(sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
+    <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${tsm(`주보 결정석 ${a.count}개`)}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${tsm(`검마 결정석 ${wm.n}개`)}</span></span><b class="rpn">${tsm(wm.meso.toLocaleString())}</b></div>`:''}
+    <div class="muted rp-line rp-sale rc-g"><span class="rpl">${topSaleIco()}${tsm(`이번주 획득 아이템 ${n}개`)}</span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
       <div class="rp-row rp-top">${(r=>`<span class="rp-rk">${r?rankNo(r):'<span class="rkno"><span class="rkn">-</span></span>'}</span><span class="rp-nm rkname${medal(r)?' md-'+medal(r):''}"><span class="${medal(r)?'spk':''}">${esc(p.c.name)}</span>${p.c.isMain?' <span class="mainbadge">★</span>':''}</span>`)(rk.get(p))}<b>${meso(pmeso(p))}</b></div>
       ${charLeftLines(p.c)}
       <div class="rp-row"><span class="mini"><i style="width:${(pmeso(p)/max*100).toFixed(1)}%"></i></span><span class="muted" style="font-size:.72rem;white-space:nowrap">${p.r.weekly}/${lim}</span></div>
       ${(L=>L.length?`<div class="rp-boss">${L.slice().sort((x,y)=>bossTblOrd(x.slot)-bossTblOrd(y.slot)).map(x=>bossPic(findBoss(x.slot),x.diff,false)).join('')}</div>`:'')([...p.r.wlist,...p.r.mlist.filter(x=>p.c.monthly[x.slot]===S.period.week)])}
-      ${(w=>w?`<div class="rp-cl">${miniIcon('ipc')}<span>주간 결정석 ${meso(w)}</span></div>`:'')(p.r.wlist.length?p.r.meso:0)}${(m=>m?`<div class="rp-cl">${miniIcon('ipcm')}<span>검마 결정석 ${meso(m)}</span></div>`:'')(pm.get(p).meso)}${charSaleLine(p.c)}
+      ${(w=>w?`<div class="rp-cl rc-g">${miniIcon('ipc')}<span>주간 결정석 +${meso(w)}</span></div>`:'')(p.r.wlist.length?p.r.meso:0)}${(m=>m?`<div class="rp-cl">${miniIcon('ipcm')}<span>검마 결정석 ${meso(m)}</span></div>`:'')(pm.get(p).meso)}${charSaleLine(p.c)}
       ${(d=>itemsInline(d.items)?`<div class="rp-items">${itemsInline(d.items,{outs:d.outcomes,revs:d.revs,byBoss:true,bpic:true,diffOf:cfgDiff(p.c)})}</div>`:'')(charAllDrops(p.c))}</div>`).join('')}</div>
   </aside>`;
 }
@@ -3893,12 +3933,12 @@ function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 
   const pts=cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' '), u=++chartUid;
   const top=Math.max(1,...cums), grid=`<line class="cyax" x1="${pl}" x2="${pl}" y1="${pt-6}" y2="${Hh-pb}" stroke="url(#lcv${u})"/>`+cums.map((v,i)=>`<line class="ctick" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Hh-pb}" y2="${Hh-pb+5}"/>`).join('')+[0,.25,.5,.75,1].map(f=>`<line class="cg${f?'':' cg0'}" x1="${pl}" x2="${W-pr}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}" stroke="url(#${f?'lcgr':'lcb'}${u})"/><line class="cytk" x1="${pl-4}" x2="${pl}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}"/>${segLab(f?fmtEok(top*f):'0',pl-8,(Y(top*f)+3.5).toFixed(1),'end','cax',9)}`).join('');
   const xl=rows.map((r,i)=>i%step===0||r.cur?`<text class="cxl${r.cur?' cur':''}" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle">${o.perWeek?`${i+1}주차`:fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(rows[n-1]&&rows[n-1].cur?`<text class="cxl cur sub" x="${X(n-1).toFixed(1)}" y="${Hh-pb+32}" text-anchor="middle">이번 주</text>`:'');
-  const tipOf=(r,v)=>`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n결정석 : ${meso(r.cry)}\n아이템 판매 : ${meso(r.sale)}`+`\n누적 ${meso(o.perWeek?acc[rows.indexOf(r)]:v)}`;
+  const tipOf=(r,v)=>o.perWeek?`${rows.indexOf(r)+1}주차 총 수익 : ${meso(r.total)}\n주간 결정석 : ${meso(r.wcry)}\n검마 결정석 : ${meso(r.bm)}\n아이템 판매 : ${meso(r.sale)}`:`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n결정석 : ${meso(r.cry)}\n아이템 판매 : ${meso(r.sale)}`+`\n누적 ${meso(o.perWeek?acc[rows.indexOf(r)]:v)}`;
   /* b186: 주간 메소(perWeek) = 주마다 막대 4개 (총 수익 · 주간 결정석 · 검마 · 아이템 판매), 점·선은 총 수익 */
   const WB_LB=['이번주 총 수익','주간 결정석','검마 수익','아이템 판매수익'];
   const bwid=Math.max(4,Math.min(9,bw*.17)), wbars=(r,i)=>[r.total,r.wcry,r.bm,r.sale].map((val,k)=>`<rect class="cbar wb wb${k}" pathLength="1" data-tip="${esc(`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n${WB_LB[k]} ${meso(val)}`)}" x="${(X(i)+(k-2)*bwid*1.15+bwid*.075).toFixed(1)}" y="${Y(val).toFixed(1)}" width="${bwid.toFixed(1)}" height="${Math.max(0,Hh-pb-Y(val)).toFixed(1)}" rx="2"/>`).join('');
   const best=cums.indexOf(top);
-  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" data-tip="${esc(tipOf(rows[i],v))}" style="--d:${(.15+i*.06).toFixed(2)}s"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/>${o.perWeek?wbars(rows[i],i):`<rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/>`}<circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/></g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
+  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" data-tip="${esc(tipOf(rows[i],v))}" style="--d:${(.15+i*.06).toFixed(2)}s"><rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/>${o.perWeek?wbars(rows[i],i):`<rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/>`}<circle data-tipanchor="1" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/>${o.perWeek?`<circle class="dhit" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="12" fill="transparent"/>`:''}</g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
   return `<div class="chart scrollx linechart lux"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?cum:Math.max(...cums,0))}</b></div>${o.perWeek?`<div class="wlegend"><span><i class="wb0"></i>이번주 총 수익</span><span><i class="wb1"></i>주간 결정석</span><span><i class="wb2"></i>검마</span><span><i class="wb3"></i>아이템 판매</span></div>`:''}<svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
       <defs><linearGradient id="lcg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a3c" stop-opacity=".38"/><stop offset=".55" stop-color="#ff9a3c" stop-opacity=".1"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></linearGradient>
       <linearGradient id="lcs${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff8a3d"/><stop offset=".6" stop-color="#ffb347"/><stop offset="1" stop-color="#ffd978"/></linearGradient>

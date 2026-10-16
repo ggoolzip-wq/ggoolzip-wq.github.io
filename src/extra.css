@@ -1568,12 +1568,32 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 @keyframes wbDraw{to{stroke-dashoffset:0}}
 @keyframes wbPulse{0%,100%{filter:drop-shadow(0 0 3px rgba(255,214,120,.85)) drop-shadow(0 0 8px rgba(255,170,60,.45))}50%{filter:drop-shadow(0 0 6px rgba(255,230,150,1)) drop-shadow(0 0 16px rgba(255,180,70,.75))}}
 @media (prefers-reduced-motion:reduce){.chart .lpt .cbar.wb:hover{animation:none;stroke-dashoffset:0}}
-/* b187: 캐릭터 선택 등장 애니메이션 */
-@keyframes cEnter{from{opacity:.25;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
-#view.center .card{animation:cEnter .26s cubic-bezier(.2,.7,.2,1) both}
-#view.center .card:nth-of-type(2),#view.center .grid>*:nth-child(2) .card{animation-delay:.05s}
-#view.center .card:nth-of-type(3),#view.center .grid>*:nth-child(3) .card{animation-delay:.1s}
-@media (prefers-reduced-motion:reduce){#view.center .card{animation:none}}
+/* b191: 캐릭터 선택 = 정보 카드·드롭 표만 홀로그램처럼 차례로 나타남 (이번 주 수익·가격 표는 애니메이션 없음).
+ * 카드 안 요소가 0.06초씩 차례로: 흐림→또렷, 옅은 시안빛이 빠짐 + 카드 위로 옅은 빛줄기 1번 지나감. 깜빡임 없음 */
+@keyframes holoIn{0%{opacity:0;filter:blur(3px) drop-shadow(0 0 6px rgba(120,220,255,.35));transform:translateY(3px)}60%{opacity:.85;filter:blur(.6px) drop-shadow(0 0 4px rgba(120,220,255,.18))}100%{opacity:1;filter:none;transform:none}}
+@keyframes holoSweep{0%{transform:translateY(-100%);opacity:0}25%{opacity:1}100%{transform:translateY(100%);opacity:0}}
+#view.center .bosslay>.grid>.card{position:relative}
+#view.center .bosslay>.grid>.card>*{animation:holoIn .42s cubic-bezier(.25,.7,.25,1) both}
+#view.center .bosslay>.grid>.card::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(180deg,transparent 0,rgba(140,225,255,.07) 45%,rgba(200,245,255,.12) 50%,rgba(140,225,255,.07) 55%,transparent 100%),repeating-linear-gradient(0deg,rgba(140,220,255,.035) 0 1px,transparent 1px 3px);animation:holoSweep .8s ease-out both}
+#view.center .bosslay>.grid>.card:nth-child(2)::after{animation-delay:.12s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(2){animation-delay:0.06s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(3){animation-delay:0.12s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(4){animation-delay:0.18s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(5){animation-delay:0.24s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(6){animation-delay:0.30s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(7){animation-delay:0.36s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(8){animation-delay:0.42s}
+#view.center .bosslay>.grid>.card:nth-child(1)>*:nth-child(9){animation-delay:0.48s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(2){animation-delay:0.18s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(3){animation-delay:0.24s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(4){animation-delay:0.30s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(5){animation-delay:0.36s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(6){animation-delay:0.42s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(7){animation-delay:0.48s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(8){animation-delay:0.54s}
+#view.center .bosslay>.grid>.card:nth-child(2)>*:nth-child(9){animation-delay:0.60s}
+@media (prefers-reduced-motion:reduce){#view.center .bosslay>.grid>.card>*,#view.center .bosslay>.grid>.card::after{animation:none}}
+
 /* b188: 왼쪽 캐릭터 목록 선택 = 강한 간접등 (사파이어 백라이트 + 가장자리 빛, box-shadow 만 → 자리 이동 없음) */
 #charList .char.on{position:relative;z-index:1;border-color:#8fb6ff!important;background:linear-gradient(160deg,rgba(90,150,255,.30),rgba(40,90,220,.14) 60%,rgba(40,90,220,.08))!important;
   box-shadow:inset 0 0 0 1px rgba(170,205,255,.55),inset 0 0 18px rgba(110,160,255,.35),0 0 0 1px rgba(120,170,255,.8),0 0 14px 2px rgba(70,130,255,.85),0 0 34px 8px rgba(50,110,255,.5),0 0 70px 14px rgba(40,90,255,.25)!important;
@@ -1581,3 +1601,23 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 @keyframes charGlow{50%{box-shadow:inset 0 0 0 1px rgba(190,220,255,.7),inset 0 0 22px rgba(130,175,255,.42),0 0 0 1px rgba(150,190,255,.9),0 0 18px 3px rgba(90,145,255,.95),0 0 42px 10px rgba(60,120,255,.58),0 0 84px 18px rgba(40,90,255,.3)}}
 @media (prefers-reduced-motion:reduce){#charList .char.on{animation:none}}
 [data-theme=light] #charList .char.on{background:linear-gradient(160deg,rgba(90,150,255,.22),rgba(90,150,255,.08))!important;box-shadow:0 0 0 1px rgba(60,110,230,.8),0 0 14px 2px rgba(60,120,255,.55),0 0 34px 8px rgba(60,120,255,.25)!important;animation:none}
+/* b191: 주간 메소 점 hover = 다른 주 흐리게, 그 주 점·막대 4개 빛 맥박 (막대 hover 는 b186 그대로) */
+.linechart svg:has(.dhit:hover) .lpt:not(:has(.dhit:hover))>*{opacity:.28;transition:opacity .2s}
+.linechart svg:has(.dhit:hover) .cval:not(.best){opacity:.35}
+.linechart .lpt:has(.dhit:hover) .cbar.wb{opacity:1;animation:wbPulse 1.4s ease-in-out infinite}
+.linechart .lpt:has(.dhit:hover) circle[data-tipanchor]{animation:dotPulse 1.4s ease-in-out infinite}
+@keyframes dotPulse{0%,100%{filter:drop-shadow(0 0 4px rgba(255,214,120,.9))}50%{filter:drop-shadow(0 0 10px rgba(255,230,150,1)) drop-shadow(0 0 18px rgba(255,180,70,.7))}}
+.linechart .dhit{cursor:pointer}
+@media (prefers-reduced-motion:reduce){.linechart .lpt:has(.dhit:hover) .cbar.wb,.linechart .lpt:has(.dhit:hover) circle[data-tipanchor]{animation:none}}
+/* b191: 선택 캐릭터 오른쪽으로 살짝 (모든 칸 오른쪽 6px 여유 → 다른 칸 안 움직임) */
+#charList .char{margin-right:6px;transition:transform .25s cubic-bezier(.3,.7,.2,1),border-color .15s,box-shadow .15s}
+#charList .char.on{transform:translateX(6px)}
+#charList.scroll{overflow-x:hidden}
+@media (prefers-reduced-motion:reduce){#charList .char{transition:none}}
+/* b192: 이번 주 수익 글자색 — 들어온 것 초록(+), 반지 상자 노랑, 남은 결정석 빨강(-) */
+.revpanel .rc-g,.revpanel .rc-g *{color:#5fe08a!important}
+.revpanel .rc-y,.revpanel .rc-y *{color:#ffd54a!important}
+.revpanel .rp-left,.revpanel .rp-left *{color:#ff6b6b!important}
+[data-theme=light] .revpanel .rc-g,[data-theme=light] .revpanel .rc-g *{color:#1a8a43!important}
+[data-theme=light] .revpanel .rc-y,[data-theme=light] .revpanel .rc-y *{color:#a87400!important}
+[data-theme=light] .revpanel .rp-left,[data-theme=light] .revpanel .rp-left *{color:#d42a2a!important}

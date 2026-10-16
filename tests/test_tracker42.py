@@ -64,7 +64,7 @@ try:
     bw=pg.evaluate("[...document.querySelectorAll('.dlv')].map(e=>getComputedStyle(e).fontWeight)")
     check('(난이도) 전부 굵게', bw and all(int(x)>=700 for x in bw), bw[:5])
     # 라인 차트
-    lc=pg.evaluate("(()=>{const c=document.querySelector('.linechart');return c?[c.querySelectorAll('polyline').length,c.querySelectorAll('rect:not(.lpt rect)').length,c.querySelectorAll('circle').length]:null})()")
+    lc=pg.evaluate("(()=>{const c=document.querySelector('.linechart');return c?[c.querySelectorAll('polyline').length,c.querySelectorAll('rect:not(.lpt rect)').length,c.querySelectorAll('circle[data-tipanchor]').length]:null})()")
     check('주별 누적 = 라인 차트(막대 없음, 점 3개(이번 주 포함))', lc==[1,0,3], lc)
     # 시드링
     rs=pg.evaluate("(()=>{const s=document.querySelector('.ringsum'),l=s.querySelector('.rslab'),x=s.querySelector('.ringexp');return [getComputedStyle(s).fontSize,getComputedStyle(l).color,getComputedStyle(l).fontWeight,getComputedStyle(x).fontSize,getComputedStyle(x).color==getComputedStyle(s).color,s.scrollWidth<=s.clientWidth+1,s.getBoundingClientRect().height]})()")

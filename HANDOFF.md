@@ -15,6 +15,16 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b192 (2026-10-17) — 이번 주 수익 글자색 (03:04 KST)
+- 위: 주보 결정석·이번주 획득 아이템 줄 `.rc-g` 초록 #5fe08a + 금액 앞 '+', 반지 상자 줄 `.rc-y` 노랑 #ffd54a, 남은 결정석 2줄 `.rp-left` 빨강 #ff6b6b + '-'. 캐릭터별: 주간 결정석 초록 '+', 남은/검마 남은 빨강 '-'. 라이트 테마는 진한 초록/황토/빨강. 값 계산은 그대로. 검마 결정석(획득) 줄은 요청에 없어 색 그대로.
+- 테스트: test_b185 색·부호, test_tracker81 '+' 기대값, test_tracker87 말풍선 4줄(b191), test_tracker27 '+1' 안내 검사를 '클릭/획득 +1'로 (이 테스트의 '.rp-cry img 2개' 검사는 변경 전 HEAD 에서도 실패 — 이번 주 검마 미클리어 데이터). test_tir_count 는 b183(작은 문구 기본 글씨체) 이후 옛 기대값이라 실패(run_all 목록 밖).
+
+## b191 (2026-10-17) — 주간 메소 점 hover · 캐릭터 선택 홀로그램 등장 · 선택 캐릭터 오른쪽 6px (03:00~03:20 KST)
+- 주간 메소(perWeek) 점: 큰 투명 hit 원 `.dhit`(r12). 말풍선 = 'N주차 총 수익 : X' / '주간 결정석 : X' / '검마 결정석 : X' / '아이템 판매 : X'(누적 없음). 점 hover 동안 다른 주 점·막대 흐림(.28), 그 주 막대 4개 wbPulse + 점 dotPulse. 막대 hover(b186 금빛 테두리·말풍선)는 그대로.
+- b187 cEnter 삭제 → 정보 카드·드롭 표(`.bosslay>.grid>.card`)만: 카드 안 요소가 0.06초씩 차례로 holoIn(흐림 3px→또렷, 옅은 시안 그림자 빠짐, 3px 위로, 0.42초) + 카드 위 옅은 빛줄기·스캔선 1번(holoSweep 0.8초). 이번 주 수익·결정석/아이템 가격 표는 애니메이션 없음. reduced-motion 이면 없음. #view.center 1.4초.
+- 왼쪽 캐릭터 목록: 모든 칸 margin-right 6px, 선택 칸 translateX(6px) 0.25초 (다른 칸 안 움직임), `#charList.scroll` overflow-x hidden.
+- 테스트: test_b185(점 말풍선 4줄·흐림·맥박), test_b187(holoIn 차례·가격/수익 표 없음·6px). 사진: /workspace/b182b/b185_after_week_chart_dot.png, b187_after_holo_mid.png, b187_after_charlist.png
+
 ## b190 (2026-10-17) — 훈장 경고 = 보스 프리셋 기준 (PC방 훈장 또는 훈장 칸 비어 있음) (02:19~02:35 KST)
 - `medalFrom(e)`: item-equipment(같은 1회 호출)의 preset_1~3 중 빈 것 빼고 점수 최고 = 보스 프리셋. 점수 = (보공+방무+데미지+올스탯 %)×10 + 공/마 + 주스탯 최대합÷10 (item_total_option 합). 같으면 현재 preset_no. 그 프리셋 훈장이 '프리미엄 PC방'이거나 없으면 bad (`empty`, `preset`, `v:2`). 프리셋 전부 비면 현재 장비로 판단, 그것도 비면 경고 없음.
 - 예전 캐시(v 없음)는 다음 동기화 때 다시 받음. 경고 UI(.medalwarn·.medalrow) 그대로, 빈 칸이면 '보스 프리셋 N에 훈장이 없는 캐릭터 입니다.'

@@ -1,6 +1,6 @@
 # 보스 목록 [취소]/[저장] (대기 중인 변경), 드롭 기간당 1회, 드롭 표 정리, '캐릭터 별 기록' 탭, '주간 기록' 탭 삭제 (2026-10-10)
 import _legacy
-import os, sys, json, subprocess, time, urllib.request, shutil
+import re, os, sys, json, subprocess, time, urllib.request, shutil
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
 SHOTDIR=os.environ.get('MBT_SHOTDIR')
@@ -48,7 +48,7 @@ try:
         shot(pg.locator('.boss',has=pg.locator(f'[data-party="{slot}"]')),name)
     rp=pg.inner_html('.revpanel'); rt=pg.inner_text('.revpanel')
     check('income panel: meso icon heading, 검은 마법사 icon (no 🌙), (b110) 결정석 줄(주간·월간 아이콘)+아이템 판매 줄, no +1 hint',
-          pg.locator('.revpanel h2 img').count()==1 and '🌙' not in rt and '🎁' not in rt and '+1' not in rt and pg.locator('.rp-cry img').count()==2
+          pg.locator('.revpanel h2 img').count()==1 and '🌙' not in rt and '🎁' not in rt and not re.search(r'(클릭|획득)\s*\+1',rt) and pg.locator('.rp-cry img').count()==2
           and rp.index('rp-sale')<rp.index('캐릭터별') and rp.index('rp-cry')<rp.index('rp-sale'), rt[:200])
     shot(pg.locator('.revpanel'),'income_panel.png')
     # A buttons

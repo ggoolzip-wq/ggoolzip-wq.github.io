@@ -43,8 +43,8 @@ try:
     cry=lc+bm; sale=100000000+200000000
     rt=pg.inner_text('.rp-total').replace('\n',''); l1=pg.inner_text('.rp-cry'); l2=pg.inner_text('.rp-sale')
     check('이번 주 수익 = 결정석 합 + 아이템 판매값', rt.startswith(f"{(cry+sale)/1e8:.2f}억"), (rt,cry+sale))
-    check("b176 결정석 줄: 주보 결정석 N개 금액 / 검마 결정석 M개 금액 따로", re.sub(r'\s+',' ',l1).strip()==f"주보 결정석 1개 {lc:,}" and re.sub(r'\s+',' ',pg.inner_text('.rp-cm')).strip()==f"검마 결정석 1개 {bm:,}" and pg.locator('.rp-cry img').count()==2, l1)
-    check("둘째 줄 (b121) '이번주 획득 아이템 N개 … 판매금액(오른쪽)'", re.sub(r'\s+',' ',l2).strip()==f"이번주 획득 아이템 1개 {sale:,}", l2)
+    check("b176 결정석 줄: 주보 결정석 N개 금액 / 검마 결정석 M개 금액 따로", re.sub(r'\s+',' ',l1).strip()==f"주보 결정석 1개 +{lc:,}" and re.sub(r'\s+',' ',pg.inner_text('.rp-cm')).strip()==f"검마 결정석 1개 {bm:,}" and pg.locator('.rp-cry img').count()==2, l1)
+    check("둘째 줄 (b121) '이번주 획득 아이템 N개 … 판매금액(오른쪽)'", re.sub(r'\s+',' ',l2).strip()==f"이번주 획득 아이템 1개 +{sale:,}", l2)
     pcs=pg.evaluate("[...document.querySelectorAll('.rp-char')].map(r=>[r.dataset.id,r.querySelector('b').innerText])")
     check('캐릭터별 메소에 그 캐릭터 판매값만', dict(pcs)=={'c1':pg.evaluate(f"meso({lc+100000000})"),'c2':pg.evaluate(f"meso({bm+200000000})")}, pcs)
     ci=pg.evaluate("(()=>{const e=[...document.querySelectorAll('.stat')].find(s=>s.querySelector('.k')?.innerText.trim()==='이번 주 주간 보스 수익');return e&&e.querySelector('.v').innerText})()")
