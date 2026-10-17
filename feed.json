@@ -1,33 +1,33 @@
 {
  "version": 1,
- "updatedAt": "2026-10-17T14:50:57+09:00",
+ "updatedAt": "2026-10-17T15:11:39+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-10-17T14:48:58+09:00",
-   "lastOkAt": "2026-10-17T14:48:58+09:00",
+   "checkedAt": "2026-10-17T15:11:15+09:00",
+   "lastOkAt": "2026-10-17T15:11:15+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-10-17T14:48:58+09:00",
-   "lastOkAt": "2026-10-17T14:48:58+09:00",
+   "checkedAt": "2026-10-17T15:11:16+09:00",
+   "lastOkAt": "2026-10-17T15:11:16+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
-   "ok": false,
-   "checkedAt": "2026-10-17T14:50:39+09:00",
-   "lastOkAt": "2026-10-17T11:52:26+09:00",
-   "error": "URLError: <urlopen error timed out> (https://maplestory.nexon.com/Testworld/News/Update)"
+   "ok": true,
+   "checkedAt": "2026-10-17T15:11:17+09:00",
+   "lastOkAt": "2026-10-17T15:11:17+09:00",
+   "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-10-17T14:50:57+09:00",
-   "lastOkAt": "2026-10-17T14:50:57+09:00",
+   "checkedAt": "2026-10-17T15:11:39+09:00",
+   "lastOkAt": "2026-10-17T15:11:39+09:00",
    "error": ""
   }
  },
