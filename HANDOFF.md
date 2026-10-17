@@ -1638,3 +1638,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 사용자 스크린샷(261x104, 글자 폭 74px = 우리 DPR 1 렌더와 같음 → Windows Chrome DPR 1·100%) 픽셀 분석: 아이콘 잉크 12~38(몸통=폭 9px 이상 14~36), 글자 잉크 13~36, 밝기 무게중심 차이 -0.06px — 수치로는 이미 맞음. 원인 = 수정 위가 뾰족(맨 위 2~3줄 3~5px 폭)·글자 위는 평평한 막대 → 같은 높이여도 수정이 낮아 보이는 착시.
 - 구조: header .logo = 높이 34px flex 가운데, 아이콘 display:block(기준선 무관), .logo-d flex 가운데. 아이콘 translateY(-1px → -2px, 정수 px 라 DPR 1 에서 안 흐림). 결과(DPR 1/1.25/1.5): 아이콘 몸통 중심이 글자 중심보다 1.0~1.6px 위, 잉크 중심 1.5~2.0px 위.
 - test_b200: 아이콘 상자 중심은 transform 빼고 비교(버튼·글자와 1px 안), 광학 보정 -2px 확인.
+
+## b206 (2026-10-17 KST) — 빈 전체 수정 [확인]·캐릭터 클릭 = 이번 주 보스 탭·가격 확인/출처 링크
+- 수익 기록 전체 수정(openRevAll): 체크한 아이템이 0개면 버튼 = [확인] 하나(data-rab=close) → 닫기만, 상태 그대로. 1개 이상이면 [전체 수정][취소] 그대로.
+- 왼쪽 캐릭터 목록 클릭: 어느 탭이든(라이브 포함, 예전엔 history/total/loot/guild 만) toBossTab() → 이번 주 보스 탭 + 그 캐릭터. 탭 버튼과 같은 정리(TIR_LAST/TSV_SEEN 비움·마지막 탭 localStorage 저장·tabTick). 스크롤은 모든 경우 그대로(b189), 팝인(b197) 그대로.
+- 아이템 가격 표(로그인·로그인 전 첫 화면 모두 priceCard 공용): '가격 확인 날짜 :' → '가격 확인 :', 그 아래 '출처 : maple.ai.kr 아이템 시세 추적'(링크 https://maple.ai.kr/blog/item-price-tracker-2026 = worker MAI_URL, 새 탭 rel=noopener). priceSrcHtml(cls) 공용.
+- 수익을 기록할까요? 창: 시세가 있을 때 '최저가 측정 시간 - …' → '가격 확인 : …' + 아래 같은 출처 링크(.rvsrc). 시세 없으면 예전 안내 문구만.
+- 테스트: test_b206(새), tracker68/87 문구 갱신. tracker80 실패는 원래부터(origin/main 에서도 같음).
