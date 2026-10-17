@@ -33,13 +33,13 @@ head = ('<!DOCTYPE html>\n<html lang="ko" data-theme="dark">\n<head>\n<meta char
         f'<link rel="icon" type="image/png" sizes="16x16" href="{LOGO["s16"]}">\n'
         '<link rel="apple-touch-icon" href="apple-touch-icon.png">\n'
         # b198: 검색 등록(구글 서치 콘솔·네이버 서치어드바이저) 준비 — 대표 주소 = bossmaple.pages.dev (github.io 도 canonical 은 여기로). 소유 확인 태그는 아직 없음
-        '<meta name="description" content="메이플스토리 주간 보스·검은 마법사(월간) 처치와 결정석 수익, 득템(보스 드롭 아이템)을 캐릭터별로 기록하는 무료 사이트. 넥슨 Open API로 보스 클리어 자동 체크, 주간 메소 그래프, 결정석·아이템 가격표 제공.">\n'
+        '<meta name="description" content="메이플스토리 보스 수익 계산과 주간 보스 기록을 한 번에. 캐릭터별 주간 보스·검은 마법사 결정석 수익, 최신 결정석 가격표(패치 노트 자동 반영), 반지 상자·득템 기록과 주간 메소 그래프를 무료로 제공합니다.">\n'
         '<meta name="google-site-verification" content="1vcb6ZmBor2M4xfKsBwcPVDYSjOmd3zo4ZzM9A7lA4E" />\n<meta name="naver-site-verification" content="a7d0315262c0c08150e38a3a696a4d0f54fae152" />\n'  # b199: 서치 콘솔·서치어드바이저 소유 확인
         '<link rel="canonical" href="https://bossmaple.pages.dev/">\n'
         '<meta property="og:type" content="website">\n<meta property="og:site_name" content="메보기">\n<meta property="og:locale" content="ko_KR">\n'
-        '<meta property="og:title" content="메보기 - 메이플 보스 수익·결정석 기록 사이트">\n<meta property="og:description" content="메이플스토리 주간 보스·검은 마법사(월간) 처치와 결정석 수익, 득템(보스 드롭 아이템)을 캐릭터별로 기록하는 무료 사이트. 넥슨 Open API로 보스 클리어 자동 체크, 주간 메소 그래프, 결정석·아이템 가격표 제공.">\n'
+        '<meta property="og:title" content="메보기 - 메이플 보스 수익·결정석 기록 사이트">\n<meta property="og:description" content="메이플스토리 보스 수익 계산과 주간 보스 기록을 한 번에. 캐릭터별 주간 보스·검은 마법사 결정석 수익, 최신 결정석 가격표(패치 노트 자동 반영), 반지 상자·득템 기록과 주간 메소 그래프를 무료로 제공합니다.">\n'
         '<meta property="og:url" content="https://bossmaple.pages.dev/">\n<meta property="og:image" content="https://bossmaple.pages.dev/og.png">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
-        '<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:title" content="메보기 - 메이플 보스 수익·결정석 기록 사이트">\n<meta name="twitter:description" content="메이플스토리 주간 보스·검은 마법사(월간) 처치와 결정석 수익, 득템(보스 드롭 아이템)을 캐릭터별로 기록하는 무료 사이트. 넥슨 Open API로 보스 클리어 자동 체크, 주간 메소 그래프, 결정석·아이템 가격표 제공.">\n<meta name="twitter:image" content="https://bossmaple.pages.dev/og.png">\n')
+        '<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:title" content="메보기 - 메이플 보스 수익·결정석 기록 사이트">\n<meta name="twitter:description" content="메이플스토리 보스 수익 계산과 주간 보스 기록을 한 번에. 캐릭터별 주간 보스·검은 마법사 결정석 수익, 최신 결정석 가격표(패치 노트 자동 반영), 반지 상자·득템 기록과 주간 메소 그래프를 무료로 제공합니다.">\n<meta name="twitter:image" content="https://bossmaple.pages.dev/og.png">\n')
 body = rd('body.html').replace('__LOGO64__', LOGO['s64'])
 open(OUT, 'w', encoding='utf-8').write(head + css + '\n' + body + '\n<script>\n' + s + '</script>\n</body>\n</html>\n')
 print('built', OUT, os.path.getsize(OUT), 'bytes')
