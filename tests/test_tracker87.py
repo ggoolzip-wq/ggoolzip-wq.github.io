@@ -106,7 +106,7 @@ try:
     if not NOCHK:
         pg.click('[data-tab="boss"]'); pg.wait_for_timeout(300); pg.evaluate("itemPricePut({whisper:{p:6200000000,t:Date.UTC(2026,9,14,5,30)}});repaintPriceCard()"); pg.click('.pricecard [data-pckind=item]'); pg.wait_for_timeout(300)
         dt=pg.evaluate("document.querySelector('.pricecard .pc-date')?.textContent")
-        check('아이템 가격 탭 맨 아래: 가격 확인 날짜 (KST, 공용 시세 최신)', dt=='가격 확인 날짜 : 2026-10-14 14:30', dt)
+        check('아이템 가격 탭 맨 아래: 가격 확인 (KST, 공용 시세 최신)', dt=='가격 확인 : 2026-10-14 14:30', dt)
         shot(pg.locator('.pricecard'),'pricecard_items')
     check('no page errors', not errs, errs[:3])
     b.close()
