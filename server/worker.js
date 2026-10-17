@@ -298,18 +298,61 @@ function userInfoFrom(st, roles) {
 /* b104: maple.ai.kr 시세 페이지 읽기 — Next.js 페이지 안의 일별 기록 {"date":"YYYY-MM-DD","items":{코드:{challenger,main}}} 중 가장 최근 날짜 하나.
  * 값 단위 = 억 메소. 돌려주는 것: {date, items:{코드:{main}}} (본섭 값만, 숫자만) */
 const MAI_URL = 'https://maple.ai.kr/blog/item-price-tracker-2026';
-export function parseMai(html) {
-  const u = String(html || '').replace(/\\"/g, '"'); let best = null;
-  const re = /"date":"(\d{4}-\d\d-\d\d)","items":\{/g; let m;
-  while ((m = re.exec(u))) {
-    if (best && m[1] <= best.date) continue;
-    let i = m.index + m[0].length - 1, d = 0, j = i;
-    for (; j < u.length && j < i + 50000; j++) { if (u[j] === '{') d++; else if (u[j] === '}' && --d === 0) break; }
-    let o; try { o = JSON.parse(u.slice(i, j + 1)); } catch (e) { continue; }
-    const items = {}; for (const [k, v] of Object.entries(o || {})) { const n = +v?.main; if (k.length <= 40 && n > 0 && n < 1e6) items[k] = { main: n }; }
-    if (Object.keys(items).length) best = { date: m[1], items };
-  }
-  return best;
+/* b207: 빠른 파서 — 전체 문자열 치환 없이(740KB) 날짜 표시만 정규식으로 훑어 가장 새 날짜 1개의 items 덩어리만 잘라 해석 (CPU 10ms 아낌).
+ * minDate 를 주면 그보다 새 날짜가 없을 때 JSON 해석도 안 함 → {date} 만 돌려줌(items 없음) */
+export function parseMai(html, minDate) {
+  const u = String(html || ''); const re = /\\?"date\\?":\\?"(\d{4}-\d\d-\d\d)\\?",\\?"items\\?":\{/g; let m, bd = '', bi = -1;
+  while ((m = re.exec(u))) if (m[1] > bd) { bd = m[1]; bi = m.index + m[0].length - 1; }
+  if (!bd) return null;
+  if (minDate && bd <= minDate) return { date: bd };
+  let d = 0, j = bi; for (; j < u.length && j < bi + 50000; j++) { const c = u.charCodeAt(j); if (c === 123) d++; else if (c === 125 && --d === 0) break; }
+  let o; try { o = JSON.parse(u.slice(bi, j + 1).replace(/\\"/g, '"').replace(/\\\\/g, '\\')); } catch (e) { return null; }
+  const items = {}; for (const [k, v] of Object.entries(o || {})) { const n = +v?.main; if (k.length <= 40 && n > 0 && n < 1e6) items[k] = { main: n }; }
+  return Object.keys(items).length ? { date: bd, items } : null;
+}
+/* b207: 페이지(app.js MAI_CODE·maiNorm·maiMap)와 같은 짝 — 서버가 admin_prices 를 페이지 PUT 과 같은 모양 {키:{p:메소,t:ms}} 으로 씀. 바꾸면 app.js 도 같이 */
+const MAI_CODE = { lcm: '루컨마', tc: '언더컨트롤', eye: '마깃안', belt: '몽벨', book: '마도서', terror: '거공', cfe: '커포', sos: '고근', genesis: '창뱃', mitra: '미트라',
+  whisper: '근원의 속삭임', oath: '죽음의 맹세', bliss: '황홀한 악몽', spirit: '굶주리는 핏빛 원혼', legacy: '불멸의 유산', papmark: '파풀마', g_life: '연마석(스카)', g_faith: '신마석(스카)',
+  ring_r4: '리4', ring_c4: '컨4', h_face: '익셉셔널 얼장', h_eye: '익셉셔널 눈장', h_belt: '익셉셔널 벨트', h_ear: '익셉셔널 귀고리' };
+const maiNorm = n => String(n || '').replace(/[\s:()\[\]·\-]/g, '').replace(/해머/g, '').replace(/얼굴장식/g, '얼장').replace(/눈장식/g, '눈장').replace(/귀걸이/g, '귀고리');
+export function maiMap(items, t) { const P = {}, by = {}; for (const [n, o] of Object.entries(items || {})) by[maiNorm(n)] = o;
+  for (const [k, c] of Object.entries(MAI_CODE)) { const v = +((items?.[c] || by[maiNorm(c)])?.main); if (v > 0) P[k] = { p: Math.round(v * 1e8), t }; } return P; }
+/* b207: maple.ai.kr 시세 자동 갱신 (주인 허락 받음, 예의 있게).
+ *  - cron 매 1분 중 KST 분 %10==0 일 때만, 그리고 오늘(KST) 새 날짜를 아직 못 찾았을 때만 1번 요청. 찾으면 그날은 끝, 다음 00:00 KST 부터 다시.
+ *  - If-None-Match(저장한 ETag) → 안 바뀌면 304(0바이트). 설명하는 User-Agent.
+ *  - 가격 = 시세 데이터의 날짜가 저장한 것보다 새로울 때만 바꿈(다른 페이지 수정으로 ETag 만 바뀌면 가격 그대로).
+ *  - admin_prices: 짝이 있는 아이템만 {p, t=처음 본 시각} 으로 덮음(관리자가 손으로 넣은 다른 아이템은 그대로). → 사이트 '가격 확인 :' = 처음 본 시각.
+ *  - mai_cache = {date, items, fetchedAt(그 날짜를 처음 본 시각), etag, foundDay, checkedAt} — KST 날짜로 잠그지 않음(b104 버그 고침).
+ *  - mai_seen = [{date, at, by}] 새 날짜를 처음 본 시각 기록(최근 60개) → 실제 올라오는 시각 파악용. */
+const MAI_UA = 'bossmaple-price-sync/1.0 (+https://bossmaple.pages.dev; daily item price sync with owner permission; contact via site)';
+const kday = t => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
+const maiDue = t => new Date(t + 9 * 3600e3).getUTCMinutes() % 10 === 0;
+async function metaGet(env, k) { const r = await env.DB.prepare('SELECT v FROM meta WHERE k=?').bind(k).first(); try { return r ? JSON.parse(r.v) : null; } catch (e) { return null; } }
+const metaPut = (env, k, v) => env.DB.prepare('INSERT INTO meta (k,v) VALUES (?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v').bind(k, JSON.stringify(v)).run();
+export async function maiRefresh(env, now = Date.now(), by = 'cron') {
+  const cv = (await metaGet(env, 'mai_cache')) || {};
+  const h = { 'User-Agent': MAI_UA, Accept: 'text/html', 'Accept-Language': 'ko-KR,ko;q=0.9' }; if (cv.etag && cv.date) h['If-None-Match'] = cv.etag;
+  const r = await fetch(env.MAI_URL || MAI_URL, { headers: h });
+  if (r.status === 304) { cv.checkedAt = now; await metaPut(env, 'mai_cache', cv); return { status: 'same', cv }; }
+  if (!r.ok) throw new HttpError(502, 'mai_http', `maple.ai.kr 응답 ${r.status}`);
+  const out = parseMai(await r.text(), cv.items ? cv.date : '');
+  if (!out) throw new HttpError(502, 'mai_parse', 'maple.ai.kr 시세 표를 읽지 못했습니다 (페이지 구조가 바뀌었을 수 있음)');
+  cv.etag = r.headers.get('ETag') || ''; cv.checkedAt = now;
+  if (!out.items) { await metaPut(env, 'mai_cache', cv); return { status: 'nochange', cv }; } // 페이지만 바뀜 → 가격 그대로
+  const P = maiMap(out.items, now), cur = (await metaGet(env, 'admin_prices')) || {};
+  for (const [k, o] of Object.entries(P)) cur[k] = o;
+  const seen = (await metaGet(env, 'mai_seen')) || []; seen.push({ date: out.date, at: now, by }); while (seen.length > 60) seen.shift();
+  const nv = { date: out.date, items: out.items, fetchedAt: now, etag: cv.etag, foundDay: kday(now), checkedAt: now };
+  await env.DB.batch([env.DB.prepare("INSERT INTO meta (k,v) VALUES ('admin_prices',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(cur)),
+    env.DB.prepare("INSERT INTO meta (k,v) VALUES ('mai_cache',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(nv)),
+    env.DB.prepare("INSERT INTO meta (k,v) VALUES ('mai_seen',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(seen))]);
+  console.log('mai new date', out.date, Object.keys(P).length);
+  return { status: 'new', cv: nv, prices: cur };
+}
+export async function maiCron(env, now = Date.now()) {
+  if (!maiDue(now) || env.MAI_OFF) return 'skip';
+  const cv = await metaGet(env, 'mai_cache'); if (cv && cv.foundDay === kday(now)) return 'done_today';
+  return (await maiRefresh(env, now, 'cron')).status;
 }
 
 /* ---------- 세션 ---------- */
@@ -470,14 +513,14 @@ function prParse(html) {
   return { rows, notes };
 }
 const kstIso = (t = Date.now()) => new Date(t + 9 * 3600e3).toISOString().slice(0, 19) + '+09:00';
-async function feedCron(env, t0 = Date.now()) {
+async function feedCron(env, t0 = Date.now(), maxList = FEED_MAX_LIST) {
   if (!env.NEXON_SVC_KEY) return;
   await feedSchema(env); const S = await feedState(env);
   const wm = S.wm || {}, items = S.items || { saryo: [], patch: [] }, chk = S.chk || {}; let sunday = S.sunday || null;
   const last = {}; let detail = 0;
   const add = (tab, x) => { const L = items[tab] = items[tab] || []; if (L.some(y => y.id === x.id)) return; L.push(x); L.sort((a, b) => String(b.date).localeCompare(String(a.date))); L.length = Math.min(L.length, FEED_CAP); };
-  for (let i = 0; i < FEED_MAX_LIST; i++) {
-    const due = t0 + Math.round(i * FEED_WINDOW / FEED_MAX_LIST), wait = due - Date.now();
+  for (let i = 0; i < maxList; i++) {
+    const due = t0 + Math.round(i * FEED_WINDOW / maxList), wait = due - Date.now();
     if (wait > 0) await new Promise(r => setTimeout(r, wait));
     if (Date.now() - t0 > FEED_WINDOW + 3000) break;
     const [path, key, det] = FEED_PATHS[i % 3]; let txt;
@@ -747,17 +790,11 @@ async function route(req, env) {
     }
     // b93: 관리자 전용 경매장 최저가 (크롬 확장이 관리자 본인 브라우저에서 측정 → 페이지가 저장). {prices:{item:{p:메소, t:측정 ms}}}. 넥슨 세션·쿠키는 오지 않음
     // b104: maple.ai.kr 아이템 시세 페이지(본섭 일별 시세)를 한 번 받아 최신 날짜 값만 돌려줌 (관리자만). 같은 KST 날짜에 이미 받았으면 저장한 것(바깥 요청 없음)
+    // b207: 같은 KST 날 잠금 없앰 — 누를 때마다 ETag 조건부 요청(안 바뀌면 304·저장한 것), 새 날짜면 서버가 admin_prices 도 바로 씀(maiRefresh)
     if (p === '/api/admin/maple-prices' && M === 'GET') {
-      const c = await env.DB.prepare("SELECT v FROM meta WHERE k='mai_cache'").first(); let cv = null; try { cv = c ? JSON.parse(c.v) : null; } catch (e) {}
-      const kday = t => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
-      if (cv && kday(cv.fetchedAt) === kday(Date.now())) return json(200, { ...cv, cached: true });
-      const r = await fetch(env.MAI_URL || MAI_URL, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36', Accept: 'text/html', 'Accept-Language': 'ko-KR,ko;q=0.9' } });
-      if (!r.ok) throw new HttpError(502, 'mai_http', `maple.ai.kr 응답 ${r.status}`);
-      const out = parseMai(await r.text());
-      if (!out) throw new HttpError(502, 'mai_parse', 'maple.ai.kr 시세 표를 읽지 못했습니다 (페이지 구조가 바뀌었을 수 있음)');
-      out.fetchedAt = Date.now();
-      await env.DB.prepare("INSERT INTO meta (k,v) VALUES ('mai_cache',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(out)).run();
-      return json(200, out);
+      const x = await maiRefresh(env, Date.now(), 'admin'), cv = x.cv;
+      if (!cv.items) throw new HttpError(502, 'mai_parse', 'maple.ai.kr 시세 표를 읽지 못했습니다');
+      return json(200, { date: cv.date, items: cv.items, fetchedAt: cv.fetchedAt, checkedAt: cv.checkedAt, ...(x.status !== 'new' ? { cached: true } : {}) });
     }
     if (p === '/api/admin/prices' && M === 'GET') {
       const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'").first(); let v = {}; try { v = r ? JSON.parse(r.v) : {}; } catch (e) {}
@@ -817,5 +854,5 @@ export default {
       return json(500, { error: 'server', message: '서버 오류' }, cors);
     }
   },
-  async scheduled(event, env, ctx) { ctx.waitUntil(liveCron(env).catch(e => console.log('liveCron', String(e && e.stack || e)))); ctx.waitUntil(feedCron(env).catch(e => console.log('feedCron', String(e && e.stack || e)))); }, // b157: 매 1분 라이브 감지 · b170: 넥슨 공지 빠른 감시
+  async scheduled(event, env, ctx) { ctx.waitUntil(liveCron(env).catch(e => console.log('liveCron', String(e && e.stack || e)))); const now = Date.now(), mai = maiDue(now); ctx.waitUntil(feedCron(env, now, mai ? FEED_MAX_LIST - 1 : FEED_MAX_LIST).catch(e => console.log('feedCron', String(e && e.stack || e)))); if (mai) ctx.waitUntil(maiCron(env, now).catch(e => console.log('maiCron', String(e && e.stack || e)))); }, // b207: 10분마다 maple.ai.kr 시세(그 회차는 공지 목록 조회 1번 덜 = 서브요청 50 안) // b157: 매 1분 라이브 감지 · b170: 넥슨 공지 빠른 감시
 };
