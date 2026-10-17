@@ -1660,3 +1660,13 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - /api/admin/maple-prices(관리자 최저가 갱신): 매번 ETag 조건부 요청(304면 저장한 것, cached:true), 새 날짜면 서버가 admin_prices 도 바로 씀(maiRefresh 공용).
 - 테스트: test_b207(모의 fetch·D1: 첫 확인·그날 끝·:00/:30·304·ETag만 바뀜·다음 날 새 날짜·손 입력 유지·mai_seen·파서 속도), test_server_b91 갱신(UA·304·admin_prices).
 - 참고: server/node_modules 를 설치하면 wrangler dev 테스트(tracker23/25/46/49/51/52 등)가 SKIP 대신 실제로 돎 — 23/25/49/52 는 b207 전 코드에서도 실패, 46/51 은 병렬에서 흔들림(46 은 예전 worker.js 로도 같은 실패).
+
+## b208 (2026-10-17 KST) — '- 메소' 아이템 = 관리자 손 입력 · 짝 서버 하나 · 시세 등록 창 '시세 정보 없음'
+- 사용자: "- 메소 인 건 내가 넣어둘 테니 사이트에서 그 아이템 시세를 구할 수 있을 때만 변경하고 냅둬".
+- 지금(10-17) '- 메소' 6개 = 짝 없음 4종(오만의 원죄 sin, 1~4단계 소울 에테르 se1~se4 — maple.ai.kr 에 없음) + 짝 있는데 페이지에 없음 1종(익셉셔널 해머 귀고리 h_ear) … 소울 에테르 4개 포함 총 6줄.
+- 서버 MAI_NAMES = {우리 키: [이름 후보…]} 하나뿐(app.js MAI_CODE·maiNorm·maiMap 삭제). sin/se1~4/h_ear 후보 이름도 미리 넣음 → 페이지에 그 이름이 생기면 자동으로 맞춤.
+- 덮는 조건: 시세 날짜가 새로움 + 그 아이템 값이 유효(>0). 값 0·null·없음 = 손 입력 그대로(지우지도 않음). 관리자 손 저장은 다음 새 날짜에 유효한 값이 올 때만 바뀜(같은 날·304·ETag만 바뀜 = 그대로).
+- 관리자 [최저가 갱신]: /api/admin/maple-prices 가 mapped(서버가 맞춘 값, t=처음 본 시각)·missing·unmatched 를 줌 → 페이지는 mapped 를 그대로 PUT(PUT 은 더 새 t 만 덮으므로 그 뒤 손으로 넣은 값 안 덮음).
+- meta.mai_unmatched = {date, at, names(페이지에 있는데 짝 없는 이름), first:{이름: 처음 본 시세 날짜}, missing(값 못 받은 우리 키)} — 새 날짜마다 갱신. 10-17 짝 없는 이름 18개(에테르넬 7종·자석펫·영달포·도미·블빈마·데브팬·에스텔라·트왈마·가엔링·솔 에르다 조각·블랙하트(스카)·익셉셔널 훈장 — 우리 드롭 표에 없는 것).
+- GET /api/admin/prices 에 mai {date, got, unmatched} 추가 → 시세 등록 창(openMkt)에서 got 에 없는 아이템 = 메소 칸 바로 왼쪽 빨간 '시세 정보 없음'(.mkno, 다크 #ff6b6b·라이트 #d32f2f). 창 540px(이름 안 잘림).
+- 테스트: test_b208(새, Worker node 모의 + 시세 등록 창), tests/mai_node.py(테스트가 Worker 짝을 node 로 부름), tracker68/84/86·server_b91 갱신.

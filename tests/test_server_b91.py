@@ -58,6 +58,8 @@ try:
     s,r=req('GET','/api/admin/maple-prices',tok=TA); check('b104: latest date only, 본섭(main) only', s==200 and r['date']=='2026-10-12' and r['items']=={'마깃안':{'main':29.28},'리4':{'main':39}} and r['fetchedAt']>0, r)
     check('b207: one outside request with descriptive UA', len(MAI_HITS)==1 and 'bossmaple' in MAI_HITS[0], MAI_HITS)
     s,r2=req('GET','/api/admin/maple-prices',tok=TA); check('b207: again → conditional GET(If-None-Match) → 304 → cached same data (no same-day lock)', s==200 and r2.get('cached') and len(MAI_HITS)==2 and MAI_INM[1]=='"e1"' and r2['date']=='2026-10-12' and r2['fetchedAt']==r['fetchedAt'], (MAI_INM,r2))
+    check('b208: maple-prices 응답 = 서버가 맞춘 mapped(값 있는 것만)·missing', r2.get('mapped',{}).get('eye',{}).get('p')==2928000000 and 'ring_r4' in r2['mapped'] and 'h_ear' in r2.get('missing',[]) and 'sin' in r2['missing'] and '에스텔라' not in r2.get('unmatched',['에스텔라']), {k:r2.get(k) for k in ('mapped','missing','unmatched')})
+    s,ra=req('GET','/api/admin/prices',tok=TA); check('b208: admin prices 응답 mai = {date, got}', ra.get('mai',{}).get('date')=='2026-10-12' and sorted(ra['mai']['got'])==['eye','ring_r4'], ra.get('mai'))
     s,r3=req('GET','/api/prices'); check('b207: server wrote admin_prices from maple.ai.kr (eye=29.28억, ring_r4=39억, t=first seen)', r3['prices'].get('eye')=={'p':2928000000,'t':r['fetchedAt']} and r3['prices'].get('ring_r4',{}).get('p')==3900000000 and r3['prices'].get('belt')=={'p':3900000000,'t':2000}, r3)
 finally:
     dev.stop(); ms.shutdown()
