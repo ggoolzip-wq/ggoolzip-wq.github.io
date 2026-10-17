@@ -814,7 +814,8 @@ async function route(req, env) {
     }
     if (p === '/api/admin/prices' && M === 'GET') {
       const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'").first(); let v = {}; try { v = r ? JSON.parse(r.v) : {}; } catch (e) {}
-      return json(200, { prices: v });
+      const cv = await metaGet(env, 'mai_cache'); // b208: 가장 새 시세 날짜에 값을 받은 키(got) → 시세 등록 창 '시세 정보 없음'
+      return json(200, { prices: v, ...(cv && cv.items ? { mai: { date: cv.date, got: Object.keys(maiMap(cv.items, 0)), unmatched: maiUnmatched(cv.items) } } : {}) });
     }
     if (p === '/api/admin/prices' && M === 'PUT') {
       const b = await readBody(req), inp = b && typeof b.prices === 'object' && b.prices ? b.prices : {};

@@ -3592,46 +3592,23 @@ async function admDecide(id,action){
 }
 /* b104: 관리자 전용 시세 — maple.ai.kr '아이템 시세 추적' 페이지(https://maple.ai.kr/blog/item-price-tracker-2026, 본섭 일별 시세)를 Worker 가 한 번 받아 읽음
  * (/api/admin/maple-prices, 관리자만, 브라우저 CORS 없이·요청 1번). robots.txt: Allow / (막힌 곳 /pf/ /admin/ /book/ 뿐).
- * 우리 드롭 표에서 [획득]으로 넣는 아이템 중 그 페이지에 있는 것만 이름으로 맞춤(MAI_CODE). 없는 아이템은 그대로(채움·시간 안 바뀜).
+ * 우리 드롭 표에서 [획득]으로 넣는 아이템 중 그 페이지에 있는 것만 이름으로 맞춤(b208: 서버 MAI_NAMES). 없는 아이템은 그대로(채움·시간 안 바뀜).
  * 수익 기록 창에서 금액 자동 채움 + '최저가 측정 시간 - YYYY-MM-DD HH:mm'(KST, 받아 온 시각). 예전 크롬 확장(b93)은 b104 에서 삭제(넥슨 약관). */
 const ADM_PRICE_KEY='mapleBossTracker.admPrices';
-// 우리 아이템 키 → maple.ai.kr 페이지의 아이템 코드 (페이지의 <option value=코드>이름</option> 와 맞춰 봄, 2026-10-13)
-const MAI_CODE={lcm:'루컨마',tc:'언더컨트롤',eye:'마깃안',belt:'몽벨',book:'마도서',terror:'거공',cfe:'커포',sos:'고근',genesis:'창뱃',mitra:'미트라',
-  whisper:'근원의 속삭임',oath:'죽음의 맹세',bliss:'황홀한 악몽',spirit:'굶주리는 핏빛 원혼',legacy:'불멸의 유산',papmark:'파풀마',g_life:'연마석(스카)',g_faith:'신마석(스카)',
-  ring_r4:'리4',ring_c4:'컨4',
-  h_face:'익셉셔널 얼장',h_eye:'익셉셔널 눈장',h_belt:'익셉셔널 벨트',h_ear:'익셉셔널 귀고리'}; // b112: 익셉셔널 해머 — 사이트 이름은 '해머' 없이 '익셉셔널 얼굴장식'(코드 얼장/눈장/벨트). 귀고리는 2026-10-13 페이지에 없음 // 도우미 조사(maple-ai-price-map.json) 18개 + 반지 상자 결과 리스트레인트·컨티뉴어스 링 4레벨. 근사: 마도서·미트라(사이트=장비, 우리=선택 상자), 연마석(스카)·신마석(스카)=생명·신념의 연마석
-const kstStamp=t=>new Date(t+9*3600e3).toISOString().slice(0,16).replace('T',' ');
-const admPrices=()=>{ try{ return JSON.parse(localStorage.getItem(ADM_PRICE_KEY)||'{}')||{}; }catch(e){ return {}; } };
-// 반지 상자 결과 'ring:r4'·'ring:c4'(리스트레인트·컨티뉴어스 링 4레벨) → ring_r4·ring_c4, 칠흑 상자 결과 'cb:키' → 키
-function admPriceOf(ik){ /* b112: 공용 시세 → 모든 사용자 수익 기록 칸 채움 */ const k=String(ik||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1'), o=(typeof itemPrices==='function'?itemPrices():admPrices())[k]; /* b112: 이 기기 + 서버에서 받은 시세 */ return o&&+o.p>0&&+o.t>0?o:null; }
-let admPriceMsg='', admPriceBusy=false;
-/* b112: 아이템 시세 = 관리자가 등록·갱신한 값(서버 admin_prices) — 로그인한 사용자 누구나 GET /api/prices 로 읽어 이 기기에 보관. 관리자 기기는 admPrices 와 합침(최신 시각 우선) */
-const ITEM_PRICE_KEY='mapleBossTracker.itemPrices';
-/* b206: 아이템 시세 출처 = Worker 가 받아 읽는 maple.ai.kr '아이템 시세 추적'(server/worker.js MAI_URL 과 같은 주소) — 아이템 가격 표·수익을 기록할까요? 창 아래 '출처 : 링크'(새 탭) */
-function priceSrcHtml(cls){ const ITEM_PRICE_SRC='https://maple.ai.kr/blog/item-price-tracker-2026'; /* 함수 안 = 첫 렌더가 먼저 불러도 안전 */ return `<div class="${cls}">출처 : <a href="${ITEM_PRICE_SRC}" target="_blank" rel="noopener noreferrer" title="${ITEM_PRICE_SRC}">maple.ai.kr 아이템 시세 추적</a></div>`; }
-function itemPrices(){ let a={}; try{ a=JSON.parse(localStorage.getItem(ITEM_PRICE_KEY)||'{}')||{}; }catch(e){} const b=svIsAdmin()?admPrices():{}, o={...a};
-  for(const [k,v] of Object.entries(b)) if(v&&+v.p>0&&(!o[k]||+o[k].t<=+v.t)) o[k]=v; for(const k in o) if(!(o[k]&&+o[k].p>0)) delete o[k]; return o; }
-function itemPricePut(P){ if(!P||typeof P!=='object'||!Object.keys(P).length) return; /* b112: 빈 응답으로 지우지 않음 */ let cur={}; try{ cur=JSON.parse(localStorage.getItem(ITEM_PRICE_KEY)||'{}')||{}; }catch(e){}
-  for(const [k,o] of Object.entries(P)) if(o&&+o.p>0&&+o.t>0&&(!cur[k]||+cur[k].t<=+o.t)) cur[k]={p:+o.p,t:+o.t}; // 0·빈 값 무시, 더 새 것만
-  try{ localStorage.setItem(ITEM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
-const repaintPriceCard=()=>repaintPrices();
-async function itemPriceLoad(){ if(!SV_ON) return; /* b112: 공용 시세 — 로그인 없이도 */ itemPriceLoad._at=Date.now(); try{ const r=await svFetch('/api/prices',{noAuth:true}); itemPricePut(r.prices); repaintPriceCard(); /* b203: 첫 화면 아이템 카드도 (예전엔 아이템 탭이 열려 있을 때만) */ }catch(e){} }
-function admPriceSave(P){ const cur=admPrices(); for(const [k,o] of Object.entries(P||{})) if(o&&+o.p>0&&(!cur[k]||cur[k].t<=o.t)) cur[k]={p:+o.p,t:+o.t}; try{ localStorage.setItem(ADM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
+/* b208: 아이템 키 ↔ maple.ai.kr 이름 짝은 server/worker.js MAI_NAMES 하나뿐(예전 MAI_CODE·maiMap 복사본 없앰). 서버가 맞춘 값(mapped)을 그대로 씀.
+ * admMaiGot = 가장 새 시세 날짜에 maple.ai.kr 값을 받은 우리 키 집합(null = 아직 모름) → 시세 등록 창에서 못 받은 아이템 옆 빨간 '시세 정보 없음' */
+let admMaiGot=null, admMaiDate='';
+const admMaiSet=m=>{ if(m&&Array.isArray(m.got)){ admMaiGot=new Set(m.got); admMaiDate=String(m.date||''); } };
 /* b112: 다른 기기에서 갱신한 시세를 이 기기로 — 예전엔 관리자 창을 열 때만 받아서, 새 기기(집 PC)에선 수익 기록 창이 빈 칸('0')이었음. 이제 로그인 확인 때마다 받음.
  * 받은 값이 비었거나 실패하면 아무것도 안 바꿈(admPriceSave 는 0·빈 값을 무시하고 더 새 시각만 덮음) */
-async function admPriceLoad(){ if(!svIsAdmin()) return; try{ const P=(await svFetch('/api/admin/prices')).prices; if(P&&typeof P==='object'&&Object.keys(P).length){ admPriceSave(P); if(typeof repaintPriceCard==='function'&&pcKind==='item') repaintPriceCard(); } }catch(e){} }
-// 페이지 값(억, 본섭) → {우리 키: {p: 메소, t}} — 본섭 값이 없거나 0 이하면 넣지 않음
-/* b114: 이름이 조금 달라도 맞춤 — 띄어쓰기·':'·괄호·'해머' 빼고, 얼굴장식→얼장·눈장식→눈장 으로 줄여 비교 */
-const maiNorm=n=>String(n||'').replace(/[\s:()\[\]·\-]/g,'').replace(/해머/g,'').replace(/얼굴장식/g,'얼장').replace(/눈장식/g,'눈장').replace(/귀걸이/g,'귀고리');
-function maiMap(items,t){ const P={}, by={}; for(const [n,o] of Object.entries(items||{})) by[maiNorm(n)]=o;
-  for(const [k,c] of Object.entries(MAI_CODE)){ const v=+((items?.[c]||by[maiNorm(c)])?.main); if(v>0) P[k]={p:Math.round(v*1e8),t}; } return P; }
+async function admPriceLoad(){ if(!svIsAdmin()) return; try{ const R=await svFetch('/api/admin/prices'), P=R.prices; admMaiSet(R.mai); if(P&&typeof P==='object'&&Object.keys(P).length){ admPriceSave(P); if(typeof repaintPriceCard==='function'&&pcKind==='item') repaintPriceCard(); } }catch(e){} }
 // b106: 대기 없이 바로 요청 (하루 1회 접속, 같은 날은 캐시)
 async function admPriceRun(){
   if(!svIsAdmin()||admPriceBusy) return;
   admPriceBusy=true; admPriceMsg='maple.ai.kr 시세 받는 중…'; renderAdmPrice();
   try{
-    const r=await svFetch('/api/admin/maple-prices'); const P=maiMap(r.items,+r.fetchedAt||Date.now());
-    const miss=Object.keys(MAI_CODE).filter(k=>!P[k]).length;
+    const r=await svFetch('/api/admin/maple-prices'); const P=r.mapped&&typeof r.mapped==='object'?r.mapped:{}; /* b208: 서버가 맞춘 값(값 있는 것만, t=처음 본 시각) */
+    const miss=(r.missing||[]).length; admMaiSet({date:r.date,got:Object.keys(P)});
     admPriceSave(P);
     const sv=await svFetch('/api/admin/prices',{method:'PUT',body:{prices:P}}); admPriceSave(sv.prices); itemPricePut(sv.prices); repaintPriceCard();
     admPriceMsg=`${Object.keys(P).length}개 갱신 (maple.ai.kr ${esc(String(r.date||''))} 본섭 시세)${miss?` · 없음 ${miss}개`:''}`;
@@ -3651,7 +3628,7 @@ function openMkt(){
   const el=document.createElement('div'); el.id='mktModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','mktTitle');
   const v=k=>{ const o=P[priceId(k)]; return o?String(Math.round(o.p/1e4)/1e4):''; };
   el.innerHTML=`<div class="modal rabox mktbox"><h3 id="mktTitle">시세 등록</h3>
-    <div class="ralist">${L.map((k,i)=>`<div class="rarow"><span class="raic">${lootIco(k)}</span><span class="raname">${esc(lootName(k))}<small class="ram" data-mkm="${i}">${P[priceId(k)]?meso(P[priceId(k)].p):''}</small></span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="-" data-mk="${i}" data-orig="${v(k)}" value="${v(k)}" aria-label="${esc(lootName(k))} 시세 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div>
+    <div class="ralist">${L.map((k,i)=>`<div class="rarow"><span class="raic">${lootIco(k)}</span><span class="raname">${esc(lootName(k))}<small class="ram" data-mkm="${i}">${P[priceId(k)]?meso(P[priceId(k)].p):''}</small></span>${admMaiGot&&!admMaiGot.has(priceId(k))?'<span class="mkno">시세 정보 없음</span>':'' /* b208 */}<label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="-" data-mk="${i}" data-orig="${v(k)}" value="${v(k)}" aria-label="${esc(lootName(k))} 시세 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div>
     <div class="rverr" id="mktErr" role="alert"></div>
     <div class="rabtns"><button class="btn raok" data-mkb="ok">저장</button><button class="btn ghost" data-mkb="cancel">취소</button></div></div>`;
   document.body.appendChild(el);

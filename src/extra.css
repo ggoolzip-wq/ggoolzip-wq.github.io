@@ -1641,3 +1641,7 @@ header .logo .logo-d{display:flex;align-items:center}
 .rvbox .rvsrc{margin-top:-8px}
 :is(.pc-src,.rvsrc) a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
 :is(.pc-src,.rvsrc) a:hover{filter:brightness(1.2)}
+/* b208: 시세 등록 창 — 가장 새 maple.ai.kr 시세 날짜에 값을 못 받은 아이템: 메소 칸 바로 왼쪽 빨간 '시세 정보 없음'(관리자가 손으로 넣는 것). 줄 넓이 고정, 이름 안 잘리게 창 넓힘 */
+.mktbox{max-width:540px}
+.mktbox .mkno{flex:none;color:#ff6b6b;font-size:.78rem;font-weight:700;white-space:nowrap;font-family:inherit}
+[data-theme="light"] .mktbox .mkno{color:#d32f2f}
