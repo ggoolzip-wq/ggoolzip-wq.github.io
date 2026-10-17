@@ -15,7 +15,7 @@ while todo or run:
         if p.poll() is not None:
             fh.close(); del run[p]
             if p.returncode: failed.append((f,lg))
-            out=open(lg).read().splitlines(); bad=[l for l in out if re.search(r'FAIL|ERRORS|Error',l)][-3:]
+            out=open(lg,errors='replace').read().splitlines(); bad=[l for l in out if re.search(r'FAIL|ERRORS|Error',l)][-3:]
             print('==',f,'(exit %d)'%p.returncode); [print(l) for l in bad]
     busy=set().union(*[P[f] for f,_,_ in run.values()]) if run else set()
     for x in list(todo):

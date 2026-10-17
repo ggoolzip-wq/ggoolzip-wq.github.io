@@ -46,8 +46,16 @@ try:
     check('에픽빔왕: 제목 숫자 없음, 누적 횟수 줄, 반지 상자·상자 결과 제외', pg.inner_text('#epicCard h2').strip()=='에픽빔왕' and pg.locator('#epicCard .epgold').count()==1 and '반지 상자' not in ep and ep.count('생명의 연마석')==1 and '리스트레인트' not in ep, (pg.inner_text('#epicCard h2'),ep[:300]))
     er=pg.eval_on_selector_all('#epicCard tbody tr:not(.rkpad)','e=>e.map(x=>x.children[1].innerText.trim())')
     check('에픽빔 동점 → 아이템 우선순위 (광휘 먼저)', er[0] in ('황홀한 악몽','근원의 속삭임','죽음의 맹세'), er)
-    cc=pg.eval_on_selector_all('#chaosCard tbody tr:not(.rkpad)','e=>e.map(x=>x.children[1].innerText.trim()+"|"+x.children[2].innerText.trim())')
+    cc=pg.eval_on_selector_all('#chaosCard tbody tr:not(.rkpad)','e=>e.map(x=>x.children[1].innerText.trim()+"|"+x.lastElementChild.innerText.trim())')
     check('상자깡: 순위 표 7행, 0 포함, 동점 우선순위(루컨마·커포 뒤)', len(cc)==7 and cc[0].endswith('x1') and cc[-1].split('|')[0]=='고통의 근원', cc)
+    # b202: 상자깡 '비율' 열 (아이템과 횟수 사이) = 횟수 / 전체 상자깡, 소수 1자리, 0개 0%, 전체 0 '-'
+    pc=pg.evaluate("""(()=>{const c=document.querySelector('#chaosCard'),t=c.querySelector('table');const hs=[...t.querySelectorAll('thead th')].map(x=>x.innerText.trim());
+      const rows=[...t.querySelectorAll('tbody tr:not(.rkpad)')].map(x=>x.children[2].innerText.trim());const hh=[...t.querySelectorAll('tbody tr')].map(x=>Math.round(x.getBoundingClientRect().height));
+      const nowrap=[...t.querySelectorAll('td,th')].every(x=>x.scrollWidth<=x.clientWidth+1);
+      return {hs,rows,hh:[...new Set(hh)],tw:t.getBoundingClientRect().width,cw:t.parentElement.clientWidth,nowrap,f:[cbPct(1,8),cbPct(0,8),cbPct(0,0),cbPct(3,7)]}})()""")
+    check('b202 상자깡 비율 열: 아이템·비율·횟수, 100.0%/0%, 공식', pc['hs'][1:]==['아이템','비율','횟수'] and pc['rows'][0]=='100.0%' and pc['rows'].count('0%')==6 and pc['f']==['12.5%','0%','-','42.9%'], pc)
+    check('b202 표 크기 그대로: 줄 높이 같음, 가로 넘침·줄바꿈 없음', len(pc['hh'])==1 and pc['tw']<=pc['cw']+1 and pc['nowrap'], pc)
+    pg.locator('#chaosCard').screenshot(path=os.path.join(os.environ.get('MBT_SHOTDIR') or '/tmp','b202_chaos.png'))
     mi=pg.eval_on_selector_all('#missItems tbody tr:not(.rkpad)','e=>e.map(x=>x.innerText.replace(/\s+/g," ").trim())')
     allm=pg.evaluate("missingItems(totalData()).map(o=>o.list.map(x=>ITEMS[o.k].n+'@'+x.b.name)).flat()")
     check('못 가진 아이템: 4단계 소울 에테르(유피테르) 있음, 얻은 신념·생명 연마석(상자 결과) 없음', any(x.startswith('4단계 소울 에테르@유피테르') for x in allm) and not any(x.split('@')[0] in ('신념의 연마석','생명의 연마석') for x in allm), allm)

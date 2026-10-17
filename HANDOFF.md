@@ -1617,3 +1617,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 
 ## b201 (2026-10-17 KST) — 사이트 이름 메록지 → **메보기**
 - 헤더 디지털 로고(logoDigital T, HPIX 에 Fusion Pixel 12px ko v2026.10.16 의 "기" 비트맵 추가 — 메·보는 이미 있음), <title> "메보기 - 메이플 보스 기록 사이트", og:title/og:site_name/twitter:title, 숨은 소개 h1·noscript, 로고 aria-label, og.png 다시 만듦. manifest 없음. test_tracker80/test_b198 갱신.
+
+## b202 (2026-10-17 KST) — 혼돈의 칠흑 장신구 상자깡 비율 열
+- 열 순서 순위·아이템·**비율**·횟수. 비율 = 그 아이템 횟수 / 전체 상자깡 횟수(모든 횟수 합), 소수 1자리(`cbPct`), 0개 = 0%, 전체 0 = "-". 표 크기·줄 높이 그대로(rankTable num 열).
+- tests/run_par.py: 로그 읽을 때 errors=replace(깨진 UTF-8 로그로 전체가 죽던 문제).
+- 테스트 test_tracker41 (b202 체크 2개), 스크린샷 /workspace/b202_chaos.png.
