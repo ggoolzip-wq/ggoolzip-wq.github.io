@@ -1739,7 +1739,12 @@ header .logo-d .logo-g{transform:translateY(1.5px)}
 @media (max-width:600px){header .logo-d .logo-g{transform:translateY(1px)} header .hbtn{padding-left:8px;padding-right:8px} header .admhdr{margin-right:4px}}
 /* b204: 로고 수정 아이콘이 글자보다 낮아 보임 — 상자·잉크 범위는 맞지만 수정(위가 뾰족, 아래가 둥글고 진함)의 밝기 무게중심이 글자보다 1~1.2px 낮음(헤드리스 3x 측정).
  * 아이콘만 1px 올려 무게중심을 맞춤(transform, 레이아웃 그대로) */
-header .logo .leaf{transform:translateY(-1px)}
+/* b205: 사용자 화면(Windows, DPR 1 — 글자 폭 74px 로 우리 DPR 1 렌더와 같음) 분석: 상자·잉크·밝기 중심은 0~0.5px 차이로 이미 맞음.
+ * 그런데 수정은 위가 뾰족(맨 위 2~3줄은 3~5px 폭)하고 글자는 위가 평평한 막대라, 같은 높이여도 수정이 낮아 보임(광학 착시). 몸통(폭 9px 이상) 중심이 글자 중심보다 0.5px 낮음.
+ * → 구조: 로고 줄 높이 34px 고정·flex 가운데·아이콘 block(기준선 영향 없음), 아이콘은 2px 올려 몸통 중심이 글자 중심보다 1.5px 위(뾰족한 위 보정). 정수 px 이라 DPR 1 에서 흐려지지 않음 */
+header .logo{display:flex;align-items:center;height:34px}
+header .logo .leaf{display:block;flex:none;transform:translateY(-2px)}
+header .logo .logo-d{display:flex;align-items:center}
 /* b203: 로그인 전 첫 화면 — 빈 카드 아래 소개 카드 + 실제 가격 카드 두 장(결정석·아이템, 읽기 전용). 좁으면 한 줄씩 */
 .landing{display:flex;flex-direction:column;gap:14px;margin-top:14px}
 .seoland{padding:18px 20px}
