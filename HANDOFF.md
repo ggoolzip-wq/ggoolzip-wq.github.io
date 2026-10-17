@@ -1607,3 +1607,6 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 루트에 robots.txt(Allow: / + Sitemap: https://bossmaple.pages.dev/sitemap.xml), sitemap.xml(대표 주소 1개), og.png. tools/pages_dist.sh 가 _site 에 복사(예전엔 Pages 가 없는 경로에 index.html 을 돌려줌). 예전 /pf/ /admin/ /book/ Disallow 는 maple.ai.kr 의 robots 라 이 사이트엔 없음.
 - src/body.html: <body> 바로 뒤 #seoIntro(1px clip 숨김 — h1+소개 글 3줄, 화면·레이아웃 변화 없음) + <noscript> 소개.
 - 테스트 test_b198.
+
+## b199 (2026-10-17 KST) — 검색 소유 확인 태그
+- tools/build.py <head> 에 google-site-verification(1vcb6ZmBor2M4xfKsBwcPVDYSjOmd3zo4ZzM9A7lA4E), naver-site-verification(a7d0315262c0c08150e38a3a696a4d0f54fae152) 추가 — 두 주소 모두 같은 index.html. test_b198 갱신.

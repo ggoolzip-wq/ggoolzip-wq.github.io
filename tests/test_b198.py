@@ -12,7 +12,7 @@ check('meta description (한국어)', re.search(r'<meta name="description" conte
 check('canonical = bossmaple.pages.dev', f'<link rel="canonical" href="{U}">' in head)
 for k,v in (('og:title','메록지'),('og:description','메이플'),('og:url',U),('og:image',U+'og.png')):
     check(k, re.search(rf'<meta property="{k}" content="[^"]*{re.escape(v)}',head) is not None)
-check('소유 확인 태그 아직 없음', 'google-site-verification' not in head and 'naver-site-verification' not in head)
+check('b199 소유 확인 태그(구글·네이버)', '<meta name="google-site-verification" content="1vcb6ZmBor2M4xfKsBwcPVDYSjOmd3zo4ZzM9A7lA4E" />' in head and '<meta name="naver-site-verification" content="a7d0315262c0c08150e38a3a696a4d0f54fae152" />' in head)
 rb=open(os.path.join(ROOT,'robots.txt')).read()
 check('robots.txt Allow / + Sitemap', 'Allow: /' in rb and 'Sitemap: '+U+'sitemap.xml' in rb and 'Disallow: /\n' not in rb, rb)
 sm=open(os.path.join(ROOT,'sitemap.xml')).read()
