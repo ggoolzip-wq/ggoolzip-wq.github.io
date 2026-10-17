@@ -69,7 +69,7 @@ try:
         check('시세 표시 (서버 /api/prices): 근원의 속삭임 62억, 익셉셔널 해머(얼굴장식) 61억 9,900만', d.get('whisper')=='62.00억 메소' and d.get('h_face')=='61.99억 메소' and SRV['pub']>=1, (d.get('whisper'),d.get('h_face'),SRV['pub']))
         check("시세 없는 아이템 = '- 메소'", d.get('oath')=='- 메소', d.get('oath'))
         shot(pg.locator('.pricecard'),'pricecard_items')
-        mm=pg.evaluate("Object.keys(maiMap({'익셉셔널 얼장':{main:61.99},'익셉셔널 눈장':{main:221.33},'익셉셔널 벨트':{main:57.78},'익셉셔널 훈장':{main:800}},1))")
+        import mai_node; mm=list(mai_node.mai_map({'익셉셔널 얼장':{'main':61.99},'익셉셔널 눈장':{'main':221.33},'익셉셔널 벨트':{'main':57.78},'익셉셔널 훈장':{'main':800}},1))  # b208: 짝 = Worker
         check('maple.ai.kr 익셉셔널 얼장/눈장/벨트 → 해머 3종 (훈장 제외)', sorted(mm)==['h_belt','h_eye','h_face'], mm)
         pg.evaluate("openAdmin()"); pg.wait_for_timeout(400)
         check("관리자 창 '시세 등록' 버튼", pg.locator('#mktBtn').count()==1)

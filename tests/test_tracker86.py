@@ -6,6 +6,7 @@ import os, sys, json, time, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAI=os.path.join(os.path.dirname(os.path.abspath(__file__)),'fixtures','mai_2026-10-13.json'); PORT='8902'
+import json as _j, mai_node; MAIR=_j.load(open(MAI,encoding='utf-8')); MAIR['mapped']=mai_node.mai_map(MAIR['items'],MAIR.get('fetchedAt') or 1760000000000)  # b208: 서버가 맞춘 값
 SHOT=os.environ.get('MBT_SHOTDIR'); TAG=os.environ.get('MBT_TAG','after'); NOCHK=os.environ.get('MBT_NOCHECK')=='1'
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -38,7 +39,7 @@ try:
         if '/api/admin/prices' in u:
             if r.request.method=='PUT': d=json.loads(r.request.post_data)['prices']; SRV['puts'].append(d); SRV['prices'].update(d)
             return r.fulfill(status=200,content_type='application/json',headers=H,body=json.dumps({'prices':SRV['prices']}))
-        if '/api/admin/maple-prices' in u: return r.fulfill(status=200,content_type='application/json',headers=H,body=open(MAI).read())
+        if '/api/admin/maple-prices' in u: return r.fulfill(status=200,content_type='application/json',headers=H,body=json.dumps(MAIR))
         if '/api/admin/users' in u: return r.fulfill(status=200,content_type='application/json',headers=H,body=json.dumps({'users':[]}))
         return r.fulfill(status=200,content_type='application/json',headers=H,body='{}')
     def nxapi(r):  # /maplestory/v1/id: 첫 호출 429(초당), 두 번째 200
@@ -63,7 +64,7 @@ try:
         put=SRV['puts'][0] if SRV['puts'] else {}
         check('시세 갱신: 익셉셔널 해머 얼장/눈장/벨트 채움', all(k in put and put[k]['p']>0 for k in ('h_face','h_eye','h_belt')), sorted(put))
         check('해머 가격 = 페이지 값', put.get('h_face',{}).get('p')==6199000000 and put.get('h_eye',{}).get('p')==22133000000, {k:put.get(k) for k in ('h_face','h_eye','h_belt')})
-        alt=pg.evaluate("maiMap({'익셉셔널 해머 : 얼굴장식':{main:60},'익셉셔널 눈장식':{main:200},'익셉셔널 해머(벨트)':{main:50}},1)")
+        import mai_node; alt=mai_node.mai_map({'익셉셔널 해머 : 얼굴장식':{'main':60},'익셉셔널 눈장식':{'main':200},'익셉셔널 해머(벨트)':{'main':50}},1)  # b208: 짝 = Worker
         check('이름이 달라도 맞춤(해머 : 얼굴장식 · 눈장식 · 해머(벨트))', alt.get('h_face',{}).get('p')==6e9 and alt.get('h_eye',{}).get('p')==2e10 and alt.get('h_belt',{}).get('p')==5e9, alt)
         for sel,n in (('.pricecard .pc-it .pc-nm','아이템 가격 탭'),('#mktModal .raname','시세 등록')):
             names=pg.eval_on_selector_all(sel,"e=>e.map(x=>(x.firstChild&&x.firstChild.textContent||x.textContent).trim())")

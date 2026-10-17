@@ -325,7 +325,7 @@ export function maiMap(items, t) { const P = {}, rank = {};
     const r = MAI_NAMES[k].findIndex(x => maiNorm(x) === maiNorm(n)); if (k in rank && rank[k] <= r) continue; rank[k] = r; P[k] = { p: Math.round(v * 1e8), t }; }
   return P; }
 export const maiUnmatched = items => Object.keys(items || {}).filter(n => !MAI_BY[maiNorm(n)]).sort();
-export const MAI_KEYS = Object.keys(MAI_NAMES);
+export const MAI_KEYS = Object.keys(MAI_NAMES); export const maiKeysList = () => MAI_KEYS;
 /* b207: maple.ai.kr 시세 자동 갱신 (주인 허락 받음, 예의 있게).
  *  - cron 매 1분 중 KST 분 %30==0(:00·:30, 사용자 결정) 일 때만, 그리고 오늘(KST) 새 날짜를 아직 못 찾았을 때만 1번 요청. 찾으면 그날은 끝, 다음 00:00 KST 부터 다시.
  *  - If-None-Match(저장한 ETag) → 안 바뀌면 304(0바이트). 설명하는 User-Agent.

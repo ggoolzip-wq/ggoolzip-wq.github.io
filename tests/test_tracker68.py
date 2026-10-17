@@ -1,5 +1,6 @@
 # b104(예전 b93): 관리자 전용 시세 — 관리자 창 '최저가 갱신' → (1~4.5초 무작위 대기) → Worker /api/admin/maple-prices(maple.ai.kr) 1번 → 우리 아이템으로 맞춤 → /api/admin/prices,
 #      '수익을 기록할까요?' 금액 자동 채움(수정 가능) + '최저가 측정 시간 - YYYY-MM-DD HH:mm'(KST). 페이지에 없는 아이템은 그대로. 관리자가 아니면 없음. (Worker 는 가짜 응답)
+import mai_node
 import os, sys, json, subprocess, time, urllib.request
 from playwright.sync_api import sync_playwright
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,7 +29,7 @@ try:
             if '/api/admin/prices' in u:
                 if r.request.method=='PUT': saved['puts']+=1; saved['prices'].update(json.loads(r.request.post_data)['prices'])
                 return r.fulfill(status=200,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps({'prices':saved['prices']}))
-            if '/api/admin/maple-prices' in u: saved['mai'].append(time.time()); return r.fulfill(status=200,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps({'date':'2026-10-12','fetchedAt':T0,'items':{'마깃안':{'main':29.28},'데브팬':{'main':0.0889},'리4':{'main':39},'파풀마':{'main':1.9},'자석펫':{'main':166}}}))
+            if '/api/admin/maple-prices' in u: saved['mai'].append(time.time()); return r.fulfill(status=200,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps((lambda it:{'date':'2026-10-12','fetchedAt':T0,'items':it,'mapped':mai_node.mai_map(it,T0)})({'마깃안':{'main':29.28},'데브팬':{'main':0.0889},'리4':{'main':39},'파풀마':{'main':1.9},'자석펫':{'main':166}})))
             if '/api/admin/users' in u: return r.fulfill(status=200,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body=json.dumps({'users':[]}))
             return r.fulfill(status=200,content_type='application/json',headers={'Access-Control-Allow-Origin':'*'},body='{}')
         ctx.route('http://127.0.0.1:9999/**',lambda r: r.fulfill(status=204,headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,PUT,POST,DELETE','Access-Control-Allow-Headers':'*'}) if r.request.method=='OPTIONS' else api(r))
