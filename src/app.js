@@ -2215,11 +2215,13 @@ function bossKingHtml(T){ const R=bossKills(T);
     R.map(o=>({ico:bossPic(o.b,o.d),name:bossDiffHtml(o.b,o.d),cells:[`<b>${o.n}회</b>`,meso(o.cry),o.sale>0?`<span class="bksale"${saleTip(o)}>${meso(o.sale)}</span>`:meso(o.sale),`<b>${meso(o.meso)}</b>`]}))); }
 function epicCounts(T){ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(isRing(it)) return; R[it]=(R[it]||0)+I.n; }); return R; } // 반지 상자와 상자에서 나온 것(리4·컨4·연마석)은 제외, 보스가 직접 준 생명의 연마석은 포함
 function chaosCounts(T){ const C=Object.fromEntries(CHAOS_PICK.map(k=>[k,0])); T.items.forEach(([a,I])=>{ if(parseIK(a).it!=='chaosbox') return; (I.outs||[]).forEach(o=>{ const k=String(o).slice(3); if(/^cb:/.test(o)&&k in C) C[k]++; }); }); return C; }
+/* b202: 상자깡 비율 = 그 아이템 횟수 / 전체 상자깡 횟수(모든 횟수 합), 소수 1자리. 0개 = 0%, 전체 0 = '-' */
+const cbPct=(n,t)=>!t?'-':!n?'0%':(n/t*100).toFixed(1)+'%';
 function epicKingHtml(T){ const R=epicCounts(T), tot=Object.values(R).reduce((x,y)=>x+y,0);
-  const ks=Object.keys(R).sort((a,b)=>R[b]-R[a]||itemCmp(a,b)), C=chaosCounts(T), cs=CHAOS_PICK.slice().sort((a,b)=>C[b]-C[a]||itemCmp(a,b));
+  const ks=Object.keys(R).sort((a,b)=>R[b]-R[a]||itemCmp(a,b)), C=chaosCounts(T), ctot=Object.values(C).reduce((x,y)=>x+y,0), cs=CHAOS_PICK.slice().sort((a,b)=>C[b]-C[a]||itemCmp(a,b));
   return rankTable('epic','epicCard',`${miniIcon('sos')} <span class="ept">에픽빔왕</span>`,['아이템','횟수'],ks.map(k=>({ico:lootIco(k),col:itemCol(k),name:k==='chaosbox'?`<span class="tipname"${tipAttr(chaosTip(C,Math.max(0,R[k]-Object.values(C).reduce((x,y)=>x+y,0))))}>${esc(lootName(k))}</span>`:esc(lootName(k)),cells:[xN(R[k])]})),
       {sub:`<div class="epline">에픽빔 누적 횟수 <b class="epgold">${tot}</b></div>`})
-    +rankTable('chaos','chaosCard',`${miniIcon('chaosbox')} 혼돈의 칠흑 장신구 상자깡`,['아이템','횟수'],cs.map(k=>({ico:itemIcon(k),col:'ic-purple',name:esc(ITEMS[k].n),cells:[xN(C[k])]}))); }
+    +rankTable('chaos','chaosCard',`${miniIcon('chaosbox')} 혼돈의 칠흑 장신구 상자깡`,['아이템','비율','횟수'],cs.map(k=>({ico:itemIcon(k),col:'ic-purple',name:esc(ITEMS[k].n),cells:[`<span class="cbpct">${cbPct(C[k],ctot)}</span>`,xN(C[k])]}))); }
 /* 못 가진 아이템: 모든 보스 드롭 표의 누를 수 있는 아이템 중 한 번도 못 얻은 것 (블빵패배 제외, 분배·블빵승리·1인 = 얻음).
  * 칠흑 상자에서 고른 장신구 = 그 장신구 얻음. 반지 상자: 상자를 얻었으면(결과 무관) 그 상자는 얻음, 상자 결과 생명의 연마석 = 생명의 연마석 얻음. 리4·컨4는 드롭 표 칩이 아니라 목록에 없음.
  * 아이템마다 1줄: 결정석이 가장 싼 보스(난이도)로 표시 */
