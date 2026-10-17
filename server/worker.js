@@ -310,13 +310,22 @@ export function parseMai(html, minDate) {
   const items = {}; for (const [k, v] of Object.entries(o || {})) { const n = +v?.main; if (k.length <= 40 && n > 0 && n < 1e6) items[k] = { main: n }; }
   return Object.keys(items).length ? { date: bd, items } : null;
 }
-/* b207: 페이지(app.js MAI_CODE·maiNorm·maiMap)와 같은 짝 — 서버가 admin_prices 를 페이지 PUT 과 같은 모양 {키:{p:메소,t:ms}} 으로 씀. 바꾸면 app.js 도 같이 */
-const MAI_CODE = { lcm: '루컨마', tc: '언더컨트롤', eye: '마깃안', belt: '몽벨', book: '마도서', terror: '거공', cfe: '커포', sos: '고근', genesis: '창뱃', mitra: '미트라',
-  whisper: '근원의 속삭임', oath: '죽음의 맹세', bliss: '황홀한 악몽', spirit: '굶주리는 핏빛 원혼', legacy: '불멸의 유산', papmark: '파풀마', g_life: '연마석(스카)', g_faith: '신마석(스카)',
-  ring_r4: '리4', ring_c4: '컨4', h_face: '익셉셔널 얼장', h_eye: '익셉셔널 눈장', h_belt: '익셉셔널 벨트', h_ear: '익셉셔널 귀고리' };
+/* b207/b208: 우리 아이템 키 → maple.ai.kr 이름 후보(앞 = 지금 페이지 이름, 뒤 = 나중에 생기면 쓸 이름). **짝은 여기 하나뿐**(b208: app.js 복사본 없앰 —
+ * 관리자 [최저가 갱신] 은 /api/admin/maple-prices 의 mapped 를 그대로 씀). 이름은 maiNorm(띄어쓰기·':'·괄호·'해머' 빼고 얼굴장식→얼장 …)으로 비교.
+ * b208: 지금 페이지에 없는 아이템(오만의 원죄·소울 에테르 1~4단계·익셉셔널 귀고리)은 관리자가 손으로 넣음 — 페이지에 그 이름의 유효한 값(>0)이 생길 때만 바뀜 */
+const MAI_NAMES = { lcm: ['루컨마', '루즈 컨트롤 머신 마크'], tc: ['언더컨트롤', '컴플리트 언더컨트롤'], eye: ['마깃안', '마력이 깃든 안대'], belt: ['몽벨', '몽환의 벨트'], book: ['마도서', '저주받은 마도서'], terror: ['거공', '거대한 공포'], cfe: ['커포', '커맨더 포스 이어링'], sos: ['고근', '고통의 근원'], genesis: ['창뱃', '창세의 뱃지'], mitra: ['미트라', '미트라의 분노'],
+  whisper: ['근원의 속삭임'], oath: ['죽음의 맹세'], bliss: ['황홀한 악몽'], spirit: ['굶주리는 핏빛 원혼'], legacy: ['불멸의 유산'], papmark: ['파풀마', '파풀라투스 마크'], g_life: ['연마석(스카)', '생명의 연마석'], g_faith: ['신마석(스카)', '신념의 연마석'],
+  ring_r4: ['리4', '리스트레인트 링 4레벨'], ring_c4: ['컨4', '컨티뉴어스 링 4레벨'], h_face: ['익셉셔널 얼장'], h_eye: ['익셉셔널 눈장'], h_belt: ['익셉셔널 벨트'], h_ear: ['익셉셔널 귀고리', '익셉셔널 이어링'],
+  sin: ['오만의 원죄', '원죄'], se1: ['1단계 소울 에테르', '소울 에테르 1단계', '소울에테르1'], se2: ['2단계 소울 에테르', '소울 에테르 2단계', '소울에테르2'], se3: ['3단계 소울 에테르', '소울 에테르 3단계', '소울에테르3'], se4: ['4단계 소울 에테르', '소울 에테르 4단계', '소울에테르4'] };
 const maiNorm = n => String(n || '').replace(/[\s:()\[\]·\-]/g, '').replace(/해머/g, '').replace(/얼굴장식/g, '얼장').replace(/눈장식/g, '눈장').replace(/귀걸이/g, '귀고리');
-export function maiMap(items, t) { const P = {}, by = {}; for (const [n, o] of Object.entries(items || {})) by[maiNorm(n)] = o;
-  for (const [k, c] of Object.entries(MAI_CODE)) { const v = +((items?.[c] || by[maiNorm(c)])?.main); if (v > 0) P[k] = { p: Math.round(v * 1e8), t }; } return P; }
+const MAI_BY = (() => { const o = {}; for (const [k, L] of Object.entries(MAI_NAMES)) for (const n of L) o[maiNorm(n)] = k; return o; })();
+// 값이 없거나 0·숫자 아님 → 그 아이템은 빼고(덮지도 지우지도 않음). 같은 키에 이름이 여럿이면 앞(지금 이름) 우선
+export function maiMap(items, t) { const P = {}, rank = {};
+  for (const [n, o] of Object.entries(items || {})) { const k = MAI_BY[maiNorm(n)]; if (!k) continue; const v = +o?.main; if (!(v > 0 && v < 1e6)) continue;
+    const r = MAI_NAMES[k].findIndex(x => maiNorm(x) === maiNorm(n)); if (k in rank && rank[k] <= r) continue; rank[k] = r; P[k] = { p: Math.round(v * 1e8), t }; }
+  return P; }
+export const maiUnmatched = items => Object.keys(items || {}).filter(n => !MAI_BY[maiNorm(n)]).sort();
+export const MAI_KEYS = Object.keys(MAI_NAMES);
 /* b207: maple.ai.kr 시세 자동 갱신 (주인 허락 받음, 예의 있게).
  *  - cron 매 1분 중 KST 분 %30==0(:00·:30, 사용자 결정) 일 때만, 그리고 오늘(KST) 새 날짜를 아직 못 찾았을 때만 1번 요청. 찾으면 그날은 끝, 다음 00:00 KST 부터 다시.
  *  - If-None-Match(저장한 ETag) → 안 바뀌면 304(0바이트). 설명하는 User-Agent.
@@ -342,10 +351,14 @@ export async function maiRefresh(env, now = Date.now(), by = 'cron') {
   const P = maiMap(out.items, now), cur = (await metaGet(env, 'admin_prices')) || {};
   for (const [k, o] of Object.entries(P)) cur[k] = o;
   const seen = (await metaGet(env, 'mai_seen')) || []; seen.push({ date: out.date, at: now, by }); while (seen.length > 60) seen.shift();
+  // b208: 페이지에 있는데 우리 짝이 없는 이름 = meta.mai_unmatched {date, at, names, first:{이름: 처음 본 시세 날짜}} → 새 아이템이 생기면 여기서 보고 MAI_NAMES 에 추가
+  const um = (await metaGet(env, 'mai_unmatched')) || {}, first = um.first || {}, names = maiUnmatched(out.items); for (const n of names) if (!first[n]) first[n] = out.date;
+  const umv = { date: out.date, at: now, names, first, missing: MAI_KEYS.filter(k => !P[k]) };
   const nv = { date: out.date, items: out.items, fetchedAt: now, etag: cv.etag, foundDay: kday(now), checkedAt: now, auto: 1 };
   await env.DB.batch([env.DB.prepare("INSERT INTO meta (k,v) VALUES ('admin_prices',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(cur)),
     env.DB.prepare("INSERT INTO meta (k,v) VALUES ('mai_cache',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(nv)),
-    env.DB.prepare("INSERT INTO meta (k,v) VALUES ('mai_seen',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(seen))]);
+    env.DB.prepare("INSERT INTO meta (k,v) VALUES ('mai_seen',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(seen)),
+    env.DB.prepare("INSERT INTO meta (k,v) VALUES ('mai_unmatched',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(umv))]);
   console.log('mai new date', out.date, Object.keys(P).length);
   return { status: 'new', cv: nv, prices: cur };
 }
@@ -796,7 +809,8 @@ async function route(req, env) {
     if (p === '/api/admin/maple-prices' && M === 'GET') {
       const x = await maiRefresh(env, Date.now(), 'admin'), cv = x.cv;
       if (!cv.items) throw new HttpError(502, 'mai_parse', 'maple.ai.kr 시세 표를 읽지 못했습니다');
-      return json(200, { date: cv.date, items: cv.items, fetchedAt: cv.fetchedAt, checkedAt: cv.checkedAt, ...(x.status !== 'new' ? { cached: true } : {}) });
+      const mapped = maiMap(cv.items, cv.fetchedAt); // b208: 짝은 서버 하나 — 페이지는 이걸 그대로 PUT (t=처음 본 시각 → 그 뒤 손으로 넣은 값은 PUT 이 안 덮음)
+      return json(200, { date: cv.date, items: cv.items, fetchedAt: cv.fetchedAt, checkedAt: cv.checkedAt, mapped, missing: MAI_KEYS.filter(k => !mapped[k]), unmatched: maiUnmatched(cv.items), ...(x.status !== 'new' ? { cached: true } : {}) });
     }
     if (p === '/api/admin/prices' && M === 'GET') {
       const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'").first(); let v = {}; try { v = r ? JSON.parse(r.v) : {}; } catch (e) {}
