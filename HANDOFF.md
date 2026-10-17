@@ -1610,3 +1610,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 
 ## b199 (2026-10-17 KST) — 검색 소유 확인 태그
 - tools/build.py <head> 에 google-site-verification(1vcb6ZmBor2M4xfKsBwcPVDYSjOmd3zo4ZzM9A7lA4E), naver-site-verification(a7d0315262c0c08150e38a3a696a4d0f54fae152) 추가 — 두 주소 모두 같은 index.html. test_b198 갱신.
+
+## b200 (2026-10-17 KST) — 헤더 세로 가운데 맞춤
+- 로고 아이콘(34px) 중심선에 로고 글자·👑 관리자·로그아웃·테마 버튼. .gwrap = flex 가운데·줄바꿈 없음(좁은 화면에서 관리자/로그아웃 두 줄로 쌓이던 것 해결), header .hbtn = 높이 34px inline-flex(글꼴·이모지 높이와 무관), 디지털 로고 글자 잉크 중심이 1.5px 높아 translateY(1.5px)(모바일 1px).
+- 측정(다크/라이트 x 1400/390px): 아이콘·글자 잉크·버튼 중심 차이 ≤1px. test_b200.
+
+## b201 (2026-10-17 KST) — 사이트 이름 메록지 → **메보기**
+- 헤더 디지털 로고(logoDigital T, HPIX 에 Fusion Pixel 12px ko v2026.10.16 의 "기" 비트맵 추가 — 메·보는 이미 있음), <title> "메보기 - 메이플 보스 기록 사이트", og:title/og:site_name/twitter:title, 숨은 소개 h1·noscript, 로고 aria-label, og.png 다시 만듦. manifest 없음. test_tracker80/test_b198 갱신.

@@ -1352,7 +1352,7 @@ img.bicon{image-rendering:auto;object-fit:cover;background:none}
 .chart.lux .cxl.sub{font-size:9px}
 .chart .tsv.tred .tl{fill:#ff9a8a;stroke:rgba(255,200,190,.6)}
 .chart .tsv.tred{filter:drop-shadow(0 0 2px rgba(255,70,60,.95)) drop-shadow(0 0 6px rgba(255,70,60,.5))}
-/* b155: 로고 '메록지' 디지털 (숫자와 같은 픽셀 SVG, 하늘색 그라데이션·글로우·5° 기울기) */
+/* b155: 로고 '메보기' 디지털 (숫자와 같은 픽셀 SVG, 하늘색 그라데이션·글로우·5° 기울기) */
 .logo-d{display:inline-flex;align-items:center;position:relative}
 .logo-d .tir-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .logo-d .logo-g{height:1.05em;width:calc(1.05em * var(--tw));vertical-align:middle}

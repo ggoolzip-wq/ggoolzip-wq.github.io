@@ -10,7 +10,7 @@ H=open(os.path.join(ROOT,'index.html'),encoding='utf-8').read(); head=H[:H.index
 U='https://bossmaple.pages.dev/'
 check('meta description (한국어)', re.search(r'<meta name="description" content="[^"]*메이플스토리[^"]*보스',head) is not None)
 check('canonical = bossmaple.pages.dev', f'<link rel="canonical" href="{U}">' in head)
-for k,v in (('og:title','메록지'),('og:description','메이플'),('og:url',U),('og:image',U+'og.png')):
+for k,v in (('og:title','메보기'),('og:description','메이플'),('og:url',U),('og:image',U+'og.png')):
     check(k, re.search(rf'<meta property="{k}" content="[^"]*{re.escape(v)}',head) is not None)
 check('b199 소유 확인 태그(구글·네이버)', '<meta name="google-site-verification" content="1vcb6ZmBor2M4xfKsBwcPVDYSjOmd3zo4ZzM9A7lA4E" />' in head and '<meta name="naver-site-verification" content="a7d0315262c0c08150e38a3a696a4d0f54fae152" />' in head)
 rb=open(os.path.join(ROOT,'robots.txt')).read()
