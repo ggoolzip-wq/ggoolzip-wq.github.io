@@ -1629,3 +1629,5 @@ header .logo .leaf{transform:translateY(-1px)}
 .pc-kind-land span{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-size:.86rem;font-weight:800;padding:6px;border-radius:8px;border:1px solid var(--accent);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
 .pc-kind-land span img{width:20px;height:20px;object-fit:contain}
 @media(max-width:760px){.landprices{grid-template-columns:1fr}}
+.landprices .pc-list{height:560px;max-height:none}
+@media(max-width:760px){.landprices .pc-list{height:420px}}
