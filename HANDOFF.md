@@ -1626,3 +1626,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 ## b204 (2026-10-17 KST) — 로고 수정 아이콘이 글자보다 낮아 보이던 것
 - 상자·잉크 범위 중심은 맞았지만(차이 0.2px) 수정 아이콘(위 뾰족·아래 둥글고 진함)의 밝기 무게중심이 디지털 글자보다 1.2px(모바일 0.85px) 낮았음 → `header .logo .leaf{transform:translateY(-1px)}`. 무게중심 차이 0.22px / -0.15px(헤드리스 3x, 라이브 측정 스크립트 /home/box/work/b204/cen.py).
 - 캐시: pages.dev = Cache-Control no-cache(_headers), CSS/JS 는 index.html 안에 인라인이라 따로 캐시될 파일 없음. github.io 는 GitHub 기본 max-age=600(최대 10분).
+
+## b203 (2026-10-17 KST) — 검색용 제목·설명 + 로그인 전 첫 화면(소개 + 실제 가격 카드)
+- 제목 "메보기 - 메이플 보스 수익·결정석 기록 사이트"(title·og·twitter), 설명 "메이플스토리 보스 수익 계산과 주간 보스 기록을 한 번에. …무료로 제공합니다."(description·og·twitter). 숨은 h1·noscript 도 같은 제목, 키워드(보스 수익 계산·주간 보스 기록·득템 기록·결정석 가격표).
+- `emptyView()` 아래 `landingHtml()`: 소개 카드(.seoland, 기능 3줄) + `.landprices` 에 **실제 가격 카드 두 장** `priceCard({kind:"cry"|"item",land:true})` — 읽기 전용(종류 버튼은 제목 1개만·누를 수 없음, 내가 잡는 보스만·패치 후 탭 없음, 관리자 버튼 없음), 결정석 = 공식 가격 전체(priceRows0, 테섭 예정 표시는 그대로), 아이템 = 공용 시세(itemPriceLoad, 로그인 없이 /api/prices; github.io 는 서버 없음 → "- 메소"). 목록 높이 고정 560px(모바일 420px) 스크롤.
+- 규칙 10: 보이는 캐릭터가 없으면(로그인 전·로그인했지만 캐릭터 없음·키 없는 계정뿐) 모든 탭이 같은 emptyView(이제 소개+가격 카드 포함). 로그인했지만 캐릭터 없는 경우에도 가격 카드를 보여 줌(쓸모 있는 정보라서).
+- 가격 카드 다시 그리기 `repaintPrices()` = 모든 .pricecard(첫 화면 카드는 data-land 종류 유지), `fitPriceCard()` = 카드마다. 빈 화면 그릴 때도 fitPriceCard.
+- 테스트 test_b203(새), test_tracker65(빈 화면 = 빈 카드 + .landing), test_tracker80(제목).

@@ -27,7 +27,7 @@ try:
             pg.evaluate(f"tab='{t}'; render()"); pg.wait_for_timeout(250)
             if t=='live':  # b161: 라이브 탭은 캐릭터 없어도 영상/목록을 보여줌(b87 예외)
                 check(f'{nm}/live: live view (not empty prompt)', pg.evaluate("!!document.querySelector('#view .lvgrid') && !document.querySelector('#view .card.empty')")); continue
-            ok=pg.evaluate("(()=>{const v=document.querySelector('#view'); return v.children.length===1 && !!v.querySelector('.card.empty .big') && v.innerText.includes('캐릭터를 추가해 보세요') && !!v.querySelector('#importAccBtn')})()")
+            ok=pg.evaluate("(()=>{const v=document.querySelector('#view'); return [...v.children].filter(x=>!x.matches('.landing')).length===1 && v.querySelectorAll('.landing').length<=1 /* b203: 첫 화면 소개+가격 카드 */ && !!v.querySelector('.card.empty .big') && v.innerText.includes('캐릭터를 추가해 보세요') && !!v.querySelector('#importAccBtn')})()")
             check(f'{nm}/{t}: empty-state prompt only', ok, pg.inner_text('#view')[:120])
             if nm=='keyless' and t=='guild': pg.screenshot(path='/workspace/maple-boss-tracker/oct12y_b87_test_guild_empty.png')
             if nm=='empty' and t=='loot': pg.screenshot(path='/workspace/maple-boss-tracker/oct12y_b87_test_loot_empty.png')

@@ -24,7 +24,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",ST); pg.reload(); pg.wait_for_timeout(800)
     shot(pg.locator('header'),'header')
-    check('사이트 이름', pg.title()=='메보기 - 메이플 보스 기록 사이트', pg.title())
+    check('사이트 이름', pg.title()=='메보기 - 메이플 보스 수익·결정석 기록 사이트', pg.title())
     check("왼쪽 위 '메보기'", pg.inner_text('header .logo').strip()=='메보기', pg.inner_text('header .logo'))
     fav=pg.evaluate("document.querySelector('link[rel=icon]').href.slice(0,60)==document.querySelector('header .logo img').src.slice(0,60)?'':'x'")
     check('파비콘·로고 = 강렬한 힘의 결정 (주간) (logo.json 재생성)', pg.evaluate("document.querySelector('header .logo img').naturalWidth")>0)
