@@ -5502,7 +5502,7 @@ function itemPricePut(P){ if(!P||typeof P!=='object'||!Object.keys(P).length) re
   for(const [k,o] of Object.entries(P)) if(o&&+o.p>0&&+o.t>0&&(!cur[k]||+cur[k].t<=+o.t)) cur[k]={p:+o.p,t:+o.t}; // 0·빈 값 무시, 더 새 것만
   try{ localStorage.setItem(ITEM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
 const repaintPriceCard=()=>repaintPrices();
-async function itemPriceLoad(){ if(!SV_ON) return; /* b112: 공용 시세 — 로그인 없이도 */ itemPriceLoad._at=Date.now(); try{ const r=await svFetch('/api/prices',{noAuth:true}); itemPricePut(r.prices); if(pcKind==='item') repaintPriceCard(); }catch(e){} }
+async function itemPriceLoad(){ if(!SV_ON) return; /* b112: 공용 시세 — 로그인 없이도 */ itemPriceLoad._at=Date.now(); try{ const r=await svFetch('/api/prices',{noAuth:true}); itemPricePut(r.prices); repaintPriceCard(); /* b203: 첫 화면 아이템 카드도 (예전엔 아이템 탭이 열려 있을 때만) */ }catch(e){} }
 function admPriceSave(P){ const cur=admPrices(); for(const [k,o] of Object.entries(P||{})) if(o&&+o.p>0&&(!cur[k]||cur[k].t<=o.t)) cur[k]={p:+o.p,t:+o.t}; try{ localStorage.setItem(ADM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
 /* b112: 다른 기기에서 갱신한 시세를 이 기기로 — 예전엔 관리자 창을 열 때만 받아서, 새 기기(집 PC)에선 수익 기록 창이 빈 칸('0')이었음. 이제 로그인 확인 때마다 받음.
  * 받은 값이 비었거나 실패하면 아무것도 안 바꿈(admPriceSave 는 0·빈 값을 무시하고 더 새 시각만 덮음) */
