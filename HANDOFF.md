@@ -1645,3 +1645,18 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 아이템 가격 표(로그인·로그인 전 첫 화면 모두 priceCard 공용): '가격 확인 날짜 :' → '가격 확인 :', 그 아래 '출처 : maple.ai.kr 아이템 시세 추적'(링크 https://maple.ai.kr/blog/item-price-tracker-2026 = worker MAI_URL, 새 탭 rel=noopener). priceSrcHtml(cls) 공용.
 - 수익을 기록할까요? 창: 시세가 있을 때 '최저가 측정 시간 - …' → '가격 확인 : …' + 아래 같은 출처 링크(.rvsrc). 시세 없으면 예전 안내 문구만.
 - 테스트: test_b206(새), tracker68/87 문구 갱신. tracker80 실패는 원래부터(origin/main 에서도 같음).
+
+## b207 (2026-10-17 KST) — 아이템 시세 매일 자동 갱신 (Worker, maple.ai.kr)
+- 출처 https://maple.ai.kr/blog/item-price-tracker-2026 (주인 허락 받음). 일별 기록 {date,items}, 하루 1번 시간 불규칙(본 것: 오후). 조사: /workspace/research_price/.
+- server/worker.js maiCron: 매 1분 cron 중 **KST :00·:30 (30분마다, 사용자 결정)** 에만, 그리고 오늘(KST) 새 날짜를 아직 못 찾았을 때만 1번 요청. 저장한 날짜보다 새 시세 날짜를 찾으면 그날은 끝 → 다음 00:00 KST 부터 다시.
+  - 예의: If-None-Match(저장한 ETag) → 안 바뀌면 304(0바이트) · User-Agent 'bossmaple-price-sync/1.0 (+https://bossmaple.pages.dev; …)'.
+  - 가격은 **시세 날짜가 바뀔 때만** 바뀜(ETag 만 바뀐 페이지 수정 = 가격 그대로, ETag 만 저장).
+  - admin_prices 쓰기 = 페이지 PUT 과 같은 모양 {키:{p:메소,t}} — MAI_CODE/maiNorm/maiMap 을 Worker 로 복사(app.js 에도 그대로 있음, 바꾸면 둘 다). 짝 있는 아이템만 t=처음 본 시각으로 덮고, 손으로 넣은 다른 아이템은 그대로. 사이트 '가격 확인 :' = 그 시각.
+  - meta.mai_cache = {date, items, fetchedAt(그 날짜 처음 본 시각), etag, foundDay, checkedAt, auto}. KST 날짜 잠금 없앰(b104 버그: 아침에 누르면 그날 내내 어제 값).
+  - meta.mai_seen = [{date, at, by:'cron'|'admin'}] 최근 60개 = 실제 올라온 시각 기록.
+  - 처음 배포 직후 1번(mai_cache.auto 없음)은 :00/:30 기다리지 않고 바로 확인.
+  - 서브요청 예산: 시세 확인 회차는 공지 목록 조회 FEED_MAX_LIST-1(43) → 유튜브·넥슨 라이브 + 43 + 상세 4 + 시세 1 ≤ 50.
+  - parseMai 빠르게: 740KB 전체 치환 없이 날짜 표시만 훑고 가장 새 날짜 1개만 JSON 해석(로컬 ~1ms), 저장 날짜보다 새것 없으면 해석 안 함.
+- /api/admin/maple-prices(관리자 최저가 갱신): 매번 ETag 조건부 요청(304면 저장한 것, cached:true), 새 날짜면 서버가 admin_prices 도 바로 씀(maiRefresh 공용).
+- 테스트: test_b207(모의 fetch·D1: 첫 확인·그날 끝·:00/:30·304·ETag만 바뀜·다음 날 새 날짜·손 입력 유지·mai_seen·파서 속도), test_server_b91 갱신(UA·304·admin_prices).
+- 참고: server/node_modules 를 설치하면 wrangler dev 테스트(tracker23/25/46/49/51/52 등)가 SKIP 대신 실제로 돎 — 23/25/49/52 는 b207 전 코드에서도 실패, 46/51 은 병렬에서 흔들림(46 은 예전 worker.js 로도 같은 실패).
