@@ -318,7 +318,7 @@ const maiNorm = n => String(n || '').replace(/[\s:()\[\]·\-]/g, '').replace(/�
 export function maiMap(items, t) { const P = {}, by = {}; for (const [n, o] of Object.entries(items || {})) by[maiNorm(n)] = o;
   for (const [k, c] of Object.entries(MAI_CODE)) { const v = +((items?.[c] || by[maiNorm(c)])?.main); if (v > 0) P[k] = { p: Math.round(v * 1e8), t }; } return P; }
 /* b207: maple.ai.kr 시세 자동 갱신 (주인 허락 받음, 예의 있게).
- *  - cron 매 1분 중 KST 분 %10==0 일 때만, 그리고 오늘(KST) 새 날짜를 아직 못 찾았을 때만 1번 요청. 찾으면 그날은 끝, 다음 00:00 KST 부터 다시.
+ *  - cron 매 1분 중 KST 분 %30==0(:00·:30, 사용자 결정) 일 때만, 그리고 오늘(KST) 새 날짜를 아직 못 찾았을 때만 1번 요청. 찾으면 그날은 끝, 다음 00:00 KST 부터 다시.
  *  - If-None-Match(저장한 ETag) → 안 바뀌면 304(0바이트). 설명하는 User-Agent.
  *  - 가격 = 시세 데이터의 날짜가 저장한 것보다 새로울 때만 바꿈(다른 페이지 수정으로 ETag 만 바뀌면 가격 그대로).
  *  - admin_prices: 짝이 있는 아이템만 {p, t=처음 본 시각} 으로 덮음(관리자가 손으로 넣은 다른 아이템은 그대로). → 사이트 '가격 확인 :' = 처음 본 시각.
@@ -326,32 +326,34 @@ export function maiMap(items, t) { const P = {}, by = {}; for (const [n, o] of O
  *  - mai_seen = [{date, at, by}] 새 날짜를 처음 본 시각 기록(최근 60개) → 실제 올라오는 시각 파악용. */
 const MAI_UA = 'bossmaple-price-sync/1.0 (+https://bossmaple.pages.dev; daily item price sync with owner permission; contact via site)';
 const kday = t => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
-const maiDue = t => new Date(t + 9 * 3600e3).getUTCMinutes() % 10 === 0;
+const maiDue = t => new Date(t + 9 * 3600e3).getUTCMinutes() % 30 === 0; // b207: 사용자 결정 = 30분마다(KST :00 · :30)
 async function metaGet(env, k) { const r = await env.DB.prepare('SELECT v FROM meta WHERE k=?').bind(k).first(); try { return r ? JSON.parse(r.v) : null; } catch (e) { return null; } }
 const metaPut = (env, k, v) => env.DB.prepare('INSERT INTO meta (k,v) VALUES (?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v').bind(k, JSON.stringify(v)).run();
 export async function maiRefresh(env, now = Date.now(), by = 'cron') {
   const cv = (await metaGet(env, 'mai_cache')) || {};
   const h = { 'User-Agent': MAI_UA, Accept: 'text/html', 'Accept-Language': 'ko-KR,ko;q=0.9' }; if (cv.etag && cv.date) h['If-None-Match'] = cv.etag;
   const r = await fetch(env.MAI_URL || MAI_URL, { headers: h });
-  if (r.status === 304) { cv.checkedAt = now; await metaPut(env, 'mai_cache', cv); return { status: 'same', cv }; }
+  if (r.status === 304) { cv.checkedAt = now; cv.auto = 1; await metaPut(env, 'mai_cache', cv); return { status: 'same', cv }; }
   if (!r.ok) throw new HttpError(502, 'mai_http', `maple.ai.kr 응답 ${r.status}`);
   const out = parseMai(await r.text(), cv.items ? cv.date : '');
   if (!out) throw new HttpError(502, 'mai_parse', 'maple.ai.kr 시세 표를 읽지 못했습니다 (페이지 구조가 바뀌었을 수 있음)');
-  cv.etag = r.headers.get('ETag') || ''; cv.checkedAt = now;
+  cv.etag = r.headers.get('ETag') || ''; cv.checkedAt = now; cv.auto = 1;
   if (!out.items) { await metaPut(env, 'mai_cache', cv); return { status: 'nochange', cv }; } // 페이지만 바뀜 → 가격 그대로
   const P = maiMap(out.items, now), cur = (await metaGet(env, 'admin_prices')) || {};
   for (const [k, o] of Object.entries(P)) cur[k] = o;
   const seen = (await metaGet(env, 'mai_seen')) || []; seen.push({ date: out.date, at: now, by }); while (seen.length > 60) seen.shift();
-  const nv = { date: out.date, items: out.items, fetchedAt: now, etag: cv.etag, foundDay: kday(now), checkedAt: now };
+  const nv = { date: out.date, items: out.items, fetchedAt: now, etag: cv.etag, foundDay: kday(now), checkedAt: now, auto: 1 };
   await env.DB.batch([env.DB.prepare("INSERT INTO meta (k,v) VALUES ('admin_prices',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(cur)),
     env.DB.prepare("INSERT INTO meta (k,v) VALUES ('mai_cache',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(nv)),
     env.DB.prepare("INSERT INTO meta (k,v) VALUES ('mai_seen',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(seen))]);
   console.log('mai new date', out.date, Object.keys(P).length);
   return { status: 'new', cv: nv, prices: cur };
 }
-export async function maiCron(env, now = Date.now()) {
-  if (!maiDue(now) || env.MAI_OFF) return 'skip';
-  const cv = await metaGet(env, 'mai_cache'); if (cv && cv.foundDay === kday(now)) return 'done_today';
+/* 처음 배포 직후 1번(mai_cache 에 auto 표시가 없을 때 = 자동 확인을 한 번도 안 함)은 :00/:30 을 기다리지 않고 바로 확인 */
+export async function maiCron(env, now = Date.now(), cv0) {
+  if (env.MAI_OFF) return 'skip';
+  const cv = cv0 !== undefined ? cv0 : await metaGet(env, 'mai_cache'); if (!maiDue(now) && cv && cv.auto) return 'skip';
+  if (cv && cv.foundDay === kday(now)) return 'done_today';
   return (await maiRefresh(env, now, 'cron')).status;
 }
 
@@ -854,5 +856,8 @@ export default {
       return json(500, { error: 'server', message: '서버 오류' }, cors);
     }
   },
-  async scheduled(event, env, ctx) { ctx.waitUntil(liveCron(env).catch(e => console.log('liveCron', String(e && e.stack || e)))); const now = Date.now(), mai = maiDue(now); ctx.waitUntil(feedCron(env, now, mai ? FEED_MAX_LIST - 1 : FEED_MAX_LIST).catch(e => console.log('feedCron', String(e && e.stack || e)))); if (mai) ctx.waitUntil(maiCron(env, now).catch(e => console.log('maiCron', String(e && e.stack || e)))); }, // b207: 10분마다 maple.ai.kr 시세(그 회차는 공지 목록 조회 1번 덜 = 서브요청 50 안) // b157: 매 1분 라이브 감지 · b170: 넥슨 공지 빠른 감시
+  async scheduled(event, env, ctx) { ctx.waitUntil(liveCron(env).catch(e => console.log('liveCron', String(e && e.stack || e)))); const now = Date.now();
+    ctx.waitUntil((async () => { let cv = null; try { cv = await metaGet(env, 'mai_cache'); } catch (e) {} const mai = !env.MAI_OFF && (maiDue(now) || !(cv && cv.auto));
+      await Promise.all([feedCron(env, now, mai ? FEED_MAX_LIST - 1 : FEED_MAX_LIST).catch(e => console.log('feedCron', String(e && e.stack || e))),
+        mai ? maiCron(env, now, cv).catch(e => console.log('maiCron', String(e && e.stack || e))) : null]); })()); }, // b207: 30분마다 maple.ai.kr 시세(그 회차는 공지 목록 조회 1번 덜 = 서브요청 50 안) // b157: 매 1분 라이브 감지 · b170: 넥슨 공지 빠른 감시
 };

@@ -17,13 +17,15 @@ def req(m,path,body=None,tok=None):
 # b104: 가짜 maple.ai.kr 페이지 (Next.js 페이지 안의 escaped JSON 일별 기록 두 개)
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-MAI_HITS=[]
+MAI_HITS=[]; MAI_INM=[]
 MAI_HTML=('<html><script>self.__next_f.push([1,"x:{\\"data\\":[{\\"date\\":\\"2026-10-11\\",\\"items\\":{\\"마깃안\\":{\\"challenger\\":40,\\"main\\":28}}},'
           '{\\"date\\":\\"2026-10-12\\",\\"items\\":{\\"마깃안\\":{\\"challenger\\":41,\\"main\\":29.28},\\"에스텔라\\":{\\"challenger\\":4.4},\\"리4\\":{\\"main\\":39}}}]}"])</script></html>')
 class MH(BaseHTTPRequestHandler):
     def log_message(self,*a): pass
     def do_GET(self):
-        MAI_HITS.append(self.headers.get('User-Agent','')); b=MAI_HTML.encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
+        MAI_HITS.append(self.headers.get('User-Agent','')); MAI_INM.append(self.headers.get('If-None-Match',''))
+        if self.headers.get('If-None-Match')=='"e1"': self.send_response(304); self.end_headers(); return
+        b=MAI_HTML.encode(); self.send_response(200); self.send_header('ETag','"e1"'); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
 MS=ThreadingHTTPServer(('127.0.0.1',8892),MH); threading.Thread(target=MS.serve_forever,daemon=True).start()
 ms=MN.start(NP); dev=cf_dev.Dev(WP,NP,extra={'MAI_URL':'http://127.0.0.1:8892/blog/item-price-tracker-2026'})
 try:
@@ -54,8 +56,9 @@ try:
     check('b102: after /api/unlink of the alt → admin shows 0 alts (even though state still has the slot)', A3['alts']==[], A3['alts'])
     s,r=req('GET','/api/admin/maple-prices',tok=TB); check('b104: non-admin maple-prices → 403', s==403, (s,r))
     s,r=req('GET','/api/admin/maple-prices',tok=TA); check('b104: latest date only, 본섭(main) only', s==200 and r['date']=='2026-10-12' and r['items']=={'마깃안':{'main':29.28},'리4':{'main':39}} and r['fetchedAt']>0, r)
-    check('b104: one outside request with browser-like UA', len(MAI_HITS)==1 and 'Mozilla' in MAI_HITS[0], MAI_HITS)
-    s,r2=req('GET','/api/admin/maple-prices',tok=TA); check('b104: same KST day → cached, no 2nd outside request', s==200 and r2.get('cached') and len(MAI_HITS)==1, (len(MAI_HITS),r2.get('cached')))
+    check('b207: one outside request with descriptive UA', len(MAI_HITS)==1 and 'bossmaple' in MAI_HITS[0], MAI_HITS)
+    s,r2=req('GET','/api/admin/maple-prices',tok=TA); check('b207: again → conditional GET(If-None-Match) → 304 → cached same data (no same-day lock)', s==200 and r2.get('cached') and len(MAI_HITS)==2 and MAI_INM[1]=='"e1"' and r2['date']=='2026-10-12' and r2['fetchedAt']==r['fetchedAt'], (MAI_INM,r2))
+    s,r3=req('GET','/api/prices'); check('b207: server wrote admin_prices from maple.ai.kr (eye=29.28억, ring_r4=39억, t=first seen)', r3['prices'].get('eye')=={'p':2928000000,'t':r['fetchedAt']} and r3['prices'].get('ring_r4',{}).get('p')==3900000000 and r3['prices'].get('belt')=={'p':3900000000,'t':2000}, r3)
 finally:
     dev.stop(); ms.shutdown()
 print('FAILS:',fails); sys.exit(1 if fails else 0)
