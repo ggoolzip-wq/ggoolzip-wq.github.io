@@ -1727,6 +1727,16 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 [data-theme=light] .revpanel .rc-g,[data-theme=light] .revpanel .rc-g *{color:#1a8a43!important}
 [data-theme=light] .revpanel .rc-y,[data-theme=light] .revpanel .rc-y *{color:#a87400!important}
 [data-theme=light] .revpanel .rp-left,[data-theme=light] .revpanel .rp-left *{color:#d42a2a!important}
+/* b200: 헤더 세로 가운데 맞춤 — 로고 아이콘(34px) 중심선에 로고 글자·관리자·로그아웃·테마 버튼을 모두 맞춤.
+ * 예전: .gwrap 이 block 이라 버튼이 글자 baseline(이모지 👑 글꼴 높이에 따라 줄 높이가 달라짐)에 붙어 위로 뜨고, 좁은 화면에선 관리자/로그아웃이 두 줄로 쌓임.
+ * 지금: .gwrap = flex 가운데 정렬·줄바꿈 없음, 헤더 버튼 = 높이 34px inline-flex(글꼴과 무관), 디지털 로고 글자는 잉크 중심이 1.5px 높아 그만큼 내림 */
+header .hwrap{align-items:center}
+header .gwrap{display:flex;align-items:center;flex-wrap:nowrap;align-self:center}
+header .hbtn{display:inline-flex;align-items:center;justify-content:center;height:34px;box-sizing:border-box;line-height:1;padding-top:0;padding-bottom:0;vertical-align:middle}
+header .thbtn{align-self:center}
+header .logo{align-self:center;line-height:1}
+header .logo-d .logo-g{transform:translateY(1.5px)}
+@media (max-width:600px){header .logo-d .logo-g{transform:translateY(1px)} header .hbtn{padding-left:8px;padding-right:8px} header .admhdr{margin-right:4px}}
 </style>
 </head>
 <body>
