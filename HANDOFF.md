@@ -1622,3 +1622,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 열 순서 순위·아이템·**비율**·횟수. 비율 = 그 아이템 횟수 / 전체 상자깡 횟수(모든 횟수 합), 소수 1자리(`cbPct`), 0개 = 0%, 전체 0 = "-". 표 크기·줄 높이 그대로(rankTable num 열).
 - tests/run_par.py: 로그 읽을 때 errors=replace(깨진 UTF-8 로그로 전체가 죽던 문제).
 - 테스트 test_tracker41 (b202 체크 2개), 스크린샷 /workspace/b202_chaos.png.
+
+## b204 (2026-10-17 KST) — 로고 수정 아이콘이 글자보다 낮아 보이던 것
+- 상자·잉크 범위 중심은 맞았지만(차이 0.2px) 수정 아이콘(위 뾰족·아래 둥글고 진함)의 밝기 무게중심이 디지털 글자보다 1.2px(모바일 0.85px) 낮았음 → `header .logo .leaf{transform:translateY(-1px)}`. 무게중심 차이 0.22px / -0.15px(헤드리스 3x, 라이브 측정 스크립트 /home/box/work/b204/cen.py).
+- 캐시: pages.dev = Cache-Control no-cache(_headers), CSS/JS 는 index.html 안에 인라인이라 따로 캐시될 파일 없음. github.io 는 GitHub 기본 max-age=600(최대 10분).

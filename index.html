@@ -1737,6 +1737,9 @@ header .thbtn{align-self:center}
 header .logo{align-self:center;line-height:1}
 header .logo-d .logo-g{transform:translateY(1.5px)}
 @media (max-width:600px){header .logo-d .logo-g{transform:translateY(1px)} header .hbtn{padding-left:8px;padding-right:8px} header .admhdr{margin-right:4px}}
+/* b204: 로고 수정 아이콘이 글자보다 낮아 보임 — 상자·잉크 범위는 맞지만 수정(위가 뾰족, 아래가 둥글고 진함)의 밝기 무게중심이 글자보다 1~1.2px 낮음(헤드리스 3x 측정).
+ * 아이콘만 1px 올려 무게중심을 맞춤(transform, 레이아웃 그대로) */
+header .logo .leaf{transform:translateY(-1px)}
 </style>
 </head>
 <body>
