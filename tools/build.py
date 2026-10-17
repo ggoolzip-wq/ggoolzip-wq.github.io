@@ -28,7 +28,7 @@ if os.path.exists(os.path.join(SRC, 'worldicons.json')):  # 공식 월드 아이
 css = rd('style_v1.css').replace('</style>', rd('extra.css') + '</style>')
 LOGO = js("logo.json")  # b109: 강렬한 힘의 결정 (주간) item 4001928 (assets/ringicons/4001928.png) — 예전 주황버섯
 head = ('<!DOCTYPE html>\n<html lang="ko" data-theme="dark">\n<head>\n<meta charset="UTF-8">\n'
-        '<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>메보기 - 메이플 보스 기록 사이트</title>\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>메보기 - 메이플 보스 수익·결정석 기록 사이트</title>\n'
         f'<link rel="icon" type="image/png" sizes="32x32" href="{LOGO["s32"]}">\n'
         f'<link rel="icon" type="image/png" sizes="16x16" href="{LOGO["s16"]}">\n'
         '<link rel="apple-touch-icon" href="apple-touch-icon.png">\n'
@@ -37,9 +37,9 @@ head = ('<!DOCTYPE html>\n<html lang="ko" data-theme="dark">\n<head>\n<meta char
         '<meta name="google-site-verification" content="1vcb6ZmBor2M4xfKsBwcPVDYSjOmd3zo4ZzM9A7lA4E" />\n<meta name="naver-site-verification" content="a7d0315262c0c08150e38a3a696a4d0f54fae152" />\n'  # b199: 서치 콘솔·서치어드바이저 소유 확인
         '<link rel="canonical" href="https://bossmaple.pages.dev/">\n'
         '<meta property="og:type" content="website">\n<meta property="og:site_name" content="메보기">\n<meta property="og:locale" content="ko_KR">\n'
-        '<meta property="og:title" content="메보기 - 메이플 보스 기록 사이트">\n<meta property="og:description" content="메이플스토리 주간 보스·검은 마법사(월간) 처치와 결정석 수익, 득템(보스 드롭 아이템)을 캐릭터별로 기록하는 무료 사이트. 넥슨 Open API로 보스 클리어 자동 체크, 주간 메소 그래프, 결정석·아이템 가격표 제공.">\n'
+        '<meta property="og:title" content="메보기 - 메이플 보스 수익·결정석 기록 사이트">\n<meta property="og:description" content="메이플스토리 주간 보스·검은 마법사(월간) 처치와 결정석 수익, 득템(보스 드롭 아이템)을 캐릭터별로 기록하는 무료 사이트. 넥슨 Open API로 보스 클리어 자동 체크, 주간 메소 그래프, 결정석·아이템 가격표 제공.">\n'
         '<meta property="og:url" content="https://bossmaple.pages.dev/">\n<meta property="og:image" content="https://bossmaple.pages.dev/og.png">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
-        '<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:title" content="메보기 - 메이플 보스 기록 사이트">\n<meta name="twitter:description" content="메이플스토리 주간 보스·검은 마법사(월간) 처치와 결정석 수익, 득템(보스 드롭 아이템)을 캐릭터별로 기록하는 무료 사이트. 넥슨 Open API로 보스 클리어 자동 체크, 주간 메소 그래프, 결정석·아이템 가격표 제공.">\n<meta name="twitter:image" content="https://bossmaple.pages.dev/og.png">\n')
+        '<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:title" content="메보기 - 메이플 보스 수익·결정석 기록 사이트">\n<meta name="twitter:description" content="메이플스토리 주간 보스·검은 마법사(월간) 처치와 결정석 수익, 득템(보스 드롭 아이템)을 캐릭터별로 기록하는 무료 사이트. 넥슨 Open API로 보스 클리어 자동 체크, 주간 메소 그래프, 결정석·아이템 가격표 제공.">\n<meta name="twitter:image" content="https://bossmaple.pages.dev/og.png">\n')
 body = rd('body.html').replace('__LOGO64__', LOGO['s64'])
 open(OUT, 'w', encoding='utf-8').write(head + css + '\n' + body + '\n<script>\n' + s + '</script>\n</body>\n</html>\n')
 print('built', OUT, os.path.getsize(OUT), 'bytes')

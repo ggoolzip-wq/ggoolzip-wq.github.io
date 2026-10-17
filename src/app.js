@@ -1491,7 +1491,7 @@ function charEnter(){ const id=S.activeId, v=$('#view'); if(enterFor===id) retur
 function render(){ paintThemeBtn(); tirDefs(); logoDigital(); orbitFont(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
-  if(!vchars().length&&tab!=='live'){ $('#view').innerHTML=emptyView(); renderResetInfo(); return; } /* b161: 라이브 탭은 캐릭터·로그인 없어도 보임 */
+  if(!vchars().length&&tab!=='live'){ $('#view').innerHTML=emptyView(); fitPriceCard(); renderResetInfo(); return; } /* b161: 라이브 탭은 캐릭터·로그인 없어도 보임 */
   ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),guild:renderGuild,live:renderLive})[tab](); if(tab==='boss'){ fitPriceCard(); charEnter(); } if(tab==='loot') fitMiss(); renderResetInfo(); }
 /* b108: 🔄 옆 상태 글자 — 동기화 중 '새로고침 중입니다..'(회색), 끝나면 초록 '새로고침 완료! HH:mm'(KST, 계속 표시),
  * 일부 캐릭터·계정 오류면 주황 '일부 실패 HH:mm', 전체 실패면 빨강 '새로고침 실패 HH:mm' (오류 알림 toast 는 예전 그대로). 페이지 열 때 동기화도 같음 */
@@ -1715,11 +1715,17 @@ function renderResetInfo(){
 }
 function emptyView(){ return `<div class="card empty"><div class="big">🍁</div><h2 style="justify-content:center">캐릭터를 추가해 보세요</h2><p class="muted">넥슨 Open API 키로 내 계정의 본캐·부캐를 한 번에 불러올 수 있어요.</p>
   <div class="toolbar" style="justify-content:center"><button class="btn" id="importAccBtn">+ 캐릭터 추가 (API 키로 불러오기)</button></div>
-  <div class="empty-attrib muted">Data based on NEXON Open API</div></div>`; }
+  <div class="empty-attrib muted">Data based on NEXON Open API</div></div>${landingHtml()}`; }
+/* b203: 로그인 전 첫 화면(= 보이는 캐릭터 없을 때 emptyView, 규칙 10 — 로그인했지만 캐릭터가 없을 때도 같은 화면) — 사이트 소개 + 실제 결정석/아이템 가격 카드(읽기 전용, 공용 가격) */
+function landingHtml(){ return `<div class="landing">
+  <section class="card seoland" aria-labelledby="landH"><h2 id="landH">메이플스토리 보스 수익·결정석 기록, 메보기</h2>
+   <p class="muted">주간 보스와 검은 마법사를 잡을 때마다 결정석 수익을 캐릭터별로 자동 계산해 주는 무료 사이트예요. 넥슨 Open API 키로 캐릭터를 불러오면 게임 스케줄러의 클리어가 자동으로 체크돼요.</p>
+   <ul class="seofeat"><li><b>보스 수익 계산</b> — 이번 주 수익, 남은 결정석, 검마 결정석</li><li><b>주간 보스 기록</b> — 캐릭터별 처치 현황과 주간 메소 그래프</li><li><b>득템 기록</b> — 반지 상자·블랙 아이템 드롭과 아이템 판매 수익</li></ul></section>
+  <div class="landprices">${priceCard({kind:'cry',land:true})}${priceCard({kind:'item',land:true})}</div></div>`; }
 
 function renderBoss(){
   const v=$('#view'); const c=activeChar();
-  if(!c){ v.innerHTML=emptyView(); return; }
+  if(!c){ v.innerHTML=emptyView(); fitPriceCard(); return; }
   const r=cRev(c); const a=COMMITTED(allRevenue);
   const lim=S.settings.weeklyLimit;
   const bosses=BOSSES.filter(b=>b.type===bossFilter);
@@ -1831,7 +1837,7 @@ function revItems(){ const set=new Set();
   BOSSES.forEach(b=>b.diffs.forEach(d=>dropsFor(b,d).forEach(k=>{ if(k==='chaosbox') CHAOS_PICK.forEach(x=>set.add('cb:'+x)); else if(isRing(k)){ set.add('ring:r4'); set.add('ring:c4'); set.add('g_life'); } else set.add(k); })));
   const seen=new Set(); return [...set].sort(itemCmp).filter(k=>{ const id=priceId(k); if(seen.has(id)) return false; seen.add(id); return true; }); } /* b114: 칠흑 상자 선택(cb:lcm)과 직접 드롭(lcm)은 같은 아이템·같은 시세 → 한 번만 */
 const priceId = k => String(k||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1');
-document.addEventListener('click',e=>{ const t=e.target.closest('[data-pckind]'); if(!t) return; pcKind=t.dataset.pckind; const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } });
+document.addEventListener('click',e=>{ const t=e.target.closest('[data-pckind]'); if(!t) return; pcKind=t.dataset.pckind; repaintPrices(); });
 function fullExpected(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit).reduce((s,x)=>s+x.value,0);
   const m=BOSSES.filter(b=>b.type==='monthly'&&c.bosses[b.id]?.enabled).reduce((s,b)=>{ const cfg=c.bosses[b.id], d=b.diffs.includes(cfg.diff)?cfg.diff:b.diffs[0]; return s+Math.floor(price(b,d)/curParty(c,b.id)); },0);
   return w+m; }
@@ -1844,27 +1850,32 @@ function afterPatchHtml(){
     <div class="pa-total"><span>합계</span><b>${meso(sum('next'))}${dlt(sum('next')-sum('now'),sum('now'))}</b></div>
     <div class="pa-note muted">주간 상위 ${S.settings.weeklyLimit}개 + 월간 보스, 테섭 예정 가격으로 계산</div>`;
 }
-document.addEventListener('change',e=>{ if(e.target.id!=='pcMine') return; pcMine=e.target.checked; localStorage.setItem('mapleBossTracker.pcMine',pcMine?'1':'0'); const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } });
-document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]'); if(!t) return; pcTab=t.dataset.pctab; const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } });
+document.addEventListener('change',e=>{ if(e.target.id!=='pcMine') return; pcMine=e.target.checked; localStorage.setItem('mapleBossTracker.pcMine',pcMine?'1':'0'); repaintPrices(); });
+document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]'); if(!t) return; pcTab=t.dataset.pctab; repaintPrices(); });
 
 // 결정석 가격 줄이 안 들어가면 자르지 않고 글자를 조금씩 줄임 (최소 .56rem)
-function fitPriceCard(){ const card=document.querySelector('.pricecard'); if(!card||!card.querySelector('.pc-row')) return;
+/* b203: 가격 카드가 여러 개(로그인 전 첫 화면 = 결정석·아이템 두 장)일 수 있음 → 모두 다시 그림·맞춤. data-land = 첫 화면 카드(종류 고정·읽기 전용) */
+function repaintPrices(){ document.querySelectorAll('.pricecard').forEach(el=>{ el.outerHTML=el.dataset.land?priceCard({kind:el.dataset.land,land:true}):priceCard(); }); fitPriceCard(); }
+function fitPriceCard(){ document.querySelectorAll('.pricecard').forEach(fitOnePrice); }
+function fitOnePrice(card){ if(!card||!card.querySelector('.pc-row')) return;
   // 폭이 허락하는 만큼 크게(최대 14px) → 안 들어가면 0.5px씩 줄임(최소 9px). 자르지 않음
   const over=()=>[...card.querySelectorAll('.pc-row')].some(r=>{ const n=r.querySelector('.pc-nm'); return n&&n.scrollWidth>n.clientWidth+0.5; });
   let fs=14; card.style.setProperty('--pcfs',fs+'px'); while(over()&&fs>9){ fs-=0.5; card.style.setProperty('--pcfs',fs+'px'); } }
-function priceCard(){
-  const up=(officialInfo&&officialInfo.upcoming)||{};
+function priceCard(opt={}){ /* b203: opt.kind = 종류 고정, opt.land = 로그인 전 첫 화면(읽기 전용: 종류 버튼 1개만·누를 수 없음, '내가 잡는 보스만'·패치 후 탭 없음) */
+  const kind=opt.kind||pcKind, land=!!opt.land, LA=land?` data-land="${kind}"`:'';
+  const up=(officialInfo&&officialInfo.upcoming)||{}, PR=land?priceRows0:priceRows;
   const row=r=>{ const u=up[r.k]; return `<div class="pc-row${u?' has-up':''}" title="${esc(r.b.name)} ${D[r.d]} — ${r.p.toLocaleString()} 메소${u?` · 테섭 예정 ${u.toLocaleString()} 메소`:''}">${bossPic(r.b,r.d,false)}<span class="pc-nm">${esc(r.b.name)} ${dlvHtml(r.d)}</span><b>${meso(r.p)}${u?`<span class="pc-up">테섭 예정 → ${meso(u)}</span>`:''}</b></div>`; };
-  const kt=`<div class="pc-kind" role="tablist"><button type="button" role="tab" data-pckind="cry" class="${pcKind==='cry'?'on':''}" aria-selected="${pcKind==='cry'}">${miniIcon('ipc')} 결정석 가격</button><button type="button" role="tab" data-pckind="item" class="${pcKind==='item'?'on':''}" aria-selected="${pcKind==='item'}">${itemIcon('genesis')} 아이템 가격</button></div>`;
-  if(pcKind==='item'){ const P=itemPrices();
-    return `<aside class="card pricecard" aria-label="아이템 가격">${kt}
+  const kt0=`<div class="pc-kind" role="tablist"><button type="button" role="tab" data-pckind="cry" class="${pcKind==='cry'?'on':''}" aria-selected="${pcKind==='cry'}">${miniIcon('ipc')} 결정석 가격</button><button type="button" role="tab" data-pckind="item" class="${pcKind==='item'?'on':''}" aria-selected="${pcKind==='item'}">${itemIcon('genesis')} 아이템 가격</button></div>`;
+  const kt=land?`<div class="pc-kind pc-kind-land"><span class="on">${kind==='item'?`${itemIcon('genesis')} 아이템 가격`:`${miniIcon('ipc')} 결정석 가격`}</span></div>`:kt0;
+  if(kind==='item'){ const P=itemPrices();
+    return `<aside class="card pricecard"${LA} aria-label="아이템 가격">${kt}
     <div class="pc-list pc-items">${revItems().map(k=>{ const o=P[priceId(k)]; return `<div class="pc-row pc-it" data-pit="${esc(k)}">${lootIco(k)}<span class="pc-nm">${esc(lootName(k))}</span><b>${o?meso(o.p):'- 메소'}</b></div>`; }).join('')}</div>
     <div class="pc-date muted tiny">가격 확인 날짜 : ${(t=>t?kstStamp(t):'-')(Math.max(0,...Object.values(P).map(o=>+o.t||0)))}</div>
   </aside>`; }
-  return `<aside class="card pricecard" aria-label="결정석 가격">${kt}
-    <div class="pc-head"><label class="pc-mine"><input type="checkbox" id="pcMine"${pcMine?' checked':''}> 내가 잡는 보스만 보기</label></div>
-    ${Object.keys(up).length?`<div class="pc-tabs" role="tablist"><button type="button" role="tab" data-pctab="price" class="${pcTab==='price'?'on':''}">가격</button><button type="button" role="tab" data-pctab="after" class="${pcTab==='after'?'on':''}">패치 후 예상 주간 수익</button></div>`:''}
-    ${Object.keys(up).length&&pcTab==='after'?afterPatchHtml():`<div class="pc-list">${priceRows('weekly').map(row).join('')}${(m=>m.length?`<div class="pc-sep">📅 월간 보스</div>${m.map(row).join('')}`:'')(priceRows('monthly'))}${pcMine&&!priceRows('weekly').length&&!priceRows('monthly').length?'<div class="muted">잡는 보스가 없어요</div>':''}</div>`}
+  return `<aside class="card pricecard"${LA} aria-label="결정석 가격">${kt}
+    ${land?'':`<div class="pc-head"><label class="pc-mine"><input type="checkbox" id="pcMine"${pcMine?' checked':''}> 내가 잡는 보스만 보기</label></div>`}
+    ${!land&&Object.keys(up).length?`<div class="pc-tabs" role="tablist"><button type="button" role="tab" data-pctab="price" class="${pcTab==='price'?'on':''}">가격</button><button type="button" role="tab" data-pctab="after" class="${pcTab==='after'?'on':''}">패치 후 예상 주간 수익</button></div>`:''}
+    ${!land&&Object.keys(up).length&&pcTab==='after'?afterPatchHtml():`<div class="pc-list">${PR('weekly').map(row).join('')}${(m=>m.length?`<div class="pc-sep">📅 월간 보스</div>${m.map(row).join('')}`:'')(PR('monthly'))}${!land&&pcMine&&!priceRows('weekly').length&&!priceRows('monthly').length?'<div class="muted">잡는 보스가 없어요</div>':''}</div>`}
     <div class="pc-foot muted">${esc(priceAutoText())}</div>
   </aside>`;
 }
@@ -1913,7 +1924,7 @@ function lootHtml(items){
   return ks.length?ks.map(k=>`<span class="loot" title="${esc(ITEMS[k].n)}">${itemIcon(k)}<span class="ln">${esc(ITEMS[k].s||ITEMS[k].n)}</span>${items[k]>1?`<b class="lx">x${items[k]}</b>`:''}</span>`).join(''):'<span class="muted">아직 없음</span>';
 }
 function renderSummary(){
-  const v=$('#view'); if(!vchars().length){v.innerHTML=emptyView();return;}
+  const v=$('#view'); if(!vchars().length){v.innerHTML=emptyView();fitPriceCard();return;}
   const R=charRecords();
   v.innerHTML=`<div class="grid"><div class="card"><h2>2026.10.08부터 지금까지의 캐릭터 별 수익 및 득템</h2>
     <div style="overflow-x:auto"><table class="rectab"><thead><tr><th>캐릭터</th><th>월드 · 직업</th><th class="num">주간 수익</th><th class="num">월간 보스</th></tr></thead><tbody>
@@ -3599,7 +3610,7 @@ function itemPrices(){ let a={}; try{ a=JSON.parse(localStorage.getItem(ITEM_PRI
 function itemPricePut(P){ if(!P||typeof P!=='object'||!Object.keys(P).length) return; /* b112: 빈 응답으로 지우지 않음 */ let cur={}; try{ cur=JSON.parse(localStorage.getItem(ITEM_PRICE_KEY)||'{}')||{}; }catch(e){}
   for(const [k,o] of Object.entries(P)) if(o&&+o.p>0&&+o.t>0&&(!cur[k]||+cur[k].t<=+o.t)) cur[k]={p:+o.p,t:+o.t}; // 0·빈 값 무시, 더 새 것만
   try{ localStorage.setItem(ITEM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
-const repaintPriceCard=()=>{ const el=document.querySelector('.pricecard'); if(el){ el.outerHTML=priceCard(); fitPriceCard(); } };
+const repaintPriceCard=()=>repaintPrices();
 async function itemPriceLoad(){ if(!SV_ON) return; /* b112: 공용 시세 — 로그인 없이도 */ itemPriceLoad._at=Date.now(); try{ const r=await svFetch('/api/prices',{noAuth:true}); itemPricePut(r.prices); if(pcKind==='item') repaintPriceCard(); }catch(e){} }
 function admPriceSave(P){ const cur=admPrices(); for(const [k,o] of Object.entries(P||{})) if(o&&+o.p>0&&(!cur[k]||cur[k].t<=o.t)) cur[k]={p:+o.p,t:+o.t}; try{ localStorage.setItem(ADM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
 /* b112: 다른 기기에서 갱신한 시세를 이 기기로 — 예전엔 관리자 창을 열 때만 받아서, 새 기기(집 PC)에선 수익 기록 창이 빈 칸('0')이었음. 이제 로그인 확인 때마다 받음.
