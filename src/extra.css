@@ -1636,3 +1636,8 @@ header .logo .logo-d{display:flex;align-items:center}
 @media(max-width:760px){.landprices{grid-template-columns:1fr}}
 .landprices .pc-list{height:560px;max-height:none}
 @media(max-width:760px){.landprices .pc-list{height:420px}}
+/* b206: 아이템 시세 출처 줄(아이템 가격 표·수익을 기록할까요? 창) — 위 '가격 확인' 줄과 같은 글씨, 링크는 밑줄+강조색 */
+.pricecard .pc-src{margin-top:2px}
+.rvbox .rvsrc{margin-top:-8px}
+:is(.pc-src,.rvsrc) a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+:is(.pc-src,.rvsrc) a:hover{filter:brightness(1.2)}

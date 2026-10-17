@@ -1760,6 +1760,11 @@ header .logo .logo-d{display:flex;align-items:center}
 @media(max-width:760px){.landprices{grid-template-columns:1fr}}
 .landprices .pc-list{height:560px;max-height:none}
 @media(max-width:760px){.landprices .pc-list{height:420px}}
+/* b206: 아이템 시세 출처 줄(아이템 가격 표·수익을 기록할까요? 창) — 위 '가격 확인' 줄과 같은 글씨, 링크는 밑줄+강조색 */
+.pricecard .pc-src{margin-top:2px}
+.rvbox .rvsrc{margin-top:-8px}
+:is(.pc-src,.rvsrc) a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+:is(.pc-src,.rvsrc) a:hover{filter:brightness(1.2)}
 </style>
 </head>
 <body>
@@ -2188,7 +2193,7 @@ function askRev(c,b,key,ik,cel){
   document.querySelector('#revModal')?.remove();
   const ap=admPriceOf(ik); // b104: 관리자만 — maple.ai.kr 시세로 미리 채움 (수정 가능)
   const el=document.createElement('div'); el.id='revModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rvTitle');
-  el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`최저가 측정 시간 - ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
+  el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`가격 확인 : ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${ap?priceSrcHtml('rvguide rvsrc muted'):''}${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
     <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><span class="rvbtns rvrow1"><button class="btn rvok" data-rv="ok">기록하기</button><button class="btn plain rvno" data-rv="no">기록 없이 저장</button></span><span class="rvbtns rvrow2"><button class="btn ghost rvcancel" data-rv="cancel">취소</button></span></div></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
   document.body.appendChild(el);
   let closed=false; const fin=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true); if(cel) cel(); };
@@ -2228,7 +2233,7 @@ function openRevAll(){
     <div class="raicons">${rows.filter((x,i)=>rows.findIndex(y=>icoId(y.ik)===icoId(x.ik))===i).map(x=>`<span class="raic" title="${esc(lootName(x.ik))}">${lootIco(x.ik)}</span>`).join('')||'<span class="muted">이번 주·이번 달 체크한 아이템이 없습니다.</span>'}</div>
     <div class="ralist">${raGroups(c,rows).map(g=>`<div class="ragrp"><span class="rabi" data-boss="${g.b.id}" title="${esc(g.b.name)}${g.d?' '+esc(D[g.d]||''):''}">${bossPic(g.b,g.d)}</span><div class="ragi">${g.items.map(([x,i])=>`<div class="rarow"><span class="raic">${lootIco(x.ik)}</span><span class="raname">${esc(lootName(x.ik))}${x.div>1?` <small class="muted">(${x.div}인 분배)</small>`:''}<small class="ram" data-ram="${i}">${x.m?meso(x.m):''}</small></span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" data-ra="${i}" value="${x.a}" aria-label="${esc(lootName(x.ik))} 판매 금액 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div></div>`).join('')}</div>
     <div class="rverr" id="raErr" role="alert"></div>
-    <div class="rabtns"><button class="btn raok" data-rab="ok">전체 수정</button><button class="btn ghost" data-rab="cancel">취소</button></div></div>`;
+    <div class="rabtns">${rows.length?'<button class="btn raok" data-rab="ok">전체 수정</button><button class="btn ghost" data-rab="cancel">취소</button>':'<button class="btn raok" data-rab="close">확인</button>' /* b206: 체크한 아이템 없음 → [확인] 하나, 누르면 닫기만 */}</div></div>`;
   document.body.appendChild(el);
   const close=()=>{ el.remove(); document.removeEventListener('keydown',kd,true); };
   const ok=()=>{ const vals=[]; for(const inp of el.querySelectorAll('[data-ra]')){ const s=String(inp.value).trim().replace(',','.'), v=s===''?0:parseFloat(s);
@@ -2244,8 +2249,8 @@ function openRevAll(){
   const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); } else if(e.key==='Enter'&&e.target.dataset?.ra!=null){ e.preventDefault(); ok(); } };
   document.addEventListener('keydown',kd,true);
   el.addEventListener('input',e=>{ const i=e.target.dataset?.ra; if(i==null) return; const v=parseFloat(String(e.target.value).replace(',','.')), o=el.querySelector(`[data-ram="${i}"]`); if(o) o.textContent=v>0?meso(Math.round(v*1e8)):''; });
-  el.onclick=e=>{ if(e.target===el) return close(); const t=e.target.closest('[data-rab]'); if(t) t.dataset.rab==='ok'?ok():close(); }; // b110: 바깥 클릭 = [취소]
-  setTimeout(()=>el.querySelector('[data-ra]')?.focus(),30);
+  el.onclick=e=>{ if(e.target===el) return close(); const t=e.target.closest('[data-rab]'); if(t) t.dataset.rab==='ok'&&rows.length?ok():close(); }; // b110: 바깥 클릭 = [취소]
+  setTimeout(()=>(el.querySelector('[data-ra]')||el.querySelector('[data-rab]'))?.focus(),30);
 }
 function changeDrop(key, delta){
   const c=activeChar(); if(!c) return; const [slot,item]=key.split('|'); const b=findBoss(slot); if(!b||!ITEMS[item]) return;
@@ -3154,6 +3159,8 @@ function guildCands(){ const have=new Set(guildList().map(gKey)), m=new Map();
   for(const c of vchars()) if(c.guild&&c.world){ const G={world:c.world,name:c.guild}, k=gKey(G); if(have.has(k)) continue; const e=m.get(k)||{...G,chars:[]}; e.chars.push(c.name); m.set(k,e); }
   return [...m.values()]; }
 /* 60초 타이머·탭 열기·화면 복귀 시 호출: 열려 있는 탭만 갱신 */
+/* b206: 왼쪽 캐릭터 목록에서 캐릭터 클릭 = 어느 탭에 있든(라이브 포함) 이번 주 보스 탭으로 — 탭 버튼과 같은 정리(디지털 숫자 다시 세기·마지막 탭 기억). 바뀌었으면 true */
+function toBossTab(){ if(tab==='boss') return false; TIR_LAST.clear(); TSV_SEEN.clear(); tab='boss'; try{ localStorage.setItem(TAB_KEY,tab); }catch(e){} syncTabs(); return true; }
 function tabTick(){
   if(document.hidden) return;
   if(tab==='guild'){ refreshGuild(); refreshSched(suroChars()); }
@@ -3766,7 +3773,7 @@ function priceCard(opt={}){ /* b203: opt.kind = 종류 고정, opt.land = 로그
   if(kind==='item'){ const P=itemPrices();
     return `<aside class="card pricecard"${LA} aria-label="아이템 가격">${kt}
     <div class="pc-list pc-items">${revItems().map(k=>{ const o=P[priceId(k)]; return `<div class="pc-row pc-it" data-pit="${esc(k)}">${lootIco(k)}<span class="pc-nm">${esc(lootName(k))}</span><b>${o?meso(o.p):'- 메소'}</b></div>`; }).join('')}</div>
-    <div class="pc-date muted tiny">가격 확인 날짜 : ${(t=>t?kstStamp(t):'-')(Math.max(0,...Object.values(P).map(o=>+o.t||0)))}</div>
+    <div class="pc-date muted tiny">가격 확인 : ${(t=>t?kstStamp(t):'-')(Math.max(0,...Object.values(P).map(o=>+o.t||0)))}</div>${priceSrcHtml('pc-date pc-src muted tiny')}
   </aside>`; }
   return `<aside class="card pricecard"${LA} aria-label="결정석 가격">${kt}
     ${land?'':`<div class="pc-head"><label class="pc-mine"><input type="checkbox" id="pcMine"${pcMine?' checked':''}> 내가 잡는 보스만 보기</label></div>`}
@@ -5277,9 +5284,9 @@ document.addEventListener('click',e=>{
   if(t.dataset.wmove){ e.stopPropagation(); const i=t.dataset.wmove.lastIndexOf('|'); moveWorldBy(t.dataset.wmove.slice(0,i),+t.dataset.wmove.slice(i+1)); render(); return; }
   if(e.target.closest('.drag-h')) return;
   if(t.dataset.edit){ e.stopPropagation(); openCharModal(t.dataset.edit); return; }
-  if(t.dataset.id){ const id=t.dataset.id; if(pend&&id!==S.activeId) return pendGuard(()=>{ S.activeId=id; save(); if(['history','total','loot','guild'].includes(tab)) {tab='boss';syncTabs();} render(); });
-    const sy=scrollY, sx=scrollX, keep=tab==='boss'; S.activeId=id; save(); if(['history','total','loot','guild'].includes(tab)) {tab='boss';syncTabs();} render();
-    if(keep){ const back=()=>{ if(scrollY!==sy||scrollX!==sx) scrollTo(sx,sy); }; back(); requestAnimationFrame(back); setTimeout(back,80); } return; } // b189: 보스 탭에서 캐릭터 클릭 = 스크롤 그대로
+  if(t.dataset.id){ const id=t.dataset.id; if(pend&&id!==S.activeId) return pendGuard(()=>{ S.activeId=id; save(); const sw=toBossTab(); render(); if(sw) tabTick(); });
+    const sy=scrollY, sx=scrollX; S.activeId=id; save(); const sw=toBossTab(); render(); if(sw) tabTick();
+    { const back=()=>{ if(scrollY!==sy||scrollX!==sx) scrollTo(sx,sy); }; back(); requestAnimationFrame(back); setTimeout(back,80); } return; } // b189: 보스 탭에서 캐릭터 클릭 = 스크롤 그대로
   if(t.dataset.filter){ bossFilter=t.dataset.filter; render(); return; }
   if(t.dataset.toggle && c){ const s=t.dataset.toggle,b=findBoss(s); const cfg=c.bosses[s]||(c.bosses[s]={enabled:false,diff:b.diffs[0],party:1}); cfg.enabled=!cfg.enabled; save(); render(); return; }
   if(t.dataset.setdiff && c){
@@ -5501,6 +5508,8 @@ function admPriceOf(ik){ /* b112: 공용 시세 → 모든 사용자 수익 기�
 let admPriceMsg='', admPriceBusy=false;
 /* b112: 아이템 시세 = 관리자가 등록·갱신한 값(서버 admin_prices) — 로그인한 사용자 누구나 GET /api/prices 로 읽어 이 기기에 보관. 관리자 기기는 admPrices 와 합침(최신 시각 우선) */
 const ITEM_PRICE_KEY='mapleBossTracker.itemPrices';
+/* b206: 아이템 시세 출처 = Worker 가 받아 읽는 maple.ai.kr '아이템 시세 추적'(server/worker.js MAI_URL 과 같은 주소) — 아이템 가격 표·수익을 기록할까요? 창 아래 '출처 : 링크'(새 탭) */
+function priceSrcHtml(cls){ const ITEM_PRICE_SRC='https://maple.ai.kr/blog/item-price-tracker-2026'; /* 함수 안 = 첫 렌더가 먼저 불러도 안전 */ return `<div class="${cls}">출처 : <a href="${ITEM_PRICE_SRC}" target="_blank" rel="noopener noreferrer" title="${ITEM_PRICE_SRC}">maple.ai.kr 아이템 시세 추적</a></div>`; }
 function itemPrices(){ let a={}; try{ a=JSON.parse(localStorage.getItem(ITEM_PRICE_KEY)||'{}')||{}; }catch(e){} const b=svIsAdmin()?admPrices():{}, o={...a};
   for(const [k,v] of Object.entries(b)) if(v&&+v.p>0&&(!o[k]||+o[k].t<=+v.t)) o[k]=v; for(const k in o) if(!(o[k]&&+o[k].p>0)) delete o[k]; return o; }
 function itemPricePut(P){ if(!P||typeof P!=='object'||!Object.keys(P).length) return; /* b112: 빈 응답으로 지우지 않음 */ let cur={}; try{ cur=JSON.parse(localStorage.getItem(ITEM_PRICE_KEY)||'{}')||{}; }catch(e){}
