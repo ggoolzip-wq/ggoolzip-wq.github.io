@@ -42,13 +42,20 @@ try:
     pg.evaluate("()=>{window.__cl=[];const v=document.getElementById('view');new MutationObserver(()=>__cl.push(v.className)).observe(v,{attributes:true})}")
     r0=pg.evaluate("(()=>{const c=document.querySelector('#view .card');return c.getBoundingClientRect().top})()")
     pg.locator('.rp-char[data-id=c2]').first.click(); pg.wait_for_timeout(60)
-    a=pg.evaluate("""(()=>{const g=document.querySelector('#view .bosslay>.grid');const an=e=>getComputedStyle(e).animationName;
-      const kids=[...g.querySelectorAll('.card,.card *')].filter(e=>/holo|cEnter|scan/.test(an(e))).length;
-      const still=[...document.querySelectorAll('.revpanel,.revpanel *,.pricecard,.pricecard *')].filter(e=>/holo|cEnter|scan/.test(an(e)+getComputedStyle(e,'::after').animationName)).length;
-      return {view:document.getElementById('view').className,grid:an(g),line:getComputedStyle(g,'::after').animationName,dur:getComputedStyle(g).animationDuration,kids,still}})()""")
-    check('b194 정보+드롭 표 한 덩어리 스캔(0.6초, 빛줄기 1개)', 'center' in a['view'] and a['grid']=='scanReveal' and a['line']=='scanLine' and a['dur']=='0.6s' and a['kids']==0, a)
-    check('b194 이번 주 수익·가격 표 애니메이션 없음', a['still']==0, a)
-    pg.wait_for_timeout(250); shot(pg.locator('#view .bosslay'),'scan_mid')
+    a=pg.evaluate("""(()=>{const g=document.querySelector('#view .bosslay>.grid');const cs=e=>getComputedStyle(e),an=e=>cs(e).animationName;
+      const cells=[...g.querySelectorAll('.cpop')];
+      const old=[g,...g.querySelectorAll('*')].filter(e=>/holo|cEnter|scan/.test(an(e)+cs(e,'::after').animationName)).length;
+      const still=[...document.querySelectorAll('.rcol,.rcol *')].filter(e=>an(e)!=='none'&&/cellPop|holo|scan/.test(an(e))).length;
+      const c0=cells[0],cl=cells[cells.length-1];
+      return {view:document.getElementById('view').className,n:cells.length,pop:cells.filter(e=>an(e)==='cellPop').length,old,still,
+        ease:cs(c0).animationTimingFunction,dur:cs(c0).animationDuration,d0:cs(c0).animationDelay,dl:cs(cl).animationDelay,
+        boss:g.querySelectorAll('.boss-list>.cpop').length,stat:g.querySelectorAll('.stats>.stat.cpop').length,rcol:document.querySelectorAll('.rcol .cpop').length}})()""")
+    check('b197 칸마다 작게→원래 크기(cellPop, 튕김 ease, 0.3초, 시차)', 'center' in a['view'] and a['n']>=8 and a['pop']==a['n'] and a['boss']>=3 and a['stat']==3 and a['ease']=='cubic-bezier(0.34, 1.56, 0.64, 1)' and a['dur']=='0.3s' and a['d0']=='0s' and a['dl']!='0s' and a['old']==0, a)
+    check('b197 이번 주 수익·가격 표 애니메이션 없음', a['still']==0 and a['rcol']==0, a)
+    kf=pg.evaluate("""(()=>{for(const sh of document.styleSheets){for(const r of sh.cssRules){if(r.name==='cellPop')return r.cssText}}return ''})()""")
+    check('b197 이동 없음: transform 은 scale 만', 'scale(0.72)' in kf and 'translate' not in kf, kf)
+    pg.evaluate("document.getAnimations().filter(x=>x.animationName==='cellPop').forEach(x=>{x.pause();x.currentTime=110})"); shot(pg.locator('#view .bosslay'),'pop_mid')
+    pg.evaluate("document.getAnimations().filter(x=>x.animationName==='cellPop').forEach(x=>x.finish())")
     pg.wait_for_timeout(1000)
     r1=pg.evaluate("(()=>{const c=document.querySelector('#view .card');return [c.getBoundingClientRect().top,document.getElementById('view').className]})()")
     check('끝나면 클래스 제거·자리 그대로', 'center' not in r1[1] and abs(r1[0]-r0)<1, (r0,r1))
@@ -58,7 +65,7 @@ try:
     p2.route('https://open.api.nexon.com/**',lambda r:r.abort()); p2.goto(f'http://127.0.0.1:{PORT}/index.html'); p2.wait_for_timeout(300)
     p2.evaluate("s=>{localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",ST); p2.reload(); p2.wait_for_timeout(900)
     p2.locator('.rp-char[data-id=c2]').first.click(); p2.wait_for_timeout(50)
-    check('줄인 동작 설정 → 애니메이션 없음', p2.evaluate("getComputedStyle(document.querySelector('#view .bosslay>.grid')).animationName")=='none')
+    check('줄인 동작 설정 → 애니메이션 없음', p2.evaluate("[...document.querySelectorAll('#view .bosslay>.grid *')].filter(e=>getComputedStyle(e).animationName==='cellPop').length")==0)
     g=pg.evaluate("(()=>{const e=document.querySelector('#charList .char.on'),o=document.querySelector('#charList .char:not(.on)');return [getComputedStyle(e).boxShadow.split('rgba').length,getComputedStyle(e).animationName,e.getBoundingClientRect().height===o.getBoundingClientRect().height]})()")
     check('b188 선택 캐릭터 간접등: 그림자 여러 겹 + 맥박, 높이 같음', g[0]>=5 and g[1]=='charGlow' and g[2], g)
     pg.wait_for_timeout(400)
