@@ -9,7 +9,7 @@ def check(n,c,d=''):
 M="""(()=>{const g=document.getElementById('gBtn');g.hidden=false;g.textContent='로그아웃';
  if(!document.getElementById('svAdminHdr')){const a=document.createElement('button');a.id='svAdminHdr';a.className='hbtn admhdr';a.textContent='👑 관리자';g.parentNode.insertBefore(a,g);}
  const c=e=>{const r=e.getBoundingClientRect();return +(r.top+r.height/2).toFixed(2)};
- return {icon:c(document.querySelector('#logoHome img')),text:(e=>c(e)-new DOMMatrix(getComputedStyle(e).transform).m42)(document.querySelector('#logoHome .logo-g')),shift:new DOMMatrix(getComputedStyle(document.querySelector('#logoHome .logo-g')).transform).m42,admin:c(document.getElementById('svAdminHdr')),logout:c(g),theme:c(document.getElementById('themeBtn')),over:document.documentElement.scrollWidth>innerWidth}})()"""
+ return {icon:(e=>c(e)-new DOMMatrix(getComputedStyle(e).transform).m42)(document.querySelector('#logoHome img')),ishift:new DOMMatrix(getComputedStyle(document.querySelector('#logoHome img')).transform).m42,text:(e=>c(e)-new DOMMatrix(getComputedStyle(e).transform).m42)(document.querySelector('#logoHome .logo-g')),shift:new DOMMatrix(getComputedStyle(document.querySelector('#logoHome .logo-g')).transform).m42,admin:c(document.getElementById('svAdminHdr')),logout:c(g),theme:c(document.getElementById('themeBtn')),over:document.documentElement.scrollWidth>innerWidth}})()"""
 srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
@@ -24,7 +24,7 @@ try:
         pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("t=>{localStorage.setItem('mapleBossTracker.v1',JSON.stringify({version:5,theme:t,characters:[],settings:{}}))}",th); pg.reload(); pg.wait_for_timeout(700)
         r=pg.evaluate(M); v=[r[k] for k in ('icon','text','admin','logout','theme')]
         check(f'{th} {w}px 세로 중심 1px 안 (로고 글자 = 잉크 보정 전 상자)', max(v)-min(v)<=1, r)
-        check(f'{th} {w}px 로고 글자 잉크 보정 1~1.5px 아래로', 1<=r['shift']<=1.5, r)
+        check(f'{th} {w}px 로고 글자 잉크 보정 1~1.5px 아래로, 아이콘 광학 보정 2px 위로(b205)', 1<=r['shift']<=1.5 and r['ishift']==-2, r)
         check(f'{th} {w}px 가로 넘침 없음', not r['over'], r)
         ctx.close()
     b.close()

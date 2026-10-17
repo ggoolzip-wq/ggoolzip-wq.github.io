@@ -1633,3 +1633,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 규칙 10: 보이는 캐릭터가 없으면(로그인 전·로그인했지만 캐릭터 없음·키 없는 계정뿐) 모든 탭이 같은 emptyView(이제 소개+가격 카드 포함). 로그인했지만 캐릭터 없는 경우에도 가격 카드를 보여 줌(쓸모 있는 정보라서).
 - 가격 카드 다시 그리기 `repaintPrices()` = 모든 .pricecard(첫 화면 카드는 data-land 종류 유지), `fitPriceCard()` = 카드마다. 빈 화면 그릴 때도 fitPriceCard.
 - 테스트 test_b203(새), test_tracker65(빈 화면 = 빈 카드 + .landing), test_tracker80(제목).
+
+## b205 (2026-10-17 KST) — 로고 수정 아이콘 광학 보정(사용자 화면 기준)
+- 사용자 스크린샷(261x104, 글자 폭 74px = 우리 DPR 1 렌더와 같음 → Windows Chrome DPR 1·100%) 픽셀 분석: 아이콘 잉크 12~38(몸통=폭 9px 이상 14~36), 글자 잉크 13~36, 밝기 무게중심 차이 -0.06px — 수치로는 이미 맞음. 원인 = 수정 위가 뾰족(맨 위 2~3줄 3~5px 폭)·글자 위는 평평한 막대 → 같은 높이여도 수정이 낮아 보이는 착시.
+- 구조: header .logo = 높이 34px flex 가운데, 아이콘 display:block(기준선 무관), .logo-d flex 가운데. 아이콘 translateY(-1px → -2px, 정수 px 라 DPR 1 에서 안 흐림). 결과(DPR 1/1.25/1.5): 아이콘 몸통 중심이 글자 중심보다 1.0~1.6px 위, 잉크 중심 1.5~2.0px 위.
+- test_b200: 아이콘 상자 중심은 transform 빼고 비교(버튼·글자와 1px 안), 광학 보정 -2px 확인.
