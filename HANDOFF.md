@@ -1600,3 +1600,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 정보 카드 줄·스탯 칸 3개·드롭 표 툴바·보스 줄마다 .cpop + --ei(순번, 최대 14) → cellPop: scale(.72)·투명 → 원래 크기, 0.3초, cubic-bezier(.34,1.56,.64,1) 살짝 튕김, 칸당 26ms 시차. 이동 없음(transform scale·opacity 만), 번쩍임 없음.
 - 이번 주 수익·결정석/아이템 가격(.rcol) 애니메이션 없음. 줄인 동작 = 클래스도 안 붙임. center 클래스 1초 후 제거.
 - 테스트 test_b187 (b197 체크 3개, 중간 프레임 스크린샷 pop_mid).
+
+## b198 (2026-10-17 KST) — 검색 등록 준비(구글 서치 콘솔·네이버 서치어드바이저)
+- 대표 주소 = **https://bossmaple.pages.dev/** (b67 이후 사용자 주소). github.io 도 canonical·og:url 은 pages.dev 로.
+- tools/build.py <head>: meta description(한국어), canonical, og:type/site_name/locale/title/description/url/image(og.png 1200x630), twitter:card. 소유 확인 태그(google-/naver-site-verification)는 아직 없음 — 코드 받으면 build.py head 에 추가.
+- 루트에 robots.txt(Allow: / + Sitemap: https://bossmaple.pages.dev/sitemap.xml), sitemap.xml(대표 주소 1개), og.png. tools/pages_dist.sh 가 _site 에 복사(예전엔 Pages 가 없는 경로에 index.html 을 돌려줌). 예전 /pf/ /admin/ /book/ Disallow 는 maple.ai.kr 의 robots 라 이 사이트엔 없음.
+- src/body.html: <body> 바로 뒤 #seoIntro(1px clip 숨김 — h1+소개 글 3줄, 화면·레이아웃 변화 없음) + <noscript> 소개.
+- 테스트 test_b198.
