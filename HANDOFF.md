@@ -1708,3 +1708,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 보스 드롭 칸: 누를 수 없는 칩(.drop.off, 기록 안 함) = 모멘텀 큐브(정보 아이콘 .erda/.memc) 바로 다음, 누르는 칩 앞. 회색·흐림 없앰(아이콘·글씨 원래 색), 테두리만 점선, pointer-events none·cursor default.
 - '이번 주 수익 총합' 반지 상자 줄: 왼쪽 '반지 상자 N개', 결과는 위아래 줄 숫자처럼 오른쪽 숫자 칸(`.rpn.rpouts`), 리4 앞 리스트레인트 링·컨4 앞 컨티뉴어스 링 아이콘(높이 1em). 결과가 많아 넘치면 `fitRingLine()`(fitPriceCard 안 + ResizeObserver)이 결과 글씨만 줄임(최소 약 0.66배), 줄바꿈·잘림 없음.
 - 테스트: test_b213(신규), test_b211(70%), test_tracker28(칩 순서), test_tracker92(링 아이콘 크기).
+
+## b214 (2026-10-18 KST) — 반지 상자 줄 아이콘 + xN · 누를 수 없는 칩 = 아이콘만
+- '이번 주 수익 총합' 반지 상자 줄(weekRingLine, 이 카드에만 있는 줄): 왼쪽 '반지 상자 xN', 오른쪽 숫자 칸 = [리스트레인트 링] xN · [컨티뉴어스 링] xN · [생명의 연마석] xN (글자 없음, data-tip/aria-label = 이름 xN) · '꽝 xN'(글자). 네 가지 다 있어도 원래 크기로 맞음, fitRingLine 은 마지막 대비로만 남김. 다른 곳(보스 드롭 칸 아래 결과 줄·득템 분석)은 다른 구성이라 그대로.
+- 보스 드롭 칸의 누를 수 없는 칩(.drop.off) = `.drop.erda.off`: 솔 에르다·모멘텀 큐브처럼 아이콘만(이름·개수 없음, 같은 크기·점선), 말풍선(data-tip) = 아이템 이름, 클릭은 .drop.erda 처럼 무시(hover 효과 없음).
+- 테스트: test_b213(b214 확인 추가), test_tracker28·42·92 갱신.
