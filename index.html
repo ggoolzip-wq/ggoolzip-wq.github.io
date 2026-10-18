@@ -1769,12 +1769,14 @@ header .logo .logo-d{display:flex;align-items:center}
 .mktbox{max-width:540px}
 .mktbox .mkno{flex:none;color:#ff6b6b;font-size:.78rem;font-weight:700;white-space:nowrap;font-family:inherit}
 [data-theme="light"] .mktbox .mkno{color:#d32f2f}
-/* b209: 로그인 전 첫 화면 '+ 캐릭터 추가 (API 키로 불러오기)' — 테두리 네온(아주 느린 숨쉬기, 깜빡임 없음). 줄이기 설정이면 고정 네온 */
-#importAccBtn{position:relative;border:1.5px solid #ffb066;box-shadow:0 0 4px rgba(255,154,60,.75),0 0 12px rgba(255,154,60,.45),0 0 24px rgba(255,154,60,.22),inset 0 0 6px rgba(255,176,102,.25);animation:neonBreath 5s ease-in-out infinite}
-@keyframes neonBreath{0%,100%{box-shadow:0 0 4px rgba(255,154,60,.7),0 0 12px rgba(255,154,60,.4),0 0 22px rgba(255,154,60,.18),inset 0 0 6px rgba(255,176,102,.22)}50%{box-shadow:0 0 5px rgba(255,154,60,.85),0 0 16px rgba(255,154,60,.55),0 0 30px rgba(255,154,60,.28),inset 0 0 8px rgba(255,176,102,.3)}}
-[data-theme="light"] #importAccBtn{border-color:#e0701a;box-shadow:0 0 3px rgba(242,140,40,.6),0 0 10px rgba(242,140,40,.35),0 0 18px rgba(242,140,40,.18);animation-name:neonBreathL}
-@keyframes neonBreathL{0%,100%{box-shadow:0 0 3px rgba(242,140,40,.55),0 0 10px rgba(242,140,40,.3),0 0 18px rgba(242,140,40,.15)}50%{box-shadow:0 0 4px rgba(242,140,40,.7),0 0 13px rgba(242,140,40,.42),0 0 24px rgba(242,140,40,.22)}}
-@media (prefers-reduced-motion:reduce){#importAccBtn{animation:none!important}}
+/* b209: 로그인 전 첫 화면 '+ 캐릭터 추가 (API 키로 불러오기)' — 테두리 네온. 버튼 자체 = 고정 네온(전역 button.btn 네온 규칙이 !important 라 같은 힘으로),
+ * 숨쉬기는 ::after 의 빛 번짐 투명도만 5초에 걸쳐 아주 천천히(깜빡임 없음). 움직임 줄이기 = 고정 */
+#view .card.empty #importAccBtn{position:relative;border:1.5px solid #ffb066!important;box-shadow:0 0 3px rgba(255,154,60,.85),0 0 10px rgba(255,154,60,.5),0 0 20px rgba(255,154,60,.25),inset 0 0 6px rgba(255,190,120,.3)!important}
+#view .card.empty #importAccBtn::after{content:'';position:absolute;inset:-2px;border-radius:12px;pointer-events:none;box-shadow:0 0 8px 1px rgba(255,154,60,.7),0 0 26px 4px rgba(255,154,60,.35);opacity:.35;animation:neonBreath 5s ease-in-out infinite}
+@keyframes neonBreath{0%,100%{opacity:.3}50%{opacity:.85}}
+[data-theme="light"] #view .card.empty #importAccBtn{border-color:#e0701a!important;box-shadow:0 0 3px rgba(242,140,40,.7),0 0 9px rgba(242,140,40,.4),0 0 16px rgba(242,140,40,.2)!important}
+[data-theme="light"] #view .card.empty #importAccBtn::after{box-shadow:0 0 7px 1px rgba(242,140,40,.55),0 0 20px 3px rgba(242,140,40,.25)}
+@media (prefers-reduced-motion:reduce){#view .card.empty #importAccBtn::after{animation:none!important;opacity:.55}}
 /* b209: API 키 발급 순서 안내 (일반 글꼴, 줄바꿈 없음, ☞ 줄은 단계 아래 들여쓰기) */
 #svMainSec .apiguide{list-style:none;margin:8px 0 2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,.06);font-size:12px;line-height:1.55;color:var(--text)}
 #svMainSec .apiguide li{white-space:nowrap}
