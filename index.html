@@ -1782,6 +1782,19 @@ header .logo .logo-d{display:flex;align-items:center}
 #svMainSec .apiguide li{white-space:nowrap}
 #svMainSec .apiguide .agn{display:inline-block;width:1.4em;color:var(--accent);font-weight:700;font-size:1.15em;line-height:1}
 #svMainSec .apiguide .aga{margin-left:1.4em;color:var(--accent2);font-weight:600}
+/* demo-mockup: 로그인 전 예시 화면 — 위 작은 API 키 칸(한 줄) + 예시 띠 */
+#view>.demotop{grid-column:1/-1;display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+#view .dmkey{display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 14px;margin:0}
+#view .dmkey .dmk-t{font-weight:600;white-space:nowrap}
+#view .dmkey #importAccBtn{position:relative;white-space:nowrap;border:1.5px solid #ffb066!important;box-shadow:0 0 3px rgba(255,154,60,.85),0 0 10px rgba(255,154,60,.5),0 0 20px rgba(255,154,60,.25),inset 0 0 6px rgba(255,190,120,.3)!important}
+#view .dmkey #importAccBtn::after{content:'';position:absolute;inset:-2px;border-radius:12px;pointer-events:none;box-shadow:0 0 8px 1px rgba(255,154,60,.7),0 0 26px 4px rgba(255,154,60,.35);opacity:.35;animation:neonBreath 5s ease-in-out infinite}
+[data-theme="light"] #view .dmkey #importAccBtn{border-color:#e0701a!important;box-shadow:0 0 3px rgba(242,140,40,.7),0 0 9px rgba(242,140,40,.4),0 0 16px rgba(242,140,40,.2)!important}
+@media (prefers-reduced-motion:reduce){#view .dmkey #importAccBtn::after{animation:none!important;opacity:.55}}
+#view .dmbanner{display:flex;align-items:center;justify-content:center;gap:8px;padding:7px 12px;border-radius:10px;border:1px solid rgba(92,225,255,.45);background:linear-gradient(90deg,rgba(42,168,216,.08),rgba(42,168,216,.2),rgba(42,168,216,.08));box-shadow:0 0 12px rgba(92,225,255,.15)}
+#view .dmbanner b{white-space:nowrap;font-weight:700}
+.dmbadge{display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;background:linear-gradient(180deg,#5ce1ff,#2aa8d8);color:#06222e;font-size:.72rem;font-weight:800;letter-spacing:.04em}
+[data-theme="light"] #view .dmbanner{border-color:rgba(20,130,180,.45);background:linear-gradient(90deg,rgba(42,168,216,.05),rgba(42,168,216,.14),rgba(42,168,216,.05))}
+@media (max-width:600px){#view .dmkey{flex-direction:column;gap:8px} #view .dmkey .dmk-t{font-size:.85rem} #view .dmbanner b{font-size:.78rem}}
 </style>
 </head>
 <body>
@@ -3721,8 +3734,8 @@ function revPanel(a,cur){
   const wm=weekMonthly(a);
   /* b115: 이번 주 수익(결정석 + 아이템 판매) 높은 순, 순위 표시(같으면 같은 순위, 0 = 순위 없음). 1~3위 = 다른 순위 카드와 같은 메달 효과 */
   per.sort((x,y)=>pmeso(y)-pmeso(x)); const rk=new Map(); per.forEach((p,i)=>rk.set(p,pmeso(p)>0?(i&&pmeso(per[i-1])===pmeso(p)?rk.get(per[i-1]):i+1):0));
-  return `<aside class="revpanel card" aria-label="이번 주 수익 요약">
-    <h2>${miniIcon('meso')} 이번 주 수익</h2>
+  return `<aside class="revpanel card" aria-label="이번 주 수익 총합">
+    <h2>${miniIcon('meso')} 이번 주 수익 총합</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
       return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
@@ -5760,6 +5773,74 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&Date.now
 gdRender(); svGate();
 if(SV_ON){ if(gdMeta.on&&svTok()){ gdConnect(false).then(()=>svSeenPull()); } else gdRender(); } // 서버 모드: 남은 세션 토큰으로만 (없으면 ☁ 로그인)
 else if(gdUsable()){ gdLoadLib().catch(()=>{}); if(gdMeta.on) gdConnect(false); }
+
+/* ===== b210 예시 화면 (demo): 로그인 전 = 위 탭(이번 주 보스·수익 분석·득템 분석·길드 현황) 마다 '예시 화면'.
+ * 실제 화면 코드를 그대로 쓰고, 그리는 동안만 S(·schedC·guildC)를 가짜 예시 데이터로 바꿨다가 되돌림 → 진짜 데이터·로그인 흐름은 그대로.
+ * 결정석 = 사이트가 지금 쓰는 실제 가격(price()), 아이템 = 공용 시세(itemPrices(), /api/prices), 드롭 = 사이트 드롭 표(dropsFor, 그 난이도). 저장·동기화·넥슨 요청 없음.
+ * 신창섭 라이브 탭은 예시 없음(그대로). 로그인한 사용자(캐릭터 0명)는 예전 빈 화면 그대로. */
+let DEMO_ST=null, DEMO_SIG='', DEMO_SC=null, DEMO_GC=null, demoDepth=0, demoLive=null;
+const demoAllowed=()=>{ const real=demoLive||S; return !(real.characters||[]).some(charShown) && !(typeof SV_ON!=='undefined'&&SV_ON&&svTok()); };
+const demoTabOk=()=>tab!=='live';
+function demoRng(seed){ let s=seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+// 한 판(보스 1번)당 그 아이템이 나올 확률 — 대략적인 체감 확률(예시용)
+const DEMO_P=k=>isRing(k)?.06:/^se\d$/.test(k)?.12:(k==='g_life'||k==='g_faith')?.035:k==='chaosbox'?.025:k==='papmark'?.03:['lcm','eye','belt','book','terror','sos','cfe'].includes(k)?.006:.004;
+const demoSig=()=>{ const ip=itemPrices(); return Object.values(PRICE_CONFIG).reduce((a,b)=>a+(+b||0),0)+'|'+Object.entries(ip).map(([k,o])=>k+o.p).sort().join(); };
+function demoBuild(){
+  const R=demoRng(20261018), R2=demoRng(777), IP=itemPrices(), wk0=weekId(), wk=k=>{ const t=new Date(wk0+'T00:00:00+09:00'); t.setDate(t.getDate()-7*k); return new Date(t.getTime()+9*3600e3).toISOString().slice(0,10); };
+  const E=(d,p=1)=>({enabled:true,diff:d,party:p});
+  const mk=(i,name,lv,job,bs)=>({id:'demo'+i,name,level:lv,job,world:'스카니아',image:'',accId:'demoA',ocid:'demo-ocid-'+i,isMain:i===1,guild:'메보기예시길드',bosses:bs,weekly:{},monthly:{},auto:{},drops:{},sync:{}});
+  const C=[ // 레벨·직업에 맞는 흔한 주간 조합 (12개 제한 안쪽)
+    mk(1,'예시히어로',287,'히어로',{lotus:E('hard'),damien:E('hard'),slime:E('chaos'),lucid:E('hard'),will:E('hard'),dusk:E('chaos'),jinhilla:E('hard'),dunkel:E('hard'),seren:E('hard',2),kalos:E('normal',3),kaling:E('normal',3),adversary:E('normal',3),blackmage:E('hard')}),
+    mk(2,'샘플비숍',279,'비숍',{papulatus:E('chaos'),lotus:E('hard'),damien:E('hard'),slime:E('chaos'),lucid:E('hard'),will:E('hard'),dusk:E('chaos'),jinhilla:E('hard'),dunkel:E('hard'),seren:E('normal',2),kalos:E('easy',2),kaling:E('easy',3),blackmage:E('hard')}),
+    mk(3,'데모아크',272,'아크메이지(불,독)',{zakum:E('chaos'),vellum:E('chaos'),papulatus:E('chaos'),magnus:E('hard'),lotus:E('normal'),damien:E('normal'),slime:E('normal'),lucid:E('normal'),will:E('normal'),dusk:E('normal'),jinhilla:E('normal'),dunkel:E('normal')}),
+    mk(4,'견본나로',265,'나이트로드',{zakum:E('chaos'),pierre:E('chaos'),vonbon:E('chaos'),queen:E('chaos'),vellum:E('chaos'),papulatus:E('chaos'),magnus:E('hard'),lotus:E('normal'),damien:E('normal'),slime:E('normal'),lucid:E('easy'),will:E('easy')})];
+  const st={...defaultState(), theme:S.theme, characters:C, activeId:'demo1', history:[], monthHistory:[], missW:[], missM:[], startWeek:wk(4)};
+  st.settings={...st.settings, accounts:[{id:'demoA',label:'예시 계정',key:'DEMO-NOT-A-KEY',main:true}], guilds:[{world:'스카니아',name:'메보기예시길드'}], suroChars:C.map(c=>c.id), autoSync:false};
+  const live=S; S=st;
+  try{
+    const sale=(c,id,key,ik)=>{ const p=IP[priceId(ik)]; if(!p||!(p.p>0)||R2()>.85) return; const n=curParty(c,id); c.drev[key]={m:Math.round(p.p/n),a:Math.round(p.p/1e4)/1e4,p:n,i:ik}; }; // 판 아이템만, 실제 공용 시세, 분배면 ÷인원
+    const loot=(c,id,cfg,map,out)=>{ const b=findBoss(id); for(const it of dropsFor(b,cfg.diff)){ if(!ITEMS[it]||R()>DEMO_P(it)) continue; const key=id+'|'+it; map[key]=1;
+        if(isRing(it)){ const r=R(), o=it==='r_life'&&r<.12?'gl':r<.125?'r4':r<.14?'c4':'x'; out[key]=[o]; if(o!=='x'&&R()<.5) sale(c,id,key,o==='gl'?'g_life':'ring:'+o); }
+        else if(it==='chaosbox'){ const k=CHAOS_PICK[Math.floor(R()*CHAOS_PICK.length)]; out[key]=['cb:'+k]; sale(c,id,key,'cb:'+k); }
+        else sale(c,id,key,it); break; } };
+    const roll=(c,pClear)=>{ c.weekly={}; c.drops={}; c.dropOut={}; c.drev={}; c.dmode={};
+      for(const [id,cfg] of Object.entries(c.bosses)){ const b=findBoss(id); if(!b||b.type!=='weekly'||R()>pClear) continue; c.weekly[id]=true; loot(c,id,cfg,c.drops,c.dropOut); } };
+    /* 9/17 패치(주간 결정석 가격 변경) 주부터 — 기록 = 지금 가격표와 같은 값 */ for(let k=4;k>=1;k--){ S.period={...S.period,week:wk(k)}; C.forEach((c,i)=>roll(c,[.97,.93,.88,.8][i]));
+      missRecord('w',wk(k),missNow('w')); const sum=weekSummary(wk(k)); if(sum.cleared>0) S.history.push(sum); }
+    // 검마: 10/1 부터 새 가격(하드 4.65억) — 예시는 10월(이번 달)만, 솔로 → 결정석 가격표 값 그대로
+    S.period={week:wk0,day:dayId(),month:monthId()};
+    C.forEach((c,i)=>{ roll(c,[.85,.7,.55,.45][i]); c.monthly={}; c.mdrops={}; c.mdropOut={}; c.mdrev={}; }); C[0].monthly.blackmage=wk0; // 이번 주: 일요일쯤 진행 상황
+  } finally { S=live; }
+  DEMO_SC={}; st.characters.forEach((c,i)=>{ DEMO_SC[c.id]={date:dayId(),at:Date.now(),ok:true,level:c.level,items:{},guild:{suro:{now:[48200,31500,22800,9600][i]||0,max:0},flag:null,mission:null}}; });
+  DEMO_GC={'스카니아|메보기예시길드':{date:dayId(),at:Date.now(),ok:true,t1:{guild_point:61500,ranking:418,guild_level:27,guild_master_name:'예시히어로'},t2:{guild_point:1832400,ranking:233,guild_level:27,guild_master_name:'예시히어로'}}};
+  return st;
+}
+function demoRun(fn,args,self){ if(demoDepth>0||!demoAllowed()||!demoTabOk()) return fn.apply(self,args);
+  const sig=demoSig(); if(!DEMO_ST||sig!==DEMO_SIG){ const keep=DEMO_ST&&DEMO_ST.activeId; DEMO_ST=demoBuild(); DEMO_SIG=sig; if(keep) DEMO_ST.activeId=keep; if(fn!==demoRenderRaw) setTimeout(()=>render(),0); }
+  const s0=S, sc0=schedC, gc0=guildC; demoLive=s0; S=DEMO_ST; schedC=DEMO_SC; guildC=DEMO_GC; demoDepth++; document.body.classList.add('demo');
+  try{ return fn.apply(self,args); } finally { demoDepth--; S=s0; schedC=sc0; guildC=gc0; demoLive=null; } }
+let demoRenderRaw=null;
+{ demoRenderRaw=globalThis.render; const wrapR=name=>{ const f=globalThis[name]; if(typeof f==='function') globalThis[name]=function(...a){ return demoRun(f,a,this); }; };
+  ['render','renderChars','renderGuild','renderTabView','renderBoss','renderTotal','renderLoot','renderHeaderSync','fitMiss','fitPriceCard','charEnter'].forEach(wrapR);
+  const wrapX=name=>{ const f=globalThis[name]; if(typeof f==='function') globalThis[name]=function(...a){ if(S===DEMO_ST||(demoAllowed()&&demoTabOk()&&DEMO_ST&&demoDepth>0)) return name==='nx'?Promise.reject(new Error('demo')):undefined; return f.apply(this,a); }; };
+  ['save','syncAll','refreshGuild','refreshSched','fillGuildCands','svSaveNow','svPushBg','nx'].forEach(wrapX);
+  // 예시 화면이 떠 있는 동안 서버 쓰기(PUT/POST/DELETE) 요청은 보내지 않음 (읽기 GET 은 그대로: /api/prices 등)
+  const svF=globalThis.svFetch; if(typeof svF==='function') globalThis.svFetch=function(path,opt,...r){ const m=String(opt?.method||'GET').toUpperCase(); if(m!=='GET'&&(S===DEMO_ST||demoDepth>0)) return Promise.reject(new Error('demo')); return svF.call(this,path,opt,...r); }; }
+// 예시 위 띠: 작은 API 키 칸(한 줄) + '[예시] 예시 화면입니다 · …' — 매 렌더 뒤 #view 맨 위에
+function demoTopHtml(){ return `<div class="demotop"><div class="card dmkey"><span class="dmk-t">넥슨 Open API 키로 내 본캐·부캐를 불러와요</span><button class="btn" id="importAccBtn">+ 캐릭터 추가 (API 키로 불러오기)</button></div>
+  <div class="dmbanner" role="status"><span class="dmbadge">예시</span><b>예시 화면입니다 · API키를 넣으면 내 캐릭터로 보여요</b></div></div>`; }
+function demoTopPut(){ const v=$('#view'); if(!v) return; const on=demoAllowed()&&demoTabOk(); document.body.classList.toggle('demo',on); const t=v.querySelector(':scope>.demotop'); if(!on){ t?.remove(); return; } if(!t) v.insertAdjacentHTML('afterbegin',demoTopHtml()); }
+new MutationObserver(()=>demoTopPut()).observe(document.getElementById('view'),{childList:true});
+// 예시 화면에서: 캐릭터 클릭 = 예시 캐릭터 바꿈, 바꾸는 버튼(체크·드롭·삭제·수정 등)은 막음, '+ 추가' = 실제 키 등록 창
+document.addEventListener('click',e=>{ if(!(demoAllowed()&&demoTabOk())) return; const t=e.target;
+  if(t.closest('#importAccBtn,#addCharBtn,.side .addbtn,#charAdd')) return; // 실제 로그인 흐름 그대로
+  const ch=t.closest('#charList .char[data-id]'); if(ch&&!t.closest('.drag-h,[data-edit],[data-move]')){ e.preventDefault(); e.stopImmediatePropagation(); if(DEMO_ST){ DEMO_ST.activeId=ch.dataset.id; tab='boss'; syncTabs(); render(); } return; }
+  const OK='[data-tab],[data-filter],[data-pckind],[data-pctab],[data-cpage],.sortlink,[data-sort],[data-lt],[data-page],.pgbtn,a[href]';
+  if(t.closest('#view,#charList')&&!t.closest(OK)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
+// 처음 열 때(로그인 전): 이번 주 보스 예시
+setTimeout(()=>{ if(demoAllowed()&&tab!=='live'){ tab='boss'; syncTabs(); render(); } },0);
+// 가격(결정석·공용 아이템 시세)이 늦게 오면 예시를 새 가격으로 다시 만들고 다시 그림
+setInterval(()=>{ if(DEMO_ST&&demoAllowed()&&demoTabOk()&&demoSig()!==DEMO_SIG) render(); },1000);
 </script>
 </body>
 </html>

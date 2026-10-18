@@ -1658,3 +1658,16 @@ header .logo .logo-d{display:flex;align-items:center}
 #svMainSec .apiguide li{white-space:nowrap}
 #svMainSec .apiguide .agn{display:inline-block;width:1.4em;color:var(--accent);font-weight:700;font-size:1.15em;line-height:1}
 #svMainSec .apiguide .aga{margin-left:1.4em;color:var(--accent2);font-weight:600}
+/* demo-mockup: 로그인 전 예시 화면 — 위 작은 API 키 칸(한 줄) + 예시 띠 */
+#view>.demotop{grid-column:1/-1;display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+#view .dmkey{display:flex;align-items:center;justify-content:center;gap:14px;padding:10px 14px;margin:0}
+#view .dmkey .dmk-t{font-weight:600;white-space:nowrap}
+#view .dmkey #importAccBtn{position:relative;white-space:nowrap;border:1.5px solid #ffb066!important;box-shadow:0 0 3px rgba(255,154,60,.85),0 0 10px rgba(255,154,60,.5),0 0 20px rgba(255,154,60,.25),inset 0 0 6px rgba(255,190,120,.3)!important}
+#view .dmkey #importAccBtn::after{content:'';position:absolute;inset:-2px;border-radius:12px;pointer-events:none;box-shadow:0 0 8px 1px rgba(255,154,60,.7),0 0 26px 4px rgba(255,154,60,.35);opacity:.35;animation:neonBreath 5s ease-in-out infinite}
+[data-theme="light"] #view .dmkey #importAccBtn{border-color:#e0701a!important;box-shadow:0 0 3px rgba(242,140,40,.7),0 0 9px rgba(242,140,40,.4),0 0 16px rgba(242,140,40,.2)!important}
+@media (prefers-reduced-motion:reduce){#view .dmkey #importAccBtn::after{animation:none!important;opacity:.55}}
+#view .dmbanner{display:flex;align-items:center;justify-content:center;gap:8px;padding:7px 12px;border-radius:10px;border:1px solid rgba(92,225,255,.45);background:linear-gradient(90deg,rgba(42,168,216,.08),rgba(42,168,216,.2),rgba(42,168,216,.08));box-shadow:0 0 12px rgba(92,225,255,.15)}
+#view .dmbanner b{white-space:nowrap;font-weight:700}
+.dmbadge{display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;background:linear-gradient(180deg,#5ce1ff,#2aa8d8);color:#06222e;font-size:.72rem;font-weight:800;letter-spacing:.04em}
+[data-theme="light"] #view .dmbanner{border-color:rgba(20,130,180,.45);background:linear-gradient(90deg,rgba(42,168,216,.05),rgba(42,168,216,.14),rgba(42,168,216,.05))}
+@media (max-width:600px){#view .dmkey{flex-direction:column;gap:8px} #view .dmkey .dmk-t{font-size:.85rem} #view .dmbanner b{font-size:.78rem}}
