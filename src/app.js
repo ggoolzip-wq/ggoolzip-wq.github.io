@@ -1796,7 +1796,7 @@ function weekRingLine(){ const by={}, t={r4:0,c4:0,gl:0,x:0}; let n=0;
   // b213: 결과 = 위아래 줄 숫자처럼 오른쪽 숫자 칸(.rpn), 리4·컨4 앞에 리스트레인트·컨티뉴어스 링 아이콘(글씨 높이)
   // b214: 리4·컨4·연마석 = 아이콘 + xN (글자 없음, 말풍선 = 이름), 꽝 = 글자 '꽝 xN'. 개수 표기 xN
   const RI={r4:['ring_restraint',OUT_NAME.r4],c4:['ring_continuous',OUT_NAME.c4],gl:['g_life',ITEMS.g_life.n]};
-  const R=['r4','c4','gl','x'].filter(q=>t[q]>0).map(q=>RI[q]?`<span class="rpo" data-tip="${esc(RI[q][1]+' '+xN(t[q]))}" aria-label="${esc(RI[q][1]+' '+xN(t[q]))}">${miniIcon(RI[q][0])}${tsm(xN(t[q]))}</span>`:`<span class="rpo">${tsm('꽝 '+xN(t[q]))}</span>`).join('');
+  const R=['r4','c4','gl','x'].filter(q=>t[q]>0).map(q=>RI[q]?`<span class="rpo rio-${q}" data-tip="${esc(RI[q][1]+' '+xN(t[q]))}" aria-label="${esc(RI[q][1]+' '+xN(t[q]))}">${miniIcon(RI[q][0])}${tsm(xN(t[q]))}</span>`:`<span class="rpo">${tsm('꽝 '+xN(t[q]))}</span>`).join('');
   return `<div class="muted rp-line rp-ring rc-y"><span class="rpl"><span class="rpg">${itemIcon(top)}${tsm(`반지 상자 ${xN(n)}`)}</span></span>${R?`<b class="rpn rpouts">${R}</b>`:''}</div>`; }
 /* b185: 남은 결정석 — 주간 = remainingWeekly(c).list(남은 칸만큼, 안 잡은 보스 1인당 가격 상위), 검마 = 이번 달 안 잡은 검은 마법사. 보이는 캐릭터만(규칙 9), 0이면 줄 없음 */
 const leftOf = c => { const r=remainingWeekly(c); return {w:r.list.reduce((t,x)=>t+x.value,0), m:r.mon.filter(x=>x.slot==='blackmage').reduce((t,x)=>t+x.value,0)}; };

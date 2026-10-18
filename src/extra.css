@@ -1689,3 +1689,10 @@ header .logo .logo-d{display:flex;align-items:center}
 .rp-line.rp-ring .rpl{flex:none;overflow:visible}
 .rp-line.rp-ring .rpo{display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
 .rp-line.rp-ring .rpo img.ric{width:auto;height:1em;flex:none}
+
+/* b215: 반지 상자 줄 아이콘 = 보이는 부분(투명 여백 뺀 그림) 높이를 모두 글씨 높이(1em)로, 세로 가운데 맞춤.
+   원본 32px 의 그림 칸(알파>64): 리스트레인트 27px(y2~28) · 컨티뉴어스 28px(y2~29) · 생명의 연마석 29px(y1~29) → 배율 32/27 · 32/28 · 32/29.
+   늘어난 투명 여백은 음수 여백으로 상쇄(줄 높이·간격 그대로) */
+.rp-line.rp-ring .rpo.rio-r4 img.ric{height:1.1852em;margin:-.0926em;position:relative;top:.0185em}
+.rp-line.rp-ring .rpo.rio-c4 img.ric{height:1.1429em;margin:-.0714em}
+.rp-line.rp-ring .rpo.rio-gl img.ric{height:1.1034em;margin:-.0517em;position:relative;top:.0172em}
