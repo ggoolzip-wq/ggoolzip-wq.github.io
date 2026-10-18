@@ -14,6 +14,10 @@ for _ in range(50):
 SMOOTH='html,body,*{scroll-behavior:smooth!important}'
 def down(pg):
     pg.evaluate("window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'})"); pg.wait_for_timeout(150); return pg.evaluate("scrollY")
+def cclick(pg,i):   # 실제 클릭처럼(마우스) — playwright click 은 먼저 요소로 스크롤해 버려서 좌표 클릭
+    r=pg.evaluate("i=>{const e=document.querySelector(`#charList .char[data-id=\"${i}\"] .cname, #charList .char[data-id=\"${i}\"]`);const r=e.getBoundingClientRect();return [r.left+Math.min(30,r.width/2),r.top+r.height/2,r.top>=0&&r.bottom<=innerHeight]}",i)
+    if not r[2]: pg.evaluate("i=>document.querySelector(`#charList .char[data-id=\"${i}\"]`).click()",i)
+    else: pg.mouse.click(r[0],r[1])
 def tabclick(pg,t):
     pg.click(f'#tabs [data-tab="{t}"]'); return pg.evaluate("scrollY")   # 클릭 바로 뒤 = 이미 0 (애니메이션 없음)
 try:
@@ -43,11 +47,11 @@ try:
     inner=pg.evaluate("[...document.querySelectorAll('#view *')].filter(e=>e.scrollTop>0).length")
     check('탭 안 스크롤 칸도 맨 위', inner==0, (r0,inner))
     # 다른 탭(수익 분석)에서 왼쪽 캐릭터 클릭 → 이번 주 보스 + 맨 위
-    y0=down(pg); pg.click('#charList .char[data-id="c2"]'); y1=pg.evaluate("scrollY"); pg.wait_for_timeout(300)
+    y0=down(pg); cclick(pg,'c2'); y1=pg.evaluate("scrollY"); pg.wait_for_timeout(300)
     st=pg.evaluate("[tab,S.activeId,scrollY]")
     check('다른 탭에서 캐릭터 클릭 → 이번 주 보스, 맨 위', y0>0 and y1==0 and st==['boss','c2',0], (y0,y1,st))
     # 보스 탭에서 캐릭터 클릭 = 스크롤 그대로 (b189)
-    y0=down(pg); pg.click('#charList .char[data-id="c3"]'); pg.wait_for_timeout(300); y1=pg.evaluate("scrollY")
+    y0=down(pg); cclick(pg,'c3'); pg.wait_for_timeout(300); y1=pg.evaluate("scrollY")
     check('보스 탭에서 캐릭터 클릭 = 스크롤 그대로', y0>0 and abs(y1-y0)<2 and pg.evaluate("S.activeId")=='c3', (y0,y1))
     # 같은 탭 다시 그리기·동기화 render = 스크롤 그대로
     pg.click('#tabs [data-tab="total"]'); y0=down(pg); pg.evaluate("render(); renderTabView()"); pg.wait_for_timeout(300); y1=pg.evaluate("scrollY")
@@ -69,9 +73,9 @@ try:
         y0=down(pg); y1=tabclick(pg,t); pg.wait_for_timeout(300); res.append((t,y0,y1))
     check('예시: 탭 바꾸면 맨 위', all(r[1]>0 and r[2]==0 for r in res), res)
     ids=pg.evaluate("[...document.querySelectorAll('#charList .char[data-id]')].map(e=>e.dataset.id)")
-    pg.click('#tabs [data-tab="loot"]'); y0=down(pg); pg.click(f'#charList .char[data-id="{ids[1]}"]'); y1=pg.evaluate("scrollY"); pg.wait_for_timeout(300)
+    pg.click('#tabs [data-tab="loot"]'); y0=down(pg); cclick(pg,ids[1]); y1=pg.evaluate("scrollY"); pg.wait_for_timeout(300)
     check('예시: 다른 탭에서 캐릭터 클릭 → 이번 주 보스, 맨 위', y0>0 and y1==0 and pg.evaluate("tab")=='boss', (y0,y1))
-    y0=down(pg); pg.click(f'#charList .char[data-id="{ids[0]}"]'); pg.wait_for_timeout(300); y1=pg.evaluate("scrollY")
+    y0=down(pg); cclick(pg,ids[0]); pg.wait_for_timeout(300); y1=pg.evaluate("scrollY")
     check('예시: 보스 탭에서 캐릭터 클릭 = 스크롤 그대로', y0>0 and abs(y1-y0)<2, (y0,y1))
     ctx.close(); b.close()
 finally: srv.terminate()
