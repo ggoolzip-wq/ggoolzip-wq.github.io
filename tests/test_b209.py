@@ -28,7 +28,7 @@ try:
         r=pg.evaluate("(()=>{const b=document.getElementById('importAccBtn'),c=getComputedStyle(b),a=getComputedStyle(b,'::after');return {bs:c.boxShadow,an:a.animationName,dur:a.animationDuration,bw:c.borderTopWidth,h:b.getBoundingClientRect().height,one:b.scrollWidth<=b.clientWidth+1}})()")
         if rm=='no-preference':
             check(f'{th}: 테두리 네온(겹 그림자) + 아주 느린 숨쉬기(5초)', r['bs'].count('rgba')>=3 and r['an']=='neonBreath' and r['dur']=='5s' and r['h']<40, r)
-            pg.mouse.move(0,0); pg.wait_for_timeout(2500); shot(pg.locator('#view .card.empty'),f'button_{th}')
+            pg.mouse.move(0,0); pg.wait_for_timeout(2500); shot(pg.locator('#view .dmkey'),f'button_{th}')
         else:
             check(f'{th}: 움직임 줄이기 → 고정 네온(애니메이션 없음)', r['an']=='none' and r['bs'].count('rgba')>=3, r)
         if th=='dark' and rm=='no-preference':
