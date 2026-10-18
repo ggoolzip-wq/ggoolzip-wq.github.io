@@ -4018,22 +4018,29 @@ function thisWeekChart(T){ // b135: 주간 메소 그래프 = 이번 주만, 목
     <polyline fill="none" stroke="#2f7fd8" stroke-width="2.5" stroke-linejoin="round" points="${pts}"/>${dots}${xl}
     <text x="${W-pr}" y="14" text-anchor="end" fill="#2f7fd8" font-size="11">이번 주 ${meso(s)}</text></svg></div>`;
 }
+function wkPageRender(){ const old=document.querySelector('.chart.lux.wk'); if(!old||!wkLast) return; const t=document.createElement('div'); t.innerHTML=cumLineChart(wkLast.rows0,wkLast.T,wkLast.o); const nw=t.firstElementChild; nw.classList.add('inview'); old.replaceWith(nw); if(typeof tsvAnim==='function') tsvAnim(nw); }
+document.addEventListener('click',e=>{ const b=e.target.closest?.('[data-wkpg]'); if(!b||b.disabled) return; WK_PAGE=Math.max(0,WK_PAGE+(+b.dataset.wkpg||0)); tipHide(); wkPageRender(); });
+/* b211: 주간 메소(perWeek) = 5주씩 페이지 (기본 = 가장 최근 5주). WK_PAGE = 최근부터 몇 번째 페이지(0 = 최신) */
+const WK_PER=5; let WK_PAGE=0, wkLast=null;
 function cumLineChart(rows0,T,o={}){ // b136: o.perWeek = 점 높이가 그 주 메소(1주차, 2주차 …), 누적 아님
-  const MW=T?monthlyByWeek(T):{}; const rows=rows0.map(r=>{ const m=MW[r.week]||{}; return {...r,mm:m.meso||0,mn:m.n||0,wcry:(r.crys??r.total??0),bm:m.cry||0,cry:(r.crys??r.total??0)+(m.cry||0),sale:(r.isale||0)+(m.sale||0),total:(r.total||0)+(m.meso||0)}; });
+  if(o.perWeek) wkLast={rows0,T,o};
+  const MW=T?monthlyByWeek(T):{}; const rowsA=rows0.map((r,wi)=>{ const m=MW[r.week]||{}; return {...r,mm:m.meso||0,mn:m.n||0,wcry:(r.crys??r.total??0),bm:m.cry||0,cry:(r.crys??r.total??0)+(m.cry||0),sale:(r.isale||0)+(m.sale||0),total:(r.total||0)+(m.meso||0),wi}; });
+  const nA=rowsA.length, P=o.perWeek?Math.max(1,Math.ceil(nA/WK_PER)):1, pg=o.perWeek?Math.min(Math.max(0,WK_PAGE),P-1):0;
+  const rows=o.perWeek&&nA>WK_PER?rowsA.slice(Math.max(0,nA-WK_PER*(pg+1)),nA-WK_PER*pg):rowsA, allSum=rowsA.reduce((t,r)=>t+r.total,0);
   // b138: 고급 다크 스타일 — 오렌지→골드 그라데이션 선 + 은은한 글로우, 오렌지 영역 그라데이션, 점선 격자, 값 라벨(외곽선), 그려지는 애니메이션
-  const n=rows.length, pl=60, pr=18, pt=48, pb=40, Hh=260, bw=Math.max(34,(640-pl-pr)/Math.max(1,n)), W=Math.max(640,pl+pr+n*bw);
+  const n=rows.length, pl=60, pr=18, pt=48, pb=40, Hh=260, bw=o.perWeek&&nA>WK_PER?(640-pl-pr)/WK_PER:Math.max(34,(640-pl-pr)/Math.max(1,n)), W=Math.max(640,pl+pr+n*bw);
   let cum=0; const acc=rows.map(r=>cum+=r.total), cums=o.perWeek?rows.map(r=>r.total):acc; const cmax=Math.max(1,...cums)*1.08;
   const X=i=>pl+i*bw+bw/2, Y=v=>Hh-pb-(Hh-pb-pt)*v/cmax, step=Math.max(1,Math.ceil(n/(W/60)));
   const pts=cums.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' '), u=++chartUid;
   const top=Math.max(1,...cums), grid=`<line class="cyax" x1="${pl}" x2="${pl}" y1="${pt-6}" y2="${Hh-pb}" stroke="url(#lcv${u})"/>`+cums.map((v,i)=>`<line class="ctick" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Hh-pb}" y2="${Hh-pb+5}"/>`).join('')+[0,.25,.5,.75,1].map(f=>`<line class="cg${f?'':' cg0'}" x1="${pl}" x2="${W-pr}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}" stroke="url(#${f?'lcgr':'lcb'}${u})"/><line class="cytk" x1="${pl-4}" x2="${pl}" y1="${Y(top*f).toFixed(1)}" y2="${Y(top*f).toFixed(1)}"/>${segLab(f?fmtEok(top*f):'0',pl-8,(Y(top*f)+3.5).toFixed(1),'end','cax',9)}`).join('');
-  const xl=rows.map((r,i)=>i%step===0||r.cur?`<text class="cxl${r.cur?' cur':''}" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle">${o.perWeek?`${i+1}주차`:fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(rows[n-1]&&rows[n-1].cur?`<text class="cxl cur sub" x="${X(n-1).toFixed(1)}" y="${Hh-pb+32}" text-anchor="middle">이번 주</text>`:'');
-  const tipOf=(r,v)=>o.perWeek?`${rows.indexOf(r)+1}주차 총 수익 : ${meso(r.total)}\n주간 결정석 : ${meso(r.wcry)}\n검마 결정석 : ${meso(r.bm)}\n아이템 판매 : ${meso(r.sale)}`:`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n결정석 : ${meso(r.cry)}\n아이템 판매 : ${meso(r.sale)}`+`\n누적 ${meso(o.perWeek?acc[rows.indexOf(r)]:v)}`;
+  const xl=rows.map((r,i)=>i%step===0||r.cur?`<text class="cxl${r.cur?' cur':''}" x="${X(i).toFixed(1)}" y="${Hh-pb+18}" text-anchor="middle">${o.perWeek?`${r.wi+1}주차`:fmtWeek(r.week).split(' ~')[0]}</text>`:'').join('')+(rows[n-1]&&rows[n-1].cur?`<text class="cxl cur sub" x="${X(n-1).toFixed(1)}" y="${Hh-pb+32}" text-anchor="middle">이번 주</text>`:'');
+  const tipOf=(r,v)=>o.perWeek?`${r.wi+1}주차 총 수익 : ${meso(r.total)}\n주간 결정석 : ${meso(r.wcry)}\n검마 결정석 : ${meso(r.bm)}\n아이템 판매 : ${meso(r.sale)}`:`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n주간 수익 ${meso(r.total)}`+(r.mn?`\n  └ 월간 보스 ${r.mn}개 ${meso(r.mm)} 포함`:'')+`\n결정석 : ${meso(r.cry)}\n아이템 판매 : ${meso(r.sale)}`+`\n누적 ${meso(o.perWeek?acc[rows.indexOf(r)]:v)}`;
   /* b186: 주간 메소(perWeek) = 주마다 막대 4개 (총 수익 · 주간 결정석 · 검마 · 아이템 판매), 점·선은 총 수익 */
   const WB_LB=['이번주 총 수익','주간 결정석','검마 수익','아이템 판매수익'];
   const bwid=Math.max(4,Math.min(9,bw*.17)), wbars=(r,i)=>[r.total,r.wcry,r.bm,r.sale].map((val,k)=>`<rect class="cbar wb wb${k}" pathLength="1" data-tip="${esc(`${fmtWeek(r.week)}${r.cur?' (이번 주)':''}\n${WB_LB[k]} ${meso(val)}`)}" x="${(X(i)+(k-2)*bwid*1.15+bwid*.075).toFixed(1)}" y="${Y(val).toFixed(1)}" width="${bwid.toFixed(1)}" height="${Math.max(0,Hh-pb-Y(val)).toFixed(1)}" rx="2"/>`).join('');
   const best=cums.indexOf(top);
-  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" ${o.perWeek?'':`data-tip="${esc(tipOf(rows[i],v))}"`} style="--d:${(.15+i*.06).toFixed(2)}s">${o.perWeek?'':`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/>`}${o.perWeek?wbars(rows[i],i):`<rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/>`}<circle data-tipanchor="1" ${o.perWeek?`class="wdot" data-tip="${esc(tipOf(rows[i],v))}"`:''} cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/></g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
-  return `<div class="chart scrollx linechart lux${o.perWeek?' wk':''}"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?cum:Math.max(...cums,0))}</b></div>${o.perWeek?`<div class="wlegend"><span><i class="wb0"></i>이번주 총 수익</span><span><i class="wb1"></i>주간 결정석</span><span><i class="wb2"></i>검마</span><span><i class="wb3"></i>아이템 판매</span></div>`:''}<svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
+  const dots=cums.map((v,i)=>`<g class="lpt${rows[i].cur?' cur':''}${i===best&&n>1?' best':''}" ${o.perWeek?'':`data-tip="${esc(tipOf(rows[i],v))}"`} style="--d:${(.15+i*.06).toFixed(2)}s">${o.perWeek?(()=>{ const R3=(rows[i].cur?5:4)*3, cx=X(i), cy=Y(v), by=Hh-pb; return `<path class="whit" data-tip="${esc(tipOf(rows[i],v))}" fill="transparent" d="M${(cx-R3).toFixed(1)},${cy.toFixed(1)}a${R3},${R3} 0 1,1 ${2*R3},0a${R3},${R3} 0 1,1 ${-2*R3},0ZM${(cx-R3).toFixed(1)},${cy.toFixed(1)}H${(cx+R3).toFixed(1)}V${by}H${(cx-R3).toFixed(1)}Z"/>`; })():''}${o.perWeek?'':`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${pt-10}" width="${bw.toFixed(1)}" height="${Hh-pb-pt+10}" fill="transparent"/>`}${o.perWeek?wbars(rows[i],i):`<rect class="cbar" x="${(X(i)-Math.min(16,bw*.2)).toFixed(1)}" y="${Y(v).toFixed(1)}" width="${(Math.min(32,bw*.4)).toFixed(1)}" height="${Math.max(0,Hh-pb-Y(v)).toFixed(1)}" rx="5" fill="url(#lcbar${u})"/>`}<circle data-tipanchor="1" ${o.perWeek?`class="wdot" data-tip="${esc(tipOf(rows[i],v))}"`:''} cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${rows[i].cur?5:4}"/></g>${n<=16&&v?`<g class="cval cvd${i===best&&n>1?' best':''}" pointer-events="none" style="--d:${(.3+i*.06).toFixed(2)}s"><title>${fmtEok(v)}</title>${tirSvg(fmtEok(v),X(i),Y(v)-13,13)}</g>`:''}`).join('');
+  return `<div class="chart scrollx linechart lux${o.perWeek?' wk':''}"><div class="ctot"><span>${o.perWeek?'총 누적':'누적'}</span><b>${meso(o.perWeek?allSum:Math.max(...cums,0))}</b></div>${o.perWeek&&P>1?`<div class="wkpg" role="group" aria-label="주간 메소 페이지"><button type="button" class="wkpb" data-wkpg="1"${pg>=P-1?' disabled':''} aria-label="이전 5주">◀ 이전</button><span class="wkpn">${P-pg} / ${P}</span><button type="button" class="wkpb" data-wkpg="-1"${pg<=0?' disabled':''} aria-label="다음 5주">다음 ▶</button></div>`:''}${o.perWeek?`<div class="wlegend"><span><i class="wb0"></i>이번주 총 수익</span><span><i class="wb1"></i>주간 결정석</span><span><i class="wb2"></i>검마</span><span><i class="wb3"></i>아이템 판매</span></div>`:''}<svg viewBox="0 0 ${W} ${Hh}" ${W>640?`style="width:${W}px;max-width:none"`:''} role="img" aria-label="주간 메소 그래프">
       <defs><linearGradient id="lcg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a3c" stop-opacity=".38"/><stop offset=".55" stop-color="#ff9a3c" stop-opacity=".1"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></linearGradient>
       <linearGradient id="lcs${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff8a3d"/><stop offset=".6" stop-color="#ffb347"/><stop offset="1" stop-color="#ffd978"/></linearGradient>
       <linearGradient id="lcgr${u}" gradientUnits="userSpaceOnUse" x1="${pl}" y1="0" x2="${W-pr}" y2="0"><stop offset="0" stop-color="#ffcf7a" stop-opacity=".28"/><stop offset=".5" stop-color="#ffb347" stop-opacity=".14"/><stop offset="1" stop-color="#ffcf7a" stop-opacity=".03"/></linearGradient>
@@ -5400,7 +5407,7 @@ function tipShow(el){
   tipFor=el; const [h0,...rest]=String(el.dataset.tip).split('\n'); // 첫 줄 = 굵은 제목(아이템 이름)
   tipEl.classList.toggle('rich',!!el.dataset.tiphtml); tipEl.classList.toggle('ctip',!!el.closest?.('.chart.lux')); // b138
   if(el.dataset.tiphtml) tipEl.innerHTML=el.dataset.tiphtml; /* b111: 아이콘 있는 말풍선 — 우리 코드가 만든 HTML(chaosTip)만 넣음 */ else tipEl.replaceChildren(Object.assign(document.createElement('b'),{className:'tth',textContent:h0}),...(rest.length?['\n'+rest.join('\n')]:[])); tipEl.classList.add('show');
-  const r=(el.querySelector?.('[data-tipanchor]')||el).getBoundingClientRect(), w=tipEl.offsetWidth, h=tipEl.offsetHeight, m=8;
+  const r=((el.classList?.contains('whit')&&el.parentNode.querySelector('circle.wdot'))||el.querySelector?.('[data-tipanchor]')||el).getBoundingClientRect(), /* b211: 넓힌 점 범위 → 말풍선은 점 위에 */ w=tipEl.offsetWidth, h=tipEl.offsetHeight, m=8;
   let x=Math.min(Math.max(m,r.left+r.width/2-w/2),innerWidth-w-m), y=r.top-h-10, below=false; if(y<m){ y=Math.min(r.bottom+10,innerHeight-h-m); below=true; }
   tipEl.classList.toggle('below',below); tipEl.style.setProperty('--ax',Math.min(Math.max(14,r.left+r.width/2-x),w-14)+'px');
   tipEl.style.left=x+'px'; tipEl.style.top=y+'px';
@@ -5801,9 +5808,10 @@ function demoBuild(){
   st.settings={...st.settings, accounts:[{id:'demoA',label:'예시 계정',key:'DEMO-NOT-A-KEY',main:true}], guilds:[{world:'스카니아',name:'메보기예시길드'}], suroChars:C.map(c=>c.id), autoSync:false};
   const live=S; S=st;
   try{
-    const sale=(c,id,key,ik)=>{ const p=IP[priceId(ik)]; if(!p||!(p.p>0)||R2()>.85) return; const n=curParty(c,id); c.drev[key]={m:Math.round(p.p/n),a:Math.round(p.p/1e4)/1e4,p:n,i:ik}; }; // 판 아이템만, 실제 공용 시세, 분배면 ÷인원
+    const sale=(c,id,key,ik)=>{ const p=IP[priceId(ik)]; if(!p||!(p.p>0)||R2()>.85) return; const md=c.dmode[key]; if(md==='l') return; const n=md==='w'?1:curParty(c,id); /* b211: 블빵승리 = 전부, 분배 = ÷인원, 블빵패배 = 판 것 없음 */ c.drev[key]={m:Math.round(p.p/n),a:Math.round(p.p/1e4)/1e4,p:n,i:ik}; }; // 판 아이템만, 실제 공용 시세, 분배면 ÷인원
     const loot=(c,id,cfg,map,out)=>{ const b=findBoss(id); for(const it of dropsFor(b,cfg.diff)){ if(!ITEMS[it]||R()>DEMO_P(it)) continue; const key=id+'|'+it; map[key]=1;
-        if(isRing(it)){ const r=R(), o=it==='r_life'&&r<.12?'gl':r<.125?'r4':r<.14?'c4':'x'; out[key]=[o]; if(o!=='x'&&R()<.5) sale(c,id,key,o==='gl'?'g_life':'ring:'+o); }
+        const pty=curParty(c,id); if(pty>1) c.dmode[key]=isRing(it)?'s':(R()<.35?'s':R()<1/pty?'w':'l'); // b211: 파티 드롭 = 블빵(승리 1/인원)·분배, 반지 상자는 항상 분배
+        if(isRing(it)){ const q=ring4(it)||{r4:0,c4:0,gl:0}, r=R()*100, o=r<q.r4?'r4':r<q.r4+q.c4?'c4':r<q.r4+q.c4+q.gl?'gl':'x'; out[key]=[o]; if(o!=='x'&&R()<.5) sale(c,id,key,o==='gl'?'g_life':'ring:'+o); } // 결과 = 실제 상자 확률(BOX_INFO·RING_GL)
         else if(it==='chaosbox'){ const k=CHAOS_PICK[Math.floor(R()*CHAOS_PICK.length)]; out[key]=['cb:'+k]; sale(c,id,key,'cb:'+k); }
         else sale(c,id,key,it); break; } };
     const roll=(c,pClear)=>{ c.weekly={}; c.drops={}; c.dropOut={}; c.drev={}; c.dmode={};
@@ -5827,7 +5835,7 @@ function demoRun(fn,args,self){ if(demoDepth>0) return fn.apply(self,args);
   try{ return fn.apply(self,args); } finally { demoDepth--; S=s0; schedC=sc0; guildC=gc0; demoLive=null; } }
 let demoRenderRaw=null;
 { demoRenderRaw=globalThis.render; const wrapR=name=>{ const f=globalThis[name]; if(typeof f==='function') globalThis[name]=function(...a){ return demoRun(f,a,this); }; };
-  ['render','renderChars','renderGuild','renderTabView','renderBoss','renderTotal','renderLoot','fitMiss','fitPriceCard','charEnter'].forEach(wrapR);
+  ['render','renderChars','renderGuild','renderTabView','renderBoss','renderTotal','renderLoot','fitMiss','fitPriceCard','charEnter','wkPageRender'].forEach(wrapR);
   // 머리글(동기화 버튼 등)은 예시 데이터가 아니라 진짜 상태로: 예시 안에서 부르면 진짜 S 로 바꿔서 그림
   const hs=globalThis.renderHeaderSync; if(typeof hs==='function') globalThis.renderHeaderSync=function(...a){ if(demoDepth>0&&demoLive){ const d=S,sc=schedC; S=demoLive; schedC=DEMO_SC0||schedC; try{ return hs.apply(this,a); } finally { S=d; schedC=sc; } } return hs.apply(this,a); };
   const wrapX=name=>{ const f=globalThis[name]; if(typeof f==='function') globalThis[name]=function(...a){ if(S===DEMO_ST||(demoAllowed()&&demoTabOk()&&DEMO_ST&&demoDepth>0)) return name==='nx'?Promise.reject(new Error('demo')):undefined; return f.apply(this,a); }; };
@@ -5843,7 +5851,7 @@ new MutationObserver(()=>demoTopPut()).observe(document.getElementById('view'),{
 document.addEventListener('click',e=>{ if(!(demoAllowed()&&demoTabOk())) return; const t=e.target;
   if(t.closest('#importAccBtn,#addCharBtn,.side .addbtn,#charAdd')) return; // 실제 로그인 흐름 그대로
   const ch=t.closest('#charList .char[data-id]'); if(ch&&!t.closest('.drag-h,[data-edit],[data-move]')){ e.preventDefault(); e.stopImmediatePropagation(); if(DEMO_ST){ DEMO_ST.activeId=ch.dataset.id; tab='boss'; syncTabs(); render(); } return; }
-  const OK='[data-tab],[data-filter],[data-pckind],[data-pctab],[data-cpage],.sortlink,[data-sort],[data-lt],[data-page],.pgbtn,a[href]';
+  const OK='[data-wkpg],[data-tab],[data-filter],[data-pckind],[data-pctab],[data-cpage],.sortlink,[data-sort],[data-lt],[data-page],.pgbtn,a[href]';
   if(t.closest('#view,#charList')&&!t.closest(OK)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
 // 처음 열 때(로그인 전): 이번 주 보스 예시
 setTimeout(()=>{ if(demoAllowed()&&tab!=='live'){ tab='boss'; syncTabs(); render(); } },0);
