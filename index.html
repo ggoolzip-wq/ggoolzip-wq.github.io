@@ -3955,15 +3955,15 @@ const ringExpHtml=T=>{ const e=ringExp(T); return `<span class="ringexp">기댓�
  * 세르니움·아르크스·오디움·도원경 = 하늘→파랑, 아르테리아 이후 = 분홍→핫핑크 (반짝임은 다른 순위 표와 같은 .spk) */
 const BOSS_REGION={lucid:'arc',will:'arc',dusk:'arc',jinhilla:'arc',dunkel:'arc',blackmage:'bm',seren:'gr1',kalos:'gr1',adversary:'gr1',kaling:'gr1',star:'gr2',limbo:'gr2',baldrix:'gr2',bellona:'gr2',jupiter:'gr2'};
 
-/* b111: 똥캐 TOP5 — 득템 횟수(득템왕과 같은 셈법) 적은 순 1~5위만. 메달 색 없음, 1위 = 왕관 대신 똥, 5명 모두 초상화 위 똥 + 글자 주변 파리 */
+/* b111: 똥캐 TOP5 → b212: TOP3 (1~3위만) — 득템 횟수(득템왕과 같은 셈법) 적은 순. 메달 색 없음, 1위 = 왕관 대신 똥, 5명 모두 초상화 위 똥 + 글자 주변 파리 */
 function poopHtml(T){
   const ord=orderedChars().map(c=>c.id), oi=o=>{ const i=ord.indexOf(o.id); return i<0?1e6:i; };
   const rows=T.chars.map(o=>{ const m=noBust(lootOf(o.items,o.outs,md=>md!=='l')); return {...o,ln:Object.values(m).reduce((x,y)=>x+y,0)}; })
-    .sort((a,b)=>a.ln-b.ln||oi(a)-oi(b)||a.name.localeCompare(b.name)).slice(0,5);
+    .sort((a,b)=>a.ln-b.ln||oi(a)-oi(b)||a.name.localeCompare(b.name)).slice(0,3);
   const FLY=(n,st='')=>`<svg class="fly f${n}"${st} viewBox="0 0 12 10" width="7" height="6" aria-hidden="true"><ellipse cx="3.6" cy="3" rx="3" ry="2" fill="rgba(200,225,255,.75)"/><ellipse cx="8.4" cy="3" rx="3" ry="2" fill="rgba(200,225,255,.75)"/><ellipse cx="6" cy="6" rx="2.2" ry="3" fill="#222"/><circle cx="6" cy="3.4" r="1.4" fill="#111"/></svg>`; /* b115: 날파리 = 초상화 주변, 작게, 4마리, 빠르게 */
   const av=o=>{ const c=S.characters.find(x=>x.id===o.id); return `<span class="poopav flies">${c?avatar(c,'rkav'):''}<span class="poop" aria-hidden="true">💩</span>${[1,2,3,4].map(n=>{ let h=0; for(const ch of o.id+n) h=(h*131+ch.charCodeAt(0))>>>0; const r=x=>((h=(h*1103515245+12345)>>>0)%1000)/1000*x; return FLY(n,` style="animation-duration:${(0.8+r(1)).toFixed(2)}s;animation-delay:-${r(2).toFixed(2)}s"`); }).join('')}</span>`; };
   const c1=rows[0]&&S.characters.find(x=>x.id===rows[0].id);
-  return `<div class="card kingcard" id="poopKing"><h2><span class="poopav ph">${c1?avatar(c1,'hking'):''}<span class="poop" aria-hidden="true">💩</span></span> 똥캐 TOP5</h2><div style="overflow-x:auto"><table class="ranktbl pooptbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="num">득템 횟수</th></tr></thead><tbody>
+  return `<div class="card kingcard" id="poopKing"><h2><span class="poopav ph">${c1?avatar(c1,'hking'):''}<span class="poop" aria-hidden="true">💩</span></span> 똥캐 TOP3</h2><div style="overflow-x:auto"><table class="ranktbl pooptbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="num">득템 횟수</th></tr></thead><tbody>
     ${rows.map((o,i)=>`<tr class="pk${i+1}"><td><span class="rkno">${i===0?'<span class="crown" aria-hidden="true">💩</span>':''}<span class="rkn">${i+1}</span></span></td><td><span class="rkname">${av(o)}<span class="rknm"><b>${esc(o.name)}</b></span></span></td><td class="num"><b>${o.ln}회</b></td></tr>`).join('')||'<tr><td colspan="3" class="muted">기록 없음</td></tr>'}
     </tbody></table></div></div>`;
 }
