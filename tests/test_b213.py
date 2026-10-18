@@ -75,8 +75,12 @@ try:
       return {txt:R.innerText.replace(/\\s+/g,' '),right:[o.getBoundingClientRect().right,S_.getBoundingClientRect().right],fit:R.scrollWidth<=R.clientWidth+1,h:R.getBoundingClientRect().height,ims}})()""")
     ims=r['ims']; tips=pg.evaluate("[...document.querySelectorAll('.revpanel .rp-ring .rpo')].map(e=>e.dataset.tip||'')"); r4=[x for x,t in zip(ims,tips) if t.startswith('리스트레인트')]; c4=[x for x,t in zip(ims,tips) if t.startswith('컨티뉴어스')]; gl=[x for x,t in zip(ims,tips) if t.startswith('생명의 연마석')]; other=[x for x in ims if x[1].startswith('꽝')]
     check('반지 상자 결과 = 위 줄 숫자처럼 오른쪽 끝 맞춤, 한 줄, 안 잘림', abs(r['right'][0]-r['right'][1])<1.5 and r['fit'] and r['h']<24, r)
-    check('b214: 리4·컨4·연마석 = 아이콘 + xN(글자 없음, 말풍선 = 이름), 꽝 = 글자 꽝 xN', r4 and c4 and gl and all(x[0] and x[1]==('x1' if x is r4[0] or x is gl[0] else 'x2') and abs(x[2]-x[3])<1.5 for x in (r4[0],c4[0],gl[0])) and other and other[0][1]=='꽝 x5' and not other[0][0] and r['txt'].startswith('반지 상자 x9'), (ims,tips,r['txt']))
+    check('b214: 리4·컨4·연마석 = 아이콘 + xN(글자 없음, 말풍선 = 이름), 꽝 = 글자 꽝 xN', r4 and c4 and gl and all(x[0] and x[1]==('x1' if x is r4[0] or x is gl[0] else 'x2') for x in (r4[0],c4[0],gl[0])) and other and other[0][1]=='꽝 x5' and not other[0][0] and r['txt'].startswith('반지 상자 x9'), (ims,tips,r['txt']))
     fs=pg.evaluate("document.querySelector('.revpanel .rp-ring .rpouts').style.fontSize")
+    vm=pg.evaluate("""(()=>[...document.querySelectorAll('.revpanel .rp-ring .rpo img')].map(im=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext('2d');x.drawImage(im,0,0);const d=x.getImageData(0,0,c.width,c.height).data;let b=1e9,f=-1;for(let y=0;y<c.height;y++)for(let X=0;X<c.width;X++)if(d[(y*c.width+X)*4+3]>64){b=Math.min(b,y);f=Math.max(f,y);}
+      const r=im.getBoundingClientRect(),k=r.height/c.height,fs=parseFloat(getComputedStyle(im.parentElement.querySelector('.tsmn')).fontSize);return [+((f-b+1)*k).toFixed(2),+(r.top+(b+f+1)/2*k).toFixed(2),fs]}))()""")
+    lh=pg.evaluate("document.querySelector('.revpanel .rp-ring').getBoundingClientRect().height")
+    check('b215: 리4·컨4·연마석 아이콘 보이는 높이 같음(= 글씨 높이), 세로 가운데 같음, 줄 높이 그대로', len(vm)==3 and max(v[0] for v in vm)-min(v[0] for v in vm)<0.3 and all(abs(v[0]-v[2])<0.5 for v in vm) and max(v[1] for v in vm)-min(v[1] for v in vm)<0.4 and lh<19, (vm,lh))
     check('b214: 네 가지 다 있어도 줄이지 않고 원래 크기', fs=='', fs)
     # 모바일
     pg.set_viewport_size({'width':390,'height':700}); pg.wait_for_timeout(400)
