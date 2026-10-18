@@ -513,7 +513,7 @@ html:not(.dark) .pbtn.pcancel.on, body.light .pbtn.pcancel.on{color:var(--text,#
 .rp-items-n{font-size:.75rem;margin-top:6px;display:flex;align-items:center;gap:4px}
 .rp-items-n .ric{width:18px;height:18px}
 /* 2026-10-10 batch */
-.drop.off{cursor:default;pointer-events:none;border-style:dashed} /* b213: 아이콘·글씨 원래 색, 누를 수 없음(테두리만 점선) */
+.drop.off{cursor:default;border-style:dashed} /* b213 원래 색 · b214: 정보 아이콘(.erda)과 같은 모양, 말풍선만(클릭 = 아무 일 없음, hover 효과 없음) */
 .pbtn{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);border-radius:8px;padding:4px 12px;margin-left:6px}
 .pbtn.on{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.06)}
 .pbtn.psave.on{border-color:#ff8a1f;background:rgba(255,138,31,.12)}

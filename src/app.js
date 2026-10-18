@@ -262,8 +262,8 @@ function dropsHtml(b,diff,c){
   // 아래 줄: 이 보스에서 획득한 아이템 (모든 화면과 같은 형식: 이름(N인 분배) ×개수 결과)
   const mine=c?(d=>({items:Object.fromEntries(Object.entries(d.items).filter(([k])=>k.split('|')[0]===b.id)),outcomes:d.outcomes}))(charDrops(c,b.type)):null;
   const ringLine=mine?itemsInline(mine.items,{outs:mine.outcomes}):'';
-  /* b213: 누를 수 없는 칩(기록 안 함) = 모멘텀 큐브(정보 아이콘) 바로 다음, 아이콘·글씨 원래 색 */
-  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${off.map(k=>`<span class="drop off s-${ITEMS[k].set}" aria-disabled="true" title="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}<span class="dn">${esc(ITEMS[k].s||ITEMS[k].n)}</span></span>`).join('')}${shown.map(chip).join('')}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
+  /* b213: 누를 수 없는 칩(기록 안 함) = 모멘텀 큐브(정보 아이콘) 바로 다음, 원래 색 · b214: 솔 에르다·모멘텀 큐브처럼 아이콘만(이름·개수 없음, 말풍선 = 이름) */
+  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${off.map(k=>`<span class="drop erda off" aria-disabled="true" data-tip="${esc(ITEMS[k].n)}" aria-label="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}</span>`).join('')}${shown.map(chip).join('')}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
 }
 /* 파티(2인 이상) 드롭: 블빵승리 / 블빵패배 / 분배 고르기 (결정석 수익은 항상 1/n — 이 선택은 아이템 기록만 바꿈)
  * c.dmode / c.mdmode = {'보스|아이템': 'w'(블빵승리)|'l'(블빵패배)|'s'(분배)} — 없으면 예전 기록(분배와 같게 표시) */
