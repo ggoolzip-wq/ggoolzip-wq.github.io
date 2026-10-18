@@ -5779,7 +5779,8 @@ else if(gdUsable()){ gdLoadLib().catch(()=>{}); if(gdMeta.on) gdConnect(false); 
  * 결정석 = 사이트가 지금 쓰는 실제 가격(price()), 아이템 = 공용 시세(itemPrices(), /api/prices), 드롭 = 사이트 드롭 표(dropsFor, 그 난이도). 저장·동기화·넥슨 요청 없음.
  * 신창섭 라이브 탭은 예시 없음(그대로). 로그인한 사용자(캐릭터 0명)는 예전 빈 화면 그대로. */
 let DEMO_ST=null, DEMO_SIG='', DEMO_SC=null, DEMO_GC=null, demoDepth=0, demoLive=null;
-const demoAllowed=()=>{ const real=demoLive||S; return !(real.characters||[]).some(charShown) && !(typeof SV_ON!=='undefined'&&SV_ON&&svTok()); };
+// 로그인 전 = 보이는 캐릭터 0명 + 서버 로그인(구글 드라이브 연결)도 안 함 + 등록한 API 키 계정도 없음. 로그인했는데 캐릭터 0명 = 예전 빈 화면(규칙 10)
+const demoAllowed=()=>{ const real=demoLive||S; return !(real.characters||[]).some(charShown) && !(real.settings?.accounts||[]).length && !gdHasTok() && !gdMeta?.on; };
 const demoTabOk=()=>tab!=='live';
 function demoRng(seed){ let s=seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
 // 한 판(보스 1번)당 그 아이템이 나올 확률 — 대략적인 체감 확률(예시용)
