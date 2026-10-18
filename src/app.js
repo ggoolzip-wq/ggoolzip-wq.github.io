@@ -262,7 +262,8 @@ function dropsHtml(b,diff,c){
   // 아래 줄: 이 보스에서 획득한 아이템 (모든 화면과 같은 형식: 이름(N인 분배) ×개수 결과)
   const mine=c?(d=>({items:Object.fromEntries(Object.entries(d.items).filter(([k])=>k.split('|')[0]===b.id)),outcomes:d.outcomes}))(charDrops(c,b.type)):null;
   const ringLine=mine?itemsInline(mine.items,{outs:mine.outcomes}):'';
-  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${shown.map(chip).join('')}${off.map(k=>`<span class="drop off s-${ITEMS[k].set}" aria-disabled="true" title="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}<span class="dn">${esc(ITEMS[k].s||ITEMS[k].n)}</span></span>`).join('')}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
+  /* b213: 누를 수 없는 칩(기록 안 함) = 모멘텀 큐브(정보 아이콘) 바로 다음, 아이콘·글씨 원래 색 */
+  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${off.map(k=>`<span class="drop off s-${ITEMS[k].set}" aria-disabled="true" title="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}<span class="dn">${esc(ITEMS[k].s||ITEMS[k].n)}</span></span>`).join('')}${shown.map(chip).join('')}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
 }
 /* 파티(2인 이상) 드롭: 블빵승리 / 블빵패배 / 분배 고르기 (결정석 수익은 항상 1/n — 이 선택은 아이템 기록만 바꿈)
  * c.dmode / c.mdmode = {'보스|아이템': 'w'(블빵승리)|'l'(블빵패배)|'s'(분배)} — 없으면 예전 기록(분배와 같게 표시) */
@@ -1792,8 +1793,9 @@ function charSaleLine(c){ const sale=pItemSale(c); if(!(sale>0)) return ''; let 
 function weekRingLine(){ const by={}, t={r4:0,c4:0,gl:0,x:0}; let n=0;
   for(const c of vchars()){ const d=charDrops(c,'weekly'); for(const [k,v] of Object.entries(d.items)){ const {it}=parseIK(k); if(!isRing(it)) continue; n+=+v; by[it]=(by[it]||0)+(+v); const o=outTally(d.outcomes[k],v); for(const q in t) t[q]+=o[q]; } }
   if(!n) return ''; const top=Object.keys(by).sort((x,y)=>by[y]-by[x]||itemCmp(x,y))[0];
-  const R=[['r4','리4'],['c4','컨4'],['gl','연마석'],['x','꽝']].filter(([q])=>t[q]>0).map(([q,l])=>`<span>${l} ${t[q]}개</span>`).join(' ');
-  return `<div class="muted rp-line rp-ring rc-y">${itemIcon(top)}<span>반지 상자 ${n}개</span>${R?' '+R:''}</div>`; }
+  // b213: 결과 = 위아래 줄 숫자처럼 오른쪽 숫자 칸(.rpn), 리4·컨4 앞에 리스트레인트·컨티뉴어스 링 아이콘(글씨 높이)
+  const R=[['r4','리4'],['c4','컨4'],['gl','연마석'],['x','꽝']].filter(([q])=>t[q]>0).map(([q,l])=>`<span class="rpo">${q==='r4'?miniIcon('ring_restraint'):q==='c4'?miniIcon('ring_continuous'):''}${tsm(`${l} ${t[q]}개`)}</span>`).join('');
+  return `<div class="muted rp-line rp-ring rc-y"><span class="rpl"><span class="rpg">${itemIcon(top)}${tsm(`반지 상자 ${n}개`)}</span></span>${R?`<b class="rpn rpouts">${R}</b>`:''}</div>`; }
 /* b185: 남은 결정석 — 주간 = remainingWeekly(c).list(남은 칸만큼, 안 잡은 보스 1인당 가격 상위), 검마 = 이번 달 안 잡은 검은 마법사. 보이는 캐릭터만(규칙 9), 0이면 줄 없음 */
 const leftOf = c => { const r=remainingWeekly(c); return {w:r.list.reduce((t,x)=>t+x.value,0), m:r.mon.filter(x=>x.slot==='blackmage').reduce((t,x)=>t+x.value,0)}; };
 const leftLine = (cls,ico,lb,v,big) => v>0?(big?`<div class="muted rp-line rp-left ${cls}"><span class="rpl"><span class="rpg">${ico}<span class="tsmn">${lb}</span></span></span><b class="rpn"><span class="tsmn">-${v.toLocaleString()}</span></b></div>`:`<div class="rp-cl rp-left ${cls}">${ico}<span>${lb} -${meso(v)}</span></div>`):'';
