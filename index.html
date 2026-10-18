@@ -1781,7 +1781,7 @@ header .logo .logo-d{display:flex;align-items:center}
 #svMainSec .apiguide{list-style:none;margin:8px 0 2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,.06);font-size:12px;line-height:1.55;color:var(--text)}
 #svMainSec .apiguide li{white-space:nowrap}
 #svMainSec .apiguide .agn{display:inline-block;width:1.4em;color:var(--accent);font-weight:700}
-#svMainSec .apiguide .aga{padding-left:1.4em;color:var(--accent2);font-weight:600}
+#svMainSec .apiguide .aga{margin-left:1.4em;color:var(--accent2);font-weight:600}
 </style>
 </head>
 <body>
@@ -4425,6 +4425,9 @@ function svMainAttr(on){ // b71: 'Data based on NEXON Open API' — 등록 칸 �
 /* b209: API 키 발급 순서 안내(사용자 문구 그대로) — 'API 발급 : 링크' 바로 아래. ☞ 줄 = 그 단계 아래 들여쓰기. 이 링크가 있는 곳은 이 창(로그인 전 본계정 키 등록) 하나뿐 */
 const API_GUIDE=[['①','링크 클릭 후 넥슨 로그인'],['②','이용약관 스크롤 끝까지 내린 후 약관 동의'],['③','어떤 게임으로 애플리케이션을 만드실 건가요?','메이플스토리'],
   ['④','아직 개발 단계인가요? 아니면 서비스 출시 단계인가요?','개발 단계'],['⑤','출시할 서비스명을 설정해주세요','메보기'],['⑥',"마이페이지 - 애플리케이션 목록 - 서비스명 '메보기' 클릭"],['⑦','첫번째 API key 옆 복사버튼 누른 후 API키 입력란에 Ctrl+V']];
+// 좁은 화면(휴대폰)에서 안내 줄이 넘치면 줄바꿈 대신 글자를 조금씩 줄임(12px → 최소 9px)
+function fitApiGuide(){ const ol=document.querySelector('#svMainSec .apiguide'); if(!ol) return; ol.style.fontSize=''; let f=12; while(ol.scrollWidth>ol.clientWidth+1&&f>9){ f-=.5; ol.style.fontSize=f+'px'; } }
+addEventListener('resize',()=>fitApiGuide());
 function apiGuideHtml(){ return `<ol class="apiguide" aria-label="API 키 발급 방법">${API_GUIDE.map(([n,t,a])=>`<li><span class="agn">${n}</span><span class="agt">${esc(t)}</span>${a?`<div class="aga">☞ ${esc(a)}</div>`:''}</li>`).join('')}</ol>`; }
 function svMainRender(){
   const modal=$('#importModal'); if(!modal) return;
@@ -4446,7 +4449,7 @@ function svMainRender(){
   sec.innerHTML=`<div class="accrow svmrow"><input id="svMainKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="API키 입력" aria-label="API키 입력"${busy?' disabled':''}><button class="btn sm" id="svMainBtn"${busy?' disabled':''}>${busy?'확인 중…':'등록'}</button></div>
     <div class="svmapi tiny muted">API 발급 : <a href="https://openapi.nexon.com/ko/my-application/create-app/" target="_blank" rel="noopener">https://openapi.nexon.com/ko/my-application/create-app/</a></div>${apiGuideHtml()}
     ${err?`<div class="accst svmst" id="svMainSt"><span class="keyrej${soft?' soft':''}" role="alert">${esc(err)}</span></div>`:'<div class="accst svmst" id="svMainSt" hidden></div>'}`;
-  svMainAttr(true);
+  svMainAttr(true); fitApiGuide();
   const inp=$('#svMainKey'); if(inp){ inp.value=v; if(err==='API 키를 넣어 주세요'&&!v) markEmpty(inp); if(!busy) setTimeout(()=>inp.focus(),0); }
 }
 async function openImport(accId){

@@ -27,7 +27,7 @@ try:
         pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate(f"localStorage.setItem('mapleBossTracker.theme','{th}');localStorage.setItem('mapleBossTracker.syncApi','http://127.0.0.1:9996')"); pg.reload(); pg.wait_for_timeout(1200)
         r=pg.evaluate("(()=>{const b=document.getElementById('importAccBtn'),c=getComputedStyle(b),a=getComputedStyle(b,'::after');return {bs:c.boxShadow,an:a.animationName,dur:a.animationDuration,bw:c.borderTopWidth,h:b.getBoundingClientRect().height,one:b.scrollWidth<=b.clientWidth+1}})()")
         if rm=='no-preference':
-            check(f'{th}: 테두리 네온(겹 그림자) + 아주 느린 숨쉬기(5초)', r['bs'].count('rgba')>=3 and r['an']=='neonBreath' and r['dur']=='5s' and r['one'], r)
+            check(f'{th}: 테두리 네온(겹 그림자) + 아주 느린 숨쉬기(5초)', r['bs'].count('rgba')>=3 and r['an']=='neonBreath' and r['dur']=='5s' and r['h']<40, r)
             pg.mouse.move(0,0); pg.wait_for_timeout(2500); shot(pg.locator('#view .card.empty'),f'button_{th}')
         else:
             check(f'{th}: 움직임 줄이기 → 고정 네온(애니메이션 없음)', r['an']=='none' and r['bs'].count('rgba')>=3, r)
@@ -41,7 +41,7 @@ try:
               return {apiTxt:api&&api.textContent.trim(),apiFirst:api&&ol&&(api.compareDocumentPosition(ol)&4)>0,lines,fit,ind,oneLine,fam:ol&&getComputedStyle(ol).fontFamily.split(',')[0],bodyFam:getComputedStyle(document.body).fontFamily.split(',')[0]}})()""")
             check("'API 발급 : 링크' 그대로 + 바로 아래 안내", g and g['apiTxt'].startswith('API 발급 : https://openapi.nexon.com/') and g['apiFirst'], g)
             check('안내 문구 = 사용자 문구 그대로(①~⑦, ☞ 줄)', g and g['lines']==EXP, g and g['lines'])
-            check('☞ 줄 들여쓰기·한 줄·안 잘림·일반 글꼴', g and g['ind'] and g['fit'] and g['oneLine'] and g['fam']==g['bodyFam'], g)
+            check('☞ 줄 들여쓰기·한 줄·안 잘림·일반 글꼴', g and g['ind'] and g['fit'] and g['oneLine'] and g['fam']==g['bodyFam'], g and {k:g[k] for k in ('fit','ind','oneLine','fam','bodyFam')})
             shot(pg.locator('#importModal .modal'),'window_dark')
             pg.evaluate("localStorage.setItem('mapleBossTracker.theme','light');applyTheme()"); pg.wait_for_timeout(200); shot(pg.locator('#importModal .modal'),'window_light')
             pg.set_viewport_size({'width':390,'height':900}); pg.wait_for_timeout(300)
