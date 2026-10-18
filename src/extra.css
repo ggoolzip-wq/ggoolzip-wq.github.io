@@ -1684,7 +1684,8 @@ header .logo .logo-d{display:flex;align-items:center}
 [data-theme="light"] .chart.wk .wkpb{color:#b35c00;border-color:rgba(200,110,20,.5);background:rgba(255,154,60,.08)}
 
 /* b213: 반지 상자 줄 결과 = 오른쪽 숫자 칸, 리4·컨4 아이콘 = 글씨 높이 */
-.rp-line.rp-ring .rpouts{display:inline-flex;align-items:center;gap:5px;flex:none;padding-left:6px;font-weight:500;letter-spacing:-.3px}
+.rp-line.rp-ring .rpouts{display:inline-flex;align-items:center;gap:5px;flex:none;padding-left:6px;font-weight:500;letter-spacing:-.3px;font-size:.82rem}
+.rp-line.rp-ring .rpouts .tsmn{font-size:1em;letter-spacing:inherit}
 .rp-line.rp-ring .rpl{flex:none;overflow:visible}
 .rp-line.rp-ring .rpo{display:inline-flex;align-items:center;gap:1px;white-space:nowrap}
 .rp-line.rp-ring .rpo img.ric{width:auto;height:1em;flex:none}

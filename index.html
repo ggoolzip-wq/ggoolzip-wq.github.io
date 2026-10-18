@@ -1808,7 +1808,8 @@ header .logo .logo-d{display:flex;align-items:center}
 [data-theme="light"] .chart.wk .wkpb{color:#b35c00;border-color:rgba(200,110,20,.5);background:rgba(255,154,60,.08)}
 
 /* b213: 반지 상자 줄 결과 = 오른쪽 숫자 칸, 리4·컨4 아이콘 = 글씨 높이 */
-.rp-line.rp-ring .rpouts{display:inline-flex;align-items:center;gap:5px;flex:none;padding-left:6px;font-weight:500;letter-spacing:-.3px}
+.rp-line.rp-ring .rpouts{display:inline-flex;align-items:center;gap:5px;flex:none;padding-left:6px;font-weight:500;letter-spacing:-.3px;font-size:.82rem}
+.rp-line.rp-ring .rpouts .tsmn{font-size:1em;letter-spacing:inherit}
 .rp-line.rp-ring .rpl{flex:none;overflow:visible}
 .rp-line.rp-ring .rpo{display:inline-flex;align-items:center;gap:1px;white-space:nowrap}
 .rp-line.rp-ring .rpo img.ric{width:auto;height:1em;flex:none}
@@ -3818,7 +3819,7 @@ function repaintPrices(){ document.querySelectorAll('.pricecard').forEach(el=>{ 
 function fitPriceCard(){ document.querySelectorAll('.pricecard').forEach(fitOnePrice); fitRingLine(); }
 /* b213: 반지 상자 줄이 카드 폭보다 길면(결과가 많을 때) 결과 글씨만 조금씩 줄임 — 줄바꿈·잘림 없음, 카드 크기 그대로 */
 function fitRing1(r){ const o=r.querySelector('.rpouts'); if(!o||!r.clientWidth) return; o.style.fontSize='';
-  for(let f=1; r.scrollWidth>r.clientWidth+.5 && f>.66; ){ f-=.03; o.style.fontSize=f.toFixed(2)+'em'; } }
+  for(let f=1; r.scrollWidth>r.clientWidth+.5 && f>.66; ){ f-=.03; o.style.fontSize=(.82*f).toFixed(3)+'rem'; } }
 function fitRingLine(){ const ro=fitRingLine._ro||(fitRingLine._ro=typeof ResizeObserver==='function'?new ResizeObserver(es=>es.forEach(e=>fitRing1(e.target))):null);
   document.querySelectorAll('.rp-line.rp-ring').forEach(r=>{ fitRing1(r); ro?.observe(r); }); } // 폭이 바뀌면(스크롤바 등) 다시 맞춤
 try{ document.fonts?.ready?.then(()=>fitRingLine()); }catch(e){}

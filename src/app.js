@@ -1870,7 +1870,7 @@ function repaintPrices(){ document.querySelectorAll('.pricecard').forEach(el=>{ 
 function fitPriceCard(){ document.querySelectorAll('.pricecard').forEach(fitOnePrice); fitRingLine(); }
 /* b213: 반지 상자 줄이 카드 폭보다 길면(결과가 많을 때) 결과 글씨만 조금씩 줄임 — 줄바꿈·잘림 없음, 카드 크기 그대로 */
 function fitRing1(r){ const o=r.querySelector('.rpouts'); if(!o||!r.clientWidth) return; o.style.fontSize='';
-  for(let f=1; r.scrollWidth>r.clientWidth+.5 && f>.66; ){ f-=.03; o.style.fontSize=f.toFixed(2)+'em'; } }
+  for(let f=1; r.scrollWidth>r.clientWidth+.5 && f>.66; ){ f-=.03; o.style.fontSize=(.82*f).toFixed(3)+'rem'; } }
 function fitRingLine(){ const ro=fitRingLine._ro||(fitRingLine._ro=typeof ResizeObserver==='function'?new ResizeObserver(es=>es.forEach(e=>fitRing1(e.target))):null);
   document.querySelectorAll('.rp-line.rp-ring').forEach(r=>{ fitRing1(r); ro?.observe(r); }); } // 폭이 바뀌면(스크롤바 등) 다시 맞춤
 try{ document.fonts?.ready?.then(()=>fitRingLine()); }catch(e){}
