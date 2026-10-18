@@ -5821,7 +5821,7 @@ function demoBuild(){
   try{
     const sale=(c,id,key,ik)=>{ const p=IP[priceId(ik)]; if(!p||!(p.p>0)||R2()>.85) return; const md=c.dmode[key]; if(md==='l') return; const n=md==='w'?1:curParty(c,id); /* b211: 블빵승리 = 전부, 분배 = ÷인원, 블빵패배 = 판 것 없음 */ c.drev[key]={m:Math.round(p.p/n),a:Math.round(p.p/1e4)/1e4,p:n,i:ik}; }; // 판 아이템만, 실제 공용 시세, 분배면 ÷인원
     const loot=(c,id,cfg,map,out)=>{ const b=findBoss(id); for(const it of dropsFor(b,cfg.diff)){ if(!ITEMS[it]||R()>DEMO_P(it)) continue; const key=id+'|'+it; map[key]=1;
-        const pty=curParty(c,id); if(pty>1) c.dmode[key]=isRing(it)?'s':(R()<.35?'s':R()<1/pty?'w':'l'); // b211: 파티 드롭 = 블빵(승리 1/인원)·분배, 반지 상자는 항상 분배
+        const pty=curParty(c,id); if(pty>1) c.dmode[key]=isRing(it)?'s':(R()<1/pty?'w':'l'); // b211: 파티 드롭 = 블빵(승리 확률 1/인원), 반지 상자는 항상 분배
         if(isRing(it)){ const q=ring4(it)||{r4:0,c4:0,gl:0}, r=R()*100, o=r<q.r4?'r4':r<q.r4+q.c4?'c4':r<q.r4+q.c4+q.gl?'gl':'x'; out[key]=[o]; if(o!=='x'&&R()<.5) sale(c,id,key,o==='gl'?'g_life':'ring:'+o); } // 결과 = 실제 상자 확률(BOX_INFO·RING_GL)
         else if(it==='chaosbox'){ const k=CHAOS_PICK[Math.floor(R()*CHAOS_PICK.length)]; out[key]=['cb:'+k]; sale(c,id,key,'cb:'+k); }
         else sale(c,id,key,it); break; } };
