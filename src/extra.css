@@ -1582,15 +1582,15 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 @media (prefers-reduced-motion:reduce){#charList .char.on{animation:none}}
 [data-theme=light] #charList .char.on{background:linear-gradient(160deg,rgba(90,150,255,.22),rgba(90,150,255,.08))!important;box-shadow:0 0 0 1px rgba(60,110,230,.8),0 0 14px 2px rgba(60,120,255,.55),0 0 34px 8px rgba(60,120,255,.25)!important;animation:none}
 /* b191: 주간 메소 점 hover = 다른 주 흐리게, 그 주 점·막대 4개 빛 맥박 (막대 hover 는 b186 그대로) */
-.linechart svg:has(.wdot:hover) .lpt:not(:has(.wdot:hover))>*{opacity:.28;transition:opacity .2s}
-.linechart svg:has(.wdot:hover) .cval:not(.best){opacity:.35}
-.linechart .lpt:has(.wdot:hover) .cbar.wb{opacity:1;animation:wbPulse 1.4s ease-in-out infinite}
-.linechart .lpt:has(.wdot:hover) circle[data-tipanchor]{animation:dotPulse 1.4s ease-in-out infinite}
+.linechart svg:has(:is(.wdot,.whit):hover) .lpt:not(:has(:is(.wdot,.whit):hover))>*{opacity:.28;transition:opacity .2s}
+.linechart svg:has(:is(.wdot,.whit):hover) .cval:not(.best){opacity:.35}
+.linechart .lpt:has(:is(.wdot,.whit):hover) .cbar.wb{opacity:1;animation:wbPulse 1.4s ease-in-out infinite}
+.linechart .lpt:has(:is(.wdot,.whit):hover) circle[data-tipanchor]{animation:dotPulse 1.4s ease-in-out infinite}
 @keyframes dotPulse{0%,100%{filter:drop-shadow(0 0 4px rgba(255,214,120,.9))}50%{filter:drop-shadow(0 0 10px rgba(255,230,150,1)) drop-shadow(0 0 18px rgba(255,180,70,.7))}}
 .linechart .wdot{cursor:pointer}
 /* b195: 점 크기 그대로(hover 때 안 커짐), hit 영역 = 점 자체 */
 .chart.lux.wk .lpt:hover circle.wdot{r:4;stroke-width:2.2}.chart.lux.wk .lpt.cur:hover circle.wdot{r:5;stroke-width:1.6}
-@media (prefers-reduced-motion:reduce){.linechart .lpt:has(.wdot:hover) .cbar.wb,.linechart .lpt:has(.wdot:hover) circle[data-tipanchor]{animation:none}}
+@media (prefers-reduced-motion:reduce){.linechart .lpt:has(:is(.wdot,.whit):hover) .cbar.wb,.linechart .lpt:has(:is(.wdot,.whit):hover) circle[data-tipanchor]{animation:none}}
 /* b191: 선택 캐릭터 오른쪽으로 살짝 (모든 칸 오른쪽 6px 여유 → 다른 칸 안 움직임) */
 #charList .char{margin-right:6px;transition:transform .25s cubic-bezier(.3,.7,.2,1),border-color .15s,box-shadow .15s}
 #charList .char.on{transform:translateX(6px)}
@@ -1671,3 +1671,14 @@ header .logo .logo-d{display:flex;align-items:center}
 .dmbadge{display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;background:linear-gradient(180deg,#5ce1ff,#2aa8d8);color:#06222e;font-size:.72rem;font-weight:800;letter-spacing:.04em}
 [data-theme="light"] #view .dmbanner{border-color:rgba(20,130,180,.45);background:linear-gradient(90deg,rgba(42,168,216,.05),rgba(42,168,216,.14),rgba(42,168,216,.05))}
 @media (max-width:600px){#view .dmkey{flex-direction:column;gap:8px} #view .dmkey .dmk-t{font-size:.85rem} #view .dmbanner b{font-size:.78rem}}
+
+/* b211: 주간 메소 — 넓힌 점 범위(보이지 않음, 점 크기 그대로) · 5주 페이지 버튼 */
+.linechart .whit{cursor:pointer;fill:transparent;stroke:none}
+.chart.lux.wk .lpt:has(.whit:hover) circle.wdot{r:4;stroke-width:2.2}.chart.lux.wk .lpt.cur:has(.whit:hover) circle.wdot{r:5;stroke-width:1.6}
+.chart.wk{position:relative}
+.chart.wk .wkpg{position:absolute;left:50%;top:4px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;z-index:2;white-space:nowrap}
+.chart.wk .wkpb{font:inherit;font-size:.72rem;font-weight:700;padding:2px 9px;height:22px;border-radius:999px;border:1px solid rgba(255,179,71,.55);background:rgba(255,154,60,.1);color:#ffcf7a;cursor:pointer;line-height:1}
+.chart.wk .wkpb:hover:not(:disabled){background:rgba(255,154,60,.22)}
+.chart.wk .wkpb:disabled{opacity:.35;cursor:default}
+.chart.wk .wkpn{font-size:.74rem;font-weight:700;color:var(--muted);min-width:3.2em;text-align:center}
+[data-theme="light"] .chart.wk .wkpb{color:#b35c00;border-color:rgba(200,110,20,.5);background:rgba(255,154,60,.08)}
