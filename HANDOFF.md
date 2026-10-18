@@ -1675,3 +1675,14 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - emptyView '+ 캐릭터 추가 (API 키로 불러오기)'(#importAccBtn, 로그인 전 + 로그인했지만 캐릭터 없을 때): 테두리 네온. 버튼 자체 = 고정 네온(전역 `button.btn` 네온 규칙이 !important 라 같은 힘), 숨쉬기 = ::after 빛 번짐의 투명도만 5초 주기(0.3↔0.85, 깜빡임 없음). 라이트 = 진한 주황 테두리·약한 빛. 움직임 줄이기 = 고정.
 - 캐릭터 추가 창(로그인 전 본계정 키 등록 #svMainSec): 'API 발급 : 링크' 그대로 + 아래 발급 순서 ①~⑦(사용자 문구 그대로, ☞ 줄은 그 단계 아래 들여쓰기, 일반 글꼴, 줄바꿈 없음). 좁은 화면은 fitApiGuide 가 12px → 최소 9px 로 줄여 맞춤. 'API 발급' 링크가 있는 곳은 이 창 하나뿐(로그인 뒤 캐릭터 추가 창엔 링크 없음 → 안내도 없음).
 - 테스트 test_b209.
+
+## b210 (2026-10-18 KST) — 로그인 전 예시 화면(데모) · '이번 주 수익 총합' 제목
+- **로그인 전**(보이는 캐릭터 0명 + 서버 로그인/드라이브 연결 없음 + 키 계정 없음, `demoAllowed()`): 위 탭 이번 주 보스·수익 분석·득템 분석·길드 현황 = 그 탭의 **예시 화면**. 처음 열면 이번 주 보스 예시(저장된 탭 무시). 신창섭 라이브 = 예시 없음(그대로).
+  - `#view` 맨 위 `.demotop` = 작은 API 키 칸 `.dmkey`(한 줄 문구 + 네온 `#importAccBtn`, 'Data based on' 줄 없음) + 예시 띠 `.dmbanner`('[예시] 예시 화면입니다 · API키를 넣으면 내 캐릭터로 보여요', 닫기 없음). MutationObserver 로 렌더마다 다시 붙임.
+  - 로그인 전 화면에서 b203 소개 카드·결정석/아이템 가격 카드 없음. **로그인했는데 캐릭터 0명 = 예전 빈 화면(규칙 10, 소개+가격 카드) 그대로**. 숨김 SEO 글(#seoIntro)·noscript·head 태그 유지, NEXON 표기 = 페이지 아래 푸터(+키 창).
+  - 구현: 실제 화면 함수(render·renderChars·renderGuild·renderBoss·renderTotal·renderLoot·fitMiss·fitPriceCard·charEnter)를 감싸서 **그리는 동안만** S·schedC·guildC 를 예시 데이터로 바꿨다가 되돌림(`demoRun`). 머리글(renderHeaderSync)은 진짜 상태. save·syncAll·refreshGuild·refreshSched·fillGuildCands·svSaveNow·svPushBg·nx 는 예시 중 아무것도 안 함, svFetch 쓰기(PUT/POST/DELETE) 막음. 예시 클릭: 캐릭터 = 예시 안에서 바꿈, 체크·드롭 등 바꾸는 클릭은 막음, '+ 추가'/키 버튼 = 실제 키 등록 흐름.
+  - 예시 데이터(`demoBuild`, 고정 난수): 가짜 캐릭터 4명(287 히어로·279 비숍·272 아크·265 나로, 레벨에 맞는 주간 12개 안쪽), 결정석 = **지금 쓰는 price()**(prices.json+feed), 판매 = **공용 시세 itemPrices()(/api/prices)** ÷ 분배, 드롭 = 사이트 드롭 표 `dropsFor`(그 난이도) + 낮은 확률(반지 상자 6%, 4레벨 반지 드묾), 시세 없는 아이템은 판 기록 없음. 검마 하드 = 솔로(가격표 값 그대로 4.65억). 기록 = 9/17(주간 가격 변경) 주부터, 검마 = 이번 달만(10/1 가격 변경). 가격이 바뀌면(`demoSig`) 다시 만들고 다시 그림.
+  - 예시 → 내 캐릭터로 바뀔 때 첫 화면처럼(팝인 없음).
+- '이번 주 수익' 카드 제목 → **'이번 주 수익 총합'** (`revPanel` h2·aria-label 만. 캐릭터별 등 다른 글자는 그대로).
+- 테스트: `tests/test_b210.py`(예시 표시·탭 클릭·라이브 제외·값=실시간 가격·시세 바뀌면 다시 계산·저장/넥슨/서버 쓰기 0·제목 한 줄·390px·로그인 0명=빈 화면·내 캐릭터=예시 없음). 고침: test_b203(연결했는데 0명 상태로), test_tracker50/51/53/65(첫 방문 = 예시 화면), test_b209(버튼 위치 .dmkey).
+- 미리보기 브랜치 demo-mockup(로컬)의 v1~v3 를 하나로 합침. 캡처 스크립트는 저장소 밖(/home/box/work/demo).
