@@ -1808,8 +1808,9 @@ header .logo .logo-d{display:flex;align-items:center}
 [data-theme="light"] .chart.wk .wkpb{color:#b35c00;border-color:rgba(200,110,20,.5);background:rgba(255,154,60,.08)}
 
 /* b213: 반지 상자 줄 결과 = 오른쪽 숫자 칸, 리4·컨4 아이콘 = 글씨 높이 */
-.rp-line.rp-ring .rpouts{display:inline-flex;align-items:center;gap:6px;flex:none}
-.rp-line.rp-ring .rpo{display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
+.rp-line.rp-ring .rpouts{display:inline-flex;align-items:center;gap:5px;flex:none;padding-left:6px;font-weight:500;letter-spacing:-.3px}
+.rp-line.rp-ring .rpl{flex:none;overflow:visible}
+.rp-line.rp-ring .rpo{display:inline-flex;align-items:center;gap:1px;white-space:nowrap}
 .rp-line.rp-ring .rpo img.ric{width:auto;height:1em;flex:none}
 </style>
 </head>
@@ -3814,7 +3815,11 @@ document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]');
 // 결정석 가격 줄이 안 들어가면 자르지 않고 글자를 조금씩 줄임 (최소 .56rem)
 /* b203: 가격 카드가 여러 개(로그인 전 첫 화면 = 결정석·아이템 두 장)일 수 있음 → 모두 다시 그림·맞춤. data-land = 첫 화면 카드(종류 고정·읽기 전용) */
 function repaintPrices(){ document.querySelectorAll('.pricecard').forEach(el=>{ el.outerHTML=el.dataset.land?priceCard({kind:el.dataset.land,land:true}):priceCard(); }); fitPriceCard(); }
-function fitPriceCard(){ document.querySelectorAll('.pricecard').forEach(fitOnePrice); }
+function fitPriceCard(){ document.querySelectorAll('.pricecard').forEach(fitOnePrice); fitRingLine(); }
+/* b213: 반지 상자 줄이 카드 폭보다 길면(결과가 많을 때) 결과 글씨만 조금씩 줄임 — 줄바꿈·잘림 없음, 카드 크기 그대로 */
+function fitRingLine(){ document.querySelectorAll('.rp-line.rp-ring').forEach(r=>{ const o=r.querySelector('.rpouts'); if(!o) return; o.style.fontSize='';
+  for(let f=1; r.scrollWidth>r.clientWidth+.5 && f>.66; ){ f-=.03; o.style.fontSize=f.toFixed(2)+'em'; } }); }
+try{ document.fonts?.ready?.then(()=>fitRingLine()); }catch(e){}
 function fitOnePrice(card){ if(!card||!card.querySelector('.pc-row')) return;
   // 폭이 허락하는 만큼 크게(최대 14px) → 안 들어가면 0.5px씩 줄임(최소 9px). 자르지 않음
   const over=()=>[...card.querySelectorAll('.pc-row')].some(r=>{ const n=r.querySelector('.pc-nm'); return n&&n.scrollWidth>n.clientWidth+0.5; });
