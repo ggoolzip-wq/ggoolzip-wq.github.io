@@ -78,8 +78,20 @@ try:
     check('범위 안의 막대 위 = 막대 말풍선 그대로', ('주간 결정석' in t3 and '총 수익' not in t3.split('\n')[0]) and '검마 결정석' not in t3, t3[:60])
     clipshot('bar_tip_still_works')
     # 범위 밖(옆 주 사이 빈 곳) = 말풍선 없음
-    t4,_=at(g['cx']+40*k,g['cy']-30*k)
-    check('범위 밖 = 점 말풍선 아님', not t4.startswith(g['tip'].split('\n')[0]), t4[:30])
+    # b212: 범위 = 그 주 칸 전체(위 = 그래프 맨 위부터, 아래 = 0선), 옆 주와 안 겹침
+    z=pg.evaluate("[...document.querySelectorAll('.chart.lux.wk .whit')].map(e=>{const r=e.getBoundingClientRect();return [r.left,r.right,r.top,r.bottom]})")
+    check('b212: 주 칸마다 범위, 옆 주와 안 겹침, 높이 = 그래프 맨 위~0선', all(z[i][1]<z[i+1][0] for i in range(len(z)-1)) and all(abs(q[3]-g['axis'])<3 and q[2]<g['cy']-40*k for q in z), z)
+    zt=z[2]; t5,_=at((zt[0]+zt[1])/2-30*k, zt[2]+6)
+    check('b212: 점 위쪽(그래프 맨 위 근처)에서도 점 말풍선', t5.startswith(g['tip'].split('\n')[0]), t5[:40])
+    if SHOT:
+        pg.add_style_tag(content='.linechart .whit{fill:rgba(60,200,255,.18)!important;stroke:#5ce1ff!important;stroke-width:1!important;stroke-dasharray:3 2}')
+        px,py=(zt[0]+zt[1])/2-30*k, zt[2]+6
+        pg.evaluate("([x,y])=>{const d=document.createElement('div');d.id='dbgPt';d.style.cssText=`position:fixed;left:${x-4}px;top:${y-4}px;width:8px;height:8px;border-radius:50%;background:#ff3b3b;box-shadow:0 0 0 2px #fff;z-index:2147483647;pointer-events:none`;document.body.appendChild(d)}",[px,py])
+        pg.mouse.move(px,py+1); pg.mouse.move(px,py); pg.wait_for_timeout(400); clipshot('b212_zone_debug_top')
+        pg.evaluate("document.getElementById('dbgPt').remove();document.querySelectorAll('style').forEach(s=>{if(s.textContent.includes('rgba(60,200,255,.18)'))s.remove()})")
+        pg.mouse.move(px,py+1); pg.mouse.move(px,py); pg.wait_for_timeout(400); clipshot('b212_bubble_from_top')
+    gx=(z[2][1]+z[3][0])/2; hit=pg.evaluate("([x,y])=>{const e=document.elementFromPoint(x,y);return e&&e.getAttribute('class')}",[gx,g['cy']-30*k])
+    check('b212: 주 사이 틈 = 점 범위 아님', hit!='whit', hit)
     pg.set_viewport_size({'width':390,'height':900}); pg.wait_for_timeout(500)
     m=pg.evaluate("(()=>{const p=document.querySelector('.chart.lux.wk .wkpg');const r=p.getBoundingClientRect();return {one:r.height<30,inside:r.left>=0&&r.right<=innerWidth+1}})()")
     check('390px: 페이지 버튼 한 줄·화면 안', m['one'] and m['inside'], m)
