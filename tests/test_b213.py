@@ -62,17 +62,22 @@ try:
     # b213: 이번 주 보스 — 누를 수 없는 칩 = 원래 색, 모멘텀 큐브 바로 다음 / 반지 상자 줄 = 숫자 칸 맞춤 + 리4·컨4 아이콘
     pg.evaluate("()=>{const c=S.characters.find(x=>x.id==='c3');c.bosses.lucid={enabled:true,diff:'hard',party:1};c.bosses.seren={enabled:true,diff:'hard',party:1};c.weekly={lucid:true,seren:true,will:true};c.drops={'seren|r_black':5,'lucid|r_life':2,'will|r_white':2};c.dropOut={'seren|r_black':['r4','x','x','c4','x'],'lucid|r_life':['gl','x'],'will|r_white':['c4','x']};S.activeId='c3';tab='boss';syncTabs();save();render()}"); pg.wait_for_timeout(500)
     d=pg.evaluate("""(()=>{const out=[];document.querySelectorAll('.drops').forEach(w=>{const ch=[...w.children];const off=ch.map((e,i)=>e.classList.contains('off')?i:-1).filter(i=>i>=0);if(!off.length)return;
-      const lastInfo=Math.max(-1,...ch.map((e,i)=>e.classList.contains('erda')?i:-1)), firstClick=ch.findIndex(e=>e.dataset.drop);
+      const lastInfo=Math.max(-1,...ch.map((e,i)=>e.classList.contains('erda')&&!e.classList.contains('off')?i:-1)), firstClick=ch.findIndex(e=>e.dataset.drop);
       out.push({ok:off[0]===lastInfo+1&&off.every((v,j)=>v===off[0]+j)&&(firstClick<0||firstClick>off[off.length-1]),memc:!!w.querySelector('.memc')});});
-      const o=document.querySelector('.drop.off'),cs=getComputedStyle(o),im=o.querySelector('img'),dn=o.querySelector('.dn'),ref=document.querySelector('.drop[data-drop] .dn');
-      return {rows:out,op:cs.opacity,f:cs.filter,imf:im?getComputedStyle(im).filter+'|'+getComputedStyle(im).opacity:'',pe:cs.pointerEvents,cur:cs.cursor,col:getComputedStyle(dn).color,refcol:ref&&getComputedStyle(ref).color,drop:o.dataset.drop||null}})()""")
+      const o=document.querySelector('.drop.off'),cs=getComputedStyle(o),im=o.querySelector('img'),mc=document.querySelector('.drop.memc').getBoundingClientRect(),ob=o.getBoundingClientRect();
+      return {rows:out,op:cs.opacity,f:cs.filter,imf:im?getComputedStyle(im).filter+'|'+getComputedStyle(im).opacity:'',cur:cs.cursor,txt:o.innerText.trim(),cnt:!!o.querySelector('.ecnt,.dn'),tip:o.dataset.tip||'',size:[Math.round(ob.width),Math.round(ob.height),Math.round(mc.width),Math.round(mc.height)],bs:cs.borderStyle,drop:o.dataset.drop||null}})()""")
     check('누를 수 없는 칩 = 모멘텀 큐브(정보 아이콘) 바로 다음, 누르는 칩보다 앞', d['rows'] and all(r['ok'] for r in d['rows']) and any(r['memc'] for r in d['rows']), d['rows'])
-    check('누를 수 없는 칩 = 아이콘·글씨 원래 색, 클릭·hover 없음', d['op']=='1' and d['f']=='none' and d['imf']=='none|1' and d['pe']=='none' and d['cur']=='default' and d['drop'] is None and d['col']==d['refcol'], d)
+    check('누를 수 없는 칩 = 원래 색 + b214: 정보 아이콘처럼 아이콘만(이름·개수 없음), 같은 크기, 말풍선 = 이름, 클릭 없음', d['op']=='1' and d['f']=='none' and d['imf']=='none|1' and d['cur']=='default' and d['drop'] is None and d['txt']=='' and not d['cnt'] and d['tip'] and d['size'][:2]==d['size'][2:] and d['bs']=='dashed', d)
+    o0=pg.locator('.drop.off').first; o0.scroll_into_view_if_needed(); before=pg.evaluate("JSON.stringify(S.characters)"); o0.hover(); pg.wait_for_timeout(300)
+    tp=pg.evaluate("(()=>{const t=document.getElementById('mbtTip');return t&&t.classList.contains('show')?t.innerText:''})()"); o0.click(); pg.wait_for_timeout(300)
+    check('b214: 누를 수 없는 아이콘 hover = 이름 말풍선, 클릭 = 아무 변화 없음', tp==d['tip'] and pg.evaluate("JSON.stringify(S.characters)")==before and pg.locator('.modal-bg.show').count()==0, (tp,d['tip']))
     r=pg.evaluate("""(()=>{const R=document.querySelector('.revpanel .rp-ring'),S_=document.querySelector('.revpanel .rp-sale .rpn'),o=R.querySelector('.rpouts');const ims=[...o.querySelectorAll('.rpo')].map(p=>[p.querySelector('img')?.src.match(/ring_\\w+|data:/)?.[0]||(p.querySelector('img')?'img':''),p.innerText.trim(),p.querySelector('img')?.getBoundingClientRect().height,parseFloat(getComputedStyle(p.querySelector('.tsmn')).fontSize)]);
       return {txt:R.innerText.replace(/\\s+/g,' '),right:[o.getBoundingClientRect().right,S_.getBoundingClientRect().right],fit:R.scrollWidth<=R.clientWidth+1,h:R.getBoundingClientRect().height,ims}})()""")
-    ims=r['ims']; r4=[x for x in ims if x[1].startswith('리4')]; c4=[x for x in ims if x[1].startswith('컨4')]; other=[x for x in ims if not x[1][:2] in ('리4','컨4')]
+    ims=r['ims']; tips=pg.evaluate("[...document.querySelectorAll('.revpanel .rp-ring .rpo')].map(e=>e.dataset.tip||'')"); r4=[x for x,t in zip(ims,tips) if t.startswith('리스트레인트')]; c4=[x for x,t in zip(ims,tips) if t.startswith('컨티뉴어스')]; gl=[x for x,t in zip(ims,tips) if t.startswith('생명의 연마석')]; other=[x for x in ims if x[1].startswith('꽝')]
     check('반지 상자 결과 = 위 줄 숫자처럼 오른쪽 끝 맞춤, 한 줄, 안 잘림', abs(r['right'][0]-r['right'][1])<1.5 and r['fit'] and r['h']<24, r)
-    check('리4·컨4 앞에 링 아이콘(글씨 높이), 연마석·꽝은 아이콘 없음', r4 and c4 and r4[0][0] and c4[0][0] and abs(r4[0][2]-r4[0][3])<1.5 and abs(c4[0][2]-c4[0][3])<1.5 and all(not x[0] for x in other), ims)
+    check('b214: 리4·컨4·연마석 = 아이콘 + xN(글자 없음, 말풍선 = 이름), 꽝 = 글자 꽝 xN', r4 and c4 and gl and all(x[0] and x[1]==('x1' if x is r4[0] or x is gl[0] else 'x2') and abs(x[2]-x[3])<1.5 for x in (r4[0],c4[0],gl[0])) and other and other[0][1]=='꽝 x5' and not other[0][0] and r['txt'].startswith('반지 상자 x9'), (ims,tips,r['txt']))
+    fs=pg.evaluate("document.querySelector('.revpanel .rp-ring .rpouts').style.fontSize")
+    check('b214: 네 가지 다 있어도 줄이지 않고 원래 크기', fs=='', fs)
     # 모바일
     pg.set_viewport_size({'width':390,'height':700}); pg.wait_for_timeout(400)
     y0=down(pg); y1=tabclick(pg,'loot'); pg.wait_for_timeout(300)

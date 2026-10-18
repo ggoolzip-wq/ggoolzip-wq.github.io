@@ -38,10 +38,10 @@ try:
     check('buttons have a visible box when disabled', all(x.startswith('1px solid') for x in bs), bs)
     # 3,4,5,6
     v=pg.inner_text('#view'); h=pg.inner_html('#view')
-    off=pg.eval_on_selector_all('.boss:has([data-party="dunkel"]) .drop.off, .drops .drop.off',"e=>e.map(x=>x.title)")
-    check('disabled 여명/보장 chips present, greyed, not clickable', len(off)>=2 and pg.evaluate("[...document.querySelectorAll('.drop.off')].every(e=>getComputedStyle(e).pointerEvents==='none'&&!e.dataset.drop)"), off)
+    off=pg.eval_on_selector_all('.boss:has([data-party="dunkel"]) .drop.off, .drops .drop.off',"e=>e.map(x=>x.dataset.tip)")
+    check('disabled 여명/보장 chips present, greyed, not clickable', len(off)>=2 and pg.evaluate("[...document.querySelectorAll('.drop.off')].every(e=>!e.dataset.drop&&e.classList.contains('erda')&&!e.querySelector('.dn'))"), off)
     check('b213: disabled chips right after info icons (모멘텀 큐브), before clickable chips', pg.evaluate("[...document.querySelectorAll('.drops')].every(d=>{const k=[...d.children].map(x=>x.classList.contains('off')?'o':x.classList.contains('erda')?'i':'c').join('');return /^i*o*c*$/.test(k)})"))
-    check('파풀라투스 마크 not disabled', pg.locator('.drop.off[title*="파풀라투스"]').count()==0)
+    check('파풀라투스 마크 not disabled', pg.locator('.drop.off[data-tip*="파풀라투스"]').count()==0)
     check("no 'API'/'API 자동' pill", pg.locator('.pill.api').count()==0 and 'API 자동' not in v)
     check('no clear-check icon in boss rows', pg.locator('[data-check]').count()==0)
     rp=pg.inner_text('.revpanel')

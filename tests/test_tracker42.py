@@ -89,7 +89,7 @@ try:
     check('보스 드랍 테이블: 난이도 그림 + 숨은 글자', bp and bp[0] in ('하드','노말') and bp[1], bp)
     # 녹옥 칩 (스우 노말)
     pg.evaluate("s=>{const x=JSON.parse(localStorage.getItem('mapleBossTracker.v1'));x.characters[0].bosses.lotus={enabled:true,diff:'normal',party:1};x.activeId='c0';localStorage.setItem('mapleBossTracker.v1',JSON.stringify(x))}"); pg.reload(); pg.wait_for_timeout(700)
-    jc=pg.evaluate("(()=>{const l=[...document.querySelectorAll('.drop.off')].filter(e=>/녹옥/.test(e.innerText||e.title));return [l.length,l[0]&&l[0].getAttribute('aria-disabled'),document.querySelectorAll('.drop[data-drop*=r_green]').length]})()")
+    jc=pg.evaluate("(()=>{const l=[...document.querySelectorAll('.drop.off')].filter(e=>/녹옥/.test(e.dataset.tip||''));return [l.length,l[0]&&l[0].getAttribute('aria-disabled'),document.querySelectorAll('.drop[data-drop*=r_green]').length]})()")
     check('녹옥 반지 상자 칩: 회색 비활성', jc[0]>=1 and jc[1]=='true' and jc[2]==0, jc)
     check('JS 오류 없음', not errs, errs)
 finally:
