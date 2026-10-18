@@ -1670,3 +1670,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - meta.mai_unmatched = {date, at, names(페이지에 있는데 짝 없는 이름), first:{이름: 처음 본 시세 날짜}, missing(값 못 받은 우리 키)} — 새 날짜마다 갱신. 10-17 짝 없는 이름 18개(에테르넬 7종·자석펫·영달포·도미·블빈마·데브팬·에스텔라·트왈마·가엔링·솔 에르다 조각·블랙하트(스카)·익셉셔널 훈장 — 우리 드롭 표에 없는 것).
 - GET /api/admin/prices 에 mai {date, got, unmatched} 추가 → 시세 등록 창(openMkt)에서 got 에 없는 아이템 = 메소 칸 바로 왼쪽 빨간 '시세 정보 없음'(.mkno, 다크 #ff6b6b·라이트 #d32f2f). 창 540px(이름 안 잘림).
 - 테스트: test_b208(새, Worker node 모의 + 시세 등록 창), tests/mai_node.py(테스트가 Worker 짝을 node 로 부름), tracker68/84/86·server_b91 갱신.
+
+## b209 (2026-10-18 KST) — 첫 화면 캐릭터 추가 버튼 네온 · API 키 발급 순서 안내
+- emptyView '+ 캐릭터 추가 (API 키로 불러오기)'(#importAccBtn, 로그인 전 + 로그인했지만 캐릭터 없을 때): 테두리 네온. 버튼 자체 = 고정 네온(전역 `button.btn` 네온 규칙이 !important 라 같은 힘), 숨쉬기 = ::after 빛 번짐의 투명도만 5초 주기(0.3↔0.85, 깜빡임 없음). 라이트 = 진한 주황 테두리·약한 빛. 움직임 줄이기 = 고정.
+- 캐릭터 추가 창(로그인 전 본계정 키 등록 #svMainSec): 'API 발급 : 링크' 그대로 + 아래 발급 순서 ①~⑦(사용자 문구 그대로, ☞ 줄은 그 단계 아래 들여쓰기, 일반 글꼴, 줄바꿈 없음). 좁은 화면은 fitApiGuide 가 12px → 최소 9px 로 줄여 맞춤. 'API 발급' 링크가 있는 곳은 이 창 하나뿐(로그인 뒤 캐릭터 추가 창엔 링크 없음 → 안내도 없음).
+- 테스트 test_b209.
