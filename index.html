@@ -3345,7 +3345,8 @@ function tir(text,cls=''){ const T=String(text); let out='', x=0, parts='';
   for(const ch of T){ if(ch==='1'){ parts+=tirDigit(ch,x-20); x+=34; } else if(/[0-9]/.test(ch)){ parts+=tirDigit(ch,x); x+=54; } /* 1 은 좁게 */
     else if(HPIX[ch]){ parts+=`<path class="tl tk" d="${hpixD(ch,x+4,1,7,HGAP,ch==='억'?[[9,11]]:null)}"/>`; x+=HADV[ch]||92; } /* b158: 숫자 옆 '억'은 ㄱ 세로획 맨 아래 점 1개 추가 */
     else if(/[가-힣]/.test(ch)){ flush(); out+=`<span class="tir-k" data-k="${ch}" aria-hidden="true"></span>`; }
-    else if(ch==='.'||ch===','){ parts+=`<path class="tl" d="M${x+2},${ch==='.'?66:64}h10v10h-10z${ch===','?`M${x+5},76h6l-5,9h-5z`:''}"/>`; x+=17; }
+    else if(ch==='.'){ parts+=`<path class="tl" d="M${x+5},61h15v15h-15z"/>`; x+=27; } /* b211: 소수점 1.5배(10→15) + 양옆 살짝 더 띄움 */
+    else if(ch===','){ parts+=`<path class="tl" d="M${x+2},64h10v10h-10zM${x+5},76h6l-5,9h-5z"/>`; x+=17; }
     else if(ch==='-'){ parts+=`<path class="tl" d="${tirH(x+2,x+40,39,7)}"/>`; x+=48; } else if(ch===' '){ flush(); out+='<span class="tir-sp" aria-hidden="true"></span>'; } }
   flush();
   return `<span class="tir ${cls}"${arguments[2]||''}><span class="tir-sr">${esc(T)}</span>${out}</span>`; }
@@ -3374,7 +3375,8 @@ function tirAnimOne(el){ if(el._tirDone) return; el._tirDone=1; const v=+el.data
 function tirSvg(text,cx,yb,h,cls='tgold'){ const T=String(text), k=h/78, P=[]; let x=0;
   for(const ch of T){ if(ch==='1'){ P.push(tirDigit(ch,x-20)); x+=34; } else if(/[0-9]/.test(ch)){ P.push(tirDigit(ch,x)); x+=54; }
     else if(HPIX[ch]){ P.push(`<path class="tl tk" d="${hpixD(ch,x+4)}"/>`); x+=HADV[ch]||92; }
-    else if(ch==='.'||ch===','){ P.push(`<path class="tl" d="M${x+2},66h10v10h-10z"/>`); x+=17; } else if(ch===' '){ x+=24; } }
+    else if(ch==='.'){ P.push(`<path class="tl" d="M${x+5},61h15v15h-15z"/>`); x+=27; } /* b211: 소수점 1.5배 + 양옆 살짝 */
+    else if(ch===','){ P.push(`<path class="tl" d="M${x+2},66h10v10h-10z"/>`); x+=17; } else if(ch===' '){ x+=24; } }
   const W=Math.max(1,x-6), tr=`translate(${(cx-W*k/2).toFixed(1)} ${(yb-78*k).toFixed(1)}) scale(${k.toFixed(4)}) skewX(-5)`; if(arguments[5]) return {tr,inner:P.join('')};
   return `<g class="tsv ${cls}" transform="${tr}" data-st="${esc(T)}" data-sa="${cx},${yb},${h}" aria-hidden="true">${P.join('')}</g>`; }
 /* b173: 그래프 안 디지털 숫자도 0→최종값 카운팅 (그래프가 화면에 들어올 때). 같은 그래프·자리·값은 탭 전환/새로고침 전까지 다시 안 돎 */
