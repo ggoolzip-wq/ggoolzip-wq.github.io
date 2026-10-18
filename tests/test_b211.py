@@ -81,11 +81,14 @@ try:
     # b212: 범위 = 그 주 칸 전체(위 = 그래프 맨 위부터, 아래 = 0선), 옆 주와 안 겹침
     z=pg.evaluate("[...document.querySelectorAll('.chart.lux.wk .whit')].map(e=>{const r=e.getBoundingClientRect();return [r.left,r.right,r.top,r.bottom]})")
     check('b212: 주 칸마다 범위, 옆 주와 안 겹침, 높이 = 그래프 맨 위~0선', all(z[i][1]<z[i+1][0] for i in range(len(z)-1)) and all(abs(q[3]-g['axis'])<3 and q[2]<g['cy']-40*k for q in z), z)
-    zt=z[2]; t5,_=at((zt[0]+zt[1])/2-30*k, zt[2]+6)
+    cxs=pg.evaluate("[...document.querySelectorAll('.chart.lux.wk circle.wdot')].map(e=>{const r=e.getBoundingClientRect();return (r.left+r.right)/2})")
+    col=cxs[1]-cxs[0]; ww=[q[1]-q[0] for q in z]
+    check('b213: 범위 좌우 = b212 칸의 약 70%, 점 가운데', all(abs(w-0.7*(col-6*k))<3 for w in ww) and all(abs((q[0]+q[1])/2-c)<1.5 for q,c in zip(z,cxs)), (col,ww[:2]))
+    zt=z[2]; t5,_=at((zt[0]+zt[1])/2-20*k, zt[2]+6)
     check('b212: 점 위쪽(그래프 맨 위 근처)에서도 점 말풍선', t5.startswith(g['tip'].split('\n')[0]), t5[:40])
     if SHOT:
         pg.add_style_tag(content='.linechart .whit{fill:rgba(60,200,255,.18)!important;stroke:#5ce1ff!important;stroke-width:1!important;stroke-dasharray:3 2}')
-        px,py=(zt[0]+zt[1])/2-30*k, zt[2]+6
+        px,py=(zt[0]+zt[1])/2-20*k, zt[2]+6
         pg.evaluate("([x,y])=>{const d=document.createElement('div');d.id='dbgPt';d.style.cssText=`position:fixed;left:${x-4}px;top:${y-4}px;width:8px;height:8px;border-radius:50%;background:#ff3b3b;box-shadow:0 0 0 2px #fff;z-index:2147483647;pointer-events:none`;document.body.appendChild(d)}",[px,py])
         pg.mouse.move(px,py+1); pg.mouse.move(px,py); pg.wait_for_timeout(400); clipshot('b212_zone_debug_top')
         pg.evaluate("document.getElementById('dbgPt').remove();document.querySelectorAll('style').forEach(s=>{if(s.textContent.includes('rgba(60,200,255,.18)'))s.remove()})")
