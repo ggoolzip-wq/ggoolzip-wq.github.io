@@ -81,7 +81,7 @@ try:
     check('other tab reloaded to fresh state too', fresh_state(p2), p2.evaluate("S.characters.length"))
     p1.reload(); p1.wait_for_timeout(1500)
     check('b73: no toast after reload into empty state', not p1.evaluate("document.querySelector('#toast').classList.contains('show')"), p1.inner_text('#toast'))
-    check('reload after logout → still fresh, empty dashboard', fresh_state(p1) and p1.is_visible('.empty'))
+    check('reload after logout → still fresh, empty dashboard', fresh_state(p1) and (p1.is_visible('.empty') or p1.locator('#view>.demotop').count()>0))  # b210: 로그인 전 = 예시 화면
     p1.click('#addCharBtn'); p1.wait_for_selector('#svMainKey')
     check("'+ 추가' → main-key field only", p1.is_visible('#svMainKey') and not p1.is_visible('#accList') and not p1.is_visible('#newAccKey'))
     p1.evaluate("closeImport()")

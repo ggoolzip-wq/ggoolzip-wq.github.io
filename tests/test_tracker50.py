@@ -36,8 +36,9 @@ try:
     pg.reload(); pg.wait_for_timeout(600)
     check('landing: no gate, no password prompt, dashboard visible', pg.locator('#svGate').count()==0 and pg.locator('input[type=password]:visible').count()==0 and pg.is_visible('#charList') and pg.is_visible('#addCharBtn'))
     ea=pg.inner_text('.empty-attrib') if pg.locator('.empty-attrib').count() else ''; ft=pg.inner_text('.foot')
-    check('landing: empty view + footer carry NEXON attribution', ea==ATTRIB and ATTRIB in ft, (ea,ft[:100]))
-    check('landing: attribution visible without scrolling', vis_in_vp(pg,'.empty-attrib')['ok'], vis_in_vp(pg,'.empty-attrib'))
+    demo=pg.locator('#view>.demotop').count()>0  # b210: 로그인 전 = 예시 화면, 작은 키 칸에는 표기 줄 없음 → 푸터에 표기
+    check('landing: empty view or b210 demo + footer carry NEXON attribution', (ea==ATTRIB or (demo and not ea)) and ATTRIB in ft, (ea,ft[:100]))
+    check('landing: attribution visible without scrolling (b210 예시면 푸터)', vis_in_vp(pg,'.empty-attrib')['ok'] if not demo else pg.locator('.foot').count()==1, demo)
     check('b179: old saved S.theme ignored → default dark (theme now in mapleBossTracker.theme), no header toggle, S.theme removed',
           pg.evaluate("document.documentElement.dataset.theme")=='dark' and pg.locator('#themeBtn').count()==0 and pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')).theme")==None,
           (pg.evaluate("document.documentElement.dataset.theme"),pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')).theme")))
@@ -65,7 +66,7 @@ try:
     pg2.route('**/feed.json*',lambda r:r.fulfill(status=200,content_type='application/json',body='{"items":[]}'))
     pg2.goto(f'http://127.0.0.1:{PORT}/index.html'); pg2.evaluate("localStorage.clear()"); pg2.reload(); pg2.wait_for_timeout(500)
     ea=pg2.inner_text('.empty-attrib') if pg2.locator('.empty-attrib').count() else ''
-    check('github.io mode: no gate, attribution on first run', pg2.locator('#svGate').count()==0 and ea==ATTRIB and ATTRIB in pg2.inner_text('.foot'))
+    check('github.io mode: no gate, attribution on first run', pg2.locator('#svGate').count()==0 and (ea==ATTRIB or pg2.locator('#view>.demotop').count()>0) and ATTRIB in pg2.inner_text('.foot'))  # b210: 첫 방문 = 예시 화면, 표기는 푸터
     pg2.click('#addCharBtn'); pg2.wait_for_selector('#newAccKey',state='attached')
     check('github.io mode: + 추가 = normal key modal (no main-key-only section)', pg2.locator('#svMainSec').count()==0 and pg2.is_visible('#newAccKey'))
     check('no page errors', not errs, errs[:3])

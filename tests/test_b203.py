@@ -28,7 +28,7 @@ try:
     for w in (1400,390):
         ctx=b.new_context(viewport={'width':w,'height':1000},locale='ko-KR'); ctx.route('https://open.api.nexon.com/**',lambda r:r.abort())
         pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e)))
-        pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.wait_for_timeout(1200)
+        pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.setItem('mapleBossTracker.gdrive',JSON.stringify({on:true}))"); pg.reload(); pg.wait_for_timeout(1200)  # b210: 로그인 전 = 예시 화면 → 여기선 '연결했는데 캐릭터 0명'(규칙 10)
         r=pg.evaluate(J)
         check(f'{w}px 빈 카드 + 소개(기능 3줄) + 가격 카드 2장(결정석·아이템)', r['empty'] and r['intro'] and r['feat']==3 and r['n']==2 and r['kinds']==['cry','item'] and r['cry']>=30 and r['item']>=10 and r['txt'], r)
         check(f'{w}px 읽기 전용: 내가 잡는 보스만·종류/패치 후 버튼·관리자 없음, 글자 목록 가격표 없음', not r['mine'] and r['kindBtn']==0 and not r['admin'] and not r['plain'], r)

@@ -5778,7 +5778,7 @@ else if(gdUsable()){ gdLoadLib().catch(()=>{}); if(gdMeta.on) gdConnect(false); 
  * 실제 화면 코드를 그대로 쓰고, 그리는 동안만 S(·schedC·guildC)를 가짜 예시 데이터로 바꿨다가 되돌림 → 진짜 데이터·로그인 흐름은 그대로.
  * 결정석 = 사이트가 지금 쓰는 실제 가격(price()), 아이템 = 공용 시세(itemPrices(), /api/prices), 드롭 = 사이트 드롭 표(dropsFor, 그 난이도). 저장·동기화·넥슨 요청 없음.
  * 신창섭 라이브 탭은 예시 없음(그대로). 로그인한 사용자(캐릭터 0명)는 예전 빈 화면 그대로. */
-let DEMO_ST=null, DEMO_SIG='', DEMO_SC=null, DEMO_GC=null, demoDepth=0, demoLive=null;
+let DEMO_SC0=null, DEMO_ST=null, DEMO_SIG='', DEMO_SC=null, DEMO_GC=null, demoDepth=0, demoLive=null;
 // 로그인 전 = 보이는 캐릭터 0명 + 서버 로그인(구글 드라이브 연결)도 안 함 + 등록한 API 키 계정도 없음. 로그인했는데 캐릭터 0명 = 예전 빈 화면(규칙 10)
 const demoAllowed=()=>{ const real=demoLive||S; return !(real.characters||[]).some(charShown) && !(real.settings?.accounts||[]).length && !gdHasTok() && !gdMeta?.on; };
 const demoTabOk=()=>tab!=='live';
@@ -5816,13 +5816,18 @@ function demoBuild(){
   DEMO_GC={'스카니아|메보기예시길드':{date:dayId(),at:Date.now(),ok:true,t1:{guild_point:61500,ranking:418,guild_level:27,guild_master_name:'예시히어로'},t2:{guild_point:1832400,ranking:233,guild_level:27,guild_master_name:'예시히어로'}}};
   return st;
 }
-function demoRun(fn,args,self){ if(demoDepth>0||!demoAllowed()||!demoTabOk()) return fn.apply(self,args);
+let demoWas=false;
+function demoRun(fn,args,self){ if(demoDepth>0) return fn.apply(self,args);
+  if(!demoAllowed()||!demoTabOk()){ if(demoWas){ demoWas=false; enterFor=null; document.body.classList.remove('demo'); } return fn.apply(self,args); } // 예시 → 내 캐릭터: 첫 화면처럼(팝인 없음)
+  demoWas=true;
   const sig=demoSig(); if(!DEMO_ST||sig!==DEMO_SIG){ const keep=DEMO_ST&&DEMO_ST.activeId; DEMO_ST=demoBuild(); DEMO_SIG=sig; if(keep) DEMO_ST.activeId=keep; if(fn!==demoRenderRaw) setTimeout(()=>render(),0); }
-  const s0=S, sc0=schedC, gc0=guildC; demoLive=s0; S=DEMO_ST; schedC=DEMO_SC; guildC=DEMO_GC; demoDepth++; document.body.classList.add('demo');
+  const s0=S, sc0=schedC, gc0=guildC; demoLive=s0; DEMO_SC0=sc0; S=DEMO_ST; schedC=DEMO_SC; guildC=DEMO_GC; demoDepth++; document.body.classList.add('demo');
   try{ return fn.apply(self,args); } finally { demoDepth--; S=s0; schedC=sc0; guildC=gc0; demoLive=null; } }
 let demoRenderRaw=null;
 { demoRenderRaw=globalThis.render; const wrapR=name=>{ const f=globalThis[name]; if(typeof f==='function') globalThis[name]=function(...a){ return demoRun(f,a,this); }; };
-  ['render','renderChars','renderGuild','renderTabView','renderBoss','renderTotal','renderLoot','renderHeaderSync','fitMiss','fitPriceCard','charEnter'].forEach(wrapR);
+  ['render','renderChars','renderGuild','renderTabView','renderBoss','renderTotal','renderLoot','fitMiss','fitPriceCard','charEnter'].forEach(wrapR);
+  // 머리글(동기화 버튼 등)은 예시 데이터가 아니라 진짜 상태로: 예시 안에서 부르면 진짜 S 로 바꿔서 그림
+  const hs=globalThis.renderHeaderSync; if(typeof hs==='function') globalThis.renderHeaderSync=function(...a){ if(demoDepth>0&&demoLive){ const d=S,sc=schedC; S=demoLive; schedC=DEMO_SC0||schedC; try{ return hs.apply(this,a); } finally { S=d; schedC=sc; } } return hs.apply(this,a); };
   const wrapX=name=>{ const f=globalThis[name]; if(typeof f==='function') globalThis[name]=function(...a){ if(S===DEMO_ST||(demoAllowed()&&demoTabOk()&&DEMO_ST&&demoDepth>0)) return name==='nx'?Promise.reject(new Error('demo')):undefined; return f.apply(this,a); }; };
   ['save','syncAll','refreshGuild','refreshSched','fillGuildCands','svSaveNow','svPushBg','nx'].forEach(wrapX);
   // 예시 화면이 떠 있는 동안 서버 쓰기(PUT/POST/DELETE) 요청은 보내지 않음 (읽기 GET 은 그대로: /api/prices 등)

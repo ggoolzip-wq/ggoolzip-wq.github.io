@@ -57,7 +57,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     # ---- 처음 온 사람(PC1): 입장 화면 없이 대시보드 → + 추가 → 본계정 키만 ----
     c1,p1=mkctx(b); p1.goto(URL); p1.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); p1.reload(); p1.wait_for_timeout(500)
-    check('fresh visitor: no gate/password, empty dashboard', p1.locator('#svGate').count()==0 and p1.locator('input[type=password]:visible').count()==0 and p1.is_visible('.empty'))
+    check('fresh visitor: no gate/password, empty dashboard', p1.locator('#svGate').count()==0 and p1.locator('input[type=password]:visible').count()==0 and (p1.is_visible('.empty') or p1.locator('#view>.demotop').count()>0))  # b210: 로그인 전 = 예시 화면
     p1.click('#addCharBtn'); p1.wait_for_selector('#svMainKey')
     check('main-key-only modal (no key list/alt/spare/char picker)', p1.is_visible('#svMainKey') and not p1.is_visible('#accList') and not p1.is_visible('#newAccKey') and not p1.is_visible('#impSec') and p1.locator('.bkrow:visible').count()==0)
     p1.fill('#svMainKey','live_WRONG_0123456789abcdef'); p1.click('#svMainBtn'); p1.wait_for_selector('#svMainSt .keyrej')
