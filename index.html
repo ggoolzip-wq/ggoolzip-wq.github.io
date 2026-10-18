@@ -5847,6 +5847,9 @@ document.addEventListener('click',e=>{ if(!(demoAllowed()&&demoTabOk())) return;
 setTimeout(()=>{ if(demoAllowed()&&tab!=='live'){ tab='boss'; syncTabs(); render(); } },0);
 // 가격(결정석·공용 아이템 시세)이 늦게 오면 예시를 새 가격으로 다시 만들고 다시 그림
 setInterval(()=>{ if(DEMO_ST&&demoAllowed()&&demoTabOk()&&demoSig()!==DEMO_SIG) render(); },1000);
+// 구글 드라이브 모드(github.io)는 공용 시세를 안 받음 → 예시를 보여 줄 때만 공용 시세(GET /api/prices, 로그인 없이)를 한 번 받아서 예시 판매값에 씀
+setTimeout(async()=>{ if(SV_ON||!SYNC_TEST_URL||!/github\.io$/.test(location.hostname)||!demoAllowed()||Object.keys(itemPrices()).length) return;
+  try{ const r=await fetch(SYNC_TEST_URL+'/api/prices',{cache:'no-store'}); if(!r.ok) return; const j=await r.json(); if(j&&j.prices){ itemPricePut(j.prices); render(); } }catch(e){} },0);
 </script>
 </body>
 </html>
