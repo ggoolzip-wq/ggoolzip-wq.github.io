@@ -59,6 +59,20 @@ try:
     # 지금 탭 다시 누름 = 탭 안 바뀜 → 그대로
     y2=tabclick(pg,'total'); pg.wait_for_timeout(200)
     check('지금 탭 다시 누름 = 그대로(탭 바뀐 게 아님)', abs(pg.evaluate("scrollY")-y0)<2, (y0,y2))
+    # b213: 이번 주 보스 — 누를 수 없는 칩 = 원래 색, 모멘텀 큐브 바로 다음 / 반지 상자 줄 = 숫자 칸 맞춤 + 리4·컨4 아이콘
+    pg.evaluate("()=>{const c=S.characters.find(x=>x.id==='c3');c.bosses.lucid={enabled:true,diff:'hard',party:1};c.bosses.seren={enabled:true,diff:'hard',party:1};c.weekly={lucid:true,seren:true,will:true};c.drops={'seren|r_black':5,'lucid|r_life':2,'will|r_white':2};c.dropOut={'seren|r_black':['r4','x','x','c4','x'],'lucid|r_life':['gl','x'],'will|r_white':['c4','x']};S.activeId='c3';tab='boss';syncTabs();save();render()}"); pg.wait_for_timeout(500)
+    d=pg.evaluate("""(()=>{const out=[];document.querySelectorAll('.drops').forEach(w=>{const ch=[...w.children];const off=ch.map((e,i)=>e.classList.contains('off')?i:-1).filter(i=>i>=0);if(!off.length)return;
+      const lastInfo=Math.max(-1,...ch.map((e,i)=>e.classList.contains('erda')?i:-1)), firstClick=ch.findIndex(e=>e.dataset.drop);
+      out.push({ok:off[0]===lastInfo+1&&off.every((v,j)=>v===off[0]+j)&&(firstClick<0||firstClick>off[off.length-1]),memc:!!w.querySelector('.memc')});});
+      const o=document.querySelector('.drop.off'),cs=getComputedStyle(o),im=o.querySelector('img'),dn=o.querySelector('.dn'),ref=document.querySelector('.drop[data-drop] .dn');
+      return {rows:out,op:cs.opacity,f:cs.filter,imf:im?getComputedStyle(im).filter+'|'+getComputedStyle(im).opacity:'',pe:cs.pointerEvents,cur:cs.cursor,col:getComputedStyle(dn).color,refcol:ref&&getComputedStyle(ref).color,drop:o.dataset.drop||null}})()""")
+    check('누를 수 없는 칩 = 모멘텀 큐브(정보 아이콘) 바로 다음, 누르는 칩보다 앞', d['rows'] and all(r['ok'] for r in d['rows']) and any(r['memc'] for r in d['rows']), d['rows'])
+    check('누를 수 없는 칩 = 아이콘·글씨 원래 색, 클릭·hover 없음', d['op']=='1' and d['f']=='none' and d['imf']=='none|1' and d['pe']=='none' and d['cur']=='default' and d['drop'] is None and d['col']==d['refcol'], d)
+    r=pg.evaluate("""(()=>{const R=document.querySelector('.revpanel .rp-ring'),S_=document.querySelector('.revpanel .rp-sale .rpn'),o=R.querySelector('.rpouts');const ims=[...o.querySelectorAll('.rpo')].map(p=>[p.querySelector('img')?.src.match(/ring_\\w+|data:/)?.[0]||(p.querySelector('img')?'img':''),p.innerText.trim(),p.querySelector('img')?.getBoundingClientRect().height,parseFloat(getComputedStyle(p.querySelector('.tsmn')).fontSize)]);
+      return {txt:R.innerText.replace(/\\s+/g,' '),right:[o.getBoundingClientRect().right,S_.getBoundingClientRect().right],fit:R.scrollWidth<=R.clientWidth+1,h:R.getBoundingClientRect().height,ims}})()""")
+    ims=r['ims']; r4=[x for x in ims if x[1].startswith('리4')]; c4=[x for x in ims if x[1].startswith('컨4')]; other=[x for x in ims if not x[1][:2] in ('리4','컨4')]
+    check('반지 상자 결과 = 위 줄 숫자처럼 오른쪽 끝 맞춤, 한 줄, 안 잘림', abs(r['right'][0]-r['right'][1])<1.5 and r['fit'] and r['h']<24, r)
+    check('리4·컨4 앞에 링 아이콘(글씨 높이), 연마석·꽝은 아이콘 없음', r4 and c4 and r4[0][0] and c4[0][0] and abs(r4[0][2]-r4[0][3])<1.5 and abs(c4[0][2]-c4[0][3])<1.5 and all(not x[0] for x in other), ims)
     # 모바일
     pg.set_viewport_size({'width':390,'height':700}); pg.wait_for_timeout(400)
     y0=down(pg); y1=tabclick(pg,'loot'); pg.wait_for_timeout(300)
