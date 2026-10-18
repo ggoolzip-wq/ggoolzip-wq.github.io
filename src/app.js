@@ -2504,6 +2504,10 @@ function svMainAttr(on){ // b71: 'Data based on NEXON Open API' — 등록 칸 �
   if(!a){ a=document.createElement('div'); a.id='svMainAttr'; a.className='svmattrib muted'; a.textContent='Data based on NEXON Open API'; }
   $('#svMainSec')?.insertAdjacentElement('afterend',a);
 }
+/* b209: API 키 발급 순서 안내(사용자 문구 그대로) — 'API 발급 : 링크' 바로 아래. ☞ 줄 = 그 단계 아래 들여쓰기. 이 링크가 있는 곳은 이 창(로그인 전 본계정 키 등록) 하나뿐 */
+const API_GUIDE=[['①','링크 클릭 후 넥슨 로그인'],['②','이용약관 스크롤 끝까지 내린 후 약관 동의'],['③','어떤 게임으로 애플리케이션을 만드실 건가요?','메이플스토리'],
+  ['④','아직 개발 단계인가요? 아니면 서비스 출시 단계인가요?','개발 단계'],['⑤','출시할 서비스명을 설정해주세요','메보기'],['⑥',"마이페이지 - 애플리케이션 목록 - 서비스명 '메보기' 클릭"],['⑦','첫번째 API key 옆 복사버튼 누른 후 API키 입력란에 Ctrl+V']];
+function apiGuideHtml(){ return `<ol class="apiguide" aria-label="API 키 발급 방법">${API_GUIDE.map(([n,t,a])=>`<li><span class="agn">${n}</span><span class="agt">${esc(t)}</span>${a?`<div class="aga">☞ ${esc(a)}</div>`:''}</li>`).join('')}</ol>`; }
 function svMainRender(){
   const modal=$('#importModal'); if(!modal) return;
   const on=svNeedMain()&&modal.classList.contains('show'); modal.querySelector('.addm')?.classList.toggle('svmain',on);
@@ -2522,7 +2526,7 @@ function svMainRender(){
   }
   // b71: 처음 등록 칸 = API 키 입력 하나 + [등록] 만 (안내 문구 없음). 오류·부계정 경고는 생길 때만 아래 줄에. NEXON 표기는 칸 밖(창 아래)
   sec.innerHTML=`<div class="accrow svmrow"><input id="svMainKey" class="pin" type="password" autocomplete="off" spellcheck="false" placeholder="API키 입력" aria-label="API키 입력"${busy?' disabled':''}><button class="btn sm" id="svMainBtn"${busy?' disabled':''}>${busy?'확인 중…':'등록'}</button></div>
-    <div class="svmapi tiny muted">API 발급 : <a href="https://openapi.nexon.com/ko/my-application/create-app/" target="_blank" rel="noopener">https://openapi.nexon.com/ko/my-application/create-app/</a></div>
+    <div class="svmapi tiny muted">API 발급 : <a href="https://openapi.nexon.com/ko/my-application/create-app/" target="_blank" rel="noopener">https://openapi.nexon.com/ko/my-application/create-app/</a></div>${apiGuideHtml()}
     ${err?`<div class="accst svmst" id="svMainSt"><span class="keyrej${soft?' soft':''}" role="alert">${esc(err)}</span></div>`:'<div class="accst svmst" id="svMainSt" hidden></div>'}`;
   svMainAttr(true);
   const inp=$('#svMainKey'); if(inp){ inp.value=v; if(err==='API 키를 넣어 주세요'&&!v) markEmpty(inp); if(!busy) setTimeout(()=>inp.focus(),0); }
