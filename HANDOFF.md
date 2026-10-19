@@ -1812,3 +1812,4 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 박스 사용 시: server/node_modules 가 없으면 wrangler 테스트가 SKIP 되므로 `cd server && npm ci`(또는 기존 사본 복사) 후 실행.
 - 320px 헤더 수정(2026-10-19 22:00 KST, 사용자 결정 '테마 버튼 유지'): src/extra.css 끝 `@media (max-width:360px){header .hwrap{gap:8px;padding-left:10px;padding-right:10px} header .thbtn{width:30px;height:30px;margin-left:2px;font-size:14px}}` → 320px scrollWidth 329→320(버튼 오른쪽 끝 310), 390px·1280px 배치 그대로. test12 기대값은 그대로 두고 통과. 사진: /workspace/zosu/shots/hdr320-before.png, hdr320-after.png.
 - 문구 정리: 5장·8장의 '다크 전용·테마 버튼 없음'을 현재 상태(기본 다크 + 헤더 #themeBtn 라이트 전환, 새 UI 는 다크·라이트 둘 다 확인)로 고침. b67 기록 항목은 남기고 'b179·b182 로 대체됨' 표시.
+- 전체 결과(320px 수정 후, 2026-10-19 KST, CHROME=/usr/bin/google-chrome, run_all.sh 순차): **135/135 통과**, 실패 0.
