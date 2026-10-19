@@ -3572,6 +3572,8 @@ function applyData(d){
 /* =====================================================================
  *  시작
  * ===================================================================== */
+/* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
+function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
 load();
@@ -3589,8 +3591,10 @@ try{ if(SV_ON&&localStorage.getItem(KEY_RESET_K)!==KEY_RESET){
 } }catch(e){}
 // b69: 서버 모드인데 세션(토큰)이 없으면 이 PC 에 남은 앱 데이터를 쓰지 않고 지움 (예전 로그인의 데이터가 로그인 없이 보이지 않게). 승인 대기 요청만 유지
 try{ if(SV_ON&&!svTok()&&(S.characters.length||accounts().length||S.history.length||(S.monthHistory||[]).length||['svUser','svmeta','svbase','svVault','svSubSig','svAdmin','guild','sched'].some(k=>localStorage.getItem('mapleBossTracker.'+k)!=null))) svWipeAll({keepPending:true}); }catch(e){ console.warn(e); }
+// b217: 예전(b216 전) 방식으로 본계정 키를 지운 기기 = 세션은 남았는데 키가 하나도 없음 → 처음 온 사람 상태(예시 화면). 서버 데이터는 그대로(세션만 끝냄)
+try{ if(SV_ON&&svTok()&&!accounts().some(a=>a.key||a.bk)&&!svPend()){ const t=svTok(); svWipeAll(); fetch(SV_ON+'/api/logout',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json',Authorization:'Bearer '+t}}).catch(()=>{}); } }catch(e){ console.warn('b217 keyless session',e); }
 if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
-checkResets(); loadOfficialPrices(); save(); applyTheme(); render();
+checkResets(); loadOfficialPrices(); save(); applyTheme(); bootRender('start'); // b217: 이 시점엔 아래쪽 const(admPrices·feed 등)가 아직 없음 → 오류가 나도 스크립트가 멈추지 않게, 파일 끝에서 다시 그림
 addEventListener('resize',()=>{ clearTimeout(fitPriceCard._t); fitPriceCard._t=setTimeout(()=>{ fitPriceCard(); fitMiss(); },150); });
 /* b109: 왼쪽 위 '메보수' → '이번 주 보스' 탭 (탭 버튼 클릭과 같은 경로: 저장 안 한 변경 확인 포함) */
 document.getElementById('logoHome')?.addEventListener('click',e=>{ e.preventDefault(); document.querySelector('#tabs [data-tab="boss"]')?.click(); });
@@ -3652,7 +3656,7 @@ async function admDecide(id,action){
  * 수익 기록 창에서 금액 자동 채움 + '최저가 측정 시간 - YYYY-MM-DD HH:mm'(KST, 받아 온 시각). 예전 크롬 확장(b93)은 b104 에서 삭제(넥슨 약관). */
 const ADM_PRICE_KEY='mapleBossTracker.admPrices';
 const kstStamp=t=>new Date(t+9*3600e3).toISOString().slice(0,16).replace('T',' ');
-const admPrices=()=>{ try{ return JSON.parse(localStorage.getItem(ADM_PRICE_KEY)||'{}')||{}; }catch(e){ return {}; } };
+function admPrices(){ try{ return JSON.parse(localStorage.getItem('mapleBossTracker.admPrices')||'{}')||{}; }catch(e){ return {}; } } // b217: 함수 선언(호이스팅) — 시작 렌더 때 'Cannot access admPrices before initialization' 로 스크립트가 멈췄음
 // 반지 상자 결과 'ring:r4'·'ring:c4'(리스트레인트·컨티뉴어스 링 4레벨) → ring_r4·ring_c4, 칠흑 상자 결과 'cb:키' → 키
 function admPriceOf(ik){ /* b112: 공용 시세 → 모든 사용자 수익 기록 칸 채움 */ const k=String(ik||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1'), o=(typeof itemPrices==='function'?itemPrices():admPrices())[k]; /* b112: 이 기기 + 서버에서 받은 시세 */ return o&&+o.p>0&&+o.t>0?o:null; }
 let admPriceMsg='', admPriceBusy=false;
@@ -3969,3 +3973,5 @@ setInterval(()=>{ if(DEMO_ST&&demoAllowed()&&demoTabOk()&&demoSig()!==DEMO_SIG) 
 // 구글 드라이브 모드(github.io)는 공용 시세를 안 받음 → 예시를 보여 줄 때만 공용 시세(GET /api/prices, 로그인 없이)를 한 번 받아서 예시 판매값에 씀
 setTimeout(async()=>{ if(SV_ON||!SYNC_TEST_URL||!/github\.io$/.test(location.hostname)||!demoAllowed()||Object.keys(itemPrices()).length) return;
   try{ const r=await fetch(SYNC_TEST_URL+'/api/prices',{cache:'no-store'}); if(!r.ok) return; const j=await r.json(); if(j&&j.prices){ itemPricePut(j.prices); render(); } }catch(e){} },0);
+// b217: 모든 선언이 끝난 뒤 한 번 더 그림 (시작 렌더가 아직 없는 값 때문에 실패했어도 화면이 제대로 나오게)
+bootRender('end');
