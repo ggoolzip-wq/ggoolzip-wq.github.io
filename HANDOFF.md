@@ -1760,3 +1760,9 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 남은 개수 = `leftOf(c).wn` = `remainingWeekly(c).list.length` (금액과 같은 목록: 캐릭터당 12칸 − 잡은 수, 켜 둔 안 잡은 보스만큼), 보이는 캐릭터만(규칙 9). 검마 남은 = 이번 달 안 잡은 검은 마법사 캐릭터 수. 월드 180 상한은 사이트에 없음(예전에 settings.worldLimit 제거, 수익 = 상한 없음) → 개수도 상한 없음.
 - 좁은 패널(줄 ≤310px: 1181~1440px 데스크톱 오른쪽 칸·휴대폰)에서 큰 금액(+21,666,100,000 등)도 한 줄: `.rp-line` 을 inline-size 컨테이너로(이미 contain:inline-size), `@container (max-width:310px)` 에서 글씨 .74rem·이름 칸 9.2em, 금액 왼쪽 여백 6px.
 - tests/test_b221.py (8973): 개수 = xN·'개' 없음, xN 왼쪽 끝 같음, 이름 안 잘림·한 줄·패널 안·숫자와 안 겹침 (1600/1280/1024/390/360 + 큰 금액 1600~360) · 예시 1600/390. test_tracker81·92 기대값 xN 으로, test_b220 빌드 확인 ≥b220. run_par 실패 = 기존 목록. 스크린샷 /workspace/b221/.
+
+## b222 (2026-10-19 KST) — 새로고침해도 캐릭터 자동 동기화 (b218 일부 되돌림)
+- 요청: "페이지 새로고침하면 캐릭터 동기화 되도록 해줘". 이제 페이지 열 때 navigation type 'navigate'(새로 들어옴)·'reload'(F5)·'back_forward'(뒤로/앞으로) 모두 1번 (`NAV_SYNC`, prerender 등은 안 함). 뒤로/앞으로가 bfcache 로 복원되면 스크립트가 다시 안 돌아서 `pageshow`(persisted) 에서 같은 규칙으로 1번.
+- 겹침 방지 그대로: `syncing` 이면 건너뜀, 마지막 동기화(lastSync)·열 때 동기화 시작(LOAD_SYNC_KEY)이 3초(LOAD_SYNC_GAP_MS) 안이면 건너뜀. 키 등록 때 동기화(keySync)도 그대로. 예시 화면 = 키·캐릭터 없음 → loadSyncDue false (demoAllowed 는 뒤쪽 const 라 시작 코드에서 부르면 TDZ — 부르지 말 것).
+- 🔄 말풍선: "홈페이지에 들어올 때·새로고침할 때·API 키를 등록할 때 자동 (3초 안 중복은 건너뜀)". 빌드 'b222'.
+- 테스트: test_b218(F5 1번·3초 안 F5 건너뜀·새로 들어옴·뒤로/앞으로·bfcache pageshow·말풍선), test_tracker22(F5 = 동기화, 3초 안 건너뜀). run_par 실패 = 기존 목록(5 16 23 25 43 44 46 47 50 51 76 80 101).
