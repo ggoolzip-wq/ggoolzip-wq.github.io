@@ -49,17 +49,29 @@ try:
     p1.wait_for_function("accounts().some(a=>a.key==='%s')"%KF,timeout=15000); p1.wait_for_function("!document.querySelector('#impMsg .spin')",timeout=15000); p1.wait_for_timeout(600)
     check('add sub key with linked character → 부캐 shown + 1 more auto sync', sc(p1)==2 and p1.evaluate("S.characters.filter(charShown).length")==2, (sc(p1),p1.evaluate("S.characters.map(c=>[c.name,charShown(c)])")))
     idle(p1); p1.evaluate("closeImport()"); p1.screenshot(path=SHOT+'/after_sub_key_sync.png')
-    # 새로 들어올 때만 동기화 (새로고침·뒤로/앞으로 제외)
+    # b222: 새로 들어올 때·새로고침(F5)·뒤로/앞으로 모두 1번 (3초 안 중복은 건너뜀)
     NX=[]; p1.on('request',lambda r: NX.append(r.url) if 'open.api.nexon.com' in r.url and '/character/list' not in r.url else None)
     nav=lambda: p1.evaluate("performance.getEntriesByType('navigation')[0].type")
-    p1.wait_for_timeout(3200); NX.clear(); p1.reload(); p1.wait_for_timeout(2500)
-    check('F5 reload (logged in) → no auto sync', len(NX)==0 and nav()=='reload' and p1.evaluate("!syncing"), (len(NX),nav()))
-    NX.clear(); p1.goto(URL); p1.wait_for_timeout(300); p1.wait_for_function("!syncing",timeout=30000); p1.wait_for_timeout(500)
-    basic=[u for u in NX if '/character/basic' in u]
-    check('fresh entry (navigate) → one auto sync (≤1 basic call per shown character)', len(NX)>0 and nav()=='navigate' and 0<len(basic)<=2, (len(NX),len(basic),nav()))
+    def one_sync(tag,want):
+        p1.wait_for_timeout(300); p1.wait_for_function("!syncing",timeout=30000); p1.wait_for_timeout(500)
+        basic=[u for u in NX if '/character/basic' in u]
+        check(f'{tag} → one auto sync (≤1 basic call per shown character)', len(NX)>0 and nav()==want and 0<len(basic)<=2, (len(NX),len(basic),nav()))
+    p1.wait_for_timeout(3200); NX.clear(); p1.reload(); one_sync('b222: F5 reload (logged in)','reload')
+    NX.clear(); p1.reload(); p1.wait_for_timeout(2000)
+    check('b222: reload again within 3s of last sync → skipped (no duplicate)', len(NX)==0 and nav()=='reload', (len(NX),nav()))
+    p1.wait_for_timeout(3200); NX.clear(); p1.goto(URL); one_sync('fresh entry (navigate)','navigate')
     p1.screenshot(path=SHOT+'/fresh_entry_synced.png')
-    p1.wait_for_timeout(3200); p1.goto('about:blank'); NX.clear(); p1.go_back(); p1.wait_for_timeout(2500)
-    check('back/forward → no auto sync', len(NX)==0, (len(NX), p1.evaluate("performance.getEntriesByType('navigation')[0]?.type")))
+    p1.wait_for_timeout(3200); p1.goto('about:blank'); NX.clear(); p1.go_back(); p1.wait_for_timeout(300); p1.wait_for_function("!syncing",timeout=30000); p1.wait_for_timeout(500)
+    bf=p1.evaluate("performance.getEntriesByType('navigation')[0]?.type")
+    check('b222: back/forward → one auto sync (reload 처럼)', len([u for u in NX if '/character/basic' in u])>0 and bf=='back_forward', (len(NX),bf))
+    # bfcache 복원(pageshow persisted)도 같은 규칙: 3초 지났으면 1번, 동기화 중이면 건너뜀
+    p1.wait_for_timeout(3200); NX.clear()
+    p1.evaluate("window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))"); p1.wait_for_timeout(50)
+    n_a=p1.evaluate("syncing||Date.now()-(+localStorage.getItem(LOAD_SYNC_KEY)||0)<1000"); p1.evaluate("window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))"); p1.wait_for_function("!syncing",timeout=30000)
+    basic=[u for u in NX if '/character/basic' in u]
+    check('b222: bfcache restore → one sync, second pageshow (syncing/within 3s) skipped', n_a and 0<len(basic)<=2, (n_a,len(basic)))
+    tip=p1.evaluate("document.querySelector('#syncBtn,[data-act=sync],.syncbtn')?.title||''")
+    check('b222: sync button tooltip mentions reload', '새로고침할 때' in tip and '제외' not in tip, tip)
     check('JS 오류 없음', not errs, errs)
     b.close()
 except Exception as e:
