@@ -85,7 +85,7 @@ try:
     ctx=b.new_context(viewport={'width':1400,'height':1000},locale='ko-KR'); ctx.route('https://open.api.nexon.com/**',lambda r:r.abort())
     ctx.route('http://127.0.0.1:9996/**',lambda r:r.fulfill(status=200,headers=H,content_type='application/json',body='{}'))
     pg=ctx.new_page(); pg.on('pageerror',lambda e:None)
-    pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi','http://127.0.0.1:9996');localStorage.setItem('mapleBossTracker.svToken','t-test')"); pg.reload(); pg.wait_for_timeout(1500)
+    pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi','http://127.0.0.1:9996');localStorage.setItem('mapleBossTracker.svToken','t-test');localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.v1',JSON.stringify({version:5,characters:[],settings:{accounts:[{id:'a1',label:'본계정',key:'live_TEST_0123456789abcdef',main:true}]}}))"); pg.reload(); pg.wait_for_timeout(1500)  # b217: 키 없는 세션은 처음 온 사람으로 바뀜 → 실제 로그인처럼 본계정 키 있음
     s=pg.evaluate("({top:!!document.querySelector('#view>.demotop'),demo:document.body.classList.contains('demo'),empty:!!document.querySelector('#view .card.empty'),chars:document.querySelectorAll('#charList .char[data-id]').length})")
     check('로그인했는데 캐릭터 0명 = 예전 빈 화면(예시 없음)', not s['top'] and not s['demo'] and s['empty'] and s['chars']==0, s)
     ctx.close()
