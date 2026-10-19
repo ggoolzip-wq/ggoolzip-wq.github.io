@@ -3612,7 +3612,10 @@ document.getElementById('logoHome')?.addEventListener('click',e=>{ e.preventDefa
  * 시작 시각을 따로 저장(LOAD_SYNC_KEY)하는 이유: 동기화 도중 새로고침하면 lastSync 가 안 바뀌어 매번 다시 시작되기 때문. */
 function loadSyncDue(){ if(!hasApi()||!S.characters.length) return false;
   const last=Math.max(+S.settings.lastSync||0, +localStorage.getItem(LOAD_SYNC_KEY)||0); return Date.now()-last>=LOAD_SYNC_GAP_MS; }
-if(loadSyncDue() || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))){ try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(e){} syncAll({silent:true}); } // + 기존 데이터: 계정 자동 배정
+// b218: 새로 들어올 때(주소 입력·북마크·링크·새 탭 = navigation type 'navigate')만 자동 동기화. 새로고침(F5, 'reload')·뒤로/앞으로('back_forward')는 안 함 (사용자 요청)
+function navType(){ try{ const e=performance.getEntriesByType('navigation')[0]; if(e&&e.type) return e.type; const n=performance.navigation; if(n) return n.type===1?'reload':n.type===2?'back_forward':'navigate'; }catch(e){} return 'navigate'; }
+const NAV_FRESH=navType()==='navigate';
+if((NAV_FRESH&&loadSyncDue()) || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))){ try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(e){} syncAll({silent:true}); } // + 기존 데이터: 계정 자동 배정
 setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden) tabTick(); if(!document.hidden) gdPull(); }, 60e3);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); return; } if(checkResets()) render(); tabTick(); gdPull(); }); // (예전: 15분 지났으면 자동 동기화 — 2026-10-10 제거)
 window.addEventListener('pagehide',()=>{ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); });
