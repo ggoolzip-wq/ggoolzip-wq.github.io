@@ -3585,7 +3585,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b219'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b220'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -3625,7 +3625,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(!SV_O
 window.addEventListener('pagehide',()=>{ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); });
 
 /* b68: 가입 승인 — 관리자(서버가 사용자 id 로 확인)만 목록·승인/거절/차단. 처음 연 기기에서도 관리자 버튼이 보이게 /api/me 로 확인 */
-async function svAdminCheck(){ if(!SV_ON||!svTok()||!gdMeta.on) return; try{ const r=await svFetch('/api/me'); localStorage.setItem(SV_ADMIN_KEY,r.admin?'1':'0'); gdRender(); if(!itemPriceLoad._at||Date.now()-itemPriceLoad._at>60e3){ itemPriceLoad(); if(r.admin) admPriceLoad(); } const m=$('#gMenu'); if(m&&!m.hidden) gdMenu(true); }catch(e){} }
+async function svAdminCheck(){ if(!SV_ON||!svTok()||!gdMeta.on) return; try{ const r=await svFetch('/api/me'); localStorage.setItem(SV_ADMIN_KEY,r.admin?'1':'0'); gdRender(); if(!itemPriceLoad._at||Date.now()-itemPriceLoad._at>60e3) itemPriceLoad(); if(r.admin) admPriceLoad(); /* b220: 관리자 시세·mai 는 공용 시세 60초 제한과 따로 (시작 때 늘 건너뛰던 버그) */ const m=$('#gMenu'); if(m&&!m.hidden) gdMenu(true); }catch(e){} }
 let admUsers=null, admErr='';
 /* b102: 관리자 창 즉시 — 지난 목록(이 탭 sessionStorage)으로 바로 그리고 뒤에서 새로 받음. 사용자 목록+최저가 = 요청 1번(/api/admin/users?prices=1) */
 const ADM_CACHE_KEY='mapleBossTracker.admUsers';
@@ -3690,18 +3690,24 @@ async function itemPriceLoad(){ if(!SV_ON) return; /* b112: 공용 시세 — �
 function admPriceSave(P){ const cur=admPrices(); for(const [k,o] of Object.entries(P||{})) if(o&&+o.p>0&&(!cur[k]||cur[k].t<=o.t)) cur[k]={p:+o.p,t:+o.t}; try{ localStorage.setItem(ADM_PRICE_KEY,JSON.stringify(cur)); }catch(e){} }
 /* b208: 아이템 키 ↔ maple.ai.kr 이름 짝은 server/worker.js MAI_NAMES 하나뿐(예전 MAI_CODE·maiMap 복사본 없앰). 서버가 맞춘 값(mapped)을 그대로 씀.
  * admMaiGot = 가장 새 시세 날짜에 maple.ai.kr 값을 받은 우리 키 집합(null = 아직 모름) → 시세 등록 창에서 못 받은 아이템 옆 빨간 '시세 정보 없음' */
+/* b220: 예전엔 [최저가 갱신] 응답 때만 채워지고(메모리), 시작 때 admPriceLoad 가 itemPriceLoad 의 60초 제한에 걸려 안 불려서 자동(cron) 갱신 뒤엔 늘 비어 있었음.
+ * 이제 서버 maiInfo(mai_cache) 하나 = 두 길 똑같음: 시작·로그인 확인 때, 시세 등록 창을 열 때마다 /api/admin/prices 의 mai 를 받고, 이 기기에 보관(창이 바로 그려지게) */
+const ADM_MAI_KEY='mapleBossTracker.admMai';
 let admMaiGot=null, admMaiDate='';
-const admMaiSet=m=>{ if(m&&Array.isArray(m.got)){ admMaiGot=new Set(m.got); admMaiDate=String(m.date||''); } };
+const admMaiSet=m=>{ if(m&&Array.isArray(m.got)){ admMaiGot=new Set(m.got); admMaiDate=String(m.date||''); try{ localStorage.setItem(ADM_MAI_KEY,JSON.stringify({date:admMaiDate,got:m.got})); }catch(e){} } };
+try{ const m=JSON.parse(localStorage.getItem(ADM_MAI_KEY)||'null'); if(m&&Array.isArray(m.got)){ admMaiGot=new Set(m.got); admMaiDate=String(m.date||''); } }catch(e){}
+function mktMissPaint(){ const el=document.querySelector('#mktModal'); if(!el) return; for(const row of el.querySelectorAll('.rarow[data-pid]')){ const miss=!!admMaiGot&&!admMaiGot.has(row.dataset.pid), cur=row.querySelector('.mkno');
+  if(miss&&!cur) row.querySelector('.raname').insertAdjacentHTML('afterend','<span class="mkno">시세 정보 없음</span>'); else if(!miss&&cur) cur.remove(); } }
 /* b112: 다른 기기에서 갱신한 시세를 이 기기로 — 예전엔 관리자 창을 열 때만 받아서, 새 기기(집 PC)에선 수익 기록 창이 빈 칸('0')이었음. 이제 로그인 확인 때마다 받음.
  * 받은 값이 비었거나 실패하면 아무것도 안 바꿈(admPriceSave 는 0·빈 값을 무시하고 더 새 시각만 덮음) */
-async function admPriceLoad(){ if(!svIsAdmin()) return; try{ const R=await svFetch('/api/admin/prices'), P=R.prices; admMaiSet(R.mai); if(P&&typeof P==='object'&&Object.keys(P).length){ admPriceSave(P); if(typeof repaintPriceCard==='function'&&pcKind==='item') repaintPriceCard(); } }catch(e){} }
+async function admPriceLoad(){ if(!svIsAdmin()) return; try{ const R=await svFetch('/api/admin/prices'), P=R.prices; admMaiSet(R.mai); mktMissPaint(); if(P&&typeof P==='object'&&Object.keys(P).length){ admPriceSave(P); if(typeof repaintPriceCard==='function'&&pcKind==='item') repaintPriceCard(); } }catch(e){} }
 // b106: 대기 없이 바로 요청 (하루 1회 접속, 같은 날은 캐시)
 async function admPriceRun(){
   if(!svIsAdmin()||admPriceBusy) return;
   admPriceBusy=true; admPriceMsg='maple.ai.kr 시세 받는 중…'; renderAdmPrice();
   try{
     const r=await svFetch('/api/admin/maple-prices'); const P=r.mapped&&typeof r.mapped==='object'?r.mapped:{}; /* b208: 서버가 맞춘 값(값 있는 것만, t=처음 본 시각) */
-    const miss=(r.missing||[]).length; admMaiSet({date:r.date,got:Object.keys(P)});
+    const miss=(r.missing||[]).length; admMaiSet(r.mai||{date:r.date,got:Object.keys(P)}); mktMissPaint();
     admPriceSave(P);
     const sv=await svFetch('/api/admin/prices',{method:'PUT',body:{prices:P}}); admPriceSave(sv.prices); itemPricePut(sv.prices); repaintPriceCard();
     admPriceMsg=`${Object.keys(P).length}개 갱신 (maple.ai.kr ${esc(String(r.date||''))} 본섭 시세)${miss?` · 없음 ${miss}개`:''}`;
@@ -3721,7 +3727,7 @@ function openMkt(){
   const el=document.createElement('div'); el.id='mktModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','mktTitle');
   const v=k=>{ const o=P[priceId(k)]; return o?String(Math.round(o.p/1e4)/1e4):''; };
   el.innerHTML=`<div class="modal rabox mktbox"><h3 id="mktTitle">시세 등록</h3>
-    <div class="ralist">${L.map((k,i)=>`<div class="rarow"><span class="raic">${lootIco(k)}</span><span class="raname">${esc(lootName(k))}<small class="ram" data-mkm="${i}">${P[priceId(k)]?meso(P[priceId(k)].p):''}</small></span>${admMaiGot&&!admMaiGot.has(priceId(k))?'<span class="mkno">시세 정보 없음</span>':'' /* b208 */}<label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="-" data-mk="${i}" data-orig="${v(k)}" value="${v(k)}" aria-label="${esc(lootName(k))} 시세 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div>
+    <div class="ralist">${L.map((k,i)=>`<div class="rarow" data-pid="${esc(priceId(k))}"><span class="raic">${lootIco(k)}</span><span class="raname">${esc(lootName(k))}<small class="ram" data-mkm="${i}">${P[priceId(k)]?meso(P[priceId(k)].p):''}</small></span>${admMaiGot&&!admMaiGot.has(priceId(k))?'<span class="mkno">시세 정보 없음</span>':'' /* b208 */}<label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="-" data-mk="${i}" data-orig="${v(k)}" value="${v(k)}" aria-label="${esc(lootName(k))} 시세 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div>
     <div class="rverr" id="mktErr" role="alert"></div>
     <div class="rabtns"><button class="btn raok" data-mkb="ok">저장</button><button class="btn ghost" data-mkb="cancel">취소</button></div></div>`;
   document.body.appendChild(el);
@@ -3737,6 +3743,7 @@ function openMkt(){
     try{ const sv=await svFetch('/api/admin/prices',{method:'PUT',body:{prices:out}}); admPriceSave(sv.prices); itemPricePut(sv.prices); repaintPriceCard(); renderAdmPrice(); toast(`시세 ${Object.keys(out).length}개 저장`); }
     catch(e){ toast(`⚠ 시세를 서버에 저장하지 못했어요: ${e.message}`); } };
   el.onclick=e=>{ if(e.target===el) return close(); const b=e.target.closest('[data-mkb]'); if(b) b.dataset.mkb==='ok'?ok():close(); };
+  admPriceLoad(); /* b220: 열 때마다 서버 mai(자동 갱신 포함) 받아 '시세 정보 없음' 다시 칠함 */
   setTimeout(()=>el.querySelector('[data-mk]')?.focus(),30);
 }
 let admPage=1; const admOpen=new Set(); // b91: 펼친 본계정 id

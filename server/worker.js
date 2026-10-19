@@ -326,6 +326,8 @@ export function maiMap(items, t) { const P = {}, rank = {};
   return P; }
 export const maiUnmatched = items => Object.keys(items || {}).filter(n => !MAI_BY[maiNorm(n)]).sort();
 export const MAI_KEYS = Object.keys(MAI_NAMES); export const maiKeysList = () => MAI_KEYS;
+// b220: 시세 등록 창 '시세 정보 없음' 상태 = 이것 하나 (자동 cron·[최저가 갱신] 둘 다 mai_cache 기준으로 같은 값) — got = 가장 새 시세 날짜에 값을 받은 우리 키
+export const maiInfo = cv => (cv && cv.items ? { date: cv.date, got: Object.keys(maiMap(cv.items, 0)), unmatched: maiUnmatched(cv.items), fetchedAt: cv.fetchedAt || 0 } : null);
 /* b207: maple.ai.kr 시세 자동 갱신 (주인 허락 받음, 예의 있게).
  *  - cron 매 1분 중 KST 분 %30==0(:00·:30, 사용자 결정) 일 때만, 그리고 오늘(KST) 새 날짜를 아직 못 찾았을 때만 1번 요청. 찾으면 그날은 끝, 다음 00:00 KST 부터 다시.
  *  - If-None-Match(저장한 ETag) → 안 바뀌면 304(0바이트). 설명하는 User-Agent.
@@ -810,12 +812,12 @@ async function route(req, env) {
       const x = await maiRefresh(env, Date.now(), 'admin'), cv = x.cv;
       if (!cv.items) throw new HttpError(502, 'mai_parse', 'maple.ai.kr 시세 표를 읽지 못했습니다');
       const mapped = maiMap(cv.items, cv.fetchedAt); // b208: 짝은 서버 하나 — 페이지는 이걸 그대로 PUT (t=처음 본 시각 → 그 뒤 손으로 넣은 값은 PUT 이 안 덮음)
-      return json(200, { date: cv.date, items: cv.items, fetchedAt: cv.fetchedAt, checkedAt: cv.checkedAt, mapped, missing: MAI_KEYS.filter(k => !mapped[k]), unmatched: maiUnmatched(cv.items), ...(x.status !== 'new' ? { cached: true } : {}) });
+      return json(200, { date: cv.date, items: cv.items, fetchedAt: cv.fetchedAt, checkedAt: cv.checkedAt, mapped, missing: MAI_KEYS.filter(k => !mapped[k]), unmatched: maiUnmatched(cv.items), mai: maiInfo(cv), ...(x.status !== 'new' ? { cached: true } : {}) });
     }
     if (p === '/api/admin/prices' && M === 'GET') {
       const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'").first(); let v = {}; try { v = r ? JSON.parse(r.v) : {}; } catch (e) {}
       const cv = await metaGet(env, 'mai_cache'); // b208: 가장 새 시세 날짜에 값을 받은 키(got) → 시세 등록 창 '시세 정보 없음'
-      return json(200, { prices: v, ...(cv && cv.items ? { mai: { date: cv.date, got: Object.keys(maiMap(cv.items, 0)), unmatched: maiUnmatched(cv.items) } } : {}) });
+      const mi = maiInfo(cv); return json(200, { prices: v, ...(mi ? { mai: mi } : {}) });
     }
     if (p === '/api/admin/prices' && M === 'PUT') {
       const b = await readBody(req), inp = b && typeof b.prices === 'object' && b.prices ? b.prices : {};
