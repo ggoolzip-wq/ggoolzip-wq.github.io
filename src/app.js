@@ -2480,7 +2480,7 @@ function renderAccList(){
   const accs=accounts();
   // b63: 키에 연결된(accId) 캐릭터 수만 — 수동 추가·키 없는 캐릭터는 제외
   const totalLinked=accs.reduce((s,a)=>s+(a.key?linkedOf(a):0),0); // b72: 키 없는 계정(숨긴 캐릭터)은 빼고
-  const ht=$('#accKeyTotal'); if(ht){ ht.textContent=`(총 ${totalLinked}캐릭 등록 중)`; ht.hidden=false; }
+  const ht=$('#accKeyTotal'); if(ht){ ht.textContent=`(총 ${totalLinked}캐릭 등록 중)`; ht.hidden=!totalLinked; } // b216: 0캐릭이면 '(총 0캐릭 등록 중)' 숨김
   const shown=accs.filter(a=>a.key||a.main); // b74: 키 없는 부계정 칸(빈 칸)은 목록에 안 보임 — 데이터·캐릭터 연결은 유지, 같은 계정 키를 '+ 계정 추가'로 넣으면 그 칸에 다시 연결
   el.innerHTML=shown.length?shown.map(a=>{
     const linked=linkedOf(a);
@@ -3467,6 +3467,9 @@ document.addEventListener('click',e=>{
       tgt.forEach(x=>{ x.key=''; delete x.bk; delete x.bkLabel; delete x.status; if(listCache[x.id]) delete listCache[x.id]; });
       accForget(tgt.filter(x=>!x.main&&!(all&&x===accounts()[0]&&!accounts().some(y=>y.main)))); // b102: 부계정 칸은 통째로 지움 (본계정 칸만 남겨 b72 처럼 다시 넣으면 보이게)
       localStorage.removeItem(SV_SUBSIG_KEY); if(impAccId===a.id||all){ impAccId=null; accChars=[]; }
+      if(SV_ON&&svTok()&&all){ // b216: 본계정(대표) 키 삭제 = 로그아웃 → 처음 온 사람 화면(예시 탭·API 키 등록 카드). 남은 변경은 서버에 저장한 뒤 이 PC 데이터 비움
+        save(); $('#importModal').classList.remove('show');
+        (async()=>{ try{ await svFetch('/api/unlink',{method:'POST',body}); }catch(e){} await gdLogout(); })(); return; }
       if(SV_ON&&svTok()) svFetch('/api/unlink',{method:'POST',body}).catch(e=>toast('⚠ 서버의 키 연결을 지우지 못했어요: '+e.message));
       save(); render(); if($('#importModal').classList.contains('show')) openImport(); } return; }
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
