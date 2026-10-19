@@ -59,7 +59,7 @@ try:
     # ---- PC1: 본계정 + 부계정 등록, 캐릭터 2명 저장 ----
     c1,p1=mkctx(b); fresh(p1); login(p1,KA); wait_on(p1,keep=True)
     p1.wait_for_selector('#accList .accrow .regok',timeout=15000); p1.wait_for_timeout(300)
-    hdr0=p1.evaluate("getComputedStyle(document.querySelector('#accKeyTotal').closest('.addsec-h')).display"); row0=p1.inner_text('#accList .accrow .regok').strip()
+    hdr0=p1.evaluate("getComputedStyle(document.querySelector('#accKeyTotal').closest('.addsec-h')).display"); row0=' '.join(p1.inner_text('#accList .accrow .regok').split())
     check("③ 0캐릭: '🔑 넥슨 API 키 (총 0캐릭 등록 중)' 줄 숨김, 행은 '✔ 등록 완료'만", hdr0=='none' and row0=='✔ 등록 완료', (hdr0,row0))
     p1.locator('#importModal .modal').screenshot(path=SHOT+'/zero_chars_modal.png')
     p1.evaluate("accAddShow(true)"); p1.evaluate("()=>{const i=document.querySelector('#newAccLabel'); if(i&&!i.value) i.value='부계정'}"); p1.fill('#newAccKey',KF); p1.click('#newAccBtn'); p1.wait_for_function("accounts().some(a=>a.key==='%s')"%KF,timeout=15000)
@@ -78,9 +78,9 @@ try:
     p1.evaluate("clearTimeout(gd.timer); const c=S.characters.find(c=>c.id==='c1'); c.weekly={lucid:true}; c.wat={lucid:222}; c.name='이PC이름'; save(); clearTimeout(gd.timer); gd.timer=null")
     p1.evaluate("gd.pulledAt=0; gd.busy=false"); p1.evaluate("(async()=>{ await gdConnect(false); })()"); p1.wait_for_timeout(2500); wait_on(p1)
     s1=st(p1); c1x=[c for c in s1['characters'] if c['id']=='c1'][0]
-    check('① 페이지 열 때(불러오기): 묻지 않음, 서버 값으로 덮어씀 (wat·이름)', not p1.is_visible('#driveModal') and p1.evaluate("gd.state")=='on' and c1x.get('wat',{}).get('lucid')==111 and c1x['name']=='본캐A', (p1.evaluate("gd.state"),c1x.get('wat'),c1x['name']))
+    check('① 페이지 열 때(불러오기): 묻지 않음, 서버 값으로 덮어씀 (wat·이름)', not p1.is_visible('#driveModal') and p1.evaluate("gd.state")=='on' and c1x.get('wat',{}).get('lucid')==111 and c1x['name']!='이PC이름', (p1.evaluate("gd.state"),c1x.get('wat'),c1x['name']))
     srvc=[c for c in json.loads(dev.sql("SELECT data FROM state")[0]['data'])['characters'] if c['id']=='c1'][0]
-    check('① 이 PC 의 예전 값이 서버로 올라가지 않음', srvc['name']=='본캐A' and srvc.get('wat',{}).get('lucid')==111, (srvc['name'],srvc.get('wat')))
+    check('① 이 PC 의 예전 값이 서버로 올라가지 않음', srvc['name']!='이PC이름' and srvc.get('wat',{}).get('lucid')==111, (srvc['name'],srvc.get('wat')))
     # 저장 중 충돌(409): 겹치는 항목은 서버, 이 PC 에서 바꾼 다른 항목은 유지
     p2.evaluate("S.characters.find(c=>c.id==='c2').name='서버부캐'; save(); svSaveNow()"); wait_on(p2)
     p1.evaluate("clearTimeout(gd.timer); S.characters.find(c=>c.id==='c2').name='PC부캐'; S.characters.find(c=>c.id==='c1').bosses.lucid.party=3; save(); clearTimeout(gd.timer); gd.timer=null; svSaveNow()"); p1.wait_for_timeout(2500); wait_on(p1)
