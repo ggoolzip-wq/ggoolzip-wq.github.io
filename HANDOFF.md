@@ -1766,3 +1766,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 겹침 방지 그대로: `syncing` 이면 건너뜀, 마지막 동기화(lastSync)·열 때 동기화 시작(LOAD_SYNC_KEY)이 3초(LOAD_SYNC_GAP_MS) 안이면 건너뜀. 키 등록 때 동기화(keySync)도 그대로. 예시 화면 = 키·캐릭터 없음 → loadSyncDue false (demoAllowed 는 뒤쪽 const 라 시작 코드에서 부르면 TDZ — 부르지 말 것).
 - 🔄 말풍선: "홈페이지에 들어올 때·새로고침할 때·API 키를 등록할 때 자동 (3초 안 중복은 건너뜀)". 빌드 'b222'.
 - 테스트: test_b218(F5 1번·3초 안 F5 건너뜀·새로 들어옴·뒤로/앞으로·bfcache pageshow·말풍선), test_tracker22(F5 = 동기화, 3초 안 건너뜀). run_par 실패 = 기존 목록(5 16 23 25 43 44 46 47 50 51 76 80 101).
+
+## b223 (2026-10-19 KST) — 새로고침하면 페이지 맨 위 (바로)
+- 요청: "새로 고침하면 스크롤이 맨 위로 올라가있게". app.js 맨 앞: `history.scrollRestoration='manual'` + `pageTop()`(scrollTo behavior:'instant' + scrollingElement 0). `TOP_PIN` 동안 bootRender('end') 뒤·load(+rAF·400ms)·동기화 끝(renderHeaderSync, syncing=false) 때 다시 맨 위. 사용자가 wheel/touch/key/mousedown 하거나 load 뒤 scrollY>0 이 되면(스크롤바 끌기·코드 스크롤) TOP_PIN 끝 → 그 뒤 render·동기화는 위치 안 건드림. 8초 뒤 자동 끝. bfcache 복원은 브라우저 그대로.
+- 탭 바꿀 때 맨 위(tabTop, b213)·보스 탭 캐릭터 클릭 = 스크롤 그대로(b189) 그대로. 안쪽 칸: 새로고침 때 복원하는 칸 없음(#charList 는 선택 캐릭터가 보이게만).
+- tests/test_b223.py (8972): 실제·예시 × 1400/390 — 내린 뒤 F5 → 첫 프레임부터 scrollY 0 만(html scroll-behavior:smooth 강제해도), 사용자가 내린 뒤 render = 그대로, 탭 = 맨 위. 옛 코드로 실패 확인. run_par 실패 = 기존 목록. 빌드 'b223'.
