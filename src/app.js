@@ -2935,7 +2935,7 @@ async function svWrite(keepalive,depth=0){
   if(r.conflict){ // 그 사이 다른 기기가 저장 → 받은 내용과 3-way 병합 후 다시 저장 (gdCommit → gdWrite)
     if(depth>=3||keepalive) throw new Error('다른 기기와 동시에 저장되고 있어요 — 잠시 후 다시 시도해 주세요');
     gd.remoteRev=+r.rev||0; gd.w409=depth+1;
-    try{ await gdSync(svRemote(r)); } finally{ gd.w409=0; }
+    try{ await gdSync(svRemote(r),{push:true}); } finally{ gd.w409=0; }
     return;
   }
   gd.remoteRev=+r.rev||0; gd.fileId='sv'; gdMeta.lastSave=Date.now(); gdMarkSynced(S.updatedAt||0);
@@ -3001,6 +3001,18 @@ function gdMerge(b,l,r,ctx,p=''){
     return o; }
   if(GD_SOFT_RE.test(p)) return ctx.prefer==='r'?r:l;
   ctx.conf.push(p); return ctx.prefer==='r'?r:l;
+}
+// b216: 서버 값으로 덮어쓰기 — 기기 전용·자동 갱신 값(GD_LOCAL_RE: 테마·선택 캐릭터·키 등)만 이 PC 값 유지, 나머지는 전부 서버(r)
+function gdServerWins(l,r,p=''){
+  if(p&&GD_LOCAL_RE.test(p)) return gdMerge(undefined,l,r,{base:false,prefer:'l',conf:[]},p);
+  if(r===undefined) return undefined;
+  const kf=GD_KEYED[p];
+  if(kf&&Array.isArray(r)){ const L=new Map((Array.isArray(l)?l:[]).filter(x=>gdIsObj(x)&&x[kf]!=null).map(x=>[String(x[kf]),x]));
+    return r.map(x=>gdIsObj(x)&&x[kf]!=null?gdServerWins(L.get(String(x[kf])),x,`${p}[${x[kf]}]`):x); }
+  if(gdIsObj(r)){ const lo=gdIsObj(l)?l:{}, o={};
+    for(const k of new Set([...Object.keys(lo),...Object.keys(r)])){ const v=gdServerWins(lo[k],r[k],gdP(p,k)); if(v!==undefined) o[k]=v; }
+    return o; }
+  return r;
 }
 function gdMergeKeyed(b,l,r,kf,ctx,p){
   const list=a=>(Array.isArray(a)?a:[]).filter(x=>gdIsObj(x)&&x[kf]!=null), ids=a=>list(a).map(x=>String(x[kf]));
@@ -3077,13 +3089,20 @@ const GD_RES_MSG={same:'',pushed:SV_ON?'이 PC의 변경 사항을 서버에 저
  *  - base(마지막으로 맞춘 내용)가 있으면 3-way 병합, 진짜 충돌(같은 항목을 양쪽에서 다르게 수정)일 때만 한 번 질문
  *  - 예전 버전 메타(시각만 있음): 한쪽만 바뀌었으면 그쪽, 둘 다면 묻지 않고 합침(겹치는 값은 최근 수정한 쪽)
  *  - 이 PC 에서 처음 연결 + 내용이 다름 → 한 번 질문(통째로 고르기) */
-async function gdSync(remote){
+async function gdSync(remote,o={}){
   if(!remote?.data || !Array.isArray(remote.data.characters)) throw new Error('드라이브 파일 형식이 올바르지 않습니다');
   if(gdLocalEmpty()){ gdApply(remote,null); return 'loaded'; }
   const rU=+remote.updatedAt||0, lU=S.updatedAt||0;
   const rd=gdPrep(remote.data), ld=gdPrep(backupData(true));
   let bd=gdBaseData(); bd=bd?gdPrep(bd):null;
   if(!bd&&gdMeta.base){ if(rU===gdMeta.base) bd=rd; else if(lU===gdMeta.base) bd=ld; }
+  if(SV_ON){ // b216: 서버 모드는 묻지 않음('어느 데이터를 쓸까요?' 없음) — 서버에 저장된 값이 항상 이김
+    // 서버가 마지막으로 맞춘 내용(base) 그대로면 이 PC 의 저장 안 된 변경만 올림. 서버가 바뀌었으면:
+    //  - 불러오기(페이지 열기·1분마다 확인·로그인) → 서버 값으로 통째로 덮어씀 (이 PC 에만 있던 예전 값은 올리지 않음)
+    //  - 저장 중(저장 버튼·409) → 방금 이 PC 에서 바꾼 항목만 합치고, 서버와 겹치는 항목은 서버 값
+    if(!bd||(gdSig(rd)!==gdSig(bd)&&!o.push)) return gdCommit(gdServerWins(ld,rd),remote);
+    return gdCommit(gdMerge(bd,ld,rd,{base:true,prefer:'r',conf:[]}),remote);
+  }
   const legacy=!bd&&!!gdMeta.base;
   if(!bd&&!legacy&&gdSig(rd)!==gdSig(ld)) return gdAsk(remote,{mode:'whole'});
   const ctx={base:!!bd,prefer:legacy?(lU>=rU?'l':'r'):'l',conf:[]};
@@ -3187,7 +3206,7 @@ async function gdPush(opts={}){
       else{ // 다른 PC에서 그 사이 저장했는지 확인 (덮어쓰기 방지)
         try{
           if(await gdRemoteChanged(true)){ // 다른 기기가 그 사이 저장 → 합친 뒤 저장 (진짜 충돌일 때만 질문)
-            const res=await gdSync(await gdRead(gd.fileId)); if(res==='ask') return false; gdSet('on',GD_RES_MSG[res]||''); return true; }
+            const res=await gdSync(await gdRead(gd.fileId),{push:true}); if(res==='ask') return false; gdSet('on',GD_RES_MSG[res]||''); return true; }
         }catch(e){ if(e.status===404) gd.fileId=null; else throw e; }
       }
     }
@@ -3212,7 +3231,7 @@ async function svLogin(key,accId,opt={}){
     localStorage.setItem(SV_TOKEN_KEY,b.token);
     // 이 PC 데이터 주인 확인: 다른 사용자 → 비우고 서버 데이터만 / 같은 사용자 → 그대로 맞춤 / 이 기기 첫 로그인 → 물어봄
     const prev=localStorage.getItem(SV_USER_KEY);
-    const keep=prev?prev===b.user:(gdLocalEmpty()||confirm(b.rev?'이 PC 데이터를 이 계정 데이터와 합칠까요?\n[취소]를 누르면 이 PC 데이터는 지우고 서버에 있는 이 계정 데이터만 불러옵니다.':'이 PC 데이터를 이 계정으로 올릴까요?\n[취소]를 누르면 이 PC 데이터는 지우고 빈 상태로 시작합니다.'));
+    const keep=prev?prev===b.user:(gdLocalEmpty()||!!b.rev||confirm('이 PC 데이터를 이 계정으로 올릴까요?\n[취소]를 누르면 이 PC 데이터는 지우고 빈 상태로 시작합니다.')); // b216: 서버에 이미 데이터가 있으면 묻지 않음 — 서버 값으로 덮어씀(gdSync)
     if(!keep){ svWipeLocal(); accId=''; }
     const same=!!prev&&prev===b.user&&keep; // b62: 같은 사용자로 다시 로그인(강제 로그아웃 등) → 마지막으로 맞춘 기준(base·rev) 유지 = 저장 안 한 변경도 3-way 병합
     localStorage.setItem(SV_USER_KEY,b.user); localStorage.setItem(SV_VAULT_KEY,b.vault||'none');
