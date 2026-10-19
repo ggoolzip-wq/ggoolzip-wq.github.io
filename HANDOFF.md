@@ -1728,3 +1728,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - '🔑 넥슨 API 키 (총 N캐릭 등록 중)' 줄: 키에 연결된 캐릭터 0명이면 줄 통째로 숨김(.addsec-h[hidden]), 키 줄 '등록 완료 · 0캐릭 등록 중' → '등록 완료'.
 - 테스트: 신규 tests/test_b216.py(wrangler dev: github.io 서버 모드·구글 없음, 0캐릭 줄, wat 충돌 불러오기=서버 값·안 올라감, 저장 중 충돌=겹친 항목 서버·나머지 저장, 본계정 키 삭제→예시 화면·서버 기록 유지→다시 등록 복원). test23(충돌 질문 → 서버 값, 드라이브 가져오기 버튼 없음)·25(서버 데이터 있으면 질문 없음)·48(0캐릭 문구) 갱신.
 - 박스에 server/node_modules 가 없어서 그동안 wrangler 테스트(23·25·46·49·51·52 등)가 SKIP 이었음 → `cd server && npm install` 후 실제로 돌면 예전부터 실패: 23(자동 저장 없음 기대 — b112 뒤 저장), 25(같은 이유·#pendSave), 46(같은 이유), 49, 51(wrangler 시작 실패), 52(admPrices TDZ). origin/main 에서도 같음.
+
+## b217 (2026-10-19 KST) — '☁ 구글 로그인 + 빈 화면' = 시작 중 스크립트 멈춤 (드라이브 모드 아님)
+- **원인**: 그 화면은 드라이브 모드가 아니라 body.html 의 정적 뼈대(헤더 `#gBtn` 초기 문구 '☁ 구글 로그인', 빈 카드 2개, 아래 표기)가 그대로 남은 것. 시작 블록의 `render()`(파일 중간 '시작')가 아래쪽에 선언된 `const admPrices`(·`const feed`)보다 먼저 돌아서 **관리자(svAdmin=1)·세션 있음·보이는 캐릭터 0명**이면 itemPrices()→admPrices() 에서 `ReferenceError: Cannot access 'admPrices' before initialization` → 스크립트 전체가 멈춤(캐릭터 목록 '아직 캐릭터가 없습니다'까지만 그려지고 본문·헤더 갱신 없음). 사용자는 b216 전에 예전 방식으로 본계정 키를 지워서(세션·관리자 표시는 남고 키만 없음) 새로고침할 때마다 이 상태였음. 캐시·서비스 워커 문제 아님(pages.dev no-cache, 서비스 워커 없음, CSS/JS 인라인).
+- 수정: `bootRender(where)` = render·gdRender 를 try 로 감쌈. 시작 렌더 + **파일 맨 끝에서 한 번 더**(모든 선언 뒤). `admPrices` 는 함수 선언(호이스팅). 정적 `#gBtn` = '☁ 로그인' + hidden(구글 문구 없음, gdRender 가 상태 맞춰 보임).
+- 키 없는 세션(서버 모드, 토큰 있음, 어느 계정에도 키·예비 키 없음, 승인 대기 아님) = 예전 방식 본계정 키 삭제 → 시작할 때 svWipeAll + /api/logout(keepalive) → 처음 온 사람 예시 화면. 서버 데이터는 그대로(같은 키 다시 등록하면 복원).
+- `document.documentElement.dataset.build='b217'`(개발자 도구에서 배포 확인용, 화면에는 안 보임).
+- 테스트: 신규 tests/test_b217.py(정적 뼈대 구글 없음 / 예전 삭제 상태+관리자 새로고침 → 예시·오류 없음·서버 유지·재등록 복원 / 관리자 0캐릭 새로고침 오류 없음). test_b210 로그인 0캐릭 사례에 본계정 키 넣음. test52 의 TDZ 오류도 같이 사라져 통과.
