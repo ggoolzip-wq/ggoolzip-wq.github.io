@@ -1081,7 +1081,13 @@ async function fetchMedal(c,key){ c.medal=medalFrom(await nx('/maplestory/v1/cha
 const medalBand = c => c.medal?.bad&&charShown(c) ? `<div class="medalwarn" title="${esc(medalTip(c))}" aria-label="훈장 잘못 착용중"><span>훈장 잘못 착용중</span></div>` : '';
 let syncing=false, syncBg=null;
 const SYNC_CONC=6, SYNC_LIST_TTL_MS=10*60e3, SYNC_BASIC_TTL_MS=10*60e3, SYNC_BASIC_LOAD_TTL_MS=60*60e3 /* b112: 페이지 열 때(자동)는 레벨·이미지 1시간, 🔄 는 10분 */, SYNC_MEDAL_TTL_MS=6*3600e3; // b107
-const LOAD_SYNC_GAP_MS=3e3, LOAD_SYNC_KEY='mapleBossTracker.loadSyncAt'; // 페이지 열 때 자동 동기화 최소 간격 (아래 loadSyncDue)
+const LOAD_SYNC_GAP_MS=3e3, LOAD_SYNC_KEY='mapleBossTracker.loadSyncAt';
+/* b218: API 키를 등록한 직후 1번 자동 동기화 (🔄 버튼과 같은 syncAll). 보이는 캐릭터가 있을 때만(새 사용자는 캐릭터를 고른 뒤 doImport 가 동기화),
+ *  이미 동기화 중이면 건너뜀, 마지막 동기화·열 때 동기화가 3초(LOAD_SYNC_GAP_MS) 안이면 건너뜀 → 새로고침 동기화와 겹치지 않음 */
+let keySyncPend=null;
+function keySync(){ if(syncing||!hasApi()||demoAllowed()||!vchars().length) return false;
+  const last=Math.max(+S.settings.lastSync||0,+localStorage.getItem(LOAD_SYNC_KEY)||0); if(Date.now()-last<LOAD_SYNC_GAP_MS) return false;
+  try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(e){} syncAll({silent:true}); return true; } // 페이지 열 때 자동 동기화 최소 간격 (아래 loadSyncDue)
 async function syncAll(opts={}){
   if(syncing) return; if(!hasApi()){ if(!opts.silent) toast('+ 추가에서 넥슨 API 키를 먼저 등록하세요'); return; }
   syncing=true; renderHeaderSync(); syncLabel('run'); let total=0, errs=0, assigned=0; const badAcc=new Set(), accMsgs=[], bgList=[];
@@ -2576,6 +2582,7 @@ async function openImport(accId){
     const all=await listAccount(a); if(impAccId!==a.id) return;
     const ra=keyRelink(a,all); if(ra){ a=ra; impAccId=ra.id; impBusy=ra.id; } // b64: 키 없는 예전 계정 칸에 다시 연결
     const n=assignFromList(a,all); save();
+    if(keySyncPend&&(keySyncPend===a.id||ra)){ keySyncPend=null; if(S.characters.some(c=>c.accId===a.id&&charShown(c))) setTimeout(keySync,0); }
     accChars=all.map(x=>({...x,accId:a.id})).sort((x,y)=>y.character_level-x.character_level||x.character_name.localeCompare(y.character_name));
     const worlds=[...new Set(accChars.map(x=>x.world_name).filter(Boolean))];
     $('#impWorld').innerHTML=`<option value="">모든 월드</option>`+worlds.map(w=>`<option>${esc(w)}</option>`).join('');
@@ -2624,7 +2631,7 @@ async function addAccount(){
   if(accAdding) return; accAdding=true; accRej=null; accRejShow();
   let rej=''; try{ rej=await svKeyCheck(k); }finally{ accAdding=false; }
   if(rej){ accRej={label,msg:rej}; accRejShow(); $('#newAccKey').value=''; return; }
-  const a={id:uid(),label,key:k}; accounts().push(a); save();
+  const a={id:uid(),label,key:k}; accounts().push(a); save(); keySyncPend=a.id; // b218: 목록을 받은 뒤(openImport) 이 키에 연결된 캐릭터가 있으면 1번 동기화
   $('#newAccKey').value=''; $('#newAccLabel').value=''; accAddShow(false);
   openImport(a.id); render();
 }
@@ -3245,6 +3252,7 @@ async function svLogin(key,accId,opt={}){
     gdSaveMeta(); gd.remoteRev=undefined; gd.fileId=null;
     await gdConnect(true);
     svAfterLogin();
+    if(gd.state==='on') setTimeout(keySync,0); // b218: 본계정 키 등록(로그인) 직후 1번 동기화 — 서버에서 받은 캐릭터의 이번 주 기록
     if($('#importModal').classList.contains('show')) openImport(); // b67: 캐릭터 추가 창에서 로그인 → 평소 창(키 목록·캐릭터 목록)으로
     if(gd.state==='on') toast('☁ 로그인했습니다'+(b.newUser?' — 이 데이터를 서버에 저장합니다':''));
     svSeenPull();
