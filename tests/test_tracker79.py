@@ -31,7 +31,7 @@ try:
         pg.route('**/open.api.nexon.com/**',route); pg.route('**/feed.json*',lambda r:r.fulfill(status=404,body='')); pg.route('https://accounts.google.com/**',lambda r:r.abort())
         mode['fail']=False
         pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",ST)
-        pg.reload(); pg.wait_for_function("typeof syncing!=='undefined'&&!syncing",timeout=30000); pg.wait_for_timeout(300)
+        pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.wait_for_function("typeof syncing!=='undefined'&&!syncing",timeout=30000)  # b218: 새로 들어올 때만 동기화; pg.wait_for_timeout(300)
         f=pg.evaluate(LBL)
         if w==1280: check('페이지 열 때 동기화 → 초록 새로고침 완료! HH:mm', bool(f) and f['t'] in ('새로고침 완료! '+kst_hm(),) or (f and re.fullmatch(r'새로고침 완료! \d\d:\d\d',f['t'])), f)
         # 동기화 중: 넥슨 호출을 느리게 (키별 1.5초에 1건)

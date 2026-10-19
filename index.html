@@ -3482,7 +3482,7 @@ function renderHeaderSync(){
   const b=$('#syncBtn'); if(!b) return; const st=S.settings; b.hidden=!hasApi(); b.disabled=syncing;
   b.classList.toggle('busy',syncing); b.setAttribute('aria-busy',String(syncing));
   if(!b.querySelector('svg')) b.innerHTML=SYNC_SVG; // 아이콘만 (2026-10-10: 헤더 → 캐릭터 카드 제목 옆)
-  b.title=syncing?'동기화 중…':`지금 동기화 (보스 클리어 자동 체크)\n마지막 동기화: ${st.lastSync?hm(st.lastSync)+' KST':'없음'}\n페이지를 열거나 새로고침할 때 자동 (${LOAD_SYNC_GAP_MS/1e3}초 안에 다시 열면 건너뜀)`;
+  b.title=syncing?'동기화 중…':`지금 동기화 (보스 클리어 자동 체크)\n마지막 동기화: ${st.lastSync?hm(st.lastSync)+' KST':'없음'}\n홈페이지에 새로 들어올 때·API 키를 등록할 때 자동 (새로고침은 제외)`;
   b.setAttribute('aria-label',syncing?'동기화 중':`지금 동기화 — 마지막 ${st.lastSync?hm(st.lastSync):'없음'}`);
   paintSyncLabel();
 }
@@ -5538,7 +5538,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b218'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b218b'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
