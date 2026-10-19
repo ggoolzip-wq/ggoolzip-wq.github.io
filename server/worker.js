@@ -417,9 +417,12 @@ const stateOut = (row, withData = true) => row
 /* ---------- b157: 신창섭 라이브 감지 (cron 매 1분, 외부 요청은 여기서만) ---------- */
 const LIVE_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36';
 const LIVE_SINCE = Date.parse('2026-10-15T00:00:00+09:00');
+let LIVE_SCHEMA_OK = false, FEED_SCHEMA_OK = false; // b224: 표 확인(CREATE IF NOT EXISTS)은 isolate 당 1번 — 예전엔 /api/live 마다 3번
 async function liveSchema(env) {
+  if (LIVE_SCHEMA_OK) return;
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS live_state (src TEXT PRIMARY KEY, live INTEGER NOT NULL, vid TEXT, title TEXT, url TEXT, thumb TEXT, ok INTEGER NOT NULL, err TEXT, checked_at INTEGER NOT NULL)').run();
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS live_items (src TEXT NOT NULL, vid TEXT NOT NULL, title TEXT, url TEXT, status TEXT, start_at INTEGER, first_seen INTEGER NOT NULL, last_seen INTEGER NOT NULL, PRIMARY KEY (src, vid))').run();
+  LIVE_SCHEMA_OK = true;
 }
 const unent = t => String(t || '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 async function ytCheck() {
@@ -468,7 +471,7 @@ async function liveRead(env) {
   const st = (await env.DB.prepare('SELECT src,live,vid,title,url,thumb,ok,err,checked_at FROM live_state').all()).results || [];
   const items = (await env.DB.prepare('SELECT src,vid,title,url,status,start_at,first_seen FROM live_items ORDER BY COALESCE(start_at,first_seen) DESC LIMIT 40').all()).results || [];
   const o = { at: Date.now(), list: items, feed: await feedRead(env) }; for (const r of st) o[r.src] = { live: !!r.live, vid: r.vid, title: r.title, url: r.url, thumb: r.thumb, ok: !!r.ok, checked_at: r.checked_at };
-  return new Response(JSON.stringify(o), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=15' } });
+  return new Response(JSON.stringify(o), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=15', Vary: 'Origin' } }); // b224: 사이트는 페이지 열 때 1번만 받고 15초 안 새로고침은 브라우저 캐시
 }
 
 /* ---------- b170: 넥슨 공지 빠른 감시 (서비스 키 NEXON_SVC_KEY, cron 매 1분 → 그 1분 동안 반복) ----------
@@ -490,7 +493,7 @@ function nxSaryoEnd(body, y0) {
   let hh = 23, mi = 59; if (d[4]) { hh = (+d[5]) % 12 + (d[4] === '오후' ? 12 : 0); mi = +(d[6] || 0); }
   const p = n => String(n).padStart(2, '0'); return `${y}-${p(+d[2])}-${p(+d[3])}T${p(hh)}:${p(mi)}:00+09:00`;
 }
-async function feedSchema(env) { await env.DB.prepare('CREATE TABLE IF NOT EXISTS nx_feed (k TEXT PRIMARY KEY, v TEXT NOT NULL, at INTEGER NOT NULL)').run(); }
+async function feedSchema(env) { if (FEED_SCHEMA_OK) return; await env.DB.prepare('CREATE TABLE IF NOT EXISTS nx_feed (k TEXT PRIMARY KEY, v TEXT NOT NULL, at INTEGER NOT NULL)').run(); FEED_SCHEMA_OK = true; }
 async function feedState(env) { const o = {}; for (const r of (await env.DB.prepare('SELECT k,v FROM nx_feed').all()).results || []) { try { o[r.k] = JSON.parse(r.v); } catch (e) {} } return o; }
 const feedPut = (env, k, v) => env.DB.prepare('INSERT OR REPLACE INTO nx_feed (k,v,at) VALUES (?,?,?)').bind(k, JSON.stringify(v), Date.now()).run();
 async function nxGet(env, path, q) {

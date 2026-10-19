@@ -3265,18 +3265,18 @@ const hhmm = t => { const d=kst(t); return `${pad(d.getUTCHours())}:${pad(d.getU
 const num = n => (Number(n)||0).toLocaleString('ko-KR');
 /* ---------- b157: 신창섭 라이브 탭 ----------
    Worker cron(매 1분)이 유튜브 @MapleStoryKR /live 와 넥슨 라이브 channels/23 을 확인해 D1 에 저장 → 여기서는 /api/live 만 읽음(외부 요청 없음).
-   브라우저 탭이 보일 때만 30초마다 재조회, 다시 보이면 즉시 1회. 영상은 자동재생 없음(썸네일 ▶ 누르면 재생). */
+   b224: 페이지를 열 때(새로 들어옴·새로고침·다시 불러오는 뒤로/앞으로, bfcache 복원 포함) 1번만 조회 — 30초 재조회 없앰(사용자 결정, 서버 비용). 라이브 탭은 받아 둔 값 사용.
+   영상은 자동재생 없음(썸네일 ▶ 누르면 재생). */
 const LIVE_API='https://ggoolzip-sync.bossmaple.workers.dev/api/live';
-let LIVE=null, liveT=null;
-async function liveFetch(){ try{ const r=await fetch(LIVE_API,{cache:'no-store'}); if(!r.ok) return; LIVE=await r.json(); }catch(e){ return; }
+let LIVE=null;
+async function liveFetch(){ try{ const r=await fetch(LIVE_API); /* b224: 서버 Cache-Control max-age=15 → 15초 안 새로고침은 브라우저 캐시(요청 0) */ if(!r.ok) return; LIVE=await r.json(); }catch(e){ return; }
   srvPricesApply(LIVE&&LIVE.feed&&LIVE.feed.prices); // b193: Worker 가 1분 안에 읽은 새 공지 가격
   feedSrvApply(LIVE&&LIVE.feed); // b170: 같은 응답에 넥슨 공지 빠른 감시 결과 포함(추가 요청 없음)
   const on=!!(LIVE&&((LIVE.yt&&LIVE.yt.live)||(LIVE.nx&&LIVE.nx.live))), b=document.getElementById('liveBadge'); if(b){ const was=!b.hidden; b.hidden=!on; if(on&&!was) liveReveal(b); }
   if(tab==='live'&&!document.querySelector('#view .lvplay.playing')) renderLive(); }
 /* b161: 모바일에서 탭 줄이 옆으로 넘쳐 '신창섭 라이브' 탭(+LIVE)이 화면 밖이면, 라이브가 켜질 때 한 번 탭 줄을 밀어 보이게 함 */
 function liveReveal(b){ const n=b.closest('.tabs'); if(!n||n.scrollWidth<=n.clientWidth+1) return; const go=()=>{ const t=b.parentElement.getBoundingClientRect(), r=n.getBoundingClientRect(); if(t.right>r.right-2||t.left<r.left) n.scrollLeft=n.scrollWidth; }; go(); setTimeout(go,600); setTimeout(go,2000); document.fonts&&document.fonts.addEventListener("loadingdone",go,{once:true}); }
-function livePoll(){ clearInterval(liveT); liveT=null; if(document.visibilityState!=='visible') return; liveFetch(); liveT=setInterval(liveFetch,30000); }
-document.addEventListener('visibilitychange',livePoll);
+window.addEventListener('pageshow',e=>{ if(e.persisted) liveFetch(); }); // b224: bfcache 로 돌아온 페이지 = 스크립트가 다시 안 돌므로 여기서 1번
 const lvDate=t=>{ const d=new Date(t+KST_MS); return `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`; };
 /* b161: 라이브 없을 때 영상 자리 — 핑크빈(메이플 몹 8820001 stand, 출처 maplestory.io 렌더, 사이트 내장) */
 const PINKBEAN='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAG0AAABZCAYAAAA0E6rtAAAJzklEQVR42u2d63GzOhCGX3u+BnRKUEogJYgSSAm4BFMCLsGUYJWASrBKsEqIStD5wcUChLnaBpydYSYhvoAedvfVaiHAn63OdiPfZ2b4jCWYmWk8Fg/NnI9XJDyBhoZSfG3wSlDp+VbuVErjcPpexXkMPUCTnm9IOM9PVAHAWuCZOighJKSS0FpDQ4NRD4mIFg/u39A3HKKDcz8lDJ7HwEVkFgbPFMd3js8QQt69S6tVxvTB0M7xGQnnoISCiwQA4HkMACCVRMhiAEDyfngNzzpEBwQsLGFprUsv2zS0wrhIKgOglAIBgVDZlfwmeJV8dYgOFc86x2ccokN5ka3VRkGTUlSAAQCltAQH4NXwGl5VN6UVEq4QsLCMEJR6HyH5TZEbCjFSh9llSovZBAslzBQeVAgL2xjznJ5FCc0vpFO5jxC6XSFST+Y2qICFrQm+eB0lrIBn5jqJOqzOSJFHAeYFVriPkCi+7ZxWQChAdakxy8PyucNl1PdqlYsGrfF9EmWech2HHQ7r3lYXISGLV+Flo6EVIqQLFM8GYRKkuhFKMnCElF5mg6sfj9JVcFrfleLaVOOkeVpbTqvDKkFRYl3i5aU+HZwVHgtw9hTEBY5SrwLuI4RIer5BCOn0sBLWLe0R56bD00rjO+IlpEJg1OePtgDhIgHJX2d72lpEyKScRgmtgOMiqsLKB6YKxgJE8l/zMDcGHrE92ArVRegu4BUApZIIWIhEnEpwHzNPc3mYuaVVUJXRJTkU4gZXec10q8OzASolQUCga5GCy/WUtAaHx/PxWhaKlVZVYIQ4Yph2/K5nDZVfP0lnlaMeGRrXVVYA2HZ47AWs1YNIe6h8gkjQWkNq+VA5shVVR/aTgKWXx8BscK6fZ7LbJeysxnQBW4uXjYYmpciA0SkASDfgGcCtXd7PAu2URLhdwgxYHy+byHCIXePgI8D9e8m3vGjQCCW4xgG+o2zi755I6w+FVnjZJGD6qeAAlPCyqEtbvzWxym2blPz3XEbuobEtRLqAuSba9V8neqZdVC7s+yRyESXmGosVQSurHqRdFbYNehuwZ0GrfVY9VGqVVfp9wVcFbT/Yy9o8Sev79kZgRYh0C1P3/pQFQLMHckOSX9d+6DPIfYG9wch09Wsc29Kg6eaIt3lZZV8PYDOqzNLbnjCZt2GZXwPza3C7Ztsl61N5KrwhcfweHglxzKvIcJU4Nix6DOjRj+ISJG15DcCQ3GbMr8kLDRo8kaD5RaLy71RKgsvnVFn2g4E9JODaZgZGveyiWVCtkHoU4dFDePRAKYFU8qmdXvvR79QT3jdFeJBpYW+OHFZ4WZvooYRASA6Phk8ROOMm1zrv0dADy09z5LAx0GZePVAqHwJ6D7lJku2UUkKVy0/PyafTy1i6I63poZWSB3msDooF2ee05Ld6L0mXpSyAL7jpk4eUUoC6H4+SClqrl9Q5J4THTBlyIbD79rPtywfnsjuljQQmhMButys3IUQGcmKb95iQKYWCFBJSyFzMqJcVpvdT3syFxE90quz7iSJwIVohjw2JQgj4vl/Z7fv+HdxISGTE8pIsvcre9D1lP/lunL5y1Kked/5P/sd7rt3tso+cq8+xCIPl57q+yxhA8NElrRGy3xyDFFLJ+hp8DizLZ1Ilb5X8H2M9SlqGEgalJDzqQWkJbW3PFCDzCZEPtAuj+BECUglnK17uYU/xsiGetitCYeXgj8cyTBWbvX9WD0hT53cV+yeXvfrlxTJNXBiF0gJSJY0th/W0VYNJ4TFgXgPQ5XhEwGauBmgNxlgDUJqmYIy9bGXctm9egVPfFhgereQeUDpYdESnE+Ih3igF4DEwxipCpBQX9fsKKBk9V1uD7ccA0/Xk2zEo9v1j0emEOL0iOp1aX9MKrq4QBQc4H3w8rkl4DzFiTHqBTMTbob1EiDDmIeEcSil40OD+F7wcIJDd+hsGwcAS2hO9pyO/WaFxJdAoAVFeazhqswKK7WHxGMFShzbyeNZs47uxRlo8VVkqmUFT8mMgbWNyLQU+2TZfEdmacnxtRWTs4uMGe/FfBc2MKgATYm10rKv0WiHgQiAIg8Fyv7UCczzCP53stbXdzv8xJr3gminIXutuixIiPOEImGMdi9JpkJqTqGb9tQCp7ksgUmkEHxAaJ4XHxiB53nyg+oKkHqAVfP8H6SWezcs2DE29HlYLQCFluwDRes7ex0WEyNG1xzS9YPffV7MW+GLb7XYwvzdA9n/U0trvV+st+ZeYH9qA2V7Ge8AceG67nf8DL2S4Bs9pkZsDmls5SgnzeyvXtZYI7CQEgjje3NTh34CYgqJfpayKW+BeGSZdwOq9ID9JgvR2y0Kh5wFCfB40oRUYaKm47/ntTYORA6v36/8X5Y96si8iSue/bt4oSHpDCxhDlHCcOMdvEXLeaLr2hB0XrErHleeBSPkRnlbJZ/E5Rny5NPLYqxWkMWbQMWitM2/bCLRhBeN8PmaMqWzvsFHHQMgmHk/RHxqlqz9ZvYFzGAaNrGuhsWzTtj3LAa0QMmvywH3v+RnZgKfNW9JauKeRDS3n/0FbUWgs/rZhaOb3fN7U1VkCtPLaGvNZp6eV1YYV5bNHXraVqLJ/cPabSWNP8KS3dhtvqhtrCJyHyzGUwM+aajvrie/oNt53jMJq+iz0gwe8VKx4NMF4L3x7T/9+7it4aR7mVJB6dD6rAHtXT/++x4hkHrdQcI3HJnV5kdXB5fy7u8XcADDXIHw7MOBBlV9rfb87UiuAeNV9C/SuXiGy7Z8mWOfl328SMQCKtoK35rFe0CrghIQOKEheJX8nuDYYemCe6npNHdRSgHV9ubnld7gQQqA9D6C0AewVAIfkrIevlRJEyOZrinPIVaMLWA7r7cA6Pa0yEEIAYVg5YVJbn5oLYJcXdIXG1qjRAcwBqO8FvhhPq3gbkC/Ze54jHbwuXA4FVv5NqSa0GrC+c7MleFrv/4pLpCwXEm1Qz/C2sR63dWDFQZqYUERZi9Wuj7fVFxPf7WkPXyNVs32ulsOWFv56QQtA4BFSgHNaF7hnARxUmqqLklx4lFLe8fysOC+GP7holwutsDAMnQPwkyfnEp7W0IwtpnekIfnzkGjDugRheVH5yQkxoZDW+3j2aLLd6qB5hIC0gNBKld7Y1/PeUg3JgRWwzrXnQR6kaABbE7gGtEfgtFUCcsEDpdnK8MwAh6jDImf5PClDH4DyfB4BWwu44sCc4OyTtYHZZufByqSUZrftzgmxAk8pEGXdDVoTF7Fj4TbSCkGPx/qtBVpZZ2uD18fqQuYahgAINMkGdXLfYR1Ui8BwAZMDBM2aoFXgfbjt/obgz/7sz/5sdfY/8HGz0sPs1XQAAAAASUVORK5CYII=';
@@ -3295,7 +3295,7 @@ function renderLive(){ const v=document.getElementById('view'); const D=LIVE||{}
 document.addEventListener('click',e=>{ const p=e.target.closest('.lvplay[data-embed]'); if(!p||p.classList.contains('playing')) return; p.classList.add('playing');
   p.innerHTML=`<iframe src="${esc(p.dataset.embed)}" title="라이브 영상" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`; });
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('.lvplay[data-embed]')){ e.preventDefault(); e.target.click(); } });
-setTimeout(livePoll,0);
+setTimeout(liveFetch,0); // b224: 페이지 열 때 1번 (재조회 없음)
 function renderGuild(){
   const v=$('#view'), g=guildC, mains=suroChars();
   const tile=(lbl,ico,r)=>`<div class="gtile"><div class="gk">${ico} ${lbl}</div>${r?`<div class="gv">${num(r.guild_point)}<small>점</small></div><div class="grk"><b>${num(r.ranking)}</b>위</div>`:`<div class="gv dim">기록 없음</div><div class="grk muted">랭킹 미등록</div>`}</div>`;
@@ -5564,7 +5564,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b223'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b224'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
