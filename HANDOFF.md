@@ -1735,3 +1735,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 키 없는 세션(서버 모드, 토큰 있음, 어느 계정에도 키·예비 키 없음, 승인 대기 아님) = 예전 방식 본계정 키 삭제 → 시작할 때 svWipeAll + /api/logout(keepalive) → 처음 온 사람 예시 화면. 서버 데이터는 그대로(같은 키 다시 등록하면 복원).
 - `document.documentElement.dataset.build='b217'`(개발자 도구에서 배포 확인용, 화면에는 안 보임).
 - 테스트: 신규 tests/test_b217.py(정적 뼈대 구글 없음 / 예전 삭제 상태+관리자 새로고침 → 예시·오류 없음·서버 유지·재등록 복원 / 관리자 0캐릭 새로고침 오류 없음). test_b210 로그인 0캐릭 사례에 본계정 키 넣음. test52 의 TDZ 오류도 같이 사라져 통과.
+
+## b218 (2026-10-19 KST) — API 키 등록 직후 자동 동기화 1번
+- `keySync()`(syncAll 위 상수 옆): 🔄 버튼과 같은 `syncAll({silent:true})` 1번. 조건 = 동기화 중 아님 · 키 있음 · 예시 화면 아님 · 보이는 캐릭터 있음 · 마지막 동기화/열 때 동기화(LOAD_SYNC_KEY)가 3초(LOAD_SYNC_GAP_MS) 지남. 실행 때 LOAD_SYNC_KEY 기록 → 새로고침 동기화·두 번 호출과 안 겹침. 알림 없음(기존 동기화 표시만).
+- 호출: ① `svLogin` 성공(gd.state on, svAfterLogin 뒤) = 본계정 키 등록·다시 등록(서버에서 받은 캐릭터의 이번 주 기록). 새 사용자(캐릭터 0)는 건너뜀 → 캐릭터를 고르면 원래대로 doImport 가 동기화. ② `addAccount`(부계정 등 '+ 계정 추가') → `keySyncPend` → openImport 목록 받고 assignFromList/keyRelink 뒤 그 키에 연결된 보이는 캐릭터가 있으면 1번(예: 지웠던 부계정 키 다시 등록).
+- 테스트 tests/test_b218.py(wrangler dev + 넥슨 모의: 예시 화면 0회, 새 사용자 0회, 본계정 키 다시 등록 1회·기록 시각, 3초 안·동기화 중 중복 없음, 부계정 키 추가 1회 더·부캐 보임). 전체 run_par: 예전부터 실패하던 것만(5·16·23·25·43·44·46·47·50·51·76·80·101).
