@@ -2474,13 +2474,13 @@ let accChars=[], impAccId=null, impBusy=null;
 /* ---------- '+ 추가' 통합 모달: API 키(계정) 관리 + 계정 캐릭터 목록에서 여러 명 선택 추가 ---------- */
 const maskKey = k => !k ? '' : k.length<=10 ? '••••' : k.slice(0,5)+'••••'+k.slice(-4);
 function linkedOf(a){ return S.characters.filter(c=>c.accId===a.id).length; }
-const regOkHtml = n => `<span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료 · ${n}캐릭 등록 중</span>`;
+const regOkHtml = n => `<span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료${n?` · ${n}캐릭 등록 중`:''}</span>`; // b216: 0캐릭이면 '· 0캐릭 등록 중' 안 씀
 function renderAccList(){
   const el=$('#accList'); if(!el) return;
   const accs=accounts();
   // b63: 키에 연결된(accId) 캐릭터 수만 — 수동 추가·키 없는 캐릭터는 제외
   const totalLinked=accs.reduce((s,a)=>s+(a.key?linkedOf(a):0),0); // b72: 키 없는 계정(숨긴 캐릭터)은 빼고
-  const ht=$('#accKeyTotal'); if(ht){ ht.textContent=`(총 ${totalLinked}캐릭 등록 중)`; ht.hidden=!totalLinked; } // b216: 0캐릭이면 '(총 0캐릭 등록 중)' 숨김
+  const ht=$('#accKeyTotal'); if(ht){ ht.textContent=`(총 ${totalLinked}캐릭 등록 중)`; ht.hidden=!totalLinked; ht.closest('.addsec-h')?.toggleAttribute('hidden',!totalLinked); } // b216: 0캐릭이면 '🔑 넥슨 API 키 (총 0캐릭 등록 중)' 줄 통째로 숨김
   const shown=accs.filter(a=>a.key||a.main); // b74: 키 없는 부계정 칸(빈 칸)은 목록에 안 보임 — 데이터·캐릭터 연결은 유지, 같은 계정 키를 '+ 계정 추가'로 넣으면 그 칸에 다시 연결
   el.innerHTML=shown.length?shown.map(a=>{
     const linked=linkedOf(a);
