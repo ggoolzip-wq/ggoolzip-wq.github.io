@@ -2732,8 +2732,11 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
  *   - 다른 기기에 내려받을 때 키: 로그인에 쓴 키만 자동으로 채움(계정의 ah = 서버가 준 계정 해시로 짝지음), 부계정 키는 대표 키(HKDF)로 AES-GCM 암호화해 서버 keyvault 에 보관 → 대표 키로 로그인하면 복원 (server/worker.js)
  *   - 옮기기: 처음 로그인 때 서버가 비어 있으면 이 PC 데이터를 올림 / '구글 드라이브에서 가져오기' 버튼(한 번, 클릭 시 구글 로그인)
  * ===================================================================== */
-const SYNC_HOSTS = ['bossmaple.pages.dev']; // 이 주소로 열면 서버 동기화가 기본 (입장 화면 바로 표시). github.io 는 아직 구글 드라이브
-const SYNC_API_URL = SYNC_HOSTS.includes(location.hostname) ? 'https://ggoolzip-sync.bossmaple.workers.dev' : ''; // 비우면 구글 드라이브
+// b216: 구글 로그인(드라이브 동기화) 폐지 — 실제 주소(bossmaple.pages.dev · ggoolzip-wq.github.io 등)는 전부 서버 동기화.
+//   예전엔 SYNC_HOSTS=['bossmaple.pages.dev'] 만 서버 모드라 github.io 로 열면 드라이브 모드 → 헤더에 '☁ 구글 로그인' 이 떴음.
+//   드라이브 코드는 로컬 테스트(localhost·127.0.0.1·file://)에서만 남음(예전 테스트용).
+const SYNC_LOCAL = /^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
+const SYNC_API_URL = SYNC_LOCAL ? '' : 'https://ggoolzip-sync.bossmaple.workers.dev';
 const SYNC_TEST_URL = 'https://ggoolzip-sync.bossmaple.workers.dev'; // 배포한 서버 주소 — 주소 뒤에 ?sync=test 를 붙여 열면 이 브라우저만 서버 모드로 미리 써 보기, ?sync=off 로 되돌림
 const SV_ON = (()=>{ let u=SYNC_API_URL;
   try{
@@ -2837,7 +2840,7 @@ function gdStatusHtml(){
       ${gd.state==='conflict'?'<button class="btn sm" id="gBtn2" onclick="gdReask()">선택하기</button>':''}</div>
       ${svIsAdmin()?'<div class="toolbar" style="margin-top:8px"><button class="btn sm" id="svAdminBtn">👑 관리자 — 가입 승인</button></div>':''}
       ${svSubHtml()}
-      ${driveUsable()?`<div class="toolbar" style="margin-top:6px"><button class="btn sm ghost" id="svImportDrive" title="예전 구글 드라이브 저장본을 이 PC 데이터와 합친 뒤 서버에 저장 (구글 로그인 창이 한 번 뜸)">구글 드라이브에서 가져오기 (한 번)</button></div>`:''}`
+      `
       :svLoginHtml()}`;
   }
   const head={off:'로그인하지 않음',connecting:'연결 중…',saving:'저장 중…',on:gdLocalDirty()||gd.timer?'변경 사항 저장 대기 (약 5초 후 자동 저장)':'✓ 동기화됨',
