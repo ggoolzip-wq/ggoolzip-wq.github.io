@@ -1,4 +1,14 @@
 'use strict';
+/* b223: 새로고침(그리고 새로 들어옴·뒤로/앞으로 다시 불러옴)하면 페이지 맨 위에서 시작 — 바로(애니메이션 없음). 브라우저 스크롤 복원 끔(manual),
+ * 시작·첫 그리기·load·첫 동기화 끝 때 다시 맨 위. 사용자가 먼저 스크롤·클릭·키를 누르면 그 뒤로는 안 건드림(TOP_PIN 끝). bfcache 복원(persisted)은 그대로 둠 */
+let TOP_PIN=true;
+function pageTop(force){ if(!TOP_PIN&&!force) return; try{ window.scrollTo({top:0,left:0,behavior:'instant'}); }catch(e){ window.scrollTo(0,0); }
+  const se=document.scrollingElement; if(se&&se.scrollTop) se.scrollTop=0; }
+try{ if('scrollRestoration' in history) history.scrollRestoration='manual'; }catch(e){}
+pageTop();
+['wheel','touchstart','keydown','mousedown'].forEach(ev=>window.addEventListener(ev,()=>{ TOP_PIN=false; },{capture:true,passive:true,once:true}));
+window.addEventListener('scroll',()=>{ if(TOP_PIN&&(scrollY>0||scrollX>0)&&document.readyState==='complete') TOP_PIN=false; },{passive:true}); // 스크롤바 끌기·코드 스크롤 = 사용자 위치 존중
+window.addEventListener('load',()=>{ pageTop(); requestAnimationFrame(()=>pageTop()); setTimeout(()=>{ pageTop(); },400); setTimeout(()=>{ TOP_PIN=false; },8000); });
 /* =====================================================================
  *  구글 드라이브 동기화용 OAuth 클라이언트 ID (Google Cloud 콘솔 > Google 인증 플랫폼 > 클라이언트 에서 만든 '웹 애플리케이션' ID)
  *  예: '1234567890-abcdefg.apps.googleusercontent.com'  — 비워 두면 동기화 기능만 '준비 중'으로 표시되고 나머지는 그대로 동작합니다.
@@ -1523,7 +1533,7 @@ function paintSyncLabel(){ const b=$('#syncBtn'); if(!b||!syncLbl||b.hidden) { $
 function syncDoneFlash(){ syncLabel('ok'); }
 /* 캐릭터 카드 제목 옆: 🔄 지금 동기화 아이콘 버튼 (API 키가 있을 때만, 넥슨 API 전용 — 구글 드라이브는 헤더 ☁ 버튼) */
 const SYNC_SVG=`<svg class="rot" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-function renderHeaderSync(){
+function renderHeaderSync(){ if(!syncing&&TOP_PIN) pageTop(); /* b223: 첫 동기화 끝(아직 사용자가 안 움직였으면) 맨 위 유지 */
   const b=$('#syncBtn'); if(!b) return; const st=S.settings; b.hidden=!hasApi(); b.disabled=syncing;
   b.classList.toggle('busy',syncing); b.setAttribute('aria-busy',String(syncing));
   if(!b.querySelector('svg')) b.innerHTML=SYNC_SVG; // 아이콘만 (2026-10-10: 헤더 → 캐릭터 카드 제목 옆)
@@ -3587,7 +3597,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b222'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b223'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -4001,4 +4011,4 @@ setInterval(()=>{ if(DEMO_ST&&demoAllowed()&&demoTabOk()&&demoSig()!==DEMO_SIG) 
 setTimeout(async()=>{ if(SV_ON||!SYNC_TEST_URL||!/github\.io$/.test(location.hostname)||!demoAllowed()||Object.keys(itemPrices()).length) return;
   try{ const r=await fetch(SYNC_TEST_URL+'/api/prices',{cache:'no-store'}); if(!r.ok) return; const j=await r.json(); if(j&&j.prices){ itemPricePut(j.prices); render(); } }catch(e){} },0);
 // b217: 모든 선언이 끝난 뒤 한 번 더 그림 (시작 렌더가 아직 없는 값 때문에 실패했어도 화면이 제대로 나오게)
-bootRender('end');
+bootRender('end'); pageTop(); requestAnimationFrame(()=>pageTop()); // b223
