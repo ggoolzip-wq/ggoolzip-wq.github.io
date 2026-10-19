@@ -1820,6 +1820,7 @@ header .logo .logo-d{display:flex;align-items:center}
 .rp-line.rp-ring .rpo.rio-r4 img.ric{height:1.1852em;margin:-.0926em;position:relative;top:.0185em}
 .rp-line.rp-ring .rpo.rio-c4 img.ric{height:1.1429em;margin:-.0714em}
 .rp-line.rp-ring .rpo.rio-gl img.ric{height:1.1034em;margin:-.0517em;position:relative;top:.0172em}
+.addsec-h[hidden]{display:none!important} /* b216 */
 </style>
 </head>
 <body>
@@ -4430,13 +4431,13 @@ let accChars=[], impAccId=null, impBusy=null;
 /* ---------- '+ 추가' 통합 모달: API 키(계정) 관리 + 계정 캐릭터 목록에서 여러 명 선택 추가 ---------- */
 const maskKey = k => !k ? '' : k.length<=10 ? '••••' : k.slice(0,5)+'••••'+k.slice(-4);
 function linkedOf(a){ return S.characters.filter(c=>c.accId===a.id).length; }
-const regOkHtml = n => `<span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료 · ${n}캐릭 등록 중</span>`;
+const regOkHtml = n => `<span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료${n?` · ${n}캐릭 등록 중`:''}</span>`; // b216: 0캐릭이면 '· 0캐릭 등록 중' 안 씀
 function renderAccList(){
   const el=$('#accList'); if(!el) return;
   const accs=accounts();
   // b63: 키에 연결된(accId) 캐릭터 수만 — 수동 추가·키 없는 캐릭터는 제외
   const totalLinked=accs.reduce((s,a)=>s+(a.key?linkedOf(a):0),0); // b72: 키 없는 계정(숨긴 캐릭터)은 빼고
-  const ht=$('#accKeyTotal'); if(ht){ ht.textContent=`(총 ${totalLinked}캐릭 등록 중)`; ht.hidden=false; }
+  const ht=$('#accKeyTotal'); if(ht){ ht.textContent=`(총 ${totalLinked}캐릭 등록 중)`; ht.hidden=!totalLinked; ht.closest('.addsec-h')?.toggleAttribute('hidden',!totalLinked); } // b216: 0캐릭이면 '🔑 넥슨 API 키 (총 0캐릭 등록 중)' 줄 통째로 숨김
   const shown=accs.filter(a=>a.key||a.main); // b74: 키 없는 부계정 칸(빈 칸)은 목록에 안 보임 — 데이터·캐릭터 연결은 유지, 같은 계정 키를 '+ 계정 추가'로 넣으면 그 칸에 다시 연결
   el.innerHTML=shown.length?shown.map(a=>{
     const linked=linkedOf(a);
@@ -4688,8 +4689,11 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
  *   - 다른 기기에 내려받을 때 키: 로그인에 쓴 키만 자동으로 채움(계정의 ah = 서버가 준 계정 해시로 짝지음), 부계정 키는 대표 키(HKDF)로 AES-GCM 암호화해 서버 keyvault 에 보관 → 대표 키로 로그인하면 복원 (server/worker.js)
  *   - 옮기기: 처음 로그인 때 서버가 비어 있으면 이 PC 데이터를 올림 / '구글 드라이브에서 가져오기' 버튼(한 번, 클릭 시 구글 로그인)
  * ===================================================================== */
-const SYNC_HOSTS = ['bossmaple.pages.dev']; // 이 주소로 열면 서버 동기화가 기본 (입장 화면 바로 표시). github.io 는 아직 구글 드라이브
-const SYNC_API_URL = SYNC_HOSTS.includes(location.hostname) ? 'https://ggoolzip-sync.bossmaple.workers.dev' : ''; // 비우면 구글 드라이브
+// b216: 구글 로그인(드라이브 동기화) 폐지 — 실제 주소(bossmaple.pages.dev · ggoolzip-wq.github.io 등)는 전부 서버 동기화.
+//   예전엔 SYNC_HOSTS=['bossmaple.pages.dev'] 만 서버 모드라 github.io 로 열면 드라이브 모드 → 헤더에 '☁ 구글 로그인' 이 떴음.
+//   드라이브 코드는 로컬 테스트(localhost·127.0.0.1·file://)에서만 남음(예전 테스트용).
+const SYNC_LOCAL = /^(localhost|127\.0\.0\.1|)$/.test(location.hostname);
+const SYNC_API_URL = SYNC_LOCAL ? '' : 'https://ggoolzip-sync.bossmaple.workers.dev';
 const SYNC_TEST_URL = 'https://ggoolzip-sync.bossmaple.workers.dev'; // 배포한 서버 주소 — 주소 뒤에 ?sync=test 를 붙여 열면 이 브라우저만 서버 모드로 미리 써 보기, ?sync=off 로 되돌림
 const SV_ON = (()=>{ let u=SYNC_API_URL;
   try{
@@ -4793,7 +4797,7 @@ function gdStatusHtml(){
       ${gd.state==='conflict'?'<button class="btn sm" id="gBtn2" onclick="gdReask()">선택하기</button>':''}</div>
       ${svIsAdmin()?'<div class="toolbar" style="margin-top:8px"><button class="btn sm" id="svAdminBtn">👑 관리자 — 가입 승인</button></div>':''}
       ${svSubHtml()}
-      ${driveUsable()?`<div class="toolbar" style="margin-top:6px"><button class="btn sm ghost" id="svImportDrive" title="예전 구글 드라이브 저장본을 이 PC 데이터와 합친 뒤 서버에 저장 (구글 로그인 창이 한 번 뜸)">구글 드라이브에서 가져오기 (한 번)</button></div>`:''}`
+      `
       :svLoginHtml()}`;
   }
   const head={off:'로그인하지 않음',connecting:'연결 중…',saving:'저장 중…',on:gdLocalDirty()||gd.timer?'변경 사항 저장 대기 (약 5초 후 자동 저장)':'✓ 동기화됨',
@@ -4891,7 +4895,7 @@ async function svWrite(keepalive,depth=0){
   if(r.conflict){ // 그 사이 다른 기기가 저장 → 받은 내용과 3-way 병합 후 다시 저장 (gdCommit → gdWrite)
     if(depth>=3||keepalive) throw new Error('다른 기기와 동시에 저장되고 있어요 — 잠시 후 다시 시도해 주세요');
     gd.remoteRev=+r.rev||0; gd.w409=depth+1;
-    try{ await gdSync(svRemote(r)); } finally{ gd.w409=0; }
+    try{ await gdSync(svRemote(r),{push:true}); } finally{ gd.w409=0; }
     return;
   }
   gd.remoteRev=+r.rev||0; gd.fileId='sv'; gdMeta.lastSave=Date.now(); gdMarkSynced(S.updatedAt||0);
@@ -4957,6 +4961,18 @@ function gdMerge(b,l,r,ctx,p=''){
     return o; }
   if(GD_SOFT_RE.test(p)) return ctx.prefer==='r'?r:l;
   ctx.conf.push(p); return ctx.prefer==='r'?r:l;
+}
+// b216: 서버 값으로 덮어쓰기 — 기기 전용·자동 갱신 값(GD_LOCAL_RE: 테마·선택 캐릭터·키 등)만 이 PC 값 유지, 나머지는 전부 서버(r)
+function gdServerWins(l,r,p=''){
+  if(p&&GD_LOCAL_RE.test(p)) return gdMerge(undefined,l,r,{base:false,prefer:'l',conf:[]},p);
+  if(r===undefined) return undefined;
+  const kf=GD_KEYED[p];
+  if(kf&&Array.isArray(r)){ const L=new Map((Array.isArray(l)?l:[]).filter(x=>gdIsObj(x)&&x[kf]!=null).map(x=>[String(x[kf]),x]));
+    return r.map(x=>gdIsObj(x)&&x[kf]!=null?gdServerWins(L.get(String(x[kf])),x,`${p}[${x[kf]}]`):x); }
+  if(gdIsObj(r)){ const lo=gdIsObj(l)?l:{}, o={};
+    for(const k of new Set([...Object.keys(lo),...Object.keys(r)])){ const v=gdServerWins(lo[k],r[k],gdP(p,k)); if(v!==undefined) o[k]=v; }
+    return o; }
+  return r;
 }
 function gdMergeKeyed(b,l,r,kf,ctx,p){
   const list=a=>(Array.isArray(a)?a:[]).filter(x=>gdIsObj(x)&&x[kf]!=null), ids=a=>list(a).map(x=>String(x[kf]));
@@ -5033,13 +5049,20 @@ const GD_RES_MSG={same:'',pushed:SV_ON?'이 PC의 변경 사항을 서버에 저
  *  - base(마지막으로 맞춘 내용)가 있으면 3-way 병합, 진짜 충돌(같은 항목을 양쪽에서 다르게 수정)일 때만 한 번 질문
  *  - 예전 버전 메타(시각만 있음): 한쪽만 바뀌었으면 그쪽, 둘 다면 묻지 않고 합침(겹치는 값은 최근 수정한 쪽)
  *  - 이 PC 에서 처음 연결 + 내용이 다름 → 한 번 질문(통째로 고르기) */
-async function gdSync(remote){
+async function gdSync(remote,o={}){
   if(!remote?.data || !Array.isArray(remote.data.characters)) throw new Error('드라이브 파일 형식이 올바르지 않습니다');
   if(gdLocalEmpty()){ gdApply(remote,null); return 'loaded'; }
   const rU=+remote.updatedAt||0, lU=S.updatedAt||0;
   const rd=gdPrep(remote.data), ld=gdPrep(backupData(true));
   let bd=gdBaseData(); bd=bd?gdPrep(bd):null;
   if(!bd&&gdMeta.base){ if(rU===gdMeta.base) bd=rd; else if(lU===gdMeta.base) bd=ld; }
+  if(SV_ON){ // b216: 서버 모드는 묻지 않음('어느 데이터를 쓸까요?' 없음) — 서버에 저장된 값이 항상 이김
+    // 서버가 마지막으로 맞춘 내용(base) 그대로면 이 PC 의 저장 안 된 변경만 올림. 서버가 바뀌었으면:
+    //  - 불러오기(페이지 열기·1분마다 확인·로그인) → 서버 값으로 통째로 덮어씀 (이 PC 에만 있던 예전 값은 올리지 않음)
+    //  - 저장 중(저장 버튼·409) → 방금 이 PC 에서 바꾼 항목만 합치고, 서버와 겹치는 항목은 서버 값
+    if(!bd||(gdSig(rd)!==gdSig(bd)&&!o.push)) return gdCommit(gdServerWins(ld,rd),remote);
+    return gdCommit(gdMerge(bd,ld,rd,{base:true,prefer:'r',conf:[]}),remote);
+  }
   const legacy=!bd&&!!gdMeta.base;
   if(!bd&&!legacy&&gdSig(rd)!==gdSig(ld)) return gdAsk(remote,{mode:'whole'});
   const ctx={base:!!bd,prefer:legacy?(lU>=rU?'l':'r'):'l',conf:[]};
@@ -5143,7 +5166,7 @@ async function gdPush(opts={}){
       else{ // 다른 PC에서 그 사이 저장했는지 확인 (덮어쓰기 방지)
         try{
           if(await gdRemoteChanged(true)){ // 다른 기기가 그 사이 저장 → 합친 뒤 저장 (진짜 충돌일 때만 질문)
-            const res=await gdSync(await gdRead(gd.fileId)); if(res==='ask') return false; gdSet('on',GD_RES_MSG[res]||''); return true; }
+            const res=await gdSync(await gdRead(gd.fileId),{push:true}); if(res==='ask') return false; gdSet('on',GD_RES_MSG[res]||''); return true; }
         }catch(e){ if(e.status===404) gd.fileId=null; else throw e; }
       }
     }
@@ -5168,7 +5191,7 @@ async function svLogin(key,accId,opt={}){
     localStorage.setItem(SV_TOKEN_KEY,b.token);
     // 이 PC 데이터 주인 확인: 다른 사용자 → 비우고 서버 데이터만 / 같은 사용자 → 그대로 맞춤 / 이 기기 첫 로그인 → 물어봄
     const prev=localStorage.getItem(SV_USER_KEY);
-    const keep=prev?prev===b.user:(gdLocalEmpty()||confirm(b.rev?'이 PC 데이터를 이 계정 데이터와 합칠까요?\n[취소]를 누르면 이 PC 데이터는 지우고 서버에 있는 이 계정 데이터만 불러옵니다.':'이 PC 데이터를 이 계정으로 올릴까요?\n[취소]를 누르면 이 PC 데이터는 지우고 빈 상태로 시작합니다.'));
+    const keep=prev?prev===b.user:(gdLocalEmpty()||!!b.rev||confirm('이 PC 데이터를 이 계정으로 올릴까요?\n[취소]를 누르면 이 PC 데이터는 지우고 빈 상태로 시작합니다.')); // b216: 서버에 이미 데이터가 있으면 묻지 않음 — 서버 값으로 덮어씀(gdSync)
     if(!keep){ svWipeLocal(); accId=''; }
     const same=!!prev&&prev===b.user&&keep; // b62: 같은 사용자로 다시 로그인(강제 로그아웃 등) → 마지막으로 맞춘 기준(base·rev) 유지 = 저장 안 한 변경도 3-way 병합
     localStorage.setItem(SV_USER_KEY,b.user); localStorage.setItem(SV_VAULT_KEY,b.vault||'none');
@@ -5401,6 +5424,9 @@ document.addEventListener('click',e=>{
       tgt.forEach(x=>{ x.key=''; delete x.bk; delete x.bkLabel; delete x.status; if(listCache[x.id]) delete listCache[x.id]; });
       accForget(tgt.filter(x=>!x.main&&!(all&&x===accounts()[0]&&!accounts().some(y=>y.main)))); // b102: 부계정 칸은 통째로 지움 (본계정 칸만 남겨 b72 처럼 다시 넣으면 보이게)
       localStorage.removeItem(SV_SUBSIG_KEY); if(impAccId===a.id||all){ impAccId=null; accChars=[]; }
+      if(SV_ON&&svTok()&&all){ // b216: 본계정(대표) 키 삭제 = 로그아웃 → 처음 온 사람 화면(예시 탭·API 키 등록 카드). 남은 변경은 서버에 저장한 뒤 이 PC 데이터 비움
+        save(); $('#importModal').classList.remove('show');
+        (async()=>{ try{ await svFetch('/api/unlink',{method:'POST',body}); }catch(e){} await gdLogout(); })(); return; }
       if(SV_ON&&svTok()) svFetch('/api/unlink',{method:'POST',body}).catch(e=>toast('⚠ 서버의 키 연결을 지우지 못했어요: '+e.message));
       save(); render(); if($('#importModal').classList.contains('show')) openImport(); } return; }
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
