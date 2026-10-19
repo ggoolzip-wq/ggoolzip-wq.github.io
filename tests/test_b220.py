@@ -105,7 +105,7 @@ try:
     check('수동 [최저가 갱신] 뒤 표시 == 자동 갱신 뒤 표시', miss()==auto_miss, (miss(),auto_miss))
     pg.evaluate("document.querySelector('#mktModal')?.remove(); document.documentElement.dataset.theme='light'; openMkt()"); pg.wait_for_timeout(500)
     if SHOT: pg.locator('#mktModal .modal').screenshot(path=os.path.join(SHOT,'b220_mkt_after_cron_light.png'))
-    check('빌드 표시 b220', pg.evaluate("document.documentElement.dataset.build")=='b220')
+    check('빌드 표시 b220 이상', int(pg.evaluate("document.documentElement.dataset.build")[1:])>=220)
     b.close()
 finally: srv.terminate()
 print('FAILS:',fails,'ERRORS:',errs); sys.exit(1 if fails or errs else 0)
