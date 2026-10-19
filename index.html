@@ -1831,6 +1831,11 @@ header .logo .logo-d{display:flex;align-items:center}
 .revpanel .rp-line{container-type:inline-size}
 .revpanel .rp-line .rpn{padding-left:6px}
 @container (max-width:310px){.rp-line .tsmn{font-size:.74rem!important}.rp-line .rplb{width:9.2em}.rp-line .rpouts{font-size:.74rem!important}}
+/* zosu-testfix (2026-10-19): 320px 헤더 가로 넘침 — 테마 버튼(#themeBtn, b182)이 9px 밖으로 나가 가로 스크롤 생김. 360px 이하에서만 간격·여백·버튼 크기 줄임 (390px 이상 그대로) */
+@media (max-width:360px){
+  header .hwrap{gap:8px;padding-left:10px;padding-right:10px}
+  header .thbtn{width:30px;height:30px;margin-left:2px;font-size:14px}
+}
 </style>
 </head>
 <body>
