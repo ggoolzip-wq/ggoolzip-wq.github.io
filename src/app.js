@@ -3463,13 +3463,13 @@ document.addEventListener('click',e=>{
     //   대표 키 삭제 = 부계정 키도 전부 삭제. 서버의 키 보관·부계정 연결도 /api/unlink 로 지움.
     const all=!!a.main||(!accounts().some(x=>x.main)&&accounts()[0]===a), tgt=all?accounts():[a]; // main 표시 없는 예전 데이터 = 첫 줄이 대표
     if(confirm(`'${a.label}' ${all?'대표 계정과 모든 부계정의':'계정의'} API 키를 삭제할까요?\n캐릭터 기록은 지워지지 않고 숨겨지며, 같은 계정 키를 다시 등록하면 다시 보입니다.`)){
+      if(SV_ON&&svTok()&&gdMeta.on&&all){ // b216: 본계정(대표) 키 삭제 = 이 브라우저만 처음 온 사람 상태(로그아웃·이 PC 데이터 비움 → 예시 화면·API 키 등록 카드).
+        // 서버 기록(데이터·부계정 키 금고·계정 연결)은 지우지 않음 → 같은 본계정 키를 다시 등록하면 본캐·부캐 캐릭터·기록이 그대로 돌아옴
+        $('#importModal').classList.remove('show'); gdLogout(); return; }
       const body=all?{all:true}:{key:a.key,bk:a.bk,ah:a.ah,ahs:a.ahs};
       tgt.forEach(x=>{ x.key=''; delete x.bk; delete x.bkLabel; delete x.status; if(listCache[x.id]) delete listCache[x.id]; });
       accForget(tgt.filter(x=>!x.main&&!(all&&x===accounts()[0]&&!accounts().some(y=>y.main)))); // b102: 부계정 칸은 통째로 지움 (본계정 칸만 남겨 b72 처럼 다시 넣으면 보이게)
       localStorage.removeItem(SV_SUBSIG_KEY); if(impAccId===a.id||all){ impAccId=null; accChars=[]; }
-      if(SV_ON&&svTok()&&all){ // b216: 본계정(대표) 키 삭제 = 로그아웃 → 처음 온 사람 화면(예시 탭·API 키 등록 카드). 남은 변경은 서버에 저장한 뒤 이 PC 데이터 비움
-        save(); $('#importModal').classList.remove('show');
-        (async()=>{ try{ await svFetch('/api/unlink',{method:'POST',body}); }catch(e){} await gdLogout(); })(); return; }
       if(SV_ON&&svTok()) svFetch('/api/unlink',{method:'POST',body}).catch(e=>toast('⚠ 서버의 키 연결을 지우지 못했어요: '+e.message));
       save(); render(); if($('#importModal').classList.contains('show')) openImport(); } return; }
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
