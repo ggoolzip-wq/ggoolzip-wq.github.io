@@ -1771,3 +1771,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 요청: "새로 고침하면 스크롤이 맨 위로 올라가있게". app.js 맨 앞: `history.scrollRestoration='manual'` + `pageTop()`(scrollTo behavior:'instant' + scrollingElement 0). `TOP_PIN` 동안 bootRender('end') 뒤·load(+rAF·400ms)·동기화 끝(renderHeaderSync, syncing=false) 때 다시 맨 위. 사용자가 wheel/touch/key/mousedown 하거나 load 뒤 scrollY>0 이 되면(스크롤바 끌기·코드 스크롤) TOP_PIN 끝 → 그 뒤 render·동기화는 위치 안 건드림. 8초 뒤 자동 끝. bfcache 복원은 브라우저 그대로.
 - 탭 바꿀 때 맨 위(tabTop, b213)·보스 탭 캐릭터 클릭 = 스크롤 그대로(b189) 그대로. 안쪽 칸: 새로고침 때 복원하는 칸 없음(#charList 는 선택 캐릭터가 보이게만).
 - tests/test_b223.py (8972): 실제·예시 × 1400/390 — 내린 뒤 F5 → 첫 프레임부터 scrollY 0 만(html scroll-behavior:smooth 강제해도), 사용자가 내린 뒤 render = 그대로, 탭 = 맨 위. 옛 코드로 실패 확인. run_par 실패 = 기존 목록. 빌드 'b223'.
+
+## b224 (2026-10-19 KST) — /api/live 페이지 열 때 1번만 (30초 재조회 없앰) · Worker 소소한 절약
+- 요청(비용 보고 뒤 승인): "새로고침이나 새로 들어올 때만 확인하게 바꿔줘". 페이지: `livePoll`(30초 setInterval·visibilitychange) 삭제 → `setTimeout(liveFetch,0)` 페이지 열 때 1번 + bfcache 복원(`pageshow` persisted) 때 1번. 실제·예시·로그인 안 한 방문자 모두 같음. 라이브 탭·LIVE 배지·사료감지/패치내역(feed.srv)·결정석 공지 가격(srvPricesApply)은 그 1번 응답 그대로. feed.json(정적, 5분)·썬데이 패널은 원래 따로라 그대로.
+- fetch 를 `cache:'no-store'` → 기본 → 서버 `Cache-Control: public, max-age=15` 가 브라우저 캐시로 동작(15초 안 새로고침 = 요청 0). `Vary: Origin` 추가(두 도메인 CORS). workers.dev 는 Cache API 가 없어 서버 쪽 캐시는 안 씀.
+- Worker: `liveSchema`/`feedSchema` 의 CREATE TABLE IF NOT EXISTS 를 isolate 당 1번(LIVE_SCHEMA_OK/FEED_SCHEMA_OK) — 예전엔 /api/live 마다 3번. cron(매 1분 라이브·공지 감시 저장)은 그대로. 배포 59efa7a2.
+- 그대로 둔 것: 로그인 시 1분마다 /api/state/meta(gdPull) — 이제 요청의 대부분. 줄이려면 3분 또는 탭 다시 보일 때만.
+- tests/test_b224.py (8969, 가짜 시계): 예시·실제 열 때 1번, 5분·숨김/보임에도 0, 라이브 탭 0, bfcache 1, 새로고침 1, Worker CREATE 3번(3요청) + 캐시 헤더. live_nochar·b193·feed_keys 통과. run_par 실패 = 기존 목록. 빌드 'b224'.
