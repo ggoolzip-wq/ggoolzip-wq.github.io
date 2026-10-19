@@ -1527,7 +1527,7 @@ function renderHeaderSync(){
   const b=$('#syncBtn'); if(!b) return; const st=S.settings; b.hidden=!hasApi(); b.disabled=syncing;
   b.classList.toggle('busy',syncing); b.setAttribute('aria-busy',String(syncing));
   if(!b.querySelector('svg')) b.innerHTML=SYNC_SVG; // 아이콘만 (2026-10-10: 헤더 → 캐릭터 카드 제목 옆)
-  b.title=syncing?'동기화 중…':`지금 동기화 (보스 클리어 자동 체크)\n마지막 동기화: ${st.lastSync?hm(st.lastSync)+' KST':'없음'}\n홈페이지에 새로 들어올 때·API 키를 등록할 때 자동 (새로고침은 제외)`;
+  b.title=syncing?'동기화 중…':`지금 동기화 (보스 클리어 자동 체크)\n마지막 동기화: ${st.lastSync?hm(st.lastSync)+' KST':'없음'}\n홈페이지에 들어올 때·새로고침할 때·API 키를 등록할 때 자동 (3초 안 중복은 건너뜀)`;
   b.setAttribute('aria-label',syncing?'동기화 중':`지금 동기화 — 마지막 ${st.lastSync?hm(st.lastSync):'없음'}`);
   paintSyncLabel();
 }
@@ -3587,7 +3587,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b221'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b222'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -3616,12 +3616,14 @@ document.getElementById('logoHome')?.addEventListener('click',e=>{ e.preventDefa
 /* 페이지를 열거나 새로고침할 때마다 넥슨 API 동기화 1회 (2026-10-10 사용자 요청) — 🔄 버튼과 같은 syncAll(넥슨 API 전용, 구글 드라이브·로그인 창과 무관).
  * 새로고침을 연달아 해도 API 호출량을 아끼도록: 마지막 동기화(완료) 또는 마지막 '열 때 동기화' 시작이 LOAD_SYNC_GAP_MS(3초, 사용자 결정) 안이면 건너뜀.
  * 시작 시각을 따로 저장(LOAD_SYNC_KEY)하는 이유: 동기화 도중 새로고침하면 lastSync 가 안 바뀌어 매번 다시 시작되기 때문. */
-function loadSyncDue(){ if(!hasApi()||!S.characters.length) return false;
+function loadSyncDue(){ if(!hasApi()||!S.characters.length) return false; /* 예시 화면 = 키·계정 없음 → 여기서 false (demoAllowed 는 아래 const 라 시작 때 못 부름) */
   const last=Math.max(+S.settings.lastSync||0, +localStorage.getItem(LOAD_SYNC_KEY)||0); return Date.now()-last>=LOAD_SYNC_GAP_MS; }
-// b218: 새로 들어올 때(주소 입력·북마크·링크·새 탭 = navigation type 'navigate')만 자동 동기화. 새로고침(F5, 'reload')·뒤로/앞으로('back_forward')는 안 함 (사용자 요청)
+// b218: 새로 들어올 때만 자동 동기화였음 → b222(사용자 요청 '페이지 새로고침하면 캐릭터 동기화'): 새로 들어올 때('navigate')·새로고침(F5, 'reload')·뒤로/앞으로('back_forward', bfcache 복원 포함) 모두 1번.
+// 겹침 방지 그대로: 동기화 중이거나 마지막 동기화·열 때 동기화 시작이 3초 안이면 건너뜀(loadSyncDue). 예시 화면은 키·캐릭터가 없어 안 함
 function navType(){ try{ const e=performance.getEntriesByType('navigation')[0]; if(e&&e.type) return e.type; const n=performance.navigation; if(n) return n.type===1?'reload':n.type===2?'back_forward':'navigate'; }catch(e){} return 'navigate'; }
-const NAV_FRESH=navType()==='navigate';
-if((NAV_FRESH&&loadSyncDue()) || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))){ try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(e){} syncAll({silent:true}); } // + 기존 데이터: 계정 자동 배정
+const NAV_SYNC=['navigate','reload','back_forward'].includes(navType()); // b222 (prerender 등 = 안 함)
+if((NAV_SYNC&&loadSyncDue()) || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))){ try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(e){} syncAll({silent:true}); } // + 기존 데이터: 계정 자동 배정
+window.addEventListener('pageshow',e=>{ if(!e.persisted||syncing||!loadSyncDue()) return; try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(x){} syncAll({silent:true}); }); // b222: 뒤로/앞으로가 bfcache 로 복원되면 스크립트가 다시 안 돌므로 여기서 같은 규칙
 setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden) tabTick(); if(!document.hidden) gdPull(); }, 60e3);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); return; } if(checkResets()) render(); tabTick(); gdPull(); }); // (예전: 15분 지났으면 자동 동기화 — 2026-10-10 제거)
 window.addEventListener('pagehide',()=>{ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); });
