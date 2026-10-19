@@ -1753,3 +1753,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - **고침**: 서버 `maiInfo(cv)` 하나 = {date, got, unmatched, fetchedAt} — GET /api/admin/prices 와 /api/admin/maple-prices(`mai` 필드 추가) 둘 다 이걸 씀. 페이지: svAdminCheck 에서 admPriceLoad 를 60초 제한 밖으로, `openMkt()` 열 때마다 admPriceLoad → `mktMissPaint()` 가 열린 창의 행(`.rarow[data-pid]`)을 제자리에서 칠함/지움, mai 를 `mapleBossTracker.admMai` 에 보관(다음에 창이 바로 그려짐, svWipeAll 이 지움). [최저가 갱신] 도 서버 mai 를 그대로 씀. 빌드 'b220'. Worker 배포 f3528c7f.
 - **짝 없는 18개(mai_unmatched 10-18)**: 짝 버그 아님 — 가엔링·데브팬·에스텔라·트왈마 = 여명 세트(DROPS_OFF 회색 칩, 기록·시세 등록 창에 없음), 도미·블빈마·블랙하트·영달포·자석펫·솔 에르다 조각·익셉셔널 훈장·에테르넬 방어구 7종 = 사이트가 쓰지 않는 아이템. 시세 등록 창 아이템(revItems) 중 값이 없는 건 손 입력 6개(오만의 원죄·소울 에테르 1~4·익셉셔널 해머(귀고리))뿐이고 그대로 보존(cron 은 짝 있는 유효 값만 덮음). MAI_NAMES 안 바꿈.
 - tests/test_b220.py (8974): node 모의 cron(10-18 표 이름, 실제 요청 없음) → 자동 mai == 수동 mai, 손 입력 보존 · 페이지: 버튼 안 누르고 창 열기 → 손 입력 아이템만 빨간 표시, 열린 창 갱신, 수동 길과 같은 표시. 옛 코드로 돌리면 실패 확인. 스크린샷 /workspace/b220/. run_par 실패 = 기존 목록(5 16 23 25 43 44 46 47 50 51 76 80 101).
+
+## b221 (2026-10-19 KST) — 이번 주 수익 총합: 개수 전부 xN + 남은 결정석 개수
+- 요청: "이번 주 남은 결정석 옆에 남은 결정석 갯수를 x24 이런식으로" → 이어서 "위에 주보 결정석, 이번주 획득 아이템 까지 전부". 
+- `rpLbl(이름, n)` = `.rplb`(이름 칸, 고정 9.4em = 가장 긴 '이번 주 남은 결정석') + `.rpx`(xN, 0이면 없음). 주보 결정석·검마 결정석·이번주 획득 아이템·반지 상자·이번 주 남은 결정석·검마 남은 결정석 모두 같은 구조 → xN 한 세로줄. 판매 아이콘이 없을 때도 16px 자리(`.rpico0`)로 맞춤. 실제·예시 같은 코드.
+- 남은 개수 = `leftOf(c).wn` = `remainingWeekly(c).list.length` (금액과 같은 목록: 캐릭터당 12칸 − 잡은 수, 켜 둔 안 잡은 보스만큼), 보이는 캐릭터만(규칙 9). 검마 남은 = 이번 달 안 잡은 검은 마법사 캐릭터 수. 월드 180 상한은 사이트에 없음(b?: worldLimit 제거, 수익 = 상한 없음) → 개수도 상한 없음.
+- 좁은 패널(줄 ≤310px: 1181~1440px 데스크톱 오른쪽 칸·휴대폰)에서 큰 금액(+21,666,100,000 등)도 한 줄: `.rp-line` 을 inline-size 컨테이너로(이미 contain:inline-size), `@container (max-width:310px)` 에서 글씨 .74rem·이름 칸 9.2em, 금액 왼쪽 여백 6px.
+- tests/test_b221.py (8973): 개수 = xN·'개' 없음, xN 왼쪽 끝 같음, 이름 안 잘림·한 줄·패널 안·숫자와 안 겹침 (1600/1280/1024/390/360 + 큰 금액 1600~360) · 예시 1600/390. test_tracker81·92 기대값 xN 으로, test_b220 빌드 확인 ≥b220. run_par 실패 = 기존 목록. 스크린샷 /workspace/b221/.
