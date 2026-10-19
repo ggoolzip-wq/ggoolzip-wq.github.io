@@ -98,8 +98,7 @@ try:
     # 7) 구글 드라이브에서 가져오기 (드라이브 함수는 가짜로 바꿔 끼움)
     pa.evaluate("""()=>{ window.driveToken=async()=> 'fake'; window.driveFind=async()=>({id:'f1'});
       window.driveRead=async()=>({app:'maple-boss-tracker',updatedAt:1,withKeys:true,data:{version:5,characters:[{id:'c9',name:'드라이브캐릭',level:270,job:'비숍',world:'스카니아',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}}],history:[],monthHistory:[],worldOrder:[],settings:{accounts:[{id:'a1',label:'본계정',key:'live_KEY_A_0123456789abcdef'}]}}}); }""")
-    pa.evaluate('gdMenu(true)'); pa.wait_for_selector('#svImportDrive', timeout=3000) if pa.evaluate("driveUsable()") else None
-    pa.wait_for_timeout(300)
+    pa.evaluate('gdMenu(true)'); pa.wait_for_timeout(300)
     check('b216: no Google Drive import button / no 구글 text in sync menu', pa.locator('#svImportDrive').count()==0 and '구글' not in pa.inner_text('#gMenu'), pa.inner_text('#gMenu')[:200])
     pa.evaluate('gdMenu(false)')
     # 8) 로그아웃
