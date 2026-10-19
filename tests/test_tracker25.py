@@ -86,7 +86,7 @@ try:
     # 4) 새 기기, 이 PC 데이터 있음 → 질문에 [취소] → 지우고 서버(A) 데이터만
     cc,pc=mkctx(b); pc.goto(URL); pc.evaluate("([p,api])=>{localStorage.clear();p.characters=[{...p.characters[0],id:'z',name:'남의캐릭'}];localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p));sessionStorage.setItem('t_preset',JSON.stringify(p));localStorage.setItem('mapleBossTracker.keyReset','b64-2026-10-12');localStorage.setItem('mapleBossTracker.syncApi',api)}",[PRESET,API]); pc.reload(); inject(pc); pc.wait_for_timeout(400)
     invite(pc); ANSWER[0]=False; n=len(dialogs); login(pc,KA); ANSWER[0]=True
-    check('first login + cancel → local wiped, server A data only (no merge)', len(dialogs)==n+1 and '합칠까요' in dialogs[-1] and [c['name'] for c in st(pc)['characters']]==['단풍용사','불독메이지'] and chars_of(ah_a)==['단풍용사','불독메이지'], ([c['name'] for c in st(pc)['characters']],dialogs[n:]))
+    check('b216: first login, server has data → no question, local replaced by server A data only (no merge)', len(dialogs)==n and [c['name'] for c in st(pc)['characters']]==['단풍용사','불독메이지'] and chars_of(ah_a)==['단풍용사','불독메이지'], ([c['name'] for c in st(pc)['characters']],dialogs[n:]))
     # 헤더: 로그인 중이면 [로그아웃]만, 저장 실패 시 작은 경고, 누르면 확인 없이 로그아웃 → 대표 키 화면
     check('header shows only 로그아웃 when logged in', pc.text_content('#gBtn')=='로그아웃' and pc.locator('#svWarn:visible').count()==0, pc.text_content('#gBtn'))
     pth=os.path.join(OUT,'header_logout.png'); pc.screenshot(path=pth,clip={'x':0,'y':0,'width':1280,'height':120}); SHOTDIR and shutil.copy(pth,SHOTDIR)
