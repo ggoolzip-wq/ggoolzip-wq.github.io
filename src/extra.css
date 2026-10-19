@@ -1697,3 +1697,13 @@ header .logo .logo-d{display:flex;align-items:center}
 .rp-line.rp-ring .rpo.rio-c4 img.ric{height:1.1429em;margin:-.0714em}
 .rp-line.rp-ring .rpo.rio-gl img.ric{height:1.1034em;margin:-.0517em;position:relative;top:.0172em}
 .addsec-h[hidden]{display:none!important} /* b216 */
+
+/* b221: 이번 주 수익 총합 — 이름 칸 고정 너비(가장 긴 '이번 주 남은 결정석') → 개수 xN 이 한 세로줄, 줄바꿈·잘림 없음 */
+.revpanel .rp-line .rpl{flex:none;overflow:visible;flex-wrap:nowrap}
+.revpanel .rp-line .rplb{display:inline-block;width:9.4em;flex:none;white-space:nowrap}
+.revpanel .rp-line .rpx{display:inline-block;flex:none;font-weight:600;white-space:nowrap}
+.revpanel .rp-line .rpico0{display:inline-block;width:16px;height:16px;flex:none}
+/* b221: 좁은 패널(줄 너비 ≤ 310px: 1181~1440px 데스크톱 오른쪽 칸 · 휴대폰)에서 큰 금액(+60,000,000,000)도 한 줄 — 줄마다 inline-size 컨테이너(이미 contain:inline-size라 너비는 내용과 무관) */
+.revpanel .rp-line{container-type:inline-size}
+.revpanel .rp-line .rpn{padding-left:6px}
+@container (max-width:310px){.rp-line .tsmn{font-size:.74rem!important}.rp-line .rplb{width:9.2em}.rp-line .rpouts{font-size:.74rem!important}}

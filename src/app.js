@@ -777,7 +777,9 @@ function openChaos(key){
 const OUT_NAME = {r4:'리스트레인트 링 4레벨', c4:'컨티뉴어스 링 4레벨'};
 const miniIcon = k => ITEM_ICONS[k] ? `<img class="ric" src="${ITEM_ICONS[k]}" alt="" aria-hidden="true">` : '';
 const outIcon = o => o==='r4'?miniIcon('ring_restraint'):o==='c4'?miniIcon('ring_continuous'):o==='gl'?miniIcon('g_life'):'';
-const xN = n => 'x'+n; // 개수 표기 공통: '리4 x1', '컨4 x3' (0개는 표시하지 않음)
+const xN = n => 'x'+n;
+/* b221: 이번 주 수익 총합 줄 = 이름 칸(고정 너비) + 개수 칸 xN — 주보·검마 결정석·획득 아이템·반지 상자·남은 결정석 개수가 한 세로줄 */
+const rpLbl = (lb,n) => `<span class="tsmn rplb">${esc(lb)}</span>${n>0?`<span class="tsmn rpx">${xN(n)}</span>`:''}`; // 개수 표기 공통: '리4 x1', '컨4 x3' (0개는 표시하지 않음)
 function outTally(list, n){ const t={r4:0,c4:0,gl:0,x:0,un:0}; (list||[]).forEach(o=>{ if(o in t) t[o]++; }); t.un=Math.max(0,(+n||0)-(list||[]).length); return t; }
 // 순서대로: '미기록 · 리4 · 꽝' / compact: '리4×2 · 꽝×3 · 미기록×1'
 function outHtml(list, n, compact){
@@ -1803,12 +1805,12 @@ function weekRingLine(){ const by={}, t={r4:0,c4:0,gl:0,x:0}; let n=0;
   // b214: 리4·컨4·연마석 = 아이콘 + xN (글자 없음, 말풍선 = 이름), 꽝 = 글자 '꽝 xN'. 개수 표기 xN
   const RI={r4:['ring_restraint',OUT_NAME.r4],c4:['ring_continuous',OUT_NAME.c4],gl:['g_life',ITEMS.g_life.n]};
   const R=['r4','c4','gl','x'].filter(q=>t[q]>0).map(q=>RI[q]?`<span class="rpo rio-${q}" data-tip="${esc(RI[q][1]+' '+xN(t[q]))}" aria-label="${esc(RI[q][1]+' '+xN(t[q]))}">${miniIcon(RI[q][0])}${tsm(xN(t[q]))}</span>`:`<span class="rpo">${tsm('꽝 '+xN(t[q]))}</span>`).join('');
-  return `<div class="muted rp-line rp-ring rc-y"><span class="rpl"><span class="rpg">${itemIcon(top)}${tsm(`반지 상자 ${xN(n)}`)}</span></span>${R?`<b class="rpn rpouts">${R}</b>`:''}</div>`; }
+  return `<div class="muted rp-line rp-ring rc-y"><span class="rpl"><span class="rpg">${itemIcon(top)}${rpLbl('반지 상자',n)}</span></span>${R?`<b class="rpn rpouts">${R}</b>`:''}</div>`; }
 /* b185: 남은 결정석 — 주간 = remainingWeekly(c).list(남은 칸만큼, 안 잡은 보스 1인당 가격 상위), 검마 = 이번 달 안 잡은 검은 마법사. 보이는 캐릭터만(규칙 9), 0이면 줄 없음 */
-const leftOf = c => { const r=remainingWeekly(c); return {w:r.list.reduce((t,x)=>t+x.value,0), m:r.mon.filter(x=>x.slot==='blackmage').reduce((t,x)=>t+x.value,0)}; };
-const leftLine = (cls,ico,lb,v,big) => v>0?(big?`<div class="muted rp-line rp-left ${cls}"><span class="rpl"><span class="rpg">${ico}<span class="tsmn">${lb}</span></span></span><b class="rpn"><span class="tsmn">-${v.toLocaleString()}</span></b></div>`:`<div class="rp-cl rp-left ${cls}">${ico}<span>${lb} -${meso(v)}</span></div>`):'';
-function weekLeftLines(cs){ let w=0,m=0; for(const c of cs){ if(!charShown(c)) continue; const o=leftOf(c); w+=o.w; m+=o.m; }
-  return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',w,1)+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',m,1); }
+const leftOf = c => { const r=remainingWeekly(c), bm=r.mon.filter(x=>x.slot==='blackmage'); return {w:r.list.reduce((t,x)=>t+x.value,0), m:bm.reduce((t,x)=>t+x.value,0), wn:r.list.length, mn:bm.length}; }; // b221: wn = 남은 주간 결정석 개수(캐릭터당 12칸 − 잡은 수, 켜 둔 안 잡은 보스만큼)
+const leftLine = (cls,ico,lb,v,big,n) => v>0?(big?`<div class="muted rp-line rp-left ${cls}"><span class="rpl"><span class="rpg">${ico}${rpLbl(lb,n)}</span></span><b class="rpn"><span class="tsmn">-${v.toLocaleString()}</span></b></div>`:`<div class="rp-cl rp-left ${cls}">${ico}<span>${lb} -${meso(v)}</span></div>`):'';
+function weekLeftLines(cs){ let w=0,m=0,wn=0,mn=0; for(const c of cs){ if(!charShown(c)) continue; const o=leftOf(c); w+=o.w; m+=o.m; wn+=o.wn; mn+=o.mn; }
+  return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',w,1,wn)+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',m,1,mn); }
 function charLeftLines(c){ const o=leftOf(c); return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',o.w)+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',o.m); }
 function weekMonthly(a){ let n=0, meso=0; a.per.forEach(p=>p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week).forEach(x=>{ n++; meso+=x.value; })); return {n,meso}; }
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
@@ -1825,8 +1827,8 @@ function revPanel(a,cur){
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
       return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
-    <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${tsm(`주보 결정석 ${a.count}개`)}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${tsm(`검마 결정석 ${wm.n}개`)}</span></span><b class="rpn">${tsm('+'+wm.meso.toLocaleString())}</b></div>`:''}
-    <div class="muted rp-line rp-sale rc-g"><span class="rpl">${topSaleIco()}${tsm(`이번주 획득 아이템 ${n}개`)}</span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
+    <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${rpLbl('주보 결정석',a.count)}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${rpLbl('검마 결정석',wm.n)}</span></span><b class="rpn">${tsm('+'+wm.meso.toLocaleString())}</b></div>`:''}
+    <div class="muted rp-line rp-sale rc-g"><span class="rpl"><span class="rpg">${topSaleIco()||'<span class="ric rpico0" aria-hidden="true"></span>'}${rpLbl('이번주 획득 아이템',n)}</span></span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
       <div class="rp-row rp-top">${(r=>`<span class="rp-rk">${r?rankNo(r):'<span class="rkno"><span class="rkn">-</span></span>'}</span><span class="rp-nm rkname${medal(r)?' md-'+medal(r):''}"><span class="${medal(r)?'spk':''}">${esc(p.c.name)}</span>${p.c.isMain?' <span class="mainbadge">★</span>':''}</span>`)(rk.get(p))}<b>${meso(pmeso(p))}</b></div>
@@ -3585,7 +3587,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b220'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b221'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
