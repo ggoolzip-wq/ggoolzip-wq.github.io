@@ -88,9 +88,9 @@ try:
     pa.evaluate("gd.pulledAt=0; gdPull(true)"); pa.wait_for_timeout(1200); wait_on(pa)
     pa.evaluate("S.characters.find(c=>c.id==='c1').name='A이름'; save(); gdPush()"); wait_on(pa)
     pb.evaluate("clearTimeout(gd.timer); S.characters.find(c=>c.id==='c1').name='B이름'; save(); clearTimeout(gd.timer); gd.timer=null; gdWrite()"); pb.wait_for_timeout(2000)
-    check('same field changed on both → asks once (서버 vs 이 PC)', pb.is_visible('#driveModal') and '서버' in pb.inner_text('#driveModal'), pb.evaluate("gd.state"))
-    pb.click('#gdUseLocal'); pb.wait_for_timeout(1500); wait_on(pb)
-    check('choose 이 PC → server has B이름', [c['name'] for c in json.loads(server_state()[0]['data'])['characters']][0]=='B이름')
+    wait_on(pb)
+    check('b216: same field changed on both → NO question (서버 값이 이김)', not pb.is_visible('#driveModal') and pb.evaluate("gd.state")=='on', pb.evaluate("gd.state"))
+    check('b216: server keeps A이름 and B adopts it', [c['name'] for c in json.loads(server_state()[0]['data'])['characters']][0]=='A이름' and st(pb)['characters'][0]['name']=='A이름', st(pb)['characters'][0]['name'])
     # 6) 새로고침 → 토큰 재사용 (로그인 다시 안 함)
     n_login=sum(1 for m,u,_ in puts if u.endswith('/api/login'))
     pa.reload(); pa.wait_for_timeout(300); wait_on(pa)
@@ -99,11 +99,9 @@ try:
     pa.evaluate("""()=>{ window.driveToken=async()=> 'fake'; window.driveFind=async()=>({id:'f1'});
       window.driveRead=async()=>({app:'maple-boss-tracker',updatedAt:1,withKeys:true,data:{version:5,characters:[{id:'c9',name:'드라이브캐릭',level:270,job:'비숍',world:'스카니아',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}}],history:[],monthHistory:[],worldOrder:[],settings:{accounts:[{id:'a1',label:'본계정',key:'live_KEY_A_0123456789abcdef'}]}}}); }""")
     pa.evaluate('gdMenu(true)'); pa.wait_for_selector('#svImportDrive', timeout=3000) if pa.evaluate("driveUsable()") else None
-    if pa.evaluate("driveUsable()"):
-        pa.click('#svImportDrive'); pa.wait_for_timeout(1500); wait_on(pa)
-        names=[c['name'] for c in json.loads(server_state()[0]['data'])['characters']]
-        check('import from Drive merges into local + saves to server', '드라이브캐릭' in names and 'B이름' in names and [c['name'] for c in st(pa)['characters']].count('드라이브캐릭')==1, names)
-    else: check('drive import button needs a Google client id (skipped on this origin)', True)
+    pa.wait_for_timeout(300)
+    check('b216: no Google Drive import button / no 구글 text in sync menu', pa.locator('#svImportDrive').count()==0 and '구글' not in pa.inner_text('#gMenu'), pa.inner_text('#gMenu')[:200])
+    pa.evaluate('gdMenu(false)')
     # 8) 로그아웃
     oldtok=pa.evaluate("svTok()")
     pa.evaluate('gdMenu(true)'); pa.wait_for_selector('#gdLogout'); pa.click('#gdLogout'); pa.wait_for_timeout(800)

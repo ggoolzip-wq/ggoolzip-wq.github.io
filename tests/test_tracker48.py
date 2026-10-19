@@ -40,7 +40,7 @@ try:
     rows=pg.eval_on_selector_all('#accList .accrow .regok',"e=>e.map(x=>x.textContent.replace(/\\s+/g,' ').trim())")
     check('본계정 3캐릭', rows[0]=='✔ 등록 완료 · 3캐릭 등록 중', rows)
     check('부계정 2캐릭', rows[1]=='✔ 등록 완료 · 2캐릭 등록 중', rows)
-    check('예비계정 0캐릭', rows[2]=='✔ 등록 완료 · 0캐릭 등록 중', rows)
+    check('예비계정 0캐릭 (b216: 0캐릭 문구 없음)', rows[2]=='✔ 등록 완료', rows)
     wrap=pg.evaluate("""()=>{
       const h=document.querySelector('.addsec-h');
       const rs=[...document.querySelectorAll('#accList .accrow .regok, #accList .bkrow .regok')];
