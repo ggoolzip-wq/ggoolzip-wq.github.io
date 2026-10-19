@@ -1806,8 +1806,8 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - 5: 64명 가져온 뒤 `!syncing&&!syncBg` 까지 대기, 모의 핸들러는 모르는 ocid 에 400.
   - 51: 새 PC 복원 때 키(금고)와 캐릭터가 따로 도착 → 둘 다 올 때까지 대기(전체 실행에서 1번 실패).
 - **앱 수정 src/app.js `bgJob(c,a,fn)`**: b184 뒤 작업(basic·훈장)이 넣을 때의 키를 기억하고, 실행 직전 캐릭터가 지워졌거나(S.characters 에 없음) 계정 키가 바뀌거나 지워졌으면 요청 안 함. 예전엔 실행 시점의 a.key 로 지운 캐릭터 ocid 를 새 키로 계속 조회(모의 기준 13건). 이미 rateGate 에서 기다리던 요청(최대 SYNC_CONC=6)은 그대로 나감. 신규 **tests/test_zosu_bgkey.py**(run_all 목록) — 고치기 전 index 로 돌리면 실패, 고친 뒤 통과.
-- 남은 실패: **test_tracker12 의 320px 가로 넘침 = 실제 앱 문제**(b182 헤더 테마 버튼 `#themeBtn` 이 320px 에서 9px 넘침, scrollWidth 329). 이번엔 CSS 안 고침(사용자 결정 대기).
-- 테마 버튼 메모: 위 5장·8장의 '다크 전용(b67): 테마 전환 버튼 없음, 라이트 모드 없음' 규칙은 b179('다크 전용 규칙 변경(사용자 요청)')·b182(헤더 #themeBtn)로 바뀌었는데 5장·8장 문구는 안 고쳐져 서로 어긋남 — 사용자 확인 필요(이번엔 안 바꿈).
+- 남은 실패: **test_tracker12 의 320px 가로 넘침 = 실제 앱 문제**(b182 헤더 테마 버튼 `#themeBtn` 이 320px 에서 9px 넘침, scrollWidth 329). → 아래 '320px 헤더 수정'으로 해결.
+- 테마 버튼 메모: 위 5장·8장의 '다크 전용(b67): 테마 전환 버튼 없음, 라이트 모드 없음' 규칙은 b179('다크 전용 규칙 변경(사용자 요청)')·b182(헤더 #themeBtn)로 바뀌었는데 5장·8장 문구는 안 고쳐져 서로 어긋남 → 사용자 결정(테마 버튼 유지)으로 아래 '문구 정리'에서 5장·8장 고침.
 - 전체 결과(run_all.sh 직렬, 21:28~21:58 KST): 135개 중 134개 통과, 실패 1개 = test_tracker12(320px 헤더, 위 '남은 실패'). 끝난 뒤 남은 http.server/wrangler 없음. (1차 전체 실행에서 나온 test_server·23·25·51 실패는 위 cf_dev 포트 재사용 대기·pendSave·b81 재시도 대기·51 대기 조건으로 고친 뒤 2차에서 통과.)
 - 박스 사용 시: server/node_modules 가 없으면 wrangler 테스트가 SKIP 되므로 `cd server && npm ci`(또는 기존 사본 복사) 후 실행.
 - 320px 헤더 수정(2026-10-19 22:00 KST, 사용자 결정 '테마 버튼 유지'): src/extra.css 끝 `@media (max-width:360px){header .hwrap{gap:8px;padding-left:10px;padding-right:10px} header .thbtn{width:30px;height:30px;margin-left:2px;font-size:14px}}` → 320px scrollWidth 329→320(버튼 오른쪽 끝 310), 390px·1280px 배치 그대로. test12 기대값은 그대로 두고 통과. 사진: /workspace/zosu/shots/hdr320-before.png, hdr320-after.png.
