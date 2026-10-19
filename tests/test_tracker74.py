@@ -1,12 +1,14 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8873=_tutil.free_port()
 # b100 (zosu): 🔄 동기화 성공 → 아래 알림(toast) 없음, 버튼 옆 초록 '새로고침 완료!' / 실패는 계속 알림 / 자동 병합(merged) 알림 없음 (넥슨 API 는 가짜 응답)
 import os, sys, time, subprocess
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8873'
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8873)
 fails=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 ST={'version':5,'theme':'dark','activeId':'c0','characters':[{'id':'c0','name':'테스트','level':280,'job':'히어로','world':'스카니아','ocid':'','accId':'a1','isMain':True,'image':'','bosses':{},'weekly':{},'monthly':{},'auto':{},'drops':{},'sync':{}}],
  'history':[],'monthHistory':[],'worldOrder':[],'settings':{'accounts':[{'id':'a1','label':'본계정','key':'dummy','main':True}]}}
 mode={'fail':False}

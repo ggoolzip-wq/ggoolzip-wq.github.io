@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8830=_tutil.free_port()
 # 캐릭터 목록 페이지(8명씩) + 결정석 가격 마지막 확인 줄바꿈
 import os, sys, json, subprocess, time, urllib.request, shutil
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -10,8 +12,8 @@ def check(n,c,d=''):
     if not c: fails.append(n)
 def shot(loc,name,**kw):
     pth=os.path.join(OUT,name); loc.screenshot(path=pth,**kw); SHOTDIR and shutil.copy(pth,SHOTDIR)
-PORT=8830
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+PORT=_P8830
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

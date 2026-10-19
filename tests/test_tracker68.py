@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8893=_tutil.free_port()
 # b104(예전 b93): 관리자 전용 시세 — 관리자 창 '최저가 갱신' → (1~4.5초 무작위 대기) → Worker /api/admin/maple-prices(maple.ai.kr) 1번 → 우리 아이템으로 맞춤 → /api/admin/prices,
 #      '수익을 기록할까요?' 금액 자동 채움(수정 가능) + '최저가 측정 시간 - YYYY-MM-DD HH:mm'(KST). 페이지에 없는 아이템은 그대로. 관리자가 아니면 없음. (Worker 는 가짜 응답)
 import mai_node
@@ -8,8 +10,8 @@ fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-PORT=8893
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+PORT=_P8893
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

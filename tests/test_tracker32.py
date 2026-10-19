@@ -1,12 +1,14 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8832=_tutil.free_port()
 # b40: 패치 후 % / 갱신완료 HH:MM / 초록 드롭 칩(체크 없음, 크기 그대로) / 검마 정렬순
 import os, sys, json, time, subprocess
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL='http://localhost:8832/index.html'
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL=('http://localhost:'+str(_P8832)+'/index.html')
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server','8832','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',str(_P8832),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 live=json.load(open(os.path.join(ROOT,'prices.json'),encoding='utf-8')); live.pop('upcoming',None)
 demo=json.loads(json.dumps(live)); demo['upcoming']={'demo':True,'source':{'title':'[데모] 테스트'},'rows':[{'boss':r['boss'],'new':int(r['new']*0.9)} for r in live['rows']]}
 def B(d): return {'enabled':True,'diff':d,'party':1}

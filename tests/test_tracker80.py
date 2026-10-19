@@ -1,9 +1,11 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8896=_tutil.free_port()
 # b109: 이름 '메보기 - 메이플 보스 기록 사이트'·왼쪽 위 '메보수'(→ 이번 주 보스 탭)·파비콘=강렬한 힘의 결정(주간)·탭 이름(이번 주 보스/수익 분석)·
 # '수익을 기록할까요?' [기록하기]/[기록 없이 저장]/[취소]·'수익 기록 전체 수정' 창·월간 보스 안내 문구 삭제.
 # MBT_ROOT/MBT_SHOTDIR/MBT_TAG/MBT_NOCHECK (변경 전 빌드 촬영용)
 import os, sys, time, subprocess
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8896'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8896)
 SHOT=os.environ.get('MBT_SHOTDIR'); TAG=os.environ.get('MBT_TAG','after'); NOCHK=os.environ.get('MBT_NOCHECK')=='1'
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -14,7 +16,7 @@ def shot(loc,name):
     if SHOT:
         try: loc.screenshot(path=os.path.join(SHOT,f'b109_{TAG}_{name}.png'))
         except Exception as e: print('shot skip',name,e)
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 B=lambda d,p=1:{'enabled':True,'diff':d,'party':p}
 C={'id':'c0','name':'zetking','level':285,'job':'히어로','world':'스카니아','ocid':'','accId':'','isMain':True,'image':'','bosses':{'seren':B('extreme'),'kaling':B('hard',2),'blackmage':B('extreme')},'weekly':{'seren':True,'kaling':True},'monthly':{},'auto':{},'drops':{},'sync':{}}
 ST={'version':5,'theme':'dark','activeId':'c0','characters':[C],'history':[],'monthHistory':[],'worldOrder':[],'settings':{'accounts':[]}}
@@ -43,8 +45,8 @@ try:
     keys=pg.evaluate("[...document.querySelectorAll('[data-drop^=\"seren|\"]')].map(e=>e.dataset.drop).filter(k=>!/\\|(r_|chaosbox)/.test(k))")
     pg.click(f'[data-drop="{keys[0]}"]'); pg.wait_for_selector('#revModal')
     lay=pg.evaluate("""(()=>{const q=s=>document.querySelector(s),r=s=>q(s).getBoundingClientRect(),i=r('#rvAmt'),ok=r('.rvok'),no=r('.rvno'),cc=r('.rvcancel');
-      return {ok:q('.rvok').innerText,no:q('.rvno').innerText,cancel:q('.rvcancel').innerText,okRight:ok.left>=i.right-1,okBg:getComputedStyle(q('.rvok')).backgroundColor,below:no.top>=i.bottom-1&&cc.top>=i.bottom-1,noBefore:no.right<=cc.left+1}})()""")
-    check("수익 창: 오른쪽 주황 '기록하기', 아래 '기록 없이 저장'·'취소'", lay['ok']=='기록하기' and lay['no']=='기록 없이 저장' and lay['cancel']=='취소' and lay['okRight'] and lay['okBg']=='rgb(255, 138, 31)' and lay['below'] and lay['noBefore'], lay)
+      return {ok:q('.rvok').innerText,no:q('.rvno').innerText,cancel:q('.rvcancel').innerText,okRight:Math.abs(ok.top-no.top)<4&&ok.right<=no.left+1,okBg:getComputedStyle(q('.rvok')).backgroundColor,below:ok.top>=i.bottom-1&&no.top>=i.bottom-1&&cc.top>=Math.max(ok.bottom,no.bottom)-1,noBefore:(l=>Math.abs((cc.left+cc.right)/2-(l.left+l.right)/2)<3)(r('.rvleft'))}})()""")  # zosu-testfix: b181 배치
+    check("수익 창(b181): 1줄 주황 '기록하기'·'기록 없이 저장', 2줄 '취소' 가운데", lay['ok']=='기록하기' and lay['no']=='기록 없이 저장' and lay['cancel']=='취소' and lay['okRight'] and lay['okBg']=='rgb(255, 138, 31)' and lay['below'] and lay['noBefore'], lay)
     shot(pg.locator('#revModal .modal'),'revmodal')
     pg.click('.rvno'); pg.wait_for_timeout(300)
     check('기록 없이 저장 → 획득 유지·기록 없음·축하', pg.evaluate(f"S.characters[0].drops['{keys[0]}']===1 && !(S.characters[0].drev||{{}})['{keys[0]}']") and pg.locator('#congrats.show').count()==1)

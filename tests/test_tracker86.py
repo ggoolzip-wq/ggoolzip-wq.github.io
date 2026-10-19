@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8902=_tutil.free_port()
 # b114: 시세 갱신 익셉셔널 해머 채움 · 가격 목록 중복(칠흑 상자 선택 cb:x 와 직접 드롭 x) 없앰. (b112 test84 바탕)
 # b112: 가격 카드 '결정석 가격 / 아이템 가격' 탭, 관리자 '시세 등록', 익셉셔널 해머 시세 이름(얼장/눈장/벨트),
 # 수익 기록 전체 수정 = 보스별 묶음(초상화 1번 + 난이도 배지), '이번주 획득 아이템' 앞 아이콘, 캐릭터 정보 결정석/아이템 판매 두 줄, '이번달 검마 (10월 8일 격파 완료)',
@@ -5,7 +7,7 @@
 import os, sys, json, time, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MAI=os.path.join(os.path.dirname(os.path.abspath(__file__)),'fixtures','mai_2026-10-13.json'); PORT='8902'
+MAI=os.path.join(os.path.dirname(os.path.abspath(__file__)),'fixtures','mai_2026-10-13.json'); PORT=str(_P8902)
 import json as _j, mai_node; MAIR=_j.load(open(MAI,encoding='utf-8')); MAIR['mapped']=mai_node.mai_map(MAIR['items'],MAIR.get('fetchedAt') or 1760000000000)  # b208: 서버가 맞춘 값
 SHOT=os.environ.get('MBT_SHOTDIR'); TAG=os.environ.get('MBT_TAG','after'); NOCHK=os.environ.get('MBT_NOCHECK')=='1'
 fails=[]; errs=[]
@@ -17,7 +19,7 @@ def shot(loc,name):
     if SHOT:
         try: loc.screenshot(path=os.path.join(SHOT,f'b114_{TAG}_{name}.png'))
         except Exception as e: print('shot skip',name,str(e)[:80])
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

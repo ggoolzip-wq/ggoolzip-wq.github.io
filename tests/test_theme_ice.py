@@ -1,13 +1,15 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8875=_tutil.free_port()
 # b167: Ice Blue Whisper 테마 + 금색 총액 + 토글 버튼 하늘색
 import os, sys, subprocess, time
 from playwright.sync_api import sync_playwright
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT = 8875
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT = _P8875
 src = open(os.path.join(ROOT, "tests", "test_tracker81.py")).read(); NS = {}; exec(src[src.index("B=lambda"):src.index("\ntry:")], NS)
 fails = []
 def check(n, c, d=""):
     print(("PASS " if c else "FAIL ") + n + (" — " + str(d) if d != "" else ""))
     if not c: fails.append(n)
-srv = subprocess.Popen([sys.executable, "-m", "http.server", str(PORT), "--bind", "127.0.0.1"], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
+srv = _tutil.Popen([sys.executable, "-m", "http.server", str(PORT), "--bind", "127.0.0.1"], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
 try:
     with sync_playwright() as p:
         b = p.chromium.launch(executable_path=os.environ.get("CHROME", "/usr/bin/google-chrome"), args=["--no-sandbox"])

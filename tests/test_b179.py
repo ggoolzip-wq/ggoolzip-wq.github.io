@@ -1,10 +1,11 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
 # b179(+b182 버튼 헤더로 이동): 수익 기록 창 가운데 정렬 + 오른쪽 위 라이트/다크 전환 (localStorage mapleBossTracker.theme, 기본 다크)
 import os,sys,subprocess,time,urllib.request,socket
 from playwright.sync_api import sync_playwright
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); fails=[]
 def check(n,c,d=''): print(('PASS ' if c else 'FAIL ')+n,'' if c else d); c or fails.append(n)
 s=socket.socket(); s.bind(('127.0.0.1',0)); PORT=s.getsockname()[1]; s.close()
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
   try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
   except Exception: time.sleep(.1)

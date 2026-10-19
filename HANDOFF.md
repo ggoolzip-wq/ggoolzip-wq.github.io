@@ -1788,3 +1788,23 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 조수 zosu-apikey 머지: activeChars/activeIds/activeRecords/activeMiss 공용 헬퍼로 API 키 빠진 계정 캐릭터를 모든 합계·표·차트에서 제외(데이터는 보존, 키 재등록 시 복귀). weekLeftLines 충돌은 b221(개수 표기) 유지 + activeIds 필터로 해결.
 - 길드 현황의 직접 추가 길드와 관리자 창 캐릭터 수는 그대로 둠.
 - 전체 테스트에서 실패하는 14개는 origin/main에서도 똑같이 실패(기존 문제, 이번 변경과 무관).
+
+## zosu-testfix (2026-10-19 KST, 브랜치 zosu-testfix, base b224 80e4cb3) — 테스트 실패 정리 + 뒤 작업 키 버그
+- 배경: run_all 에서 4·5·8·9·12·16·23·25·27·43·44·46·47·50·51·76·80·101·server_b94 가 실패. 원인 = (A) 테스트가 죽으면 http.server/wrangler 가 남아 같은 하드코딩 포트를 쓰는 다음 테스트가 남의 서버(예전 index.html·예전 D1)를 읽음, (B) 운영 Worker `/api/live`(30초 폴링)를 안 막아 file:// CORS 오류·운영 썬데이가 섞임, (C) UI 변경 뒤 안 고친 기대값, (D) 앱 버그 1건.
+- **tests/_tutil.py (신규 공용 도우미)**: `free_port()`(bind 0), `Popen()`(PR_SET_PDEATHSIG + atexit/SIGTERM·SIGHUP 정리 + http.server 는 포트가 열릴 때까지 기다리고 그 전에 끝나면 = bind 실패 → 바로 RuntimeError, 이미 사용 중인 포트면 시작 전에 실패), Browser.new_context/new_page 를 감싸 `https://ggoolzip-sync.bossmaple.workers.dev/**` → `{}`(ACAO *) — 테스트가 직접 route 하면 그쪽 우선, `MBT_REAL_WORKER=1` 이면 끔.
+- 서버를 띄우는 테스트 전부(132개 파일): 맨 위 `import _tutil` + `_PNNNN=_tutil.free_port()`, 하드코딩 포트(PORT·URL·Popen 인자·Dev/MN.start)를 그 변수로, `subprocess.Popen(...http.server...)` → `_tutil.Popen(...)`. 9996~9999(route 로만 잡는 가짜 API 주소)와 test_server 의 Origin 'localhost:8787' 은 그대로. test17/20 의 test10 머리 재사용 replace 문자열도 `_tutil.Popen` 으로.
+- **tests/cf_dev.py**: 포트가 15초 안에 비지 않으면 바로 실패, `--inspector-port` 빈 포트, PDEATHSIG, atexit(stop), health 확인 중 wrangler 가 끝나면(bind 실패) 남의 서버에 붙지 않고 실패, 시작 실패 때도 stop(예전엔 프로세스가 남음). stop() 두 번 호출 안전.
+- exit 코드: 4·5·6·7·8·9·10·11·12·13·27 끝에 `sys.exit(1 if fails or errs else 0)` (예전엔 FAIL 을 찍고 exit 0).
+- 기대값 갱신(앱 그대로):
+  - 9: 모의 prices 에서 `upcoming` 제거(b171 lastCk 가 테섭 반영 시각을 골라 'MM.DD HH:MM' 로 보임 → 매일 바뀌는 prices.json 의존 제거).
+  - 23·25·46: 사용자 수정은 `pendStart()` 후 변경(b112 이후 pend 없는 save() 는 2초 뒤 자동 저장). 23 은 [저장]=`pendSave()`, 25 는 저장 실패 후 b81 뒤 재시도로 저장되는지 `!svUnsaved()` 대기. 46 은 '저장 안 한 변경'이 자동 저장에 안 올라가게.
+  - 27: c2 에 `monthly.blackmage=이번 주`(검마 결정석 줄은 잡은 주만 → .rp-cry 아이콘 2개).
+  - 43: b221 표기(`검마 결정석\nxN`, 안 잡으면 `검마 남은 결정석`), 말풍선은 `circle.wdot`/`rect.cbar` data-tip(b191·b195).
+  - 44: 첫 제목 `startswith('누적 득템')`(날짜·주차 붙음). 47·76·80: b181 배치(1줄 [기록하기][기록 없이 저장], 2줄 [취소] 가운데).
+  - 50: 헤더 `#themeBtn` 1개(b182), API 발급 칸은 b209 발급 순서 안내 포함(startswith).
+  - 101: `ctx.clock.install(2026-10-16 12:00 KST 금요일)` — 예전엔 월~수에 돌리면 '그제'가 이번 주라 실패(요일 의존).
+  - 5: 64명 가져온 뒤 `!syncing&&!syncBg` 까지 대기, 모의 핸들러는 모르는 ocid 에 400.
+  - 51: 새 PC 복원 때 키(금고)와 캐릭터가 따로 도착 → 둘 다 올 때까지 대기(전체 실행에서 1번 실패).
+- **앱 수정 src/app.js `bgJob(c,a,fn)`**: b184 뒤 작업(basic·훈장)이 넣을 때의 키를 기억하고, 실행 직전 캐릭터가 지워졌거나(S.characters 에 없음) 계정 키가 바뀌거나 지워졌으면 요청 안 함. 예전엔 실행 시점의 a.key 로 지운 캐릭터 ocid 를 새 키로 계속 조회(모의 기준 13건). 이미 rateGate 에서 기다리던 요청(최대 SYNC_CONC=6)은 그대로 나감. 신규 **tests/test_zosu_bgkey.py**(run_all 목록) — 고치기 전 index 로 돌리면 실패, 고친 뒤 통과.
+- 남은 실패: **test_tracker12 의 320px 가로 넘침 = 실제 앱 문제**(b182 헤더 테마 버튼 `#themeBtn` 이 320px 에서 9px 넘침, scrollWidth 329). 이번엔 CSS 안 고침(사용자 결정 대기).
+- 테마 버튼 메모: 위 5장·8장의 '다크 전용(b67): 테마 전환 버튼 없음, 라이트 모드 없음' 규칙은 b179('다크 전용 규칙 변경(사용자 요청)')·b182(헤더 #themeBtn)로 바뀌었는데 5장·8장 문구는 안 고쳐져 서로 어긋남 — 사용자 확인 필요(이번엔 안 바꿈).

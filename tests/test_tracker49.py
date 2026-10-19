@@ -1,3 +1,7 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8788=_tutil.free_port()
+_P8789=_tutil.free_port()
+_P8807=_tutil.free_port()
 # b64: 등록된 API 키 전체 초기화(기기마다 1번, 키만 비움·캐릭터 그대로) → 대표 키 로그인 → 부계정 키 다시 추가하면 예전 계정 칸에 재연결
 #      / 다른 데이터(캐릭터 있음)에 묶인 키 추가 → '이미 등록된 부계정 API입니다.' 빨간 글, 저장 안 함 / 집 PC(예전 키) → 비워진 뒤 대표 키로 복원
 import os, sys, json, subprocess, time, urllib.request
@@ -10,9 +14,9 @@ def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP: wrangler/node22 not installed'); print('FAILS: []'); sys.exit(0)
-PORT, WP, NP = 8807, 8788, 8789
+PORT, WP, NP = _P8807, _P8788, _P8789
 API=f'http://127.0.0.1:{WP}'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

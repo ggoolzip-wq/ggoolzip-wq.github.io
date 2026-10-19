@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8897=_tutil.free_port()
 # b98: 동기화 충돌 — 넥슨 API 자동 값(medal·guildAt·guild)은 '어느 데이터를 쓸까요?'에 나오지 않고 자동 병합 (훈장은 최근 확인, guildAt 은 큰 값)
 import os, sys, json, subprocess, time, urllib.request
 from playwright.sync_api import sync_playwright
@@ -6,8 +8,8 @@ fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-PORT=8897
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+PORT=_P8897
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

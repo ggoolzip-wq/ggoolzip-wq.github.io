@@ -1,12 +1,14 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8842=_tutil.free_port()
 # b53: 반짝이 가루, 아이템 순위(1.5/2), 녹옥 비활성, 못 가진 아이템 다중 보스, 1~3위 글자색, (난이도) 굵게·전 화면 표기, 시드링 글자, 블빵 구분선 1개, 누적 라인 차트
 import os, sys, json, time, subprocess
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL='http://localhost:8842/index.html'
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL=('http://localhost:'+str(_P8842)+'/index.html')
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server','8842','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',str(_P8842),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 ch={'id':'c0','name':'캐릭00','level':280,'job':'히어로','world':'스카니아','ocid':'','accId':'','isMain':True,'image':'',
     'bosses':{'kaling':{'enabled':True,'diff':'hard','party':1},'limbo':{'enabled':True,'diff':'normal','party':1}},'weekly':{},'monthly':{},'auto':{},'sync':{},
     'drops':{'kaling|g_faith':1,'limbo|se3':1},'dropOut':{}}

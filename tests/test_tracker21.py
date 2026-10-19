@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8796=_tutil.free_port()
 # 에테르넬 장비 조각 정보 칩 · 드롭 칩 툴팁(마우스·터치) · 반지 상자 리렌4/컨티4 확률 (2026-10-10)
 import os, sys, json, subprocess, time, urllib.request, shutil
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -11,8 +13,8 @@ def check(n,c,d=''):
 def shot(pg,name,clip=None):
     path=os.path.join(OUT,name); pg.screenshot(path=path,clip=clip)
     if SHOTDIR: shutil.copy(path,os.path.join(SHOTDIR,name))
-PORT=8796
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+PORT=_P8796
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

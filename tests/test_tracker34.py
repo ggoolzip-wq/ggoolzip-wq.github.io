@@ -1,12 +1,14 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8834=_tutil.free_port()
 # b45: 캐릭터 정보 칸 3개(최고 전투력 삭제)가 줄을 고르게 채움 / 목록: 본캐 배지 없음, 이름 전체, 줄 가운데
 import os, sys, json, time, subprocess
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL='http://localhost:8834/index.html'
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL=('http://localhost:'+str(_P8834)+'/index.html')
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server','8834','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',str(_P8834),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 chars=[{'id':f'c{i}','name':n,'level':294,'job':'렌','world':'스카니아','ocid':f'o{i}','accId':'','isMain':i==0,'image':'','bosses':{},'weekly':{},'monthly':{},'auto':{},'drops':{},'sync':{}} for i,n in enumerate(['림강혼망','부캐','MapleWarrior1'])]
 ST={'version':5,'theme':'dark','activeId':'c0','characters':chars,'history':[],'monthHistory':[],'worldOrder':[],'settings':{'accounts':[]}}
 try:

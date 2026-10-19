@@ -1,9 +1,11 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8897=_tutil.free_port()
 # b110: 아이템 판매값을 수익에 더함 — 판 캐릭터에만, 준 보스 종류대로(주간 보스 → 주간, 검은 마법사 → 월간). 이번 주 수익 두 줄, 캐릭터 정보,
 # 누적 수입(총/주보/검마), 주간 메소 그래프, 메소왕(누적 주간/월간 메소량), 보스 메소왕(누적 결정석·누적 아이템 판매값·누적 메소량), 전체 주 목록, 문구 2개 삭제.
 # MBT_ROOT/MBT_SHOTDIR/MBT_TAG/MBT_NOCHECK
 import os, sys, time, subprocess, re
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8897'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8897)
 SHOT=os.environ.get('MBT_SHOTDIR'); TAG=os.environ.get('MBT_TAG','after'); NOCHK=os.environ.get('MBT_NOCHECK')=='1'
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -14,7 +16,7 @@ def shot(loc,name):
     if SHOT:
         try: loc.screenshot(path=os.path.join(SHOT,f'b110_{TAG}_{name}.png'))
         except Exception as e: print('shot skip',name,e)
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 B=lambda d,p=1:{'enabled':True,'diff':d,'party':p}
 def ch(i,n,**k): return {'id':i,'name':n,'level':285,'job':'히어로','world':'스카니아','ocid':'','accId':'','isMain':i=='c1','image':'','bosses':{},'weekly':{},'monthly':{},'auto':{},'drops':{},'sync':{},**k}
 ST={'version':5,'theme':'dark','activeId':'c1','history':[],'monthHistory':[],'worldOrder':[],'settings':{'accounts':[]},

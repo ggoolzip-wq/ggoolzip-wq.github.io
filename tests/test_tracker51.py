@@ -1,3 +1,7 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8798=_tutil.free_port()
+_P8799=_tutil.free_port()
+_P8817=_tutil.free_port()
 # b67: 초대 비밀번호·입장 화면 폐지 — 처음 온 사람 흐름 / 캐릭터 추가 창 본계정 키만 / 부계정 키를 본계정으로 → 빨간 글 / 잘못된 키 / 로그아웃 후 다시 / 새 PC 에서 본계정 키로 복원
 # (공통 준비는 test_tracker49 와 같음)
 # b64: 등록된 API 키 전체 초기화(기기마다 1번, 키만 비움·캐릭터 그대로) → 대표 키 로그인 → 부계정 키 다시 추가하면 예전 계정 칸에 재연결
@@ -12,9 +16,9 @@ def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP: wrangler/node22 not installed'); print('FAILS: []'); sys.exit(0)
-PORT, WP, NP = 8817, 8798, 8799
+PORT, WP, NP = _P8817, _P8798, _P8799
 API=f'http://127.0.0.1:{WP}'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
@@ -87,7 +91,7 @@ try:
     c2,p2=mkctx(b); p2.goto(URL); p2.evaluate("api=>{localStorage.clear();localStorage.setItem('mapleBossTracker.syncApi',api)}",API); p2.reload(); p2.wait_for_timeout(500)
     p2.click('#addCharBtn'); p2.wait_for_selector('#svMainKey'); p2.fill('#svMainKey',KA); p2.press('#svMainKey','Enter')
     wait_on(p2)
-    p2.wait_for_function("accounts().some(a=>a.key==='%s')"%KF,timeout=10000); s2=st(p2)
+    p2.wait_for_function("accounts().some(a=>a.key==='%s') && ((JSON.parse(localStorage.getItem('mapleBossTracker.v1')||'{}').characters)||[]).length>0"%KF,timeout=20000); s2=st(p2)  # zosu-testfix: 키(금고)와 캐릭터(state)가 따로 도착 — 전체 실행 때 키만 먼저 와서 1번 실패
     check('returning user (new PC): main key only → characters + alt key restored', sorted(c['id'] for c in s2['characters'])==names1 and keyset(s2)==sorted([KA,KF]), (keyset(s2),[c['name'] for c in s2['characters']]))
     check('header 로그아웃 when logged in', p2.text_content('#gBtn').strip()=='로그아웃')
     check('JS 오류 없음', not errs, errs)

@@ -1,8 +1,10 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8979=_tutil.free_port()
 # b210: 로그인 전 = 위 탭(이번 주 보스·수익 분석·득템 분석·길드 현황)마다 예시 화면 (실시간 결정석·공용 시세로 계산, 저장·동기화·넥슨·서버 쓰기 없음)
 #       + 작은 API 키 칸·예시 띠, 랜딩 소개·가격 카드 없음(숨김 SEO 글·푸터 NEXON 표기 유지), '이번 주 수익 총합' 제목, 로그인(캐릭터 0명) = 예전 빈 화면
 import os, sys, json, time, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8979'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8979)
 SHOT=os.environ.get('MBT_SHOTDIR')
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -12,7 +14,7 @@ def shot(loc,name):
     if SHOT:
         try: loc.screenshot(path=os.path.join(SHOT,f'b210_{name}.png'))
         except Exception as e: print('shot skip',name,str(e)[:80])
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

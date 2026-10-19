@@ -1,13 +1,15 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8871=_tutil.free_port()
 # b161: 캐릭터·로그인 없이도 LIVE 배지(로드 직후) + 라이브 탭 유튜브 플레이어(클릭 시 iframe, autoplay 없음), 모바일 탭 줄 자동 노출
 import os, sys, json, subprocess, time
 from playwright.sync_api import sync_playwright
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT = 8871
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT = _P8871
 fails = []
 def check(n, c, d=""):
     print(("PASS " if c else "FAIL ") + n + (" — " + str(d) if d != "" else ""))
     if not c: fails.append(n)
 LIVE = {"at": int(time.time()*1000), "yt": {"live": True, "vid": "IkEDT0Wy8zY", "url": "https://www.youtube.com/watch?v=IkEDT0Wy8zY", "title": "테스트 라이브", "checked_at": int(time.time()*1000)}, "nx": {"live": False}, "list": []}
-srv = subprocess.Popen([sys.executable, "-m", "http.server", str(PORT), "--bind", "127.0.0.1"], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
+srv = _tutil.Popen([sys.executable, "-m", "http.server", str(PORT), "--bind", "127.0.0.1"], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
 try:
     with sync_playwright() as p:
         b = p.chromium.launch(executable_path=os.environ.get("CHROME", "/usr/bin/google-chrome"), args=["--no-sandbox"])

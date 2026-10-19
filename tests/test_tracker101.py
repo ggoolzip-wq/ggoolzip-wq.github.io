@@ -1,7 +1,9 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8921=_tutil.free_port()
 # b137: 실제 넥슨 응답 — 목 리셋 후 미접속 캐릭터는 오늘 응답에 주간 보스 행이 없음 → 지난 날짜 등록 목록으로 라인업
 import os, sys, json, time, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8921'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8921)
 SHOT=os.environ.get('MBT_SHOTDIR'); TAG=os.environ.get('MBT_TAG','after'); NOCHK=os.environ.get('MBT_NOCHECK')=='1'
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -12,7 +14,7 @@ def shot(loc,name):
     if SHOT:
         try: loc.screenshot(path=os.path.join(SHOT,f'b137_{TAG}_{name}.png'))
         except Exception as e: print('shot skip',name,str(e)[:80])
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
@@ -37,6 +39,8 @@ try:
             return r.fulfill(status=200,content_type='application/json',body=json.dumps(x))
         return r.abort()
     ctx.route('https://open.api.nexon.com/**',nx)
+    # zosu-testfix: 금요일 KST 로 고정 — 어제(목, 리셋일) 400 → 그제(수) = 지난 주 응답. 예전엔 월~수에 돌리면 그제가 이번 주라 듄켈 클리어가 이번 주로 맞게 잡혀 실패(요일 의존)
+    import datetime as _dt; ctx.clock.install(time=_dt.datetime(2026,10,16,12,0,tzinfo=_dt.timezone(_dt.timedelta(hours=9))))
     pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.wait_for_timeout(400)
     W['w']=pg.evaluate("S.period.week"); W['y']=pg.evaluate("dayId(Date.now()-864e5)")

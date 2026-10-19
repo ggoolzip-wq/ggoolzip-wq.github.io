@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8879=_tutil.free_port()
 # b171: 가격 카드 '마지막 확인' = checkedAt·테섭 예정 반영(detectedAt) 중 늦은 것 + 테섭 반영 시각 표시 + prices.json 5분 단위 재요청(내용 바뀌면 다시 그림)
 import os, sys, json, subprocess, time, urllib.request
 from playwright.sync_api import sync_playwright
@@ -6,9 +8,9 @@ fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d) if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen(['python3','-m','http.server','8879','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(_P8879),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
-    try: urllib.request.urlopen('http://127.0.0.1:8879/index.html',timeout=1); break
+    try: urllib.request.urlopen(('http://127.0.0.1:'+str(_P8879)+'/index.html'),timeout=1); break
     except Exception: time.sleep(0.1)
 base=json.load(open(ROOT+'/prices.json',encoding='utf-8'))
 cur={'pj':dict(base,checkedAt='2026-10-14T09:00:00+09:00',changedAt='2026-09-17',upcoming={'source':{'url':'https://x/Testworld/News/Update/1','title':'테섭 공지','date':'2026-10-15'},'rows':[{'boss':'선택받은 세렌 (하드)','new':1234567}],'detectedAt':'2026-10-15T16:27:00+09:00'})}
@@ -22,7 +24,7 @@ try:
         def h(route):
             urls.append(route.request.url); route.fulfill(status=200,content_type='application/json',body=json.dumps(cur['pj'],ensure_ascii=False))
         pg.route('**/prices.json*',h)
-        pg.goto('http://127.0.0.1:8879/index.html'); pg.wait_for_timeout(500)
+        pg.goto(('http://127.0.0.1:'+str(_P8879)+'/index.html')); pg.wait_for_timeout(500)
         pg.evaluate("(()=>{const st=JSON.parse(JSON.stringify(S));st.characters=[%s];st.activeId='c1';S=normState(st);render();})()"%CH)
         pg.wait_for_function("!!document.querySelector('.pricecard .pc-foot')&&officialInfo&&officialInfo.upAt",timeout=8000); pg.evaluate('render()')
         f=pg.inner_text('.pricecard .pc-foot')

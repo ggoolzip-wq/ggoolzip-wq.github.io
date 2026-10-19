@@ -1,3 +1,7 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8890=_tutil.free_port()
+_P8891=_tutil.free_port()
+_P8892=_tutil.free_port()
 # b91: /api/admin/users — 본계정 regAt, 부계정 목록(alts: label·대표 캐릭터·regAt), acct_role.created_at 유지 (wrangler dev 로컬 D1)
 import os, sys, json, time, urllib.request, urllib.error
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -7,7 +11,7 @@ def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP: wrangler/node22 not installed'); print('FAILS: []'); sys.exit(0)
-NP, WP = 8891, 8890
+NP, WP = _P8891, _P8890
 def req(m,path,body=None,tok=None):
     h={'Content-Type':'application/json','Origin':'https://bossmaple.pages.dev',**({'Authorization':'Bearer '+tok} if tok else {})}
     r=urllib.request.Request(f'http://127.0.0.1:{WP}{path}',data=json.dumps(body).encode() if body is not None else None,method=m,headers=h)
@@ -26,8 +30,8 @@ class MH(BaseHTTPRequestHandler):
         MAI_HITS.append(self.headers.get('User-Agent','')); MAI_INM.append(self.headers.get('If-None-Match',''))
         if self.headers.get('If-None-Match')=='"e1"': self.send_response(304); self.end_headers(); return
         b=MAI_HTML.encode(); self.send_response(200); self.send_header('ETag','"e1"'); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
-MS=ThreadingHTTPServer(('127.0.0.1',8892),MH); threading.Thread(target=MS.serve_forever,daemon=True).start()
-ms=MN.start(NP); dev=cf_dev.Dev(WP,NP,extra={'MAI_URL':'http://127.0.0.1:8892/blog/item-price-tracker-2026'})
+MS=ThreadingHTTPServer(('127.0.0.1',_P8892),MH); threading.Thread(target=MS.serve_forever,daemon=True).start()
+ms=MN.start(NP); dev=cf_dev.Dev(WP,NP,extra={'MAI_URL':('http://127.0.0.1:'+str(_P8892)+'/blog/item-price-tracker-2026')})
 try:
     KA,KF,KB='live_KEY_A_0123456789abcdef','live_KEY_F_0123456789abcdef','live_KEY_B_0123456789abcdef'
     s,a=req('POST','/api/login',{'key':KA}); TA=a['token']; UA=dev.sql('SELECT id FROM users')[0]['id']

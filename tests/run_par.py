@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """병렬 전체 테스트 (b107, 2026-10-14). run_all.sh 와 같은 목록·같은 로그(tests/out/r*.log)·같은 판정.
 동시에 최대 JOBS(기본 8, MBT_JOBS)개. 테스트 파일에 적힌 포트(8000~9999 숫자)가 겹치는 테스트는 동시에 돌리지 않음(포트 충돌 방지).
+zosu-testfix: 서버 포트는 이제 _tutil.free_port() 로 매번 빈 포트를 받으므로 파일에 포트 숫자가 거의 없음(남은 9996~9999 는 Playwright route 로만 잡는 가짜 주소).
 직렬로 돌리려면 MBT_JOBS=1 또는 bash tests/run_all.sh"""
 import os, re, subprocess, sys, time
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); os.makedirs('tests/out',exist_ok=True)

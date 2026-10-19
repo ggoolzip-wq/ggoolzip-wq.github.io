@@ -1,3 +1,6 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8786=_tutil.free_port()
+_P8787=_tutil.free_port()
 # b132: 가입 승인 스위치 APPROVAL_REQUIRED — 0 = 끔(누구나 바로 사용), 1 = 켬 (wrangler dev 로컬 D1)
 import os, sys, json, re, urllib.request, urllib.error
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -7,7 +10,7 @@ def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP'); print('FAILS: []'); sys.exit(0)
-NP, WP = 8787, 8786
+NP, WP = _P8787, _P8786
 def req(m,path,body=None,tok=None):
     h={'Content-Type':'application/json','Origin':'https://bossmaple.pages.dev',**({'Authorization':'Bearer '+tok} if tok else {})}
     r=urllib.request.Request(f'http://127.0.0.1:{WP}{path}',data=json.dumps(body).encode() if body is not None else None,method=m,headers=h)

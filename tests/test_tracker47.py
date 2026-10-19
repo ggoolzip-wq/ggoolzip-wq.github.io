@@ -1,13 +1,15 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8847=_tutil.free_port()
 # b62 task 8: '수익을 기록할까요?' 창 (득템 축하 직전), 분배 ÷인원, 블빵패배/반지 꽝 제외, 판매 수익 카드, 이번 주 수익 분홍 줄
 import os, sys, json, time, subprocess
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL='http://localhost:8847/index.html'
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL=('http://localhost:'+str(_P8847)+'/index.html')
 SHOT='/workspace/maple-boss-tracker'; os.makedirs(SHOT,exist_ok=True)
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server','8847','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',str(_P8847),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 B=lambda d,p=1:{'enabled':True,'diff':d,'party':p}
 C={'id':'c0','name':'zetking','level':285,'job':'히어로','world':'스카니아','ocid':'','accId':'','isMain':True,'image':'','bosses':{'seren':B('extreme'),'kaling':B('hard',2)},'weekly':{'seren':True,'kaling':True},'monthly':{},'auto':{},'drops':{},'sync':{}}
 ST={'version':5,'theme':'dark','activeId':'c0','characters':[C],'history':[],'monthHistory':[],'worldOrder':[],'settings':{'accounts':[]}}
@@ -27,9 +29,9 @@ try:
     g=pg.evaluate("(()=>{const e=document.querySelector('#rvGuide'),h=document.querySelector('.rvh');return {t:e.innerText,fs:parseFloat(getComputedStyle(e).fontSize),hfs:parseFloat(getComputedStyle(h).fontSize),below:e.getBoundingClientRect().top>=h.getBoundingClientRect().bottom-1}})()")
     check("제목 아래 작은 안내 문구 '이 아이템의 경매장 최저가 시세를 적어주세요.'", g['t']=='이 아이템의 경매장 최저가 시세를 적어주세요.' and g['fs']<g['hfs']*0.8 and g['below'], g)
     lay=pg.evaluate("""(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(); const i=r('#rvAmt'),u=r('.rvin span'),ok=r('.rvok'),no=r('.rvno'),l=r('.rvleft');
-      return {sameLine:Math.abs((i.top+i.bottom)/2-(u.top+u.bottom)/2)<4, okBelow:no.top>=i.bottom-1, okCenter:(c=>Math.abs((no.left+c.right)/2-(l.left+l.right)/2)<3)(r('.rvcancel')), noRight:ok.left>=l.right-1,
+      return {sameLine:Math.abs((i.top+i.bottom)/2-(u.top+u.bottom)/2)<4, okBelow:no.top>=i.bottom-1, okCenter:(c=>Math.abs((c.left+c.right)/2-(l.left+l.right)/2)<3&&c.top>=Math.max(ok.bottom,no.bottom)-1)(r('.rvcancel')), noRight:Math.abs(ok.top-no.top)<4&&ok.right<=no.left+1, /* zosu-testfix: b181 1줄 [기록하기][기록 없이 저장], 2줄 [취소] 가운데 */
         okBg:getComputedStyle(document.querySelector('.rvok')).backgroundColor, unit:document.querySelector('.rvin span').innerText, okTxt:document.querySelector('.rvok').innerText, noTxt:document.querySelector('.rvno').innerText}})()""")
-    check('레이아웃: 입력+억 메소 한 줄, 주황 기록하기+취소하기 아래 가운데, 오른쪽 아니오', lay['sameLine'] and lay['okBelow'] and lay['okCenter'] and lay['noRight'] and lay['okBg']=='rgb(255, 138, 31)' and lay['unit']=='억 메소' and lay['okTxt']=='기록하기' and lay['noTxt']=='기록 없이 저장', lay)
+    check('레이아웃(b181): 입력+억 메소 한 줄, 아래 1줄 주황 기록하기·기록 없이 저장, 2줄 취소 가운데', lay['sameLine'] and lay['okBelow'] and lay['okCenter'] and lay['noRight'] and lay['okBg']=='rgb(255, 138, 31)' and lay['unit']=='억 메소' and lay['okTxt']=='기록하기' and lay['noTxt']=='기록 없이 저장', lay)
     pg.screenshot(path=f'{SHOT}/oct12b_revmodal.png')
     pg.click('.rvok'); pg.wait_for_timeout(100)
     check('빈 값 → 오류, 창 유지', pg.locator('#revModal').count()==1 and '금액' in pg.inner_text('#rvErr'))

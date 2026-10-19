@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8795=_tutil.free_port()
 # 페이지 열 때 자동 동기화(3초 간격) · 예전 15분 자동 동기화 제거 · 🔄 아이콘 버튼(캐릭터 카드 제목 옆) (2026-10-10)
 import os, sys, json, subprocess, time, urllib.request, shutil
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -13,8 +15,8 @@ def check(n,c,d=''):
 def shot(loc,name):
     path=os.path.join(OUT,name); loc.screenshot(path=path)
     if SHOTDIR: shutil.copy(path,os.path.join(SHOTDIR,name))
-PORT=8795
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+PORT=_P8795
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

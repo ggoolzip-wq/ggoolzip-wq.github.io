@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8899=_tutil.free_port()
 import _legacy
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -12,11 +14,11 @@ errs=[]; fails=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d) if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen(['python3','-m','http.server','8899','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(_P8899),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
-    try: urllib.request.urlopen('http://127.0.0.1:8899/index.html',timeout=1); break
+    try: urllib.request.urlopen(('http://127.0.0.1:'+str(_P8899)+'/index.html'),timeout=1); break
     except Exception: time.sleep(0.1)
-URL='http://localhost:8899/index.html'
+URL=('http://localhost:'+str(_P8899)+'/index.html')
 def wait_list(pg): pg.wait_for_function("!document.querySelector('#impMsg .spin')",timeout=15000); pg.wait_for_timeout(200)
 def wait_sync(pg): pg.wait_for_function("!syncing",timeout=30000); pg.wait_for_timeout(250)
 try:

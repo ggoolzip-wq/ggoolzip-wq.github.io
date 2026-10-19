@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8896=_tutil.free_port()
 # b96 (test 71): 캐릭터 정보(보스 현황 왼쪽 카드) — '프리미엄 PC방' 훈장 착용 캐릭터는 주간/월간 보스 칸 위에 경고 줄(훈장 아이콘 + 왼쪽 위 빨간 ! 삼각형). 다른 캐릭터는 없음
 import os, sys, json, subprocess, time, urllib.request
 from playwright.sync_api import sync_playwright
@@ -7,8 +9,8 @@ fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-PORT=8896
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+PORT=_P8896
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
