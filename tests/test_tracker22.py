@@ -35,15 +35,17 @@ try:
     ctx.route('https://accounts.google.com/**',lambda r:r.abort()); ctx.route('**/feed.json*',lambda r:r.fulfill(status=404,body=''))
     pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('popup',lambda pp: popups.append(pp.url))
     pg.goto(URL); pg.evaluate("p=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(p))}",PRESET)
-    calls.clear(); pg.goto(URL); pg.wait_for_function("!syncing",timeout=30000); pg.wait_for_timeout(300)  # b218: 새로 들어옴(navigate)만 동기화
+    calls.clear(); pg.goto(URL); pg.wait_for_function("!syncing",timeout=30000); pg.wait_for_timeout(300)  # b222: 새로 들어옴·새로고침 모두 동기화
     n1=len(calls); check('page load → Nexon sync runs once (lastSync set)', n1>0 and pg.evaluate("S.settings.lastSync")>0, n1)
     check('old autoSync setting removed on load (migration)', pg.evaluate("'autoSync' in S.settings")==False and 'autoSync' not in pg.evaluate("localStorage.getItem('mapleBossTracker.v1')"))
     check('no periodic auto-sync code left', pg.evaluate("typeof autoDue==='undefined' && !('AUTO_SYNC_MIN' in CONFIG)"))
     calls.clear(); pg.goto(URL); pg.wait_for_timeout(800)
     check('new entry within 3s → skipped (no API calls)', len(calls)==0, calls)
-    pg.wait_for_timeout(3200); calls.clear(); pg.reload(); pg.wait_for_timeout(1500)
-    check('b218: reload (F5) after 3s → NO sync', len(calls)==0 and pg.evaluate("performance.getEntriesByType('navigation')[0].type")=='reload', len(calls))
-    calls.clear(); pg.goto(URL); pg.wait_for_function("!syncing",timeout=30000); pg.wait_for_timeout(300)
+    pg.wait_for_timeout(3200); calls.clear(); pg.reload(); pg.wait_for_timeout(300); pg.wait_for_function("!syncing",timeout=30000); pg.wait_for_timeout(300)
+    check('b222: reload (F5) after 3s → sync again', len(calls)>0 and pg.evaluate("performance.getEntriesByType('navigation')[0].type")=='reload', len(calls))
+    calls.clear(); pg.reload(); pg.wait_for_timeout(800)
+    check('b222: reload within 3s → skipped', len(calls)==0, calls)
+    pg.wait_for_timeout(3200); calls.clear(); pg.goto(URL); pg.wait_for_function("!syncing",timeout=30000); pg.wait_for_timeout(300)
     check('b218: new entry after 3s → sync again', len(calls)>0 and pg.evaluate("performance.getEntriesByType('navigation')[0].type")=='navigate', len(calls))
     # 동기화 도중 새로고침 → 시작 시각 기록으로 건너뜀
     pg.evaluate("S.settings.lastSync=0; save(); localStorage.setItem('mapleBossTracker.loadSyncAt',String(Date.now()))"); calls.clear(); pg.goto(URL); pg.wait_for_timeout(800)
@@ -54,7 +56,7 @@ try:
     info=pg.evaluate("""(()=>{const b=document.querySelector('#syncBtn'),h=b.closest('h2');const r=b.getBoundingClientRect(),t=h.firstChild;
       const rg=document.createRange(); rg.selectNodeContents(t); const tr=rg.getBoundingClientRect();
       return {inCard:!!b.closest('aside .card'),title:t.textContent.trim(),gap:r.left-tr.right,text:b.textContent.trim(),aria:b.getAttribute('aria-label'),tt:b.title,w:r.width,h:r.height,round:getComputedStyle(b).borderRadius,inHeader:!!b.closest('header')}})()""")
-    check('sync button: in character card header right after 캐릭터, icon-only, round, aria-label+title', info['inCard'] and info['title']=='캐릭터' and 0<=info['gap']<=14 and info['text']=='' and '지금 동기화' in info['aria'] and '새로 들어올 때' in info['tt'] and not info['inHeader'] and abs(info['w']-info['h'])<1, info)
+    check('sync button: in character card header right after 캐릭터, icon-only, round, aria-label+title', info['inCard'] and info['title']=='캐릭터' and 0<=info['gap']<=14 and info['text']=='' and '지금 동기화' in info['aria'] and '새로고침할 때' in info['tt'] and not info['inHeader'] and abs(info['w']-info['h'])<1, info)
     calls.clear(); pg.click('#syncBtn'); pg.wait_for_timeout(50)
     check('click → spins + disabled while syncing', pg.evaluate("syncing && document.querySelector('#syncBtn').classList.contains('busy') && getComputedStyle(document.querySelector('#syncBtn .rot')).animationName==='sbspin'"))
     pg.wait_for_function("!syncing",timeout=30000); check('manual click syncs', len(calls)>0)
