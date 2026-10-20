@@ -149,6 +149,8 @@ async function ensureSchema(env) {
   ]);
   // b91: acct_role.created_at = 그 넥슨 계정(API 키)이 이 데이터에 처음 등록된 시각. 없으면 추가하고 accounts.created_at 으로 채움 (모르면 NULL → 관리자 창 '-')
   try { await env.DB.prepare('ALTER TABLE acct_role ADD COLUMN created_at INTEGER').run(); } catch (e) {}
+  // b225: users.sync_click = 사용자가 캐릭터 동기화(🔄) 버튼을 마지막으로 직접 누른 시각 (자동 동기화는 안 적음). 관리자 창 '최근 로그인'
+  try { await env.DB.prepare('ALTER TABLE users ADD COLUMN sync_click INTEGER').run(); } catch (e) {}
   await env.DB.prepare('UPDATE acct_role SET created_at=(SELECT a.created_at FROM accounts a WHERE a.acct_hash=acct_role.acct_hash) WHERE created_at IS NULL').run();
   schemaOk = true;
 }
@@ -673,6 +675,12 @@ async function route(req, env) {
   const sk = me.th.slice(0, 32);
   if (M === 'GET') await limit(env, 'r:' + sk, LIMITS.read);
   if (M === 'PUT') { await limit(env, 'w:' + sk, LIMITS.write); await limit(env, 'uw:' + me.userId, LIMITS.userWrite); }
+  // b225: 🔄 버튼을 직접 눌렀을 때만 페이지가 보냄. 한 번 = UPDATE 1줄 (10초 안 다시 누르면 0줄 — 제한 표 쓰기도 안 함)
+  if (p === '/api/sync-click' && M === 'POST') {
+    const now = Date.now();
+    await env.DB.prepare('UPDATE users SET sync_click=? WHERE id=? AND COALESCE(sync_click,0)<?').bind(now, me.userId, now - 10e3).run();
+    return json(200, { ok: true, at: now });
+  }
   if (p === '/api/link' && M === 'POST') {
     await limit(env, 'l:' + sk, LIMITS.link);
     const b = await readBody(req);
@@ -793,7 +801,7 @@ async function route(req, env) {
   if (p.startsWith('/api/admin/')) { // b68: 관리자만 (서버에서 사용자 id 로 확인)
     if (!adminId(env) || me.userId !== adminId(env)) throw new HttpError(403, 'not_admin', '관리자만 쓸 수 있습니다');
     if (p === '/api/admin/users' && M === 'GET') { // b102: 쿼리 3개를 한 번에(batch) — 사용자 수와 상관없이 왕복 1번. ?prices=1 이면 최저가도 같이
-      const q = [env.DB.prepare('SELECT u.id, u.created_at, u.last_login, a.status, a.name, a.world, a.level, a.requested_at, a.decided_at FROM users u LEFT JOIN approval a ON a.user_id=u.id ORDER BY u.created_at LIMIT 500'),
+      const q = [env.DB.prepare('SELECT u.id, u.created_at, u.last_login, u.sync_click, a.status, a.name, a.world, a.level, a.requested_at, a.decided_at FROM users u LEFT JOIN approval a ON a.user_id=u.id ORDER BY u.created_at LIMIT 500'),
         env.DB.prepare("SELECT s.user_id, s.size, s.saved_at, s.data FROM state s LEFT JOIN approval a ON a.user_id=s.user_id WHERE COALESCE(a.status,'ok')<>'pending'"),
         env.DB.prepare('SELECT user_id, acct_hash, role, created_at FROM acct_role')];
       const wantP = url.searchParams.get('prices') === '1'; if (wantP) q.push(env.DB.prepare("SELECT v FROM meta WHERE k='admin_prices'"));
@@ -803,7 +811,7 @@ async function route(req, env) {
       const out = (ur.results || []).map(u => {
         const st = u.status || 'ok', inf = st === 'pending' ? { chars: 0, size: 0, savedAt: 0, alts: [] } : userInfoFrom(stOf.get(u.id), roOf.get(u.id) || []);
         return { id: u.id, status: st, admin: u.id === adminId(env), name: inf.name || u.name || '', world: inf.world || u.world || '', level: inf.level || u.level || 0,
-          chars: inf.chars, size: inf.size, lastLogin: u.last_login, requestedAt: u.requested_at || 0, regAt: inf.mainRegAt || u.created_at || 0, alts: inf.alts || [] };
+          chars: inf.chars, size: inf.size, lastLogin: u.last_login, syncAt: u.sync_click || 0, requestedAt: u.requested_at || 0, regAt: inf.mainRegAt || u.created_at || 0, alts: inf.alts || [] };
       });
       let prices; if (wantP) { try { prices = pr.results?.[0] ? JSON.parse(pr.results[0].v) : {}; } catch (e) { prices = {}; } }
       return json(200, { users: out, ...(wantP ? { prices } : {}) });

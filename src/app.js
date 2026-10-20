@@ -3499,7 +3499,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
   switch(t.id){
     case 'editModeBtn': editMode=!editMode; render(); break;
-    case 'syncBtn': syncAll(); break;
+    case 'syncBtn': svSyncClick(); syncAll(); break;
     case 'importAccBtn': openImport(); break;
     case 'impRetry': openImport(impAccId); break;
     case 'impToSettings': accAddShow(true); break;
@@ -3597,7 +3597,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b224'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b225'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -3639,6 +3639,8 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(!SV_O
 window.addEventListener('pagehide',()=>{ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); });
 
 /* b68: 가입 승인 — 관리자(서버가 사용자 id 로 확인)만 목록·승인/거절/차단. 처음 연 기기에서도 관리자 버튼이 보이게 /api/me 로 확인 */
+/* b225: 🔄 버튼을 직접 누른 때만 서버에 시각 1줄 (관리자 창 '최근 로그인'). 자동 동기화(키 등록·들어올 때·새로고침)는 이 함수를 안 부름. 예시 화면·로컬 = 세션 없음 → 안 보냄 */
+function svSyncClick(){ if(!SV_ON||!svTok()||!gdMeta.on||syncing) return; svFetch('/api/sync-click',{method:'POST',body:{}}).catch(()=>{}); }
 async function svAdminCheck(){ if(!SV_ON||!svTok()||!gdMeta.on) return; try{ const r=await svFetch('/api/me'); localStorage.setItem(SV_ADMIN_KEY,r.admin?'1':'0'); gdRender(); if(!itemPriceLoad._at||Date.now()-itemPriceLoad._at>60e3) itemPriceLoad(); if(r.admin) admPriceLoad(); /* b220: 관리자 시세·mai 는 공용 시세 60초 제한과 따로 (시작 때 늘 건너뛰던 버그) */ const m=$('#gMenu'); if(m&&!m.hidden) gdMenu(true); }catch(e){} }
 let admUsers=null, admErr='';
 /* b102: 관리자 창 즉시 — 지난 목록(이 탭 sessionStorage)으로 바로 그리고 뒤에서 새로 받음. 사용자 목록+최저가 = 요청 1번(/api/admin/users?prices=1) */
@@ -3663,7 +3665,7 @@ function renderAdmin(){
   b.innerHTML=`<div class="admsec admprice" id="admPrice"></div>`+sec('승인 대기',P,'대기 중인 요청이 없어요',u=>row(u,`요청 ${u.requestedAt?hm(u.requestedAt):'-'}`,`<button class="btn sm" data-adm="approve">승인</button><button class="btn sm ghost admno" data-adm="reject">거절</button>`))
     +sec('사용 중',A,'없음',u=>{ const al=u.alts||[], op=admOpen.has(u.id); // b91: 부계정은 본계정 아래 접힘(▽/△), 강퇴 없음, 등록 날짜(KST)
       const tg=al.length?`<button class="admtg" data-admalt="${esc(u.id)}" aria-expanded="${op}" title="부계정 ${al.length}개 ${op?'접기':'펼치기'}">${op?'△':'▽'} 부계정 ${al.length}</button>`:'';
-      return row(u,`${u.status==='blocked'?'(예전 차단) ':''}캐릭터 ${u.chars||0} · 데이터 ${Math.ceil((u.size||0)/1024)}KB · 마지막 로그인 ${u.lastLogin?hm(u.lastLogin):'-'}`,`${tg}${admReg(u.regAt)}${u.admin?'<span class="admtag">관리자</span>':`<button class="btn sm ghost admno" data-adm="kick">강퇴</button>`}`)
+      return row(u,`${u.status==='blocked'?'(예전 차단) ':''}캐릭터 ${u.chars||0} · 데이터 ${Math.ceil((u.size||0)/1024)}KB · 최근 로그인 ${u.syncAt?hm(u.syncAt):'-'}`,`${tg}${admReg(u.regAt)}${u.admin?'<span class="admtag">관리자</span>':`<button class="btn sm ghost admno" data-adm="kick">강퇴</button>`}`)
         +(al.length?`<div class="admalts"${op?'':' hidden'}>${al.map(a=>`<div class="admrow admalt"><div class="admwho"><span class="muted">└</span> <b>${esc(a.label||'부계정')}</b><span class="muted">${a.name?' · '+esc(a.name):''}${a.world?' · '+esc(a.world):''}${a.level?' · Lv.'+a.level:''}</span><div class="muted tiny">부계정 · 캐릭터 ${a.chars||0}</div></div><div class="admbtns">${admReg(a.regAt)}<span class="admkick-sp"></span></div></div>`).join('')}</div>`:''); },Ap)
     +(np>1?`<div class="admpages">${Array.from({length:np},(_,i)=>`<button class="btn sm ${i+1===admPage?'':'ghost'}" data-admpage="${i+1}">${i+1}</button>`).join('')}</div>`:''); // b78: 10명씩 쪽 번호
   renderAdmPrice();
