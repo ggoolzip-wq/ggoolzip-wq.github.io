@@ -56,7 +56,7 @@ try:
     if not NOCHK:
         L=pg.evaluate("[...document.querySelectorAll('.revpanel .rp-line:not(.rp-left)')].map(e=>{const n=e.querySelector('.rpn'),l=e.querySelector('.rpl');return {t:e.innerText.replace(/\\s+/g,' ').trim(),nr:n?Math.round(n.getBoundingClientRect().right):null,er:Math.round(e.getBoundingClientRect().right),nl:n&&l?n.getBoundingClientRect().left>=l.getBoundingClientRect().right:false,ic:[...e.querySelectorAll('img,svg,.ric')].map(i=>Math.round(i.getBoundingClientRect().width))}})")
         check('결정석·아이템 줄: 글자 먼저, 숫자 오른쪽 끝', len(L)>=3 and all(x['nr'] is not None and abs(x['nr']-x['er'])<=2 and x['nl'] for x in L[:2]), L)
-        check('이번주 획득 아이템: 반지 상자 제외 (벨트·연마석·맹세 3개)', '이번주 획득 아이템 x3' in L[-2]['t'], L[-2])
+        check('이번주 획득 아이템: 반지 상자 제외 (벨트·연마석·맹세 3개 + b225 이번 주 검마 창세 1 = x4)', '이번주 획득 아이템 x4' in L[-2]['t'], L[-2])
         rg=L[-1]
         check('반지 상자 줄: 가장 많은 상자 아이콘(흑옥·백옥 3개 동점 → 아이템 순서 백옥) 16px + 7개, 결과 0개는 숨김 (b213: 리4·컨4 아이콘 = 글씨 높이)', rg['t'].startswith('반지 상자 x7') and len(rg['ic'])>=1 and rg['ic'][0]==16 and all(w<16 for w in rg['ic'][1:]) and pg.evaluate("(()=>{const d=document.createElement('div');d.innerHTML=itemIcon('r_white');const a=document.querySelector('.revpanel .rp-ring .rpg > :first-child');return !!a&&a.outerHTML===d.firstElementChild.outerHTML})()"), rg)
         check('결과(b214): 리4·컨4·연마석 = 아이콘 + x1, 꽝 x2 (0개 숨김)', rg['t']=='반지 상자 x7 x1 x1 x1 꽝 x2' and pg.evaluate("[...document.querySelectorAll('.revpanel .rp-ring .rpo[data-tip]')].map(e=>e.dataset.tip)")==['리스트레인트 링 4레벨 x1','컨티뉴어스 링 4레벨 x1','생명의 연마석 x1'], rg)
