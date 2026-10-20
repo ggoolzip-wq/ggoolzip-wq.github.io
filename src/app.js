@@ -1886,7 +1886,7 @@ function afterPatchHtml(){
   const tip=r=>`${esc(r.c.name)} — 주간 ${meso(r.nw)} → ${meso(r.xw)} · 검마 ${meso(r.nm)} → ${meso(r.xm)} (현재 가격 → 패치 후)`;
   return `<div class="pc-list pa-list">${rows.map(r=>`<div class="pc-row pa-row" title="${tip(r)}">${avatar(r.c,'sm')}<span class="pc-nm">${esc(r.c.name)}</span>${two(r.xw,r.nw,r.xm,r.nm)}</div>`).join('')||'<div class="muted">캐릭터가 없어요</div>'}</div>
     <div class="pa-total"><span>합계</span>${two(sum('xw'),sum('nw'),sum('xm'),sum('nm'))}</div>
-    <div class="pa-note muted">주간 = 주간 보스 상위 ${S.settings.weeklyLimit}개, 검마 = 월간 보스 · 테섭 예정 가격으로 계산, (%) = 지금 가격 대비</div>`;
+    <div class="pa-note muted">주간 상위 ${S.settings.weeklyLimit}개 · 테섭 예정 가격으로 계산 · (%) = 지금 가격 대비</div>`;
 }
 document.addEventListener('change',e=>{ if(e.target.id!=='pcMine') return; pcMine=e.target.checked; localStorage.setItem('mapleBossTracker.pcMine',pcMine?'1':'0'); repaintPrices(); });
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]'); if(!t) return; pcTab=t.dataset.pctab; repaintPrices(); });
