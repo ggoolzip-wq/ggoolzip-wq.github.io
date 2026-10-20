@@ -31,9 +31,17 @@ try:
     check('갱신완료 + time', f'갱신완료 {hm}' in pg.inner_text('#view'), hm)
     # 1) %
     pg.click('[data-pctab="after"]'); pg.wait_for_timeout(150)
-    ds=pg.eval_on_selector_all('.pa-d','e=>e.map(x=>x.textContent)')
+    # b227: 줄마다 '주간 X 메소 (−a%)' + '+ 검마 Y 메소 (−b%)' (검마 안 잡는 캐릭터 = '+ 검마 0 메소', % 없음)
     import re
-    check('change + (−x.x%) on rows and total', len(ds)>=2 and all(re.search(r'−[\d억만,. ]+ 메소 \(−\d+\.\d%\)$',d) for d in ds), ds[:3])
+    ds=pg.eval_on_selector_all('.pa-row .pa-v, .pa-total .pa-v','e=>e.map(x=>[...x.querySelectorAll(".pa-l")].map(l=>l.textContent))')
+    okw=all(len(d)==2 and re.fullmatch(r'주간 [\d억만,. ]+ 메소 \(−\d+\.\d%\)',d[0]) for d in ds)
+    okm=all(re.fullmatch(r'\+ 검마 [\d억만,. ]+ 메소 \(−\d+\.\d%\)',d[1]) or d[1]=='+ 검마 0 메소' for d in ds)
+    check('b227 주간 메소(−x%) + 검마 메소(−y%) on rows and total', len(ds)>=2 and okw and okm and any('(−' in d[1] for d in ds), ds[:4])
+    pg.evaluate("()=>{S.characters[0].bosses.blackmage.enabled=false;repaintPrices()}"); pg.wait_for_timeout(150)
+    z=pg.eval_on_selector_all('.pa-row .pa-v','e=>e.map(x=>[...x.querySelectorAll(".pa-l")].map(l=>l.textContent))')
+    check('b227 검마 안 잡는 캐릭터 = + 검마 0 메소', any(d[1]=='+ 검마 0 메소' for d in z), z[:2])
+    one=pg.evaluate("()=>[...document.querySelectorAll('.pa-l')].every(l=>l.getClientRects().length===1&&l.scrollWidth<=l.clientWidth+0.5)")
+    check('b227 각 줄 한 줄(줄바꿈·잘림 없음)', one)
     pg.locator('.pricecard').screenshot(path='/workspace/shots/b40_after_pct.png')
     # 4) 초록 칩
     chip='[data-drop="limbo|r_white"], [data-drop^="limbo|"]'
