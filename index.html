@@ -2762,6 +2762,8 @@ const outIcon = o => o==='r4'?miniIcon('ring_restraint'):o==='c4'?miniIcon('ring
 const xN = n => 'x'+n;
 /* b221: 이번 주 수익 총합 줄 = 이름 칸(고정 너비) + 개수 칸 xN — 주보·검마 결정석·획득 아이템·반지 상자·남은 결정석 개수가 한 세로줄 */
 const rpLbl = (lb,n,z) => `<span class="tsmn rplb">${esc(lb)}</span>${n>0||z?`<span class="tsmn rpx">${xN(n)}</span>`:''}`; // 개수 표기 공통: '리4 x1', '컨4 x3' (0개는 표시하지 않음 — b225: z 면 x0 도 표시)
+/* b226: '이번주 획득 아이템' 개수 — 일반 아이템 = 개수, 반지 상자 = 결과가 리4(r4)·컨4(c4)·생명의 연마석(gl)인 것만 (꽝 x·미기록은 아래 '반지 상자' 줄에만). 판매 금액(drev 'ring:r4' 등)과 같은 기준 */
+const itemCnt = (k,v,om) => { if(!(+v>0)) return 0; if(!isRing(parseIK(k).it)) return +v; const t=outTally((om||{})[k],v); return Math.min(+v,t.r4+t.c4+t.gl); };
 function outTally(list, n){ const t={r4:0,c4:0,gl:0,x:0,un:0}; (list||[]).forEach(o=>{ if(o in t) t[o]++; }); t.un=Math.max(0,(+n||0)-(list||[]).length); return t; }
 // 순서대로: '미기록 · 리4 · 꽝' / compact: '리4×2 · 꽝×3 · 미기록×1'
 function outHtml(list, n, compact){
@@ -3807,7 +3809,7 @@ function revPanel(a,cur){
   return `<aside class="revpanel card" aria-label="이번 주 수익 총합">
     <h2>${miniIcon('meso')} 이번 주 수익 총합</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
-    ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0)+Object.entries(c.mdrops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)||c.monthly?.[parseIK(k).slot]!==S.period.week?0:(+v||0)),0),0); // b121: 반지 상자 제외(아래 '반지 상자' 줄) · b225: 이번 주에 잡은 검마 아이템(mdrops)도 셈 (판매 금액 pItemSale 과 같은 규칙)
+    ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+itemCnt(k,v,c.dropOut),0)+Object.entries(c.mdrops||{}).reduce((x,[k,v])=>x+(c.monthly?.[parseIK(k).slot]!==S.period.week?0:itemCnt(k,v,c.mdropOut)),0),0); // b121: 반지 상자 제외(아래 '반지 상자' 줄) · b225: 이번 주에 잡은 검마 아이템(mdrops)도 셈 (판매 금액 pItemSale 과 같은 규칙)
       return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
     <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${rpLbl('주보 결정석',a.count,1)}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${rpLbl('검마 결정석',wm.n)}</span></span><b class="rpn">${tsm('+'+wm.meso.toLocaleString())}</b></div>`:''}
     <div class="muted rp-line rp-sale rc-g"><span class="rpl"><span class="rpg">${topSaleIco()||'<span class="ric rpico0" aria-hidden="true"></span>'}${rpLbl('이번주 획득 아이템',n,1)}</span></span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
@@ -5569,7 +5571,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b225'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b226'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
