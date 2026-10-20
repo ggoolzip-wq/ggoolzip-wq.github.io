@@ -863,7 +863,8 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 
 /* b68: 가입 승인 대기 · 관리자 창 (다크 전용) */
 #svMainSec .svpend{padding:8px 10px;border:1px solid var(--line,#333);border-radius:8px;margin-bottom:6px;line-height:1.6}
-.admm{max-width:640px;position:relative}
+.modal.wide.admm{max-width:720px}
+.admm{position:relative}
 .admm .admsec{margin-top:12px}
 .admm .admsec h4{margin:0 0 6px;font-size:.95rem}
 .admm .admrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.07)}
@@ -967,6 +968,10 @@ html body .dlv-extreme.dlv-extreme.dlv-extreme.dlv-extreme{
 /* b91: 관리자 창 — 부계정 접기/펼치기, 등록 날짜 */
 .admm .admbtns{align-items:center}
 .admm .admreg{white-space:nowrap}
+/* b225: 사용자 정보 줄('… · 최근 로그인 M/D HH:MM')은 한 줄 그대로 — 자리가 모자라면 글 대신 버튼 칸이 다음 줄로 */
+.admm .admrow{flex-wrap:wrap;row-gap:4px}
+.admm .admwho .tiny,.admm .admwho>b{white-space:nowrap}
+.admm .admbtns{margin-left:auto}
 .admm .admtg{background:none;border:1px solid rgba(255,255,255,.18);color:inherit;border-radius:6px;padding:2px 7px;font-size:.78rem;cursor:pointer;white-space:nowrap}
 .admm .admtg:hover{border-color:rgba(255,255,255,.4)}
 .admm .admalts[hidden]{display:none}
