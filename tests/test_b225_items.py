@@ -35,9 +35,9 @@ try:
         ctx.route('**/feed.json*',lambda r:r.fulfill(status=200,content_type='application/json',body='{"version":1,"sources":{},"items":{}}'))
         pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e))); return ctx,pg
     def shot(pg,name):
-        os.makedirs('/workspace/b225',exist_ok=True)
+        os.makedirs('/workspace/b226',exist_ok=True)
         bb=pg.evaluate("(()=>{const P=document.querySelector('.revpanel');const sec=P.querySelector('.rp-sec')?.getBoundingClientRect(),r=P.getBoundingClientRect();return {x:r.left,y:r.top+scrollY,width:r.width,height:(sec?sec.top:r.bottom)-r.top}})()")
-        pg.screenshot(path='/workspace/b225/'+name,clip=bb,full_page=True)
+        pg.screenshot(path='/workspace/b226/'+name,clip=bb,full_page=True)
     ctx,pg=mk({'width':1600,'height':1000})
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.wait_for_timeout(300)
     E_=lambda d:{'enabled':True,'diff':d,'party':1}
@@ -48,12 +48,20 @@ try:
     ST={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':[],'monthHistory':[],'characters':CH,'settings':{'accounts':[]}}
     pg.evaluate("([s])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','boss')}",[ST]); pg.reload(); pg.wait_for_timeout(1200)
     L=verify(pg,'반지 상자만',{'이번주 획득 아이템':'x0','반지 상자':'x9'})
-    shot(pg,'b225_items_rings_only.png')
+    shot(pg,'b225_items_rings_only.png') if False else None
+    # b226: 원모 실제 결과 기록 — 꽝 8개 + 림보 생명 상자 = 리4(판매 기록) → x1 / 리4·컨4·연마석 각각 셈, 꽝·미기록 안 셈
+    pg.evaluate("()=>{S.characters.forEach(c=>{c.dropOut=Object.fromEntries(Object.keys(c.drops).map(k=>[k,['x']]));}); const c=S.characters[0]; c.dropOut['limbo|r_life']=['r4']; c.drev={'limbo|r_life':{m:1500000000,a:15,p:1,i:'ring:r4'}}; save(); render()}"); pg.wait_for_timeout(300)
+    L=verify(pg,'b226 원모 실제(리4 1)',{'이번주 획득 아이템':'x1','반지 상자':'x9'})
+    check('b226: 리4 판매금이 같은 줄 금액', any(l['lb']=='이번주 획득 아이템' and '+1,500,000,000' in l['txt'] for l in L), [l['txt'] for l in L])
+    shot(pg,'b226_items_r4.png')
+    pg.evaluate("()=>{const c=S.characters[1]; c.dropOut['adversary|r_white']=['c4']; S.characters[0].drops['limbo|r_white']=1; S.characters[0].dropOut['limbo|r_white']=['x']; S.characters[2].drops['limbo|r_life']=1; S.characters[2].dropOut['limbo|r_life']=['gl']; S.characters[3].drops['slime|r_black']=3; S.characters[3].dropOut['slime|r_black']=['r4']; save(); render()}"); pg.wait_for_timeout(300)
+    verify(pg,'b226 리4·컨4·연마석 + 미기록',{'이번주 획득 아이템':'x4','반지 상자':'x13'})
+    pg.evaluate("()=>{S.characters.forEach(c=>{c.dropOut=Object.fromEntries(Object.keys(c.drops).map(k=>[k,['x']]));delete c.drev;}); S.characters[3].drops['slime|r_black']=1; delete S.characters[0].drops['limbo|r_white']; delete S.characters[2].drops['limbo|r_life']; save(); render()}"); pg.wait_for_timeout(300)
     pg.evaluate("()=>{const c=S.characters[0];c.drops['lotus|blackheart']=2;save();render()}"); pg.wait_for_timeout(300)
     verify(pg,'주간 아이템 2개',{'이번주 획득 아이템':'x2','반지 상자':'x9'})
     pg.evaluate("()=>{const c=S.characters[1],wk=S.period.week;c.monthly={blackmage:wk};c.mdrops={'blackmage|genesis':1};S.characters[2].monthly={blackmage:'2000-01-06'};S.characters[2].mdrops={'blackmage|genesis':1};save();render()}"); pg.wait_for_timeout(300)
     verify(pg,'검마 아이템(이번 주만)',{'이번주 획득 아이템':'x3'})
-    shot(pg,'b225_items_after.png')
+    shot(pg,'b226_items_after.png')
     for w in (1280,390): pg.set_viewport_size({'width':w,'height':900}); pg.wait_for_timeout(300); verify(pg,f'실제 {w}')
     ctx.close()
     for w in (1600,390):
@@ -61,7 +69,7 @@ try:
         pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(1500)
         L=verify(pg,f'예시 {w}')
         check(f'예시 {w}: 이번주 획득 아이템 xN 있음', any(l['lb']=='이번주 획득 아이템' and l['x'] for l in L), [l['txt'] for l in L])
-        if w==1600: shot(pg,'b225_items_demo.png')
+        if w==1600: shot(pg,'b226_items_demo.png')
         ctx.close()
     b.close()
 except Exception as e:
