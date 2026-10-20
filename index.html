@@ -1890,6 +1890,8 @@ header .logo .logo-d{display:flex;align-items:center}
 .rrbox .rrpick{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.82rem;font-weight:700;padding:5px 12px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
 .rrbox .rrpick img,.rrbox .rrpick .ric{width:24px;height:24px;object-fit:contain}
 .rrbox .rrpick.on{color:var(--text);border-color:var(--accent,#ff8a1f);background:rgba(255,138,31,.12);box-shadow:0 0 0 1px var(--accent,#ff8a1f) inset}
+.hongsum>img,.hongsum>.ric,.hongsum>.ifb{width:22px;height:22px;object-fit:contain;vertical-align:middle}
+@media(max-width:560px){.hongsum{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}.hongsum .hsr{flex:1 0 100%;padding-left:28px}}
 </style>
 </head>
 <body>
@@ -4435,7 +4437,7 @@ function lootSummary(T){
 function ringCardHtml(T){ return `  <div class="card ringcard"><h2>${miniIcon('ring_restraint')} 시드링 획득 타율</h2>
     ${(()=>{const r=T.ring, rec=r.r4+r.c4+(r.gl||0)+r.x; return rec+r.un?`<div class="ringsum">${miniIcon('ring_continuous')} <b class="rslab">반지 상자 결과</b> : ${[r.r4?`<span class="ro ro-r4">${outIcon('r4')}리4 <b>${xN(r.r4)}</b></span>`:'',r.c4?`<span class="ro ro-c4">${outIcon('c4')}컨4 <b>${xN(r.c4)}</b></span>`:'',r.gl?`<span class="ro ro-gl">${outIcon('gl')}생명의 연마석 <b>${xN(r.gl)}</b></span>`:'',r.x?`<span class="ro ro-x">꽝 <b>${xN(r.x)}</b></span>`:'',r.un?`<span class="ro ro-un">미기록 <b>${xN(r.un)}</b></span>`:''].filter(Boolean).join(' · ')} ${ringExpHtml(T)}</div>`:'';})()}
     ${(()=>{ const h={r4:0,c4:0}; T.items.forEach(([a,I])=>{ const {it,mode}=parseIK(a); if(mode!=='l'&&isHong(it)) h[it.slice(5)]+=I.n; }); // b229: 홍옥 반지 상자로 얻은 리4/컨4 — 꽝·기댓값 없음
-      return h.r4+h.c4?`<div class="ringsum hongsum">${itemIcon('r_red')} <b class="rslab">홍옥 반지 상자로 얻은 리4/컨4</b> : ${[h.r4?`<span class="ro ro-r4">${outIcon('r4')}리4 <b>${xN(h.r4)}</b></span>`:'',h.c4?`<span class="ro ro-c4">${outIcon('c4')}컨4 <b>${xN(h.c4)}</b></span>`:''].filter(Boolean).join(' · ')}</div>`:''; })()}
+      return h.r4+h.c4?`<div class="ringsum hongsum">${itemIcon('r_red')} <b class="rslab">홍옥 반지 상자로 얻은 리4/컨4</b> <span class="hsr">: ${[h.r4?`<span class="ro ro-r4">${outIcon('r4')}리4 <b>${xN(h.r4)}</b></span>`:'',h.c4?`<span class="ro ro-c4">${outIcon('c4')}컨4 <b>${xN(h.c4)}</b></span>`:''].filter(Boolean).join(' · ')}</span></div>`:''; })()}
     ${(()=>{ const R={}; T.items.forEach(([a,I])=>{ const {it,mode}=parseIK(a); if(!isRing(it)) return; const kk=it+(mode?'@'+mode:''); const o=R[kk]||(R[kk]={n:0,outs:[]}); o.n+=I.n; o.outs.push(...I.outs); });
       const ks=Object.keys(R).sort((x,y)=>lootOrd(x)-lootOrd(y));
       return ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${lootIco(k)}<span class="ln">${esc(lootName(k))}${modeTag(k)}</span> <b class="lx">${xN(R[k].n)}</b></span>${outHtml(R[k].outs,R[k].n,true)}</div>`).join('')}</div>`:'<p class="muted">아직 획득한 반지 상자가 없습니다.</p>'; })()}</div>`; }
