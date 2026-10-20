@@ -1795,4 +1795,5 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 고침: `itemCnt(k,v,om)` = 일반 아이템 v개, 반지 상자 = min(v, r4+c4+gl 결과 수)(outTally). 꽝·미기록은 '반지 상자' 줄에만. 검마(mdrops)는 이번 주에 잡았을 때만(b225 그대로).
 - 이번 주 수익 줄의 판매 아이콘 `.rpsico` margin-right 3px 때문에 판매 기록이 있으면 '이번주 획득 아이템' xN 이 3px 밀리던 것 → `.rp-line .rpg .rpsico{margin-right:0;width:16px}`.
 - 원모 실제(D1 읽기만, 10/20 15:59 KST): 이번 주 상자 9개 — 림강혼망 림보 생명 상자 = r4(판매 기록 'ring:r4'), 나머지 8개 꽝 → '이번주 획득 아이템' x0 → **x1**, 반지 상자 x9 그대로.
+- run_par 실패 = 기존 목록(5 16 23 25 43 44 46 47 50 51 76 80 101 server server_b94). Worker 변경 없음(배포 안 함).
 - 테스트: test_b225_items(원모 모양 x1·금액 같은 줄·xN 세로줄, 리4·컨4·연마석+미기록 x4) · test_tracker92 기대값 x7. 빌드 'b226'. 사진 /workspace/b226/.
