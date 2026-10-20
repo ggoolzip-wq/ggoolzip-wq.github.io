@@ -1877,7 +1877,7 @@ function revPanel(a,cur){
     <div class="muted rp-line rp-sale rc-g"><span class="rpl"><span class="rpg">${topSaleIco()||'<span class="ric rpico0" aria-hidden="true"></span>'}${rpLbl('이번주 획득 아이템',n,1)}</span></span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
-      <div class="rp-row rp-top">${(r=>`<span class="rp-rk">${r?rankNo(r):'<span class="rkno"><span class="rkn">-</span></span>'}</span><span class="rp-nm rkname${medal(r)?' md-'+medal(r):''}"><span class="${medal(r)?'spk':''}">${esc(p.c.name)}</span>${p.c.isMain?' <span class="mainbadge">★</span>':''}</span>`)(rk.get(p))}<b>${meso(pmeso(p))}</b></div>
+      <div class="rp-row rp-top">${(r=>`<span class="rp-rk">${r?rankNo(r):'<span class="rkno"><span class="rkn">-</span></span>'}</span>${avatar(p.c,'sm av24 rp-av')/* b233: 주별 득템 표와 같은 24px 초상화(사진 없으면 같은 크기 글자 칸) */}<span class="rp-nm rkname${medal(r)?' md-'+medal(r):''}"><span class="${medal(r)?'spk':''}">${esc(p.c.name)}</span>${p.c.isMain?' <span class="mainbadge">★</span>':''}</span>`)(rk.get(p))}<b>${meso(pmeso(p))}</b></div>
       ${charLeftLines(p.c)}
       <div class="rp-row"><span class="mini"><i style="width:${(pmeso(p)/max*100).toFixed(1)}%"></i></span><span class="muted" style="font-size:.72rem;white-space:nowrap">${p.r.weekly}/${lim}</span></div>
       ${(L=>L.length?`<div class="rp-boss">${L.slice().sort((x,y)=>bossTblOrd(x.slot)-bossTblOrd(y.slot)).map(x=>bossPic(findBoss(x.slot),x.diff,false)).join('')}</div>`:'')([...p.r.wlist,...p.r.mlist.filter(x=>p.c.monthly[x.slot]===S.period.week)])}
@@ -2457,7 +2457,7 @@ function wlGo(card,idx){ const pages=[...card.querySelectorAll('.wlpage')]; if(!
   const [older,newer]=card.querySelectorAll('[data-wlpg]'); if(older) older.disabled=WL_PAGE>=pages.length-1; if(newer) newer.disabled=WL_PAGE<=0; tipHide?.(); }
 function weekLootHtml(T){
   const P=weekLootData(T); WL_PAGE=Math.min(Math.max(0,WL_PAGE),Math.max(0,P.length-1)); const cur=P[WL_PAGE];
-  const row=o=>{ const c=o.id&&S.characters.find(x=>x.id===o.id), q=chaosMerge(o.m); return `<div class="wlrow"><span class="wlb">${c?avatar(c,'sm'):''}<b>${esc(o.name)}</b></span>${lootChips(q.m,false,q.tips)}</div>`; };
+  const row=o=>{ const c=o.id&&S.characters.find(x=>x.id===o.id), q=chaosMerge(o.m); return `<div class="wlrow"><span class="wlb">${c?avatar(c,'sm av24'):''}<b>${esc(o.name)}</b></span>${lootChips(q.m,false,q.tips)}</div>`; };
   const sel=P.length?`<select class="wlsel" aria-label="주 선택">${P.map((pg,i)=>`<option value="${i}" data-l="${esc(wlOptL(pg))}" data-s="${esc(wlOptS(pg))}"${i===WL_PAGE?' selected':''}>${esc(wlOpt(pg))}</option>`).join('')}</select>`:'';
   return `<div class="card wkloot" id="weekLoot"><h2><span class="wlico">${cur?wlIco(cur):itemIcon('oath')}</span><span class="wlt">주별 득템 캐릭터 정리</span>${sel}</h2>
     <div class="wlpg">${P.map((pg,i)=>`<div class="wlpage${i===WL_PAGE?' on':''}" data-wlico="${esc(wlIco(pg))}" data-wllb="${esc(wlLabel(pg))}"${i===WL_PAGE?'':' aria-hidden="true"'}>${pg.rows.length?pg.rows.map(row).join(''):'<p class="muted wlempty">이 주에 얻은 아이템이 없어요.</p>'}</div>`).join('')||'<p class="muted">아직 저장된 드랍 기록이 없습니다.</p>'}</div>
@@ -3690,7 +3690,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b232'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b233'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');

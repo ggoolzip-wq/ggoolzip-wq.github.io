@@ -1786,3 +1786,6 @@ header .logo .logo-d{display:flex;align-items:center}
 /* 줄 안 아이템 아이콘도 고정 22px 칸 */
 #weekLoot .loot>img,#weekLoot .loot>.ric,#weekLoot .loot>.ifb,#weekLoot .loot .hongico>img,#weekLoot .loot .hongico>.ric{width:22px;height:22px;object-fit:contain;flex:none}
 @media(max-width:560px){#weekLoot h2{gap:6px}#weekLoot .wlsel{font-size:.74rem;padding:3px 4px}}
+/* b233: 24px 초상화 공통(주별 득템 표 이름 앞 = 이번 주 수익 총합 캐릭터 이름 앞). 자르기 = .avatar img 공통(64px 원본, object-fit:none, 가운데 60%) */
+.avatar.av24{width:24px;height:24px;min-width:24px;flex:none;border-radius:10px;font-size:15px;line-height:1;font-weight:800}
+.rp-top .rp-av{align-self:center}
