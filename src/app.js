@@ -1871,17 +1871,22 @@ function revItems(){ const set=new Set();
   const seen=new Set(); return [...set].sort(itemCmp).filter(k=>{ const id=priceId(k); if(seen.has(id)) return false; seen.add(id); return true; }); } /* b114: 칠흑 상자 선택(cb:lcm)과 직접 드롭(lcm)은 같은 아이템·같은 시세 → 한 번만 */
 const priceId = k => String(k||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1');
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-pckind]'); if(!t) return; pcKind=t.dataset.pckind; repaintPrices(); });
-function fullExpected(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit).reduce((s,x)=>s+x.value,0);
+/* b227: 주간(상위 N) · 검마(월간) 따로 — fullExpected = 둘의 합(예전 그대로) */
+function expParts(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit).reduce((s,x)=>s+x.value,0);
   const m=BOSSES.filter(b=>b.type==='monthly'&&c.bosses[b.id]?.enabled).reduce((s,b)=>{ const cfg=c.bosses[b.id], d=b.diffs.includes(cfg.diff)?cfg.diff:b.diffs[0]; return s+Math.floor(price(b,d)/curParty(c,b.id)); },0);
-  return w+m; }
+  return {w,m}; }
+function fullExpected(c){ const x=expParts(c); return x.w+x.m; }
+/* b227: '패치 후 예상 주간 수익' = 주간 메소(감소율%) + 검마 메소(감소율%) — 합친 한 숫자 대신 따로. 검마를 안 잡는 캐릭터 = '+ 검마 0 메소'(흐리게, % 없음) */
 function afterPatchHtml(){
-  const rows=vchars().map(c=>({c,now:fullExpected(c),next:withUpcoming(()=>fullExpected(c))})).filter(r=>r.now||r.next);
+  const rows=vchars().map(c=>{ const a=expParts(c), b=withUpcoming(()=>expParts(c))||a; return {c,nw:a.w,nm:a.m,xw:b.w,xm:b.m}; }).filter(r=>r.nw||r.nm||r.xw||r.xm);
   const sum=k=>rows.reduce((s,r)=>s+(r[k]||0),0);
-  const pct=(d,b)=>b?` (${d>0?'+':d<0?'−':''}${Math.abs(d/b*100).toFixed(1)}%)`:'';
-  const dlt=(d,b)=>`<span class="pa-d ${d<0?'dn':d>0?'upx':''}">${d>0?'+':d<0?'−':'±'}${meso(Math.abs(d))}${pct(d,b)}</span>`;
-  return `<div class="pc-list pa-list">${rows.map(r=>`<div class="pc-row pa-row" title="${esc(r.c.name)} — 현재 가격 ${meso(r.now)} → 패치 후 ${meso(r.next)}">${avatar(r.c,'sm')}<span class="pc-nm">${esc(r.c.name)}</span><b>${meso(r.next)}${dlt(r.next-r.now,r.now)}</b></div>`).join('')||'<div class="muted">캐릭터가 없어요</div>'}</div>
-    <div class="pa-total"><span>합계</span><b>${meso(sum('next'))}${dlt(sum('next')-sum('now'),sum('now'))}</b></div>
-    <div class="pa-note muted">주간 상위 ${S.settings.weeklyLimit}개 + 월간 보스, 테섭 예정 가격으로 계산</div>`;
+  const pct=(n,b)=>{ const d=n-b; return `<span class="pa-p ${d<0?'dn':d>0?'upx':''}">(${d>0?'+':d<0?'−':''}${b?Math.abs(d/b*100).toFixed(1):'0.0'}%)</span>`; };
+  const part=(lb,n,b)=>(n||b)?`<span class="pa-k">${lb}</span> ${meso(n)} ${pct(n,b)}`:`<span class="pa-k">${lb}</span> <span class="pa-z">0 메소</span>`;
+  const two=(xw,nw,xm,nm)=>`<b class="pa-v"><span class="pa-l">${part('주간',xw,nw)}</span><span class="pa-l">+ ${part('검마',xm,nm)}</span></b>`;
+  const tip=r=>`${esc(r.c.name)} — 주간 ${meso(r.nw)} → ${meso(r.xw)} · 검마 ${meso(r.nm)} → ${meso(r.xm)} (현재 가격 → 패치 후)`;
+  return `<div class="pc-list pa-list">${rows.map(r=>`<div class="pc-row pa-row" title="${tip(r)}">${avatar(r.c,'sm')}<span class="pc-nm">${esc(r.c.name)}</span>${two(r.xw,r.nw,r.xm,r.nm)}</div>`).join('')||'<div class="muted">캐릭터가 없어요</div>'}</div>
+    <div class="pa-total"><span>합계</span>${two(sum('xw'),sum('nw'),sum('xm'),sum('nm'))}</div>
+    <div class="pa-note muted">주간 = 주간 보스 상위 ${S.settings.weeklyLimit}개, 검마 = 월간 보스 · 테섭 예정 가격으로 계산, (%) = 지금 가격 대비</div>`;
 }
 document.addEventListener('change',e=>{ if(e.target.id!=='pcMine') return; pcMine=e.target.checked; localStorage.setItem('mapleBossTracker.pcMine',pcMine?'1':'0'); repaintPrices(); });
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-pctab]'); if(!t) return; pcTab=t.dataset.pctab; repaintPrices(); });
@@ -3599,7 +3604,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b226'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b227'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -3989,7 +3994,7 @@ function demoRun(fn,args,self){ if(demoDepth>0) return fn.apply(self,args);
   try{ return fn.apply(self,args); } finally { demoDepth--; S=s0; schedC=sc0; guildC=gc0; demoLive=null; } }
 let demoRenderRaw=null;
 { demoRenderRaw=globalThis.render; const wrapR=name=>{ const f=globalThis[name]; if(typeof f==='function') globalThis[name]=function(...a){ return demoRun(f,a,this); }; };
-  ['render','renderChars','renderGuild','renderTabView','renderBoss','renderTotal','renderLoot','fitMiss','fitPriceCard','charEnter','wkPageRender'].forEach(wrapR);
+  ['render','renderChars','renderGuild','renderTabView','renderBoss','renderTotal','renderLoot','fitMiss','repaintPrices','fitPriceCard','charEnter','wkPageRender'].forEach(wrapR);
   // 머리글(동기화 버튼 등)은 예시 데이터가 아니라 진짜 상태로: 예시 안에서 부르면 진짜 S 로 바꿔서 그림
   const hs=globalThis.renderHeaderSync; if(typeof hs==='function') globalThis.renderHeaderSync=function(...a){ if(demoDepth>0&&demoLive){ const d=S,sc=schedC; S=demoLive; schedC=DEMO_SC0||schedC; try{ return hs.apply(this,a); } finally { S=d; schedC=sc; } } return hs.apply(this,a); };
   const wrapX=name=>{ const f=globalThis[name]; if(typeof f==='function') globalThis[name]=function(...a){ if(S===DEMO_ST||(demoAllowed()&&demoTabOk()&&DEMO_ST&&demoDepth>0)) return name==='nx'?Promise.reject(new Error('demo')):undefined; return f.apply(this,a); }; };
