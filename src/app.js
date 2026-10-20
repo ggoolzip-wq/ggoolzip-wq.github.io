@@ -789,7 +789,7 @@ const miniIcon = k => ITEM_ICONS[k] ? `<img class="ric" src="${ITEM_ICONS[k]}" a
 const outIcon = o => o==='r4'?miniIcon('ring_restraint'):o==='c4'?miniIcon('ring_continuous'):o==='gl'?miniIcon('g_life'):'';
 const xN = n => 'x'+n;
 /* b221: 이번 주 수익 총합 줄 = 이름 칸(고정 너비) + 개수 칸 xN — 주보·검마 결정석·획득 아이템·반지 상자·남은 결정석 개수가 한 세로줄 */
-const rpLbl = (lb,n) => `<span class="tsmn rplb">${esc(lb)}</span>${n>0?`<span class="tsmn rpx">${xN(n)}</span>`:''}`; // 개수 표기 공통: '리4 x1', '컨4 x3' (0개는 표시하지 않음)
+const rpLbl = (lb,n,z) => `<span class="tsmn rplb">${esc(lb)}</span>${n>0||z?`<span class="tsmn rpx">${xN(n)}</span>`:''}`; // 개수 표기 공통: '리4 x1', '컨4 x3' (0개는 표시하지 않음 — b225: z 면 x0 도 표시)
 function outTally(list, n){ const t={r4:0,c4:0,gl:0,x:0,un:0}; (list||[]).forEach(o=>{ if(o in t) t[o]++; }); t.un=Math.max(0,(+n||0)-(list||[]).length); return t; }
 // 순서대로: '미기록 · 리4 · 꽝' / compact: '리4×2 · 꽝×3 · 미기록×1'
 function outHtml(list, n, compact){
@@ -1835,10 +1835,10 @@ function revPanel(a,cur){
   return `<aside class="revpanel card" aria-label="이번 주 수익 총합">
     <h2>${miniIcon('meso')} 이번 주 수익 총합</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
-    ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0),0); // b121: 반지 상자 제외
+    ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)?0:(+v||0)),0)+Object.entries(c.mdrops||{}).reduce((x,[k,v])=>x+(isRing(parseIK(k).it)||c.monthly?.[parseIK(k).slot]!==S.period.week?0:(+v||0)),0),0); // b121: 반지 상자 제외(아래 '반지 상자' 줄) · b225: 이번 주에 잡은 검마 아이템(mdrops)도 셈 (판매 금액 pItemSale 과 같은 규칙)
       return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
-    <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${rpLbl('주보 결정석',a.count)}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${rpLbl('검마 결정석',wm.n)}</span></span><b class="rpn">${tsm('+'+wm.meso.toLocaleString())}</b></div>`:''}
-    <div class="muted rp-line rp-sale rc-g"><span class="rpl"><span class="rpg">${topSaleIco()||'<span class="ric rpico0" aria-hidden="true"></span>'}${rpLbl('이번주 획득 아이템',n)}</span></span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
+    <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${rpLbl('주보 결정석',a.count,1)}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${rpLbl('검마 결정석',wm.n)}</span></span><b class="rpn">${tsm('+'+wm.meso.toLocaleString())}</b></div>`:''}
+    <div class="muted rp-line rp-sale rc-g"><span class="rpl"><span class="rpg">${topSaleIco()||'<span class="ric rpico0" aria-hidden="true"></span>'}${rpLbl('이번주 획득 아이템',n,1)}</span></span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
       <div class="rp-row rp-top">${(r=>`<span class="rp-rk">${r?rankNo(r):'<span class="rkno"><span class="rkn">-</span></span>'}</span><span class="rp-nm rkname${medal(r)?' md-'+medal(r):''}"><span class="${medal(r)?'spk':''}">${esc(p.c.name)}</span>${p.c.isMain?' <span class="mainbadge">★</span>':''}</span>`)(rk.get(p))}<b>${meso(pmeso(p))}</b></div>
