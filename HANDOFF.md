@@ -1778,3 +1778,11 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - Worker: `liveSchema`/`feedSchema` 의 CREATE TABLE IF NOT EXISTS 를 isolate 당 1번(LIVE_SCHEMA_OK/FEED_SCHEMA_OK) — 예전엔 /api/live 마다 3번. cron(매 1분 라이브·공지 감시 저장)은 그대로. 배포 59efa7a2.
 - 그대로 둔 것: 로그인 시 1분마다 /api/state/meta(gdPull) — 이제 요청의 대부분. 줄이려면 3분 또는 탭 다시 보일 때만.
 - tests/test_b224.py (8969, 가짜 시계): 예시·실제 열 때 1번, 5분·숨김/보임에도 0, 라이브 탭 0, bfcache 1, 새로고침 1, Worker CREATE 3번(3요청) + 캐시 헤더. live_nochar·b193·feed_keys 통과. run_par 실패 = 기존 목록. 빌드 'b224'.
+
+## b225 (2026-10-20 KST) — 관리자 창 '최근 로그인' = 🔄 버튼 마지막 클릭 · '이번주 획득 아이템' x0
+- 요청: "관리자 메뉴에서 마지막 로그인 말고 최근 로그인으로 바꿔주고 옆에 날짜 시간은 캐릭터 동기화 버튼을 마지막으로 누른 시간을 알려줘".
+- Worker: `users.sync_click INTEGER`(ensureSchema 의 ALTER, schema.sql 에도). `POST /api/sync-click`(로그인 세션) = `UPDATE users SET sync_click=now WHERE id=? AND COALESCE(sync_click,0)<now-10초` 1줄(10초 안 다시 누르면 0줄, 제한 표 쓰기 없음). GET /api/admin/users 에 `syncAt`.
+- 페이지: `svSyncClick()` 은 `#syncBtn` 클릭 때만(동기화 중·세션 없음·예시 화면이면 안 보냄). 자동 동기화(키 등록 keySync·들어올 때·F5·bfcache·doImport)는 안 부름. 관리자 창 사용자 줄 '마지막 로그인 (last_login)' → '최근 로그인 ${hm(syncAt)}'(KST M/D HH:MM), 기록 없으면 '-'. 기존 사용자는 다음에 🔄 를 누를 때까지 '-'. users.last_login 은 그대로 기록만(화면에서 안 씀).
+- 관리자 창 넓이: `.admm{max-width:640px}` 가 `.modal.wide{520px}` 에 져서 실제로 520px 이었음 → `.modal.wide.admm{max-width:720px}`. 정보 줄·이름 nowrap, `.admrow` flex-wrap: 자리가 모자라면(휴대폰) 글 대신 버튼 칸(▽ 부계정·등록 날짜·강퇴)이 다음 줄로. 예전엔 부계정 있는 줄의 날짜가 줄바꿈됐음.
+- 추가 요청: '이번주 획득 아이템' xN 안 보임. **원인**: b221 rpLbl 이 0개면 xN 을 안 그림 + 이 줄 개수는 b121 부터 반지 상자 제외(아래 '반지 상자' 줄에 따로) → 사용자 이번 주(10/15) 획득이 반지 상자 9개뿐이라 n=0 → xN 없음(예시는 일반 아이템 1개라 x1 보였음). 고침: `rpLbl(lb,n,z)` z 면 x0 도 표시 — '이번주 획득 아이템'·'주보 결정석' 줄(항상 있는 줄). 개수에 이번 주 잡은 검마 아이템(mdrops, monthly[slot]===이번 주)도 넣음(판매 금액 pItemSale 과 같은 규칙). 반지 상자 제외는 그대로(중복 방지). 반지 상자를 판 금액은 예전처럼 '이번주 획득 아이템' 금액에 들어감.
+- 테스트: 신규 tests/test_b225.py(8986~8988, wrangler dev: 자동 동기화 0요청·sync_click NULL, 클릭 1번 = 시각, 10초 안 다시 = 그대로, 동기화 중 0, 관리자 줄 '최근 로그인 M/D HH:MM' 한 줄), tests/test_b225_items.py(8997: 반지 상자만 → x0·반지 상자 x9, 아이템 2 → x2, 검마 이번 주만 → x3, 1600/1280/390, 예시 1600/390). test_tracker67 에 syncAt·'-' 검사. 빌드 'b225'. 사진 /workspace/b225/.
