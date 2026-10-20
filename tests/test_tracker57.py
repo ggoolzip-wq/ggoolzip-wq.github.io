@@ -25,7 +25,7 @@ try:
         pg.evaluate("tab='loot'; render()"); pg.wait_for_timeout(300)
         if w==1280:
             check('title', pg.inner_text('#salesCard h2').strip()=='아이템 판매 누적 수익')
-            check('title icon = most-sold item (belt x3)', pg.evaluate("document.querySelector('#salesCard h2 .hbi').innerHTML===lootIco('belt')"))
+            check('b229: title icon = highest total sale amount (eye 21억 > belt 11.5억)', pg.evaluate("document.querySelector('#salesCard h2 .hbi').innerHTML===lootIco('eye')"))
             check("total has ' 메소'", pg.inner_text('#salesCard .v.acc')=='32.50억 메소', pg.inner_text('#salesCard .v.acc'))
             rows=pg.evaluate("[...document.querySelectorAll('#salesCard .sl')].map(r=>[r.querySelector('.ln').textContent,r.querySelector('.slp').textContent,r.querySelector('.lx').textContent,r.querySelector('.slm').textContent])")
             check('rows split by party size', rows==[['마력이 깃든 안대','3인 분배','x1','12.00억 메소'],['마력이 깃든 안대','1인','x1','9.00억 메소'],['몽환의 벨트','1인','x2','9.00억 메소'],['몽환의 벨트','2인 분배','x1','2.50억 메소']], rows)
