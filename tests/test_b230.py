@@ -26,7 +26,7 @@ try:
         pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
         pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(1500)
         L=pg.evaluate(RP); g={l['lb']:l['x'] for l in L}
-        check(f'예시 {w}: 주보 결정석·이번 주 남은 결정석·검마 남은 결정석(b231) xN 없음, 검마 결정석·이번주 획득 아이템 xN 그대로', g.get('주보 결정석','?') is None and g.get('이번 주 남은 결정석','?') is None and g.get('검마 남은 결정석','?') is None and (g.get('검마 결정석') or '').startswith('x') and (g.get('이번주 획득 아이템') or '').startswith('x'), g)
+        check(f'예시 {w}: 주보 결정석·이번 주 남은 결정석·검마 남은 결정석(b231) xN 없음, 검마 결정석(b232)도 없음, 이번주 획득 아이템 xN 그대로', g.get('주보 결정석','?') is None and g.get('이번 주 남은 결정석','?') is None and g.get('검마 남은 결정석','?') is None and g.get('검마 결정석','?') is None and (g.get('이번주 획득 아이템') or '').startswith('x'), g)
         check(f'예시 {w}: 금액 오른쪽 끝 한 줄', len({l['nr'] for l in L if l['nr']})==1, L)
         pg.click('[data-tab=loot]'); pg.wait_for_timeout(900)
         R=[pg.evaluate(M)]
