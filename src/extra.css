@@ -1773,3 +1773,16 @@ header .logo .logo-d{display:flex;align-items:center}
 .rpsico .hongico{position:relative;width:16px;height:16px;gap:0}
 .rpsico .hongico>:first-child{width:16px;height:16px}
 .rpsico .hongico>:last-child{position:absolute;right:-3px;bottom:-3px;width:10px!important;height:10px!important}
+/* b230: 주별 득템 제목 줄 — 아이콘 = 고정 28px 칸(어떤 아이템이든 같은 크기·같은 자리), 오른쪽 위 주 선택칸 */
+#weekLoot h2{display:flex;align-items:center;gap:8px;min-height:32px;flex-wrap:nowrap}
+#weekLoot h2 .wlico{flex:none;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;line-height:0;margin:0}
+#weekLoot h2 .wlico .hbi{display:contents}
+#weekLoot h2 .wlico img,#weekLoot h2 .wlico .ric,#weekLoot h2 .wlico .ifb{width:28px!important;height:28px!important;max-width:28px;max-height:28px;object-fit:contain;margin:0!important;vertical-align:0;flex:none}
+#weekLoot h2 .wlico .hongico{position:relative;width:28px;height:28px;gap:0}
+#weekLoot h2 .wlico .hongico>:last-child{position:absolute;right:0;bottom:0;width:14px!important;height:14px!important}
+#weekLoot h2 .wlt{flex:none;white-space:nowrap}
+#weekLoot .wlsel{margin-left:auto;flex:none;font-size:.8rem;font-weight:700;padding:4px 8px;border-radius:8px;border:1px solid var(--line,#3a3a46);background:var(--panel2,#25252c);color:var(--text,#ececf1);appearance:auto;cursor:pointer;max-width:100%}
+#weekLoot .wlsel option{color:#111}
+/* 줄 안 아이템 아이콘도 고정 22px 칸 */
+#weekLoot .loot>img,#weekLoot .loot>.ric,#weekLoot .loot>.ifb,#weekLoot .loot .hongico>img,#weekLoot .loot .hongico>.ric{width:22px;height:22px;object-fit:contain;flex:none}
+@media(max-width:560px){#weekLoot h2{gap:6px}#weekLoot .wlsel{font-size:.74rem;padding:3px 4px}}

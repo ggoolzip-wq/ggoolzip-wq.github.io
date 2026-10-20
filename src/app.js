@@ -2446,19 +2446,27 @@ function weekLootData(T){
 function wlIco(pg){ const t={}; pg.rows.forEach(o=>{ const q=chaosMerge(o.m).m; for(const [k,n] of Object.entries(q)) t[k]=(t[k]||0)+n; });
   const best=Object.keys(t).sort((a,b)=>t[b]-t[a]||itemCmp(a,b))[0]; return best?`<span class="hbi">${lootIco(best)}</span>`:itemIcon('oath'); }
 const wlLabel = pg => `${fmtWeek(pg.wk)} · ${pg.no}주차${pg.cur?' (이번 주)':''}`;
+// b230: 오른쪽 위 주 선택칸 — 글 = 'N주차 (이번 주) · 날짜'(넓은 화면) / 'N주차 (이번 주)'(좁은 화면, 날짜는 밑 ◀▶ 줄에 있음)
+const wlOptL = pg => `${pg.no}주차${pg.cur?' (이번 주)':''} · ${fmtWeek(pg.wk)}`, wlOptS = pg => `${pg.no}주차${pg.cur?' (이번 주)':''}`;
+const WL_MQ = typeof matchMedia==='function'?matchMedia('(max-width:560px)'):null;
+const wlOpt = pg => WL_MQ&&WL_MQ.matches?wlOptS(pg):wlOptL(pg);
+function wlGo(card,idx){ const pages=[...card.querySelectorAll('.wlpage')]; if(!pages.length) return; WL_PAGE=Math.min(Math.max(0,idx),pages.length-1);
+  pages.forEach((x,i)=>{ x.classList.toggle('on',i===WL_PAGE); if(i===WL_PAGE) x.removeAttribute('aria-hidden'); else x.setAttribute('aria-hidden','true'); });
+  const pg=pages[WL_PAGE]; card.querySelector('.wlico').innerHTML=pg.dataset.wlico; card.querySelector('.wlnow').textContent=pg.dataset.wllb;
+  const sel=card.querySelector('.wlsel'); if(sel) sel.value=String(WL_PAGE);
+  const [older,newer]=card.querySelectorAll('[data-wlpg]'); if(older) older.disabled=WL_PAGE>=pages.length-1; if(newer) newer.disabled=WL_PAGE<=0; tipHide?.(); }
 function weekLootHtml(T){
   const P=weekLootData(T); WL_PAGE=Math.min(Math.max(0,WL_PAGE),Math.max(0,P.length-1)); const cur=P[WL_PAGE];
   const row=o=>{ const c=o.id&&S.characters.find(x=>x.id===o.id), q=chaosMerge(o.m); return `<div class="wlrow"><span class="wlb">${c?avatar(c,'sm'):''}<b>${esc(o.name)}</b></span>${lootChips(q.m,false,q.tips)}</div>`; };
-  return `<div class="card wkloot" id="weekLoot"><h2><span class="wlico">${cur?wlIco(cur):itemIcon('oath')}</span> 주별 득템 캐릭터 정리</h2>
+  const sel=P.length?`<select class="wlsel" aria-label="주 선택">${P.map((pg,i)=>`<option value="${i}" data-l="${esc(wlOptL(pg))}" data-s="${esc(wlOptS(pg))}"${i===WL_PAGE?' selected':''}>${esc(wlOpt(pg))}</option>`).join('')}</select>`:'';
+  return `<div class="card wkloot" id="weekLoot"><h2><span class="wlico">${cur?wlIco(cur):itemIcon('oath')}</span><span class="wlt">주별 득템 캐릭터 정리</span>${sel}</h2>
     <div class="wlpg">${P.map((pg,i)=>`<div class="wlpage${i===WL_PAGE?' on':''}" data-wlico="${esc(wlIco(pg))}" data-wllb="${esc(wlLabel(pg))}"${i===WL_PAGE?'':' aria-hidden="true"'}>${pg.rows.length?pg.rows.map(row).join(''):'<p class="muted wlempty">이 주에 얻은 아이템이 없어요.</p>'}</div>`).join('')||'<p class="muted">아직 저장된 드랍 기록이 없습니다.</p>'}</div>
     ${P.length?`<div class="cpager wlpager" role="group" aria-label="주 선택"><button type="button" class="cpg" data-wlpg="1"${WL_PAGE>=P.length-1?' disabled':''} aria-label="지난 주">◀</button><span class="wlnow">${esc(wlLabel(cur))}</span><button type="button" class="cpg" data-wlpg="-1"${WL_PAGE<=0?' disabled':''} aria-label="다음 주">▶</button></div>`:''}</div>`;
 }
 // 쪽 넘기기 = 다시 그리지 않고 보이는 주만 바꿈(표 크기 그대로, 스크롤 그대로)
-document.addEventListener('click',e=>{ const b=e.target.closest?.('[data-wlpg]'); if(!b||b.disabled) return; const card=b.closest('#weekLoot'); if(!card) return;
-  const pages=[...card.querySelectorAll('.wlpage')]; if(!pages.length) return; WL_PAGE=Math.min(Math.max(0,WL_PAGE+(+b.dataset.wlpg||0)),pages.length-1);
-  pages.forEach((x,i)=>{ x.classList.toggle('on',i===WL_PAGE); if(i===WL_PAGE) x.removeAttribute('aria-hidden'); else x.setAttribute('aria-hidden','true'); });
-  const pg=pages[WL_PAGE]; card.querySelector('.wlico').innerHTML=pg.dataset.wlico; card.querySelector('.wlnow').textContent=pg.dataset.wllb;
-  const [older,newer]=card.querySelectorAll('[data-wlpg]'); older.disabled=WL_PAGE>=pages.length-1; newer.disabled=WL_PAGE<=0; tipHide?.(); });
+document.addEventListener('click',e=>{ const b=e.target.closest?.('[data-wlpg]'); if(!b||b.disabled) return; const card=b.closest('#weekLoot'); if(card) wlGo(card,WL_PAGE+(+b.dataset.wlpg||0)); });
+document.addEventListener('change',e=>{ const t=e.target; if(!t.classList?.contains('wlsel')) return; const card=t.closest('#weekLoot'); if(card) wlGo(card,+t.value||0); });
+WL_MQ?.addEventListener?.('change',()=>document.querySelectorAll('#weekLoot .wlsel option').forEach(o=>{ o.textContent=WL_MQ.matches?o.dataset.s:o.dataset.l; }));
 function renderLoot(){
   const v=$('#view'); const T=totalData(), L=lootSummary(T);
   v.innerHTML=`<div class="grid"><div class="card" id="lootTop">
@@ -3682,7 +3690,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b229'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b230'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -4096,7 +4104,7 @@ new MutationObserver(()=>demoTopPut()).observe(document.getElementById('view'),{
 document.addEventListener('click',e=>{ if(!(demoAllowed()&&demoTabOk())) return; const t=e.target;
   if(t.closest('#importAccBtn,#addCharBtn,.side .addbtn,#charAdd')) return; // 실제 로그인 흐름 그대로
   const ch=t.closest('#charList .char[data-id]'); if(ch&&!t.closest('.drag-h,[data-edit],[data-move]')){ e.preventDefault(); e.stopImmediatePropagation(); if(DEMO_ST){ const sw=tab!=='boss', sy=scrollY, sx=scrollX; DEMO_ST.activeId=ch.dataset.id; tab='boss'; syncTabs(); render(); if(sw) tabTop(); else { const back=()=>{ if(scrollY!==sy||scrollX!==sx) scrollTo(sx,sy); }; back(); requestAnimationFrame(back); } } return; }
-  const OK='[data-wkpg],[data-wlpg],[data-tab],[data-filter],[data-pckind],[data-pctab],[data-cpage],.sortlink,[data-sort],[data-lt],[data-page],.pgbtn,a[href]';
+  const OK='[data-wkpg],[data-wlpg],select.wlsel,[data-tab],[data-filter],[data-pckind],[data-pctab],[data-cpage],.sortlink,[data-sort],[data-lt],[data-page],.pgbtn,a[href]';
   if(t.closest('#view,#charList')&&!t.closest(OK)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
 // 처음 열 때(로그인 전): 이번 주 보스 예시
 setTimeout(()=>{ if(demoAllowed()&&tab!=='live'){ tab='boss'; syncTabs(); render(); } },0);
