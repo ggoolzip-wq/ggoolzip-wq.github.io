@@ -149,7 +149,7 @@ async function ensureSchema(env) {
   ]);
   // b91: acct_role.created_at = 그 넥슨 계정(API 키)이 이 데이터에 처음 등록된 시각. 없으면 추가하고 accounts.created_at 으로 채움 (모르면 NULL → 관리자 창 '-')
   try { await env.DB.prepare('ALTER TABLE acct_role ADD COLUMN created_at INTEGER').run(); } catch (e) {}
-  // b225: users.sync_click = 사용자가 캐릭터 동기화(🔄) 버튼을 마지막으로 직접 누른 시각 (자동 동기화는 안 적음). 관리자 창 '최근 로그인'
+  // b225→b229: users.sync_click = 마지막으로 캐릭터 동기화가 끝난 시각 (🔄·키 등록·들어올 때·F5 자동 동기화 모두). 관리자 창 '최근 갱신'
   try { await env.DB.prepare('ALTER TABLE users ADD COLUMN sync_click INTEGER').run(); } catch (e) {}
   await env.DB.prepare('UPDATE acct_role SET created_at=(SELECT a.created_at FROM accounts a WHERE a.acct_hash=acct_role.acct_hash) WHERE created_at IS NULL').run();
   schemaOk = true;
@@ -675,7 +675,7 @@ async function route(req, env) {
   const sk = me.th.slice(0, 32);
   if (M === 'GET') await limit(env, 'r:' + sk, LIMITS.read);
   if (M === 'PUT') { await limit(env, 'w:' + sk, LIMITS.write); await limit(env, 'uw:' + me.userId, LIMITS.userWrite); }
-  // b225: 🔄 버튼을 직접 눌렀을 때만 페이지가 보냄. 한 번 = UPDATE 1줄 (10초 안 다시 누르면 0줄 — 제한 표 쓰기도 안 함)
+  // b229: 페이지가 동기화를 마칠 때마다 보냄(b225 는 🔄 클릭 때만). 한 번 = UPDATE 1줄 (10초 안 다시 누르면 0줄 — 제한 표 쓰기도 안 함)
   if (p === '/api/sync-click' && M === 'POST') {
     const now = Date.now();
     await env.DB.prepare('UPDATE users SET sync_click=? WHERE id=? AND COALESCE(sync_click,0)<?').bind(now, me.userId, now - 10e3).run();
