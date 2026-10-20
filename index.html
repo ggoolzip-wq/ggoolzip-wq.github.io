@@ -3858,13 +3858,13 @@ function expParts(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit).red
   const m=BOSSES.filter(b=>b.type==='monthly'&&c.bosses[b.id]?.enabled).reduce((s,b)=>{ const cfg=c.bosses[b.id], d=b.diffs.includes(cfg.diff)?cfg.diff:b.diffs[0]; return s+Math.floor(price(b,d)/curParty(c,b.id)); },0);
   return {w,m}; }
 function fullExpected(c){ const x=expParts(c); return x.w+x.m; }
-/* b227: '패치 후 예상 주간 수익' = 주간 메소(감소율%) + 검마 메소(감소율%) — 합친 한 숫자 대신 따로. 검마를 안 잡는 캐릭터 = '+ 검마 0 메소'(흐리게, % 없음) */
+/* b227: '패치 후 예상 주간 수익' = 주간 메소(감소율%) + 검마 메소(감소율%) — 합친 한 숫자 대신 따로. 검마를 안 잡는 캐릭터(합계도 검마 0) = 검마 줄 없음(b228) */
 function afterPatchHtml(){
   const rows=vchars().map(c=>{ const a=expParts(c), b=withUpcoming(()=>expParts(c))||a; return {c,nw:a.w,nm:a.m,xw:b.w,xm:b.m}; }).filter(r=>r.nw||r.nm||r.xw||r.xm);
   const sum=k=>rows.reduce((s,r)=>s+(r[k]||0),0);
   const pct=(n,b)=>{ const d=n-b; return `<span class="pa-p ${d<0?'dn':d>0?'upx':''}">(${d>0?'+':d<0?'−':''}${b?Math.abs(d/b*100).toFixed(1):'0.0'}%)</span>`; };
   const part=(lb,n,b)=>(n||b)?`<span class="pa-k">${lb}</span> ${meso(n)} ${pct(n,b)}`:`<span class="pa-k">${lb}</span> <span class="pa-z">0 메소</span>`;
-  const two=(xw,nw,xm,nm)=>`<b class="pa-v"><span class="pa-l">${part('주간',xw,nw)}</span><span class="pa-l">+ ${part('검마',xm,nm)}</span></b>`;
+  const two=(xw,nw,xm,nm)=>`<b class="pa-v"><span class="pa-l">${part('주간',xw,nw)}</span>${(xm||nm)?`<span class="pa-l">+ ${part('검마',xm,nm)}</span>`:''}</b>`; // b228: 검마 0(안 잡음) = 검마 줄 없음
   const tip=r=>`${esc(r.c.name)} — 주간 ${meso(r.nw)} → ${meso(r.xw)} · 검마 ${meso(r.nm)} → ${meso(r.xm)} (현재 가격 → 패치 후)`;
   return `<div class="pc-list pa-list">${rows.map(r=>`<div class="pc-row pa-row" title="${tip(r)}">${avatar(r.c,'sm')}<span class="pc-nm">${esc(r.c.name)}</span>${two(r.xw,r.nw,r.xm,r.nm)}</div>`).join('')||'<div class="muted">캐릭터가 없어요</div>'}</div>
     <div class="pa-total"><span>합계</span>${two(sum('xw'),sum('nw'),sum('xm'),sum('nm'))}</div>
@@ -5586,7 +5586,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b227'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b228'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
