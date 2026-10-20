@@ -2224,7 +2224,8 @@ function kingHtml(T,which){
   const MK=`<div class="card kingcard" id="mesoKing"><h2>${top1?avatar(top1,'hking'):miniIcon('meso')} 메소왕</h2><div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="num">누적 주간 메소량</th><th class="num">누적 월간 메소량</th><th class="num">누적 합계</th></tr></thead><tbody>
     ${rankSlice('meso',mr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)}</td><td class="num">${meso(o.week)}</td><td class="num">${o.month?meso(o.month):'-'}</td><td class="num"><b>${meso(o.week+o.month)}</b></td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('meso',mr).length,mr.length,5)}
     </tbody></table></div>${rankPager('meso',mr.length)}</div>`;
-  const LK=`<div class="card kingcard" id="lootKing"><h2>${itemIcon('oath')} 득템왕</h2>${SC_SUB}<div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="scth">점수</th><th>누적 획득 아이템</th></tr></thead><tbody>
+  const lk1=lr[0]&&S.characters.find(x=>x.id===lr[0].id); // b229: 제목 아이콘 = 득템왕 1위 캐릭터 초상화 (없으면 예전 아이콘)
+  const LK=`<div class="card kingcard" id="lootKing"><h2>${lk1?avatar(lk1,'hking'):itemIcon('oath')} 득템왕</h2>${SC_SUB}<div style="overflow-x:auto"><table class="ranktbl"><thead><tr><th>순위</th><th>캐릭터</th><th class="scth">점수</th><th>누적 획득 아이템</th></tr></thead><tbody>
     ${rankSlice('loot',lr).map(([o,r])=>`<tr class="rk${r}${medal(r)?' md-'+medal(r):''}"><td>${rankNo(r)}</td><td>${rankName(o,r)}</td><td class="sctd"><b class="${scCls(r)}">${fmtSc(o.sc)}</b></td><td>${(()=>{ const q=chaosMerge(o.loot); return lootChips(q.m,!!medal(r),q.tips); })()}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">기록 없음</td></tr>'}${rankPad(rankSlice('loot',lr).length,lr.length,4)}
     </tbody></table></div>${rankPager('loot',lr.length)}</div>`;
   return which==='meso'?MK:which==='loot'?LK:MK+LK;
@@ -2374,15 +2375,51 @@ function ringCardHtml(T){ return `  <div class="card ringcard"><h2>${miniIcon('r
       const ks=Object.keys(R).sort((x,y)=>lootOrd(x)-lootOrd(y));
       return ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${lootIco(k)}<span class="ln">${esc(lootName(k))}${modeTag(k)}</span> <b class="lx">${xN(R[k].n)}</b></span>${outHtml(R[k].outs,R[k].n,true)}</div>`).join('')}</div>`:'<p class="muted">아직 획득한 반지 상자가 없습니다.</p>'; })()}</div>`; }
 // b62-8: 아이템 판매 수익 (드롭 때 '수익을 기록할까요?' 에서 입력한 값, 분배는 내 몫) — 간단 카드 (사용자가 나중에 다듬을 예정)
-function salesHtml(T){ // b76: '아이템 판매 누적 수익' — 아이템·분배 인원별 줄, 제목 아이콘 = 가장 많이 판 아이템
+function salesHtml(T){ // b76: '아이템 판매 누적 수익' — 아이템·분배 인원별 줄, 제목 아이콘 = 누적 판매 금액 1위 아이템(b229)
   const S_=T.sales||{}, ok=k=>{ try{ return !!lootName(S_[k].i||k.split('#')[0]); }catch(e){ return false; } };
   const ks=Object.keys(S_).filter(ok).sort((a,b)=>S_[b].m-S_[a].m||itemCmp(S_[a].i||a,S_[b].i||b)||(S_[a].p||1)-(S_[b].p||1)), tot=ks.reduce((x,k)=>x+S_[k].m,0);
-  const top={}; ks.forEach(k=>{ const i=S_[k].i||k.split('#')[0]; top[i]=(top[i]||0)+S_[k].n; });
+  const top={}; ks.forEach(k=>{ const i=S_[k].i||k.split('#')[0]; top[i]=(top[i]||0)+S_[k].m; }); // b229: 제목 아이콘 = 누적 판매 금액이 가장 큰 아이템 (분배 인원 줄 합침)
   const best=Object.keys(top).sort((a,b)=>top[b]-top[a]||itemCmp(a,b))[0];
   const ico=best?`<span class="hbi">${lootIco(best)}</span>`:miniIcon('meso'), pl=p=>p>1?`${p}인 분배`:'1인';
   return `<div class="card" id="salesCard"><h2>${ico} 아이템 판매 누적 수익</h2>
     <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc tirv tgoldv">${tot?tirN(tot,'eok','sales',' 메소'):tir('-')}</div><div class="muted" id="salesAvg">${tsm(avgTxt('주',doneAvgs(T).sales))}</div></div></div>
     ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot">${lootIco(i)}<span class="ln">${esc(lootName(i))}</span> <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm tirv">${tirMeso(o.m,'sl:'+k)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
+/* b229: '주별 득템 캐릭터 정리' — 한 쪽 = 한 주(목요일 초기화 주, 최신 주가 기본). 캐릭터별 그 주에 얻은 아이템 아이콘 xN.
+ * 셈법 = 득템왕과 같은 lootOf(블빵패배 제외) + 꽝 제외 + 반지 상자는 결과(리4·컨4·생명의 연마석)만(b226 이번주 획득 아이템과 같음, 결과 미기록 상자는 안 셈).
+ * 검마(월간 기록) 아이템 = 그 검마를 잡은 주(mweeks)로. 주간 기록(S.history)마다 perChar.items·outcomes 가 있어 지난 주도 그대로 나옴.
+ * 모든 주를 같은 칸에 겹쳐 그리고(.wlpg grid) 지금 주만 보임 → 표 높이 = 가장 긴 주(쪽을 넘겨도 크기 그대로) */
+let WL_PAGE=0; // 0 = 최신 주
+function weekLootData(T){
+  const nameOf=p=>{ const c=p.id&&S.characters.find(x=>x.id===p.id); return c?c.name:p.name; };
+  const wks=T.weeks.map(w=>w.week).filter(Boolean), by={};
+  const put=(wk,p,items,outs)=>{ if(!wk||!wks.includes(wk)) return;
+    const m=noBust(lootOf(items,outs,md=>md!=='l')); for(const k of Object.keys(m)) if(isRing(k)||!(m[k]>0)) delete m[k];
+    if(!Object.keys(m).length) return;
+    const W=by[wk]||(by[wk]={}), key=p.id&&S.characters.some(x=>x.id===p.id)?p.id:'n:'+p.name, o=W[key]||(W[key]={id:p.id,name:nameOf(p),m:{}});
+    for(const [k,n] of Object.entries(m)) o.m[k]=(o.m[k]||0)+n; };
+  T.weeks.forEach(w=>(w.perChar||[]).forEach(p=>put(w.week,p,p.items,p.outcomes)));
+  T.months.forEach(M=>(M.perChar||[]).forEach(p=>{ const tags=p.bosses||[], mw=p.mweeks||[], one=[...new Set(mw.filter(Boolean))];
+    for(const [ik,n] of Object.entries(p.items||{})){ const b=findBoss(parseIK(ik).slot); const i=b?tags.findIndex(t=>t.startsWith(b.name+'(')||t===b.name):-1;
+      const wk=(i>=0&&mw[i])||(one.length===1?one[0]:''); put(wk,p,{[ik]:n},{[ik]:(p.outcomes||{})[ik]||[]}); } }));
+  const ord=orderedChars().map(c=>c.id), oi=o=>{ const i=ord.indexOf(o.id); return i<0?1e6:i; };
+  return wks.slice().sort((a,b)=>a<b?1:-1).map(wk=>({wk,cur:wk===S.period.week,no:wks.slice().sort().indexOf(wk)+1,rows:Object.values(by[wk]||{}).sort((a,b)=>oi(a)-oi(b)||a.name.localeCompare(b.name))}));
+}
+function wlIco(pg){ const t={}; pg.rows.forEach(o=>{ const q=chaosMerge(o.m).m; for(const [k,n] of Object.entries(q)) t[k]=(t[k]||0)+n; });
+  const best=Object.keys(t).sort((a,b)=>t[b]-t[a]||itemCmp(a,b))[0]; return best?`<span class="hbi">${lootIco(best)}</span>`:itemIcon('oath'); }
+const wlLabel = pg => `${fmtWeek(pg.wk)} · ${pg.no}주차${pg.cur?' (이번 주)':''}`;
+function weekLootHtml(T){
+  const P=weekLootData(T); WL_PAGE=Math.min(Math.max(0,WL_PAGE),Math.max(0,P.length-1)); const cur=P[WL_PAGE];
+  const row=o=>{ const c=o.id&&S.characters.find(x=>x.id===o.id), q=chaosMerge(o.m); return `<div class="blrow"><span class="blb wlb">${c?avatar(c,'sm'):''}<b>${esc(o.name)}</b></span>${lootChips(q.m,false,q.tips)}</div>`; };
+  return `<div class="card bossloot wkloot" id="weekLoot"><h2><span class="wlico">${cur?wlIco(cur):itemIcon('oath')}</span> 주별 득템 캐릭터 정리</h2>
+    <div class="wlpg">${P.map((pg,i)=>`<div class="wlpage${i===WL_PAGE?' on':''}" data-wlico="${esc(wlIco(pg))}" data-wllb="${esc(wlLabel(pg))}"${i===WL_PAGE?'':' aria-hidden="true"'}>${pg.rows.length?pg.rows.map(row).join(''):'<p class="muted wlempty">이 주에 얻은 아이템이 없어요.</p>'}</div>`).join('')||'<p class="muted">아직 저장된 드랍 기록이 없습니다.</p>'}</div>
+    ${P.length?`<div class="cpager wlpager" role="group" aria-label="주 선택"><button type="button" class="cpg" data-wlpg="1"${WL_PAGE>=P.length-1?' disabled':''} aria-label="지난 주">◀</button><span class="wlnow">${esc(wlLabel(cur))}</span><button type="button" class="cpg" data-wlpg="-1"${WL_PAGE<=0?' disabled':''} aria-label="다음 주">▶</button></div>`:''}</div>`;
+}
+// 쪽 넘기기 = 다시 그리지 않고 보이는 주만 바꿈(표 크기 그대로, 스크롤 그대로)
+document.addEventListener('click',e=>{ const b=e.target.closest?.('[data-wlpg]'); if(!b||b.disabled) return; const card=b.closest('#weekLoot'); if(!card) return;
+  const pages=[...card.querySelectorAll('.wlpage')]; if(!pages.length) return; WL_PAGE=Math.min(Math.max(0,WL_PAGE+(+b.dataset.wlpg||0)),pages.length-1);
+  pages.forEach((x,i)=>{ x.classList.toggle('on',i===WL_PAGE); if(i===WL_PAGE) x.removeAttribute('aria-hidden'); else x.setAttribute('aria-hidden','true'); });
+  const pg=pages[WL_PAGE]; card.querySelector('.wlico').innerHTML=pg.dataset.wlico; card.querySelector('.wlnow').textContent=pg.dataset.wllb;
+  const [older,newer]=card.querySelectorAll('[data-wlpg]'); older.disabled=WL_PAGE>=pages.length-1; newer.disabled=WL_PAGE<=0; tipHide?.(); });
 function renderLoot(){
   const v=$('#view'); const T=totalData(), L=lootSummary(T);
   v.innerHTML=`<div class="grid"><div class="card" id="lootTop">
@@ -2394,6 +2431,7 @@ function renderLoot(){
     </div>
   </div>
   ${salesHtml(T)}
+  ${weekLootHtml(T)}
   ${kingHtml(T,'loot')}
   ${poopHtml(T)}
   ${bossLootKingHtml(T)}
@@ -3604,7 +3642,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b228'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b229'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -4010,7 +4048,7 @@ new MutationObserver(()=>demoTopPut()).observe(document.getElementById('view'),{
 document.addEventListener('click',e=>{ if(!(demoAllowed()&&demoTabOk())) return; const t=e.target;
   if(t.closest('#importAccBtn,#addCharBtn,.side .addbtn,#charAdd')) return; // 실제 로그인 흐름 그대로
   const ch=t.closest('#charList .char[data-id]'); if(ch&&!t.closest('.drag-h,[data-edit],[data-move]')){ e.preventDefault(); e.stopImmediatePropagation(); if(DEMO_ST){ const sw=tab!=='boss', sy=scrollY, sx=scrollX; DEMO_ST.activeId=ch.dataset.id; tab='boss'; syncTabs(); render(); if(sw) tabTop(); else { const back=()=>{ if(scrollY!==sy||scrollX!==sx) scrollTo(sx,sy); }; back(); requestAnimationFrame(back); } } return; }
-  const OK='[data-wkpg],[data-tab],[data-filter],[data-pckind],[data-pctab],[data-cpage],.sortlink,[data-sort],[data-lt],[data-page],.pgbtn,a[href]';
+  const OK='[data-wkpg],[data-wlpg],[data-tab],[data-filter],[data-pckind],[data-pctab],[data-cpage],.sortlink,[data-sort],[data-lt],[data-page],.pgbtn,a[href]';
   if(t.closest('#view,#charList')&&!t.closest(OK)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
 // 처음 열 때(로그인 전): 이번 주 보스 예시
 setTimeout(()=>{ if(demoAllowed()&&tab!=='live'){ tab='boss'; syncTabs(); render(); } },0);

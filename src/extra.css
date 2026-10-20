@@ -1722,3 +1722,16 @@ header .logo .logo-d{display:flex;align-items:center}
 @container (max-width:310px){.rp-line .tsmn{font-size:.74rem!important}.rp-line .rplb{width:9.2em}.rp-line .rpouts{font-size:.74rem!important}}
 /* b226: 이번 주 수익 줄의 판매 아이콘 = 다른 줄 아이콘과 같은 16px 칸 (margin 3px 때문에 xN 이 3px 밀리던 것) */
 .rp-line .rpg .rpsico{margin-right:0;flex:none;width:16px;justify-content:center}
+
+/* b229: 주별 득템 캐릭터 정리 — 모든 주를 한 칸에 겹침(높이 = 가장 긴 주), 지금 주만 보임 */
+#weekLoot .wlpg{display:grid}
+#weekLoot .wlpage{grid-area:1/1;min-width:0}
+#weekLoot .wlpage:not(.on){visibility:hidden;pointer-events:none}
+#weekLoot .wlpage>.blrow:first-child{border-top:0}
+#weekLoot .wlb{min-width:150px;white-space:nowrap}
+#weekLoot .wlb .avatar{width:24px;height:24px;flex:none}
+#weekLoot .wlb b{white-space:nowrap}
+#weekLoot .wlempty{margin:6px 0}
+#weekLoot .wlpager{align-items:center;flex-wrap:nowrap;gap:8px}
+#weekLoot .wlpager .cpg:disabled{opacity:.35;cursor:default}
+#weekLoot .wlnow{font-size:.85rem;font-weight:700;color:var(--muted,#a0a0ab);white-space:nowrap;min-width:12em;text-align:center}
