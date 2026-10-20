@@ -48,7 +48,7 @@ try:
     per=pg.evaluate("vchars().map(c=>[weeklyCount(c),expectedAll(c).filter(x=>!c.weekly[x.slot]).length])")
     exp2=sum(min(12-d,a) for d,a in per); cr=pg.evaluate("allRevenue(vchars()).count")
     check('남은 개수 = 캐릭터별 min(12 − 잡은 수, 켜 둔 안 잡은 보스) 합 (다 잡은 캐릭터 0)', exp==exp2 and exp>0, (exp,per))
-    verify(pg,'실제 1600',{'주보 결정석':f'x{cr}','검마 결정석':'x1','이번주 획득 아이템':'x1','이번 주 남은 결정석':f'x{exp}','검마 남은 결정석':'x2'})
+    verify(pg,'실제 1600',{'주보 결정석':None,'검마 결정석':'x1','이번주 획득 아이템':'x1','이번 주 남은 결정석':None,'검마 남은 결정석':'x2'}) # b230: 주보 결정석·이번 주 남은 결정석 = 개수 없음
     if SHOT:
         bb=pg.evaluate("(()=>{const P=document.querySelector('.revpanel');const sec=P.querySelector('.rp-sec').getBoundingClientRect(),r=P.getBoundingClientRect();return {x:r.left,y:r.top+scrollY,width:r.width,height:sec.top-r.top}})()")
         pg.screenshot(path=os.path.join(SHOT,'b221_real_closeup.png'),clip=bb,full_page=True)
@@ -76,7 +76,7 @@ try:
         pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(1500)
         check(f'예시 {w}: 켜짐', pg.evaluate("!!document.querySelector('.demotop,.dmbanner')"))
         L=verify(pg,f'예시 {w}')
-        check(f'예시 {w}: 남은 결정석 xN 있음', any(l['lb']=='이번 주 남은 결정석' and l['x'] for l in L) or not any(l['lb']=='이번 주 남은 결정석' for l in L), [l['txt'] for l in L])
+        check(f'예시 {w}: 주보 결정석·이번 주 남은 결정석 xN 없음(b230)', not any(l['lb'] in ('주보 결정석','이번 주 남은 결정석') and l['x'] for l in L), [l['txt'] for l in L])
         if SHOT:
             bb=pg.evaluate("(()=>{const P=document.querySelector('.revpanel');const sec=P.querySelector('.rp-sec').getBoundingClientRect(),r=P.getBoundingClientRect();return {x:r.left,y:r.top+scrollY,width:r.width,height:sec.top-r.top}})()")
             pg.screenshot(path=os.path.join(SHOT,f'b221_demo_closeup_{w}.png'),clip=bb,full_page=True)
