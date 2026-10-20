@@ -273,7 +273,34 @@ function dropsHtml(b,diff,c){
   const mine=c?(d=>({items:Object.fromEntries(Object.entries(d.items).filter(([k])=>k.split('|')[0]===b.id)),outcomes:d.outcomes}))(charDrops(c,b.type)):null;
   const ringLine=mine?itemsInline(mine.items,{outs:mine.outcomes}):'';
   /* b213: 누를 수 없는 칩(기록 안 함) = 모멘텀 큐브(정보 아이콘) 바로 다음, 원래 색 · b214: 솔 에르다·모멘텀 큐브처럼 아이콘만(이름·개수 없음, 말풍선 = 이름) */
-  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${off.map(k=>`<span class="drop erda off" aria-disabled="true" data-tip="${esc(ITEMS[k].n)}" aria-label="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}</span>`).join('')}${shown.map(chip).join('')}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
+  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${off.map(k=>`<span class="drop erda off" aria-disabled="true" data-tip="${esc(ITEMS[k].n)}" aria-label="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}</span>`).join('')}${shown.map(chip).join('')}${c&&b.type==='weekly'&&(RING_DROPS.r_red?.[b.id]||[]).includes(diff)?rredBtn(b,c):''}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
+}
+/* b229: 홍옥 반지 상자로 리4/컨4 — 홍옥 상자는 기록 안 함(칩 회색 그대로, 상자 수 0). 판매금만 c.drev['보스|rc4'] = {m,a,p:1,i:'ring:rc4'} (리4·컨4 구분 없음).
+ * drev 라서 '이번주 획득 아이템' 금액·캐릭터별 판매금·주간 기록(perChar.revs)·아이템 판매 누적 수익에 그대로 들어가고, '이번주 획득 아이템' xN 에 1개씩 더함(금액과 개수 맞춤, b226).
+ * 득템왕·주별 득템·총 득템(아이템 기록 = drops)에는 안 들어감. 다시 누르면 취소(드롭 칩처럼), 저장은 [저장]/[취소] 대기(pend) 그대로 */
+const RRED_TXT='홍옥 반지 상자로 리4/컨4를 먹었을 경우 클릭';
+const rredKey = slot => slot+'|rc4', isRred = k => /\|rc4$/.test(String(k));
+const rredN = c => Object.entries(c?.drev||{}).filter(([k,r])=>isRred(k)&&r&&+r.m>0).length;
+function rredBtn(b,c){ const r=(c.drev||{})[rredKey(b.id)], on=r&&+r.m>0;
+  return `<button type="button" class="drop rredbtn${on?' got':''}" data-rred="${b.id}"${on?` data-tip="${esc(`리4/컨4 판매금 ${meso(+r.m)} — 다시 누르면 취소`)}"`:''}>${RRED_TXT}</button>`; }
+function openRred(slot){
+  const c=activeChar(), b=findBoss(slot); if(!c||!b) return; const key=rredKey(slot); pendStart();
+  if(c.drev&&c.drev[key]){ delete c.drev[key]; if(!Object.keys(c.drev).length) delete c.drev; save(); render(); return; } // 기록된 것 다시 누름 = 취소
+  document.querySelector('#rredModal')?.remove();
+  const el=document.createElement('div'); el.id='rredModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rrTitle');
+  el.innerHTML=`<div class="modal rvbox rrbox"><h3 class="rvh" id="rrTitle"><span class="rrico">${miniIcon('ring_restraint')}${miniIcon('ring_continuous')}</span>홍옥 반지 상자로 리4/컨4를 먹었을 경우</h3>
+    <div class="rrnote muted">(홍옥 반지 상자는 카운팅X, 리4/컨4 판매금은 아이템 메소에 편입됩니다)</div>
+    <div class="rrbody"><label class="rvin"><input id="rrAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매금 (억 메소)"><span>억 메소</span></label>
+    <span class="rrbtns"><button class="btn rvok" data-rr="ok">저장</button><button class="btn ghost" data-rr="cancel">취소</button></span></div><div class="rverr" id="rrErr" role="alert"></div></div>`;
+  document.body.appendChild(el);
+  const close=()=>{ el.remove(); document.removeEventListener('keydown',kd,true); };
+  const cancel=()=>{ close(); if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; render(); };
+  const ok=()=>{ const v=parseFloat(String($('#rrAmt').value).replace(',','.')); if(!(v>0)||v>100000){ $('#rrErr').textContent='금액을 입력해주세요.'; markEmpty($('#rrAmt')); $('#rrAmt').focus(); return; }
+    const cc=S.characters.find(x=>x.id===c.id)||c; (cc.drev||(cc.drev={}))[key]={m:Math.round(v*1e8),a:Math.round(v*1e4)/1e4,p:1,i:'ring:rc4'}; save(); close(); render(); };
+  const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); cancel(); } else if(e.key==='Enter'&&e.target.id==='rrAmt'){ e.preventDefault(); ok(); } };
+  document.addEventListener('keydown',kd,true);
+  el.onclick=e=>{ if(e.target===el) return cancel(); const t=e.target.closest('[data-rr]'); if(t) t.dataset.rr==='ok'?ok():cancel(); };
+  setTimeout(()=>$('#rrAmt')?.focus(),30);
 }
 /* 파티(2인 이상) 드롭: 블빵승리 / 블빵패배 / 분배 고르기 (결정석 수익은 항상 1/n — 이 선택은 아이템 기록만 바꿈)
  * c.dmode / c.mdmode = {'보스|아이템': 'w'(블빵승리)|'l'(블빵패배)|'s'(분배)} — 없으면 예전 기록(분배와 같게 표시) */
@@ -767,6 +794,7 @@ function charDrops(c,type){
   for(const [k,n] of Object.entries(m||{})){ if(!(+n>0)) continue; const slot=k.split('|')[0], p=curParty(c,slot), md=p>1?((type==='monthly'?c.mdmode:c.dmode)||{})[k]:'', key=p>1&&md!=='n'?`${k}#${p}${md==='w'||md==='l'?md:''}`:k;
     I[key]=+n; const l=(om||{})[k]; if(Array.isArray(l)&&l.length) O[key]=l.filter(o=>o==='r4'||o==='c4'||o==='gl'||o==='x'||/^cb:\w+$/.test(o));
     const r=rm[k]; if(r&&+r.m>0) V[key]={m:+r.m,a:+r.a||0,p:+r.p||1,i:String(r.i||k.split('|')[1])}; }
+  if(type!=='monthly') for(const [k,r] of Object.entries(rm)) if(isRred(k)&&r&&+r.m>0) V[k]={m:+r.m,a:+r.a||0,p:1,i:'ring:rc4'}; // b229: 홍옥 리4/컨4 판매금(드롭 기록 없음)
   return {items:I, outcomes:O, revs:V};
 }
 const charAllDrops = c => { const w=charDrops(c,'weekly'), m=charDrops(c,'monthly'); return {items:{...w.items,...m.items}, outcomes:{...w.outcomes,...m.outcomes}, revs:{...w.revs,...m.revs}}; };
@@ -1837,7 +1865,7 @@ function revPanel(a,cur){
   return `<aside class="revpanel card" aria-label="이번 주 수익 총합">
     <h2>${miniIcon('meso')} 이번 주 수익 총합</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
-    ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+itemCnt(k,v,c.dropOut),0)+Object.entries(c.mdrops||{}).reduce((x,[k,v])=>x+(c.monthly?.[parseIK(k).slot]!==S.period.week?0:itemCnt(k,v,c.mdropOut)),0),0); // b121: 반지 상자 제외(아래 '반지 상자' 줄) — b226: 단 결과가 리4·컨4·연마석이면 셈(itemCnt) · b225: 이번 주에 잡은 검마 아이템(mdrops)도 셈 (판매 금액 pItemSale 과 같은 규칙)
+    ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+rredN(c)/* b229: 홍옥 리4/컨4 판매 1건 = 1개 */+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+itemCnt(k,v,c.dropOut),0)+Object.entries(c.mdrops||{}).reduce((x,[k,v])=>x+(c.monthly?.[parseIK(k).slot]!==S.period.week?0:itemCnt(k,v,c.mdropOut)),0),0); // b121: 반지 상자 제외(아래 '반지 상자' 줄) — b226: 단 결과가 리4·컨4·연마석이면 셈(itemCnt) · b225: 이번 주에 잡은 검마 아이템(mdrops)도 셈 (판매 금액 pItemSale 과 같은 규칙)
       return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
     <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${rpLbl('주보 결정석',a.count,1)}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${rpLbl('검마 결정석',wm.n)}</span></span><b class="rpn">${tsm('+'+wm.meso.toLocaleString())}</b></div>`:''}
     <div class="muted rp-line rp-sale rc-g"><span class="rpl"><span class="rpg">${topSaleIco()||'<span class="ric rpico0" aria-hidden="true"></span>'}${rpLbl('이번주 획득 아이템',n,1)}</span></span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
@@ -2021,10 +2049,10 @@ function totalData(skipCur){
 /* b117: 아이콘이 같은 아이템인지 (칠흑 상자 결과 cb:·x:·블빵 @w/@l 은 같은 아이템) */
 const icoId = k => lootBase(String(k||'').replace(/^x:/,'')).replace(/^cb:/,'');
 const lootSf = k => /@([wl])$/.exec(k)?.[1]||'', lootBase = k => k.replace(/@[wl]$/,'');
-const lootName0 = k => /^cb:/.test(k)?ITEMS[k.slice(3)].n : k==='ring:r4'?OUT_NAME.r4 : k==='ring:c4'?OUT_NAME.c4 : ITEMS[k].n;
+const lootName0 = k => /^cb:/.test(k)?ITEMS[k.slice(3)].n : k==='ring:rc4'?'리4/컨4 (홍옥 반지 상자)' : k==='ring:r4'?OUT_NAME.r4 : k==='ring:c4'?OUT_NAME.c4 : ITEMS[k].n;
 const lootName = k => /^x:/.test(k)?ITEMS[k.slice(2)].n+' · 꽝':lootName0(lootBase(k));
 const lootIco = k => /^x:/.test(k)?itemIcon(k.slice(2)):lootIco0(lootBase(k));
-const lootIco0 = k => /^cb:/.test(k)?itemIcon(k.slice(3)) : k==='ring:r4'?miniIcon('ring_restraint') : k==='ring:c4'?miniIcon('ring_continuous') : itemIcon(k);
+const lootIco0 = k => /^cb:/.test(k)?itemIcon(k.slice(3)) : k==='ring:rc4'?miniIcon('ring_restraint') : k==='ring:r4'?miniIcon('ring_restraint') : k==='ring:c4'?miniIcon('ring_continuous') : itemIcon(k);
 const lootOrd = k => /^x:/.test(k)?Object.keys(ITEMS).indexOf(k.slice(2))+.5:lootOrd0(lootBase(k))+({w:.001,l:.002}[lootSf(k)]||0);
 const lootOrd0 = k => /^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*(1+CHAOS_PICK.indexOf(k.slice(3))) : /^ring:/.test(k)?-1+(k==='ring:c4'?.5:0) : Object.keys(ITEMS).indexOf(k);
 const modeTag = k => lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:'';
@@ -3489,6 +3517,7 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#congrats')){ endCelebrate(); return; }
   const dd=e.target.closest('[data-dropdec]'); if(dd){ e.stopPropagation(); changeDrop(dd.dataset.dropdec,-1); return; }
   const dm=e.target.closest('[data-dropmore]'); if(dm){ const id=dm.dataset.dropmore; dropOpen.has(id)?dropOpen.delete(id):dropOpen.add(id); render(); return; }
+  const rr=e.target.closest('[data-rred]'); if(rr){ openRred(rr.dataset.rred); return; } // b229
   const dc=e.target.closest('[data-drop]'); if(dc){ changeDrop(dc.dataset.drop,+1); return; }
   if(e.target.closest('.drop.erda')) return; // 솔 에르다의 기운: 정보 표시 전용 (클릭해도 아무 일 없음)
   const svl=e.target.closest('[data-svlogin]'); if(svl){ const a=accById(svl.dataset.svlogin); if(a&&a.key) svLogin(a.key,a.id); return; }

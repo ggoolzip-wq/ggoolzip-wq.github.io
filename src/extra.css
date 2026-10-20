@@ -1739,3 +1739,18 @@ header .logo .logo-d{display:flex;align-items:center}
 #weekLoot .wlnow{font-size:.85rem;font-weight:700;color:var(--muted,#a0a0ab);white-space:nowrap;min-width:12em;text-align:center}
 /* b229: 좁은 화면 — 캐릭터 이름 줄 아래에 아이템(가로 넘침·잘림 없음) */
 @media(max-width:560px){#weekLoot .wlrow{flex-direction:column;gap:4px}#weekLoot .wlb{min-width:0}#weekLoot .wlrow .loots{padding-left:30px;max-width:100%;box-sizing:border-box}#weekLoot .wlnow{min-width:0}}
+
+/* b229: 홍옥 반지 상자 리4/컨4 버튼(보스 드롭 줄 맨 끝, 한 줄·안 잘림) + 창 */
+.drop.rredbtn{flex:none;max-width:none;font:inherit;font-size:.66rem;font-weight:700;white-space:nowrap;padding:2px 8px;cursor:pointer;color:#ff9a9a;border:1px dashed rgba(255,110,110,.55);background:rgba(255,80,80,.06)}
+.drop.rredbtn:hover{background:rgba(255,80,80,.14)}
+.drop.rredbtn.got{color:#5fe08a;border-style:solid;border-color:rgba(95,224,138,.6);background:rgba(95,224,138,.1)}
+[data-theme=light] .drop.rredbtn{color:#c62828}[data-theme=light] .drop.rredbtn.got{color:#1b7f45}
+@media(max-width:420px){.drop.rredbtn{font-size:.6rem;padding:2px 6px}}
+.rrbox{max-width:440px}
+.rrbox .rvh{font-size:1rem;white-space:nowrap}
+.rrbox .rrico{display:inline-flex;gap:2px;flex:none}
+.rrbox .rrico img,.rrbox .rrico .ric{width:26px;height:26px;object-fit:contain}
+.rrbox .rrnote{font-size:.72rem;margin:2px 0 0;white-space:nowrap}
+.rrbox .rrbody{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2.6em}
+.rrbox .rrbtns{display:inline-flex;gap:6px}
+@media(max-width:480px){.rrbox .rvh{font-size:.86rem}.rrbox .rrnote{font-size:.6rem}.rrbox .rrico img,.rrbox .rrico .ric{width:22px;height:22px}}
