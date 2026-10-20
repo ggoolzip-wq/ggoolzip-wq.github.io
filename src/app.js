@@ -2313,7 +2313,7 @@ function saleTip(o){ const L=Object.values(o.its||{}).sort((a,b)=>itemCmp(a.it,b
 function bossKingHtml(T){ const R=bossKills(T);
   return rankTable('boss','bossKing',`${R[0]?`<span class="hbi">${bossIcon(R[0].b)}</span>`:miniIcon('meso')} 보스 메소왕`,['보스','처치 당한 횟수','누적 결정석','누적 아이템 판매값','누적 메소량'],
     R.map(o=>({ico:bossPic(o.b,o.d),name:bossDiffHtml(o.b,o.d),cells:[`<b>${o.n}회</b>`,meso(o.cry),o.sale>0?`<span class="bksale"${saleTip(o)}>${meso(o.sale)}</span>`:meso(o.sale),`<b>${meso(o.meso)}</b>`]}))); }
-function epicCounts(T){ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(isRing(it)) return; R[it]=(R[it]||0)+I.n; }); return R; } // 반지 상자와 상자에서 나온 것(리4·컨4·연마석)은 제외, 보스가 직접 준 생명의 연마석은 포함
+function epicCounts(T){ const R={}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); if(isRing(it)||isHong(it)) return; R[it]=(R[it]||0)+I.n; }); return R; } // b229: 홍옥 리4/컨4 도 상자에서 나온 것 → 제외 // 반지 상자와 상자에서 나온 것(리4·컨4·연마석)은 제외, 보스가 직접 준 생명의 연마석은 포함
 function chaosCounts(T){ const C=Object.fromEntries(CHAOS_PICK.map(k=>[k,0])); T.items.forEach(([a,I])=>{ if(parseIK(a).it!=='chaosbox') return; (I.outs||[]).forEach(o=>{ const k=String(o).slice(3); if(/^cb:/.test(o)&&k in C) C[k]++; }); }); return C; }
 /* b202: 상자깡 비율 = 그 아이템 횟수 / 전체 상자깡 횟수(모든 횟수 합), 소수 1자리. 0개 = 0%, 전체 0 = '-' */
 const cbPct=(n,t)=>!t?'-':!n?'0%':(n/t*100).toFixed(1)+'%';
@@ -4060,7 +4060,7 @@ function demoBuild(){
       const it=its[Math.floor(R3()*its.length)], key=id+'|'+it; if(!c.drops[key]) c.drops[key]=1; }; // 솔로 보스만(블빵 없음), 소울 에테르가 있으면 대개 에테르
     // b229: 홍옥 반지 상자로 얻은 리4/컨4 예시 (캐릭터 번호, 몇 주 전(0 = 이번 주), 보스, 반지) — 그 주에 그 보스를 잡았을 때만, 절반쯤 판매 기록
     const HONG=[[0,3,'lotus','r4'],[0,1,'will','c4'],[1,2,'lucid','c4'],[0,0,'damien','r4']];
-    const hong=(c,i,k)=>HONG.filter(h=>h[0]===i&&h[1]===k&&c.weekly[h[2]]&&(RING_DROPS.r_red[h[2]]||[]).includes(c.bosses[h[2]]?.diff)).forEach(([,,id,o])=>{ const key=id+'|hong_'+o; c.drops[key]=1; const p=IP[priceId('ring:'+o)]; if(p&&p.p>0&&k!==1) c.drev[key]={m:Math.round(p.p),a:Math.round(p.p/1e4)/1e4,p:1,i:'hong_'+o}; });
+    const hong=(c,i,k)=>HONG.filter(h=>h[0]===i&&h[1]===k&&c.weekly[h[2]]&&(RING_DROPS.r_red[h[2]]||[]).includes(c.bosses[h[2]]?.diff)).forEach(([,,id,o])=>{ const key=id+'|hong_'+o; c.drops[key]=1; const q=IP[priceId('ring:'+o)], v=q&&q.p>0?q.p:(o==='r4'?32e8:27e8)/* 시세 못 받았을 때 예시 값 */; if(k!==1) c.drev[key]={m:Math.round(v),a:Math.round(v/1e4)/1e4,p:1,i:'hong_'+o}; });
     /* 9/17 패치(주간 결정석 가격 변경) 주부터 — 기록 = 지금 가격표와 같은 값 */ for(let k=4;k>=1;k--){ S.period={...S.period,week:wk(k)}; C.forEach((c,i)=>{ roll(c,[.97,.93,.88,.8][i]); extra(c,[.9,.8,.7,.6][i]); hong(c,i,k); });
       missRecord('w',wk(k),missNow('w')); const sum=weekSummary(wk(k)); if(sum.cleared>0) S.history.push(sum); }
     // 검마: 10/1 부터 새 가격(하드 4.65억) — 예시는 10월(이번 달)만, 솔로 → 결정석 가격표 값 그대로
