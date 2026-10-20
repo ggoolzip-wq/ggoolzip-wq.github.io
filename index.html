@@ -6010,11 +6010,15 @@ function demoBuild(){
         else sale(c,id,key,it); break; } };
     const roll=(c,pClear)=>{ c.weekly={}; c.drops={}; c.dropOut={}; c.drev={}; c.dmode={};
       for(const [id,cfg] of Object.entries(c.bosses)){ const b=findBoss(id); if(!b||b.type!=='weekly'||R()>pClear) continue; c.weekly[id]=true; loot(c,id,cfg,c.drops,c.dropOut); } };
-    /* 9/17 패치(주간 결정석 가격 변경) 주부터 — 기록 = 지금 가격표와 같은 값 */ for(let k=4;k>=1;k--){ S.period={...S.period,week:wk(k)}; C.forEach((c,i)=>roll(c,[.97,.93,.88,.8][i]));
+    // b229: 주별 득템 표 예시 — 주마다 잡은 보스의 일반 드롭(반지 상자·칠흑 상자 제외)을 가끔 1개 더 (따로 난수 → 위 난수 순서 그대로)
+    const R3=demoRng(2290), extra=(c,pr)=>{ const ids=Object.keys(c.weekly).filter(id=>c.weekly[id]&&curParty(c,id)===1); if(!ids.length||R3()>pr) return; const id=ids[Math.floor(R3()*ids.length)], cfg=c.bosses[id];
+      const all=dropsFor(findBoss(id),cfg.diff).filter(it=>ITEMS[it]&&!isRing(it)&&it!=='chaosbox'), eth=all.filter(it=>/^se\d$/.test(it)), its=eth.length&&R3()<.8?eth:all; if(!its.length) return;
+      const it=its[Math.floor(R3()*its.length)], key=id+'|'+it; if(!c.drops[key]) c.drops[key]=1; }; // 솔로 보스만(블빵 없음), 소울 에테르가 있으면 대개 에테르
+    /* 9/17 패치(주간 결정석 가격 변경) 주부터 — 기록 = 지금 가격표와 같은 값 */ for(let k=4;k>=1;k--){ S.period={...S.period,week:wk(k)}; C.forEach((c,i)=>{ roll(c,[.97,.93,.88,.8][i]); extra(c,[.9,.8,.7,.6][i]); });
       missRecord('w',wk(k),missNow('w')); const sum=weekSummary(wk(k)); if(sum.cleared>0) S.history.push(sum); }
     // 검마: 10/1 부터 새 가격(하드 4.65억) — 예시는 10월(이번 달)만, 솔로 → 결정석 가격표 값 그대로
     S.period={week:wk0,day:dayId(),month:monthId()};
-    C.forEach((c,i)=>{ roll(c,[.85,.7,.55,.45][i]); c.monthly={}; c.mdrops={}; c.mdropOut={}; c.mdrev={}; }); C[0].monthly.blackmage=wk0; // 이번 주: 일요일쯤 진행 상황
+    C.forEach((c,i)=>{ roll(c,[.85,.7,.55,.45][i]); extra(c,[.9,.8,.7,.6][i]); c.monthly={}; c.mdrops={}; c.mdropOut={}; c.mdrev={}; }); C[0].monthly.blackmage=wk0; // 이번 주: 일요일쯤 진행 상황
   } finally { S=live; }
   DEMO_SC={}; st.characters.forEach((c,i)=>{ DEMO_SC[c.id]={date:dayId(),at:Date.now(),ok:true,level:c.level,items:{},guild:{suro:{now:[48200,31500,22800,9600][i]||0,max:0},flag:null,mission:null}}; });
   DEMO_GC={'스카니아|메보기예시길드':{date:dayId(),at:Date.now(),ok:true,t1:{guild_point:61500,ranking:418,guild_level:27,guild_master_name:'예시히어로'},t2:{guild_point:1832400,ranking:233,guild_level:27,guild_master_name:'예시히어로'}}};
