@@ -3902,7 +3902,7 @@ function weekRingLine(){ const by={}, t={r4:0,c4:0,gl:0,x:0}; let n=0;
 const leftOf = c => { const r=remainingWeekly(c), bm=r.mon.filter(x=>x.slot==='blackmage'); return {w:r.list.reduce((t,x)=>t+x.value,0), m:bm.reduce((t,x)=>t+x.value,0), wn:r.list.length, mn:bm.length}; }; // b221: wn = 남은 주간 결정석 개수(캐릭터당 12칸 − 잡은 수, 켜 둔 안 잡은 보스만큼)
 const leftLine = (cls,ico,lb,v,big,n) => v>0?(big?`<div class="muted rp-line rp-left ${cls}"><span class="rpl"><span class="rpg">${ico}${rpLbl(lb,n)}</span></span><b class="rpn"><span class="tsmn">-${v.toLocaleString()}</span></b></div>`:`<div class="rp-cl rp-left ${cls}">${ico}<span>${lb} -${meso(v)}</span></div>`):'';
 function weekLeftLines(cs){ let w=0,m=0,wn=0,mn=0; for(const c of cs){ if(!charShown(c)) continue; const o=leftOf(c); w+=o.w; m+=o.m; wn+=o.wn; mn+=o.mn; }
-  return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',w,1)/* b230: 개수 표시 없음 */+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',m,1,mn); }
+  return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',w,1)/* b230: 개수 표시 없음 */+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',m,1)/* b231: 개수 표시 없음 */; }
 function charLeftLines(c){ const o=leftOf(c); return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',o.w)+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',o.m); }
 function weekMonthly(a){ let n=0, meso=0; a.per.forEach(p=>p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week).forEach(x=>{ n++; meso+=x.value; })); return {n,meso}; }
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
@@ -5736,7 +5736,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b230'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b231'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
