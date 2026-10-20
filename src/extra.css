@@ -1737,3 +1737,5 @@ header .logo .logo-d{display:flex;align-items:center}
 #weekLoot .wlpager{align-items:center;flex-wrap:nowrap;gap:8px}
 #weekLoot .wlpager .cpg:disabled{opacity:.35;cursor:default}
 #weekLoot .wlnow{font-size:.85rem;font-weight:700;color:var(--muted,#a0a0ab);white-space:nowrap;min-width:12em;text-align:center}
+/* b229: 좁은 화면 — 캐릭터 이름 줄 아래에 아이템(가로 넘침·잘림 없음) */
+@media(max-width:560px){#weekLoot .wlrow{flex-direction:column;gap:4px}#weekLoot .wlb{min-width:0}#weekLoot .wlrow .loots{padding-left:30px;max-width:100%;box-sizing:border-box}#weekLoot .wlnow{min-width:0}}
