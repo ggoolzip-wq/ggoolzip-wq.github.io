@@ -4088,7 +4088,7 @@ const lootName0 = k => /^cb:/.test(k)?ITEMS[k.slice(3)].n : k==='ring:r4'?OUT_NA
 const lootName = k => /^x:/.test(k)?ITEMS[k.slice(2)].n+' · 꽝':lootName0(lootBase(k));
 const lootIco = k => /^x:/.test(k)?itemIcon(k.slice(2)):lootIco0(lootBase(k));
 /* b229: 아이템 표시 공통 — 아이콘 + 이름 칸(+ xN). 홍옥 리4/컨4 = 홍옥 상자 아이콘 + 반지 아이콘 + xN (이름은 .vh 로 숨김, 1개여도 x1). 모든 아이템 목록이 이걸 씀 */
-const lootLabel = (k,o={}) => `${lootIco(k)}<span class="${o.cls||'ln'}${hnCls(k)}">${o.name!=null?o.name:esc(lootName(k))}${o.extra||''}</span>${o.n!=null&&(o.n>1||o.n1||isHong(k))?` <b class="${o.xc||'lx'}">${xN(o.n)}</b>`:''}`;
+const lootLabel = (k,o={}) => `${lootIco(k)}<span class="${o.cls||'ln'}${hnCls(k)}">${o.name!=null?o.name:esc(lootName(k))}${o.extra||''}</span>${o.n!=null&&(o.n>1||o.n1||isHong(k))?`${isHong(k)?'':' '}<b class="${o.xc||'lx'}">${xN(o.n)}</b>`:''}`;
 const lootIco0 = k => /^cb:/.test(k)?itemIcon(k.slice(3)) : k==='ring:r4'?miniIcon('ring_restraint') : k==='ring:c4'?miniIcon('ring_continuous') : itemIcon(k);
 const lootOrd = k => /^x:/.test(k)?Object.keys(ITEMS).indexOf(k.slice(2))+.5:lootOrd0(lootBase(k))+({w:.001,l:.002}[lootSf(k)]||0);
 const lootOrd0 = k => /^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*(1+CHAOS_PICK.indexOf(k.slice(3))) : /^ring:/.test(k)?-1+(k==='ring:c4'?.5:0) : Object.keys(ITEMS).indexOf(k);
