@@ -3919,7 +3919,7 @@ function revPanel(a,cur){
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+itemCnt(k,v,c.dropOut),0)+Object.entries(c.mdrops||{}).reduce((x,[k,v])=>x+(c.monthly?.[parseIK(k).slot]!==S.period.week?0:itemCnt(k,v,c.mdropOut)),0),0); // b121: 반지 상자 제외(아래 '반지 상자' 줄) — b226: 단 결과가 리4·컨4·연마석이면 셈(itemCnt) · b225: 이번 주에 잡은 검마 아이템(mdrops)도 셈 (판매 금액 pItemSale 과 같은 규칙)
       return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
-    <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${rpLbl('주보 결정석')/* b230: 개수 표시 없음 */}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${rpLbl('검마 결정석',wm.n)}</span></span><b class="rpn">${tsm('+'+wm.meso.toLocaleString())}</b></div>`:''}
+    <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${rpLbl('주보 결정석')/* b230: 개수 표시 없음 */}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${rpLbl('검마 결정석')/* b232: 개수 표시 없음 */}</span></span><b class="rpn">${tsm('+'+wm.meso.toLocaleString())}</b></div>`:''}
     <div class="muted rp-line rp-sale rc-g"><span class="rpl"><span class="rpg">${topSaleIco()||'<span class="ric rpico0" aria-hidden="true"></span>'}${rpLbl('이번주 획득 아이템',n,1)}</span></span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
     <div class="rp-sec">캐릭터별</div>
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
@@ -5736,7 +5736,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b231'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b232'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
