@@ -1976,7 +1976,8 @@ function bossRow(c,b){
     </div>
     <div class="party">파티 <select data-party="${slot}" title="${pmax<CONFIG.MAX_PARTY?`${esc(b.name)} ${D[diff]}: 최대 ${pmax}인`:''}">${Array.from({length:pmax},(_,i)=>`<option ${party===i+1?'selected':''}>${i+1}</option>`).join('')}</select>인</div>
     <div class="price"><b>${meso(Math.floor(p/party))}</b>${party>1?`<br><span>(${meso(p)} ÷ ${party})</span>`:''}</div>
-  </div>`;
+    ${b.type==='weekly'&&(RING_DROPS.r_red?.[b.id]||[]).includes(diff)?`<div class="rredrow">${rredBtn(b,c)}</div>`:''}
+  </div>`; /* b229: 좁은 줄(보스 줄 < 400px)에서는 드롭 칸 안 버튼 대신 줄 맨 아래 한 줄 버튼(.rredrow) — 글자 그대로·안 잘림 */
 }
 
 /* 캐릭터 별 기록 (2026-10-10): 2026.10.08(이번 주 시작)부터 계속 쌓임, 초기화 없음.
