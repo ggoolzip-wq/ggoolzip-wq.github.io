@@ -43,6 +43,23 @@ try:
         check(f'{w}: 선택칸 한 줄·안 잘림·카드 안·제목과 안 겹침, 제목 줄 한 줄', all(r['selFit'] and r['selIn'] and r['h2One'] for r in R), R[0])
         check(f'{w}: 줄 아이템 아이콘 22x22', all(set(r['rowIco'])<={'22x22'} for r in R), [r['rowIco'] for r in R])
         ctx.close()
+    # b231: 아무도 아무것도 못 얻은 주 — 제목 아이콘 = 기본 아이콘(oath)이 같은 28x28 칸, 자리 그대로, 빈 주 안내
+    for w in (1600,390):
+        ctx=br.new_context(viewport={'width':w,'height':1000},locale='ko-KR'); pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e)))
+        pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
+        pg.goto(f'http://127.0.0.1:{PORT}/index.html')
+        E=lambda d:{'enabled':True,'diff':d,'party':1}
+        ch=[{'id':f'c{i}','name':n,'level':285,'job':'히어로','world':'스카니아','image':'','bosses':{'lotus':E('hard')},'weekly':{},'monthly':{},'auto':{},'drops':{},'sync':{}} for i,n in [(1,'원모본캐'),(2,'원모부캐')]]
+        ST={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':[],'monthHistory':[],'characters':ch,'settings':{'accounts':[]},'startWeek':'2026-10-01'}
+        pg.evaluate("([s])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",[ST]); pg.reload(); pg.wait_for_timeout(1200)
+        pg.evaluate("""()=>{ const P=(id,name,items)=>({id,name,meso:1e9,count:1,bosses:['스우(하드)'],bvals:[1e9],items,outcomes:{}});
+          S.history=[{week:'2026-10-01',weeklyOnly:true,total:1e9,cleared:1,perChar:[P('c1','원모본캐',{'lotus|eye':1})]},{week:'2026-10-08',weeklyOnly:true,total:2e9,cleared:2,perChar:[P('c1','원모본캐',{}),P('c2','원모부캐',{})]}];
+          const c=S.characters[0]; c.weekly={lotus:true}; c.drops={'lotus|eye':1}; save(); render(); }""")
+        pg.wait_for_timeout(300); pg.click('[data-tab=loot]'); pg.wait_for_timeout(900)
+        a=pg.evaluate(M); pg.click('#weekLoot [data-wlpg="1"]'); pg.wait_for_timeout(150); b=pg.evaluate(M)
+        info=pg.evaluate("(()=>{const c=document.querySelector('#weekLoot'); return {empty:c.querySelector('.wlpage.on .wlempty')?.textContent, same:c.querySelector('.wlico').innerHTML===itemIcon('oath')}})()")
+        check(f'빈 주 {w}: 안내 글 + 기본 아이콘(oath) 같은 28x28 칸·제목 자리 그대로', info['empty']=='이 주에 얻은 아이템이 없어요.' and info['same'] and b['img'] and b['img'][2:]==[28,28] and b['ico']==a['ico'] and b['t']==a['t'] and b['h2']==a['h2'], (info,a['ico'],b['ico'],b['img']))
+        ctx.close()
     br.close()
 except Exception as e:
     import traceback; traceback.print_exc(); errs.append(repr(e))
