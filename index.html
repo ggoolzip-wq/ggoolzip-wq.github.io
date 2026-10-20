@@ -2401,7 +2401,7 @@ function openRevAll(){
   const el=document.createElement('div'); el.id='revAllModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','raTitle');
   el.innerHTML=`<div class="modal rabox"><h3 id="raTitle">수익 기록 전체 수정</h3>
     <div class="raicons">${rows.filter((x,i)=>rows.findIndex(y=>icoId(y.ik)===icoId(x.ik))===i).map(x=>`<span class="raic" title="${esc(lootName(x.ik))}">${lootIco(x.ik)}</span>`).join('')||'<span class="muted">이번 주·이번 달 체크한 아이템이 없습니다.</span>'}</div>
-    <div class="ralist">${raGroups(c,rows).map(g=>`<div class="ragrp"><span class="rabi" data-boss="${g.b.id}" title="${esc(g.b.name)}${g.d?' '+esc(D[g.d]||''):''}">${bossPic(g.b,g.d)}</span><div class="ragi">${g.items.map(([x,i])=>`<div class="rarow"><span class="raic">${lootIco(x.ik)}</span><span class="raname">${esc(lootName(x.ik))}${x.div>1?` <small class="muted">(${x.div}인 분배)</small>`:''}<small class="ram" data-ram="${i}">${x.m?meso(x.m):''}</small></span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" data-ra="${i}" value="${x.a}" aria-label="${esc(lootName(x.ik))} 판매 금액 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div></div>`).join('')}</div>
+    <div class="ralist">${raGroups(c,rows).map(g=>`<div class="ragrp"><span class="rabi" data-boss="${g.b.id}" title="${esc(g.b.name)}${g.d?' '+esc(D[g.d]||''):''}">${bossPic(g.b,g.d)}</span><div class="ragi">${g.items.map(([x,i])=>`<div class="rarow"><span class="raic">${lootIco(x.ik)}</span><span class="raname">${isHong(x.ik)?`<span class="vh">${esc(lootName(x.ik))}</span><b class="lx">x1</b>`:esc(lootName(x.ik))}${x.div>1?` <small class="muted">(${x.div}인 분배)</small>`:''}<small class="ram" data-ram="${i}">${x.m?meso(x.m):''}</small></span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" data-ra="${i}" value="${x.a}" aria-label="${esc(lootName(x.ik))} 판매 금액 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div></div>`).join('')}</div>
     <div class="rverr" id="raErr" role="alert"></div>
     <div class="rabtns">${rows.length?'<button class="btn raok" data-rab="ok">전체 수정</button><button class="btn ghost" data-rab="cancel">취소</button>':'<button class="btn raok" data-rab="close">확인</button>' /* b206: 체크한 아이템 없음 → [확인] 하나, 누르면 닫기만 */}</div></div>`;
   document.body.appendChild(el);
@@ -2878,7 +2878,7 @@ function dropLine(it, party, n, outs, boss, mode, diff, bp){ // b126: bp = 보�
   const dtx=diff&&D[diff]?` (${D[diff]})`:'', bh=boss?`<span class="dlb">${bp?bossPic(bp,diff,false):''}${esc(boss)}${dlvHtml(diff)?' '+dlvHtml(diff):''}</span>`:'';
   const I=ITEMS[it];
   if(it==='chaosbox') return `<span class="dl cbl">${bh}${chaosHtml(outs,n)}${partyHtml(party,mode)}</span>`;
-  return `<span class="dl ${party>1?'pty':''}${mode?' md-'+mode:''}" title="${esc((boss?boss+dtx+' · ':'')+I.n+partyTxt(party,mode))} ${xN(n)}">${bh}<span class="dlt">${itemIcon(it)}<span class="dln${hnCls(it)}">${esc(I.n)}${partyHtml(party,mode)}</span> <b class="dlc">${xN(n)}</b>${isRing(it)?' '+outHtml(outs,n,true):''}</span>${it==='chaosbox'?chaosHtml(outs,n):''}</span>`;
+  return `<span class="dl ${party>1?'pty':''}${mode?' md-'+mode:''}" title="${esc((boss?boss+dtx+' · ':'')+I.n+partyTxt(party,mode))} ${xN(n)}">${bh}<span class="dlt">${lootLabel(it,{cls:'dln',name:esc(I.n),extra:partyHtml(party,mode),n,n1:1,xc:'dlc'})}${isRing(it)?' '+outHtml(outs,n,true):''}</span>${it==='chaosbox'?chaosHtml(outs,n):''}</span>`;
 }
 // 슬롯 → 현재 설정 난이도(캐릭터) / 기록의 보스 태그 '이름(난이도)'(주간·월간 기록)
 const cfgDiff = c => slot => { const b=findBoss(slot), d=c?.bosses?.[slot]?.diff; return b&&b.diffs.includes(d)?d:''; };
@@ -4026,7 +4026,7 @@ function charRecords(){
 }
 function lootHtml(items){
   const ks=Object.keys(items).sort((x,y)=>Object.keys(ITEMS).indexOf(x)-Object.keys(ITEMS).indexOf(y));
-  return ks.length?ks.map(k=>`<span class="loot" title="${esc(ITEMS[k].n)}">${itemIcon(k)}<span class="ln">${esc(ITEMS[k].s||ITEMS[k].n)}</span>${items[k]>1?`<b class="lx">x${items[k]}</b>`:''}</span>`).join(''):'<span class="muted">아직 없음</span>';
+  return ks.length?ks.map(k=>`<span class="loot" title="${esc(ITEMS[k].n)}">${lootLabel(k,{name:esc(ITEMS[k].s||ITEMS[k].n),n:items[k]}).replace(' <b class="lx">','<b class="lx">')}</span>`).join(''):'<span class="muted">아직 없음</span>';
 }
 function renderSummary(){
   const v=$('#view'); if(!vchars().length){v.innerHTML=emptyView();fitPriceCard();return;}
@@ -4085,6 +4085,8 @@ const lootSf = k => /@([wl])$/.exec(k)?.[1]||'', lootBase = k => k.replace(/@[wl
 const lootName0 = k => /^cb:/.test(k)?ITEMS[k.slice(3)].n : k==='ring:r4'?OUT_NAME.r4 : k==='ring:c4'?OUT_NAME.c4 : ITEMS[k].n;
 const lootName = k => /^x:/.test(k)?ITEMS[k.slice(2)].n+' · 꽝':lootName0(lootBase(k));
 const lootIco = k => /^x:/.test(k)?itemIcon(k.slice(2)):lootIco0(lootBase(k));
+/* b229: 아이템 표시 공통 — 아이콘 + 이름 칸(+ xN). 홍옥 리4/컨4 = 홍옥 상자 아이콘 + 반지 아이콘 + xN (이름은 .vh 로 숨김, 1개여도 x1). 모든 아이템 목록이 이걸 씀 */
+const lootLabel = (k,o={}) => `${lootIco(k)}<span class="${o.cls||'ln'}${hnCls(k)}">${o.name!=null?o.name:esc(lootName(k))}${o.extra||''}</span>${o.n!=null&&(o.n>1||o.n1||isHong(k))?` <b class="${o.xc||'lx'}">${xN(o.n)}</b>`:''}`;
 const lootIco0 = k => /^cb:/.test(k)?itemIcon(k.slice(3)) : k==='ring:r4'?miniIcon('ring_restraint') : k==='ring:c4'?miniIcon('ring_continuous') : itemIcon(k);
 const lootOrd = k => /^x:/.test(k)?Object.keys(ITEMS).indexOf(k.slice(2))+.5:lootOrd0(lootBase(k))+({w:.001,l:.002}[lootSf(k)]||0);
 const lootOrd0 = k => /^cb:/.test(k)?Object.keys(ITEMS).indexOf('chaosbox')+.01*(1+CHAOS_PICK.indexOf(k.slice(3))) : /^ring:/.test(k)?-1+(k==='ring:c4'?.5:0) : Object.keys(ITEMS).indexOf(k);
@@ -4105,7 +4107,7 @@ function bossStr(slot,d){ const id=typeof slot==='object'?slot?.id:slot; d=DK[d]
   if(id==='lotus'&&d==='extreme') return STR_ORD.indexOf('star')*10+5;
   let i=STR_ORD.indexOf(id); if(i<0){ const j=BOSSES.findIndex(b=>b.id===id); i=j<0?9999:STR_ORD.length+(BOSSES.length-j); }
   return i*10+diffRank(d); }
-const lootChips = (m,top,tips) => `<span class="loots">${Object.keys(m).filter(k=>m[k]>0).sort((a,b)=>itemCmp(a,b)).map(k=>`<span class="loot${lootSf(k)?' md-'+lootSf(k):''}"${tipAttr(tips&&tips[k])}>${/^cb:/.test(k)?miniIcon('chaosbox')+' - ':''}${lootIco(k)}<span class="ln${top&&itemCol(k)?' spk '+itemCol(k):''}${hnCls(k)}">${esc(lootName(k))}${lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:''}</span> <b class="lx">${xN(m[k])}</b></span>`).join('')}</span>`;
+const lootChips = (m,top,tips) => `<span class="loots">${Object.keys(m).filter(k=>m[k]>0).sort((a,b)=>itemCmp(a,b)).map(k=>`<span class="loot${lootSf(k)?' md-'+lootSf(k):''}"${tipAttr(tips&&tips[k])}>${/^cb:/.test(k)?miniIcon('chaosbox')+' - ':''}${lootLabel(k,{cls:'ln'+(top&&itemCol(k)?' spk '+itemCol(k):''),extra:lootSf(k)?` <span class="ptx ptx-${lootSf(k)}">(${MODE_TXT[lootSf(k)]})</span>`:'',n:m[k],n1:1})}</span>`).join('')}</span>`;
 // 시드링 기댓값: 상자 종류별 (획득 상자 수 × 상자 1개의 리4/컨4 확률) 합. 확률 = BOX_INFO (넥슨 공식 확률 공개, 툴팁과 같은 값)
 function ringExp(T){ const e={r4:0,c4:0,gl:0}; T.items.forEach(([a,I])=>{ const {it}=parseIK(a); const p=ring4(it); if(p){ e.r4+=I.n*p.r4/100; e.c4+=I.n*p.c4/100; e.gl+=I.n*p.gl/100; } }); return e; }
 const fmtExp=v=>(Math.round(v*100)/100).toFixed(2);
@@ -4131,7 +4133,7 @@ function bossLootKingHtml(T){
   const sl=rankSlice('bloot',rows);
   const nm=o=>`<span class="bdn">${esc(o.b.name)}</span>${o.d?` <span class="dlv dlv-${DIFF_CLS[o.d]||''}">(${D[o.d]||o.dl})</span>`:o.dl?` <span class="muted">(${esc(o.dl)})</span>`:''}`;
   const chips=(m0,ro)=>{ const {m,tips}=chaosMerge(m0); return `<span class="blkchips">${Object.keys(m).filter(k=>m[k]>0).sort(itemCmp).map(k=>{ const t=ro&&isRing(lootBase(k))&&ro[k];
-    return `<span class="blkchip"${tips[k]?tipAttr(tips[k]):` title="${esc(lootName(k)+(t?` ${m[k]}개 - 리4 ${t.r4}개 - 컨4 ${t.c4}개 - 꽝 ${t.x}개`:''))}"`}>${lootIco(k)}${t?modeTag(k):`<span class="ln${hnCls(k)}">${esc(lootName(k))}${modeTag(k)}</span>`}${t?` <b class="lx">${m[k]}개</b><span class="blro"> - 리4 ${t.r4}개 - 컨4 ${t.c4}개 - 꽝 ${t.x}개</span>`:m[k]>1||isHong(k)?`<b class="lx">${xN(m[k])}</b>`:''}</span>`; }).join('')}</span>`; };
+    return `<span class="blkchip"${tips[k]?tipAttr(tips[k]):` title="${esc(lootName(k)+(t?` ${m[k]}개 - 리4 ${t.r4}개 - 컨4 ${t.c4}개 - 꽝 ${t.x}개`:''))}"`}>${t?`${lootIco(k)}${modeTag(k)} <b class="lx">${m[k]}개</b><span class="blro"> - 리4 ${t.r4}개 - 컨4 ${t.c4}개 - 꽝 ${t.x}개</span>`:lootLabel(k,{extra:modeTag(k),n:m[k]})}</span>`; }).join('')}</span>`; };
   return `<div class="card kingcard" id="bossLootKing"><h2>${rows[0]?`<span class="hbi">${bossIcon(rows[0].b)}</span>`:miniIcon('bliss')} 보스 득템왕</h2>${SC_SUB}<div class="blkwrap"><table class="ranktbl blktbl"><thead><tr><th>순위</th><th>보스</th><th class="scth">점수</th><th>득템 목록</th></tr></thead><tbody>
     ${sl.map(([o,r])=>{ const m=medal(r), rg=m?(BOSS_REGION[o.b.id]?'rg-'+BOSS_REGION[o.b.id]:'rg-old'):''; return `<tr class="rk${r}${m?' md-'+m:''}"><td>${rankNo(r)}</td><td class="blkb"><span class="rkname ${m?'md-'+m:''}">${m?`<span class="rkico">${bossPic(o.b,o.d)}</span>`:''}<span class="${m?'spk ':''}${rg}">${nm(o)}</span></span></td><td class="sctd"><b class="${scCls(r)}">${fmtSc(o.sc)}</b></td><td class="blkl">${chips(o.items,o.ro)}</td></tr>`; }).join('')||'<tr><td colspan="4" class="muted">기록 없음</td></tr>'}${rankPad(sl.length,rows.length,4)}
     </tbody></table></div>${rankPager('bloot',rows.length)}</div>`;
@@ -4332,7 +4334,7 @@ function bossKills(T){ const R={}, VI=visibleCharIds();
   return Object.values(R).sort((a,b)=>b.meso-a.meso||diffRank(a.d)-diffRank(b.d)||b.n-a.n||price(b.b,b.d)-price(a.b,a.d)); }
 /* b115: 보스 메소왕 '누적 아이템 판매값' 말풍선 — [초상화+난이도] 보스 이름 (난이도) / 선 / 이 보스가 준 아이템(분배 표시) 몇 개, 얼마 */
 function saleTip(o){ const L=Object.values(o.its||{}).sort((a,b)=>itemCmp(a.it,b.it)||a.dv-b.dv); if(!L.length) return '';
-  const h=`<div class="bkt-h">${bossPic(o.b,o.d,false)}<b>${esc(o.b.name)} (${esc(D[o.d]||'')})</b></div><div class="bkt-l">${L.map(q=>`<div class="bkt-r">${lootIco(q.it)}<span>${esc(lootName(q.it))}${q.dv>1?` <span class="muted">(${q.dv}인 분배)</span>`:''}</span><span class="bkt-v">${q.n}개, ${meso(q.m)}</span></div>`).join('')}</div>`;
+  const h=`<div class="bkt-h">${bossPic(o.b,o.d,false)}<b>${esc(o.b.name)} (${esc(D[o.d]||'')})</b></div><div class="bkt-l">${L.map(q=>`<div class="bkt-r">${lootLabel(q.it,{cls:'bkt-n',extra:q.dv>1?` <span class="muted">(${q.dv}인 분배)</span>`:''})}<span class="bkt-v">${q.n}개, ${meso(q.m)}</span></div>`).join('')}</div>`;
   return ` data-tip="${esc(o.b.name)}" data-tiphtml="${esc(h)}"`; }
 function bossKingHtml(T){ const R=bossKills(T);
   return rankTable('boss','bossKing',`${R[0]?`<span class="hbi">${bossIcon(R[0].b)}</span>`:miniIcon('meso')} 보스 메소왕`,['보스','처치 당한 횟수','누적 결정석','누적 아이템 판매값','누적 메소량'],
@@ -4446,7 +4448,7 @@ function salesHtml(T){ // b76: '아이템 판매 누적 수익' — 아이템·�
   const ico=best?`<span class="hbi">${lootIco(best)}</span>`:miniIcon('meso'), pl=p=>p>1?`${p}인 분배`:'1인';
   return `<div class="card" id="salesCard"><h2>${ico} 아이템 판매 누적 수익</h2>
     <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc tirv tgoldv">${tot?tirN(tot,'eok','sales',' 메소'):tir('-')}</div><div class="muted" id="salesAvg">${tsm(avgTxt('주',doneAvgs(T).sales))}</div></div></div>
-    ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot"${isHong(i)?` title="${esc(lootName(i))}"`:''}>${lootIco(i)}<span class="ln${hnCls(i)}">${esc(lootName(i))}</span> <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm tirv">${tirMeso(o.m,'sl:'+k)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
+    ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot"${isHong(i)?` title="${esc(lootName(i))}"`:''}>${lootLabel(i)} <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm tirv">${tirMeso(o.m,'sl:'+k)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
 /* b229: '주별 득템 캐릭터 정리' — 한 쪽 = 한 주(목요일 초기화 주, 최신 주가 기본). 캐릭터별 그 주에 얻은 아이템 아이콘 xN.
  * 셈법 = 득템왕과 같은 lootOf(블빵패배 제외) + 꽝 제외 + 반지 상자는 결과(리4·컨4·생명의 연마석)만(b226 이번주 획득 아이템과 같음, 결과 미기록 상자는 안 셈).
  * 검마(월간 기록) 아이템 = 그 검마를 잡은 주(mweeks)로. 주간 기록(S.history)마다 perChar.items·outcomes 가 있어 지난 주도 그대로 나옴.
