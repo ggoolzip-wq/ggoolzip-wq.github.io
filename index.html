@@ -1851,8 +1851,10 @@ header .logo .logo-d{display:flex;align-items:center}
 #weekLoot .wlpg{display:grid}
 #weekLoot .wlpage{grid-area:1/1;min-width:0}
 #weekLoot .wlpage:not(.on){visibility:hidden;pointer-events:none}
-#weekLoot .wlpage>.blrow:first-child{border-top:0}
-#weekLoot .wlb{min-width:150px;white-space:nowrap}
+#weekLoot .wlrow{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)} /* = 보스 별 누적 획득 아이템 줄 */
+#weekLoot .wlpage>.wlrow:first-child{border-top:0}
+#weekLoot .wlb{flex:none;min-width:150px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+#weekLoot .loots{flex:1}
 #weekLoot .wlb .avatar{width:24px;height:24px;flex:none}
 #weekLoot .wlb b{white-space:nowrap}
 #weekLoot .wlempty{margin:6px 0}
@@ -4404,8 +4406,8 @@ function wlIco(pg){ const t={}; pg.rows.forEach(o=>{ const q=chaosMerge(o.m).m; 
 const wlLabel = pg => `${fmtWeek(pg.wk)} · ${pg.no}주차${pg.cur?' (이번 주)':''}`;
 function weekLootHtml(T){
   const P=weekLootData(T); WL_PAGE=Math.min(Math.max(0,WL_PAGE),Math.max(0,P.length-1)); const cur=P[WL_PAGE];
-  const row=o=>{ const c=o.id&&S.characters.find(x=>x.id===o.id), q=chaosMerge(o.m); return `<div class="blrow"><span class="blb wlb">${c?avatar(c,'sm'):''}<b>${esc(o.name)}</b></span>${lootChips(q.m,false,q.tips)}</div>`; };
-  return `<div class="card bossloot wkloot" id="weekLoot"><h2><span class="wlico">${cur?wlIco(cur):itemIcon('oath')}</span> 주별 득템 캐릭터 정리</h2>
+  const row=o=>{ const c=o.id&&S.characters.find(x=>x.id===o.id), q=chaosMerge(o.m); return `<div class="wlrow"><span class="wlb">${c?avatar(c,'sm'):''}<b>${esc(o.name)}</b></span>${lootChips(q.m,false,q.tips)}</div>`; };
+  return `<div class="card wkloot" id="weekLoot"><h2><span class="wlico">${cur?wlIco(cur):itemIcon('oath')}</span> 주별 득템 캐릭터 정리</h2>
     <div class="wlpg">${P.map((pg,i)=>`<div class="wlpage${i===WL_PAGE?' on':''}" data-wlico="${esc(wlIco(pg))}" data-wllb="${esc(wlLabel(pg))}"${i===WL_PAGE?'':' aria-hidden="true"'}>${pg.rows.length?pg.rows.map(row).join(''):'<p class="muted wlempty">이 주에 얻은 아이템이 없어요.</p>'}</div>`).join('')||'<p class="muted">아직 저장된 드랍 기록이 없습니다.</p>'}</div>
     ${P.length?`<div class="cpager wlpager" role="group" aria-label="주 선택"><button type="button" class="cpg" data-wlpg="1"${WL_PAGE>=P.length-1?' disabled':''} aria-label="지난 주">◀</button><span class="wlnow">${esc(wlLabel(cur))}</span><button type="button" class="cpg" data-wlpg="-1"${WL_PAGE<=0?' disabled':''} aria-label="다음 주">▶</button></div>`:''}</div>`;
 }

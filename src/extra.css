@@ -1727,8 +1727,10 @@ header .logo .logo-d{display:flex;align-items:center}
 #weekLoot .wlpg{display:grid}
 #weekLoot .wlpage{grid-area:1/1;min-width:0}
 #weekLoot .wlpage:not(.on){visibility:hidden;pointer-events:none}
-#weekLoot .wlpage>.blrow:first-child{border-top:0}
-#weekLoot .wlb{min-width:150px;white-space:nowrap}
+#weekLoot .wlrow{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)} /* = 보스 별 누적 획득 아이템 줄 */
+#weekLoot .wlpage>.wlrow:first-child{border-top:0}
+#weekLoot .wlb{flex:none;min-width:150px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+#weekLoot .loots{flex:1}
 #weekLoot .wlb .avatar{width:24px;height:24px;flex:none}
 #weekLoot .wlb b{white-space:nowrap}
 #weekLoot .wlempty{margin:6px 0}

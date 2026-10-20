@@ -2409,8 +2409,8 @@ function wlIco(pg){ const t={}; pg.rows.forEach(o=>{ const q=chaosMerge(o.m).m; 
 const wlLabel = pg => `${fmtWeek(pg.wk)} · ${pg.no}주차${pg.cur?' (이번 주)':''}`;
 function weekLootHtml(T){
   const P=weekLootData(T); WL_PAGE=Math.min(Math.max(0,WL_PAGE),Math.max(0,P.length-1)); const cur=P[WL_PAGE];
-  const row=o=>{ const c=o.id&&S.characters.find(x=>x.id===o.id), q=chaosMerge(o.m); return `<div class="blrow"><span class="blb wlb">${c?avatar(c,'sm'):''}<b>${esc(o.name)}</b></span>${lootChips(q.m,false,q.tips)}</div>`; };
-  return `<div class="card bossloot wkloot" id="weekLoot"><h2><span class="wlico">${cur?wlIco(cur):itemIcon('oath')}</span> 주별 득템 캐릭터 정리</h2>
+  const row=o=>{ const c=o.id&&S.characters.find(x=>x.id===o.id), q=chaosMerge(o.m); return `<div class="wlrow"><span class="wlb">${c?avatar(c,'sm'):''}<b>${esc(o.name)}</b></span>${lootChips(q.m,false,q.tips)}</div>`; };
+  return `<div class="card wkloot" id="weekLoot"><h2><span class="wlico">${cur?wlIco(cur):itemIcon('oath')}</span> 주별 득템 캐릭터 정리</h2>
     <div class="wlpg">${P.map((pg,i)=>`<div class="wlpage${i===WL_PAGE?' on':''}" data-wlico="${esc(wlIco(pg))}" data-wllb="${esc(wlLabel(pg))}"${i===WL_PAGE?'':' aria-hidden="true"'}>${pg.rows.length?pg.rows.map(row).join(''):'<p class="muted wlempty">이 주에 얻은 아이템이 없어요.</p>'}</div>`).join('')||'<p class="muted">아직 저장된 드랍 기록이 없습니다.</p>'}</div>
     ${P.length?`<div class="cpager wlpager" role="group" aria-label="주 선택"><button type="button" class="cpg" data-wlpg="1"${WL_PAGE>=P.length-1?' disabled':''} aria-label="지난 주">◀</button><span class="wlnow">${esc(wlLabel(cur))}</span><button type="button" class="cpg" data-wlpg="-1"${WL_PAGE<=0?' disabled':''} aria-label="다음 주">▶</button></div>`:''}</div>`;
 }
