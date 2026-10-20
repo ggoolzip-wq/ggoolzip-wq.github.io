@@ -1752,6 +1752,17 @@ header .logo .logo-d{display:flex;align-items:center}
 .rrbox .rrico{display:inline-flex;gap:2px;flex:none}
 .rrbox .rrico img,.rrbox .rrico .ric{width:26px;height:26px;object-fit:contain}
 .rrbox .rrnote{font-size:.72rem;margin:2px 0 0;white-space:nowrap}
-.rrbox .rrbody{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2.6em}
+.rrbox .rrbody{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
 .rrbox .rrbtns{display:inline-flex;gap:6px}
 @media(max-width:480px){.rrbox .rvh{font-size:.86rem}.rrbox .rrnote{font-size:.6rem}.rrbox .rrico img,.rrbox .rrico .ric{width:22px;height:22px}}
+
+/* b229: 홍옥 리4/컨4 — 아이콘 2개(홍옥 상자 + 반지), 이름은 숨김(.vh) */
+.vh{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important;margin:-1px!important;padding:0!important;border:0!important}
+.hongico{display:inline-flex;align-items:center;gap:1px;flex:none;vertical-align:middle}
+.hongico>img,.hongico>.ric,.hongico>.ifb{width:20px;height:20px;object-fit:contain}
+.hbi .hongico>img,.hbi .hongico>.ric{width:20px;height:20px}
+.hongsum{margin-top:4px}
+.rrbox .rrpicks{display:flex;gap:8px;margin-top:2.6em}
+.rrbox .rrpick{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.82rem;font-weight:700;padding:5px 12px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.rrbox .rrpick img,.rrbox .rrpick .ric{width:24px;height:24px;object-fit:contain}
+.rrbox .rrpick.on{color:var(--text);border-color:var(--accent,#ff8a1f);background:rgba(255,138,31,.12);box-shadow:0 0 0 1px var(--accent,#ff8a1f) inset}
