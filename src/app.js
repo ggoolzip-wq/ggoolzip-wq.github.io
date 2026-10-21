@@ -340,27 +340,38 @@ function askBbang(c,b,key,apply,cel,disp){
 /* b62-8: 아이템 판매 수익 기록 — 축하 메시지가 나오는 모든 드롭(반지 상자 꽝·블빵패배 제외) 바로 전에 '수익을 기록할까요?'
  * c.drev / c.mdrev = {'보스|아이템': {m: 내 몫 메소(분배면 ÷인원), a: 입력한 억, p: 나눈 인원, i: 실제 아이템 키(반지 결과 'ring:r4'·칠흑 'cb:…' 포함)}}
  * 획득 기록(보스·아이템당 기간 1번)마다 따로 저장 → 주간/월간 기록(perChar.revs)으로 넘어감. 제목 아래 안내 문구대로 사용자가 경매장 최저가 시세를 매번 직접 입력. */
+/* b244: 수수료 — 판매 P, 판매 수수료 s → 실수령 Q=P(1-s). N명 분배(분배 수수료 d): 분배자 몫 x, 다른 사람에게 y 보내면 y(1-d) 받음,
+ * x=y(1-d), x+(N-1)y=Q → 1인 실수령 = Q(1-d)/(N-d) (메이플로드 보스 분배금 계산기와 같은 식). 1인이면 Q. 마지막 선택 기억(기본 0%). */
+const revNet=(p,n,s,d)=>{ const q=p*(1-(s||0)/100); if(!(n>1)) return q; const f=(d||0)/100; return q*(1-f)/(n-f); };
+const REVFEE_K='mapleBossTracker.revFee';
+function revFeeGet(){ try{ const o=JSON.parse(localStorage.getItem(REVFEE_K)||'{}'); const ok=v=>[0,3,5].includes(v)?v:0; return {s:ok(o.s),d:ok(o.d)}; }catch(e){ return {s:0,d:0}; } }
+function revFeeSet(o){ try{ localStorage.setItem(REVFEE_K,JSON.stringify({s:o.s,d:o.d})); }catch(e){} }
+const fmtEokP=m=>{ const e=m/1e8; return (e>=100?e.toFixed(1):e>=1?e.toFixed(3):e.toFixed(4)).replace(/\.?0+$/,'')+'억 메소'; };
 const revMap = (c,type) => type==='monthly' ? (c.mdrev||(c.mdrev={})) : (c.drev||(c.drev={}));
 function askRev(c,b,key,ik,cel){
   const pty=curParty(c,b.id), md=modeMap(c,b.type)[key]||'', div=pty>1&&md!=='w'&&md!=='n'?pty:1; // 분배(예전 기록 포함) = ÷인원, 1인·블빵승리 = 전부
   document.querySelector('#revModal')?.remove();
+  const fs=revFeeGet(), feeRow=(k,lab)=>`<div class="rvfrow" data-frow="${k}"><span class="rvflab">${lab} :</span>${[0,3,5].map(v=>`<button type="button" class="rvfbtn${fs[k]===v?' on':''}" data-fee="${k}" data-v="${v}" aria-pressed="${fs[k]===v}">${v}%</button>`).join('')}</div>`;
+  const feeHtml=`<div class="rvfee">${feeRow('s','판매 수수료')}${div>1?feeRow('d','분배 수수료'):''}<div class="rvprev" id="rvPrev"></div></div>`; // b244: 1인 = 판매만, 2인 이상 분배 = 판매+분배
   const ap=admPriceOf(ik); // b104: 관리자만 — maple.ai.kr 시세로 미리 채움 (수정 가능)
   const el=document.createElement('div'); el.id='revModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rvTitle');
-  el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`가격 확인 : ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${ap?priceSrcHtml('rvguide rvsrc muted'):''}${div>1?`<div class="rvname muted">${div}인 분배 · 입력한 금액 ÷ ${div}</div>`:''}
-    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label><span class="rvbtns rvrow1"><button class="btn rvok" data-rv="ok">기록하기</button><button class="btn plain rvno" data-rv="no">기록 없이 저장</button></span><span class="rvbtns rvrow2"><button class="btn ghost rvcancel" data-rv="cancel">취소</button></span></div></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
+  el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`가격 확인 : ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${ap?priceSrcHtml('rvguide rvsrc muted'):''}${div>1?`<div class="rvname muted">${div}인 분배 · 수수료 반영 1인 실수령</div>`:''}
+    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label>${feeHtml}<span class="rvbtns rvrow1"><button class="btn rvok" data-rv="ok">기록하기</button><button class="btn plain rvno" data-rv="no">기록 없이 저장</button></span><span class="rvbtns rvrow2"><button class="btn ghost rvcancel" data-rv="cancel">취소</button></span></div></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
   document.body.appendChild(el);
   let closed=false; const fin=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true); if(cel) cel(); };
   const ok=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')); if(!(v>0)||v>100000){ $('#rvErr').textContent='금액을 입력해주세요.'; markEmpty($('#rvAmt')); $('#rvAmt').focus(); return; }
-    const cc=S.characters.find(x=>x.id===c.id)||c; revMap(cc,b.type)[key]={m:Math.round(v*1e8/div),a:Math.round(v*1e4)/1e4,p:div,i:ik}; save(); render(); fin(); };
+    const cc=S.characters.find(x=>x.id===c.id)||c; const ds=div>1?fs.d:0; revMap(cc,b.type)[key]={m:Math.round(revNet(v*1e8,div,fs.s,ds)),a:Math.round(v*1e4)/1e4,p:div,i:ik,fs:fs.s,fd:ds}; revFeeSet(fs); save(); render(); fin(); };
   // b109: 오른쪽 [기록하기](주황) = 금액 기록 / [기록 없이 저장](예전 '아니오') = 획득은 남기고 수익 기록 없이 축하 / [취소](예전 '취소하기') = 아래 undo
   // zosu-ui: [취소하기] = 이 창을 띄운 아이템 선택 자체를 되돌림(획득·블빵/분배·반지/칠흑 결과·수익 기록 삭제, 축하 없음) — changeDrop 의 취소와 같은 정리
   const undo=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true);
     const cc=S.characters.find(x=>x.id===c.id)||c, t=b.type; delete dropMap(cc,t)[key]; delete modeMap(cc,t)[key]; delete outMap(cc,t)[key];
     const rk=t==='monthly'?'mdrev':'drev', rm=cc[rk]; if(rm){ delete rm[key]; if(!Object.keys(rm).length) delete cc[rk]; }
     if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; save(); render(); };
+  const prev=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')), pv=$('#rvPrev'); if(pv) pv.innerHTML=v>0&&v<=100000?`기록 금액 : <b>${fmtEokP(revNet(v*1e8,div,fs.s,div>1?fs.d:0))}</b>${div>1?' (1인)':''}`:''; };
+  $('#rvAmt').addEventListener('input',prev); prev();
   const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); fin(); } else if(e.key==='Enter'&&e.target.id==='rvAmt'){ e.preventDefault(); ok(); } };
   document.addEventListener('keydown',kd,true);
-  el.onclick=e=>{ if(e.target===el) return undo(); const t=e.target.closest('[data-rv]'); if(t) return t.dataset.rv==='ok'?ok():t.dataset.rv==='cancel'?undo():fin(); }; // b110: 바깥(배경) 클릭 = [취소] (체크 되돌림)
+  el.onclick=e=>{ if(e.target===el) return undo(); const f=e.target.closest('[data-fee]'); if(f){ fs[f.dataset.fee]=+f.dataset.v; el.querySelectorAll(`[data-fee="${f.dataset.fee}"]`).forEach(x=>{const on=x===f; x.classList.toggle('on',on); x.setAttribute('aria-pressed',on);}); prev(); return; } const t=e.target.closest('[data-rv]'); if(t) return t.dataset.rv==='ok'?ok():t.dataset.rv==='cancel'?undo():fin(); }; // b110: 바깥(배경) 클릭 = [취소] (체크 되돌림)
   setTimeout(()=>{ const i=$('#rvAmt'); if(i){ i.focus(); if(ap) i.select(); } },30);
 }
 /* b110: 아이템 이름 옆에 그 아이템을 준 보스 아이콘 = 공통 bossIcon() (보스 아이콘을 바꾸면 여기도 같이 바뀜)
