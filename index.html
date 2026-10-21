@@ -2770,7 +2770,7 @@ function b134Restore(){ let n=0; const wk=S.period?.week; if(!wk) return 0;
       if(!b||b.type!=='weekly'||!b.diffs.includes(d)) continue; const cfg=c.bosses[b.id];
       if(cfg?.enabled) continue; c.bosses[b.id]={enabled:true,diff:d,party:cfg?.party||1}; clampParty(c,b.id); n++; } }
   return n; }
-function checkResets(){ const r=resetCore(); if(b134Restore()) r.changed=true; const bf=missBackfill(); if(r.changed||bf) missSync(); if(r.changed||bf){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
+function checkResets(){ const r=resetCore(); try{ if(keyGoneTick()) r.changed=true; }catch(e){ console.warn('keyGoneTick',e); } if(b134Restore()) r.changed=true; const bf=missBackfill(); if(r.changed||bf) missSync(); if(r.changed||bf){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
 // 다른 상태 객체(드라이브 데이터 등)도 지금 주·월로 넘김 (지난 주 체크 → 기록으로 보관 후 초기화) — 병합 전에 양쪽 기준을 맞춤
 function rollPeriod(x){ const keep=S; try{ S=x; resetCore(); } finally{ S=keep; } return x; }
 
@@ -2961,6 +2961,43 @@ const goneAcc = id => (S.settings.goneAccs||[]).includes(id);
 const charShown = c => { if(!c||!c.accId) return true; if(goneAcc(c.accId)) return false; const a=accById(c.accId); return !a||!!a.key; };
 function accForget(list){ const ids=list.map(x=>x.id); S.settings.goneAccs=[...new Set([...(S.settings.goneAccs||[]),...ids])].slice(-200); S.settings.accounts=accounts().filter(x=>!ids.includes(x.id)); ids.forEach(id=>{ if(listCache[id]) delete listCache[id]; }); }
 const vchars = () => S.characters.filter(charShown);
+/* b234: 키가 빠진 계정 30일 → 기록 삭제 (사용자 요청 'API키가 빠졌을 때 30일이 지나면 기록도 삭제, 본계정 포함').
+ * S.settings.keyGoneAt = {계정 칸 id: 키를 지운 시각(ms)} — 키 삭제 버튼(data-accdel)에서 기록, 상태와 함께 동기화.
+ * 30일 안에 같은 계정 키를 다시 넣으면(칸에 key 가 생기고 goneAccs 에서 빠짐) keyGoneTick 이 지움 → 예전처럼 전부 복귀.
+ * 30일(30×24시간)이 지나면 그 칸의 (숨은) 캐릭터와 그 캐릭터의 지난 기록(history·monthHistory perChar, missW/missM list — id 없는 예전 줄은 이름으로)을
+ * 실제로 지우고 합계(total·cleared·crystals·items / n·meso)를 다시 계산. 드롭·판매(drops·drev·mdrev…)는 캐릭터 객체 안이라 함께 지워짐 → 키를 다시 넣으면 새로 시작.
+ * 서버 모드 본계정(대표) 키 삭제 = 로그아웃이라 이 페이지가 못 지움 → Worker /api/keygone + cron(keyGoneCron)이 사용자 데이터 전체를 30일 뒤 삭제. */
+const KEY_GONE_MS = 30*864e5;
+function keyGoneMap(){ const m=S.settings.keyGoneAt; if(m&&typeof m==='object'&&!Array.isArray(m)) return m; return (S.settings.keyGoneAt={}); }
+function keyGoneMark(ids,t=Date.now()){ const m=keyGoneMap(); ids.filter(Boolean).forEach(id=>{ if(!m[id]) m[id]=t; }); }
+function purgeChars(ids){ // ids = Set(캐릭터 id). 캐릭터와 그 기록을 실제로 지움
+  if(!ids.size) return false;
+  const names=new Set(S.characters.filter(c=>ids.has(c.id)).map(c=>c.name));
+  S.characters=S.characters.filter(c=>!ids.has(c.id));
+  const left=new Set(S.characters.map(c=>c.name)), gone=x=>x&&(x.id?ids.has(x.id):(names.has(x.name)&&!left.has(x.name)));
+  const fixRec=arr=>(arr||[]).flatMap(h=>{ const pc=h.perChar||[]; if(!pc.some(gone)) return [h];
+    const k=pc.filter(x=>!gone(x)); if(!k.length) return [];
+    const o={...h, perChar:k, total:k.reduce((x,p)=>x+(+p.meso||0),0), cleared:k.reduce((x,p)=>x+((p.bosses||[]).length||+p.count||0),0), items:k.reduce((x,p)=>x+itemSum(p.items),0)};
+    if(h.crystals!=null) o.crystals=k.reduce((x,p)=>x+(p.bvals||[]).filter(v=>v>0).length,0); return [o]; });
+  S.history=fixRec(S.history); S.monthHistory=fixRec(S.monthHistory);
+  const hw=new Set(S.history.map(h=>h.week)), hm=new Set(S.monthHistory.map(h=>h.month));
+  const fixMiss=(arr,f,has)=>(arr||[]).flatMap(r=>{ const l=r.list||[]; if(!l.some(gone)) return [r]; const k=l.filter(x=>!gone(x));
+    if(!k.length&&!has.has(r[f])) return []; return [{...r, list:k, n:k.reduce((a,x)=>a+(+x.n||0),0), meso:k.reduce((a,x)=>a+(+x.meso||0),0)}]; });
+  S.missW=fixMiss(S.missW,'week',hw); S.missM=fixMiss(S.missM,'month',hm);
+  if(ids.has(S.activeId)) S.activeId=S.characters[0]?.id||null;
+  if(S.dq) ['charOff','hide'].forEach(k=>{ const o=S.dq[k]; if(o) for(const x of Object.keys(o)) if(ids.has(x)||(names.has(x)&&!left.has(x))) delete o[x]; });
+  return true; }
+function keyGoneTick(now=Date.now()){ let ch=false; const m=keyGoneMap();
+  for(const id of S.settings.goneAccs||[]) if(!m[id]&&S.characters.some(c=>c.accId===id)){ m[id]=now; ch=true; } // b102 로 예전에 지운 부계정 = 오늘부터 30일
+  for(const id of Object.keys(m)){ const a=accById(id);
+    if(a&&a.key&&!goneAcc(id)){ delete m[id]; ch=true; continue; } // 30일 안에 키를 다시 넣음 → 예약 취소
+    if(!(+m[id]>0)){ m[id]=now; ch=true; continue; }
+    if(now-m[id]<KEY_GONE_MS) continue;
+    const ids=new Set(S.characters.filter(c=>c.accId===id&&!charShown(c)).map(c=>c.id));
+    if(purgeChars(ids)) console.info('b234: 키 삭제 30일 지난 계정 기록 삭제',ids.size);
+    delete m[id]; S.settings.goneAccs=(S.settings.goneAccs||[]).filter(x=>x!==id); if(listCache[id]) delete listCache[id]; ch=true; }
+  if(!Object.keys(m).length) delete S.settings.keyGoneAt;
+  return ch; }
 /* b82 규칙: 모든 합계·표·차트(지금·앞으로의 모든 탭)는 '지금 보이는(키 등록된) 캐릭터'만 — visibleCharIds() / visHist().
  * 저장된 기록(S.history·monthHistory)은 지우지 않고 볼 때마다 캐릭터 id 로 걸러 합계를 다시 계산 → 키를 다시 넣으면 합계도 그대로 돌아옴.
  * (b72 의 '지난 기록은 숨긴 캐릭터 것도 합산' 결정을 대체. 지금 목록에 없는(삭제된) 캐릭터의 기록도 빠짐) */
@@ -5561,7 +5598,7 @@ function svAsk(msg,btns,head=''){ return new Promise(res=>{
   if(head) d.classList.add('svaskc');
   document.body.appendChild(d); d.querySelector('[data-k]')?.focus();
 }); }
-async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그대로 둠 — PC방은 종료 시 자동 초기화)
+async function gdLogout(o={}){ // 로그아웃만 (이 브라우저 데이터는 그대로 둠 — PC방은 종료 시 자동 초기화)
   if(SV_ON){ // b69: ① 세션이 살아 있으면 남은 변경(저장 안 한 체크·키·읽음)을 먼저 서버에 저장 ② 서버 세션 삭제 ③ 이 PC 의 앱 데이터 전부 삭제 → 처음 온 사람 상태
     if(svTok()&&gdMeta.on&&gd.state!=='conflict'){
       try{ if(pend){ pend=null; save(); } }catch(e){}
@@ -5570,7 +5607,7 @@ async function gdLogout(){ // 로그아웃만 (이 브라우저 데이터는 그
       try{ clearTimeout(seenT); await svSeenFlush(); }catch(e){}
     }
     try{ sessionStorage.removeItem('mapleBossTracker.admUsers'); admUsers=null; }catch(e){}
-    try{ if(svTok()) await svFetch('/api/logout',{method:'POST',noGen:true}); }catch(e){}
+    try{ if(svTok()) await svFetch(o.keyGone?'/api/keygone':'/api/logout',{method:'POST',noGen:true}); }catch(e){ if(o.keyGone) try{ await svFetch('/api/logout',{method:'POST',noGen:true}); }catch(e2){} } // b234: 본계정 키 삭제 = keygone(로그아웃 + 30일 삭제 예약)
     svWipeAll({broadcast:true}); gd.svErr=''; gdSet('off'); render(); svGate(); toastHide(); return; // b73: 직접 로그아웃 = 알림 없음 (저장 중 뜬 알림도 지움)
   }
   if(gdMeta.on && gdLocalDirty()){
@@ -5637,12 +5674,13 @@ document.addEventListener('click',e=>{
     // b95: 삭제 = API 키(예비 키 포함)만 완전히 지움. 계정 칸(ah = 넥슨 계정 해시)·캐릭터 연결은 남겨 기록은 숨김 → 같은 넥슨 계정 키를 다시 넣으면 그대로 다시 보임.
     //   대표 키 삭제 = 부계정 키도 전부 삭제. 서버의 키 보관·부계정 연결도 /api/unlink 로 지움.
     const all=!!a.main||(!accounts().some(x=>x.main)&&accounts()[0]===a), tgt=all?accounts():[a]; // main 표시 없는 예전 데이터 = 첫 줄이 대표
-    if(confirm(`'${a.label}' ${all?'대표 계정과 모든 부계정의':'계정의'} API 키를 삭제할까요?\n캐릭터 기록은 지워지지 않고 숨겨지며, 같은 계정 키를 다시 등록하면 다시 보입니다.`)){
+    if(confirm(`'${a.label}' ${all?'대표 계정과 모든 부계정의':'계정의'} API 키를 삭제할까요?\n캐릭터 기록은 바로 지워지지 않고 숨겨지며, 30일 안에 같은 계정 키를 다시 등록하면 다시 보입니다.\n30일이 지나면 그 계정 캐릭터의 기록이 삭제됩니다.`)){
       if(SV_ON&&all){ // b219: 서버 모드에서 대표 키 삭제는 어떤 상태에서도 /api/unlink {all} 을 보내지 않음(부계정 키 금고가 지워졌음)
         if(!svTok()){ $('#importModal').classList.remove('show'); svWipeAll(); render(); return; } // b216: 본계정(대표) 키 삭제 = 이 브라우저만 처음 온 사람 상태(로그아웃·이 PC 데이터 비움 → 예시 화면·API 키 등록 카드).
         // 서버 기록(데이터·부계정 키 금고·계정 연결)은 지우지 않음 → 같은 본계정 키를 다시 등록하면 본캐·부캐 캐릭터·기록이 그대로 돌아옴
-        $('#importModal').classList.remove('show'); gdLogout(); return; }
+        $('#importModal').classList.remove('show'); gdLogout({keyGone:true}); return; } // b234: 서버에 삭제 시각 기록(/api/keygone) → 30일 안에 다시 로그인 안 하면 Worker cron 이 데이터 전체 삭제
       const body=all?{all:true}:{key:a.key,bk:a.bk,ah:a.ah,ahs:a.ahs};
+      keyGoneMark(tgt.map(x=>x.id)); // b234: 30일 뒤 기록 삭제 예약 (다시 넣으면 취소)
       tgt.forEach(x=>{ x.key=''; delete x.bk; delete x.bkLabel; delete x.status; if(listCache[x.id]) delete listCache[x.id]; });
       accForget(tgt.filter(x=>!x.main&&!(all&&x===accounts()[0]&&!accounts().some(y=>y.main)))); // b102: 부계정 칸은 통째로 지움 (본계정 칸만 남겨 b72 처럼 다시 넣으면 보이게)
       localStorage.removeItem(SV_SUBSIG_KEY); if(impAccId===a.id||all){ impAccId=null; accChars=[]; }
@@ -5749,7 +5787,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b233'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b234'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
