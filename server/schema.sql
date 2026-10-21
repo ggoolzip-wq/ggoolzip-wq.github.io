@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at  INTEGER NOT NULL,
   last_login  INTEGER NOT NULL,
   sync_click  INTEGER,                   -- b225: 🔄 버튼을 마지막으로 직접 누른 시각 (Worker 가 ALTER 로도 추가)
-  key_gone_at INTEGER                    -- b234: 본계정 키 삭제 시각 (30일 지나면 cron 이 사용자 데이터 삭제; Worker 가 ALTER 로도 추가)
+  key_gone_at INTEGER,                   -- b234: 키 삭제 시각 (b235 부터 안 씀)
+  last_sync_at INTEGER                   -- b235: 🔄 캐릭터 동기화 버튼을 마지막으로 누른 시각 (30일 지나면 cron 이 사용자 데이터 삭제, 관리자 제외; Worker 가 ALTER 로도 추가)
 );
 -- 한 사용자(데이터 묶음)에 넥슨 계정 여러 개(본계정·부계정 키) 연결 가능
 CREATE TABLE IF NOT EXISTS accounts (

@@ -15,6 +15,20 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b235 (2026-10-21 KST) — 기록 삭제 기준 변경: 🔄 캐릭터 동기화 버튼 30일 안 누름 → 삭제 (b234 의 '키 삭제 30일' 대체) + 본계정 줄 '로그아웃' 버튼
+사용자 정정: "키 삭제가 아니라, 30일 동안 캐릭터 동기화 버튼을 안 누르면 그 계정 기록 자동 삭제(본계정 포함, 관리자 제외)". "키를 지웠다가 같은 넥슨 계정에 새 키를 넣으면 기존 기록 유지·다시 연결". "본계정 키 삭제 버튼 = 로그아웃 버튼".
+1. **페이지** (`src/app.js`, `vchars` 아래): `S.settings.syncAt = {계정 칸 id: 🔄 버튼을 마지막으로 누른 시각}` (상태와 함께 동기화).
+   - `syncPressMark()` = 🔄 버튼(`case 'syncBtn'`)을 **직접 누를 때만**: 키가 있는 모든 칸 = 지금 + 서버 모드면 `POST /api/sync-press`. 자동 동기화(열 때·F5·키 등록)·로그인·로그아웃·다른 기기 세션은 타이머와 무관.
+   - `syncGoneTick(now)` (`checkResets()` 안, b234 keyGoneTick 대체): 캐릭터가 붙은 칸마다 기록 없으면 지금부터 셈(조용히, 이것만으로 서버 저장 안 함 — test_tracker23 rev), 30×24시간 지나면 `purgeChars`(b234 그대로) 로 그 칸 캐릭터·기록 전부 삭제(키 있든 없든·본계정 포함). 관리자(`svIsAdmin()`) 제외. 예전 `S.settings.keyGoneAt` 은 지움.
+   - 키 없는 칸은 🔄 로 갱신 안 됨 → 계속 셈. 같은 넥슨 계정 새 키 → b219 keyRelink 가 다시 연결할 때 `syncTimerMove` 로 타이머도 새 칸으로 이어감(기록 그대로·합계 복귀). b64 같은 칸 재연결은 칸 id 그대로.
+   - b234 의 `keyGoneMark`·`keyGoneAt`·`gdLogout({keyGone})` 제거. 부계정 키 삭제 확인창에서 '30일' 문구 제거.
+   - 키 없는 캐릭터 합계·차트 제외(b234/zosu-apikey `activeIds` 등)는 그대로.
+2. **본계정(대표) 줄 버튼 = '로그아웃'** (`accIsMain(a)`, `btn sm ghost acclogout`; 부계정은 '삭제' 그대로). 동작은 b216+ 그대로(서버 모드: gdLogout, 서버 데이터·부계정 키 금고 유지, 부계정도 함께 로그아웃 / 아닌 모드: 모든 키 비움). 확인창 = '대표 계정에서 로그아웃할까요? 모든 부계정도 함께 로그아웃…'. 타이머 시작 없음.
+3. **Worker** (`server/worker.js`): `users.last_sync_at` (ensureSchema ALTER + schema.sql; NULL = 지금으로 채움 — ensureSchema 와 cron 마다, 새 가입 INSERT 도 지금). `POST /api/sync-press` = last_sync_at=now. `syncGoneCron`(keyGoneCron 대체, meta 'syncgone_cron' 1시간 1번, 20명씩): last_sync_at ≤ now-30일 이고 관리자 아님 → `dropUser`. login/auth 의 key_gone_at 처리 제거. `/api/keygone` = 예전 페이지 호환용 그냥 로그아웃. `key_gone_at` 열은 남김(안 씀). 같은 넥슨 계정 새 키 = acct_hash 같음 → 같은 사용자(기록 그대로).
+   - ⚠ **Worker 배포 필요** (`cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`) — 이번 작업에선 배포 안 함. D1 수동 migration 불필요(ALTER 자동, 기존 사용자는 배포 시각부터 30일). 배포 전 새 페이지가 /api/sync-press 부르면 404 → 무시(catch).
+4. 테스트(내용 교체): tests/test_b234_purge.py (31일 칸 삭제·기록 없는 칸 지금부터·keyGoneAt 버림·🔄 누름 리셋(키 없는 칸 제외)·새 키 재연결+타이머 이어감+합계 복귀·부계정 키 삭제 타이머 무관·30일-1ms/30일·idempotent·본계정 로그아웃 버튼/문구/타이머 무관·본계정 30일 삭제; `MBT_SHOTBTN` 키 목록 사진, `MBT_ROOT` 변경 전 빌드). tests/test_server_b234.py (sync-press·401·sync-click/로그인/로그아웃/keygone 무관·같은 넥슨 계정 새 키 = 같은 사용자·NULL 기존 사용자 안 지움·31일 삭제·관리자 제외·1시간 제한·idempotent·재가입 새로 시작).
+5. 사진: /workspace/b235/before_main_delete_btn.png (origin/main b234: 본계정 '삭제') · after_main_logout_btn.png ('로그아웃') · after_purge_total.png (본계정 30일 뒤 삭제 후 결정석 분석 탭).
+
 ## b234 (2026-10-21 KST) — API 키가 빠진 계정 30일 → 기록 삭제 (본계정 포함) + zosu-apikey·zosu-b234 merge
 사용자 요청: "API키가 빠졌을 때 30일이 지나면 기록도 삭제되게 해줘. 이건 본계정 포함".
 1. **부계정·서버 아닌 모드 본계정 = 클라이언트** (`src/app.js`, `vchars` 바로 아래): `S.settings.keyGoneAt = {계정 칸 id: 키 삭제 시각}` (상태와 함께 동기화).

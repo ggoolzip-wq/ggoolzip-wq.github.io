@@ -2782,7 +2782,7 @@ function b134Restore(){ let n=0; const wk=S.period?.week; if(!wk) return 0;
       if(!b||b.type!=='weekly'||!b.diffs.includes(d)) continue; const cfg=c.bosses[b.id];
       if(cfg?.enabled) continue; c.bosses[b.id]={enabled:true,diff:d,party:cfg?.party||1}; clampParty(c,b.id); n++; } }
   return n; }
-function checkResets(){ const r=resetCore(); try{ if(keyGoneTick()) r.changed=true; }catch(e){ console.warn('keyGoneTick',e); } if(b134Restore()) r.changed=true; const bf=missBackfill(); if(r.changed||bf) missSync(); if(r.changed||bf){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
+function checkResets(){ const r=resetCore(); try{ if(syncGoneTick()) r.changed=true; }catch(e){ console.warn('syncGoneTick',e); } if(b134Restore()) r.changed=true; const bf=missBackfill(); if(r.changed||bf) missSync(); if(r.changed||bf){ save(); if(r.msgs.length) toast(r.msgs.join(' · ')); } return r.changed; }
 // 다른 상태 객체(드라이브 데이터 등)도 지금 주·월로 넘김 (지난 주 체크 → 기록으로 보관 후 초기화) — 병합 전에 양쪽 기준을 맞춤
 function rollPeriod(x){ const keep=S; try{ S=x; resetCore(); } finally{ S=keep; } return x; }
 
@@ -2973,15 +2973,18 @@ const goneAcc = id => (S.settings.goneAccs||[]).includes(id);
 const charShown = c => { if(!c||!c.accId) return true; if(goneAcc(c.accId)) return false; const a=accById(c.accId); return !a||!!a.key; };
 function accForget(list){ const ids=list.map(x=>x.id); S.settings.goneAccs=[...new Set([...(S.settings.goneAccs||[]),...ids])].slice(-200); S.settings.accounts=accounts().filter(x=>!ids.includes(x.id)); ids.forEach(id=>{ if(listCache[id]) delete listCache[id]; }); }
 const vchars = () => S.characters.filter(charShown);
-/* b234: 키가 빠진 계정 30일 → 기록 삭제 (사용자 요청 'API키가 빠졌을 때 30일이 지나면 기록도 삭제, 본계정 포함').
- * S.settings.keyGoneAt = {계정 칸 id: 키를 지운 시각(ms)} — 키 삭제 버튼(data-accdel)에서 기록, 상태와 함께 동기화.
- * 30일 안에 같은 계정 키를 다시 넣으면(칸에 key 가 생기고 goneAccs 에서 빠짐) keyGoneTick 이 지움 → 예전처럼 전부 복귀.
- * 30일(30×24시간)이 지나면 그 칸의 (숨은) 캐릭터와 그 캐릭터의 지난 기록(history·monthHistory perChar, missW/missM list — id 없는 예전 줄은 이름으로)을
- * 실제로 지우고 합계(total·cleared·crystals·items / n·meso)를 다시 계산. 드롭·판매(drops·drev·mdrev…)는 캐릭터 객체 안이라 함께 지워짐 → 키를 다시 넣으면 새로 시작.
- * 서버 모드 본계정(대표) 키 삭제 = 로그아웃이라 이 페이지가 못 지움 → Worker /api/keygone + cron(keyGoneCron)이 사용자 데이터 전체를 30일 뒤 삭제. */
-const KEY_GONE_MS = 30*864e5;
-function keyGoneMap(){ const m=S.settings.keyGoneAt; if(m&&typeof m==='object'&&!Array.isArray(m)) return m; return (S.settings.keyGoneAt={}); }
-function keyGoneMark(ids,t=Date.now()){ const m=keyGoneMap(); ids.filter(Boolean).forEach(id=>{ if(!m[id]) m[id]=t; }); }
+/* b235: 🔄 캐릭터 동기화 버튼을 30일 동안 안 누른 계정 → 기록 삭제 (본계정 포함, 관리자 제외). b234 의 '키 삭제 30일' 기준을 대체.
+ * S.settings.syncAt = {계정 칸 id: 🔄 버튼을 마지막으로 누른 시각(ms)} — 상태와 함께 동기화. 🔄 누를 때(syncPressMark) 키가 있는 모든 계정 칸 = 지금.
+ * 기록이 없는 칸(기존 데이터·새 칸) = 처음 본 때부터 셈(지금) → 배포 직후 바로 지워지는 계정 없음. 자동 동기화(열 때·F5)·로그인·로그아웃·다른 기기 세션은 타이머와 무관.
+ * 키 삭제(부계정)·로그아웃(본계정)은 타이머를 시작/멈추지 않음. 키가 빠진 칸은 🔄 로 갱신되지 않으므로 계속 셈.
+ * 같은 넥슨 계정에 새 키를 등록하면 keyRelink(b64·b219)가 같은 칸/새 칸으로 다시 연결 → 기록 그대로·합계에 다시 포함(syncAt 도 새 칸으로 이어감).
+ * 30일(30×24시간)이 지나면 purgeChars: 그 칸 캐릭터와 지난 기록(history·monthHistory perChar, missW/missM list)을 지우고 합계 다시 계산.
+ * 서버 모드: Worker 도 users.last_sync_at(POST /api/sync-press) 기준 30일 → 사용자 데이터 전부 삭제(syncGoneCron, 관리자 제외). */
+const SYNC_GONE_MS = 30*864e5;
+function syncAtMap(){ const m=S.settings.syncAt; if(m&&typeof m==='object'&&!Array.isArray(m)) return m; return (S.settings.syncAt={}); }
+function syncPressMark(t=Date.now()){ const m=syncAtMap(); accounts().filter(a=>a.key).forEach(a=>{ m[a.id]=t; }); save();
+  try{ if(typeof SV_ON!=='undefined'&&SV_ON&&svTok()) svFetch('/api/sync-press',{method:'POST',body:{}}).catch(()=>{}); }catch(e){} }
+function syncTimerMove(from,to){ const m=syncAtMap(); if(m[from]!=null&&from!==to){ m[to]=Math.max(+m[to]||0,+m[from]||0); } }
 function purgeChars(ids){ // ids = Set(캐릭터 id). 캐릭터와 그 기록을 실제로 지움
   if(!ids.size) return false;
   const names=new Set(S.characters.filter(c=>ids.has(c.id)).map(c=>c.name));
@@ -2999,16 +3002,17 @@ function purgeChars(ids){ // ids = Set(캐릭터 id). 캐릭터와 그 기록을
   if(ids.has(S.activeId)) S.activeId=S.characters[0]?.id||null;
   if(S.dq) ['charOff','hide'].forEach(k=>{ const o=S.dq[k]; if(o) for(const x of Object.keys(o)) if(ids.has(x)||(names.has(x)&&!left.has(x))) delete o[x]; });
   return true; }
-function keyGoneTick(now=Date.now()){ let ch=false; const m=keyGoneMap();
-  for(const id of S.settings.goneAccs||[]) if(!m[id]&&S.characters.some(c=>c.accId===id)){ m[id]=now; ch=true; } // b102 로 예전에 지운 부계정 = 오늘부터 30일
-  for(const id of Object.keys(m)){ const a=accById(id);
-    if(a&&a.key&&!goneAcc(id)){ delete m[id]; ch=true; continue; } // 30일 안에 키를 다시 넣음 → 예약 취소
-    if(!(+m[id]>0)){ m[id]=now; ch=true; continue; }
-    if(now-m[id]<KEY_GONE_MS) continue;
-    const ids=new Set(S.characters.filter(c=>c.accId===id&&!charShown(c)).map(c=>c.id));
-    if(purgeChars(ids)) console.info('b234: 키 삭제 30일 지난 계정 기록 삭제',ids.size);
-    delete m[id]; S.settings.goneAccs=(S.settings.goneAccs||[]).filter(x=>x!==id); if(listCache[id]) delete listCache[id]; ch=true; }
-  if(!Object.keys(m).length) delete S.settings.keyGoneAt;
+function syncGoneTick(now=Date.now()){ let ch=false;
+  if(S.settings.keyGoneAt){ delete S.settings.keyGoneAt; ch=true; } // b234 예약은 버림 (b235 = 동기화 버튼 기준)
+  try{ if(typeof svIsAdmin==='function'&&svIsAdmin()) return ch; }catch(e){} // 관리자 제외
+  const m=syncAtMap(), used=new Set(S.characters.map(c=>c.accId).filter(Boolean));
+  for(const id of used){
+    if(!(+m[id]>0)){ m[id]=now; continue; } // 처음 셈 = 다음 저장 때 함께 저장(이것만으로 서버 저장 안 함)
+    if(now-m[id]<SYNC_GONE_MS) continue;
+    const ids=new Set(S.characters.filter(c=>c.accId===id).map(c=>c.id));
+    if(purgeChars(ids)) console.info('b235: 30일 동안 캐릭터 동기화 안 한 계정 기록 삭제',ids.size);
+    delete m[id]; S.settings.goneAccs=(S.settings.goneAccs||[]).filter(x=>x!==id); ch=true; }
+  for(const id of Object.keys(m)) if(!used.has(id)&&!accById(id)) delete m[id]; // 캐릭터·칸 없는 id 정리
   return ch; }
 /* b82 규칙: 모든 합계·표·차트(지금·앞으로의 모든 탭)는 '지금 보이는(키 등록된) 캐릭터'만 — visibleCharIds() / visHist().
  * 저장된 기록(S.history·monthHistory)은 지우지 않고 볼 때마다 캐릭터 id 로 걸러 합계를 다시 계산 → 키를 다시 넣으면 합계도 그대로 돌아옴.
@@ -4696,6 +4700,7 @@ let accChars=[], impAccId=null, impBusy=null;
 const maskKey = k => !k ? '' : k.length<=10 ? '••••' : k.slice(0,5)+'••••'+k.slice(-4);
 function linkedOf(a){ return S.characters.filter(c=>c.accId===a.id).length; }
 const regOkHtml = n => `<span class="okc regok"><span class="okic" aria-hidden="true">✔</span> 등록 완료${n?` · ${n}캐릭 등록 중`:''}</span>`; // b216: 0캐릭이면 '· 0캐릭 등록 중' 안 씀
+const accIsMain=a=>!!a.main||(!accounts().some(x=>x.main)&&accounts()[0]===a); // b235: 대표 계정 줄 = 로그아웃 버튼
 function renderAccList(){
   const el=$('#accList'); if(!el) return;
   const accs=accounts();
@@ -4708,7 +4713,7 @@ function renderAccList(){
     const stt=!a.key?'':a.status?.ok===false?`<span class="warnc" title="${esc(a.status.msg)}">⚠ 오류</span>`:regOkHtml(linked);
     return `<div class="accrow ${a.id===impAccId?'on':''}" ${a.key?`data-acctest="${a.id}" title="이 계정의 캐릭터 보기"`:''}><input class="pin acclbl" data-acclabel="${a.id}" value="${a.key?esc(a.label):''}" placeholder="계정 이름" maxlength="12" aria-label="계정 이름">
       <span class="accst">${stt}${quotaHtml(a.key,false)}</span>
-      <span class="accbtns"><button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button></span></div>`; // b74: 예비 키 줄 삭제
+      <span class="accbtns">${accIsMain(a)?`<button class="btn sm ghost acclogout" data-accdel="${a.id}" title="대표 계정 로그아웃 (부계정도 함께)">로그아웃</button>`:`<button class="btn sm plain danger" data-accdel="${a.id}" title="이 API 키 삭제">삭제</button>`}</span></div>`; // b74: 예비 키 줄 삭제
   }).join(''):'<div class="muted acc-empty">등록된 API 키가 없습니다. <b>+ 계정 추가</b>로 키를 넣으면 바로 그 계정의 캐릭터 목록이 나와요.</div>';
   $('#newAccLabel').placeholder='계정 이름'; // b72
   $('#accOpts').innerHTML=''; // (예전 '스케줄러 보스 자동 추가' 옵션 — 2026-10-10 삭제: 항상 켜짐)
@@ -4816,7 +4821,7 @@ async function openImport(accId){
 function keyRelink(a,all){
   if(!a?.key) return null; const ids=new Set((all||[]).map(x=>x.ocid).filter(Boolean)); if(!ids.size) return null;
   { // b219: 지운(goneAccs) 계정 칸에 묶여 숨겨진 캐릭터도 같은 넥슨 캐릭터(ocid)면 이 키에 다시 연결 → 기록과 함께 다시 보임 (예전엔 칸이 지워져 영영 숨겨짐)
-    let rv=0; S.characters.forEach(c=>{ if(c.accId&&goneAcc(c.accId)&&c.ocid&&ids.has(c.ocid)){ c.accId=a.id; rv++; } });
+    let rv=0; S.characters.forEach(c=>{ if(c.accId&&goneAcc(c.accId)&&c.ocid&&ids.has(c.ocid)){ syncTimerMove(c.accId,a.id); c.accId=a.id; rv++; } }); // b235: 동기화 타이머도 이어감
     if(rv){ const used=new Set(S.characters.map(c=>c.accId)); S.settings.goneAccs=(S.settings.goneAccs||[]).filter(id=>used.has(id)); save(); } }
   const o=accounts().find(x=>x!==a&&!x.key&&a.ah&&x.ah===a.ah)||accounts().find(x=>x!==a&&!x.key&&S.characters.some(c=>c.accId===x.id&&c.ocid&&ids.has(c.ocid))); // b95: 넥슨 계정 해시(ah) 우선
   if(!o) return null;
@@ -5622,7 +5627,7 @@ async function gdLogout(o={}){ // 로그아웃만 (이 브라우저 데이터는
       try{ clearTimeout(seenT); await svSeenFlush(); }catch(e){}
     }
     try{ sessionStorage.removeItem('mapleBossTracker.admUsers'); admUsers=null; }catch(e){}
-    try{ if(svTok()) await svFetch(o.keyGone?'/api/keygone':'/api/logout',{method:'POST',noGen:true}); }catch(e){ if(o.keyGone) try{ await svFetch('/api/logout',{method:'POST',noGen:true}); }catch(e2){} } // b234: 본계정 키 삭제 = keygone(로그아웃 + 30일 삭제 예약)
+    try{ if(svTok()) await svFetch('/api/logout',{method:'POST',noGen:true}); }catch(e){} // b235: 본계정 로그아웃 = 그냥 로그아웃 (삭제 타이머와 무관)
     svWipeAll({broadcast:true}); gd.svErr=''; gdSet('off'); render(); svGate(); toastHide(); return; // b73: 직접 로그아웃 = 알림 없음 (저장 중 뜬 알림도 지움)
   }
   if(gdMeta.on && gdLocalDirty()){
@@ -5689,13 +5694,13 @@ document.addEventListener('click',e=>{
     // b95: 삭제 = API 키(예비 키 포함)만 완전히 지움. 계정 칸(ah = 넥슨 계정 해시)·캐릭터 연결은 남겨 기록은 숨김 → 같은 넥슨 계정 키를 다시 넣으면 그대로 다시 보임.
     //   대표 키 삭제 = 부계정 키도 전부 삭제. 서버의 키 보관·부계정 연결도 /api/unlink 로 지움.
     const all=!!a.main||(!accounts().some(x=>x.main)&&accounts()[0]===a), tgt=all?accounts():[a]; // main 표시 없는 예전 데이터 = 첫 줄이 대표
-    if(confirm(`'${a.label}' ${all?'대표 계정과 모든 부계정의':'계정의'} API 키를 삭제할까요?\n캐릭터 기록은 바로 지워지지 않고 숨겨지며, 30일 안에 같은 계정 키를 다시 등록하면 다시 보입니다.\n30일이 지나면 그 계정 캐릭터의 기록이 삭제됩니다.`)){
+    if(confirm(all?`'${a.label}' 대표 계정에서 로그아웃할까요?\n모든 부계정도 함께 로그아웃됩니다. 캐릭터 기록은 그대로 남고, 같은 계정 키로 다시 로그인하면 그대로 다시 보입니다.`
+      :`'${a.label}' 계정의 API 키를 삭제할까요?\n캐릭터 기록은 지워지지 않고 숨겨지며, 같은 계정 키를 다시 등록하면 다시 보입니다.`)){ // b235: 본계정 = 로그아웃 버튼 (삭제 타이머 없음 — 기록 삭제는 30일 동안 🔄 캐릭터 동기화를 안 눌렀을 때만)
       if(SV_ON&&all){ // b219: 서버 모드에서 대표 키 삭제는 어떤 상태에서도 /api/unlink {all} 을 보내지 않음(부계정 키 금고가 지워졌음)
         if(!svTok()){ $('#importModal').classList.remove('show'); svWipeAll(); render(); return; } // b216: 본계정(대표) 키 삭제 = 이 브라우저만 처음 온 사람 상태(로그아웃·이 PC 데이터 비움 → 예시 화면·API 키 등록 카드).
         // 서버 기록(데이터·부계정 키 금고·계정 연결)은 지우지 않음 → 같은 본계정 키를 다시 등록하면 본캐·부캐 캐릭터·기록이 그대로 돌아옴
-        $('#importModal').classList.remove('show'); gdLogout({keyGone:true}); return; } // b234: 서버에 삭제 시각 기록(/api/keygone) → 30일 안에 다시 로그인 안 하면 Worker cron 이 데이터 전체 삭제
+        $('#importModal').classList.remove('show'); gdLogout(); return; } // b235: 본계정 로그아웃 (서버 데이터·부계정 키 금고 유지, 부계정도 함께 로그아웃)
       const body=all?{all:true}:{key:a.key,bk:a.bk,ah:a.ah,ahs:a.ahs};
-      keyGoneMark(tgt.map(x=>x.id)); // b234: 30일 뒤 기록 삭제 예약 (다시 넣으면 취소)
       tgt.forEach(x=>{ x.key=''; delete x.bk; delete x.bkLabel; delete x.status; if(listCache[x.id]) delete listCache[x.id]; });
       accForget(tgt.filter(x=>!x.main&&!(all&&x===accounts()[0]&&!accounts().some(y=>y.main)))); // b102: 부계정 칸은 통째로 지움 (본계정 칸만 남겨 b72 처럼 다시 넣으면 보이게)
       localStorage.removeItem(SV_SUBSIG_KEY); if(impAccId===a.id||all){ impAccId=null; accChars=[]; }
@@ -5704,7 +5709,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
   switch(t.id){
     case 'editModeBtn': editMode=!editMode; render(); break;
-    case 'syncBtn': syncAll(); break;
+    case 'syncBtn': syncPressMark(); syncAll(); break; // b235: 직접 누름 = 30일 삭제 타이머 다시 시작
     case 'importAccBtn': openImport(); break;
     case 'impRetry': openImport(impAccId); break;
     case 'impToSettings': accAddShow(true); break;

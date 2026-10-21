@@ -151,8 +151,12 @@ async function ensureSchema(env) {
   try { await env.DB.prepare('ALTER TABLE acct_role ADD COLUMN created_at INTEGER').run(); } catch (e) {}
   // b225→b229: users.sync_click = 마지막으로 캐릭터 동기화가 끝난 시각 (🔄·키 등록·들어올 때·F5 자동 동기화 모두). 관리자 창 '최근 갱신'
   try { await env.DB.prepare('ALTER TABLE users ADD COLUMN sync_click INTEGER').run(); } catch (e) {}
-  // b234: users.key_gone_at = 본계정(대표) API 키를 삭제한 시각. 30일 동안 다시 로그인(키 등록)이 없으면 cron 이 그 사용자 데이터 전부 삭제(keyGoneCron)
+  // b234: users.key_gone_at (키 삭제 시각) — b235 부터 안 씀(열만 남김)
   try { await env.DB.prepare('ALTER TABLE users ADD COLUMN key_gone_at INTEGER').run(); } catch (e) {}
+  // b235: users.last_sync_at = 🔄 캐릭터 동기화 버튼을 마지막으로 누른 시각. 30일 넘게 안 누르면 cron(syncGoneCron)이 사용자 데이터 전부 삭제(관리자 제외).
+  //   비어 있는 사용자(기존·새 가입) = 지금으로 채움 → 배포 직후 바로 지워지는 사용자 없음
+  try { await env.DB.prepare('ALTER TABLE users ADD COLUMN last_sync_at INTEGER').run(); } catch (e) {}
+  await env.DB.prepare('UPDATE users SET last_sync_at=? WHERE last_sync_at IS NULL').bind(Date.now()).run();
   await env.DB.prepare('UPDATE acct_role SET created_at=(SELECT a.created_at FROM accounts a WHERE a.acct_hash=acct_role.acct_hash) WHERE created_at IS NULL').run();
   schemaOk = true;
 }
@@ -381,10 +385,9 @@ async function auth(env, req) {
   const m = /^Bearer\s+([A-Za-z0-9_-]{20,100})$/.exec(req.headers.get('Authorization') || '');
   if (!m) throw new HttpError(401, 'no_session', '로그인이 필요합니다');
   const th = await sha256hex(m[1]), now = Date.now();
-  const s = await env.DB.prepare('SELECT s.user_id, s.created_at, s.last_used, s.expires_at, a.status, u.key_gone_at FROM sessions s LEFT JOIN approval a ON a.user_id=s.user_id LEFT JOIN users u ON u.id=s.user_id WHERE s.token_hash=?').bind(th).first();
+  const s = await env.DB.prepare('SELECT s.user_id, s.created_at, s.last_used, s.expires_at, a.status FROM sessions s LEFT JOIN approval a ON a.user_id=s.user_id LEFT JOIN users u ON u.id=s.user_id WHERE s.token_hash=?').bind(th).first();
   if (!s || s.expires_at < now || s.created_at < await authEpoch(env)) { if (s) await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(th).run(); throw new HttpError(401, 'no_session', '로그인이 만료되었습니다 — 다시 로그인하세요'); }
   if (gated(env, s.status) && s.user_id !== adminId(env)) { await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(th).run(); throw new HttpError(403, s.status, STATUS_MSG[s.status] || STATUS_MSG.blocked); } // b68
-  if (s.key_gone_at) await env.DB.prepare('UPDATE users SET key_gone_at=NULL WHERE id=?').bind(s.user_id).run(); // b234: 다른 기기에서 아직 키로 쓰는 중 → 삭제 예약 취소
   if (now - s.last_used > DAY) await env.DB.prepare('UPDATE sessions SET last_used=?, expires_at=? WHERE token_hash=?').bind(now, now + SESSION_DAYS * DAY, th).run();
   return { userId: s.user_id, th };
 }
@@ -647,9 +650,9 @@ async function route(req, env) {
       await limit(env, await ipKey(env, req, 'newuser'), NEWUSER_LIMIT, '이 네트워크에서 오늘 새로 만들 수 있는 데이터 수를 넘었습니다 — 내일 다시 시도하세요');
       await limit(env, 'newuser:all', NEWUSER_ALL, '오늘 새 가입이 많아 잠시 막혀 있습니다 — 내일 다시 시도하세요');
       userId = crypto.randomUUID(); newUser = true; const t = hashes.top || {};
-      await env.DB.batch([env.DB.prepare('INSERT INTO users (id,created_at,last_login) VALUES (?,?,?)').bind(userId, now, now)]   // b68: 새 가입 = 승인 대기 (최소 기록만)
+      await env.DB.batch([env.DB.prepare('INSERT INTO users (id,created_at,last_login,last_sync_at) VALUES (?,?,?,?)').bind(userId, now, now, now)]   // b68: 새 가입 = 승인 대기 (최소 기록만)
         .concat(!approvalOn(env) ? [] : [env.DB.prepare("INSERT INTO approval (user_id,status,name,world,level,requested_at) VALUES (?,'pending',?,?,?,?)").bind(userId, t.name || '', t.world || '', t.level || 0, now)])); } // AUTO_APPROVE=1 = 로컬 테스트 전용 (운영 wrangler.toml 에 넣지 말 것)
-    if (!newUser) await env.DB.prepare('UPDATE users SET last_login=?, key_gone_at=NULL WHERE id=?').bind(now, userId).run(); // b234: 키를 다시 등록(로그인) = 30일 삭제 예약 취소
+    if (!newUser) await env.DB.prepare('UPDATE users SET last_login=? WHERE id=?').bind(now, userId).run(); // b235: 로그인은 30일 타이머(last_sync_at)와 무관 — 같은 넥슨 계정이면 새 키라도 같은 사용자 = 기록 그대로
     const owned = new Set(found.map(f => f.acct_hash));
     const ins = hashes.filter(h => !owned.has(h)).map(h => env.DB.prepare('INSERT OR IGNORE INTO accounts (acct_hash,user_id,created_at) VALUES (?,?,?)').bind(h, userId, now));
     if (ins.length) await env.DB.batch(ins);
@@ -683,6 +686,12 @@ async function route(req, env) {
     const now = Date.now();
     await env.DB.prepare('UPDATE users SET sync_click=? WHERE id=? AND COALESCE(sync_click,0)<?').bind(now, me.userId, now - 10e3).run();
     return json(200, { ok: true, at: now });
+  }
+  // b235: 🔄 캐릭터 동기화 버튼을 직접 누름 = 30일 삭제 타이머 다시 시작 (자동 동기화·로그인·로그아웃·다른 기기 세션은 무관)
+  if (p === '/api/sync-press' && M === 'POST') {
+    const now = Date.now();
+    await env.DB.prepare('UPDATE users SET last_sync_at=? WHERE id=?').bind(now, me.userId).run();
+    return json(200, { ok: true, at: now, purgeAfterDays: SYNC_GONE_DAYS });
   }
   if (p === '/api/link' && M === 'POST') {
     await limit(env, 'l:' + sk, LIMITS.link);
@@ -764,9 +773,9 @@ async function route(req, env) {
     if (st.length) await env.DB.batch(st);
     return json(200, { ok: true, accounts: await acctList(env, me.userId) });
   }
-  if (p === '/api/keygone' && M === 'POST') { // b234: 본계정(대표) 키 삭제 = 이 세션 로그아웃 + 삭제 예약 시각 기록 (30일 안에 다시 로그인하면 취소, 지나면 keyGoneCron 이 전부 삭제)
-    await env.DB.batch([env.DB.prepare('UPDATE users SET key_gone_at=? WHERE id=?').bind(Date.now(), me.userId), env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(me.th)]);
-    return json(200, { ok: true, purgeAfterDays: KEY_GONE_DAYS });
+  if (p === '/api/keygone' && M === 'POST') { // b235: 예전 페이지 호환 = 그냥 로그아웃 (키 삭제는 더 이상 삭제 타이머가 아님)
+    await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(me.th).run();
+    return json(200, { ok: true });
   }
   if (p === '/api/logout' && M === 'POST') { await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(me.th).run(); return json(200, { ok: true }); }
   if (p === '/api/logout-all' && M === 'POST') { const r = await env.DB.prepare('DELETE FROM sessions WHERE user_id=?').bind(me.userId).run(); return json(200, { ok: true, removed: r.meta?.changes || 0 }); }
@@ -876,23 +885,19 @@ async function route(req, env) {
   throw new HttpError(404, 'not_found', '없는 주소');
 }
 
-/* ---------- b234: 본계정 키 삭제 후 30일 → 사용자 데이터 삭제 ----------
- * key_gone_at 이 30일 넘게 지난 사용자만 (그 뒤 로그인·세션 사용이 있으면 login/auth 가 NULL 로 되돌림 → 대상 아님).
- * 관리자 제외, 그 뒤 쓰인 세션이 있으면 삭제하지 않고 예약만 취소. 1시간에 1번만(meta 'keygone_cron'), 한 번에 최대 20명. 같은 사용자를 두 번 지워도 문제없음(DELETE). */
-const KEY_GONE_DAYS = 30;
-export async function keyGoneCron(env, now = Date.now(), force = false) {
+/* ---------- b235: 🔄 캐릭터 동기화 버튼을 30일 안 누름 → 사용자 데이터 삭제 (b234 의 키 삭제 기준 대체) ----------
+ * last_sync_at ≤ now-30일 사용자만 dropUser(USER_TABLES 전부 + users). 관리자 제외. 로그인·로그아웃·세션 사용은 타이머와 무관.
+ * 1시간에 1번만(meta 'syncgone_cron'), 한 번에 최대 20명. 같은 사용자를 두 번 지워도 문제없음(DELETE). */
+const SYNC_GONE_DAYS = 30;
+export async function syncGoneCron(env, now = Date.now(), force = false) {
   await ensureSchema(env); await loadAdmin(env);
-  if (!force) { const last = await metaGet(env, 'keygone_cron'); if (last && now - (+last.at || 0) < 3600e3) return { skipped: true }; }
-  await env.DB.prepare("INSERT INTO meta (k,v) VALUES ('keygone_cron',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify({ at: now })).run();
-  const cut = now - KEY_GONE_DAYS * DAY, out = [];
-  const rows = (await env.DB.prepare('SELECT id, key_gone_at FROM users WHERE key_gone_at IS NOT NULL AND key_gone_at<=? LIMIT 20').bind(cut).all()).results || [];
-  for (const r of rows) {
-    if (r.id === adminId(env)) { await env.DB.prepare('UPDATE users SET key_gone_at=NULL WHERE id=?').bind(r.id).run(); continue; }
-    const used = await env.DB.prepare('SELECT 1 FROM sessions WHERE user_id=? AND expires_at>? AND (last_used>? OR created_at>?) LIMIT 1').bind(r.id, now, r.key_gone_at, r.key_gone_at).first();
-    if (used) { await env.DB.prepare('UPDATE users SET key_gone_at=NULL WHERE id=?').bind(r.id).run(); continue; }
-    await dropUser(env, r.id); out.push(r.id.slice(0, 8));
-  }
-  if (out.length) console.log('keyGoneCron purged', out.length);
+  if (!force) { const last = await metaGet(env, 'syncgone_cron'); if (last && now - (+last.at || 0) < 3600e3) return { skipped: true }; }
+  await env.DB.prepare("INSERT INTO meta (k,v) VALUES ('syncgone_cron',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify({ at: now })).run();
+  await env.DB.prepare('UPDATE users SET last_sync_at=? WHERE last_sync_at IS NULL').bind(now).run(); // 기록 없는 사용자(배포 전부터 있던 사용자) = 지금부터 셈
+  const cut = now - SYNC_GONE_DAYS * DAY, out = [], adm = adminId(env) || '';
+  const rows = (await env.DB.prepare('SELECT id FROM users WHERE last_sync_at IS NOT NULL AND last_sync_at<=? AND id<>? LIMIT 20').bind(cut, adm).all()).results || [];
+  for (const r of rows) { await dropUser(env, r.id); out.push(r.id.slice(0, 8)); }
+  if (out.length) console.log('syncGoneCron purged', out.length);
   return { purged: out };
 }
 
@@ -915,5 +920,5 @@ export default {
     ctx.waitUntil((async () => { let cv = null; try { cv = await metaGet(env, 'mai_cache'); } catch (e) {} const mai = !env.MAI_OFF && (maiDue(now) || !(cv && cv.auto));
       await Promise.all([feedCron(env, now, mai ? FEED_MAX_LIST - 1 : FEED_MAX_LIST).catch(e => console.log('feedCron', String(e && e.stack || e))),
         mai ? maiCron(env, now, cv).catch(e => console.log('maiCron', String(e && e.stack || e))) : null]); })());
-    ctx.waitUntil(keyGoneCron(env, now).catch(e => console.log('keyGoneCron', String(e && e.stack || e)))); }, // b207: 30분마다 maple.ai.kr 시세(그 회차는 공지 목록 조회 1번 덜 = 서브요청 50 안) // b157: 매 1분 라이브 감지 · b170: 넥슨 공지 빠른 감시
+    ctx.waitUntil(syncGoneCron(env, now).catch(e => console.log('syncGoneCron', String(e && e.stack || e)))); }, // b207: 30분마다 maple.ai.kr 시세(그 회차는 공지 목록 조회 1번 덜 = 서브요청 50 안) // b157: 매 1분 라이브 감지 · b170: 넥슨 공지 빠른 감시
 };
