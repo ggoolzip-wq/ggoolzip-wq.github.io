@@ -43,6 +43,8 @@ try:
     s,_=req('PUT','/api/state',{'baseRev':0,'updatedAt':1,'data':st},tok=TA); check('state saved', s==200, s)
     s,u=req('GET','/api/admin/users',tok=TA); U={x['id']:x for x in u['users']}; A=U[UA]
     check('main regAt set', A['regAt']>0, A)
+    check('b237: joinAt = users.created_at, separate from regAt', A.get('joinAt',0)>0 and A['joinAt']==dev.sql(f"SELECT created_at FROM users WHERE id='{UA}'")[0]['created_at'], A)
+    check('b237: pending user regAt no fallback', all(x['regAt']==0 for x in u['users'] if x['status']=='pending'), [(x['status'],x['regAt']) for x in u['users']])
     check('alts = 부계정F only (rep char 부캐F, regAt); b102: 키 없는 칸 키없음 은 안 보임', [x['label'] for x in A['alts']]==['부계정F'] and A['alts'][0]['name']=='부캐F' and A['alts'][0]['regAt']>0, A['alts'])
     s,u2=req('GET','/api/admin/users?prices=1',tok=TA); check('b102: ?prices=1 → users + prices in one response', s==200 and 'prices' in u2 and len(u2['users'])==len(u['users']), list(u2))
     check('no key/hash leaked', KF not in json.dumps(u) and AH not in json.dumps(u))

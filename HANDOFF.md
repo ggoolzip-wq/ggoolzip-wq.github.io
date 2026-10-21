@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b237 (2026-10-21 KST) — 관리자 창 사용자 줄: '가입'·'등록' 날짜 둘 다
+사용자 요청: 관리자 창 본계정 줄에 가입 날짜(users.created_at)와 본계정 키 등록 날짜(inf.mainRegAt)를 따로 표시.
+1. Worker `/api/admin/users`: `joinAt: u.created_at||0` 추가, `regAt: inf.mainRegAt||0` (예전엔 created_at 으로 대체 → 이제 대체 없음). ⚠ **Worker 배포 필요** (`cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`) — 이번엔 안 함. 배포 전엔 joinAt 이 없어 '가입 : -', 등록은 예전처럼 created_at 대체값.
+2. `src/app.js`: `admDay(t)`(KST YYYY-MM-DD, 없으면 '-'), `admJoinReg(u)` = `가입 : 2026-09-20 · 등록 : 2026-10-10` (admreg 같은 스타일, 본계정 줄). 부계정 줄은 `admReg`('등록 날짜 : …') 그대로. 승인 버튼 낙관적 갱신은 regAt 대신 joinAt=now.
+3. 테스트: tests/test_tracker67.py (가입·등록 둘 다, 등록 없음 → '등록 : -'(가입으로 대체 안 함), 가입 없음 → '가입 : -'), tests/test_server_b91.py (joinAt = users.created_at).
+4. 사진(모의 데이터): /workspace/b237/before_admin_rows.png · after_admin_rows.png.
+
 ## b236 (2026-10-21 KST) — 30일 삭제 타이머: 끝난 동기화마다 리셋 (자동 포함)
 사용자 요청: 🔄 직접 누름뿐 아니라 **성공한 모든 캐릭터 동기화**(페이지 열 때 자동·F5/새로고침·뒤로/앞으로·키 등록 뒤·🔄)가 30일 타이머를 다시 시작하고 /api/sync-press 를 부름.
 1. `src/app.js`: `syncPressMark(t,bad)` 를 🔄 버튼(`case 'syncBtn'`)에서 빼고 `syncAll()` 이 예외 없이 끝나는 곳(`S.settings.lastSync=…; svSyncDone()` 바로 뒤)으로 옮김. 리셋 대상 = 키가 있고 이번 동기화에서 계정 오류(`badAcc`)가 없는 칸만. 동기화 실패(네트워크 등, catch) = 리셋 없음. 키 없는 칸은 동기화가 안 되므로 계속 셈. 나머지(b235 삭제·재연결·로그아웃 버튼)는 그대로.

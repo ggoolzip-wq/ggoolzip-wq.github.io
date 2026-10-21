@@ -827,7 +827,7 @@ async function route(req, env) {
       const out = (ur.results || []).map(u => {
         const st = u.status || 'ok', inf = st === 'pending' ? { chars: 0, size: 0, savedAt: 0, alts: [] } : userInfoFrom(stOf.get(u.id), roOf.get(u.id) || []);
         return { id: u.id, status: st, admin: u.id === adminId(env), name: inf.name || u.name || '', world: inf.world || u.world || '', level: inf.level || u.level || 0,
-          chars: inf.chars, size: inf.size, lastLogin: u.last_login, syncAt: u.sync_click || 0, requestedAt: u.requested_at || 0, regAt: inf.mainRegAt || u.created_at || 0, alts: inf.alts || [] };
+          chars: inf.chars, size: inf.size, lastLogin: u.last_login, syncAt: u.sync_click || 0, requestedAt: u.requested_at || 0, joinAt: u.created_at || 0, regAt: inf.mainRegAt || 0, alts: inf.alts || [] };
       });
       let prices; if (wantP) { try { prices = pr.results?.[0] ? JSON.parse(pr.results[0].v) : {}; } catch (e) { prices = {}; } }
       return json(200, { users: out, ...(wantP ? { prices } : {}) });

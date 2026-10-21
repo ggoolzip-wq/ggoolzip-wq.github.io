@@ -14,10 +14,10 @@ for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
 T=lambda s: int(time.mktime(time.strptime(s,'%Y-%m-%d %H:%M'))*1000)  # 박스 시간대 = KST
-def U(i,name,alts=(),admin=False,reg='2026-10-01 10:00'):
-    return {'id':f'u{i}','status':'ok','admin':admin,'name':name,'world':'스카니아','level':280,'chars':3,'size':2048,'lastLogin':T('2026-10-12 09:00'),'syncAt':(0 if i==2 else T('2026-10-13 21:07')),'regAt':T(reg),
+def U(i,name,alts=(),admin=False,reg='2026-10-01 10:00',join='2026-09-20 10:00'):
+    return {'id':f'u{i}','status':'ok','admin':admin,'name':name,'world':'스카니아','level':280,'chars':3,'size':2048,'lastLogin':T('2026-10-12 09:00'),'syncAt':(0 if i==2 else T('2026-10-13 21:07')),'regAt':(T(reg) if reg else 0),'joinAt':(T(join) if join else 0),
             'alts':[{'label':l,'name':n,'world':'스카니아','level':270,'chars':1,'regAt':(T(r) if r else 0)} for l,n,r in alts]}
-USERS=[U(0,'관리자캐',admin=True,reg='2026-10-10 08:00'),U(1,'본캐하나',[('부계정1','부캐가','2026-10-11 23:30'),('부계정2','부캐나',None)],reg='2026-10-10 23:59')]+[U(i,f'유저{i}') for i in range(2,13)]+[{'id':'p1','status':'pending','name':'대기캐','world':'루나','level':260,'requestedAt':T('2026-10-12 08:00')}]
+USERS=[U(0,'관리자캐',admin=True,reg='2026-10-10 08:00'),U(1,'본캐하나',[('부계정1','부캐가','2026-10-11 23:30'),('부계정2','부캐나',None)],reg='2026-10-10 23:59')]+[U(i,f'유저{i}',reg=(None if i==3 else '2026-10-01 10:00'),join=(None if i==4 else '2026-09-20 10:00')) for i in range(2,13)]+[{'id':'p1','status':'pending','name':'대기캐','world':'루나','level':260,'requestedAt':T('2026-10-12 08:00')}]
 SHOT=os.environ.get('SHOT'); STRICT=not SHOT or 'after' in SHOT
 try:
   with sync_playwright() as p:
@@ -35,7 +35,9 @@ try:
       check('alts collapsed by default', pg.evaluate(f"document.querySelectorAll(\"{r1} ~ .admalts .admalt\").length")==2 and not pg.is_visible('.admalt'))
       tg=pg.locator(f"{r1} [data-admalt]"); check('toggle ▽ next to main with alts', tg.count()==1 and '▽' in tg.inner_text(), tg.count())
       check('no toggle for user without alts', pg.locator("[data-admuser='u2'] [data-admalt]").count()==0)
-      check('main reg date KST', '등록 날짜 : 2026-10-10' in pg.inner_text(r1), pg.inner_text(r1))
+      check('b237: main row = 가입·등록 both (KST)', '가입 : 2026-09-20 · 등록 : 2026-10-10' in pg.inner_text(r1), pg.inner_text(r1))
+      check('b237: no key reg → 등록 : - (no fallback to 가입)', '가입 : 2026-09-20 · 등록 : -' in pg.inner_text("[data-admuser='u3']"), pg.inner_text("[data-admuser='u3']"))
+      check('b237: no joinAt → 가입 : -', '가입 : - · 등록 : 2026-10-01' in pg.inner_text("[data-admuser='u4']"), pg.inner_text("[data-admuser='u4']"))
       check('b229: 최근 갱신 = syncAt (KST), 마지막 로그인 없음', '최근 갱신 10/13 21:07' in pg.inner_text(r1) and '마지막 로그인' not in pg.inner_text('#admBody'), pg.inner_text(r1))
       check('b229: no sync recorded → 최근 갱신 -', '최근 갱신 -' in pg.inner_text("[data-admuser='u2']"), pg.inner_text("[data-admuser='u2']"))
       if os.environ.get('B225_SHOT'): pg.locator('#adminModal .modal').first.screenshot(path=os.environ['B225_SHOT'])
