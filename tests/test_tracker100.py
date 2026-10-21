@@ -55,7 +55,8 @@ try:
     # 3) 스케줄러가 registration_flag:"false" 여도 / 응답에 없어도 동기화는 등록을 끄지 않음 (사용자: 등록은 리셋·동기화로 절대 안 지움)
     apply([{'content_name':'루시드','difficulty':'hard','cycle':'bossWeekly','registration_flag':'true','clear_flag':'false'},
            {'content_name':'카링','difficulty':'normal','cycle':'bossWeekly','registration_flag':'false','clear_flag':'false'}])
-    check('동기화는 등록을 끄지 않음 (등록 false·응답에 없음 모두 유지)', on()==['blackmage','dusk','kaling','lotus','lucid','will'], on())
+    # b242: 이번 주 응답에서 명시적 registration_flag 'false' + 안 잡은 주간 보스 = 스케줄러에서 뺀 것 → 꺼짐(교체 바로 적용). 응답에 없는 보스는 여전히 유지
+    check('b242: 등록 false(안 잡음)는 꺼짐, 응답에 없음은 유지', on()==['blackmage','dusk','lotus','lucid','will'], on())
     # 4) 등록 false 만 잔뜩 (리셋 직후 이상 응답) → 아무것도 안 끔
     apply([{'content_name':'루시드','difficulty':'hard','cycle':'bossWeekly','registration_flag':'false','clear_flag':'false'}])
     check('주간 등록 true 가 하나도 없는 응답은 끄는 근거 아님', 'lucid' in on(), on())

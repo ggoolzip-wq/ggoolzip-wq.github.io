@@ -42,6 +42,8 @@ try:
         nid=info[1]
         check('12개 다 잡은 뒤 스케줄러 변경 → 이번 주 주간 보스 12개 그대로', n[0]==12 and n[1]==12, n)
         check('새 등록은 대기(c.bossNext) — 이번 주엔 꺼져 있음', pg.evaluate(f"!S.characters[0].bosses['{nid}']?.enabled && !!S.characters[0].bossNext?.['{nid}']"), pg.evaluate("S.characters[0].bossNext"))
+        check('b242: 대기 중(12개 처치 후 스케줄러 수정)에도 빨간 안내', pg.evaluate("!!document.querySelector('#view .bover')"))
+        if SD: pg.locator('#view').screenshot(path=os.path.join(SD,f'{PFX}_b242_pending_red_note.png'))
         check('안내 문구(목요일 초기화 때 적용)', '목요일' in pg.inner_text('#view') and info[2] in pg.inner_text('#view .bnext'), pg.evaluate("(document.querySelector('#view .bnext')||{}).textContent"))
         pg.reload(); pg.wait_for_timeout(800)
         check('새로고침해도 대기 유지(저장)', pg.evaluate(f"!!S.characters[0].bossNext?.['{nid}'] && JSON.parse(localStorage.getItem('mapleBossTracker.v1')).characters[0].bossNext['{nid}'].enabled===true"))
@@ -68,13 +70,59 @@ try:
         check('등록 13개 → 카드 12개·카운트 /12', len(ids)==13 and v['rows']==12 and '/12' in v['seg'], (len(ids),v))
         check('처치한 보스(가장 싼 것)는 12개 안에 남음', cheap in v['shown'], (cheap,v['shown']))
         check('안 잡은 것 중 가장 싼 보스가 빠짐', ids[1][0] not in v['shown'], ids[:2])
-        check('빨간 안내 문구 정확히', v['over']=='*스케줄러에 등록된 보스가 12마리를 초과하여 일부 보스가 미출력됩니다.', v['over'])
+        TXT='*스케줄러에 등록된 보스가 12마리를 초과했거나, 보스 클리어 후 스케줄러를 수정하여\n 일부 보스가 미출력됩니다.'
+        ov=pg.evaluate("(document.querySelector('#view .bover')||{}).innerText||''")
+        check('b242: 빨간 안내 문구 정확히 두 줄', ov.replace('\r','')==TXT or ov.split('\n')==TXT.split('\n') or [x.strip() for x in ov.split('\n')]==[x.strip() for x in TXT.split('\n')], repr(ov))
+        check('b242: 두 줄로 보임(높이)', pg.evaluate("(()=>{const o=document.querySelector('#view .bover'); return o.getClientRects().length>=2||o.getBoundingClientRect().height>parseFloat(getComputedStyle(o).lineHeight)*1.5})()"))
         pos=pg.evaluate("()=>{ const s=document.querySelector('#view .seg'), o=document.querySelector('#view .bover'), b=document.querySelector('#revAllBtn'); return !!(s&&o&&b)&&(s.compareDocumentPosition(o)&4)&&(o.compareDocumentPosition(b)&4)&&getComputedStyle(o).color; }")
         check('위치 = 월간 보스 버튼과 수익 기록 전체 수정 사이, 빨간색', bool(pos) and 'rgb(255, 77, 79)' == pos, pos)
         check('예상 수익도 12개 기준', pg.evaluate("expectedAll(S.characters[0]).length<=12"))
         if SD: pg.locator('#view').screenshot(path=os.path.join(SD,f'{PFX}_over12_red_note.png'))
         pg.evaluate("()=>{ const c=S.characters[0]; for(const b of BOSSES.filter(b=>b.type==='weekly'&&c.bosses[b.id]?.enabled).slice(0,1)) c.bosses[b.id].enabled=false; render(); }")
         check('12개 이하 → 안내 없음', pg.evaluate("!document.querySelector('#view .bover')"))
+        # b242: 12개 등록·8개 처치, 안 잡은 보스를 스케줄러에서 다른 보스로 교체 → 바로 적용, 정상 표시(12개·새 보스 보임·옛 보스 없음·빨간 안내·대기 없음)
+        sw=pg.evaluate("""()=>{ const W=BOSSES.filter(b=>b.type==='weekly'&&b.diffs.length).slice(-13);
+          const c={id:'c1',name:'교체캐',level:285,job:'히어로',world:'스카니아',image:'',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}};
+          W.slice(0,12).forEach((b,i)=>{ c.bosses[b.id]={enabled:true,diff:b.diffs[b.diffs.length-1],party:1}; if(i<8){ c.weekly[b.id]=true; c.auto[b.id]=true; } });
+          S.characters=[c]; S.activeId='c1'; bossFilter='weekly'; save(); render(); return [W[11].id,W[12].id,W[12].name,W[11].name]; }""")
+        if SD: pg.locator('#view').screenshot(path=os.path.join(SD,'swap_before.png'))
+        pg.evaluate("""()=>{ const W=BOSSES.filter(b=>b.type==='weekly'&&b.diffs.length).slice(-13); const c=S.characters[0];
+          const rows=W.slice(0,11).map((b,i)=>({content_name:b.name,difficulty:b.diffs[b.diffs.length-1],cycle:'bossWeekly',registration_flag:'true',complete_flag:i<8?'true':'false'}))
+            .concat([{content_name:W[11].name,difficulty:W[11].diffs[W[11].diffs.length-1],cycle:'bossWeekly',registration_flag:'false',complete_flag:'false'},
+                     {content_name:W[12].name,difficulty:W[12].diffs[0],cycle:'bossWeekly',registration_flag:'true',complete_flag:'false'}]);
+          applyScheduler(c,{date:S.period.week+'T00:00+09:00',boss_contents:rows}); save(); render(); }"""); pg.wait_for_timeout(300)
+        r=pg.evaluate(f"""()=>{{ const c=S.characters[0]; const ids=[...document.querySelectorAll('#view .boss [data-drop]')].map(e=>e.dataset.drop.split('|')[0]);
+          return {{rows:document.querySelectorAll('#view .boss').length, seg:document.querySelector('#view [data-filter=weekly]').textContent, newOn:bossOn(c,findBoss('{sw[1]}')), oldOn:bossOn(c,findBoss('{sw[0]}')), txt:document.querySelector('#view').innerText, red:!!document.querySelector('#view .bover'), pend:Object.keys(c.bossNext||{{}}).length}}; }}""")
+        if SD: pg.locator('#view').screenshot(path=os.path.join(SD,'swap_after.png'))
+        check('b242 교체: 바로 적용 — 새 보스 보임·옛 보스 없음', r['newOn'] and not r['oldOn'] and sw[2] in r['txt'], {k:r[k] for k in ('newOn','oldOn','rows','seg')})
+        check('b242 교체: 12개·8/12·빨간 안내·대기 없음', r['rows']==12 and '8/12' in r['seg'] and not r['red'] and r['pend']==0, {k:r[k] for k in ('rows','seg','red','pend')})
+        # b242: 10개 처치 상태에서 '잡은 보스'를 다른 보스로 교체 → 잡은 보스는 이번 주 그대로(클리어), 새 보스는 대기, 빨간 안내. 섞인 교체 = 안 잡은 쪽은 바로
+        CS="""(mixed)=>{ const W=BOSSES.filter(b=>b.type==='weekly'&&b.diffs.length).slice(-14);
+          const c={id:'c1',name:'잡은보스교체',level:285,job:'히어로',world:'스카니아',image:'',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}};
+          W.slice(0,12).forEach((b,i)=>{ c.bosses[b.id]={enabled:true,diff:b.diffs[b.diffs.length-1],party:1}; if(i<10){ c.weekly[b.id]=true; c.auto[b.id]=true; } });
+          S.characters=[c]; S.activeId='c1'; bossFilter='weekly'; save(); render(); return W.map(b=>[b.id,b.name]); }"""
+        CA="""(mixed)=>{ const W=BOSSES.filter(b=>b.type==='weekly'&&b.diffs.length).slice(-14); const c=S.characters[0]; const L=b=>b.diffs[b.diffs.length-1];
+          const rows=W.slice(0,12).map((b,i)=>({content_name:b.name,difficulty:L(b),cycle:'bossWeekly',registration_flag:(i===0||(mixed&&i===11))?'false':'true',complete_flag:i<10?'true':'false'}))
+            .concat([{content_name:W[12].name,difficulty:W[12].diffs[0],cycle:'bossWeekly',registration_flag:'true',complete_flag:'false'}])
+            .concat(mixed?[{content_name:W[13].name,difficulty:W[13].diffs[0],cycle:'bossWeekly',registration_flag:'true',complete_flag:'false'}]:[]);
+          applyScheduler(c,{date:S.period.week+'T00:00+09:00',boss_contents:rows}); save(); render(); }"""
+        W=pg.evaluate(CS,False)
+        if SD: pg.locator('#view').screenshot(path=os.path.join(SD,'cleared_swap_before.png'))
+        pg.evaluate(CA,False); pg.wait_for_timeout(300)
+        r=pg.evaluate(f"""()=>{{ const c=S.characters[0]; return {{rows:document.querySelectorAll('#view .boss').length, seg:document.querySelector('#view [data-filter=weekly]').textContent,
+          xOn:bossOn(c,findBoss('{W[0][0]}')), xClr:!!c.weekly['{W[0][0]}'], yOn:bossOn(c,findBoss('{W[12][0]}')), next:c.bossNext||{{}}, red:!!document.querySelector('#view .bover')}}; }}""")
+        if SD: pg.locator('#view').screenshot(path=os.path.join(SD,'cleared_swap_after.png'))
+        check('b242 잡은 보스 교체: 잡은 보스 이번 주 그대로(클리어 표시), 새 보스 대기, 12개·10/12', r['xOn'] and r['xClr'] and not r['yOn'] and r['rows']==12 and '10/12' in r['seg'], r)
+        check('b242 잡은 보스 교체: 대기 = 새 보스 켜기 + 잡은 보스 빼기, 빨간 안내', r['next'].get(W[12][0],{}).get('enabled')==True and r['next'].get(W[0][0],{}).get('enabled')==False and r['red'], r['next'])
+        pg.reload(); pg.wait_for_timeout(800); pg.evaluate("render()")
+        check('b242 대기 유지(새로고침)·빨간 안내', pg.evaluate("Object.keys(S.characters[0].bossNext||{}).length==2&&!!document.querySelector('#view .bover')"))
+        pg.evaluate("()=>{ S.period.week='2000-01-06'; checkResets(); render(); }")
+        st=pg.evaluate(f"()=>{{const c=S.characters[0]; return [c.bosses['{W[0][0]}']?.enabled, c.bosses['{W[12][0]}']?.enabled, !c.bossNext, BOSSES.filter(b=>b.type==='weekly'&&c.bosses[b.id]?.enabled).length]}}")
+        check('b242 목 리셋: 잡은 보스 빠지고 새 보스 켜짐(12개)', st==[False,True,True,12], st)
+        # 섞인 교체: 잡은 X 빼고 + 안 잡은 Z(11번) 빼고, 새 Y·V 등록 → 빈 칸 1개 = 가격 높은 새 보스 바로, 나머지 대기
+        W=pg.evaluate(CS,True); pg.evaluate(CA,True); pg.wait_for_timeout(200)
+        m=pg.evaluate(f"""()=>{{ const c=S.characters[0]; const on=id=>bossOn(c,findBoss(id)); return {{z:on('{W[11][0]}'), y:on('{W[12][0]}'), v:on('{W[13][0]}'), x:on('{W[0][0]}'), next:Object.keys(c.bossNext||{{}}), rows:document.querySelectorAll('#view .boss').length, red:!!document.querySelector('#view .bover')}}; }}""")
+        check('b242 섞인 교체: 안 잡은 보스는 바로 빠짐, 새 보스 1개 바로·1개 대기, 잡은 보스 그대로, 12개·빨간 안내', (not m['z']) and m['x'] and (m['y']!=m['v']) and len(m['next'])==2 and m['rows']==12 and m['red'], m)
         check('페이지 오류 없음', not errs, errs)
     b.close()
 finally:

@@ -1107,7 +1107,7 @@ const isSeasonBoss = n => /시즌|메이린/.test(String(n||''));
 /* b241: 주간 보스 12개(한도)를 이번 주에 다 잡은 캐릭터 = 스케줄러 등록 변경(새 보스·난이도)은 목 리셋 때 적용.
  * c.bossNext = {보스 id: {enabled, diff}} — 캐릭터 안이라 저장·서버/드라이브 동기화·다른 기기에 그대로. resetCore(주간 초기화, rollPeriod 포함)가 적용 후 지움.
  * 한도 미만이면 예전처럼 바로 적용(대기 중이던 것도 다음 applyScheduler 때 바로). */
-const bossNextNote = c => { const l=Object.entries(c.bossNext||{}).map(([id,v])=>{ const b=findBoss(id); return b?`${b.name}${v?.diff&&D[v.diff]?`(${D[v.diff]})`:''}`:''; }).filter(Boolean);
+const bossNextNote = c => { const l=Object.entries(c.bossNext||{}).map(([id,v])=>{ const b=findBoss(id); return b?`${b.name}${v?.enabled===false?' 빼기':v?.diff&&D[v.diff]?`(${D[v.diff]})`:''}`:''; }).filter(Boolean);
   return l.length?`<div class="bnext muted tiny" title="이번 주 주간 보스 ${S.settings.weeklyLimit}개를 다 잡아서 스케줄러 변경은 다음 주부터 적용">⏳ 스케줄러 변경 ${esc(l.join(', '))} — 목요일 초기화 때 적용</div>`:''; };
 /* b241: 스케줄러 주간 보스 등록이 12개(한도)를 넘으면 어디서나 12개만 — 이번 주 처치한 보스는 항상 포함, 나머지는 1인당 결정석 가격 높은 순.
  * bossOn(c,b) = 켜져 있고(enabled) 주간이면 weeklyShown 안. 월간(검마)은 세지 않음. */
@@ -1124,9 +1124,11 @@ function bossNextApply(c){ const n=c.bossNext; if(!n) return 0; let k=0;
     c.bosses[id]={enabled:v?.enabled!==false,diff,party:cfg?.party||1}; try{ clampParty(c,id); }catch(e){} k++; }
   delete c.bossNext; return k; }
 function applyScheduler(c, data){
-  if(c.bossNext&&!weeklyFull(c)) bossNextApply(c); // b241: 한도 미만이 됨 → 대기 중이던 변경 바로 적용
   const d=String(data?.date||'').slice(0,10);
   const staleWeek = d && d < S.period.week, staleMonth = d && d.slice(0,7) < S.period.month;
+  /* b242: 이번 주 응답이면 대기(bossNext)를 응답 기준으로 다시 계산. adds = 새로 등록된(안 켜진·안 잡은) 주간 보스, clrEdit = 이번 주 잡은 보스의 등록 해제·난이도 변경(→ 대기).
+   *  잡은 보스를 건드렸거나(clrEdit) 12개 다 잡았으면(weeklyFull) 새 등록은 빈 칸(12 - 켜진 수)만큼 가격 높은 순으로 바로, 나머지는 대기. 아니면 예전처럼 전부 바로. */
+  if(!staleWeek&&c.bossNext) delete c.bossNext; const adds=[], clrEdit={};
   const unmatched=[]; let checked=0;
   const isDone = r => flagOn(r.complete_flag) || flagOn(r.clear_flag); // 공식 스펙: complete_flag (일부 문서는 clear_flag 표기)
   const rows=(data?.boss_contents||[]).slice().sort((a,b)=>isDone(b)-isDone(a));
@@ -1138,7 +1140,7 @@ function applyScheduler(c, data){
     if(!b && RETIRED_BOSS_NAMES.includes(normName(r.content_name))) continue; // 일일 보스로 바뀐 보스
     if(!b && isSeasonBoss(r.content_name)) continue; // 시즌 보스(메이린 등)는 추적 대상이 아님 — '매칭 안 된 보스'에서 제외
     if(!b || !diff || !b.diffs.includes(diff)){ unmatched.push(`${r.content_name}(${r.difficulty||'?'})`); continue; }
-    if(seen[b.id]) continue;
+    if(seen[b.id]){ if(b.type==='weekly'&&!staleWeek&&c.weekly[b.id]&&flagOn(r.registration_flag)&&!isDone(r)&&diff!==c.bosses[b.id]?.diff) clrEdit[b.id]={enabled:true,diff}; continue; } // b242: 잡은 보스 난이도 변경 = 대기
     const done=isDone(r), reg=flagOn(r.registration_flag), hasReg=r.registration_flag!=null&&r.registration_flag!=='';
     if(reg) regYes[b.id]=b; else if(hasReg&&!done) regNo[b.id]=b;
     const cfg=c.bosses[b.id];
@@ -1152,14 +1154,15 @@ function applyScheduler(c, data){
         continue;
       }
       seen[b.id]=true;
+      if(b.type==='weekly'&&hasReg&&!reg) clrEdit[b.id]={enabled:false}; // b242: 잡은 보스를 스케줄러에서 뺌 = 이번 주는 그대로(클리어 표시), 목 리셋 때 끔
       c.bosses[b.id]={enabled:true,diff,party:cfg?.party||1}; clampParty(c,b.id);
       if(b.type==='weekly'){ if(!c.weekly[b.id]){ checked++; (c.wat||(c.wat={}))[b.id]=Date.now(); } c.weekly[b.id]=true; }
       else { if(!c.monthly[b.id]) checked++; c.monthly[b.id]=c.monthly[b.id]||S.period.week; (c.mdate||(c.mdate={}))[b.id]=(c.mdate||{})[b.id]||kstDay(); }
       c.auto[b.id]=true;
     } else if(reg){ // 스케줄러에 등록된 보스 = 이 캐릭터의 보스 (난이도도 API 값, 파티 인원은 유지)
       seen[b.id]=true;
-      if(b.type==='weekly'&&!c.weekly[b.id]&&weeklyFull(c)&&!(cfg?.enabled&&cfg.diff===diff)){ bossNextPut(c,b,{enabled:true,diff}); continue; } // b241: 12개 다 잡음 → 목 리셋 때 적용
-      if(c.bossNext) delete c.bossNext[b.id];
+      if(b.type==='weekly'&&!staleWeek&&!c.weekly[b.id]&&!cfg?.enabled){ adds.push({b,diff,cfg}); continue; } // b242: 새 등록은 아래에서 (빈 칸만큼 바로, 나머지 대기)
+      if(b.type==='weekly'&&!staleWeek&&c.weekly[b.id]&&cfg?.enabled&&cfg.diff!==diff){ clrEdit[b.id]={enabled:true,diff}; continue; } // b242: 잡은 보스 난이도 변경 = 대기
       c.bosses[b.id]={enabled:true,diff,party:cfg?.party||1}; clampParty(c,b.id);
     }
   }
@@ -1170,6 +1173,17 @@ function applyScheduler(c, data){
   //  안 잡은 주간 보스를 전부 껐음 (+ isDone(c,b) 가 응답 행용 isDone 에 가려져 '체크한 건 유지'도 안 됐음).
   //  사용자 규칙: 스케줄러 등록 보스는 항상 라인업에, 클리어 플래그는 클리어 표시만, 목 리셋은 클리어 표시만 지움.
   //  → 동기화는 등록을 켜기만 하고 절대 끄지 않음 (빼려면 사용자가 직접 끔). regYes/regNo 는 기록용.
+  // b242: 예외 — 이번 주 응답에서 registration_flag 가 명시적으로 'false'(regNo)인 주간 보스는, 이번 주에 안 잡았고 같은 응답에 등록(true) 보스가 있을 때만 끔
+  //  (스케줄러에서 안 잡은 보스를 다른 보스로 바꾼 경우 → 바로 적용. b136 의 '플래그 없음'은 regNo 에 안 들어가므로 그대로 안전). 난이도·파티 인원은 남김.
+  if(!staleWeek&&Object.values(regYes).some(b=>b.type==='weekly')) for(const [id,b] of Object.entries(regNo)){
+    if(b.type!=='weekly'||!c.bosses[id]?.enabled) continue; if(c.weekly[id]){ clrEdit[id]=clrEdit[id]||{enabled:false}; continue; } c.bosses[id].enabled=false; }
+  if(!staleWeek){ // b242
+    const hold=Object.keys(clrEdit).length>0||weeklyFull(c), val=a=>Math.floor(price(a.b,a.diff)/Math.max(1,Math.min(partyMax(a.b,a.diff),a.cfg?.party||1)));
+    let free=hold?Math.max(0,S.settings.weeklyLimit-BOSSES.filter(x=>x.type==='weekly'&&c.bosses[x.id]?.enabled).length):Infinity;
+    adds.sort((x,y)=>val(y)-val(x));
+    for(const a of adds){ if(free>0){ c.bosses[a.b.id]={enabled:true,diff:a.diff,party:a.cfg?.party||1}; clampParty(c,a.b.id); free--; } else bossNextPut(c,a.b,{enabled:true,diff:a.diff}); }
+    for(const [id,v] of Object.entries(clrEdit)) bossNextPut(c,findBoss(id),v);
+  }
   c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:true,msg:'',clear:data?.weekly_boss_clear_count,limit:data?.weekly_boss_clear_limit_count,unmatched,date:d});
   if(data?.character_level) c.level=data.character_level;
   if(data?.character_class) c.job=data.character_class;
@@ -1907,7 +1921,7 @@ function renderBoss(){
    </div>
    <div class="card">
     <div class="toolbar" style="margin-bottom:10px">
-      <div class="seg">${['weekly','monthly'].map(t=>`<button data-filter="${t}" class="${bossFilter===t?'on':''}">${TYPE_LABEL[t]} <span style="opacity:.8">${doneType(t)}/${cntType(t)}</span></button>`).join('')}</div>${weeklyOver(c)?`<span class="bover" role="note">*스케줄러에 등록된 보스가 12마리를 초과하여 일부 보스가 미출력됩니다.</span>`:''}
+      <div class="seg">${['weekly','monthly'].map(t=>`<button data-filter="${t}" class="${bossFilter===t?'on':''}">${TYPE_LABEL[t]} <span style="opacity:.8">${doneType(t)}/${cntType(t)}</span></button>`).join('')}</div>${weeklyOver(c)||Object.keys(c.bossNext||{}).length?`<span class="bover" role="note">*스케줄러에 등록된 보스가 12마리를 초과했거나, 보스 클리어 후 스케줄러를 수정하여<br>&nbsp;일부 보스가 미출력됩니다.</span>`:''}
       <span style="flex:1"></span>
       ${(!pend&&pendDoneAt&&Date.now()-pendDoneAt<3000)?'<span class="pdone" role="status">저장이 완료되었습니다.</span>':''}${(on=>`<button class="pbtn prevall on" id="revAllBtn" type="button">수익 기록 전체 수정</button><button class="pbtn pcancel${on?' on':''}" id="pendCancel" ${on?'':'disabled'}>취소</button><button class="pbtn psave${on?' on':''}" id="pendSave" ${on?'':'disabled'}>저장</button>`)(!!pend)}
     </div>
