@@ -1913,6 +1913,13 @@ header .logo .logo-d{display:flex;align-items:center}
 /* b233: 24px 초상화 공통(주별 득템 표 이름 앞 = 이번 주 수익 총합 캐릭터 이름 앞). 자르기 = .avatar img 공통(64px 원본, object-fit:none, 가운데 60%) */
 .avatar.av24{width:24px;height:24px;min-width:24px;flex:none;border-radius:10px;font-size:15px;line-height:1;font-weight:800}
 .rp-top .rp-av{align-self:center}
+
+/* zosu-hong: 홍옥 반지 상자 버튼 = 아이콘 + 이름 */
+.drop.rredbtn{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 4px}
+.drop.rredbtn .rrbico{display:inline-flex;width:20px;height:20px;flex:none}
+.drop.rredbtn .rrbico img,.drop.rredbtn .rrbico .ric{width:20px!important;height:20px!important;object-fit:contain;margin:0}
+.drop.rredbtn .rrbt{white-space:nowrap}
+@media(max-width:470px){.drops .drop.rredbtn{display:none}}
 </style>
 </head>
 <body>
@@ -2327,16 +2334,16 @@ function dropsHtml(b,diff,c){
   const mine=c?(d=>({items:Object.fromEntries(Object.entries(d.items).filter(([k])=>k.split('|')[0]===b.id)),outcomes:d.outcomes}))(charDrops(c,b.type)):null;
   const ringLine=mine?itemsInline(mine.items,{outs:mine.outcomes}):'';
   /* b213: 누를 수 없는 칩(기록 안 함) = 모멘텀 큐브(정보 아이콘) 바로 다음, 원래 색 · b214: 솔 에르다·모멘텀 큐브처럼 아이콘만(이름·개수 없음, 말풍선 = 이름) */
-  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${off.map(k=>`<span class="drop erda off" aria-disabled="true" data-tip="${esc(ITEMS[k].n)}" aria-label="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}</span>`).join('')}${shown.map(chip).join('')}${c&&b.type==='weekly'&&(RING_DROPS.r_red?.[b.id]||[]).includes(diff)?rredBtn(b,c):''}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
+  return `<div class="drops open" aria-label="주요 희귀 드롭">${erda}${off.filter(k=>!(k==='r_red'&&c&&b.type==='weekly')).map(k=>`<span class="drop erda off" aria-disabled="true" data-tip="${esc(ITEMS[k].n)}" aria-label="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}</span>`).join('')}${shown.map(chip).join('')}${c&&b.type==='weekly'&&(RING_DROPS.r_red?.[b.id]||[]).includes(diff)?rredBtn(b,c):''}</div>${ringLine?`<div class="ringouts">${ringLine}</div>`:''}`;
 }
 /* b229: 홍옥 반지 상자로 리4/컨4 — 보스 줄 끝 버튼 → 창(리4/컨4 고르기 + 판매금 + 저장/취소).
  * 저장 = c.drops['보스|hong_r4|hong_c4']=1 (홍옥 상자 r_red 는 기록 안 함 → 상자 수·반지 상자 줄·반상 상위·기댓값 그대로) + c.drev 같은 키 {m,a,p:1,i:'hong_r4'}.
  * 일반 아이템 기록과 같아서 '이번주 획득 아이템' 금액·xN(+1)·주간 기록·득템왕·보스 득템왕·보스 별 누적·주별 득템·판매 누적 수익에 그대로, 일반 반지 상자 리4/컨4 와는 따로 줄.
  * 다시 누르면 취소(드롭 칩처럼). 보스당 이번 주 1번. 분배 없음(입력 = 내 몫) */
-const RRED_TXT='홍옥 반지 상자로 리4/컨4를 먹었을 경우 클릭';
+const RRED_TXT='홍옥 반지 상자'; /* zosu-hong: 버튼 = 홍옥 상자 아이콘 + 이름 (예전 '…먹었을 경우 클릭'), 옆 아이콘만 칩(r_red off) 삭제 */
 const rredGot = (c,slot) => ['hong_r4','hong_c4'].find(k=>+(c?.drops||{})[slot+'|'+k]>0)||'';
 function rredBtn(b,c){ const k=rredGot(c,b.id), r=k&&(c.drev||{})[b.id+'|'+k];
-  return `<button type="button" class="drop rredbtn${k?' got':''}" data-rred="${b.id}"${k?` data-tip="${esc(`${k==='hong_r4'?'리4':'컨4'}${r&&+r.m>0?` · 판매금 ${meso(+r.m)}`:''} — 다시 누르면 취소`)}"`:''}>${RRED_TXT}</button>`; }
+  return `<button type="button" class="drop rredbtn${k?' got':''}" data-rred="${b.id}"${k?` data-tip="${esc(`${k==='hong_r4'?'리4':'컨4'}${r&&+r.m>0?` · 판매금 ${meso(+r.m)}`:''} — 다시 누르면 취소`)}"`:''} aria-label="홍옥 반지 상자로 리4/컨4를 먹었을 경우 기록"><span class="rrbico" aria-hidden="true">${itemIcon('r_red')}</span><span class="rrbt">${RRED_TXT}</span></button>`; }
 function openRred(slot){
   const c=activeChar(), b=findBoss(slot); if(!c||!b) return; pendStart();
   const had=rredGot(c,slot); if(had){ for(const k of ['hong_r4','hong_c4']){ delete c.drops[slot+'|'+k]; if(c.drev) delete c.drev[slot+'|'+k]; } if(c.drev&&!Object.keys(c.drev).length) delete c.drev; save(); render(); return; } // 기록된 것 다시 누름 = 취소
