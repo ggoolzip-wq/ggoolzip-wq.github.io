@@ -1860,3 +1860,15 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 사진 없음/깨짐 = 같은 24px 칸에 닉네임 첫 글자(기존 avatar 동작). 수익 총합에서 닉네임이 나오는 곳은 이 줄 하나.
 - 테스트 tests/test_b233.py(8977): box 전용 가짜 초상화(넥슨 이미지 주소를 PNG 로 응답)로 수익 총합 vs 주별 득템 표 크기·모서리·img 크기·object-fit/position 같음, 사진 없음 = 같은 크기 글자 칸, 이름 안 잘림·한 줄·금액 오른쪽 끝 같음(실제 1600/390, 예시 1600/390).
 - 스크린샷 /workspace/b233/revpanel_{demo,real}_{1600,390}.png — 1600 에서는 패널이 높이 제한(안쪽 스크롤)이라 찍을 때만 max-height 풀어서 전체를 찍음(b232 1600 사진은 위쪽만 찍혔었음).
+
+## zosu-testfix (b233 위로 다시) (2026-10-21 14:22~14:38 KST) — 테스트 안정화만 b233 위에 다시 올림 (브랜치 zosu-testfix-b233, 병합 전)
+- 예전 zosu-testfix 는 로컬 b224(zosu-apikey 병합 포함, origin 에 없음) 위였음 → origin/main b233 위에서 **테스트 정리 작업만** 다시 적용. zosu-apikey 변경(activeChars/activeIds/activeRecords/activeMiss, test_tracker103, missNow)과 로컬 b224 HANDOFF 섹션은 **안 가져옴**(메이플 봇이 b233 위에서 따로 다시 함).
+- **tests/_tutil.py**(새 파일): `free_port()` 빈 포트, `Popen()` = 테스트 서버를 PDEATHSIG·atexit 로 정리 + bind 실패/포트 사용 중이면 바로 실패, 브라우저 컨텍스트에서 운영 Worker(ggoolzip-sync…workers.dev) 요청을 `{}` 로 막음(`MBT_REAL_WORKER=1` 이면 안 막음). → 남은 서버·같은 포트 때문에 거짓 통과/실패하던 문제 해결.
+- **tests/cf_dev.py**: 포트 비기 기다림(15초), inspector 포트도 빈 포트, wrangler 조기 종료 감지, stop() 여러 번 안전.
+- 서버 띄우는 테스트 전부 빈 포트 방식으로 바꿈(9996~9999 는 Playwright route 가짜 주소라 그대로). **이번에 새로 바꾼 것(main b224~b233 에서 추가된 테스트)**: test_b224, test_b225, test_b225_items, test_b229, test_b229_rred, test_b230, test_b233.
+- exit 코드: test_tracker4~13·27 이 실패하면 exit 1.
+- 오래된 기대값 갱신(b181 수익 창 버튼, b209 안내, b221 그래프 글자, b112 자동 저장 → pendStart/pendSave, b182 헤더 #themeBtn 등) + **test_tracker43**: b230 부터 이번 주 수익 총합 패널에 xN 이 없으므로 '검마 결정석\nx1' 기대 → '검마 결정석\n+금액' 으로(plain origin/main 에서도 실패하던 것).
+- **src/app.js `bgJob`**: syncAll 의 뒤 작업(basic·훈장, `later`)은 넣을 때의 계정 키를 기억, 실행 때 캐릭터가 지워졌거나 키가 바뀌었/지워졌으면 요청 안 함. 테스트 `tests/test_zosu_bgkey.py`(run_all 목록 끝).
+- **320px 헤더**: src/extra.css 끝 `@media (max-width:360px){header .hwrap{gap:8px;padding-left:10px;padding-right:10px} header .thbtn{width:30px;height:30px;margin-left:2px;font-size:14px}}` → 320px scrollWidth 329→320(테마 버튼 [295,329]→[280,310]), 390·1280px 그대로. 사진 /workspace/zosu/shots/hdr320-b233-{before,after}.png.
+- **테마 문구**: 5장·8장 '다크 전용·테마 버튼 없음' → 현재 상태(기본 다크 + 헤더 #themeBtn 라이트 전환, 새 UI 는 다크·라이트 둘 다 확인). b67 기록 항목은 남기고 'b179·b182 로 대체됨' 표시.
+- 전체 테스트(`CHROME=/usr/bin/google-chrome python3 tests/run_par.py`, 141개): 병렬에서 6개 실패 → 직렬 재시도에서 5개 통과(test_tracker12·14·18·28·63 = 동시 8개 부하로 타이밍 흔들림), test_tracker43 만 진짜 실패 → 위처럼 기대값 고친 뒤 단독 통과. 결과적으로 **141/141**.
