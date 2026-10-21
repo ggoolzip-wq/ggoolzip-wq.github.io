@@ -53,9 +53,15 @@ try:
     check('키 없는 h1: 화면 합계엔 없음·저장 기록엔 있음', g("S.history[0].perChar.some(p=>p.id==='h1')") and not g("activeIds().has('h1')") and not g("totalData().chars.some(o=>o.name==='부계캐')"))
     # 2) 🔄 버튼 = 키 있는 모든 칸 타이머 리셋 (키 없는 a2 는 리셋 안 됨)
     g("S.settings.syncAt.a1=Date.now()-29*864e5; S.settings.syncAt.a4=Date.now()-29*864e5; S.settings.syncAt.a2=Date.now()-29*864e5; render()")
-    g("syncAll=async()=>{}; document.getElementById('syncBtn').hidden=false; document.getElementById('syncBtn').disabled=false; document.getElementById('syncBtn').click()"); pg.wait_for_timeout(200)
+    # b236: 끝난 syncAll 마다(자동 동기화 포함) = 리셋. 넥슨 호출은 가짜(성공)
+    g("window.__sp=0; const of=svFetch; svFetch=(u,o)=>{ if(u==='/api/sync-press') window.__sp++; return of(u,o); }; listAccount=async()=>[]; assignFromList=()=>0; schedApply=async()=>0; fetchBasic=async()=>{}; fetchMedal=async()=>{}; schedLookback=async()=>0; S.characters.forEach(c=>c.ocid=c.ocid||('oc-'+c.id))")
+    g("syncAll({silent:true})"); pg.wait_for_function("!syncing",timeout=10000); pg.wait_for_timeout(200)
     sa=g("S.settings.syncAt"); t=int(time.time()*1000)
-    check('🔄 누름 → 본계정·키 있는 부계정 = 지금', abs(sa['a1']-t)<60000 and abs(sa['a4']-t)<60000, sa)
+    check('자동 동기화(silent) 끝 → 본계정·키 있는 부계정 = 지금', abs(sa['a1']-t)<60000 and abs(sa['a4']-t)<60000, sa)
+    g("S.settings.syncAt.a1=Date.now()-29*864e5; accById('a4').status=null; listAccount=async a=>{ if(a.id==='a4') throw new Error('x'); return []; }; Object.keys(listCache).forEach(k=>delete listCache[k])"); 
+    g("S.characters.find(c=>c.id==='k1').ocid=null; syncAll({silent:true})"); pg.wait_for_function("!syncing",timeout=10000); pg.wait_for_timeout(200)
+    sa2=g("S.settings.syncAt"); check('오류 난 계정은 리셋 안 됨, 성공 계정은 리셋', abs(sa2['a1']-t)<60000 and sa2['a4']==sa['a4'], sa2)
+    g("S.characters.find(c=>c.id==='k1').ocid='oc-k1'; listAccount=async()=>[]")
     check('키 없는 칸은 🔄 로 리셋 안 됨', t-sa['a2']>28*DAY, sa)
     # 3) 새 키(같은 넥슨 캐릭터 ocid)를 30일 안에 등록 → 다시 연결·기록 그대로·합계 복귀
     g("accForget([accById('a2')]); const n={id:'a9',label:'새키',key:'test_new_0123456789abcdef'}; accounts().push(n); keyRelink(n,[{ocid:'oc-h1'}]); render()")

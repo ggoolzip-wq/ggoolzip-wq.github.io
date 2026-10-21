@@ -913,15 +913,15 @@ const charShown = c => { if(!c||!c.accId) return true; if(goneAcc(c.accId)) retu
 function accForget(list){ const ids=list.map(x=>x.id); S.settings.goneAccs=[...new Set([...(S.settings.goneAccs||[]),...ids])].slice(-200); S.settings.accounts=accounts().filter(x=>!ids.includes(x.id)); ids.forEach(id=>{ if(listCache[id]) delete listCache[id]; }); }
 const vchars = () => S.characters.filter(charShown);
 /* b235: 🔄 캐릭터 동기화 버튼을 30일 동안 안 누른 계정 → 기록 삭제 (본계정 포함, 관리자 제외). b234 의 '키 삭제 30일' 기준을 대체.
- * S.settings.syncAt = {계정 칸 id: 🔄 버튼을 마지막으로 누른 시각(ms)} — 상태와 함께 동기화. 🔄 누를 때(syncPressMark) 키가 있는 모든 계정 칸 = 지금.
- * 기록이 없는 칸(기존 데이터·새 칸) = 처음 본 때부터 셈(지금) → 배포 직후 바로 지워지는 계정 없음. 자동 동기화(열 때·F5)·로그인·로그아웃·다른 기기 세션은 타이머와 무관.
+ * S.settings.syncAt = {계정 칸 id: 마지막으로 동기화가 끝난 시각(ms)} — 상태와 함께 동기화. b236: 🔄·열 때·F5·키 등록 등 끝난 syncAll 마다(syncPressMark) 동기화된 칸 = 지금.
+ * 기록이 없는 칸(기존 데이터·새 칸) = 처음 본 때부터 셈(지금) → 배포 직후 바로 지워지는 계정 없음. (b236: 자동 동기화도 셈) 로그인·로그아웃·다른 기기 세션 자체는 타이머와 무관.
  * 키 삭제(부계정)·로그아웃(본계정)은 타이머를 시작/멈추지 않음. 키가 빠진 칸은 🔄 로 갱신되지 않으므로 계속 셈.
  * 같은 넥슨 계정에 새 키를 등록하면 keyRelink(b64·b219)가 같은 칸/새 칸으로 다시 연결 → 기록 그대로·합계에 다시 포함(syncAt 도 새 칸으로 이어감).
  * 30일(30×24시간)이 지나면 purgeChars: 그 칸 캐릭터와 지난 기록(history·monthHistory perChar, missW/missM list)을 지우고 합계 다시 계산.
  * 서버 모드: Worker 도 users.last_sync_at(POST /api/sync-press) 기준 30일 → 사용자 데이터 전부 삭제(syncGoneCron, 관리자 제외). */
 const SYNC_GONE_MS = 30*864e5;
 function syncAtMap(){ const m=S.settings.syncAt; if(m&&typeof m==='object'&&!Array.isArray(m)) return m; return (S.settings.syncAt={}); }
-function syncPressMark(t=Date.now()){ const m=syncAtMap(); accounts().filter(a=>a.key).forEach(a=>{ m[a.id]=t; }); save();
+function syncPressMark(t=Date.now(),bad=new Set()){ const m=syncAtMap(); accounts().filter(a=>a.key&&!bad.has(a.id)).forEach(a=>{ m[a.id]=t; }); save(); // b236: 끝난 동기화마다(자동·F5·키 등록·🔄) — 동기화된(키 있고 오류 없는) 칸만
   try{ if(typeof SV_ON!=='undefined'&&SV_ON&&svTok()) svFetch('/api/sync-press',{method:'POST',body:{}}).catch(()=>{}); }catch(e){} }
 function syncTimerMove(from,to){ const m=syncAtMap(); if(m[from]!=null&&from!==to){ m[to]=Math.max(+m[to]||0,+m[from]||0); } }
 function purgeChars(ids){ // ids = Set(캐릭터 id). 캐릭터와 그 기록을 실제로 지움
@@ -1231,6 +1231,7 @@ async function syncAll(opts={}){
       await pool(later,SYNC_CONC,async f=>{ try{ await f(); bp(); }catch(e){} });
       clearTimeout(bt); save(); if(!syncing) render(); })().finally(()=>{ syncBg=null; });
     S.settings.lastSync=Date.now(); save(); try{ svSyncDone(); }catch(e){} // b229: 관리자 창 '최근 갱신'
+    try{ syncPressMark(Date.now(),badAcc); }catch(e){} // b236: 성공한 동기화(자동 포함) = 30일 삭제 타이머 다시 시작 + /api/sync-press
     // zosu: 성공 알림(toast) 대신 🔄 버튼 옆 초록 글자 '새로고침 완료!' (몇 초 뒤 사라짐). 실패(일부 캐릭터·계정 오류)는 계속 알림
     if(errs||accMsgs.length) toast((errs?`일부 캐릭터 동기화 실패 ${errs}`:'')+(errs&&accMsgs.length?' · ':'')+(accMsgs.length?`계정 오류: ${accMsgs.join(', ')}`:''));
     syncLabel(errs||accMsgs.length?'part':'ok');
@@ -3648,7 +3649,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.delhist){ if(confirm('이 주간 기록을 삭제할까요?')){ S.history=S.history.filter(h=>h.week!==t.dataset.delhist); save(); render(); } return; }
   switch(t.id){
     case 'editModeBtn': editMode=!editMode; render(); break;
-    case 'syncBtn': syncPressMark(); syncAll(); break; // b235: 직접 누름 = 30일 삭제 타이머 다시 시작
+    case 'syncBtn': syncAll(); break; // b236: 30일 타이머는 syncAll 이 끝날 때(syncPressMark)
     case 'importAccBtn': openImport(); break;
     case 'impRetry': openImport(impAccId); break;
     case 'impToSettings': accAddShow(true); break;
