@@ -1,10 +1,12 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8894=_tutil.free_port()
 # b108: 🔄 옆 '새로고침 중입니다..' → 초록 '새로고침 완료! HH:mm'(KST) · 페이지 열 때 동기화도 · 일부 실패 주황 · 전체 실패 빨강 · 줄바꿈/잘림 없음(1280·1920·375·320)
 # MBT_ROOT=다른 빌드(변경 전 화면), MBT_SHOTDIR=스크린샷 폴더, MBT_TAG=파일 이름 접두(before/after), MBT_NOCHECK=1 이면 검사 생략(변경 전 촬영용)
 import os, sys, time, subprocess, re, datetime as dt
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mock_nexon import handle, KM
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8894'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8894)
 SHOT=os.environ.get('MBT_SHOTDIR'); TAG=os.environ.get('MBT_TAG','after'); NOCHK=os.environ.get('MBT_NOCHECK')=='1'
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -13,7 +15,7 @@ def check(n,c,d=''):
     if not c: fails.append(n)
 def shot(pg,name):
     if SHOT: pg.locator('aside .card').first.screenshot(path=os.path.join(SHOT,f'b108_{TAG}_{name}.png'))
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 def ch(i,n,o): return {'id':f'c{i}','name':n,'level':280,'job':'히어로','world':'스카니아','ocid':o,'accId':'a1','isMain':i==0,'image':'','bosses':{},'weekly':{},'monthly':{},'auto':{},'drops':{},'sync':{}}
 ST={'version':5,'theme':'dark','activeId':'c0','history':[],'monthHistory':[],'worldOrder':[],'characters':[ch(0,'단풍용사','ocid-main'),ch(1,'불독메이지','ocid-alt1')],
     'settings':{'accounts':[{'id':'a1','label':'본계정','key':KM,'main':True}],'lastSync':0}}

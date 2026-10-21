@@ -1,3 +1,7 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8951=_tutil.free_port()
+_P8952=_tutil.free_port()
+_P8953=_tutil.free_port()
 # b217: 시작 렌더 오류(admPrices TDZ)로 스크립트가 멈춰 body.html 뼈대('☁ 구글 로그인'·빈 화면)만 남던 문제
 #  A) 예전 방식 본계정 키 삭제(세션 남음·키 없음) + 관리자 → 새로고침 = 예시 화면, 오류 없음, 서버 기록 유지 → 다시 등록하면 복원
 #  B) 관리자 로그인 + 캐릭터 0명 → 새로고침해도 오류 없음, 헤더 로그아웃, 캐릭터 추가 화면
@@ -17,9 +21,9 @@ body=re.sub(r'<script[\s\S]*?</script>','',html[html.index('<body'):])
 check('C: 정적 뼈대(스크립트 제외)에 구글 문구 없음, 헤더 버튼은 처음엔 숨김', '구글' not in body and re.search(r'id="gBtn"[^>]*hidden',body) is not None)
 T=open(os.path.join(ROOT,'tests','test_b216.py'),encoding='utf-8').read(); exec(T[T.index("KA,KF="):T.index("if not cf_dev")])
 if not cf_dev.available(): print('SKIP: wrangler/node22 not installed'); print('FAILS:',fails); sys.exit(1 if fails else 0)
-PORT, WP, NP = 8951, 8952, 8953
+PORT, WP, NP = _P8951, _P8952, _P8953
 API=f'http://127.0.0.1:{WP}'; URL=f'http://localhost:{PORT}/index.html'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

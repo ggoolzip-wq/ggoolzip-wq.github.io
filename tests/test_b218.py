@@ -1,3 +1,7 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8961=_tutil.free_port()
+_P8962=_tutil.free_port()
+_P8963=_tutil.free_port()
 # b218: API 키 등록 직후 1번 자동 동기화 — 본계정 키 등록(다시 등록 포함) · 부계정 키 추가(연결된 캐릭터 있을 때) · 중복/3초 안 건너뜀 · 새 사용자(캐릭터 0)는 안 함
 import os, sys, json, subprocess, time, urllib.request
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -11,9 +15,9 @@ def check(n,c,d=''):
     if not c: fails.append(n)
 T=open(os.path.join(ROOT,'tests','test_b216.py'),encoding='utf-8').read(); exec(T[T.index("KA,KF="):T.index("if not cf_dev")])
 if not cf_dev.available(): print('SKIP: wrangler/node22 not installed'); print('FAILS: []'); sys.exit(0)
-PORT, WP, NP = 8961, 8962, 8963
+PORT, WP, NP = _P8961, _P8962, _P8963
 API=f'http://127.0.0.1:{WP}'; URL=f'http://localhost:{PORT}/index.html'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

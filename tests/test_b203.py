@@ -1,7 +1,9 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8984=_tutil.free_port()
 # b203: 로그인 전 첫 화면 = 빈 카드 + 소개 카드(기능 3줄) + 실제 결정석/아이템 가격 카드(읽기 전용), 제목·설명
 import os, sys, time, subprocess, urllib.request, re
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8984'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8984)
 SHOT=os.environ.get('MBT_SHOTDIR')
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -11,7 +13,7 @@ H=open(os.path.join(ROOT,'index.html'),encoding='utf-8').read(); head=H[:H.index
 T='메보기 - 메이플 보스 수익·결정석 기록 사이트'
 check('title·og·twitter 제목', f'<title>{T}</title>' in head and f'og:title" content="{T}"' in head and f'twitter:title" content="{T}"' in head)
 check('설명 = 보스 수익 계산·주간 보스 기록', re.search(r'<meta name="description" content="메이플스토리 보스 수익 계산과 주간 보스 기록을 한 번에\.[^"]*무료로 제공합니다\.">',head) is not None)
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

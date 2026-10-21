@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8875=_tutil.free_port()
 import _legacy
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -17,11 +19,11 @@ def check(n,c,d=''):
 def shot(loc_or_pg,name,**kw):
     path=os.path.join(OUT,name); loc_or_pg.screenshot(path=path,**kw)
     if SHOTDIR: shutil.copy(path,os.path.join(SHOTDIR,name))
-srv=subprocess.Popen(['python3','-m','http.server','8875','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(_P8875),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
-    try: urllib.request.urlopen('http://127.0.0.1:8875/index.html',timeout=1); break
+    try: urllib.request.urlopen(('http://127.0.0.1:'+str(_P8875)+'/index.html'),timeout=1); break
     except Exception: time.sleep(0.1)
-URL='http://localhost:8875/index.html'
+URL=('http://localhost:'+str(_P8875)+'/index.html')
 IMG='https://open.api.nexon.com/static/maplestory/character/look/mock-'
 def ch(id,name,lv,job,ocid,acc,main=False,img=''):
     return {'id':id,'name':name,'level':lv,'job':job,'world':'스카니아','ocid':ocid,'accId':acc,'isMain':main,'image':(IMG+img) if img else '',

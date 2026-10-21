@@ -1,12 +1,14 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8874=_tutil.free_port()
 # b166: 새로고침하면 저장된 탭·해시와 상관없이 항상 '이번 주 보스'
 import os, sys, subprocess, time
 from playwright.sync_api import sync_playwright
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT = 8874
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT = _P8874
 fails = []
 def check(n, c, d=""):
     print(("PASS " if c else "FAIL ") + n + (" — " + str(d) if d != "" else ""))
     if not c: fails.append(n)
-srv = subprocess.Popen([sys.executable, "-m", "http.server", str(PORT), "--bind", "127.0.0.1"], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
+srv = _tutil.Popen([sys.executable, "-m", "http.server", str(PORT), "--bind", "127.0.0.1"], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
 try:
     with sync_playwright() as p:
         b = p.chromium.launch(executable_path=os.environ.get("CHROME", "/usr/bin/google-chrome"), args=["--no-sandbox"]); pg = b.new_page()

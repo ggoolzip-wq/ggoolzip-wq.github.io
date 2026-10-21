@@ -1,7 +1,9 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8974=_tutil.free_port()
 # b220: 자동(cron) 시세 갱신 뒤에도 시세 등록 창 '시세 정보 없음' — [최저가 갱신] 과 똑같은 상태 (서버 maiInfo 하나)
 import os, sys, json, time, subprocess, urllib.request, shutil, tempfile
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8974'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8974)
 SHOT=os.environ.get('MBT_SHOTDIR'); NOCHK=os.environ.get('MBT_NOCHECK')=='1'
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -41,7 +43,7 @@ check('maple.ai.kr 요청 = 모의 2번(cron 1·수동 1, 304)', O['nf']==2 and 
 MAI={k:O['auto'][k] for k in ('date','got')}
 
 # ---- 페이지: 버튼 안 누르고 자동 갱신 상태만으로 '시세 정보 없음' ----
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

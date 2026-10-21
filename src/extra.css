@@ -1789,3 +1789,9 @@ header .logo .logo-d{display:flex;align-items:center}
 /* b233: 24px 초상화 공통(주별 득템 표 이름 앞 = 이번 주 수익 총합 캐릭터 이름 앞). 자르기 = .avatar img 공통(64px 원본, object-fit:none, 가운데 60%) */
 .avatar.av24{width:24px;height:24px;min-width:24px;flex:none;border-radius:10px;font-size:15px;line-height:1;font-weight:800}
 .rp-top .rp-av{align-self:center}
+
+/* zosu-testfix (2026-10-19): 320px 헤더 가로 넘침 — 테마 버튼(#themeBtn, b182)이 9px 밖으로 나가 가로 스크롤 생김. 360px 이하에서만 간격·여백·버튼 크기 줄임 (390px 이상 그대로) */
+@media (max-width:360px){
+  header .hwrap{gap:8px;padding-left:10px;padding-right:10px}
+  header .thbtn{width:30px;height:30px;margin-left:2px;font-size:14px}
+}

@@ -1,12 +1,14 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8844=_tutil.free_port()
 # b60: 메소 단위, 홍옥 비활성, 이번 주 주간 보스 수익(+검마), 월간 클리어 날짜, 탭 이름/분리, 누적 수입, 득템 분석
 import os, sys, json, time, subprocess
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL='http://localhost:8844/index.html'
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL=('http://localhost:'+str(_P8844)+'/index.html')
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server','8844','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',str(_P8844),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 ch={'id':'c0','name':'캐릭00','level':280,'job':'히어로','world':'스카니아','ocid':'','accId':'','isMain':True,'image':'',
     'bosses':{'kaling':{'enabled':True,'diff':'hard','party':1},'blackmage':{'enabled':True,'diff':'hard','party':1},'lotus':{'enabled':True,'diff':'normal','party':1}},'weekly':{'kaling':True},'monthly':{},'auto':{},'sync':{},'drops':{}}
 per=[{'id':'c0','name':'캐릭00','meso':100000000,'count':2,'bosses':['카링(하드)'],'bvals':[100000000],
@@ -52,7 +54,7 @@ try:
     # H
     load('loot')
     hs=[h.replace('\n',' ').strip() for h in pg.eval_on_selector_all('#view h2','e=>e.map(x=>x.innerText.trim())')]
-    check('H: 득템 분석 구성(누적 득템 맨 위 + 옮겨진 카드)', hs[0]=='누적 득템' and any(h.endswith('득템왕') for h in hs) and any('에픽빔왕' in h for h in hs) and any('시드링' in h for h in hs) and any('블빵 승률' in h for h in hs) and any('획득 못한' in h for h in hs) and not any('메소왕' in h for h in hs), hs)
+    check('H: 득템 분석 구성(누적 득템 맨 위 + 옮겨진 카드)', hs[0].startswith('누적 득템') and any(h.endswith('득템왕') for h in hs) and any('에픽빔왕' in h for h in hs) and any('시드링' in h for h in hs) and any('블빵 승률' in h for h in hs) and any('획득 못한' in h for h in hs) and not any('메소왕' in h for h in hs), hs)
     L=pg.evaluate("(()=>{const g=id=>document.querySelector(id).innerText.replace(/\\s+/g,' ');return [g('#ltTotal'),g('#ltRing'),g('#ltBbang'),document.querySelectorAll('#lootTop .stat .hbi img, #lootTop .stat .hbi .ric, #lootTop .stat .blk .ric').length]})()")
     # 총 득템: kaling g_faith,se1,r_black,r_white,g_life#2w = 5 (녹옥·홍옥 제외, 블빵패배 oath 제외)
     # b111: + 상자에서 나온 리4(흑옥)·컨4(홍옥) 2개 = 7

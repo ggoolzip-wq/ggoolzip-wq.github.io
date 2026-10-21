@@ -1,7 +1,9 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8993=_tutil.free_port()
 # b209: 로그인 전 첫 화면 '+ 캐릭터 추가' 버튼 테두리 네온(느린 숨쉬기·줄이기 설정이면 고정) + 캐릭터 추가 창 'API 발급 : 링크' 아래 발급 순서 안내
 import os, sys, time, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8993'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8993)
 SHOT=os.environ.get('MBT_SHOTDIR')
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -12,7 +14,7 @@ def shot(loc,name):
         try: loc.screenshot(path=os.path.join(SHOT,f'b209_{name}.png'))
         except Exception as e: print('shot skip',name,str(e)[:80])
 EXP=['①링크 클릭 후 넥슨 로그인','②이용약관 스크롤 끝까지 내린 후 약관 동의','③어떤 게임으로 애플리케이션을 만드실 건가요?','☞ 메이플스토리','④아직 개발 단계인가요? 아니면 서비스 출시 단계인가요?','☞ 개발 단계','⑤출시할 서비스명을 설정해주세요','☞ 메보기',"⑥마이페이지 - 애플리케이션 목록 - 서비스명 '메보기' 클릭",'⑦첫번째 API key 옆 복사버튼 누른 후 API키 입력란에 Ctrl+V']
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

@@ -1,3 +1,7 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8941=_tutil.free_port()
+_P8942=_tutil.free_port()
+_P8943=_tutil.free_port()
 # b216: ① 서버 동기화 '어느 데이터를 쓸까요?' 없음 — 서버 저장 값이 항상 이김 (wat 처치 시각이 기기마다 달라 다시 떴던 문제)
 #       ② 본계정 키 삭제 = 이 브라우저만 처음 온 사람(예시 화면) · 서버 기록 유지 → 같은 키 다시 등록하면 본캐·부캐 복원
 #       ③ '(총 0캐릭 등록 중)'·'· 0캐릭 등록 중' 숨김  ④ 실제 주소(github.io 포함)는 서버 모드 — '☁ 구글 로그인' 없음
@@ -11,9 +15,9 @@ errs=[]; fails=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-PORT, WP, NP = 8941, 8942, 8943
+PORT, WP, NP = _P8941, _P8942, _P8943
 API=f'http://127.0.0.1:{WP}'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

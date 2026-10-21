@@ -1,13 +1,15 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8875=_tutil.free_port()
 # zosu-ui: ① 로그인 전 첫 화면 오른쪽 위 로그인 버튼 없음(로그인 뒤 헤더 그대로) ② '+ 추가' 본계정 키 칸 아래 'API 발급 : 링크' 한 줄 (가짜 서버, 넥슨 호출 없음)
 import os, sys, json, time, subprocess
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8875'
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8875)
 URL_API='https://openapi.nexon.com/ko/my-application/create-app/'
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 API='https://fake-sync-zosu.example'
 try:
   with sync_playwright() as p:

@@ -1,14 +1,16 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8997=_tutil.free_port()
 # b225: '이번주 획득 아이템' xN — 반지 상자만 얻은 주(사용자 실제 상황)에도 x0 표시, 검마 아이템(이번 주) 포함 · 실제 + 예시 (b221 도우미 재사용)
 # b221: 이번 주 수익 총합 — 개수 줄 전부 xN(주보 결정석·검마 결정석·이번주 획득 아이템·반지 상자·이번 주 남은 결정석·검마 남은 결정석), 개수 한 세로줄, 줄바꿈·잘림 없음 · 실제 + 예시
 import os, sys, time, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8997'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8997)
 SHOT=os.environ.get('MBT_SHOTDIR')
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:400] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

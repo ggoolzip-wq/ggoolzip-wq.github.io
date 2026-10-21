@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8797=_tutil.free_port()
 # 구글 드라이브 동기화: 두 기기(집 PC · PC방) 시뮬레이션 — '어느 데이터를 쓸까요?' 반복 버그(2026-10-10) 회귀 테스트
 import os, sys, json, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -5,15 +7,15 @@ import importlib.util
 spec=importlib.util.spec_from_file_location('t10h', os.path.join(os.path.dirname(os.path.abspath(__file__)),'test_tracker10.py'))
 src=open(spec.origin,encoding='utf-8').read()
 # test10 의 Drive 모의 객체·INIT·state() 만 재사용 (본문 실행 없이)
-head=src.split('with sync_playwright() as p:')[0].replace("srv=subprocess.Popen","srv=None and subprocess.Popen").replace("for _ in range(50):","for _ in range(0):")
+head=src.split('with sync_playwright() as p:')[0].replace("srv=_tutil.Popen","srv=None and _tutil.Popen").replace("for _ in range(50):","for _ in range(0):")
 ns={'__file__':spec.origin}; exec(compile(head,spec.origin,'exec'),ns)
 Drive, INIT, state, char = ns['Drive'], ns['INIT'], ns['state'], ns['char']
 import subprocess, urllib.request
 from playwright.sync_api import sync_playwright
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
-PORT=8797; BASE=f'http://localhost:{PORT}/index.html'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+PORT=_P8797; BASE=f'http://localhost:{PORT}/index.html'
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

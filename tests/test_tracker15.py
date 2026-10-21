@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8876=_tutil.free_port()
 import _legacy
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,11 +18,11 @@ def check(n,c,d=''):
 def shot(loc_or_pg,name,**kw):
     path=os.path.join(OUT,name); loc_or_pg.screenshot(path=path,**kw)
     if SHOTDIR: shutil.copy(path,os.path.join(SHOTDIR,name))
-srv=subprocess.Popen(['python3','-m','http.server','8876','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(_P8876),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
-    try: urllib.request.urlopen('http://127.0.0.1:8876/index.html',timeout=1); break
+    try: urllib.request.urlopen(('http://127.0.0.1:'+str(_P8876)+'/index.html'),timeout=1); break
     except Exception: time.sleep(0.1)
-URL='http://localhost:8876/index.html'
+URL=('http://localhost:'+str(_P8876)+'/index.html')
 KST=datetime.timezone(datetime.timedelta(hours=9)); now=datetime.datetime.now(KST)
 iso=lambda d: d.replace(microsecond=0).isoformat()
 def ch(id,name,lv,job,ocid,acc,main=False):

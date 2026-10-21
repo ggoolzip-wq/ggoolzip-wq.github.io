@@ -1128,6 +1128,9 @@ const medalTip = c => c.medal?.empty?`${(c.medal.where||[]).join(', ')} — 훈�
 async function fetchMedal(c,key){ c.medal=medalFrom(await nx('/maplestory/v1/character/item-equipment',{ocid:c.ocid},key)); }
 const medalBand = c => c.medal?.bad&&charShown(c) ? `<div class="medalwarn" title="${esc(medalTip(c))}" aria-label="훈장 잘못 착용중"><span>훈장 잘못 착용중</span></div>` : '';
 let syncing=false, syncBg=null;
+/* zosu-testfix: b184 뒤 작업(basic·훈장)은 넣을 때의 키를 기억 → 그 사이 캐릭터가 지워졌거나(S.characters 에 없음) 계정 키가 바뀌거나 지워졌으면 요청 안 함
+ * (예전엔 실행 시점의 a.key 를 읽어 지운 캐릭터 ocid 를 다른 키로 계속 조회했음) */
+const bgJob=(c,a,fn)=>{ const k=a.key; return ()=>{ if(!S.characters.includes(c)||a.key!==k||!k) return; return fn(c,k); }; };
 const SYNC_CONC=6, SYNC_LIST_TTL_MS=10*60e3, SYNC_BASIC_TTL_MS=10*60e3, SYNC_BASIC_LOAD_TTL_MS=60*60e3 /* b112: 페이지 열 때(자동)는 레벨·이미지 1시간, 🔄 는 10분 */, SYNC_MEDAL_TTL_MS=6*3600e3; // b107
 const LOAD_SYNC_GAP_MS=3e3, LOAD_SYNC_KEY='mapleBossTracker.loadSyncAt';
 /* b218: API 키를 등록한 직후 1번 자동 동기화 (🔄 버튼과 같은 syncAll). 보이는 캐릭터가 있을 때만(새 사용자는 캐릭터를 고른 뒤 doImport 가 동기화),
@@ -1165,8 +1168,8 @@ async function syncAll(opts={}){
       try{ total+=await schedApply(c,a,opts.full?null:lb,opts.full); paint(); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
       catch(e){ errs++; if(e.code==='NETWORK') netN++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
       const now=Date.now();
-      if(opts.full||!(now-(c.sync?.imgAt||0)<(opts.silent?SYNC_BASIC_LOAD_TTL_MS:SYNC_BASIC_TTL_MS))) later.push(()=>fetchBasic(c,a.key)); // 이미지·레벨·EXP
-      if(opts.full||!c.medal||c.medal.v!==2||!(now-(c.medal.at||0)<SYNC_MEDAL_TTL_MS)) later.push(()=>fetchMedal(c,a.key)); // b86: 훈장(모든 프리셋)
+      if(opts.full||!(now-(c.sync?.imgAt||0)<(opts.silent?SYNC_BASIC_LOAD_TTL_MS:SYNC_BASIC_TTL_MS))) later.push(bgJob(c,a,fetchBasic)); // 이미지·레벨·EXP
+      if(opts.full||!c.medal||c.medal.v!==2||!(now-(c.medal.at||0)<SYNC_MEDAL_TTL_MS)) later.push(bgJob(c,a,fetchMedal)); // b86: 훈장(모든 프리셋)
     });
     clearTimeout(rt);
     if(todo.length&&netN===todo.length) throw new Error('네트워크 오류 — 인터넷 연결 또는 브라우저 확장 프로그램·네트워크의 차단 여부를 확인하세요.'); // b184: 목록을 뒤로 미뤄도 전부 네트워크 오류면 '새로고침 실패'

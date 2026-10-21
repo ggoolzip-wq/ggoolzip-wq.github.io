@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8873=_tutil.free_port()
 import _legacy
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -10,9 +12,9 @@ errs=[]; fails=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d) if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen(['python3','-m','http.server','8873','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(_P8873),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
-    try: urllib.request.urlopen('http://127.0.0.1:8873/index.html',timeout=1); break
+    try: urllib.request.urlopen(('http://127.0.0.1:'+str(_P8873)+'/index.html'),timeout=1); break
     except Exception: time.sleep(0.1)
 FIT="""(()=>{const out={};document.querySelectorAll('#charList .char').forEach(c=>{const d=c.querySelector('.dov');if(!d)return;const cr=c.getBoundingClientRect(),ok=d.querySelector('.dov-ok').getBoundingClientRect(),w=d.querySelector('.dov-warn');
  const inside=r=>r.left>=cr.left-0.5&&r.right<=cr.right+0.5&&r.top>=cr.top-0.5&&r.bottom<=cr.bottom+0.5;const t=d.querySelector('.dov-t');
@@ -32,7 +34,7 @@ try:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
     ctx=b.new_context(viewport={'width':1280,'height':1000},locale='ko-KR')
     pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('console',lambda m:errs.append('console:'+m.text) if m.type=='error' and 'Failed to load resource' not in m.text else None)
-    pg.goto('http://localhost:8873/index.html'); pg.wait_for_timeout(500)
+    pg.goto(('http://localhost:'+str(_P8873)+'/index.html')); pg.wait_for_timeout(500)
     pg.evaluate(SETUP); pg.wait_for_timeout(300)
     ov=lambda: dict(pg.evaluate("[...document.querySelectorAll('#charList .char')].map(e=>[e.dataset.id,e.querySelector('.dov')?e.querySelector('.dov').innerText.replace(/\\s+/g,' ').trim():null])"))
     o=ov(); print(o)
@@ -70,7 +72,7 @@ try:
     pg.evaluate("(()=>{S.period.week='2000-01-01';save();})()"); pg.reload(); pg.wait_for_timeout(600)
     check('overlay gone after weekly reset', all(v is None for v in ov().values()), ov())
     m=ctx.new_page(); m.set_viewport_size({'width':375,'height':812}); m.on('pageerror',lambda e:errs.append(str(e)))
-    m.goto('http://localhost:8873/index.html'); m.wait_for_timeout(400); m.evaluate(SETUP); m.wait_for_timeout(300)
+    m.goto(('http://localhost:'+str(_P8873)+'/index.html')); m.wait_for_timeout(400); m.evaluate(SETUP); m.wait_for_timeout(300)
     check('mobile overlay + no overflow', m.query_selector('.char[data-id=c1] .dov') is not None and not m.evaluate('document.documentElement.scrollWidth>innerWidth'))
     f=m.evaluate(FIT); check('mobile: 2 lines fit inside card', fitok(f) and 'wIn' in f['c1'], f)
     m.screenshot(path=OUT+'/stamp_mobile.png')
@@ -79,10 +81,10 @@ try:
     m.screenshot(path=OUT+'/stamp_mobile320.png')
     # 터치: 덮개 위 탭이 카드 선택으로 통과
     t=b.new_context(viewport={'width':375,'height':812},has_touch=True,is_mobile=True,locale='ko-KR'); tp=t.new_page(); tp.on('pageerror',lambda e:errs.append(str(e)))
-    tp.goto('http://localhost:8873/index.html'); tp.wait_for_timeout(400); tp.evaluate(SETUP); tp.wait_for_timeout(300)
+    tp.goto(('http://localhost:'+str(_P8873)+'/index.html')); tp.wait_for_timeout(400); tp.evaluate(SETUP); tp.wait_for_timeout(300)
     tp.tap('.char[data-id=c1]'); tp.wait_for_timeout(200); check('touch tap passes through overlay', tp.evaluate('S.activeId')=='c1' and tp.evaluate("getComputedStyle(document.querySelector('.char[data-id=c1] .dov')).opacity")=='1')
     t.close()
-    pg.goto('http://localhost:8873/index.html'); pg.wait_for_timeout(600)
+    pg.goto(('http://localhost:'+str(_P8873)+'/index.html')); pg.wait_for_timeout(600)
     v=pg.inner_text('body')
     check('no settings tab / API side card / backup / proxy text', pg.query_selector('[data-tab="settings"]') is None and pg.query_selector('#apiSide') is None and pg.query_selector('#exportBtn') is None and not any(w in v for w in ['프록시','JSON','백업','serve.py','연결 방식']), [w for w in ['프록시','JSON','백업','serve.py','연결 방식'] if w in v])
     check('limits fixed 12/1', pg.evaluate('[S.settings.weeklyLimit,S.settings.monthlyLimit]')==[12,1])
@@ -90,3 +92,4 @@ try:
 finally:
     srv.terminate()
 print('FAILS:',fails); print('ERRORS:',errs)
+import sys as _sys; _sys.exit(1 if (globals().get('fails') or globals().get('errs')) else 0)  # zosu-testfix: 실패·오류가 있으면 exit 1

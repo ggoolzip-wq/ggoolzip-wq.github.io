@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8848=_tutil.free_port()
 # b63: 캐릭터 추가 모달 — 키별 '등록 완료 · N캐릭 등록 중' + 헤더 '(총 N캐릭 등록 중)', 초록, 한 줄, 수동(키 없음) 제외, 라이브 갱신
 import os, sys, json, time, subprocess, shutil
 from playwright.sync_api import sync_playwright
@@ -5,7 +7,7 @@ ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
 SHOTDIR=os.environ.get('MBT_SHOTDIR') or '/workspace/maple-boss-tracker'
 os.makedirs(SHOTDIR, exist_ok=True)
-PORT=8848
+PORT=_P8848
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:400] if d!='' else ''))
@@ -21,7 +23,7 @@ ST={'version':5,'theme':'dark','activeId':'c0','characters':chars,'history':[],'
       {'id':'a2','label':'부계정','key':'live_SUB_xxx','status':{'ok':True}},
       {'id':'a3','label':'예비계정','key':'live_EMPTY_xxx','status':{'ok':True}},
     ],'lastSync':int(time.time()*1000)}}
-srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(0.8)
+srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(0.8)
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or '/usr/bin/google-chrome',args=['--no-sandbox'])

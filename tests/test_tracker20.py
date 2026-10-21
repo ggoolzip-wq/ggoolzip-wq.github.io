@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8798=_tutil.free_port()
 # 구글 로그인 창이 자동으로 뜨지 않는지 (2026-10-10 'PC방에서 자꾸 로그인하라고 함' 회귀 테스트)
 # 규칙: 로그인 팝업(requestAccessToken)은 사용자가 직접 누른 동작에서만, 그 동작당 최대 1번.
 #       페이지 열기·탭 복귀(gdPull)·1분 타이머·자동 저장은 남은 토큰(1시간, sessionStorage)만 사용 → 없으면 [☁ 다시 연결] 표시만.
@@ -5,12 +7,12 @@ import os, sys, json, time, subprocess, urllib.request, importlib.util
 here=os.path.dirname(os.path.abspath(__file__))
 spec=importlib.util.spec_from_file_location('t10h', os.path.join(here,'test_tracker10.py'))
 src=open(spec.origin,encoding='utf-8').read()
-head=src.split('with sync_playwright() as p:')[0].replace("srv=subprocess.Popen","srv=None and subprocess.Popen").replace("for _ in range(50):","for _ in range(0):")
+head=src.split('with sync_playwright() as p:')[0].replace("srv=_tutil.Popen","srv=None and _tutil.Popen").replace("for _ in range(50):","for _ in range(0):")
 ns={'__file__':spec.origin}; exec(compile(head,spec.origin,'exec'),ns)
 Drive, INIT, state = ns['Drive'], ns['INIT'], ns['state']
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(here); PORT=8798; BASE=f'http://localhost:{PORT}/index.html'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+ROOT=os.path.dirname(here); PORT=_P8798; BASE=f'http://localhost:{PORT}/index.html'
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

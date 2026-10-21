@@ -1,3 +1,6 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8770=_tutil.free_port()
+_P8771=_tutil.free_port()
 # 동기화 서버(server/worker.js) — wrangler dev(로컬 D1) + 넥슨 모의 서버로 API 테스트
 import subprocess, os, sys, json, urllib.request, urllib.error
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -7,7 +10,7 @@ def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP: wrangler/node22 not installed (cd server && npm install)'); print('FAILS: []'); sys.exit(0)
-NP, WP = 8771, 8770
+NP, WP = _P8771, _P8770
 ORIGIN='https://ggoolzip-wq.github.io'
 def req(method,path,body=None,tok=None,origin=ORIGIN,raw=None):
     h={'Content-Type':'application/json'}

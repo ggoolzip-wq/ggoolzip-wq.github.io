@@ -1,7 +1,9 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8969=_tutil.free_port()
 # b224: /api/live = 페이지 열 때 1번만 (30초 재조회 없음) · 라이브 탭은 받아 둔 값 · 공지 결과·배지 그대로 · Worker 표 확인 isolate 당 1번 · 15초 캐시
 import os, sys, json, subprocess, time, urllib.request, shutil, tempfile
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8969'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8969)
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
@@ -9,7 +11,7 @@ def check(n,c,d=''):
 NOW=int(time.time()*1000)
 LIVE={"at":NOW,"yt":{"live":True,"vid":"IkEDT0Wy8zY","url":"https://www.youtube.com/watch?v=IkEDT0Wy8zY","title":"테스트 라이브","checked_at":NOW},"nx":{"live":False},"list":[],
       "feed":{"items":{"saryo":[{"id":"notice:999","title":"[완료] 테스트 사료 공지","url":"https://maplestory.nexon.com/News/Notice/999","date":"2026-10-19","src":"notice"}],"patch":[]},"sunday":None,"chk":{},"prices":None}}
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

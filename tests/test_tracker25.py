@@ -1,3 +1,7 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8776=_tutil.free_port()
+_P8777=_tutil.free_port()
+_P8796=_tutil.free_port()
 # 사용자 바꿈: 다른 사람 키로 로그인해도 이 PC 데이터를 올리지/합치지 않음 + 로그아웃 시 비움 + 입장 화면 — 브라우저 2대 + wrangler dev(로컬 D1) + 넥슨 모의 서버 (2026-10-10)
 import os, sys, json, subprocess, time, urllib.request, shutil
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -11,9 +15,9 @@ def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP: wrangler/node22 not installed'); print('FAILS: []'); sys.exit(0)
-PORT, WP, NP = 8796, 8776, 8777
+PORT, WP, NP = _P8796, _P8776, _P8777
 API=f'http://127.0.0.1:{WP}'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
@@ -91,14 +95,14 @@ try:
     check('header shows only 로그아웃 when logged in', pc.text_content('#gBtn')=='로그아웃' and pc.locator('#svWarn:visible').count()==0, pc.text_content('#gBtn'))
     pth=os.path.join(OUT,'header_logout.png'); pc.screenshot(path=pth,clip={'x':0,'y':0,'width':1280,'height':120}); SHOTDIR and shutil.copy(pth,SHOTDIR)
     puts_n=len([x for x in puts if x[1].endswith('/api/state')])
-    pc.evaluate("S.characters[0].name='바뀐이름';save();render()"); pc.wait_for_timeout(6500)
+    pc.evaluate("pendStart();S.characters[0].name='바뀐이름';save();render()")  # zosu-testfix: 사용자 수정(pend) — b112 자동 저장 대상 아님; pc.wait_for_timeout(6500)
     check('no autosave in sync mode (no PUT), header still only 로그아웃', len([x for x in puts if x[1].endswith('/api/state')])==puts_n and pc.text_content('#gBtn')=='로그아웃' and pc.evaluate('svUnsaved()'))
     check('no beforeunload warning', not pc.evaluate("(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented})()"))
     pc.route(API+'/api/state',lambda r: r.fulfill(status=500,body='{"error":"server","message":"서버 오류"}') if r.request.method=='PUT' else r.continue_())
     pc.click('#pendSave'); pc.wait_for_timeout(1500)
     check('save fails → small warning chip, still logged in', pc.evaluate('!!svTok()') and pc.is_visible('#svWarn') and pc.text_content('#gBtn')=='로그아웃', pc.evaluate('gd.state'))
-    pc.unroute(API+'/api/state'); pc.click('#pendSave'); pc.wait_for_timeout(1500)
-    check('저장 button saves to server', chars_of(ah_a)[0]=='바뀐이름' and not pc.evaluate('svUnsaved()'), chars_of(ah_a))
+    pc.unroute(API+'/api/state'); pc.wait_for_function("!svUnsaved()",timeout=15000)  # zosu-testfix: b81 — 실패하면 뒤에서 1.5·3·4.5초에 다시 시도(그동안 [저장] 꺼짐) → 서버가 살아나면 자동 저장
+    check('저장 실패 후 뒤에서 다시 시도해 서버 저장(b81)', chars_of(ah_a)[0]=='바뀐이름' and not pc.evaluate('svUnsaved()'), chars_of(ah_a))
     pc.evaluate("S.characters[0].name='버릴이름';save()"); n=len(dialogs); pc.click('#gBtn'); pc.wait_for_function("!svTok()",timeout=8000); pc.wait_for_timeout(300)
     check('b69: logout with unsaved changes → no prompt, changes saved to server first, local cleared', pc.locator('#svAsk').count()==0 and len(dialogs)==n and chars_of(ah_a)[0]=='버릴이름' and st(pc)['characters']==[], chars_of(ah_a))
     login(pc,KA); n=len(dialogs); pc.click('#gBtn'); pc.wait_for_function("!svTok()",timeout=8000); pc.wait_for_timeout(300)
