@@ -1873,3 +1873,8 @@ header .logo .logo-d{display:flex;align-items:center}
 .rafee{max-width:none;margin:0 0 10px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
 .rafh{font-size:.78rem;font-weight:700;text-align:center}
 @media(max-width:480px){.rafee .rvfrow{gap:4px}.rafee .rvfbtn{min-width:40px;padding:4px 8px}}
+
+/* b248: 수익을 기록할까요? — 판매가 칸 왼쪽 작은 결과 글자(전체 수정 창 .ram 과 같은 모양) */
+.rvamtrow{display:flex;align-items:center;justify-content:center;gap:8px}
+.rvamtrow .rvram{display:inline;white-space:nowrap}
+.rvamtrow .rvram:empty{display:none}

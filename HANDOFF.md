@@ -2013,3 +2013,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   버튼 = 창 안의 칸·미리보기 금액만 바로 바꿈 → [전체 수정] 으로 기존 저장 경로(save + svPushBg, pend.base 도 같이) 로 확정, [취소] = 버림. 적용한 칸은 반올림 없이 정확한 m 과 a(판매가)·fs·fd 저장.
   판매가 P: revGrossOf(r) — r.a(억, askRev = 입력 판매가 / b110 전체 수정 = 내 몫×인원) 가 revNet(a,p,fs,fd)≈m (2만 메소 이내) 이면 a 그대로, 아니면 m 을 역산 revGross: 1인 P=m/(1-s), 분배 Q=m(N-d)/(1-d), P=Q/(1-s). 예전 기록은 fs/fd 없음 = 0. 1인 기록은 분배 수수료 무시(fd=0).
 - tests/test_b247.py (run_all.sh 에 b246·b247 추가), test_tracker80 의 아이콘↔목록 간격 검사는 이제 아이콘↔수수료 박스.
+
+## b248 (2026-10-22 00:30~01:05 KST) 수수료 = 결과 글자만 (판매가 칸 고정)
+- 수익 기록 전체 수정: 오른쪽 칸 = 판매가(총액) 그대로 — 기록의 a, a 없거나 안 맞으면 revGrossOf(r) 역산. 왼쪽 작은 글자(.ram) = 수수료 반영 결과 m (1인 P(1-s), 분배 Q(1-d)/(N-d)). '수수료 전체 적용' 버튼·칸 입력은 왼쪽 글자만 다시 계산(칸 값 안 바꿈). 줄별 수수료 rf[i] (기록 fs/fd 로 시작, 분배 수수료는 div>1 줄만).
+  [전체 수정] = 칸·수수료 안 바뀐 줄은 그대로, 바뀐 줄은 {m:revNet(P,div,s,d), a:P억, p, i, fs, fd} 저장(칸 안 바꾸면 P = 역산값 그대로, 반올림 없음). b110 의 '칸 = 내 몫' 동작은 폐기.
+- 수익을 기록할까요?(askRev): 판매가 칸 왼쪽에 같은 모양 작은 결과 글자 #rvRam(.ram.rvram, .rvamtrow flex) — 입력·수수료 버튼마다 갱신. 칸 값은 그대로, 저장은 기존 b244 그대로(a·fs·fd·m).
+- 테스트: tests/test_b248.py 새로(run_all 끝; 두 창 × solo/party × dark/light × 1280/390), test_tracker80 의 b110 '칸 = 내 몫' 검사를 판매가 기준으로 수정. 전체 152개 통과(직렬 재시도 4개 = 병렬 부하).
+- 사진 /workspace/b248/{before,after}_{editall,popup}_{solo,party}.png

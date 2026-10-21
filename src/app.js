@@ -358,7 +358,7 @@ function askRev(c,b,key,ik,cel){
   const ap=admPriceOf(ik); // b104: 관리자만 — maple.ai.kr 시세로 미리 채움 (수정 가능)
   const el=document.createElement('div'); el.id='revModal'; el.className='modal-bg show'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','rvTitle');
   el.innerHTML=`<div class="modal rvbox"><h3 class="rvh" id="rvTitle"><span class="rvico">${lootIco(ik)}</span>수익을 기록할까요?</h3><div class="rvguide muted" id="rvGuide">${ap?`가격 확인 : ${kstStamp(ap.t)}`:'이 아이템의 경매장 최저가 시세를 적어주세요.'}</div>${ap?priceSrcHtml('rvguide rvsrc muted'):''}${div>1?`<div class="rvname muted">${div}인 분배 · 수수료 반영 1인 실수령</div>`:''}
-    <div class="rvbody"><div class="rvleft"><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label>${feeHtml}<span class="rvbtns rvrow1"><button class="btn rvok" data-rv="ok">기록하기</button><button class="btn plain rvno" data-rv="no">기록 없이 저장</button></span><span class="rvbtns rvrow2"><button class="btn ghost rvcancel" data-rv="cancel">취소</button></span></div></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
+    <div class="rvbody"><div class="rvleft"><div class="rvamtrow"><small class="ram rvram" id="rvRam" aria-live="polite"></small><label class="rvin"><input id="rvAmt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label></div>${feeHtml}<span class="rvbtns rvrow1"><button class="btn rvok" data-rv="ok">기록하기</button><button class="btn plain rvno" data-rv="no">기록 없이 저장</button></span><span class="rvbtns rvrow2"><button class="btn ghost rvcancel" data-rv="cancel">취소</button></span></div></div><div class="rverr" id="rvErr" role="alert"></div></div>`;
   document.body.appendChild(el);
   let closed=false; const fin=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true); if(cel) cel(); };
   const ok=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')); if(!(v>0)||v>100000){ $('#rvErr').textContent='금액을 입력해주세요.'; markEmpty($('#rvAmt')); $('#rvAmt').focus(); return; }
@@ -369,7 +369,7 @@ function askRev(c,b,key,ik,cel){
     const cc=S.characters.find(x=>x.id===c.id)||c, t=b.type; delete dropMap(cc,t)[key]; delete modeMap(cc,t)[key]; delete outMap(cc,t)[key];
     const rk=t==='monthly'?'mdrev':'drev', rm=cc[rk]; if(rm){ delete rm[key]; if(!Object.keys(rm).length) delete cc[rk]; }
     if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; save(); render(); };
-  const prev=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')), pv=$('#rvPrev'); if(pv) pv.innerHTML=v>0&&v<=100000?`기록 금액 : <b>${fmtEokP(revNet(v*1e8,div,fs.s,div>1?fs.d:0))}</b>${div>1?' (1인)':''}`:''; };
+  const prev=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')), pv=$('#rvPrev'), rr=$('#rvRam'); if(rr) rr.textContent=v>0&&v<=100000?meso(Math.round(revNet(v*1e8,div,fs.s,div>1?fs.d:0))):''; /* b248: 입력 = 판매가 그대로, 왼쪽 작은 글자 = 수수료 반영 결과 */ if(pv) pv.innerHTML=v>0&&v<=100000?`기록 금액 : <b>${fmtEokP(revNet(v*1e8,div,fs.s,div>1?fs.d:0))}</b>${div>1?' (1인)':''}`:''; };
   $('#rvAmt').addEventListener('input',prev); prev();
   const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); fin(); } else if(e.key==='Enter'&&e.target.id==='rvAmt'){ e.preventDefault(); ok(); } };
   document.addEventListener('keydown',kd,true);
@@ -389,7 +389,7 @@ function revAllRows(c){ const rows=[];
     const [slot,it]=key.split('|'), b=findBoss(slot); if(!b||!ITEMS[it]) continue; const md=modeMap(c,t)[key]||'', outs=outMap(c,t)[key]||[], last=outs[outs.length-1];
     if(md==='l'||last==='x') continue;
     const r=revMap(c,t)[key], ik=r?.i||(last==='r4'||last==='c4'?'ring:'+last:last==='gl'?'g_life':/^cb:/.test(last||'')?last:it);
-    const pty=curParty(c,slot), div=pty>1&&md!=='w'&&md!=='n'?pty:1; rows.push({t,key,b,ik,div,m:r&&+r.m>0?+r.m:0,a:r&&+r.m>0?String(Math.round(r.m/1e4)/1e4):'',fs:+r?.fs||0,fd:div>1?+r?.fd||0:0,g:r&&+r.m>0?revGrossOf(r):0}); } // b110: 칸 = 내 몫(분배 후, 실제로 합산되는 값) 억 단위
+    const pty=curParty(c,slot), div=pty>1&&md!=='w'&&md!=='n'?pty:1; rows.push({t,key,b,ik,div,m:r&&+r.m>0?+r.m:0,fs:+r?.fs||0,fd:div>1?+r?.fd||0:0,g:r&&+r.m>0?revGrossOf(r):0}); const x=rows[rows.length-1]; x.a=x.g>0?String(Math.round(x.g/1e4)/1e4):''; } // b248: 칸 = 판매가(총액, a 없으면 revGrossOf 역산), 왼쪽 = 결과 m · b110: 칸 = 내 몫(분배 후, 실제로 합산되는 값) 억 단위
   return rows; }
 /* b112: 같은 보스 기록(주간/월간·보스)끼리 묶음 — 보스 초상화 1번 + 그 보스 아이템 줄들. 입력 번호(i)는 rows 순서 그대로 */
 function raGroups(c,rows){ const G=[]; rows.forEach((x,i)=>{ let g=G.find(y=>y.t===x.t&&y.b===x.b); if(!g) G.push(g={t:x.t,b:x.b,d:c.bosses?.[x.b.id]?.diff||'',items:[]}); g.items.push([x,i]); }); return G; }
@@ -409,24 +409,27 @@ function openRevAll(){
     <div class="rabtns">${rows.length?'<button class="btn raok" data-rab="ok">전체 수정</button><button class="btn ghost" data-rab="cancel">취소</button>':'<button class="btn raok" data-rab="close">확인</button>' /* b206: 체크한 아이템 없음 → [확인] 하나, 누르면 닫기만 */}</div></div>`;
   document.body.appendChild(el);
   const close=()=>{ el.remove(); document.removeEventListener('keydown',kd,true); };
-  const nm=[], fee={s:-1,d:-1}; el.querySelectorAll('[data-rafee].on').forEach(b=>{ fee[b.dataset.rafee]=+b.dataset.v; });
+  // b248: 오른쪽 칸 = 판매가(그대로), 수수료 버튼·입력 = 왼쪽 결과 글자만 다시 계산
+  const rf=rows.map(x=>({s:x.fs,d:x.fd})), fee={s:-1,d:-1}; el.querySelectorAll('[data-rafee].on').forEach(b=>{ fee[b.dataset.rafee]=+b.dataset.v; });
+  const gOf=i=>{ const inp=el.querySelector(`[data-ra="${i}"]`), raw=String(inp?.value??'').trim(), v=parseFloat(raw.replace(',','.')); return raw===rows[i].a&&rows[i].g>0?rows[i].g:v>0&&v<=100000?v*1e8:0; };
+  const mOf=i=>{ const g=gOf(i), x=rows[i]; return g>0?Math.round(revNet(g,x.div,rf[i].s,x.div>1?rf[i].d:0)):0; };
+  const showM=i=>{ const o=el.querySelector(`[data-ram="${i}"]`); if(o){ const m=mOf(i); o.textContent=m>0?meso(m):''; } };
   const feeAll=(k,v)=>{ fee[k]=v; el.querySelectorAll(`[data-rafee="${k}"]`).forEach(b=>{ const on=+b.dataset.v===v; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
-    rows.forEach((x,i)=>{ if(!(x.g>0)) return; const p=nm[i]||{s:x.fs,d:x.fd}, s=k==='s'?v:p.s, d=x.div>1?(k==='d'?v:p.d):0, m=Math.round(revNet(x.g,x.div,s,d)), sh=String(Math.round(m/1e4)/1e4);
-      nm[i]={m,s,d,g:x.g,sh}; const inp=el.querySelector(`[data-ra="${i}"]`), o=el.querySelector(`[data-ram="${i}"]`); if(inp) inp.value=sh; if(o) o.textContent=meso(m); }); };
+    rows.forEach((x,i)=>{ if(k==='d'&&!(x.div>1)) return; rf[i][k]=v; showM(i); }); };
   const ok=()=>{ const vals=[]; for(const inp of el.querySelectorAll('[data-ra]')){ const s=String(inp.value).trim().replace(',','.'), v=s===''?0:parseFloat(s);
       if(!(v>=0)||v>100000){ $('#raErr').textContent='금액을 확인해주세요.'; markEmpty(inp); inp.focus(); return; } vals[+inp.dataset.ra]=v; } // b112: 보스별 묶음이라 화면 순서 ≠ rows 순서 → 번호로
     // b110: 입력 = 내 몫 그대로 저장(다시 나누지 않음). 안 바꾼 칸은 원래 값 그대로(반올림 손실 없음)
     const raw=[]; el.querySelectorAll('[data-ra]').forEach(i=>{ raw[+i.dataset.ra]=String(i.value).trim(); });
     const apply=cc=>{ if(!cc) return; rows.forEach((x,i)=>{ const v=vals[i], rm=revMap(cc,x.t);
-      if(raw[i]===x.a&&x.m>0) return;
-      const n=nm[i]; if(n&&raw[i]===n.sh){ rm[x.key]={m:n.m,a:Math.round(n.g/1e4)/1e4,p:x.div,i:x.ik,fs:n.s,fd:n.d}; return; } // b247: 수수료 전체 적용 값 = 반올림 없이
-      if(v>0) rm[x.key]={m:Math.round(v*1e8),a:Math.round(v*x.div*1e4)/1e4,p:x.div,i:x.ik}; else delete rm[x.key];
+      const s=rf[i].s, d=x.div>1?rf[i].d:0; if(raw[i]===x.a&&x.m>0&&s===x.fs&&d===x.fd) return; // 안 바꾼 줄 = 그대로
+      const g=raw[i]===x.a&&x.g>0?x.g:v*1e8; // b248: 판매가 a + fs/fd + 결과 m 저장
+      if(v>0) rm[x.key]={m:Math.round(revNet(g,x.div,s,d)),a:Math.round(g/1e4)/1e4,p:x.div,i:x.ik,fs:s,fd:d}; else delete rm[x.key];
       const rk=x.t==='monthly'?'mdrev':'drev'; if(cc[rk]&&!Object.keys(cc[rk]).length) delete cc[rk]; }); };
     apply(S.characters.find(x=>x.id===c.id)); if(pend) apply(pend.base?.characters?.find(x=>x.id===c.id)); // 저장 대기 중인 다른 변경과 섞이지 않게 기준 상태에도 같이
     save(); try{ svPushBg(); }catch(e){} close(); render(); };
   const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); } else if(e.key==='Enter'&&e.target.dataset?.ra!=null){ e.preventDefault(); ok(); } };
   document.addEventListener('keydown',kd,true);
-  el.addEventListener('input',e=>{ const i=e.target.dataset?.ra; if(i==null) return; const v=parseFloat(String(e.target.value).replace(',','.')), o=el.querySelector(`[data-ram="${i}"]`); if(o) o.textContent=v>0?meso(Math.round(v*1e8)):''; });
+  el.addEventListener('input',e=>{ const i=e.target.dataset?.ra; if(i==null) return; showM(+i); });
   el.onclick=e=>{ if(e.target===el) return close(); const f=e.target.closest('[data-rafee]'); if(f) return feeAll(f.dataset.rafee,+f.dataset.v); const t=e.target.closest('[data-rab]'); if(t) t.dataset.rab==='ok'&&rows.length?ok():close(); }; // b110: 바깥 클릭 = [취소]
   setTimeout(()=>(el.querySelector('[data-ra]')||el.querySelector('[data-rab]'))?.focus(),30);
 }
