@@ -1679,7 +1679,7 @@ nav.tabs button.on{color:var(--sap2)!important;text-shadow:0 0 8px rgba(40,110,2
 [data-theme=light] .avatar{color:#a84a00!important}
 [data-theme=light] .dl .dlc{color:#a84a00!important}[data-theme=light] .dl .dlb{color:#5e4a38!important}
 [data-theme=light] .drop.erda .ecnt{background:#1f6f80!important}[data-theme=light] .drop.memc .ecnt{background:#6e5428!important}[data-theme=light] .drop.memc.mc-s .ecnt{background:#59636f!important}[data-theme=light] .drop.memc.mc-g .ecnt{background:#7a5a00!important}[data-theme=light] .drop.eter .ecnt{background:#6545c0!important}
-[data-theme=light] .drop.s-광휘{background:color-mix(in srgb,#e7b93c 12%,#fff)!important}[data-theme=light] .drop.s-칠흑{background:color-mix(in srgb,#8a63d2 10%,#fff)!important}[data-theme=light] .drop.s-여명{background:color-mix(in srgb,#5aa9e6 10%,#fff)!important}[data-theme=light] .drop.s-에테르{background:color-mix(in srgb,#b06ad8 8%,#fff)!important}[data-theme=light] .drop.s-반지{background:color-mix(in srgb,#3fae8a 10%,#fff)!important}
+[data-theme=light] .drop.s-광휘:not(.tz){background:color-mix(in srgb,#e7b93c 12%,#fff)!important}[data-theme=light] .drop.s-칠흑:not(.tz){background:color-mix(in srgb,#8a63d2 10%,#fff)!important}[data-theme=light] .drop.s-여명:not(.tz){background:color-mix(in srgb,#5aa9e6 10%,#fff)!important}[data-theme=light] .drop.s-에테르:not(.tz){background:color-mix(in srgb,#b06ad8 8%,#fff)!important}[data-theme=light] .drop.s-반지:not(.tz){background:color-mix(in srgb,#3fae8a 10%,#fff)!important}
 
 /* b183: 작은 문구 기본 글씨체 · 득템 카드 밑 글씨 · 못 가진 아이템 표 글씨 · 가격 카드 밑 글씨 */
 .tsmn{font-family:inherit;font-size:.82rem;letter-spacing:normal;white-space:nowrap}
@@ -1926,25 +1926,42 @@ header .logo .logo-d{display:flex;align-items:center}
 .drop.rredbtn .rrbt{white-space:nowrap}
 @media(max-width:470px){.drops .drop.rredbtn{display:none}}
 
-/* b239: 드롭 칩 가격 등급 — 테두리 = 3겹 배경(채움 / 패널 / 테두리 그라데이션). :root 를 붙여 라이트 테마 !important 칩 배경보다 우선 */
-:root .drop.tz{border:1px solid transparent!important;--fl:linear-gradient(transparent,transparent);--pn:var(--panel);
-  background:var(--fl) padding-box,linear-gradient(var(--pn),var(--pn)) padding-box,var(--bd) border-box!important;background-size:300% 100%,100% 100%,300% 100%!important;background-position:0% 50%,0 0,0% 50%!important}
+/* b239→b240: 드롭 칩 가격 등급 — 4겹 배경(반짝 줄 / 채움 / 패널 / 테두리) . :root 접두 + !important = 라이트 테마 칩 배경 규칙보다 우선 */
+:root .drop.tz{border:1px solid transparent!important;--fl:linear-gradient(transparent,transparent);--gl:linear-gradient(transparent,transparent);--pn:var(--panel);
+  background-color:transparent!important;background-image:var(--gl),var(--fl),linear-gradient(var(--pn),var(--pn)),var(--bd)!important;
+  background-origin:padding-box,padding-box,padding-box,border-box!important;background-clip:padding-box,padding-box,padding-box,border-box!important;background-repeat:no-repeat!important;
+  /* b240: background 줄임말 !important 는 position 까지 고정해 애니메이션이 안 움직였음(b239) → 나눠 씀 */
+  background-size:250% 100%,300% 100%,100% 100%,300% 100%!important;background-position:var(--gx) 0,0% 50%,0 0,0% 50%} /* b240: !important 없음 — 있으면 애니메이션이 못 움직임(b239 버그) */
 :root .drop.tz.got{box-shadow:none!important}
-:root .drop.t-pur{--bd:linear-gradient(#a45cff,#a45cff)}
-:root .drop.t-grn{--bd:linear-gradient(#34e89e,#34e89e);box-shadow:0 0 6px 1px rgba(52,232,158,.55),inset 0 0 4px rgba(52,232,158,.3)!important}
-:root .drop.t-gold{--bd:linear-gradient(115deg,#8a5600,#ffcf4a,#fff6cf,#e3a21a,#8a5600,#ffcf4a,#fff6cf,#e3a21a,#8a5600);box-shadow:0 0 6px rgba(255,200,70,.45)}
-:root .drop.t-aur{--bd:linear-gradient(115deg,#2ff3c3,#4aa3ff,#a66bff,#ff62c8,#ffd25e,#2ff3c3,#4aa3ff,#a66bff,#ff62c8);box-shadow:0 0 7px rgba(140,140,255,.5)}
+:root .drop.t-pur{--bd:linear-gradient(#b56dff,#b56dff)}
+/* b240: 금빛 = 더 밝은 금 + 흰 반짝 줄 + 빛 */
+:root .drop.t-gold{--bd:linear-gradient(115deg,#c98a00,#ffd84a,#fff,#ffe680,#ffb800,#fff7c8,#ffd84a,#fff,#ffcc33,#c98a00);box-shadow:0 0 8px 1px rgba(255,214,80,.7),0 0 2px rgba(255,255,220,.9)!important}
+:root .drop.t-aur{--bd:linear-gradient(115deg,#2ff3c3,#4aa3ff,#a66bff,#ff62c8,#ffd25e,#2ff3c3,#4aa3ff,#a66bff,#ff62c8);box-shadow:0 0 8px rgba(140,140,255,.6)!important}
 :root .drop.t-sky{--bd:linear-gradient(#5cc8ff,#5cc8ff)}
-:root .drop.t-sky.got{box-shadow:0 0 5px rgba(92,200,255,.45)!important}
-:root .drop.f-pur{--fl:linear-gradient(rgba(164,92,255,.34),rgba(164,92,255,.34))}
-:root .drop.f-grn{--fl:linear-gradient(rgba(52,232,158,.28),rgba(52,232,158,.28))}
-:root .drop.f-gold{--fl:linear-gradient(115deg,rgba(255,186,40,.16),rgba(255,226,130,.42),rgba(255,248,215,.55),rgba(227,162,26,.22),rgba(255,186,40,.16),rgba(255,226,130,.42),rgba(255,248,215,.55),rgba(227,162,26,.22),rgba(255,186,40,.16))}
-:root .drop.f-aur{--fl:linear-gradient(115deg,rgba(47,243,195,.28),rgba(74,163,255,.32),rgba(166,107,255,.34),rgba(255,98,200,.3),rgba(255,210,94,.28),rgba(47,243,195,.28),rgba(74,163,255,.32),rgba(166,107,255,.34),rgba(255,98,200,.3))}
-:root .drop.tz.got .dn{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55)}
-[data-theme=light] .drop.tz.got .dn{color:#2b2118!important;text-shadow:0 0 3px rgba(255,255,255,.8)}
-:root .drop.tza{animation:tzShift 3.2s linear infinite alternate}
-@keyframes tzShift{from{background-position:0% 50%,0 0,0% 50%}to{background-position:100% 50%,0 0,100% 50%}}
-@media(prefers-reduced-motion:reduce){:root .drop.tza{animation:none!important}}
+:root .drop.t-sky.got{box-shadow:0 0 7px rgba(92,200,255,.65)!important}
+:root .drop.f-sky{--fl:linear-gradient(115deg,rgba(40,170,255,.5),rgba(120,215,255,.65),rgba(40,170,255,.5))} /* b240: 10억 미만 기록 = 밝은 하늘색 */
+/* b240: 기록 채움 = 더 밝고 진하게 + 반짝 줄(--gl) */
+:root .drop.tz.got{--gl:linear-gradient(105deg,transparent 0 38%,rgba(255,255,255,.0) 42%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 58%,transparent 62% 100%)}
+:root .drop.f-pur{--fl:linear-gradient(115deg,rgba(150,70,255,.55),rgba(190,120,255,.62),rgba(150,70,255,.55))}
+:root .drop.f-gold{--fl:linear-gradient(115deg,rgba(230,150,0,.5),rgba(255,205,40,.68),rgba(255,245,190,.8),rgba(255,180,0,.55),rgba(230,150,0,.5),rgba(255,205,40,.68),rgba(255,245,190,.8),rgba(255,180,0,.55),rgba(230,150,0,.5))}
+:root .drop.f-aur{--fl:linear-gradient(115deg,rgba(20,230,180,.52),rgba(60,150,255,.58),rgba(160,90,255,.6),rgba(255,80,190,.55),rgba(255,200,70,.52),rgba(20,230,180,.52),rgba(60,150,255,.58),rgba(160,90,255,.6),rgba(255,80,190,.55))}
+:root .drop.tz.got .dn{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.75),0 0 3px rgba(0,0,0,.45)}
+:root .drop.f-gold.got .dn{color:#2a1a00;text-shadow:0 0 3px rgba(255,250,220,.9)}
+[data-theme=light] .drop.tz.got .dn{color:#1e140c!important;text-shadow:0 0 3px rgba(255,255,255,.9)}
+/* b240: 체크 표시 = 등급 색 (반지 상자 = 채움 등급, 없으면 하늘색) */
+:root .drop.tz.got::after{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%2339b6f5' fill-opacity='.95'/%3E%3Cpath d='M6.5 12.5l3.5 3.5 7.5-8' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat!important}
+:root .drop.tz.got.f-sky::after{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%2339b6f5' fill-opacity='.95'/%3E%3Cpath d='M6.5 12.5l3.5 3.5 7.5-8' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat!important}
+:root .drop.tz.got.f-pur::after{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%239b5cff' fill-opacity='.95'/%3E%3Cpath d='M6.5 12.5l3.5 3.5 7.5-8' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat!important}
+:root .drop.tz.got.f-gold::after{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23fff3b0'/%3E%3Cstop offset='.45' stop-color='%23ffc21a'/%3E%3Cstop offset='1' stop-color='%23e08a00'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='12' cy='12' r='11' fill='url(%23g)'/%3E%3Cpath d='M6.5 12.5l3.5 3.5 7.5-8' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat!important;filter:drop-shadow(0 0 3px rgba(255,220,90,.9))}
+:root .drop.tz.got.f-aur::after{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322e6b8'/%3E%3Cstop offset='.35' stop-color='%234a9dff'/%3E%3Cstop offset='.65' stop-color='%23b061ff'/%3E%3Cstop offset='1' stop-color='%23ff5cc0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='12' cy='12' r='11' fill='url(%23a)'/%3E%3Cpath d='M6.5 12.5l3.5 3.5 7.5-8' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat!important;animation:tzHue 4s linear infinite}
+@keyframes tzHue{to{filter:hue-rotate(360deg)}}
+/* 움직임: 오로라·금빛 = 테두리·채움 흐름 + 반짝 줄, 보라·하늘 기록 = 반짝 줄만(천천히) */
+:root .drop.tza{animation:tzShift 3.2s linear infinite alternate,tzGlint 2.2s ease-in-out infinite}
+:root .drop.tz.got:not(.tza){animation:tzGlint 3.6s ease-in-out infinite}
+@keyframes tzShift{from{background-position-x:var(--gx,120%),0%,0,0%}to{background-position-x:var(--gx,120%),100%,0,100%}}
+@keyframes tzGlint{0%,35%{--gx:120%}100%{--gx:-20%}}
+@property --gx{syntax:'<percentage>';inherits:false;initial-value:120%}
+@media(prefers-reduced-motion:reduce){:root .drop.tz,:root .drop.tz::after{animation:none!important}}
 </style>
 </head>
 <body>
@@ -2344,14 +2361,14 @@ function itemIcon(k){
   return src?`<img src="${src}" alt="" aria-hidden="true">`:`<span class="ifb" aria-hidden="true">${esc((it?.n||'?').slice(0,1))}</span>`;
 }
 /* b239: 드롭 칩 가격 등급 (공용 시세 admPriceOf = 수익 기록 칸과 같은 값). 테두리 t-*, 기록하면 같은 등급 채움 f-*, 움직이는 등급 tza.
- * ≥1000억 aur(오로라) · ≥100억 gold(금빛) · ≥30억 grn(초록 빛) · ≥10억 pur(보라) · 그 밑/시세 없음 = 예전 그대로.
+ * ≥1000억 aur(오로라) · ≥100억 gold(금빛) · ≥10억 pur(보라) · b240: 10억 미만/시세 없음 = 하늘색(sky, 반지 상자와 같음; 초록 등급 삭제).
  * 반지 상자 칩 = 항상 하늘색 테두리(t-sky), 기록하면 결과(리4·컨4) 중 비싼 쪽 가격 등급으로 채움(꽝·미기록 결과 = 채움 없음). 홍옥 반지 상자 버튼(rredBtn)은 예전 그대로(옆 칩과 같은 모양 규칙 zosu-b234 유지). */
-const priceTier = p => !(+p>0)?'':p>=1e11?'aur':p>=1e10?'gold':p>=3e9?'grn':p>=1e9?'pur':'';
+const priceTier = p => !(+p>0)?'':p>=1e11?'aur':p>=1e10?'gold':p>=1e9?'pur':''; // b240: 초록 등급 삭제
 const tierP = k => +(admPriceOf(priceId(k))?.p)||0;
 function tierCls(bd,fill){ if(!bd&&!fill) return ''; const anim=/aur|gold/.test(bd+' '+fill); return ` tz${bd?' t-'+bd:''}${fill?' f-'+fill:''}${anim?' tza':''}`; }
 function dropTierCls(c,b,k,got){
-  if(isRing(k)){ const outs=got&&c?(outMap(c,b.type)[b.id+'|'+k]||[]):[]; const p=Math.max(0,...outs.filter(o=>o==='r4'||o==='c4').map(o=>tierP('ring:'+o))); return tierCls('sky',priceTier(p)); }
-  const t=priceTier(tierP(k)); return t?tierCls(t,got?t:''):''; }
+  if(isRing(k)){ const outs=(got&&c?(outMap(c,b.type)[b.id+'|'+k]||[]):[]).filter(o=>o==='r4'||o==='c4'); const p=Math.max(0,...outs.map(o=>tierP('ring:'+o))); return tierCls('sky',outs.length?(priceTier(p)||'sky'):''); } // b240: 결과 10억 미만 = 하늘색 채움, 꽝·미기록 = 채움 없음
+  const t=priceTier(tierP(k))||'sky'; return tierCls(t,got?t:''); } // b240: 10억 미만·시세 없음 = 하늘색
 const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
   const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!eternalFor(b,diff)&&!mementoFor(b,diff)) return '';
@@ -2377,7 +2394,7 @@ function dropsHtml(b,diff,c){
 const RRED_TXT='홍옥 반지 상자'; /* zosu-hong: 버튼 = 홍옥 상자 아이콘 + 이름 (예전 '…먹었을 경우 클릭'), 옆 아이콘만 칩(r_red off) 삭제 */
 const rredGot = (c,slot) => ['hong_r4','hong_c4'].find(k=>+(c?.drops||{})[slot+'|'+k]>0)||'';
 function rredBtn(b,c){ const k=rredGot(c,b.id), r=k&&(c.drev||{})[b.id+'|'+k];
-  return `<button type="button" class="drop rredbtn${k?' got':''}" data-rred="${b.id}"${k?` data-tip="${esc(`${k==='hong_r4'?'리4':'컨4'}${r&&+r.m>0?` · 판매금 ${meso(+r.m)}`:''} — 다시 누르면 취소`)}"`:''} aria-label="홍옥 반지 상자로 리4/컨4를 먹었을 경우 기록"><span class="rrbico" aria-hidden="true">${itemIcon('r_red')}</span><span class="rrbt">${RRED_TXT}</span></button>`; }
+  return `<button type="button" class="drop rredbtn${k?' got':''}${tierCls('sky',k?'sky':'')}" data-rred="${b.id}"${k?` data-tip="${esc(`${k==='hong_r4'?'리4':'컨4'}${r&&+r.m>0?` · 판매금 ${meso(+r.m)}`:''} — 다시 누르면 취소`)}"`:''} aria-label="홍옥 반지 상자로 리4/컨4를 먹었을 경우 기록"><span class="rrbico" aria-hidden="true">${itemIcon('r_red')}</span><span class="rrbt">${RRED_TXT}</span></button>`; }
 function openRred(slot){
   const c=activeChar(), b=findBoss(slot); if(!c||!b) return; pendStart();
   const had=rredGot(c,slot); if(had){ for(const k of ['hong_r4','hong_c4']){ delete c.drops[slot+'|'+k]; if(c.drev) delete c.drev[slot+'|'+k]; } if(c.drev&&!Object.keys(c.drev).length) delete c.drev; save(); render(); return; } // 기록된 것 다시 누름 = 취소

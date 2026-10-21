@@ -54,7 +54,8 @@ try:
     sz0=pg.evaluate("k=>{const r=document.querySelector(`[data-drop=\"${k}\"]`).getBoundingClientRect();return [r.width,r.height,document.querySelector('.drops').getBoundingClientRect().height]}",first)
     pg.evaluate("k=>{const [b,i]=k.split('|'); const c=activeChar(); (c.drops||(c.drops={}))[k]=1; render()}",first); pg.wait_for_timeout(150)
     st=pg.evaluate("k=>{const e=document.querySelector(`[data-drop=\"${k}\"]`),s=getComputedStyle(e),r=e.getBoundingClientRect();return {got:e.classList.contains('got'),bg:s.backgroundColor,bd:s.borderColor,chk:e.textContent.includes('✓'),sz:[r.width,r.height,document.querySelector('.drops').getBoundingClientRect().height]}}",first)
-    check('selected chip: green bg+border, no ✓, size unchanged', st['got'] and 'rgba(63, 185, 111' in st['bg'] and st['bd']=='rgb(63, 185, 111)' and not st['chk'] and st['sz']==sz0, (st,sz0))
+    st['tier']=pg.evaluate("k=>{const e=document.querySelector(`[data-drop=\"${k}\"]`);return [...e.classList].some(c=>c.startsWith('f-'))&&getComputedStyle(e).backgroundImage.split('gradient').length>3}",first)
+    check('selected chip: tier fill (b240: 초록 → 가격 등급 색, 10억 미만 = 하늘색), no ✓ text, size unchanged', st['got'] and st['tier'] and not st['chk'] and st['sz']==sz0, (st,sz0))
     pg.locator('.boss:has([data-drop^="limbo|"])').first.screenshot(path='/workspace/shots/b40_limbo_green.png')
     # 5) 정렬: 아래 왼쪽, 3가지
     btns=pg.eval_on_selector_all('#charFoot .charsort [data-csort]','e=>e.map(x=>x.textContent)')

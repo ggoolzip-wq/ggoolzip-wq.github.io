@@ -263,14 +263,14 @@ function itemIcon(k){
   return src?`<img src="${src}" alt="" aria-hidden="true">`:`<span class="ifb" aria-hidden="true">${esc((it?.n||'?').slice(0,1))}</span>`;
 }
 /* b239: 드롭 칩 가격 등급 (공용 시세 admPriceOf = 수익 기록 칸과 같은 값). 테두리 t-*, 기록하면 같은 등급 채움 f-*, 움직이는 등급 tza.
- * ≥1000억 aur(오로라) · ≥100억 gold(금빛) · ≥30억 grn(초록 빛) · ≥10억 pur(보라) · 그 밑/시세 없음 = 예전 그대로.
+ * ≥1000억 aur(오로라) · ≥100억 gold(금빛) · ≥10억 pur(보라) · b240: 10억 미만/시세 없음 = 하늘색(sky, 반지 상자와 같음; 초록 등급 삭제).
  * 반지 상자 칩 = 항상 하늘색 테두리(t-sky), 기록하면 결과(리4·컨4) 중 비싼 쪽 가격 등급으로 채움(꽝·미기록 결과 = 채움 없음). 홍옥 반지 상자 버튼(rredBtn)은 예전 그대로(옆 칩과 같은 모양 규칙 zosu-b234 유지). */
-const priceTier = p => !(+p>0)?'':p>=1e11?'aur':p>=1e10?'gold':p>=3e9?'grn':p>=1e9?'pur':'';
+const priceTier = p => !(+p>0)?'':p>=1e11?'aur':p>=1e10?'gold':p>=1e9?'pur':''; // b240: 초록 등급 삭제
 const tierP = k => +(admPriceOf(priceId(k))?.p)||0;
 function tierCls(bd,fill){ if(!bd&&!fill) return ''; const anim=/aur|gold/.test(bd+' '+fill); return ` tz${bd?' t-'+bd:''}${fill?' f-'+fill:''}${anim?' tza':''}`; }
 function dropTierCls(c,b,k,got){
-  if(isRing(k)){ const outs=got&&c?(outMap(c,b.type)[b.id+'|'+k]||[]):[]; const p=Math.max(0,...outs.filter(o=>o==='r4'||o==='c4').map(o=>tierP('ring:'+o))); return tierCls('sky',priceTier(p)); }
-  const t=priceTier(tierP(k)); return t?tierCls(t,got?t:''):''; }
+  if(isRing(k)){ const outs=(got&&c?(outMap(c,b.type)[b.id+'|'+k]||[]):[]).filter(o=>o==='r4'||o==='c4'); const p=Math.max(0,...outs.map(o=>tierP('ring:'+o))); return tierCls('sky',outs.length?(priceTier(p)||'sky'):''); } // b240: 결과 10억 미만 = 하늘색 채움, 꽝·미기록 = 채움 없음
+  const t=priceTier(tierP(k))||'sky'; return tierCls(t,got?t:''); } // b240: 10억 미만·시세 없음 = 하늘색
 const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
   const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!eternalFor(b,diff)&&!mementoFor(b,diff)) return '';
@@ -296,7 +296,7 @@ function dropsHtml(b,diff,c){
 const RRED_TXT='홍옥 반지 상자'; /* zosu-hong: 버튼 = 홍옥 상자 아이콘 + 이름 (예전 '…먹었을 경우 클릭'), 옆 아이콘만 칩(r_red off) 삭제 */
 const rredGot = (c,slot) => ['hong_r4','hong_c4'].find(k=>+(c?.drops||{})[slot+'|'+k]>0)||'';
 function rredBtn(b,c){ const k=rredGot(c,b.id), r=k&&(c.drev||{})[b.id+'|'+k];
-  return `<button type="button" class="drop rredbtn${k?' got':''}" data-rred="${b.id}"${k?` data-tip="${esc(`${k==='hong_r4'?'리4':'컨4'}${r&&+r.m>0?` · 판매금 ${meso(+r.m)}`:''} — 다시 누르면 취소`)}"`:''} aria-label="홍옥 반지 상자로 리4/컨4를 먹었을 경우 기록"><span class="rrbico" aria-hidden="true">${itemIcon('r_red')}</span><span class="rrbt">${RRED_TXT}</span></button>`; }
+  return `<button type="button" class="drop rredbtn${k?' got':''}${tierCls('sky',k?'sky':'')}" data-rred="${b.id}"${k?` data-tip="${esc(`${k==='hong_r4'?'리4':'컨4'}${r&&+r.m>0?` · 판매금 ${meso(+r.m)}`:''} — 다시 누르면 취소`)}"`:''} aria-label="홍옥 반지 상자로 리4/컨4를 먹었을 경우 기록"><span class="rrbico" aria-hidden="true">${itemIcon('r_red')}</span><span class="rrbt">${RRED_TXT}</span></button>`; }
 function openRred(slot){
   const c=activeChar(), b=findBoss(slot); if(!c||!b) return; pendStart();
   const had=rredGot(c,slot); if(had){ for(const k of ['hong_r4','hong_c4']){ delete c.drops[slot+'|'+k]; if(c.drev) delete c.drev[slot+'|'+k]; } if(c.drev&&!Object.keys(c.drev).length) delete c.drev; save(); render(); return; } // 기록된 것 다시 누름 = 취소
