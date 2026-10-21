@@ -15,6 +15,24 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b234 (2026-10-21 KST) — API 키가 빠진 계정 30일 → 기록 삭제 (본계정 포함) + zosu-apikey·zosu-b234 merge
+사용자 요청: "API키가 빠졌을 때 30일이 지나면 기록도 삭제되게 해줘. 이건 본계정 포함".
+1. **부계정·서버 아닌 모드 본계정 = 클라이언트** (`src/app.js`, `vchars` 바로 아래): `S.settings.keyGoneAt = {계정 칸 id: 키 삭제 시각}` (상태와 함께 동기화).
+   - 키 삭제 버튼(`data-accdel`)에서 `keyGoneMark()`. b102 로 예전에 지운 부계정(goneAccs, 캐릭터 남음)은 처음 열 때 '오늘'로 기록.
+   - `keyGoneTick(now)` 를 `checkResets()` 에서 매번(불러올 때·드라이브/서버 데이터 적용 때): 칸에 키가 다시 생기면(goneAccs 아님) 예약 삭제 → 예전처럼 전부 복귀. 30×24시간 지나면 `purgeChars(ids)`:
+     그 칸의 숨은 캐릭터 삭제(drops·drev·mdrev 등 캐릭터 안 기록 포함), history·monthHistory perChar 삭제 후 total·cleared·crystals·items 다시 계산(빈 기록은 삭제),
+     missW/missM list 삭제(id 줄 + id 없는 예전 줄은 '지운 캐릭터 이름이고 남은 캐릭터 중엔 없는' 이름) 후 n·meso 다시 계산(그 주/달 기록이 남아 있으면 0 줄 유지 → missBackfill 이 다시 만들지 않음), activeId·dq.charOff/hide 정리, goneAccs·예약 정리. 키 다시 넣으면 새로 시작.
+   - 확인창 문구: '30일 안에 … 다시 보입니다. 30일이 지나면 … 기록이 삭제됩니다.'
+2. **서버 모드 본계정(대표) 키 삭제 = 로그아웃**이라 페이지가 지울 수 없음 → Worker:
+   - `users.key_gone_at` (ensureSchema ALTER + schema.sql). `POST /api/keygone` = key_gone_at=now + 이 세션 삭제 (클라이언트 `gdLogout({keyGone:true})` 가 /api/logout 대신 호출).
+   - 취소: 같은 사용자 로그인(`/api/login`)·다른 기기 세션 사용(`auth()`) → NULL.
+   - `keyGoneCron` (scheduled 안, meta 'keygone_cron' 으로 1시간에 1번, 한 번에 20명): key_gone_at ≤ now-30일 사용자만 `dropUser`(USER_TABLES 전부+users). 관리자 제외, 그 뒤 쓰인 세션이 있으면 예약만 취소. 같은 키로 다시 가입하면 새 사용자(빈 데이터).
+   - ⚠ **Worker 배포 필요** (`cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`) — 이번 작업에선 배포 안 함. 배포 전 사이트가 /api/keygone 을 부르면 404 → 예전처럼 /api/logout 으로 대체(데이터 삭제 예약만 안 됨).
+   - 한계: 세션이 이미 없는 상태(b216 `svWipeAll` 경로)에서 본계정 키를 지우면 서버에 알릴 수 없어 예약 안 됨.
+3. 테스트: tests/test_b234_purge.py (클라이언트: 30일 전 숨김·보존, 29일·30일-1ms 보존, 다시 넣으면 복귀, 30일 지나면 삭제·합계, idempotent, 본계정), tests/test_server_b234.py (wrangler dev --test-scheduled, /__scheduled 로 cron: keygone·재로그인 취소·다른 기기 취소·30일 전 유지·1시간 제한·삭제·키 있는 사용자 유지·재가입 새로 시작). 둘 다 `_tutil.free_port()`. tests/cf_dev.py `Dev(..., args=())` 추가. run_all.sh 등록.
+4. merge: zosu-apikey(b233 위), zosu-b234 (592b3b8 → a1cefe4: 테스트 빈 포트 _tutil, bgJob 옛 키, 320px 헤더, 홍옥 반지 상자 버튼).
+5. 화면 변화 = 키 삭제 확인창 문구뿐(삭제는 30일 뒤). 사진: /workspace/b234/after_purge_total.png (본계정 30일 뒤 삭제 후 결정석 분석 탭).
+
 ## zosu-apikey (2026-10-19, origin/main b220 위로 rebase) — 키 삭제된 계정 캐릭터 데이터 전부 제외 (공용 헬퍼)
 1. **공용 헬퍼**(`src/app.js`, `visibleCharIds()` 바로 아래): `activeChars()`(= vchars, 보이는 캐릭터 목록), `activeIds()`(= visibleCharIds, id Set), `activeRecords(h,ids)`(= visHist: 기록 1개의 perChar 를 걸러 total·cleared·crystals·items 다시 계산), `activeMiss(r,ids)`(빠뜨린 보스메소 기록 1개의 list 를 걸러 n·meso 다시 계산; 예전 기록은 id 없이 이름만 → 숨은 캐릭터 이름이고 보이는 캐릭터에 같은 이름이 없으면 제외). 기준 = `charShown`(키 없는 계정 또는 `settings.goneAccs`(b102) → 숨김). **새 탭·집계는 이 헬퍼만 쓸 것**(규칙 8). 저장 데이터는 안 지움 → 키 다시 넣으면(b219 재연결 포함) 복귀.
 2. **누출 → 고친 곳**
