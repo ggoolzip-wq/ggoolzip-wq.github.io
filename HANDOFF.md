@@ -1980,3 +1980,9 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 테스트: tests/test_zosu_ringbtn.py(9463, 1600/390 × 다크/라이트, 예시 화면) + test_b229_rred TXT 갱신, test_b229. 사진: /workspace/zosu/shots/ringbtn-{before,after}-{1600,390}.png
 - zosu-b234 병합(2026-10-21 14:39~14:41 KST): zosu-testfix-b233 + origin/zosu-hong. 충돌 = src/extra.css(두 블록 다 둠), tests/run_all.sh(zosu_bgkey·zosu_ringbtn 둘 다), index.html(build.py 로 다시 만듦). test_b229_rred 는 자동 병합(빈 포트 + 새 버튼 글자 '홍옥 반지 상자'). 이 섹션은 맨 위 규칙 앞에서 여기(끝)로 옮김. test_zosu_ringbtn 고정 포트 9463 → _tutil 빈 포트. 관련 테스트 6개(test_zosu_ringbtn·test_b229_rred·test_b229·test_tracker12·test_zosu_bgkey·test_tracker43) 통과.
 - zosu-b234 홍옥 버튼 테두리(2026-10-21 14:46~14:49 KST, 사용자 '홍옥 반지 상자 버튼 테두리가 이상해. 다른 아이템이랑 똑같이'): .drop.rredbtn 의 빨간 점선 테두리·자체 배경·색·여백·글자 크기 삭제 → 공통 .drop 칩 규칙 그대로(1px solid var(--line), 7px, var(--panel), 1px 7px 1px 2px, .72rem), 아이콘 칸 26px(그림 20px)로 높이 30px = 다른 칩. hover = .drop[data-drop]:hover, 기록됨 = 공통 .drop.got(초록 테두리·배경, 체크 겹침 그림은 글자 가려서 계속 숨김). test_zosu_ringbtn 에 '옆 칩과 테두리 두께·모양·색·둥글기·높이·배경·여백·글자 크기 같음' 검사 추가(다크/라이트 x 1600/390). 사진 /workspace/zosu/shots/ringbtn2-{before,after}-{1600,390}.png.
+
+## b243 (2026-10-21 20:57~21:08 KST) — 득템 축하 창 아이콘 뒤 에픽 빛줄기
+- celebrate(): 아이콘을 `.cg-ico` 로 감싸고 그 안에 `.cg-beam`(aria-hidden) — 원본 BasicEff.img/RewardEffect/ScreenEff 16프레임(60ms, 반복) 알파 PNG 를 rewardeffect_tree.txt origin 기준으로 정렬, 빛 위쪽 반을 잘라 192x100 투명 animated WebP(약 69KB, base64 로 src/extra.css 끝)로.
+- 크기 288x150(480px 이하 230x120), 빛 나오는 점(높이 80%) = 아이콘 가운데, 아이콘 z-index 1 이 위. 모션 줄이기면 숨김. 레이아웃 안 바뀜(absolute).
+- 테스트 tests/test_b243.py(run_all 끝, 1280/390: 존재·가운데·아이콘 위·webp·크기·넘침 없음). 전체 148개 통과(직렬 재시도 4개 = 병렬 부하).
+- 사진 /workspace/b243/{before,after,before_mobile,after_mobile}.png
