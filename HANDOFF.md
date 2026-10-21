@@ -1997,3 +1997,4 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 ## b245 (2026-10-21 KST) 에픽빔 고화질
 - 축하 팝업 빛줄기 WebP를 320x191(q45, base64 내장)에서 864x515(q82, 약 1.4MB) 별도 파일 epicbeam.webp로 교체. src/extra.css가 url(epicbeam.webp) 참조(첫 축하 때 로드). index.html 용량 감소. 69ms x16, 페더·마스크·크기 그대로.
 - tests/test_b243.py: 파일 기준 프레임·용량(<1.6MB) 검사로 수정.
+- b245 후속: tools/pages_dist.sh 배포 목록에 epicbeam.webp 추가(빠져서 404/HTML 응답이던 것 수정).
