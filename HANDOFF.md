@@ -2020,3 +2020,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 수익을 기록할까요?(askRev): 판매가 칸 왼쪽에 같은 모양 작은 결과 글자 #rvRam(.ram.rvram, .rvamtrow flex) — 입력·수수료 버튼마다 갱신. 칸 값은 그대로, 저장은 기존 b244 그대로(a·fs·fd·m).
 - 테스트: tests/test_b248.py 새로(run_all 끝; 두 창 × solo/party × dark/light × 1280/390), test_tracker80 의 b110 '칸 = 내 몫' 검사를 판매가 기준으로 수정. 전체 152개 통과(직렬 재시도 4개 = 병렬 부하).
 - 사진 /workspace/b248/{before,after}_{editall,popup}_{solo,party}.png
+
+## b249 (2026-10-22 01:02~01:16 KST) 결과 글자 '기록 금액 :' 노랑 + 금액 초록, 더 크게
+- 공통 ramHtml(m) = `<span class="rlab">기록 금액 :</span> <b class="rval">meso(m)</b>` — 수익 기록 전체 수정 창 .ram(줄마다) 과 수익을 기록할까요? 팝업 #rvRam 둘 다.
+- CSS: 1rem(480px 이하 .92rem, 예전 .72rem), 라벨 #ffd23f / 금액 #4ade80(라이트 테마 #a86b00 / #13803d, 대비 3 이상). 팝업 .rvamtrow flex-wrap — 큰 글씨라 칸 옆에 안 들어가면 칸 바로 위 가운데로 줄바꿈(1280·390 모두 지금은 위).
+- 팝업 아래 기존 '기록 금액 : X (1인)' 미리보기(#rvPrev, b244)는 그대로 둠(test_b244 가 사용).
+- 테스트: tests/test_b249.py 새로(run_all 끝; 두 창 × solo/party × dark/light × 1280/390: 문구·색·크기·대비·창 안). test_b248/test_tracker80 은 금액을 .rval 에서 읽게, test_b248 팝업 위치 = 왼쪽 같은 줄 또는 바로 위. 전체 153개: tracker53(로그아웃 동기화) 만 직렬 재시도에서도 1번 실패 — 단독 재실행 통과, b248 에서도 같은 간헐 실패.
+- 사진 /workspace/b249/{before,after}_{editall,popup}_{solo,party}.png

@@ -349,6 +349,8 @@ const REVFEE_K='mapleBossTracker.revFee';
 function revFeeGet(){ try{ const o=JSON.parse(localStorage.getItem(REVFEE_K)||'{}'); const ok=v=>[0,3,5].includes(v)?v:0; return {s:ok(o.s),d:ok(o.d)}; }catch(e){ return {s:0,d:0}; } }
 function revFeeSet(o){ try{ localStorage.setItem(REVFEE_K,JSON.stringify({s:o.s,d:o.d})); }catch(e){} }
 const fmtEokP=m=>{ const e=m/1e8; return (e>=100?e.toFixed(1):e>=1?e.toFixed(3):e.toFixed(4)).replace(/\.?0+$/,'')+'억 메소'; };
+/* b249: 결과 글자 = '기록 금액 :'(노랑) + 금액(초록) */
+const ramHtml=m=>m>0?`<span class="rlab">기록 금액 :</span> <b class="rval">${meso(m)}</b>`:'';
 const revMap = (c,type) => type==='monthly' ? (c.mdrev||(c.mdrev={})) : (c.drev||(c.drev={}));
 function askRev(c,b,key,ik,cel){
   const pty=curParty(c,b.id), md=modeMap(c,b.type)[key]||'', div=pty>1&&md!=='w'&&md!=='n'?pty:1; // 분배(예전 기록 포함) = ÷인원, 1인·블빵승리 = 전부
@@ -369,7 +371,7 @@ function askRev(c,b,key,ik,cel){
     const cc=S.characters.find(x=>x.id===c.id)||c, t=b.type; delete dropMap(cc,t)[key]; delete modeMap(cc,t)[key]; delete outMap(cc,t)[key];
     const rk=t==='monthly'?'mdrev':'drev', rm=cc[rk]; if(rm){ delete rm[key]; if(!Object.keys(rm).length) delete cc[rk]; }
     if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; save(); render(); };
-  const prev=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')), pv=$('#rvPrev'), rr=$('#rvRam'); if(rr) rr.textContent=v>0&&v<=100000?meso(Math.round(revNet(v*1e8,div,fs.s,div>1?fs.d:0))):''; /* b248: 입력 = 판매가 그대로, 왼쪽 작은 글자 = 수수료 반영 결과 */ if(pv) pv.innerHTML=v>0&&v<=100000?`기록 금액 : <b>${fmtEokP(revNet(v*1e8,div,fs.s,div>1?fs.d:0))}</b>${div>1?' (1인)':''}`:''; };
+  const prev=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')), pv=$('#rvPrev'), rr=$('#rvRam'); if(rr) rr.innerHTML=v>0&&v<=100000?ramHtml(Math.round(revNet(v*1e8,div,fs.s,div>1?fs.d:0))):''; /* b248: 입력 = 판매가 그대로, 왼쪽 작은 글자 = 수수료 반영 결과 */ if(pv) pv.innerHTML=v>0&&v<=100000?`기록 금액 : <b>${fmtEokP(revNet(v*1e8,div,fs.s,div>1?fs.d:0))}</b>${div>1?' (1인)':''}`:''; };
   $('#rvAmt').addEventListener('input',prev); prev();
   const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); fin(); } else if(e.key==='Enter'&&e.target.id==='rvAmt'){ e.preventDefault(); ok(); } };
   document.addEventListener('keydown',kd,true);
@@ -404,7 +406,7 @@ function openRevAll(){
     ${rows.some(x=>x.m>0)?(()=>{ const rec=rows.filter(x=>x.m>0), cm=k=>{ const v=rec.map(x=>x[k]); return v.every(y=>y===v[0])?v[0]:-1; }, sp=rec.some(x=>x.div>1), cs=cm('fs'), cd=sp?cm('fd'):-1;
       const fr=(k,lab,cv)=>`<div class="rvfrow" data-rafrow="${k}"><span class="rvflab">${lab} :</span>${[0,3,5].map(v=>`<button type="button" class="rvfbtn${cv===v?' on':''}" data-rafee="${k}" data-v="${v}" aria-pressed="${cv===v}">${v}%</button>`).join('')}</div>`;
       return `<div class="rvfee rafee" aria-label="수수료 전체 적용"><div class="rafh muted">수수료 전체 적용</div>${fr('s','판매 수수료',cs)}${sp?fr('d','분배 수수료',cd):''}</div>`; })():'' /* b247: 기록 전부 1인(분배 없음) = 판매만 */}
-    <div class="ralist">${raGroups(c,rows).map(g=>`<div class="ragrp"><span class="rabi" data-boss="${g.b.id}" title="${esc(g.b.name)}${g.d?' '+esc(D[g.d]||''):''}">${bossPic(g.b,g.d)}</span><div class="ragi">${g.items.map(([x,i])=>`<div class="rarow"><span class="raic">${lootIco(x.ik)}</span><span class="raname">${isHong(x.ik)?`<span class="vh">${esc(lootName(x.ik))}</span><b class="lx">x1</b>`:esc(lootName(x.ik))}${x.div>1?` <small class="muted">(${x.div}인 분배)</small>`:''}<small class="ram" data-ram="${i}">${x.m?meso(x.m):''}</small></span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" data-ra="${i}" value="${x.a}" aria-label="${esc(lootName(x.ik))} 판매 금액 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div></div>`).join('')}</div>
+    <div class="ralist">${raGroups(c,rows).map(g=>`<div class="ragrp"><span class="rabi" data-boss="${g.b.id}" title="${esc(g.b.name)}${g.d?' '+esc(D[g.d]||''):''}">${bossPic(g.b,g.d)}</span><div class="ragi">${g.items.map(([x,i])=>`<div class="rarow"><span class="raic">${lootIco(x.ik)}</span><span class="raname">${isHong(x.ik)?`<span class="vh">${esc(lootName(x.ik))}</span><b class="lx">x1</b>`:esc(lootName(x.ik))}${x.div>1?` <small class="muted">(${x.div}인 분배)</small>`:''}<small class="ram" data-ram="${i}">${ramHtml(x.m)}</small></span><label class="rvin rain"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" data-ra="${i}" value="${x.a}" aria-label="${esc(lootName(x.ik))} 판매 금액 (억 메소)"><span>억 메소</span></label></div>`).join('')}</div></div>`).join('')}</div>
     <div class="rverr" id="raErr" role="alert"></div>
     <div class="rabtns">${rows.length?'<button class="btn raok" data-rab="ok">전체 수정</button><button class="btn ghost" data-rab="cancel">취소</button>':'<button class="btn raok" data-rab="close">확인</button>' /* b206: 체크한 아이템 없음 → [확인] 하나, 누르면 닫기만 */}</div></div>`;
   document.body.appendChild(el);
@@ -413,7 +415,7 @@ function openRevAll(){
   const rf=rows.map(x=>({s:x.fs,d:x.fd})), fee={s:-1,d:-1}; el.querySelectorAll('[data-rafee].on').forEach(b=>{ fee[b.dataset.rafee]=+b.dataset.v; });
   const gOf=i=>{ const inp=el.querySelector(`[data-ra="${i}"]`), raw=String(inp?.value??'').trim(), v=parseFloat(raw.replace(',','.')); return raw===rows[i].a&&rows[i].g>0?rows[i].g:v>0&&v<=100000?v*1e8:0; };
   const mOf=i=>{ const g=gOf(i), x=rows[i]; return g>0?Math.round(revNet(g,x.div,rf[i].s,x.div>1?rf[i].d:0)):0; };
-  const showM=i=>{ const o=el.querySelector(`[data-ram="${i}"]`); if(o){ const m=mOf(i); o.textContent=m>0?meso(m):''; } };
+  const showM=i=>{ const o=el.querySelector(`[data-ram="${i}"]`); if(o) o.innerHTML=ramHtml(mOf(i)); };
   const feeAll=(k,v)=>{ fee[k]=v; el.querySelectorAll(`[data-rafee="${k}"]`).forEach(b=>{ const on=+b.dataset.v===v; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
     rows.forEach((x,i)=>{ if(k==='d'&&!(x.div>1)) return; rf[i][k]=v; showM(i); }); };
   const ok=()=>{ const vals=[]; for(const inp of el.querySelectorAll('[data-ra]')){ const s=String(inp.value).trim().replace(',','.'), v=s===''?0:parseFloat(s);

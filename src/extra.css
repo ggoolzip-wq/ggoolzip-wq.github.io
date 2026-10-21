@@ -1878,3 +1878,10 @@ header .logo .logo-d{display:flex;align-items:center}
 .rvamtrow{display:flex;align-items:center;justify-content:center;gap:8px}
 .rvamtrow .rvram{display:inline;white-space:nowrap}
 .rvamtrow .rvram:empty{display:none}
+
+/* b249: 결과 글자 '기록 금액 :' 노랑 + 금액 초록, 더 크게 (라이트 = 진한 색으로 읽히게) */
+.ram,.rvamtrow .rvram{font-size:1rem;font-weight:600}
+.ram .rlab{color:#ffd23f}.ram .rval{color:#4ade80;font-weight:800}
+[data-theme=light] .ram .rlab{color:#a86b00}[data-theme=light] .ram .rval{color:#13803d}
+.rvamtrow{flex-wrap:wrap;row-gap:4px}
+@media(max-width:480px){.ram,.rvamtrow .rvram{font-size:.92rem}}

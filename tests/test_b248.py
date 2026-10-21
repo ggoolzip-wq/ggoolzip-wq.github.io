@@ -19,7 +19,7 @@ FIND="b=>[...document.querySelectorAll(`[data-drop^=\"${b}|\"]`)].map(e=>e.datas
 # 세렌 1인 10억(a 있음), 카링 3인 분배 10억(a 없음 = 예전 기록 → revGrossOf 역산)
 SEED="""([ks,kk,party])=>{const c=S.characters[0]; c.drops={[ks]:1}; c.drev={[ks]:{m:1e9,a:10,p:1,i:ks.split('|')[1]}};
  if(party){ c.drops[kk]=1; c.dmode={[kk]:'s'}; c.drev[kk]={m:Math.round(1e9/3),p:3,i:kk.split('|')[1]}; } save(); render(); }"""
-val=lambda pg,k:pg.evaluate("k=>{const r=S.characters[0].drev;const i=revAllRows(S.characters[0]).findIndex(x=>x.key===k);return [document.querySelector(`[data-ra=\"${i}\"]`)?.value,document.querySelector(`[data-ram=\"${i}\"]`)?.textContent]}",k)
+val=lambda pg,k:pg.evaluate("k=>{const r=S.characters[0].drev;const i=revAllRows(S.characters[0]).findIndex(x=>x.key===k);return [document.querySelector(`[data-ra=\"${i}\"]`)?.value,document.querySelector(`[data-ram=\"${i}\"] .rval`)?.textContent]}",k)
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
@@ -65,10 +65,10 @@ try:
         if CHECK:
             exp=316801347 if party else 970000000
             check(f'팝업 칸 그대로 {tag}', pg.input_value('#rvAmt')=='10')
-            rt=pg.inner_text('#rvRam'); check(f'팝업 결과 글자 {tag}', rt==pg.evaluate(f"()=>meso({exp})"), rt)
-            g=pg.evaluate("()=>{const a=document.querySelector('#rvRam').getBoundingClientRect(),i=document.querySelector('#rvAmt').getBoundingClientRect(),m=document.querySelector('#revModal .modal').getBoundingClientRect();return {left:a.right<=i.left+1,row:Math.abs((a.top+a.bottom)/2-(i.top+i.bottom)/2)<12,fit:a.left>=m.left-1,ov:document.documentElement.scrollWidth>innerWidth}}")
-            check(f'팝업 글자 왼쪽·같은 줄 {tag}', g['left'] and g['row'] and g['fit'] and not g['ov'], g)
-            pg.click('[data-fee="s"][data-v="5"]'); rt2=pg.inner_text('#rvRam')
+            rt=pg.inner_text('#rvRam .rval'); check(f'팝업 결과 글자 {tag}', rt==pg.evaluate(f"()=>meso({exp})"), rt)
+            g=pg.evaluate("()=>{const a=document.querySelector('#rvRam').getBoundingClientRect(),i=document.querySelector('#rvAmt').getBoundingClientRect(),m=document.querySelector('#revModal .modal').getBoundingClientRect();return {above:a.bottom<=i.top+1,left:a.right<=i.left+1,row:Math.abs((a.top+a.bottom)/2-(i.top+i.bottom)/2)<12,fit:a.left>=m.left-1,ov:document.documentElement.scrollWidth>innerWidth}}")
+            check(f'팝업 글자 왼쪽 같은 줄 또는 (b249 큰 글씨) 바로 위 {tag}', ((g['left'] and g['row']) or g['above']) and g['fit'] and not g['ov'], g)
+            pg.click('[data-fee="s"][data-v="5"]'); rt2=pg.inner_text('#rvRam .rval')
             check(f'팝업 수수료 바꾸면 글자 갱신 {tag}', rt2!=rt and pg.input_value('#rvAmt')=='10', rt2)
             pg.click('[data-fee="s"][data-v="3"]'); pg.click('[data-rv="ok"]'); pg.wait_for_timeout(300)
             r=pg.evaluate("()=>S.characters[0].drev")[k]
