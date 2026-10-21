@@ -1741,10 +1741,6 @@ header .logo .logo-d{display:flex;align-items:center}
 @media(max-width:560px){#weekLoot .wlrow{flex-direction:column;gap:4px}#weekLoot .wlb{min-width:0}#weekLoot .wlrow .loots{padding-left:30px;max-width:100%;box-sizing:border-box}#weekLoot .wlnow{min-width:0}}
 
 /* b229: 홍옥 반지 상자 리4/컨4 버튼(보스 드롭 줄 맨 끝, 한 줄·안 잘림) + 창 */
-.drop.rredbtn{flex:none;max-width:none;font:inherit;font-size:.66rem;font-weight:700;white-space:nowrap;padding:2px 8px;cursor:pointer;color:#ff9a9a;border:1px dashed rgba(255,110,110,.55);background:rgba(255,80,80,.06)}
-.drop.rredbtn:hover{background:rgba(255,80,80,.14)}
-.drop.rredbtn.got{color:#5fe08a;border-style:solid;border-color:rgba(95,224,138,.6);background:rgba(95,224,138,.1)}
-[data-theme=light] .drop.rredbtn{color:#c62828}[data-theme=light] .drop.rredbtn.got{color:#1b7f45}
 .rredrow{display:none}
 @media(max-width:470px){.boss:has(.rredrow){flex-wrap:wrap}.drops .rredbtn{display:none}.rredrow{display:flex;flex:1 0 100%;margin-top:2px}}
 .rrbox{max-width:440px}
@@ -1797,8 +1793,11 @@ header .logo .logo-d{display:flex;align-items:center}
 }
 
 /* zosu-hong: 홍옥 반지 상자 버튼 = 아이콘 + 이름 */
-.drop.rredbtn{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 4px}
-.drop.rredbtn .rrbico{display:inline-flex;width:20px;height:20px;flex:none}
+/* zosu-b234 (사용자 '홍옥 반지 상자 버튼 테두리가 이상해. 다른 아이템이랑 똑같이'): 테두리·둥글기·배경·여백·글자 크기·높이 = 공통 .drop 칩 규칙 그대로(빨간 점선·자체 색 삭제).
+   버튼 기본값(글꼴·색)만 되돌림. hover = .drop[data-drop]:hover 와 같음, 기록됨 = 공통 .drop.got(강조색 테두리·배경·안쪽 테두리) */
+.drop.rredbtn{flex:none;max-width:none;font:inherit;font-size:.72rem;color:inherit;cursor:pointer;user-select:none;white-space:nowrap}
+.drop.rredbtn:hover{filter:brightness(1.04);box-shadow:0 0 0 1px var(--accent) inset}
+.drop.rredbtn .rrbico{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;flex:none} /* 칸 = 다른 칩 아이콘 26px(높이 같음), 그림은 20px */
 .drop.rredbtn .rrbico img,.drop.rredbtn .rrbico .ric{width:20px!important;height:20px!important;object-fit:contain;margin:0}
 .drop.rredbtn .rrbt{white-space:nowrap}
 @media(max-width:470px){.drops .drop.rredbtn{display:none}}

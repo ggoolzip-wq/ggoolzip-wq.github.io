@@ -15,6 +15,9 @@ for _ in range(50):
 Q="""()=>[...document.querySelectorAll('[data-rred]')].filter(b=>b.getClientRects().length).map(b=>{const r=b.getBoundingClientRect(), i=b.querySelector('.rrbico img, .rrbico .ric'), ir=i&&i.getBoundingClientRect(), boss=b.closest('.boss'), cs=getComputedStyle(b);
  return {t:b.textContent.trim(), ico:!!i&&ir.width>=16&&ir.width<=22&&ir.top>=r.top-1&&ir.bottom<=r.bottom+1, one:r.height<34&&b.scrollWidth<=b.clientWidth+0.5,
   inside:r.right<=boss.getBoundingClientRect().right+0.5, offchip:!!boss.querySelector('.drop.off img[src], .drop.off .ric')&&[...boss.querySelectorAll('.drop.off')].some(x=>/홍옥/.test(x.dataset.tip||'')), col:cs.color, bg:document.body.style.background||getComputedStyle(document.body).backgroundColor}})"""
+QS="""()=>[...document.querySelectorAll('[data-rred]')].filter(b=>b.getClientRects().length).map(b=>{const t=document.createElement('span'); t.className='drop'+(b.classList.contains('got')?' got':''); t.innerHTML='<span class="ifb">?</span><span class="dn">x</span>'; b.parentNode.insertBefore(t,b);
+ const f=e=>{const c=getComputedStyle(e);return {bw:c.borderTopWidth,bs:c.borderTopStyle,bc:c.borderTopColor,br:c.borderTopLeftRadius,h:Math.round(e.getBoundingClientRect().height),bg:c.backgroundColor,pad:c.paddingTop+' '+c.paddingBottom,fs:c.fontSize}};
+ const r=[f(b),f(t)]; t.remove(); return r;})"""
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
@@ -26,6 +29,8 @@ try:
         check(f'{w} {th}: 테마', pg.evaluate("document.documentElement.dataset.theme||'dark'")==th)
         B=pg.evaluate(Q)
         check(f'{w} {th}: 버튼 있음·글자 홍옥 반지 상자·아이콘 안·한 줄·칸 안', B and all(x['t']=='홍옥 반지 상자' and x['ico'] and x['one'] and x['inside'] for x in B), B)
+        S=pg.evaluate(QS)
+        check(f'{w} {th}: 테두리 두께·모양·색·둥글기·높이·배경·위아래 여백·글자 크기 = 옆 아이템 칩(.drop, 기록됨이면 .drop.got)과 같음 (zosu-b234)', S and all(x==y for x,y in S), S)
         check(f'{w} {th}: 옆 홍옥 아이콘만 칩 없음', B and not any(x['offchip'] for x in B), B)
       pg.locator('[data-rred]:visible').first.click(); pg.wait_for_timeout(300)
       check(f'{w}: 예시 화면 클릭 = 예전과 같음(캐릭터 없음 → 창 안 열림; 실제 캐릭터 창은 test_b229_rred)', pg.locator('#rredModal').count()==0 and not errs, errs)
