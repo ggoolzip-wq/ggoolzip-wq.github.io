@@ -3,6 +3,6 @@
 set -e
 cd "$(dirname "$0")/.."
 rm -rf _site && mkdir _site
-for f in index.html feed.json prices.json sunday.png favicon.png apple-touch-icon.png robots.txt sitemap.xml og.png epicbeam.webp; do [ -f "$f" ] && cp "$f" _site/; done
+for f in index.html feed.json prices.json sunday.png favicon.png apple-touch-icon.png robots.txt sitemap.xml og.png epicbeam_sprite.webp; do [ -f "$f" ] && cp "$f" _site/; done
 printf '/*\n  Cache-Control: no-cache\n' > _site/_headers
 echo "_site: $(ls _site | tr '\n' ' ')"

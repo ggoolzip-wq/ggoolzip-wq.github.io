@@ -1974,11 +1974,14 @@ header .logo .logo-d{display:flex;align-items:center}
 .cg-ico{position:relative;display:inline-block;line-height:0;isolation:isolate}
 .cg-ico>img{position:relative;z-index:1}
 /* b244: 2배(576x343) + 가장자리 페더(프레임에 타원 알파 감쇠 + mask), 위아래 자르지 않음 → 빛 나오는 점 = 높이 68.4% */
-.cg-beam{position:absolute;z-index:0;left:50%;top:50%;width:576px;height:343px;transform:translate(-49.65%,-68.45%);pointer-events:none;background:url('epicbeam.webp') center/100% 100% no-repeat;-webkit-mask-image:radial-gradient(closest-side,#000 70%,transparent 100%);mask-image:radial-gradient(closest-side,#000 70%,transparent 100%)}
+.cg-beam{position:absolute;z-index:0;left:50%;top:50%;width:576px;height:343px;transform:translate(-49.65%,-68.19%);pointer-events:none;-webkit-mask-image:radial-gradient(closest-side,#000 70%,transparent 100%);mask-image:radial-gradient(closest-side,#000 70%,transparent 100%)}
 @media(max-width:480px){.cg-beam{width:460px;height:274px}}
 .cg-in>:not(.cg-ico){position:relative;z-index:1} /* b244: 글자는 빛 위 */
 #congrats{overflow:hidden} /* b244: 큰 빛줄기는 화면에서 잘림(스크롤 없음) */
 @media(prefers-reduced-motion:reduce){.cg-beam{display:none}}
+/* b246: 빛줄기 = canvas(1152x689 스프라이트 프레임, 2배 해상도), 높이 = 576x344 · 모바일 460x275, 빛 나오는 점 68.19% */
+.cg-beam{height:344px}
+@media(max-width:480px){.cg-beam{height:275px}}
 
 /* b244: 수익 기록 창 수수료 버튼 (판매 수수료 / 분배 수수료 0·3·5%) */
 .rvfee{display:flex;flex-direction:column;gap:6px;width:100%;max-width:300px;margin:0 auto}
@@ -2396,6 +2399,8 @@ function tierCls(bd,fill){ if(!bd&&!fill) return ''; const anim=/aur|gold/.test(
 function dropTierCls(c,b,k,got){
   if(isRing(k)){ const outs=(got&&c?(outMap(c,b.type)[b.id+'|'+k]||[]):[]).filter(o=>o==='r4'||o==='c4'); const p=Math.max(0,...outs.map(o=>tierP('ring:'+o))); return tierCls('sky',outs.length?(priceTier(p)||'sky'):''); } // b240: 결과 10억 미만 = 하늘색 채움, 꽝·미기록 = 채움 없음
   const t=priceTier(tierP(k))||'sky'; return tierCls(t,got?t:''); } // b240: 10억 미만·시세 없음 = 하늘색
+// b246: 드롭 칩 정렬 가격 = 테두리 등급과 같은 시세(tierP). 반지 상자 = 리4·컨4 확률(ring4, BOX_INFO) × 리4/컨4 시세 기댓값
+const dropSortP = k => { if(isRing(k)){ const p=ring4(k); return p?(p.r4/100)*tierP('ring:r4')+(p.c4/100)*tierP('ring:c4'):0; } return tierP(k); };
 const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
   const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!eternalFor(b,diff)&&!mementoFor(b,diff)) return '';
@@ -2407,7 +2412,7 @@ function dropsHtml(b,diff,c){
   const chip=k=>{const it=ITEMS[k], n=cnt(k);
     return `<span class="drop s-${it.set} ${n?'got':''}${dropTierCls(c,b,k,n>0)}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span></span>`;};
   // 2026-10-10 사용자 요청: 아이템을 '+N' 묶음 칩으로 합치지 않음 — 생명/신념 연마석, 소울 에테르 1~4단계, 반지 상자 모두 각자 칩(각자 아이콘·클릭 +1), 넘치면 다음 줄로
-  const shown=ks;
+  const shown=ks.map((k,i)=>[k,i,dropSortP(k)]).sort((a,b)=>b[2]-a[2]||a[1]-b[1]).map(a=>a[0]); // b246: 비싼 순(시세 없음 = 뒤, 같으면 원래 순서)
   // 아래 줄: 이 보스에서 획득한 아이템 (모든 화면과 같은 형식: 이름(N인 분배) ×개수 결과)
   const mine=c?(d=>({items:Object.fromEntries(Object.entries(d.items).filter(([k])=>k.split('|')[0]===b.id)),outcomes:d.outcomes}))(charDrops(c,b.type)):null;
   const ringLine=mine?itemsInline(mine.items,{outs:mine.outcomes}):'';
@@ -2590,9 +2595,20 @@ function iconBurst(src){
 // 이모지: 글꼴에 컬러 이모지가 없는 PC(예: PC방 윈도우)에서도 보이게 Twemoji 이미지(CC-BY 4.0)로, alt 에 글자
 const CG_EMOJI=[['😚','1f61a'],['😙','1f619'],['😊','1f60a'],['😘','1f618'],['🥳','1f973']];
 const cgEmoji = () => { const [ch,cp]=CG_EMOJI[Math.random()*CG_EMOJI.length|0]; return `<img class="cg-emo" src="${ITEM_ICONS['emo_'+cp]}" alt="${ch}" data-emo="${ch}" draggable="false">`; };
+/* b246: 에픽 빛줄기 = 4x4 스프라이트(1152x689 프레임 16장, ESPCN x2 업스케일+언샤프) 를 캔버스에 69ms 마다 — 창이 열릴 때마다 0번 프레임부터(animated WebP 는 캐시되면 중간부터 재생됨). 페이지 로드 때 미리 받아 디코드 */
+const BEAM={src:'epicbeam_sprite.webp',w:1152,h:689,cols:4,n:16,ms:69};
+const beamImg=new Image(); beamImg.src=BEAM.src; beamImg.decode?.().catch(()=>{});
+function beamDraw(cv,f){ const g=cv.getContext('2d'); g.clearRect(0,0,BEAM.w,BEAM.h); if(beamImg.complete&&beamImg.naturalWidth) g.drawImage(beamImg,(f%BEAM.cols)*BEAM.w,(f/BEAM.cols|0)*BEAM.h,BEAM.w,BEAM.h,0,0,BEAM.w,BEAM.h); celebrate.beamFrame=f; }
+function beamPlay(cv){ if(!cv) return; const id=(beamPlay._id=(beamPlay._id||0)+1);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){ celebrate.beamFrame=-1; return; }
+  const t0=performance.now(); beamDraw(cv,0); let last=0;
+  const tick=now=>{ if(id!==beamPlay._id||!celebrate.running||!cv.isConnected) return; const f=Math.max(0,Math.floor((now-t0)/BEAM.ms))%BEAM.n; if(f!==last){ last=f; beamDraw(cv,f); } requestAnimationFrame(tick); };
+  if(!beamImg.complete) beamImg.addEventListener('load',()=>{ if(id===beamPlay._id) beamDraw(cv,last); },{once:true});
+  requestAnimationFrame(tick); }
 function celebrate(o,item,boss){
   const cv=$('#fx'), msg=$('#congrats');
-  msg.innerHTML=`<div class="cg-in"><span class="cg-ico"><span class="cg-beam" aria-hidden="true"></span>${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}</span><div class="cg-big">${boss?`<span class="cg-boss">${bossIcon(boss)}</span>`:''}<span class="cg-t">축하드립니다!</span></div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득</div></div>`;
+  msg.innerHTML=`<div class="cg-in"><span class="cg-ico"><canvas class="cg-beam" width="1152" height="689" aria-hidden="true"></canvas>${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}</span><div class="cg-big">${boss?`<span class="cg-boss">${bossIcon(boss)}</span>`:''}<span class="cg-t">축하드립니다!</span></div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득</div></div>`;
+  beamPlay(msg.querySelector('.cg-beam'));
   const img=null; iconBurst(ITEM_ICONS[item||(o==='r4'?'ring_restraint':'ring_continuous')]);
   msg.classList.add('show'); cv.classList.add('show'); celebrate.running=true;
   clearTimeout(celebrate._t); celebrate._t=setTimeout(endCelebrate,2200);

@@ -1850,11 +1850,14 @@ header .logo .logo-d{display:flex;align-items:center}
 .cg-ico{position:relative;display:inline-block;line-height:0;isolation:isolate}
 .cg-ico>img{position:relative;z-index:1}
 /* b244: 2배(576x343) + 가장자리 페더(프레임에 타원 알파 감쇠 + mask), 위아래 자르지 않음 → 빛 나오는 점 = 높이 68.4% */
-.cg-beam{position:absolute;z-index:0;left:50%;top:50%;width:576px;height:343px;transform:translate(-49.65%,-68.45%);pointer-events:none;background:url('epicbeam.webp') center/100% 100% no-repeat;-webkit-mask-image:radial-gradient(closest-side,#000 70%,transparent 100%);mask-image:radial-gradient(closest-side,#000 70%,transparent 100%)}
+.cg-beam{position:absolute;z-index:0;left:50%;top:50%;width:576px;height:343px;transform:translate(-49.65%,-68.19%);pointer-events:none;-webkit-mask-image:radial-gradient(closest-side,#000 70%,transparent 100%);mask-image:radial-gradient(closest-side,#000 70%,transparent 100%)}
 @media(max-width:480px){.cg-beam{width:460px;height:274px}}
 .cg-in>:not(.cg-ico){position:relative;z-index:1} /* b244: 글자는 빛 위 */
 #congrats{overflow:hidden} /* b244: 큰 빛줄기는 화면에서 잘림(스크롤 없음) */
 @media(prefers-reduced-motion:reduce){.cg-beam{display:none}}
+/* b246: 빛줄기 = canvas(1152x689 스프라이트 프레임, 2배 해상도), 높이 = 576x344 · 모바일 460x275, 빛 나오는 점 68.19% */
+.cg-beam{height:344px}
+@media(max-width:480px){.cg-beam{height:275px}}
 
 /* b244: 수익 기록 창 수수료 버튼 (판매 수수료 / 분배 수수료 0·3·5%) */
 .rvfee{display:flex;flex-direction:column;gap:6px;width:100%;max-width:300px;margin:0 auto}

@@ -1998,3 +1998,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 축하 팝업 빛줄기 WebP를 320x191(q45, base64 내장)에서 864x515(q82, 약 1.4MB) 별도 파일 epicbeam.webp로 교체. src/extra.css가 url(epicbeam.webp) 참조(첫 축하 때 로드). index.html 용량 감소. 69ms x16, 페더·마스크·크기 그대로.
 - tests/test_b243.py: 파일 기준 프레임·용량(<1.6MB) 검사로 수정.
 - b245 후속: tools/pages_dist.sh 배포 목록에 epicbeam.webp 추가(빠져서 404/HTML 응답이던 것 수정).
+
+## b246 (2026-10-21 KST) 에픽빔 선명하게 + 매번 0프레임부터 · 드롭 칩 비싼 순
+- 흐림 원인: b245 epicbeam.webp 가 원본 캔버스(1432x856)를 864폭(0.6배)으로 줄인 뒤 CSS 576px 로 표시 → DPR2 에서는 1152px 필요라 브라우저가 1.33배 다시 늘림 + 손실 WebP(q82) + DXT5 원본 블록. 
+- 새 에셋 epicbeam_sprite.webp (4x4 스프라이트, 프레임 1152x689, 약 3.3MB): 원본 프레임(frames_v2/ScreenEff, 680x480) → OpenCV dnn_superres ESPCN x2 (RGB·알파 따로) → 1152폭 Lanczos → 언샤프(r1.2) → 타원 알파 페더(광선 자체는 안 흐림) → WebP q90 alpha_quality 100. 생성기 /workspace/epicbeam/scripts/build_b246.py (EDSR 은 CPU 에서 너무 느려 ESPCN). epicbeam.webp 삭제.
+- 재생: .cg-beam = canvas, BEAM/beamImg(페이지 로드 때 미리 받아 decode), celebrate() → beamPlay(): 열 때 즉시 0번 프레임 그림, rAF 로 69ms/프레임(2.2초 창에서 2바퀴), celebrate.beamFrame = 현재 프레임(테스트용), reduced-motion 이면 안 그림(-1) + CSS display:none. 빛 나오는 점 높이 68.19%.
+- 드롭 표 칩: dropSortP(k) 비싼 순(테두리 등급과 같은 tierP 시세, 반지 상자 = ring4 확률 × 리4/컨4 시세 기댓값, 시세 없음 = 0 → 뒤, 같으면 원래 순서).
+- 테스트: test_b243 (canvas 스프라이트, 열 때 frame 0 두 번, 진행, 칠해짐, reduced motion), test_b246 (정렬).
