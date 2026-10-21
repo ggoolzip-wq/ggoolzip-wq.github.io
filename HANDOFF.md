@@ -1993,3 +1993,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 빛줄기: ScreenEff 16프레임 전체(위 반 자르기 없음)를 origin 정렬 → 원점 기준 타원 알파 감쇠(smoothstep 0.35→0.95) 구워 320x191 WebP(약 110KB, 69ms, 2.2초 동안 2번 반복) → CSS 576x343(480px 이하 460x274) + mask radial-gradient. 원점 = 높이 68.45%. #congrats overflow:hidden, 글자(.cg-in 의 아이콘 외)는 z-index 1. 생성 스크립트 /workspace/epicbeam/scripts/build_b244.py.
 - 테스트 tests/test_b244.py(새, run_all 끝), tests/test_b243.py 갱신(크기·마스크·16x69ms·용량). 전체 149개 통과(직렬 재시도 4개 = 병렬 부하).
 - 사진 /workspace/b244/{fee_before,fee_after_solo,fee_after_party,beam_before,beam_after,beam_after_mobile}.png
+
+## b245 (2026-10-21 KST) 에픽빔 고화질
+- 축하 팝업 빛줄기 WebP를 320x191(q45, base64 내장)에서 864x515(q82, 약 1.4MB) 별도 파일 epicbeam.webp로 교체. src/extra.css가 url(epicbeam.webp) 참조(첫 축하 때 로드). index.html 용량 감소. 69ms x16, 페더·마스크·크기 그대로.
+- tests/test_b243.py: 파일 기준 프레임·용량(<1.6MB) 검사로 수정.
