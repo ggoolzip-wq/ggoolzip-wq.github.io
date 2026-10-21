@@ -15,6 +15,13 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b238 (2026-10-21 KST) — 관리자 창 본계정 줄: '등록' → '최근 갱신'
+사용자 요청: 본계정 줄 = `가입 : YYYY-MM-DD · 최근 갱신 : M/D HH:MM` (hm()), 정보 줄의 '· 최근 갱신 …' 중복 제거.
+1. `src/app.js` `admJoinReg(u)`: 등록 대신 `u.syncAt`(= users.sync_click, 마지막으로 끝난 동기화; 없으면 '-'). last_sync_at 은 b235 배포 때 배포 시각으로 채워져 실제 동기화 시각이 아니므로 안 씀. 정보 줄은 '캐릭터 N · 데이터 NKB' 만. 부계정 줄('등록 날짜 : …') 그대로. Worker 의 regAt 은 계속 보내지만 화면엔 안 씀.
+2. **Worker 변경 없음** (배포 불필요): 이미 /api/sync-click(sync_click)·/api/sync-press(last_sync_at) 둘 다 끝난 동기화마다 페이지가 부름(b236).
+3. 테스트: tests/test_tracker67.py (가입 · 최근 갱신, '등록' 없음, 최근 갱신 1번만, 없으면 '-'), tests/test_b225.py ('최근 갱신 : ' 형식).
+4. 사진(모의 데이터): /workspace/b238/before_admin_rows.png · after_admin_rows.png.
+
 ## b237 (2026-10-21 KST) — 관리자 창 사용자 줄: '가입'·'등록' 날짜 둘 다
 사용자 요청: 관리자 창 본계정 줄에 가입 날짜(users.created_at)와 본계정 키 등록 날짜(inf.mainRegAt)를 따로 표시.
 1. Worker `/api/admin/users`: `joinAt: u.created_at||0` 추가, `regAt: inf.mainRegAt||0` (예전엔 created_at 으로 대체 → 이제 대체 없음). ⚠ **Worker 배포 필요** (`cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`) — 이번엔 안 함. 배포 전엔 joinAt 이 없어 '가입 : -', 등록은 예전처럼 created_at 대체값.

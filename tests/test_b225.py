@@ -47,7 +47,7 @@ try:
     uid=dev.sql("SELECT id FROM users")[0]['id']; dev.sql(f"INSERT OR REPLACE INTO meta (k,v) VALUES ('admin_user','{uid}')")
     p1.evaluate("openAdmin()"); p1.wait_for_function("admUsers&&admUsers.length&&!document.querySelector('#admBody .muted')?.textContent.includes('불러오는 중')",timeout=10000); p1.wait_for_timeout(300)
     row=p1.inner_text(f"#admBody [data-admuser='{uid}']"); want=p1.evaluate(f"hm({v1})")
-    check('admin row: 최근 갱신 = last sync time (KST M/D HH:MM)', f'최근 갱신 {want}' in row and '최근 로그인' not in row and '마지막 로그인' not in row, (row,want))
+    check('admin row: 최근 갱신 = last sync time (KST M/D HH:MM)', f'최근 갱신 : {want}' in row and '최근 로그인' not in row and '마지막 로그인' not in row, (row,want))
     check('API sends syncAt', p1.evaluate("admUsers[0].syncAt")==v1)
     w=p1.evaluate(f"(()=>{{const e=document.querySelector(\"#admBody [data-admuser='{uid}'] .admwho .tiny\"); return [e.scrollWidth<=e.clientWidth+1, e.getClientRects().length, Math.round(e.getBoundingClientRect().height)]}})()")
     check('info line one line, not clipped', w[0] and w[2]<24, w)

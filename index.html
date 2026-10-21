@@ -5877,7 +5877,7 @@ function renderAdmin(){
   b.innerHTML=`<div class="admsec admprice" id="admPrice"></div>`+sec('승인 대기',P,'대기 중인 요청이 없어요',u=>row(u,`요청 ${u.requestedAt?hm(u.requestedAt):'-'}`,`<button class="btn sm" data-adm="approve">승인</button><button class="btn sm ghost admno" data-adm="reject">거절</button>`))
     +sec('사용 중',A,'없음',u=>{ const al=u.alts||[], op=admOpen.has(u.id); // b91: 부계정은 본계정 아래 접힘(▽/△), 강퇴 없음, 등록 날짜(KST)
       const tg=al.length?`<button class="admtg" data-admalt="${esc(u.id)}" aria-expanded="${op}" title="부계정 ${al.length}개 ${op?'접기':'펼치기'}">${op?'△':'▽'} 부계정 ${al.length}</button>`:'';
-      return row(u,`${u.status==='blocked'?'(예전 차단) ':''}캐릭터 ${u.chars||0} · 데이터 ${Math.ceil((u.size||0)/1024)}KB · 최근 갱신 ${u.syncAt?hm(u.syncAt):'-'}`,`${tg}${admJoinReg(u)}${u.admin?'<span class="admtag">관리자</span>':`<button class="btn sm ghost admno" data-adm="kick">강퇴</button>`}`)
+      return row(u,`${u.status==='blocked'?'(예전 차단) ':''}캐릭터 ${u.chars||0} · 데이터 ${Math.ceil((u.size||0)/1024)}KB`,`${tg}${admJoinReg(u)}${u.admin?'<span class="admtag">관리자</span>':`<button class="btn sm ghost admno" data-adm="kick">강퇴</button>`}`)
         +(al.length?`<div class="admalts"${op?'':' hidden'}>${al.map(a=>`<div class="admrow admalt"><div class="admwho"><span class="muted">└</span> <b>${esc(a.label||'부계정')}</b><span class="muted">${a.name?' · '+esc(a.name):''}${a.world?' · '+esc(a.world):''}${a.level?' · Lv.'+a.level:''}</span><div class="muted tiny">부계정 · 캐릭터 ${a.chars||0}</div></div><div class="admbtns">${admReg(a.regAt)}<span class="admkick-sp"></span></div></div>`).join('')}</div>`:''); },Ap)
     +(np>1?`<div class="admpages">${Array.from({length:np},(_,i)=>`<button class="btn sm ${i+1===admPage?'':'ghost'}" data-admpage="${i+1}">${i+1}</button>`).join('')}</div>`:''); // b78: 10명씩 쪽 번호
   renderAdmPrice();
@@ -5976,7 +5976,7 @@ function openMkt(){
 }
 let admPage=1; const admOpen=new Set(); // b91: 펼친 본계정 id
 const admDay=t=>t?new Date(t+9*3600e3).toISOString().slice(0,10):'-'; // KST
-const admJoinReg=u=>`<span class="admreg muted tiny">가입 : ${admDay(u.joinAt)} · 등록 : ${admDay(u.regAt)}</span>`; // b237: 본계정 줄 = 가입(users.created_at)·등록(본계정 키 등록, 없으면 -) 따로
+const admJoinReg=u=>`<span class="admreg muted tiny">가입 : ${admDay(u.joinAt)} · 최근 갱신 : ${u.syncAt?hm(u.syncAt):'-'}</span>`; // b238: 등록 → 최근 갱신(users.sync_click = 마지막으로 끝난 동기화; last_sync_at 은 배포 시각으로 채워져 안 씀), 정보 줄의 중복 '최근 갱신' 제거 · b237: 본계정 줄 = 가입(users.created_at)·등록(본계정 키 등록, 없으면 -) 따로
 const admReg=t=>`<span class="admreg muted tiny">등록 날짜 : ${t?new Date(t+9*3600e3).toISOString().slice(0,10):'-'}</span>`; // KST
 document.addEventListener('click',e=>{ const at=e.target.closest('[data-admalt]'); if(at){ const id=at.dataset.admalt; admOpen.has(id)?admOpen.delete(id):admOpen.add(id); renderAdmin(); return; } const pg=e.target.closest('[data-admpage]'); if(pg){ admPage=+pg.dataset.admpage; renderAdmin(); return; } const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }
   if(e.target.id==='adminModal') e.target.classList.remove('show'); });
