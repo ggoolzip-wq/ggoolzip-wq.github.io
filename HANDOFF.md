@@ -1990,6 +1990,6 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 ## b244 (2026-10-21 21:23~21:37 KST) — 수익 기록 창 수수료 버튼 + 에픽 빛줄기 2배·페더
 - 수익 기록 창(askRev): 금액 칸과 [기록하기] 사이에 `.rvfee` — '판매 수수료 :' 0/3/5%(항상), '분배 수수료 :' 0/3/5%(div>1 = 파티 2인+ 이고 분배 모드일 때만; div 는 기존 curParty+모드 그대로). 기본 0%, 마지막 선택은 localStorage `mapleBossTracker.revFee` 에 기억. 아래 '기록 금액 : X억 메소 (1인)' 미리보기.
 - 기록 값 m = revNet(P,N,s,d): Q=P(1-s), 1인=Q, N인=Q(1-d)/(N-d) (예전 P/N). 레코드에 fs/fd 추가. 메이플로드 보스 분배금 계산기(파티장 몫 = 실수령 ÷ (1 + (N-1)·100/(100-수수료)))와 같은 식(그쪽은 전달액 100메소 내림, 수수료 하나).
-- 빛줄기: ScreenEff 16프레임 전체(위 반 자르기 없음)를 origin 정렬 → 원점 기준 타원 알파 감쇠(smoothstep 0.35→0.95) 구워 240x143 WebP(약 74KB, 90ms) → CSS 576x343(480px 이하 460x274) + mask radial-gradient. 원점 = 높이 68.45%. #congrats overflow:hidden, 글자(.cg-in 의 아이콘 외)는 z-index 1. 생성 스크립트 /workspace/epicbeam/scripts/build_b244.py.
-- 테스트 tests/test_b244.py(새, run_all 끝), tests/test_b243.py 갱신(크기·마스크·16x90ms·용량). 전체 149개 통과(직렬 재시도 4개 = 병렬 부하).
+- 빛줄기: ScreenEff 16프레임 전체(위 반 자르기 없음)를 origin 정렬 → 원점 기준 타원 알파 감쇠(smoothstep 0.35→0.95) 구워 320x191 WebP(약 110KB, 69ms, 2.2초 동안 2번 반복) → CSS 576x343(480px 이하 460x274) + mask radial-gradient. 원점 = 높이 68.45%. #congrats overflow:hidden, 글자(.cg-in 의 아이콘 외)는 z-index 1. 생성 스크립트 /workspace/epicbeam/scripts/build_b244.py.
+- 테스트 tests/test_b244.py(새, run_all 끝), tests/test_b243.py 갱신(크기·마스크·16x69ms·용량). 전체 149개 통과(직렬 재시도 4개 = 병렬 부하).
 - 사진 /workspace/b244/{fee_before,fee_after_solo,fee_after_party,beam_before,beam_after,beam_after_mobile}.png

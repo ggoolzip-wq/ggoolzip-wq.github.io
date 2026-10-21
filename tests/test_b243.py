@@ -1,5 +1,5 @@
 # test_b243: 득템 축하 창 아이콘 뒤에 에픽 빛줄기(.cg-beam, 투명 animated WebP) — 아이콘 가운데, 아이콘이 위, 화면 안 넘침
-# b244: 2배(576x343, 모바일 460x274) + 페더(마스크), 프레임 90ms(2200ms 창에서 약 2번)
+# b244: 2배(576x343, 모바일 460x274) + 페더(마스크), 프레임 69ms(2200ms 창에서 약 2번)
 # MBT_SHOTDIR=폴더 → 사진 · MBT_ROOT=다른 빌드(변경 전 사진만)
 import os, sys, subprocess, time, urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _tutil
@@ -40,7 +40,7 @@ try:
             n,sz=raw[i:i+4],struct.unpack('<I',raw[i+4:i+8])[0]
             if n==b'ANMF': ds.append(int.from_bytes(raw[i+8+12:i+8+15],'little'))
             i+=8+sz+(sz&1)
-          check(f'beam 16 frames x 90ms (2 loops/2.2s) {vw}', len(ds)==16 and set(ds)=={90}, ds[:3])
+          check(f'beam 16 frames x 69ms (2 loops/2.2s) {vw}', len(ds)==16 and set(ds)=={69}, ds[:3])
           check(f'beam asset small {vw}', len(raw)<120000, len(raw))
           check(f'no overflow {vw}', not g['ov'])
       pg.close()
