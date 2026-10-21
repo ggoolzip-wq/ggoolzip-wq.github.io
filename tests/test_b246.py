@@ -14,7 +14,7 @@ srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.
 B=lambda d,p=1:{'enabled':True,'diff':d,'party':p}
 C={'id':'c0','name':'zetking','level':285,'job':'히어로','world':'스카니아','ocid':'','accId':'','isMain':True,'image':'','bosses':{'seren':B('extreme'),'kaling':B('hard'),'kalos':B('chaos'),'limbo':B('hard'),'lucid':B('hard'),'will':B('hard')},'weekly':{},'monthly':{},'auto':{},'drops':{},'sync':{}}
 ST={'version':5,'theme':'dark','activeId':'c0','characters':[C],'history':[],'monthHistory':[],'worldOrder':[],'settings':{'accounts':[]}}
-ORD="""()=>[...document.querySelectorAll('.drops')].filter(d=>d.offsetParent).map(d=>[...d.querySelectorAll('[data-drop]')].map(e=>{const k=e.dataset.drop.split('|')[1];return [k,dropSortP(k)]}))"""
+ORD="""()=>[...document.querySelectorAll('.drops')].filter(d=>d.offsetParent).map(d=>[...d.querySelectorAll('[data-drop]')].map(e=>{const k=e.dataset.drop.split('|')[1];return [k,dropSortP(k)]}).filter(x=>!isRing(x[0])))"""
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
@@ -35,8 +35,10 @@ try:
         anyp=[r for r in rows if any(x[1]>0 for x in r) and any(x[1]==0 for x in r)]
         check(f'unpriced last {vw}', all(r.index(next(x for x in r if x[1]==0))>=sum(1 for x in r if x[1]>0) for r in anyp), anyp[:1])
         ring=pg.evaluate("()=>{const k=[...RING_KEYS].find(k=>ring4(k)?.r4>0); const p=ring4(k); return [dropSortP(k), (p.r4/100)*tierP('ring:r4')+(p.c4/100)*tierP('ring:c4')]}")
+        rl=pg.evaluate("()=>[...document.querySelectorAll('.drops')].every(d=>{const r=[...d.querySelectorAll('[data-drop]')].map(e=>isRing(e.dataset.drop.split('|')[1])); const f=r.indexOf(true); return f<0||r.slice(f).every(Boolean);})")
+        check('b247 ring boxes always last', rl)
         check('ring box = expected value', ring[0]>0 and abs(ring[0]-ring[1])<1, ring)
-        check(f'order actually changed (priced rows) {vw}', sum(1 for r in rows if len({x[1] for x in r})>2)>=2, [[x[0] for x in r] for r in rows][:2])
+        check(f'order actually changed (priced rows) {vw}', sum(1 for r in rows if len({x[1] for x in r})>1)>=1, [[x[0] for x in r] for r in rows][:2])
       pg.close()
     b.close()
 finally: srv.terminate()

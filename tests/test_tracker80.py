@@ -64,7 +64,8 @@ try:
     pg.wait_for_timeout(2600); shot(pg.locator('.toolbar').first,'toolbar')
     if NOCHK and not pg.locator('#revAllBtn').count(): raise SystemExit(0)
     pg.click('#revAllBtn'); pg.wait_for_selector('#revAllModal')
-    m=pg.evaluate("""(()=>{const q=s=>document.querySelector(s),box=q('#revAllModal .modal').getBoundingClientRect(),ic=q('.raicons').getBoundingClientRect(),l=q('.ralist').getBoundingClientRect(),fs=parseFloat(getComputedStyle(q('.raicons')).fontSize||16);
+    # b247: 아이콘 아래 = 수수료 전체 적용(있으면) → 보스 목록
+    m=pg.evaluate("""(()=>{const q=s=>document.querySelector(s),box=q('#revAllModal .modal').getBoundingClientRect(),ic=q('.raicons').getBoundingClientRect(),l=(q('.rafee')||q('.ralist')).getBoundingClientRect(),fs=parseFloat(getComputedStyle(q('.raicons')).fontSize||16);
       return {title:q('#raTitle').innerText,icons:document.querySelectorAll('.raicons .raic').length,oneRow:[...document.querySelectorAll('.raicons .raic')].every(e=>Math.abs(e.getBoundingClientRect().top-ic.top)<2),
        gap:l.top-ic.bottom,rows:[...document.querySelectorAll('.rarow')].map(r=>[r.querySelector('.raname').innerText,r.querySelector('input').value]),
        center:Math.abs((box.left+box.right)/2-innerWidth/2)<3,btns:[...document.querySelectorAll('.rabtns button')].map(b=>b.innerText),okBg:getComputedStyle(q('.raok')).backgroundColor}})()""")

@@ -2005,3 +2005,11 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 재생: .cg-beam = canvas, BEAM/beamImg(페이지 로드 때 미리 받아 decode), celebrate() → beamPlay(): 열 때 즉시 0번 프레임 그림, rAF 로 69ms/프레임(2.2초 창에서 2바퀴), celebrate.beamFrame = 현재 프레임(테스트용), reduced-motion 이면 안 그림(-1) + CSS display:none. 빛 나오는 점 높이 68.19%.
 - 드롭 표 칩: dropSortP(k) 비싼 순(테두리 등급과 같은 tierP 시세, 반지 상자 = ring4 확률 × 리4/컨4 시세 기댓값, 시세 없음 = 0 → 뒤, 같으면 원래 순서).
 - 테스트: test_b243 (canvas 스프라이트, 열 때 frame 0 두 번, 진행, 칠해짐, reduced motion), test_b246 (정렬).
+
+## b247 (2026-10-21 KST) 반지 상자 항상 맨 끝
+- 드롭 칩 정렬: 반지 상자는 가격과 무관하게 항상 맨 끝(상자끼리는 기댓값 순), 나머지는 b246 그대로 비싼 순. src/app.js dropsHtml 정렬.
+- tests/test_b246.py: 반지 상자 맨 끝 검사 추가, 가격순 검사는 반지 상자 제외.
+- 수익 기록 전체 수정: '수수료 전체 적용' 박스(아이콘 줄 아래, 맨 위 보스 바로 위). 판매 수수료 0/3/5%, 기록 중 분배(div>1, curParty·mode 규칙 = b244/revAllRows) 가 하나라도 있으면 분배 수수료 줄도. 모든 기록이 같은 값이면 그 버튼 강조(아니면 강조 없음).
+  버튼 = 창 안의 칸·미리보기 금액만 바로 바꿈 → [전체 수정] 으로 기존 저장 경로(save + svPushBg, pend.base 도 같이) 로 확정, [취소] = 버림. 적용한 칸은 반올림 없이 정확한 m 과 a(판매가)·fs·fd 저장.
+  판매가 P: revGrossOf(r) — r.a(억, askRev = 입력 판매가 / b110 전체 수정 = 내 몫×인원) 가 revNet(a,p,fs,fd)≈m (2만 메소 이내) 이면 a 그대로, 아니면 m 을 역산 revGross: 1인 P=m/(1-s), 분배 Q=m(N-d)/(1-d), P=Q/(1-s). 예전 기록은 fs/fd 없음 = 0. 1인 기록은 분배 수수료 무시(fd=0).
+- tests/test_b247.py (run_all.sh 에 b246·b247 추가), test_tracker80 의 아이콘↔목록 간격 검사는 이제 아이콘↔수수료 박스.

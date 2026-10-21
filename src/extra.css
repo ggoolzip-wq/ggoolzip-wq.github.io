@@ -1868,3 +1868,8 @@ header .logo .logo-d{display:flex;align-items:center}
 .rvfbtn:focus-visible{outline:2px solid #ff8a1f;outline-offset:1px}
 .rvprev{font-size:.8rem;text-align:center;color:var(--muted);min-height:1.1em}
 .rvprev b{color:var(--text)}
+
+/* b247: 수익 기록 전체 수정 — 수수료 전체 적용 (맨 위 보스 바로 위) */
+.rafee{max-width:none;margin:0 0 10px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.rafh{font-size:.78rem;font-weight:700;text-align:center}
+@media(max-width:480px){.rafee .rvfrow{gap:4px}.rafee .rvfbtn{min-width:40px;padding:4px 8px}}
