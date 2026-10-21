@@ -1,3 +1,7 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8857=_tutil.free_port()
+_P8858=_tutil.free_port()
+_P8859=_tutil.free_port()
 # b72: 본계정 키 = 항상 1번 줄 '본계정'(새 키로 바뀌면 예전 키 칸·금고에서 삭제, 중복 없음) / 부계정 이름 필수(빨간 글) / 키 없는 계정 캐릭터 숨김(데이터 유지·키 다시 넣으면 복귀) / '키 없음' 글자 없음
 import os, sys, json, subprocess, time, urllib.request
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -9,9 +13,9 @@ def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP: wrangler/node22 not installed'); print('FAILS: []'); sys.exit(0)
-PORT, WP, NP = 8857, 8858, 8859
+PORT, WP, NP = _P8857, _P8858, _P8859
 API=f'http://127.0.0.1:{WP}'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

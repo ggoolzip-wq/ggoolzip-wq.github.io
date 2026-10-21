@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8898=_tutil.free_port()
 # b99: 길드 현황 — '길드' 제목 아이콘 = 길드의 축복 아이콘, 길드 이름 앞 = 그 길드의 길드 마크 (guild/id → guild/basic: guild_mark_custom(base64) 우선, 없으면 guild_mark(URL), 둘 다 없으면 기본 아이콘)
 import os, sys, json, subprocess, time, urllib.request, base64, io
 from playwright.sync_api import sync_playwright
@@ -7,8 +9,8 @@ fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-PORT=8898
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+PORT=_P8898
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

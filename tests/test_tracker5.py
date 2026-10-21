@@ -1,3 +1,4 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
@@ -36,6 +37,7 @@ def handle(route):
     if p.endswith('/character/list'): return route.fulfill(json=LIST[k])
     allc={c['ocid']:c for a in LIST[k].get('account_list',[]) for c in a.get('character_list',[])}
     if p.endswith('/character/basic'):
+        if q.get('ocid') not in allc: return route.fulfill(status=400,json={'error':{'name':'OPENAPI00003','message':'Please input valid id'}})  # zosu-testfix: 모르는 ocid = 400 (예전엔 KeyError → 다음 Playwright 호출에서 예외)
         c=allc[q['ocid']]; return route.fulfill(json={'date':'2026-10-08T00:00+09:00',**{x:c[x] for x in ('character_name','world_name','character_class')},'character_level':int(c['character_level']),'character_exp_rate':'12.345','character_exp':1})
     if p.endswith('/scheduler/character-state'):
         # clear_flag only (no complete_flag) to verify fallback
@@ -70,7 +72,7 @@ with sync_playwright() as p:
     pg.fill('#impMin','200'); pg.wait_for_timeout(50); print('T2b min200:', pg.inner_text('#impCount'), pg.locator('#impList .imp-item').count())
     pg.fill('#impMin',''); pg.fill('#impQ','창고캐0'); pg.wait_for_timeout(50); print('T2c search:', pg.inner_text('#impCount'))
     pg.fill('#impQ','없는이름'); pg.wait_for_timeout(50); print('T2d no-match:', pg.inner_text('#impList')); pg.click('#impClear'); print('T2e cleared:', pg.inner_text('#impCount'))
-    pg.click('#impAll'); pg.click('#impOk'); pg.wait_for_function("!syncing",timeout=60000); print('T2f imported:', pg.evaluate("S.characters.length"))
+    pg.click('#impAll'); pg.click('#impOk'); pg.wait_for_function("!syncing&&!syncBg",timeout=90000);  print('T2f imported:', pg.evaluate("S.characters.length"))  # zosu-testfix: b184 뒤 작업(basic·훈장)까지 끝난 뒤 다음 단계
     pg.evaluate("S.characters=[];save();render()")
     # 3. empty
     setkey(pg,aid,'test_mock_EMPTY'); print('T3 empty:',imp(pg)); pg.screenshot(path=OUT+'/shot5_import_empty.png'); close(pg)
@@ -109,3 +111,4 @@ with sync_playwright() as p:
     addkey(lp,'test_dummy_key_for_error_check'); print('T9 LIVE dummy key:', imp(lp)); lp.screenshot(path=OUT+'/shot5_live_error.png')
     b.close()
 print('ERRORS:',errs)
+import sys as _sys; _sys.exit(1 if (globals().get('fails') or globals().get('errs')) else 0)  # zosu-testfix: 실패·오류가 있으면 exit 1

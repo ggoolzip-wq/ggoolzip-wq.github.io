@@ -1,12 +1,14 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8840=_tutil.free_port()
 # b54: 축하 = 보스 아이콘 + 축하드립니다! (이모지 없음), 결정석 가격 '내가 잡는 보스만 보기' (테섭 예정 모의 포함)
 import os, sys, json, time, subprocess
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL='http://localhost:8840/index.html'
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL=('http://localhost:'+str(_P8840)+'/index.html')
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server','8840','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',str(_P8840),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 def ch(i,b):
     return {'id':f'c{i}','name':f'캐릭{i}','level':280,'job':'히어로','world':'스카니아','ocid':'','accId':'','isMain':i==0,'image':'','bosses':b,'weekly':{},'monthly':{},'auto':{},'drops':{},'sync':{}}
 B0={'lotus':{'enabled':True,'diff':'hard','party':1},'lucid':{'enabled':True,'diff':'hard','party':1},'blackmage':{'enabled':True,'diff':'hard','party':1}}

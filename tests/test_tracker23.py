@@ -1,3 +1,7 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8772=_tutil.free_port()
+_P8773=_tutil.free_port()
+_P8794=_tutil.free_port()
 # 동기화 서버 모드(기능 플래그) — 브라우저 2대 + wrangler dev(로컬 D1) + 넥슨 모의 서버 (2026-10-10)
 import os, sys, json, subprocess, time, urllib.request, shutil
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -11,9 +15,9 @@ def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP: wrangler/node22 not installed'); print('FAILS: []'); sys.exit(0)
-PORT, WP, NP = 8794, 8772, 8773
+PORT, WP, NP = _P8794, _P8772, _P8773
 API=f'http://127.0.0.1:{WP}'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
@@ -70,10 +74,10 @@ try:
     sb=st(pb)
     check('B (empty PC) login → pulled 2 chars, key filled for that account', len(sb['characters'])==2 and sb['settings']['accounts'][0].get('key')==KA, [a.get('key','')[:8] for a in sb['settings']['accounts']])
     # 3) B 에서 바꿈 → 자동 저장(5초) → A 가 당겨옴
-    pb.evaluate("S.characters.find(c=>c.id==='c2').name='불독메이지B'; save()"); pb.wait_for_timeout(6000)
+    pb.evaluate("pendStart(); S.characters.find(c=>c.id==='c2').name='불독메이지B'; save()")  # zosu-testfix: b112 이후 pend 없는 save()=자동 변경 → 2초 뒤 뒤에서 저장. 사용자 수정처럼 pendStart(); pb.wait_for_timeout(6000)
     check('sync mode: NO autosave after a change (rev still 1, dirty)', server_state()[0]['rev']==1 and pb.evaluate("svUnsaved()"), server_state()[0]['rev'])
-    pb.evaluate("svSaveNow()"); pb.wait_for_timeout(800); wait_on(pb)
-    check('manual svSaveNow() saves (rev 2), not dirty', server_state()[0]['rev']==2 and not pb.evaluate("svUnsaved()"), server_state()[0]['rev'])
+    pb.evaluate("pendSave()"); pb.wait_for_timeout(800); wait_on(pb); pb.wait_for_function("!svPushing",timeout=10000)  # zosu-testfix: 사용자 수정(pend)은 [저장]=pendSave() 로 확정·서버 저장
+    check('manual 저장(pendSave) saves (rev 2), not dirty', server_state()[0]['rev']==2 and not pb.evaluate("svUnsaved()"), server_state()[0]['rev'])
     pa.evaluate("gd.pulledAt=0; gdPull(true)"); pa.wait_for_timeout(1200); wait_on(pa)
     check('A pulls B change', [c['name'] for c in st(pa)['characters']]==['단풍용사','불독메이지B'], [c['name'] for c in st(pa)['characters']])
     # 4) 동시 수정: A·B 가 서로 다른 항목을 바꾸고 B 는 오래된 rev 로 저장 → 409 → 3-way 병합

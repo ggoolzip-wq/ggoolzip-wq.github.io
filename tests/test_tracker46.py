@@ -1,3 +1,7 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8778=_tutil.free_port()
+_P8779=_tutil.free_port()
+_P8797=_tutil.free_port()
 # b62: 대표 키 하나로 어느 PC 에서든 부계정·예비 키 전부 복원 / 부계정·예비 키 로그인 차단(빨간 글) / 강제 로그아웃(예전 세션) 후 데이터 유지 / 소식 읽음 동기화
 # 브라우저 여러 대 + wrangler dev(로컬 D1) + 넥슨 모의 서버
 import os, sys, json, subprocess, time, urllib.request, shutil, hashlib, datetime
@@ -11,9 +15,9 @@ def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP: wrangler/node22 not installed'); print('FAILS: []'); sys.exit(0)
-PORT, WP, NP = 8797, 8778, 8779
+PORT, WP, NP = _P8797, _P8778, _P8779
 API=f'http://127.0.0.1:{WP}'
-srv=subprocess.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen(['python3','-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
@@ -82,7 +86,7 @@ try:
         t=pc.inner_text('#svMainSt .keyrej'); col=pc.evaluate("getComputedStyle(document.querySelector('#svMainSt .keyrej')).color")
         check(f'C: {nm} 로그인 → 빨간 \'이미 등록된 부계정 API입니다.\' + 로그인 안 됨', t.strip()=='이미 등록된 부계정 API입니다.' and col=='rgb(255, 90, 90)' and not pc.evaluate("localStorage.getItem('mapleBossTracker.svToken')") and pc.locator('#svMainSec').count()==1, (t,col))
     # ---- 강제 로그아웃: A 의 세션·기기 표를 기준 시각 이전으로 → 다시 열면 입장 화면, 비밀번호부터 ----
-    pa.evaluate("()=>{S.characters[0].name='단풍용사2';save();}")  # 저장 안 한 변경(이 PC 에만)
+    pa.evaluate("()=>{pendStart();S.characters[0].name='단풍용사2';save();}")  # zosu-testfix: pend 로 둬야 b112 2초 자동 저장에 안 올라감  # 저장 안 한 변경(이 PC 에만)
     ep=int(dev.sql("SELECT v FROM meta WHERE k='auth_epoch_b62'")[0]['v'])
     tok=pa.evaluate("localStorage.getItem('mapleBossTracker.svToken')")
     dev.sql(f"UPDATE sessions SET created_at={ep-1000} WHERE token_hash='{hashlib.sha256(tok.encode()).hexdigest()}'")

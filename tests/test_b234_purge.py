@@ -1,14 +1,15 @@
 # test_b234_purge (b234): API 키가 빠진 계정 30일 → 기록 삭제 (본계정 포함). 30일 전엔 숨김·보존, 다시 넣으면 복귀, 지나면 캐릭터·지난 기록·빠뜨린 보스메소 삭제
 # MBT_SHOT=경로 → 삭제 후 결정석 분석 탭 스크린샷
 import os, sys, subprocess, time, urllib.request
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _tutil
 from playwright.sync_api import sync_playwright
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-PORT=9341
-srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+PORT=_tutil.free_port()
+srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

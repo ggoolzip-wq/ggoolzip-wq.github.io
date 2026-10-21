@@ -1,12 +1,14 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8835=_tutil.free_port()
 # b46: 빠뜨린 보스메소(주간/월간) 기록·백필·중복 없음 · 아이템 항목 줄바꿈 단위 · 일퀘 탭 삭제 · 넓힌 오른쪽 열/결정석 글자 키움
 import os, sys, json, time, subprocess
 from playwright.sync_api import sync_playwright
-ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL='http://localhost:8835/index.html'
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); URL=('http://localhost:'+str(_P8835)+'/index.html')
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server','8835','--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
+srv=_tutil.Popen([sys.executable,'-m','http.server',str(_P8835),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); time.sleep(1)
 B=lambda d,p=1:{'enabled':True,'diff':d,'party':p}
 def ch(i,n,weekly,monthly,drops={},out={}):
     return {'id':f'c{i}','name':n,'level':285,'job':'히어로','world':'스카니아','ocid':'','accId':'','isMain':i==0,'image':'',

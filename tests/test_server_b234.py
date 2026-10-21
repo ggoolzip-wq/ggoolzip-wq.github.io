@@ -1,14 +1,14 @@
 # b234: 본계정(대표) 키 삭제 → /api/keygone 이 삭제 시각 기록 + 세션 끝. 30일 안에 다시 로그인/다른 기기 사용 = 취소, 지나면 cron(keyGoneCron)이 사용자 데이터 전부 삭제
-# wrangler dev(로컬 D1, --test-scheduled) — 운영 D1 은 건드리지 않음. 포트 9342(Worker)·9343(넥슨 모의)
+# wrangler dev(로컬 D1, --test-scheduled) — 운영 D1 은 건드리지 않음. 포트 = _tutil.free_port()
 import os, sys, json, time, urllib.request, urllib.error
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import cf_dev, mock_nexon_list as MN
+import cf_dev, mock_nexon_list as MN, _tutil
 fails=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
 if not cf_dev.available(): print('SKIP'); print('FAILS: []'); sys.exit(0)
-NP, WP = 9343, 9342
+NP, WP = _tutil.free_port(), _tutil.free_port()
 DAY=86400000
 def req(m,path,body=None,tok=None,raw=False):
     h={'Content-Type':'application/json','Origin':'https://bossmaple.pages.dev',**({'Authorization':'Bearer '+tok} if tok else {})}

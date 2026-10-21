@@ -672,7 +672,7 @@
 1. **입장 화면(#svGate)·초대 비밀번호 없음**: bossmaple.pages.dev 는 바로 대시보드(로그인 전 = 빈 화면 '캐릭터를 추가하세요'). `svGate()` 는 예전 #svGate 를 지우는 빈 함수, `svInvite`·기기 표 요청 삭제. 예전 b62·b66·친구 초대 설명은 이 항목으로 대체됨.
 2. **로그인·가입 = 왼쪽 위 '캐릭터 추가'(+ 추가)**: 세션이 없으면(`svNeedMain()` = 서버 모드 && !(svTok && gdMeta.on)) 창에 **본계정 API 키 칸 + [등록] 버튼만**(`#svMainSec`, `.addm.svmain` 이 다른 `.addsec` 숨김 — 부계정·예비 키·캐릭터 목록 없음), 아래 키 받는 법 링크와 `Data based on NEXON Open API`. 등록 = 예전 입장 화면 로그인과 같음(POST /api/login: 계정 생성/복원 → 금고 v2 키·데이터·소식 읽음·세션 복원) → 성공하면 같은 창이 **지금까지의 캐릭터 추가 창**으로 바뀜. 부계정/예비 키를 넣으면 '등록 완료' 자리에 빨간 **'이미 등록된 부계정 API입니다.'**(`#svMainSt .keyrej`, #ff5a5a), 잘못된 키는 넥슨 오류 문구 빨간 글. 창을 닫았다 열면 지워짐. ☁ 헤더 '☁ 로그인'·401(만료) 때도 이 창. 로그아웃은 ☁ 메뉴 그대로 → 다시 이 상태. github.io(드라이브 모드)는 변화 없음.
 3. **서버(Worker, health v:'b67')**: 세션 생성에 SITE_PASS 불필요(`checkDevice` 삭제, device 값 무시, /api/invite 는 예전 캐시 클라이언트용으로 남김). 남용 방지(D1 `rate` 고정 창, IP 는 해시): 로그인 **IP당 30회/10분**, 새 사용자 생성 **IP당 10명/일 + 전체 300명/일**, 모든 API **IP당 읽기 300/분·쓰기 120/분**(PC방 공유 IP 고려, 기존 세션별 읽기 90/분·저장 20/분, 사용자별 저장 40/분, keycheck 30/10분은 그대로). 크기: 데이터 **사용자당 최대 512KB**(넘으면 413 '최대 512KB, 지금 NKB'; 현재 사용자 데이터 ≈54KB), 요청 본문 Content-Length 로 먼저 거절(state 576KB, 그 외 64KB), 기록(history) **10개** 유지, 데이터당 넥슨 계정 **40개**(link/subkeys). EPOCH_KEY 그대로 → **기존 세션 강제 로그아웃 없음**, 사용자·데이터 그대로. Worker Version af44c079 (11:38 KST 배포, health v:b67, 배포 뒤 D1 개수 배포 전과 같음·기존 세션 1개 그대로).
-4. **다크 전용**: 오른쪽 위 라이트/다크 버튼(#themeBtn) 삭제, `applyTheme()` 은 항상 dark, build.py 가 `<html data-theme="dark">` 로 출력, 저장된 `S.theme` 은 load 때 지움(prefers-color-scheme 무시). 라이트 전용 CSS(`[data-theme=light] .expbar>i`, `html[data-theme="light"] #svGate…`) 삭제. style_v1.css 의 :root 기본 변수와 `html:not(.dark)` 규칙은 다크에서도 쓰여 남김. 예전 섹션의 '라이트' 색 설명은 이제 무시.
+4. **다크 전용** *(기록 — b179·b182 에서 사용자 요청으로 라이트 모드와 헤더 #themeBtn 이 다시 생겨 대체됨)*: 오른쪽 위 라이트/다크 버튼(#themeBtn) 삭제, `applyTheme()` 은 항상 dark, build.py 가 `<html data-theme="dark">` 로 출력, 저장된 `S.theme` 은 load 때 지움(prefers-color-scheme 무시). 라이트 전용 CSS(`[data-theme=light] .expbar>i`, `html[data-theme="light"] #svGate…`) 삭제. style_v1.css 의 :root 기본 변수와 `html:not(.dark)` 규칙은 다크에서도 쓰여 남김. 예전 섹션의 '라이트' 색 설명은 이제 무시.
 5. 테스트: test_server(초대 없이 로그인·device 무시, 530KB→413·500KB 저장, 64KB 넘는 본문 413, 새 사용자 11번째 429·기존 사용자 로그인 됨, IP 쓰기 121번째 429), test23·24·25·29·46·49(입장 화면 → 본계정 키 창 흐름), test50(첫 화면·다크 전용 이전·본계정 키 창·모바일·github.io), 신규 **test_tracker51**(처음 온 사람 → 본계정 키만 → 잘못된 키 → 등록 → 일반 창 → 부계정 키 추가 → 로그아웃 → 부계정 키로 로그인 시 빨간 글 → 새 PC 본계정 키로 데이터·키 복원), 12·14·19·47·48 테마 버튼 기대 제거. 전체(run_all.sh) 결과: 새·수정 테스트 전부 통과. 예전부터 실패(이번과 무관, HEAD 에서도 같음): 8·10·16(시간 초과), 9·30(가격 꼬리말 문구), 13·14(박스에 떠 있는 다른 :8787 서버(/workspace/maple-boss-tracker)를 읽음 — 예전 index)·15(예전 UI 기대), 27(아바타), 28(제목 이름).
 6. D1 백업(변경 전): /workspace/backup/b67_before_20261012_112957.json (600). D1 스키마 변경 없음. 스크린샷 /workspace/maple-boss-tracker/oct12e_landing.png, oct12e_mainkey_modal.png, oct12e_mainkey_modal_mobile.png.
 
@@ -1015,7 +1015,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 남은 일: 사용자 Cloudflare 가입 → `npx wrangler login --device`(또는 API 토큰) → d1 create · schema · ID_PEPPER · deploy → 미리 써 보기 → SYNC_API_URL 켜기. 나중 단계(미구현): 매일 18:00 KST cron 으로 maplescouter 헥사환산(캐릭터 1명으로 먼저 시험).
 
 ## 8. 사용자가 정한 동작·취향 (변경 시 사용자 확인 필요)
-- **항상 다크 테마**(2026-10-12 b67 사용자 요청): 라이트 모드·테마 전환 버튼 없음. 새 UI 는 다크만 만들고 확인(라이트 색 추가 금지).
+- **기본 다크, 라이트는 헤더 버튼으로**(b179·b182 사용자 요청 — 2026-10-12 b67 '항상 다크·테마 버튼 없음'을 대체): 기본 테마는 다크, 헤더 맨 오른쪽 `#themeBtn` 으로 라이트 전환. 새 UI 는 다크·라이트 둘 다 만들고 확인(라이트 색은 src/extra.css 의 `[data-theme=light]` 규칙).
 - **초대 비밀번호 없음**(b67): 누구나 bossmaple.pages.dev 에 들어와 '캐릭터 추가'에서 본계정 키로 가입 요청 → **관리자(사용자 본 데이터) 승인 후 사용**(b68).
 - 썬데이 새 글 감시: 매일 10:00~10:20 KST, **5초 간격**(사용자 결정, 최대 240회/일).
 - 데이터 출처는 **넥슨 Open API 우선**, 홈페이지 HTML 스크랩은 API 실패/자료 없음일 때만 대체(2026-10-09 사용자 요청). 호출 수는 하루 한도(개발 키 1,000회) 안에서 — 이미 받은 목록 재사용.
@@ -1195,7 +1195,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 결정석 가격: 월간 보스 📅, '(가격 변동일 YYYY-MM-DD, 마지막 확인 YYYY-MM-DD)'. `prices.json.changedAt` = 현재 가격을 정한 패치 노트 날짜(지금 2026-09-17, 공지 813). `update_prices.py` 가 rows 가 실제로 바뀔 때만 changedAt 을 그 공지 날짜로 갱신.
 
 ## 5. 일반 규칙 (사용자 고정 선호 — 반드시 지킬 것)
-- **다크 전용**(b67): 테마 전환 버튼 없음, 라이트 모드 없음.
+- **기본 다크 + 라이트 전환 버튼**(b179·b182 사용자 요청): 기본은 다크. 헤더 맨 오른쪽 `#themeBtn`(☀️/🌙)으로 라이트 모드 전환(기기별 저장). 새 UI 는 다크·라이트 둘 다에서 제대로 보이는지 확인할 것. (예전 b67 '다크 전용·테마 버튼 없음'은 b179·b182 로 대체됨)
 - **공용 PC 기준**(b69): 서버 모드에서 로그아웃·세션 없음 = 이 PC 의 앱 데이터 전부 삭제(처음 온 사람 상태). 로그아웃 전에 남은 변경은 서버에 저장.
 - 답변·UI 문구는 **한국어**. 개수 표기는 **xN** (예 x3).
 - **자동 저장 없음**: 서버 모드는 수동 [저장]/[취소]. 드롭 선택 시 토스트 없음.
@@ -1872,3 +1872,23 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 사진 없음/깨짐 = 같은 24px 칸에 닉네임 첫 글자(기존 avatar 동작). 수익 총합에서 닉네임이 나오는 곳은 이 줄 하나.
 - 테스트 tests/test_b233.py(8977): box 전용 가짜 초상화(넥슨 이미지 주소를 PNG 로 응답)로 수익 총합 vs 주별 득템 표 크기·모서리·img 크기·object-fit/position 같음, 사진 없음 = 같은 크기 글자 칸, 이름 안 잘림·한 줄·금액 오른쪽 끝 같음(실제 1600/390, 예시 1600/390).
 - 스크린샷 /workspace/b233/revpanel_{demo,real}_{1600,390}.png — 1600 에서는 패널이 높이 제한(안쪽 스크롤)이라 찍을 때만 max-height 풀어서 전체를 찍음(b232 1600 사진은 위쪽만 찍혔었음).
+
+## zosu-testfix (b233 위로 다시) (2026-10-21 14:22~14:38 KST) — 테스트 안정화만 b233 위에 다시 올림 (브랜치 zosu-testfix-b233, 병합 전)
+- 예전 zosu-testfix 는 로컬 b224(zosu-apikey 병합 포함, origin 에 없음) 위였음 → origin/main b233 위에서 **테스트 정리 작업만** 다시 적용. zosu-apikey 변경(activeChars/activeIds/activeRecords/activeMiss, test_tracker103, missNow)과 로컬 b224 HANDOFF 섹션은 **안 가져옴**(메이플 봇이 b233 위에서 따로 다시 함).
+- **tests/_tutil.py**(새 파일): `free_port()` 빈 포트, `Popen()` = 테스트 서버를 PDEATHSIG·atexit 로 정리 + bind 실패/포트 사용 중이면 바로 실패, 브라우저 컨텍스트에서 운영 Worker(ggoolzip-sync…workers.dev) 요청을 `{}` 로 막음(`MBT_REAL_WORKER=1` 이면 안 막음). → 남은 서버·같은 포트 때문에 거짓 통과/실패하던 문제 해결.
+- **tests/cf_dev.py**: 포트 비기 기다림(15초), inspector 포트도 빈 포트, wrangler 조기 종료 감지, stop() 여러 번 안전.
+- 서버 띄우는 테스트 전부 빈 포트 방식으로 바꿈(9996~9999 는 Playwright route 가짜 주소라 그대로). **이번에 새로 바꾼 것(main b224~b233 에서 추가된 테스트)**: test_b224, test_b225, test_b225_items, test_b229, test_b229_rred, test_b230, test_b233.
+- exit 코드: test_tracker4~13·27 이 실패하면 exit 1.
+- 오래된 기대값 갱신(b181 수익 창 버튼, b209 안내, b221 그래프 글자, b112 자동 저장 → pendStart/pendSave, b182 헤더 #themeBtn 등) + **test_tracker43**: b230 부터 이번 주 수익 총합 패널에 xN 이 없으므로 '검마 결정석\nx1' 기대 → '검마 결정석\n+금액' 으로(plain origin/main 에서도 실패하던 것).
+- **src/app.js `bgJob`**: syncAll 의 뒤 작업(basic·훈장, `later`)은 넣을 때의 계정 키를 기억, 실행 때 캐릭터가 지워졌거나 키가 바뀌었/지워졌으면 요청 안 함. 테스트 `tests/test_zosu_bgkey.py`(run_all 목록 끝).
+- **320px 헤더**: src/extra.css 끝 `@media (max-width:360px){header .hwrap{gap:8px;padding-left:10px;padding-right:10px} header .thbtn{width:30px;height:30px;margin-left:2px;font-size:14px}}` → 320px scrollWidth 329→320(테마 버튼 [295,329]→[280,310]), 390·1280px 그대로. 사진 /workspace/zosu/shots/hdr320-b233-{before,after}.png.
+- **테마 문구**: 5장·8장 '다크 전용·테마 버튼 없음' → 현재 상태(기본 다크 + 헤더 #themeBtn 라이트 전환, 새 UI 는 다크·라이트 둘 다 확인). b67 기록 항목은 남기고 'b179·b182 로 대체됨' 표시.
+- 전체 테스트(`CHROME=/usr/bin/google-chrome python3 tests/run_par.py`, 141개): 병렬에서 6개 실패 → 직렬 재시도에서 5개 통과(test_tracker12·14·18·28·63 = 동시 8개 부하로 타이밍 흔들림), test_tracker43 만 진짜 실패 → 위처럼 기대값 고친 뒤 단독 통과. 결과적으로 **141/141**.
+
+## zosu-ringbtn (2026-10-21) — 홍옥 반지 상자 버튼 = 아이콘 + '홍옥 반지 상자', 옆 아이콘만 칩 삭제 (14:24 KST~, 브랜치 zosu-hong)
+- 사용자 요청: '홍옥 반지 상자로 리4/컨4를 먹었을 경우 클릭' 버튼을 홍옥 반지 상자 아이콘과 같이 '홍옥 반지 상자' 버튼으로, 그 옆 홍옥 반지 상자 아이콘만 있는 칩은 지움.
+- `rredBtn`: 내용 = `.rrbico`(itemIcon('r_red'), 20px) + `.rrbt` '홍옥 반지 상자'(RRED_TXT). aria-label = '홍옥 반지 상자로 리4/컨4를 먹었을 경우 기록'. 동작(창 #rredModal·.got·다시 누르면 취소·data-tip)은 그대로. 예시 화면(캐릭터 없음)에서 눌러도 예전처럼 아무 일 없음.
+- 드롭 줄 off 칩: 주간 보스 + 캐릭터가 있을 때(=버튼이 있을 때) r_red 회색 아이콘 칩 안 그림. 버튼 없는 곳(캐릭터 없음 등)은 그대로.
+- CSS(extra.css 끝): .drop.rredbtn inline-flex·gap 4px, 470px 이하 `.drops .drop.rredbtn{display:none}` 다시 지정(.rredrow 쪽만 보임). 다크/라이트 색은 기존 규칙 그대로.
+- 테스트: tests/test_zosu_ringbtn.py(9463, 1600/390 × 다크/라이트, 예시 화면) + test_b229_rred TXT 갱신, test_b229. 사진: /workspace/zosu/shots/ringbtn-{before,after}-{1600,390}.png
+- zosu-b234 병합(2026-10-21 14:39~14:41 KST): zosu-testfix-b233 + origin/zosu-hong. 충돌 = src/extra.css(두 블록 다 둠), tests/run_all.sh(zosu_bgkey·zosu_ringbtn 둘 다), index.html(build.py 로 다시 만듦). test_b229_rred 는 자동 병합(빈 포트 + 새 버튼 글자 '홍옥 반지 상자'). 이 섹션은 맨 위 규칙 앞에서 여기(끝)로 옮김. test_zosu_ringbtn 고정 포트 9463 → _tutil 빈 포트. 관련 테스트 6개(test_zosu_ringbtn·test_b229_rred·test_b229·test_tracker12·test_zosu_bgkey·test_tracker43) 통과.

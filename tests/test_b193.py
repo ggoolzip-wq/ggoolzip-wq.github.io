@@ -1,7 +1,9 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8966=_tutil.free_port()
 # b193: Worker 1분 공지 감시 → 결정석 가격표 파싱(prParse, nexon_prices.parse_post 와 같은 결과) + 사이트가 feed.prices 를 prices.json 위에 덮음
 import os, sys, json, time, subprocess, urllib.request, re
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8966'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8966)
 sys.path.insert(0,os.path.join(ROOT,'scripts')); import nexon_prices
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -15,7 +17,7 @@ out=json.loads(subprocess.check_output(['node','-e',js,os.path.join(ROOT,'server
 py=nexon_prices.parse_post(open(FX,encoding='utf-8').read())
 k=lambda L:[(r['boss'],r.get('old'),r['new'],r.get('effective')) for r in L]
 check('Worker prParse = 파이썬 parse_post (46줄·적용일 같음)', len(out['rows'])>=20 and k(out['rows'])==k(py['rows']), (len(out['rows']),len(py['rows'])))
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

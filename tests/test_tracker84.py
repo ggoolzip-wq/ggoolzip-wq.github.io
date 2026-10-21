@@ -1,9 +1,11 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8900=_tutil.free_port()
 # b112: 가격 카드 '결정석 가격 / 아이템 가격' 탭, 관리자 '시세 등록', 익셉셔널 해머 시세 이름(얼장/눈장/벨트),
 # 수익 기록 전체 수정 = 보스별 묶음(초상화 1번 + 난이도 배지), '이번주 획득 아이템' 앞 아이콘, 캐릭터 정보 결정석/아이템 판매 두 줄, '이번달 검마 (10월 8일 격파 완료)',
 # 429: 초당 한도는 1번 재시도 + '오늘 한도 도달' 아님. MBT_ROOT/MBT_SHOTDIR/MBT_TAG/MBT_NOCHECK. Worker·넥슨은 가짜 응답.
 import os, sys, json, time, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8900'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8900)
 SHOT=os.environ.get('MBT_SHOTDIR'); TAG=os.environ.get('MBT_TAG','after'); NOCHK=os.environ.get('MBT_NOCHECK')=='1'
 fails=[]; errs=[]
 def check(n,c,d=''):
@@ -14,7 +16,7 @@ def shot(loc,name):
     if SHOT:
         try: loc.screenshot(path=os.path.join(SHOT,f'b112_{TAG}_{name}.png'))
         except Exception as e: print('shot skip',name,str(e)[:80])
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

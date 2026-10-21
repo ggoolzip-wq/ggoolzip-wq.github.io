@@ -1,3 +1,5 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8886=_tutil.free_port()
 # zosu-crystal: 결정석 보스왕 = 누적 메소 내림차순, 동점은 난이도(익스트림>하드=카오스>노말>이지), 키 삭제된 계정 캐릭터 제외
 # MBT_ROOT=폴더 → 그 폴더의 index.html 검사(스크린샷용), MBT_SHOT=경로 → #bossKing 스크린샷 저장, MBT_NOCHECK=1 → 판정 생략
 import os, sys, subprocess, time, urllib.request
@@ -7,8 +9,8 @@ fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
     if not c: fails.append(n)
-PORT=8886
-srv=subprocess.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+PORT=_P8886
+srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)

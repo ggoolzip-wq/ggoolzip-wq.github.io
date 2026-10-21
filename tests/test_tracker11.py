@@ -1,3 +1,4 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
 import os, sys
 ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT=os.environ.get('MBT_OUT') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
@@ -132,3 +133,4 @@ with sync_playwright() as p:
     m.evaluate("tab='boss';syncTabs();render()"); m.screenshot(path=OUT+'/shot11_mobile.png',full_page=True)
     b.close()
 print('FAILS:',fails); print('ERRORS:',errs)
+import sys as _sys; _sys.exit(1 if (globals().get('fails') or globals().get('errs')) else 0)  # zosu-testfix: 실패·오류가 있으면 exit 1

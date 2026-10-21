@@ -1,7 +1,9 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8992=_tutil.free_port()
 # b229: 홍옥 반지 상자로 리4/컨4 — 보스 드롭 줄 끝 버튼 → 창(리4/컨4 고르기·판매금·저장/취소) → drops 'hong_c4' + 판매금 = '이번주 획득 아이템' 금액·xN 1, 홍옥 상자 수·결정석 그대로, 득템 분석 표들에 홍옥 아이콘+반지 아이콘 xN · 다시 누르면 취소 · 실제 + 예시
 import os, sys, time, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8992'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8992)
 SHOT=os.environ.get('MBT_SHOTDIR')
 fails=[]; errs=[]
 REV="""()=>{ const T=totalData(), id=S.characters[0].id, ch=T.chars.find(c=>c.id===id)||{}, bk=(bossKills(T)||[]).find(o=>o.b.id==='lotus')||{}; const num=t=>+String(t||'').replace(/[^0-9]/g,'')||0;
@@ -11,11 +13,11 @@ REV="""()=>{ const T=totalData(), id=S.characters[0].id, ch=T.chars.find(c=>c.id
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:400] if d!='' else ''))
     if not c: fails.append(n)
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
-TXT='홍옥 반지 상자로 리4/컨4를 먹었을 경우 클릭'
+TXT='홍옥 반지 상자'
 LINE="""lb=>{const r=[...document.querySelectorAll('.revpanel > .rp-line')].find(x=>x.querySelector('.rplb')?.textContent===lb); return r?{x:r.querySelector('.rpx')?.textContent||'',t:r.innerText.replace(/\\s+/g,' ')}:null}"""
 BTN="""()=>[...document.querySelectorAll('[data-rred]')].filter(b=>b.getClientRects().length).map(b=>{const r=b.getBoundingClientRect(), p=b.parentElement.getBoundingClientRect(), last=b===b.parentElement.lastElementChild&&(b.closest('.rredrow')?b.closest('.boss').lastElementChild===b.closest('.rredrow'):true);
   return {id:b.dataset.rred,row:!!b.closest('.rredrow'),t:b.textContent,one:b.getClientRects().length===1&&r.height<34,fit:b.scrollWidth<=b.clientWidth+0.5,inside:r.right<=p.right+0.5&&r.left>=p.left-0.5,last}})"""

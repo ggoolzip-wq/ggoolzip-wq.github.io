@@ -1,7 +1,9 @@
+import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
+_P8981=_tutil.free_port()
 # b198: 검색 등록 준비 — meta description·canonical·og, robots.txt·sitemap.xml 실제 파일, 숨은 소개 글(화면 변화 없음)
 import os, sys, time, subprocess, urllib.request, re
 from playwright.sync_api import sync_playwright
-ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT='8981'
+ROOT=os.environ.get('MBT_ROOT') or os.path.dirname(os.path.dirname(os.path.abspath(__file__))); PORT=str(_P8981)
 fails=[]; errs=[]
 def check(n,c,d=''):
     print(('PASS ' if c else 'FAIL ')+n+(' — '+str(d)[:300] if d!='' else ''))
@@ -20,7 +22,7 @@ check('sitemap.xml 대표 주소', f'<loc>{U}</loc>' in sm and 'sitemaps.org/sch
 ds=open(os.path.join(ROOT,'tools/pages_dist.sh')).read()
 check('Cloudflare Pages 배포에 robots·sitemap·og 포함', all(f in ds for f in ('robots.txt','sitemap.xml','og.png')))
 check('og.png 있음', os.path.getsize(os.path.join(ROOT,'og.png'))>10000)
-srv=subprocess.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
