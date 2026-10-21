@@ -262,6 +262,15 @@ function itemIcon(k){
   const it=ITEMS[k], src=ITEM_ICONS[k];
   return src?`<img src="${src}" alt="" aria-hidden="true">`:`<span class="ifb" aria-hidden="true">${esc((it?.n||'?').slice(0,1))}</span>`;
 }
+/* b239: 드롭 칩 가격 등급 (공용 시세 admPriceOf = 수익 기록 칸과 같은 값). 테두리 t-*, 기록하면 같은 등급 채움 f-*, 움직이는 등급 tza.
+ * ≥1000억 aur(오로라) · ≥100억 gold(금빛) · ≥30억 grn(초록 빛) · ≥10억 pur(보라) · 그 밑/시세 없음 = 예전 그대로.
+ * 반지 상자 칩 = 항상 하늘색 테두리(t-sky), 기록하면 결과(리4·컨4) 중 비싼 쪽 가격 등급으로 채움(꽝·미기록 결과 = 채움 없음). 홍옥 반지 상자 버튼(rredBtn)은 예전 그대로(옆 칩과 같은 모양 규칙 zosu-b234 유지). */
+const priceTier = p => !(+p>0)?'':p>=1e11?'aur':p>=1e10?'gold':p>=3e9?'grn':p>=1e9?'pur':'';
+const tierP = k => +(admPriceOf(priceId(k))?.p)||0;
+function tierCls(bd,fill){ if(!bd&&!fill) return ''; const anim=/aur|gold/.test(bd+' '+fill); return ` tz${bd?' t-'+bd:''}${fill?' f-'+fill:''}${anim?' tza':''}`; }
+function dropTierCls(c,b,k,got){
+  if(isRing(k)){ const outs=got&&c?(outMap(c,b.type)[b.id+'|'+k]||[]):[]; const p=Math.max(0,...outs.filter(o=>o==='r4'||o==='c4').map(o=>tierP('ring:'+o))); return tierCls('sky',priceTier(p)); }
+  const t=priceTier(tierP(k)); return t?tierCls(t,got?t:''):''; }
 const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
   const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!eternalFor(b,diff)&&!mementoFor(b,diff)) return '';
@@ -271,7 +280,7 @@ function dropsHtml(b,diff,c){
     +mementoHtml(mementoFor(b,diff));
   const cnt=k=>c?dropCount(c,b,k):0;
   const chip=k=>{const it=ITEMS[k], n=cnt(k);
-    return `<span class="drop s-${it.set} ${n?'got':''}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span></span>`;};
+    return `<span class="drop s-${it.set} ${n?'got':''}${dropTierCls(c,b,k,n>0)}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span></span>`;};
   // 2026-10-10 사용자 요청: 아이템을 '+N' 묶음 칩으로 합치지 않음 — 생명/신념 연마석, 소울 에테르 1~4단계, 반지 상자 모두 각자 칩(각자 아이콘·클릭 +1), 넘치면 다음 줄로
   const shown=ks;
   // 아래 줄: 이 보스에서 획득한 아이템 (모든 화면과 같은 형식: 이름(N인 분배) ×개수 결과)

@@ -1925,6 +1925,26 @@ header .logo .logo-d{display:flex;align-items:center}
 .drop.rredbtn .rrbico img,.drop.rredbtn .rrbico .ric{width:20px!important;height:20px!important;object-fit:contain;margin:0}
 .drop.rredbtn .rrbt{white-space:nowrap}
 @media(max-width:470px){.drops .drop.rredbtn{display:none}}
+
+/* b239: 드롭 칩 가격 등급 — 테두리 = 3겹 배경(채움 / 패널 / 테두리 그라데이션). :root 를 붙여 라이트 테마 !important 칩 배경보다 우선 */
+:root .drop.tz{border:1px solid transparent!important;--fl:linear-gradient(transparent,transparent);--pn:var(--panel);
+  background:var(--fl) padding-box,linear-gradient(var(--pn),var(--pn)) padding-box,var(--bd) border-box!important;background-size:300% 100%,100% 100%,300% 100%!important;background-position:0% 50%,0 0,0% 50%!important}
+:root .drop.tz.got{box-shadow:none!important}
+:root .drop.t-pur{--bd:linear-gradient(#a45cff,#a45cff)}
+:root .drop.t-grn{--bd:linear-gradient(#34e89e,#34e89e);box-shadow:0 0 6px 1px rgba(52,232,158,.55),inset 0 0 4px rgba(52,232,158,.3)!important}
+:root .drop.t-gold{--bd:linear-gradient(115deg,#8a5600,#ffcf4a,#fff6cf,#e3a21a,#8a5600,#ffcf4a,#fff6cf,#e3a21a,#8a5600);box-shadow:0 0 6px rgba(255,200,70,.45)}
+:root .drop.t-aur{--bd:linear-gradient(115deg,#2ff3c3,#4aa3ff,#a66bff,#ff62c8,#ffd25e,#2ff3c3,#4aa3ff,#a66bff,#ff62c8);box-shadow:0 0 7px rgba(140,140,255,.5)}
+:root .drop.t-sky{--bd:linear-gradient(#5cc8ff,#5cc8ff)}
+:root .drop.t-sky.got{box-shadow:0 0 5px rgba(92,200,255,.45)!important}
+:root .drop.f-pur{--fl:linear-gradient(rgba(164,92,255,.34),rgba(164,92,255,.34))}
+:root .drop.f-grn{--fl:linear-gradient(rgba(52,232,158,.28),rgba(52,232,158,.28))}
+:root .drop.f-gold{--fl:linear-gradient(115deg,rgba(255,186,40,.16),rgba(255,226,130,.42),rgba(255,248,215,.55),rgba(227,162,26,.22),rgba(255,186,40,.16),rgba(255,226,130,.42),rgba(255,248,215,.55),rgba(227,162,26,.22),rgba(255,186,40,.16))}
+:root .drop.f-aur{--fl:linear-gradient(115deg,rgba(47,243,195,.28),rgba(74,163,255,.32),rgba(166,107,255,.34),rgba(255,98,200,.3),rgba(255,210,94,.28),rgba(47,243,195,.28),rgba(74,163,255,.32),rgba(166,107,255,.34),rgba(255,98,200,.3))}
+:root .drop.tz.got .dn{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55)}
+[data-theme=light] .drop.tz.got .dn{color:#2b2118!important;text-shadow:0 0 3px rgba(255,255,255,.8)}
+:root .drop.tza{animation:tzShift 3.2s linear infinite alternate}
+@keyframes tzShift{from{background-position:0% 50%,0 0,0% 50%}to{background-position:100% 50%,0 0,100% 50%}}
+@media(prefers-reduced-motion:reduce){:root .drop.tza{animation:none!important}}
 </style>
 </head>
 <body>
@@ -2323,6 +2343,15 @@ function itemIcon(k){
   const it=ITEMS[k], src=ITEM_ICONS[k];
   return src?`<img src="${src}" alt="" aria-hidden="true">`:`<span class="ifb" aria-hidden="true">${esc((it?.n||'?').slice(0,1))}</span>`;
 }
+/* b239: 드롭 칩 가격 등급 (공용 시세 admPriceOf = 수익 기록 칸과 같은 값). 테두리 t-*, 기록하면 같은 등급 채움 f-*, 움직이는 등급 tza.
+ * ≥1000억 aur(오로라) · ≥100억 gold(금빛) · ≥30억 grn(초록 빛) · ≥10억 pur(보라) · 그 밑/시세 없음 = 예전 그대로.
+ * 반지 상자 칩 = 항상 하늘색 테두리(t-sky), 기록하면 결과(리4·컨4) 중 비싼 쪽 가격 등급으로 채움(꽝·미기록 결과 = 채움 없음). 홍옥 반지 상자 버튼(rredBtn)은 예전 그대로(옆 칩과 같은 모양 규칙 zosu-b234 유지). */
+const priceTier = p => !(+p>0)?'':p>=1e11?'aur':p>=1e10?'gold':p>=3e9?'grn':p>=1e9?'pur':'';
+const tierP = k => +(admPriceOf(priceId(k))?.p)||0;
+function tierCls(bd,fill){ if(!bd&&!fill) return ''; const anim=/aur|gold/.test(bd+' '+fill); return ` tz${bd?' t-'+bd:''}${fill?' f-'+fill:''}${anim?' tza':''}`; }
+function dropTierCls(c,b,k,got){
+  if(isRing(k)){ const outs=got&&c?(outMap(c,b.type)[b.id+'|'+k]||[]):[]; const p=Math.max(0,...outs.filter(o=>o==='r4'||o==='c4').map(o=>tierP('ring:'+o))); return tierCls('sky',priceTier(p)); }
+  const t=priceTier(tierP(k)); return t?tierCls(t,got?t:''):''; }
 const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
   const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!eternalFor(b,diff)&&!mementoFor(b,diff)) return '';
@@ -2332,7 +2361,7 @@ function dropsHtml(b,diff,c){
     +mementoHtml(mementoFor(b,diff));
   const cnt=k=>c?dropCount(c,b,k):0;
   const chip=k=>{const it=ITEMS[k], n=cnt(k);
-    return `<span class="drop s-${it.set} ${n?'got':''}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span></span>`;};
+    return `<span class="drop s-${it.set} ${n?'got':''}${dropTierCls(c,b,k,n>0)}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span></span>`;};
   // 2026-10-10 사용자 요청: 아이템을 '+N' 묶음 칩으로 합치지 않음 — 생명/신념 연마석, 소울 에테르 1~4단계, 반지 상자 모두 각자 칩(각자 아이콘·클릭 +1), 넘치면 다음 줄로
   const shown=ks;
   // 아래 줄: 이 보스에서 획득한 아이템 (모든 화면과 같은 형식: 이름(N인 분배) ×개수 결과)

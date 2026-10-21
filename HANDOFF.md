@@ -15,6 +15,14 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b239 (2026-10-21 KST) — 보스 드롭 칩: 가격 등급 테두리·채움 + '블빵 기록하기' 버튼 조사
+사용자 요청: 드롭 표 칩 테두리를 아이템 가격으로 — ≥1000억 오로라(움직임), ≥100억 금빛(움직임), ≥30억 초록 빛, ≥10억 보라, 그 밑 그대로. 반지 상자 = 하늘색 테두리, 기록하면 결과(리4/컨4) 가격 등급으로 채움. 기록하면 채움 = 테두리 등급 색(움직이는 등급은 같은 색 반짝임).
+1. `src/app.js` (`dropOpen` 위): `priceTier(p)`, `tierP(k)` = `admPriceOf(priceId(k))`(공용 시세, 수익 기록 칸과 같은 값), `tierCls(bd,fill)` → 클래스 `tz t-<aur|gold|grn|pur|sky> f-<등급> tza(움직임)`, `dropTierCls(c,b,k,got)`. `dropsHtml` 칩에 붙임. 홍옥 `rredBtn` 은 그대로(zosu-b234 '옆 칩과 같은 모양' 규칙·test_zosu_ringbtn 유지 — 처음엔 하늘색을 붙였다가 그 테스트가 실패해 되돌림). 반지 상자 채움 = 기록한 결과 중 리4·컨4 비싼 쪽(꽝·결과 미기록 = 채움 없음). 시세 없음/10억 미만 = 예전 그대로(.s-세트 색·.got 초록).
+2. `src/extra.css` 끝 'b239': 3겹 배경(채움 padding-box / 패널 / 테두리 그라데이션 border-box), `:root` 접두 + !important 로 라이트 테마 칩 배경 규칙보다 우선. `tzShift` 3.2초 좌우 흐름, `prefers-reduced-motion` = 정지. 기록 글자 = 다크 흰 글자+그림자, 라이트 진한 글자. 체크 표시(::after)·홍옥 버튼 규칙 그대로.
+3. 테스트: 신규 tests/test_b239.py (등급별 클래스·움직임·미기록 채움 없음·기록 채움·반지 리4/컨4/꽝·라이트·reduced-motion; `MBT_SHOTDIR`, `MBT_ROOT`=변경 전 사진만), run_all.sh 등록.
+4. 사진(모의 시세: 칠흑 상자 1500억·익셉 해머 200억·신념 연마석 50억·소울 에테르1 15억·리4 150억): /workspace/b239/before_{dark,light}_{unrec,rec}.png · after_{dark,light}_{unrec,rec}.png.
+5. **'블빵 기록하기' 버튼 조사 (다시 넣지 않음)**: HANDOFF·git log -S/-G('블빵 기록', '블빵기록', askBbang) 결과, '블빵 기록하기'라는 버튼은 **어느 빌드에도 없었음**. '블빵 기록' 글자는 b52(6529485, 2026-10-11 01:04 KST) 득템 분석 블빵 카드 빈 칸 문구 '아직 블빵 기록이 없어요'(지금도 그대로)뿐. 블빵 기록 UI = b49(843171b, 2026-10-11 00:18 KST) `askBbang()` 창(블빵승리/블빵패배/분배/취소) — 보스 파티 인원 2인 이상에서 드롭 칩을 누르면 뜸(b50 큰 아이콘+이름, 반지 상자는 b51~ 항상 분배). **지금도 그대로 있음**(src/app.js askBbang, changeDrop·칠흑·반지 결과 경로). 1인 보스면 창이 안 뜨는 게 정상. 비슷한 이름의 [기록하기] = '수익을 기록할까요?'(askRev) 버튼.
+
 ## b238 (2026-10-21 KST) — 관리자 창 본계정 줄: '등록' → '최근 갱신'
 사용자 요청: 본계정 줄 = `가입 : YYYY-MM-DD · 최근 갱신 : M/D HH:MM` (hm()), 정보 줄의 '· 최근 갱신 …' 중복 제거.
 1. `src/app.js` `admJoinReg(u)`: 등록 대신 `u.syncAt`(= users.sync_click, 마지막으로 끝난 동기화; 없으면 '-'). last_sync_at 은 b235 배포 때 배포 시각으로 채워져 실제 동기화 시각이 아니므로 안 씀. 정보 줄은 '캐릭터 N · 데이터 NKB' 만. 부계정 줄('등록 날짜 : …') 그대로. Worker 의 regAt 은 계속 보내지만 화면엔 안 씀.

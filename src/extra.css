@@ -1801,3 +1801,23 @@ header .logo .logo-d{display:flex;align-items:center}
 .drop.rredbtn .rrbico img,.drop.rredbtn .rrbico .ric{width:20px!important;height:20px!important;object-fit:contain;margin:0}
 .drop.rredbtn .rrbt{white-space:nowrap}
 @media(max-width:470px){.drops .drop.rredbtn{display:none}}
+
+/* b239: 드롭 칩 가격 등급 — 테두리 = 3겹 배경(채움 / 패널 / 테두리 그라데이션). :root 를 붙여 라이트 테마 !important 칩 배경보다 우선 */
+:root .drop.tz{border:1px solid transparent!important;--fl:linear-gradient(transparent,transparent);--pn:var(--panel);
+  background:var(--fl) padding-box,linear-gradient(var(--pn),var(--pn)) padding-box,var(--bd) border-box!important;background-size:300% 100%,100% 100%,300% 100%!important;background-position:0% 50%,0 0,0% 50%!important}
+:root .drop.tz.got{box-shadow:none!important}
+:root .drop.t-pur{--bd:linear-gradient(#a45cff,#a45cff)}
+:root .drop.t-grn{--bd:linear-gradient(#34e89e,#34e89e);box-shadow:0 0 6px 1px rgba(52,232,158,.55),inset 0 0 4px rgba(52,232,158,.3)!important}
+:root .drop.t-gold{--bd:linear-gradient(115deg,#8a5600,#ffcf4a,#fff6cf,#e3a21a,#8a5600,#ffcf4a,#fff6cf,#e3a21a,#8a5600);box-shadow:0 0 6px rgba(255,200,70,.45)}
+:root .drop.t-aur{--bd:linear-gradient(115deg,#2ff3c3,#4aa3ff,#a66bff,#ff62c8,#ffd25e,#2ff3c3,#4aa3ff,#a66bff,#ff62c8);box-shadow:0 0 7px rgba(140,140,255,.5)}
+:root .drop.t-sky{--bd:linear-gradient(#5cc8ff,#5cc8ff)}
+:root .drop.t-sky.got{box-shadow:0 0 5px rgba(92,200,255,.45)!important}
+:root .drop.f-pur{--fl:linear-gradient(rgba(164,92,255,.34),rgba(164,92,255,.34))}
+:root .drop.f-grn{--fl:linear-gradient(rgba(52,232,158,.28),rgba(52,232,158,.28))}
+:root .drop.f-gold{--fl:linear-gradient(115deg,rgba(255,186,40,.16),rgba(255,226,130,.42),rgba(255,248,215,.55),rgba(227,162,26,.22),rgba(255,186,40,.16),rgba(255,226,130,.42),rgba(255,248,215,.55),rgba(227,162,26,.22),rgba(255,186,40,.16))}
+:root .drop.f-aur{--fl:linear-gradient(115deg,rgba(47,243,195,.28),rgba(74,163,255,.32),rgba(166,107,255,.34),rgba(255,98,200,.3),rgba(255,210,94,.28),rgba(47,243,195,.28),rgba(74,163,255,.32),rgba(166,107,255,.34),rgba(255,98,200,.3))}
+:root .drop.tz.got .dn{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55)}
+[data-theme=light] .drop.tz.got .dn{color:#2b2118!important;text-shadow:0 0 3px rgba(255,255,255,.8)}
+:root .drop.tza{animation:tzShift 3.2s linear infinite alternate}
+@keyframes tzShift{from{background-position:0% 50%,0 0,0% 50%}to{background-position:100% 50%,0 0,100% 50%}}
+@media(prefers-reduced-motion:reduce){:root .drop.tza{animation:none!important}}
