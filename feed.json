@@ -1,33 +1,33 @@
 {
  "version": 1,
- "updatedAt": "2026-10-22T07:09:49+09:00",
+ "updatedAt": "2026-10-22T07:43:13+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": false,
-   "checkedAt": "2026-10-22T07:09:24+09:00",
+   "checkedAt": "2026-10-22T07:42:51+09:00",
    "lastOkAt": "2026-10-22T04:21:51+09:00",
    "error": "HTTP 400 https://open.api.nexon.com/maplestory/v1/notice {\"error\":{\"name\":\"OPENAPI00010\",\"message\":\"Please wait until the game maintenance is finished\"}}"
   },
   "patch": {
    "label": "패치내역",
-   "ok": true,
-   "checkedAt": "2026-10-22T07:09:25+09:00",
+   "ok": false,
+   "checkedAt": "2026-10-22T07:42:51+09:00",
    "lastOkAt": "2026-10-22T07:09:25+09:00",
-   "error": ""
+   "error": "HTTP 400 https://open.api.nexon.com/maplestory/v1/notice-update {\"error\":{\"name\":\"OPENAPI00010\",\"message\":\"Please wait until the game maintenance is finished\"}}"
   },
   "test": {
    "label": "테섭",
    "ok": false,
-   "checkedAt": "2026-10-22T07:09:26+09:00",
+   "checkedAt": "2026-10-22T07:42:53+09:00",
    "lastOkAt": "2026-10-22T03:45:32+09:00",
    "error": "HTTP 403 https://maplestory.nexon.com/Testworld/News/Update <!doctype html>\n<html lang=\"ko-kr\">\n<head>\n<meta charset=\"UTF-8\">\n<title>NEXON</title>\n<style>\n.wrap{\n\t\tdisplay:flex;\n\t\tjustify-content:center;\n\t\talign-items:ce"
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-10-22T07:09:49+09:00",
-   "lastOkAt": "2026-10-22T07:09:49+09:00",
+   "checkedAt": "2026-10-22T07:43:13+09:00",
+   "lastOkAt": "2026-10-22T07:43:13+09:00",
    "error": ""
   }
  },
