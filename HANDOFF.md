@@ -1872,3 +1872,11 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - **320px 헤더**: src/extra.css 끝 `@media (max-width:360px){header .hwrap{gap:8px;padding-left:10px;padding-right:10px} header .thbtn{width:30px;height:30px;margin-left:2px;font-size:14px}}` → 320px scrollWidth 329→320(테마 버튼 [295,329]→[280,310]), 390·1280px 그대로. 사진 /workspace/zosu/shots/hdr320-b233-{before,after}.png.
 - **테마 문구**: 5장·8장 '다크 전용·테마 버튼 없음' → 현재 상태(기본 다크 + 헤더 #themeBtn 라이트 전환, 새 UI 는 다크·라이트 둘 다 확인). b67 기록 항목은 남기고 'b179·b182 로 대체됨' 표시.
 - 전체 테스트(`CHROME=/usr/bin/google-chrome python3 tests/run_par.py`, 141개): 병렬에서 6개 실패 → 직렬 재시도에서 5개 통과(test_tracker12·14·18·28·63 = 동시 8개 부하로 타이밍 흔들림), test_tracker43 만 진짜 실패 → 위처럼 기대값 고친 뒤 단독 통과. 결과적으로 **141/141**.
+
+## zosu-ringbtn (2026-10-21) — 홍옥 반지 상자 버튼 = 아이콘 + '홍옥 반지 상자', 옆 아이콘만 칩 삭제 (14:24 KST~, 브랜치 zosu-hong)
+- 사용자 요청: '홍옥 반지 상자로 리4/컨4를 먹었을 경우 클릭' 버튼을 홍옥 반지 상자 아이콘과 같이 '홍옥 반지 상자' 버튼으로, 그 옆 홍옥 반지 상자 아이콘만 있는 칩은 지움.
+- `rredBtn`: 내용 = `.rrbico`(itemIcon('r_red'), 20px) + `.rrbt` '홍옥 반지 상자'(RRED_TXT). aria-label = '홍옥 반지 상자로 리4/컨4를 먹었을 경우 기록'. 동작(창 #rredModal·.got·다시 누르면 취소·data-tip)은 그대로. 예시 화면(캐릭터 없음)에서 눌러도 예전처럼 아무 일 없음.
+- 드롭 줄 off 칩: 주간 보스 + 캐릭터가 있을 때(=버튼이 있을 때) r_red 회색 아이콘 칩 안 그림. 버튼 없는 곳(캐릭터 없음 등)은 그대로.
+- CSS(extra.css 끝): .drop.rredbtn inline-flex·gap 4px, 470px 이하 `.drops .drop.rredbtn{display:none}` 다시 지정(.rredrow 쪽만 보임). 다크/라이트 색은 기존 규칙 그대로.
+- 테스트: tests/test_zosu_ringbtn.py(9463, 1600/390 × 다크/라이트, 예시 화면) + test_b229_rred TXT 갱신, test_b229. 사진: /workspace/zosu/shots/ringbtn-{before,after}-{1600,390}.png
+- zosu-b234 병합(2026-10-21 14:39~14:41 KST): zosu-testfix-b233 + origin/zosu-hong. 충돌 = src/extra.css(두 블록 다 둠), tests/run_all.sh(zosu_bgkey·zosu_ringbtn 둘 다), index.html(build.py 로 다시 만듦). test_b229_rred 는 자동 병합(빈 포트 + 새 버튼 글자 '홍옥 반지 상자'). 이 섹션은 맨 위 규칙 앞에서 여기(끝)로 옮김. test_zosu_ringbtn 고정 포트 9463 → _tutil 빈 포트. 관련 테스트 6개(test_zosu_ringbtn·test_b229_rred·test_b229·test_tracker12·test_zosu_bgkey·test_tracker43) 통과.

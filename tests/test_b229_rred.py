@@ -17,7 +17,7 @@ srv=_tutil.Popen([sys.executable,'-m','http.server',PORT,'--bind','127.0.0.1'],c
 for _ in range(50):
     try: urllib.request.urlopen(f'http://127.0.0.1:{PORT}/index.html',timeout=1); break
     except Exception: time.sleep(0.1)
-TXT='홍옥 반지 상자로 리4/컨4를 먹었을 경우 클릭'
+TXT='홍옥 반지 상자'
 LINE="""lb=>{const r=[...document.querySelectorAll('.revpanel > .rp-line')].find(x=>x.querySelector('.rplb')?.textContent===lb); return r?{x:r.querySelector('.rpx')?.textContent||'',t:r.innerText.replace(/\\s+/g,' ')}:null}"""
 BTN="""()=>[...document.querySelectorAll('[data-rred]')].filter(b=>b.getClientRects().length).map(b=>{const r=b.getBoundingClientRect(), p=b.parentElement.getBoundingClientRect(), last=b===b.parentElement.lastElementChild&&(b.closest('.rredrow')?b.closest('.boss').lastElementChild===b.closest('.rredrow'):true);
   return {id:b.dataset.rred,row:!!b.closest('.rredrow'),t:b.textContent,one:b.getClientRects().length===1&&r.height<34,fit:b.scrollWidth<=b.clientWidth+0.5,inside:r.right<=p.right+0.5&&r.left>=p.left-0.5,last}})"""

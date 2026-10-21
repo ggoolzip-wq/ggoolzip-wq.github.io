@@ -1795,3 +1795,10 @@ header .logo .logo-d{display:flex;align-items:center}
   header .hwrap{gap:8px;padding-left:10px;padding-right:10px}
   header .thbtn{width:30px;height:30px;margin-left:2px;font-size:14px}
 }
+
+/* zosu-hong: 홍옥 반지 상자 버튼 = 아이콘 + 이름 */
+.drop.rredbtn{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 4px}
+.drop.rredbtn .rrbico{display:inline-flex;width:20px;height:20px;flex:none}
+.drop.rredbtn .rrbico img,.drop.rredbtn .rrbico .ric{width:20px!important;height:20px!important;object-fit:contain;margin:0}
+.drop.rredbtn .rrbt{white-space:nowrap}
+@media(max-width:470px){.drops .drop.rredbtn{display:none}}
