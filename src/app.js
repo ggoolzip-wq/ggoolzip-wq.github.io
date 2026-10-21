@@ -629,7 +629,7 @@ function save(){
   if(typeof svKeysSoon==='function') svKeysSoon(); // b62: 서버 모드 — 키(부계정·예비)만 바뀐 것도 바로 금고에 (키는 내용 비교에서 빠져 있어 [저장]이 안 생김)
 }
 const price = (b,diff) => { const k=priceKey(b,diff); return (k in S.settings.prices)?S.settings.prices[k]:(PRICE_CONFIG[k]||0); };
-const activeChar = () => { const c=S.characters.find(c=>c.id===S.activeId); return c&&charShown(c)?c:vchars()[0]; };
+const activeChar = () => { const c=S.characters.find(c=>c.id===S.activeId); return c&&charShown(c)?c:activeChars()[0]; };
 const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
 const worldOf = c => c.world || '월드 미지정';
 
@@ -642,7 +642,7 @@ const nextWeekId = w => dayId(Date.parse(w+'T00:00:00+09:00')+7*864e5);
 const nextMonthId = m => { const [y,mm]=m.split('-').map(Number); return mm===12?`${y+1}-01`:`${y}-${pad(mm+1)}`; };
 function missPack(list){ return {n:list.reduce((a,x)=>a+x.n,0), meso:list.reduce((a,x)=>a+x.meso,0), list}; }
 function missNow(kind){ const list=[];
-  vchars().forEach(c=>{ const r=remainingWeekly(c), l=kind==='w'?r.list:r.mon; if(l.length) list.push({name:c.name,n:l.length,meso:l.reduce((a,x)=>a+x.value,0)}); });
+  S.characters.forEach(c=>{ const r=remainingWeekly(c), l=kind==='w'?r.list:r.mon; if(l.length) list.push({id:c.id,name:c.name,n:l.length,meso:l.reduce((a,x)=>a+x.value,0)}); }); // zosu-apikey: 전체 저장(id 포함), 화면에서 activeMiss 로 거름
   return missPack(list); }
 function missRecord(kind,id,pk,extra){ const arr=kind==='w'?(S.missW||(S.missW=[])):(S.missM||(S.missM=[])), f=kind==='w'?'week':'month';
   if(!id||arr.some(x=>x[f]===id)) return false;
@@ -650,10 +650,10 @@ function missRecord(kind,id,pk,extra){ const arr=kind==='w'?(S.missW||(S.missW=[
 // 며칠/몇 주 안 열었을 때: 저장된 주간 기록(history: 캐릭터별 클리어 보스)으로 지난 주들을 채움 (보스 목록·가격은 지금 설정 기준이라 근사값)
 function missBackfill(){ let n=0; const cur=weekId(), lim=S.settings.weeklyLimit;
   for(const h of S.history||[]){ if(!h.week||h.week>=cur||(S.missW||[]).some(x=>x.week===h.week)) continue; const list=[];
-    for(const p of h.perChar||[]){ const c=S.characters.find(x=>x.id===p.id); if(!c||!charShown(c)) continue; // b82
+    for(const p of h.perChar||[]){ const c=S.characters.find(x=>x.id===p.id); if(!c) continue; // zosu-apikey: 숨은 캐릭터도 id 와 함께 저장, 화면에서 activeMiss 로 거름
       const top=expectedAll(c).slice(0,lim), got=new Set((p.bosses||[]).map(t=>String(t).split('(')[0]));
       const miss=top.filter(x=>!got.has(x.name)).slice(0,Math.max(0,top.length-(+p.count||0)));
-      if(miss.length) list.push({name:p.name||c.name,n:miss.length,meso:miss.reduce((a,x)=>a+x.value,0)}); }
+      if(miss.length) list.push({id:c.id,name:p.name||c.name,n:miss.length,meso:miss.reduce((a,x)=>a+x.value,0)}); }
     if(missRecord('w',h.week,missPack(list),{approx:true})) n++; }
   return n; }
 function missSync(){ if(typeof SV_ON!=='undefined'&&SV_ON&&!pend) setTimeout(()=>{ try{ if(svTok()&&gdMeta.on) svSaveNow(); }catch(e){} },1500); }
@@ -686,8 +686,8 @@ let chartUid=0;
   const start=()=>{ scan(document); new MutationObserver(ms=>{ for(const m of ms) for(const n of m.addedNodes) if(n.nodeType===1){ if(n.matches?.('.chart.lux')) scan(n.parentNode); else scan(n); } }).observe(document.body,{childList:true,subtree:true}); };
   if(document.body) start(); else document.addEventListener('DOMContentLoaded',start); })();
 const missIcon = '<span class="missic" aria-hidden="true">!</span>', missIconM = '<span class="missic red" aria-hidden="true">!</span>';
-function missHtml(){ return `<div class="card"><h2>${missIcon} 지금까지 빠뜨린 보스메소는? (주간 Ver)</h2>${missChart(S.missW||[],'w')}</div>
-  <div class="card"><h2>${missIconM} 지금까지 빠뜨린 보스메소는? (월간 Ver)</h2>${missChart(S.missM||[],'m')}</div>`; }
+function missHtml(){ return `<div class="card"><h2>${missIcon} 지금까지 빠뜨린 보스메소는? (주간 Ver)</h2>${missChart((S.missW||[]).map(r=>activeMiss(r)),'w')}</div>
+  <div class="card"><h2>${missIconM} 지금까지 빠뜨린 보스메소는? (월간 Ver)</h2>${missChart((S.missM||[]).map(r=>activeMiss(r)),'m')}</div>`; }
 
 /* ---------- 리셋 처리 ---------- */
 function resetCore(){
@@ -916,6 +916,16 @@ const vchars = () => S.characters.filter(charShown);
  * 저장된 기록(S.history·monthHistory)은 지우지 않고 볼 때마다 캐릭터 id 로 걸러 합계를 다시 계산 → 키를 다시 넣으면 합계도 그대로 돌아옴.
  * (b72 의 '지난 기록은 숨긴 캐릭터 것도 합산' 결정을 대체. 지금 목록에 없는(삭제된) 캐릭터의 기록도 빠짐) */
 const visibleCharIds = () => new Set(vchars().map(c=>c.id));
+/* zosu-apikey: 공용 필터 헬퍼 — 새 탭·집계는 이것만 쓰면 키 삭제(키 없음·goneAccs) 캐릭터가 자동 제외. 저장 데이터는 안 지움(키 다시 넣으면 복귀).
+ * activeChars() = 보이는 캐릭터 목록 · activeIds() = 그 id Set · activeRecords(h) = 기록 1개(perChar) 걸러 합계 다시 계산 · activeMiss(r) = 빠뜨린 보스메소 기록 1개 거름 */
+const activeChars = () => vchars();
+const activeIds = () => visibleCharIds();
+const activeRecords = (h,ids=activeIds()) => visHist(h,ids);
+function activeMiss(r,ids=activeIds()){ const list=r.list||[]; // 예전 기록은 id 없이 이름만 → 숨은 캐릭터 이름이고 보이는 캐릭터 중엔 없으면 제외
+  const vis=new Set(S.characters.filter(c=>ids.has(c.id)).map(c=>c.name)), hid=new Set(S.characters.filter(c=>!ids.has(c.id)).map(c=>c.name));
+  const keep=list.filter(x=>x&&(x.id?ids.has(x.id):!(hid.has(x.name)&&!vis.has(x.name))));
+  if(keep.length===list.length) return r;
+  return {...r, list:keep, n:keep.reduce((a,x)=>a+(+x.n||0),0), meso:keep.reduce((a,x)=>a+(+x.meso||0),0)}; }
 function visHist(h,ids=visibleCharIds()){ const pc=(h.perChar||[]).filter(p=>p&&p.id&&ids.has(p.id));
   if(pc.length===(h.perChar||[]).length) return h;
   return {...h, perChar:pc, total:pc.reduce((x,p)=>x+(+p.meso||0),0), cleared:pc.reduce((x,p)=>x+((p.bosses||[]).length||+p.count||0),0),
@@ -1304,13 +1314,13 @@ async function refreshGuild(force){
 }
 /* '+ 길드 추가' 후보: 보이는 캐릭터의 (월드, 길드). 길드 정보가 아직 없는 캐릭터는 character/basic으로 한 번 채움 */
 async function fillGuildCands(){
-  if(guildCandBusy) return; const todo=vchars().filter(c=>c.guildAt==null&&c.ocid&&accOf(c)?.key); if(!todo.length) return;
+  if(guildCandBusy) return; const todo=activeChars().filter(c=>c.guildAt==null&&c.ocid&&accOf(c)?.key); if(!todo.length) return;
   guildCandBusy=true; renderTabView();
   try{ for(const c of todo){ try{ await fetchBasic(c,accOf(c).key); }catch(e){ if(e.code==='OPENAPI00007'||e.status===429||e.code==='NETWORK') break; } } save(); }
   finally{ guildCandBusy=false; renderTabView(); }
 }
 function guildCands(){ const have=new Set(guildList().map(gKey)), m=new Map();
-  for(const c of vchars()) if(c.guild&&c.world){ const G={world:c.world,name:c.guild}, k=gKey(G); if(have.has(k)) continue; const e=m.get(k)||{...G,chars:[]}; e.chars.push(c.name); m.set(k,e); }
+  for(const c of activeChars()) if(c.guild&&c.world){ const G={world:c.world,name:c.guild}, k=gKey(G); if(have.has(k)) continue; const e=m.get(k)||{...G,chars:[]}; e.chars.push(c.name); m.set(k,e); }
   return [...m.values()]; }
 /* 60초 타이머·탭 열기·화면 복귀 시 호출: 열려 있는 탭만 갱신 */
 /* b206: 왼쪽 캐릭터 목록에서 캐릭터 클릭 = 어느 탭에 있든(라이브 포함) 이번 주 보스 탭으로 — 탭 버튼과 같은 정리(디지털 숫자 다시 세기·마지막 탭 기억). 바뀌었으면 true */
@@ -1328,7 +1338,7 @@ function tabTick(){
 const SURO_ICON='data:image/webp;base64,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'; // 수로 보스 '아르카누스' (MapStory Fandom Wiki Mob_Arcanus.png, 얼굴 위주 잘라 64px)
 let suroPick=false;
 function suroIds(){ const st=S.settings; if(!Array.isArray(st.suroChars)) st.suroChars=S.characters.filter(c=>c.isMain).map(c=>c.id); return st.suroChars; }
-const suroChars=()=>{ const ids=suroIds(); return vchars().filter(c=>ids.includes(c.id)).sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id)); };
+const suroChars=()=>{ const ids=suroIds(); return activeChars().filter(c=>ids.includes(c.id)).sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id)); };
 function renderTabView(){ if(!vchars().length) return; if(tab==='guild') renderGuild(); }
 const hhmm = t => { const d=kst(t); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
 const num = n => (Number(n)||0).toLocaleString('ko-KR');
@@ -1385,7 +1395,7 @@ function renderGuild(){
     return `<div class="grow-r">${avatar(c)}<div class="grow"><div class="nm">${esc(c.name)}</div><div class="meta">Lv.${esc(c.level||'?')} · ${esc(c.job||'')}</div></div>
       ${!schedOk(c)?'<span class="muted tiny">API 키 미연결</span>':!x?`<span class="muted tiny">${dqBusy?'불러오는 중…':'대기 중…'}</span>`:!has?`<span class="warnc tiny" title="${esc(x.msg||'')}">⚠ 조회 실패</span>`
        :`<div class="gsc main"><span class="muted tiny">지하 수로</span><b>${gg.suro?num(gg.suro.now):'-'}</b></div>`}<button class="surodel" data-surodel="${esc(c.id)}" title="목록에서 제거" aria-label="${esc(c.name)} 제거">✕</button></div>`; };
-  const cand=vchars().filter(c=>!suroIds().includes(c.id));
+  const cand=activeChars().filter(c=>!suroIds().includes(c.id));
   const pick=suroPick?`<div class="suropick">${cand.length?cand.map(c=>`<label class="surocand">${avatar(c)}<input type="checkbox" value="${esc(c.id)}"><span><b>${esc(c.name)}</b> <span class="muted tiny">Lv.${esc(c.level||'?')} · ${esc(c.job||'')}</span></span></label>`).join(''):'<div class="muted">추가할 수 있는 캐릭터가 없습니다.</div>'}
 </div>`:'';
   const sbtns=suroPick?`<span class="pickbtns"><button class="btn sm plain" id="suroCancel">취소</button><button class="btn sm primary" id="suroOk"${cand.length?'':' disabled'}>추가</button></span>`:'';
@@ -1584,7 +1594,7 @@ function renderHeaderSync(){ if(!syncing&&TOP_PIN) pageTop(); /* b223: 첫 동�
 function worldGroups(){
   const groups=new Map();
   for(const w of S.worldOrder) groups.set(w,[]);
-  for(const c of vchars()){ const w=worldOf(c); if(!groups.has(w)) groups.set(w,[]); groups.get(w).push(c); }
+  for(const c of activeChars()){ const w=worldOf(c); if(!groups.has(w)) groups.set(w,[]); groups.get(w).push(c); }
   for(const [w,cs] of groups) if(!cs.length) groups.delete(w);
   return groups;
 }
@@ -1823,7 +1833,7 @@ function renderBoss(){
       ${(!pend&&pendDoneAt&&Date.now()-pendDoneAt<3000)?'<span class="pdone" role="status">저장이 완료되었습니다.</span>':''}${(on=>`<button class="pbtn prevall on" id="revAllBtn" type="button">수익 기록 전체 수정</button><button class="pbtn pcancel${on?' on':''}" id="pendCancel" ${on?'':'disabled'}>취소</button><button class="pbtn psave${on?' on':''}" id="pendSave" ${on?'':'disabled'}>저장</button>`)(!!pend)}
     </div>
     <div class="boss-list">${shown.length?shown.map(b=>bossRow(c,b)).join(''):`<div class="empty muted">${c.ocid?`게임 스케줄러에 등록된 ${TYPE_LABEL[bossFilter]}가 없습니다.<br>게임에서 보스를 스케줄러에 등록한 뒤 동기화(↻)하면 자동으로 표시돼요.`:`넥슨 API로 불러온 캐릭터만 보스가 자동 표시돼요.<br>캐릭터 편집에서 API 키 계정에 연결해 주세요.`}</div>`}</div>
-   </div></div><div class="rcol">${COMMITTED(()=>revPanel(allRevenue(vchars()),activeChar()))}${priceCard()}<div class="card resetcard"><div class="muted" id="resetInfo"></div></div></div></div>`;
+   </div></div><div class="rcol">${COMMITTED(()=>revPanel(allRevenue(activeChars()),activeChar()))}${priceCard()}<div class="card resetcard"><div class="muted" id="resetInfo"></div></div></div></div>`;
 }
 /* b58: 월간 보스는 '잡은 주'(c.monthly[slot] = 클리어한 주 key)가 현재 주일 때만 이번 주 수익 표시에 합산 — 표시 전용, allRevenue/weekSummary/monthSummary/history 는 건드리지 않음(이중 계산 방지) */
 const pWeekMonthly = p => { const l=p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week); return {n:l.length, meso:l.reduce((t,x)=>t+x.value,0), any:p.r.mlist.some(x=>p.c.monthly[x.slot]===S.period.week)||Object.values(p.c.monthly||{}).some(w=>w===S.period.week)}; };
@@ -1832,7 +1842,7 @@ const pWeekMonthly = p => { const l=p.r.mlist.filter(x=>x.counted&&p.c.monthly[x
 const revSum = m => Object.values(m||{}).reduce((t,r)=>t+(r&&+r.m>0?+r.m:0),0);
 const pItemSale = c => revSum(c.drev) + Object.entries(c.mdrev||{}).reduce((t,[k,r])=>t+(r&&+r.m>0&&c.monthly?.[k.split('|')[0]]===S.period.week?+r.m:0),0);
 // b112: 이번 주 가장 비싸게 판 아이템의 아이콘 (보이는 캐릭터, pItemSale 과 같은 범위). 판 게 없으면 아이콘 없음
-function topSaleIco(){ let best=null; for(const c of vchars()){ const L=[...Object.entries(c.drev||{}),...Object.entries(c.mdrev||{}).filter(([k])=>c.monthly?.[k.split('|')[0]]===S.period.week)];
+function topSaleIco(){ let best=null; for(const c of activeChars()){ const L=[...Object.entries(c.drev||{}),...Object.entries(c.mdrev||{}).filter(([k])=>c.monthly?.[k.split('|')[0]]===S.period.week)];
     for(const [k,r] of L) if(r&&+r.m>0&&(!best||+r.m>best.m)) best={m:+r.m,i:r.i||k.split('|')[1]}; }
   try{ return best?`<span class="rpsico" title="${esc(lootName(best.i))}">${lootIco(best.i)}</span>`:''; }catch(e){ return ''; } }
 /* b118: 이번 주 수익 보스 아이콘 순서 = 보스 드랍 표 순서(BOSSES 순서 = 인게임 스케줄러 순서), 검은 마법사는 항상 맨 오른쪽 */
@@ -1845,7 +1855,7 @@ function charSaleLine(c){ const sale=pItemSale(c); if(!(sale>0)) return ''; let 
   return `<div class="rp-cl rp-sl">${ico}<span>이번주 아이템 판매금 ${meso(sale)}</span></div>`; }
 /* b121: 이번 주 반지 상자 줄 — 가장 많이 얻은 상자 아이콘(같으면 아이템 순서 = 생명→백옥→흑옥→녹옥→홍옥) · 상자 수 · 결과(리4·컨4·연마석·꽝, 0개 숨김). 범위 = '이번주 획득 아이템'과 같은 이번 주 주간 드롭 */
 function weekRingLine(){ const by={}, t={r4:0,c4:0,gl:0,x:0}; let n=0;
-  for(const c of vchars()){ const d=charDrops(c,'weekly'); for(const [k,v] of Object.entries(d.items)){ const {it}=parseIK(k); if(!isRing(it)) continue; n+=+v; by[it]=(by[it]||0)+(+v); const o=outTally(d.outcomes[k],v); for(const q in t) t[q]+=o[q]; } }
+  for(const c of activeChars()){ const d=charDrops(c,'weekly'); for(const [k,v] of Object.entries(d.items)){ const {it}=parseIK(k); if(!isRing(it)) continue; n+=+v; by[it]=(by[it]||0)+(+v); const o=outTally(d.outcomes[k],v); for(const q in t) t[q]+=o[q]; } }
   if(!n) return ''; const top=Object.keys(by).sort((x,y)=>by[y]-by[x]||itemCmp(x,y))[0];
   // b213: 결과 = 위아래 줄 숫자처럼 오른쪽 숫자 칸(.rpn), 리4·컨4 앞에 리스트레인트·컨티뉴어스 링 아이콘(글씨 높이)
   // b214: 리4·컨4·연마석 = 아이콘 + xN (글자 없음, 말풍선 = 이름), 꽝 = 글자 '꽝 xN'. 개수 표기 xN
@@ -1855,7 +1865,7 @@ function weekRingLine(){ const by={}, t={r4:0,c4:0,gl:0,x:0}; let n=0;
 /* b185: 남은 결정석 — 주간 = remainingWeekly(c).list(남은 칸만큼, 안 잡은 보스 1인당 가격 상위), 검마 = 이번 달 안 잡은 검은 마법사. 보이는 캐릭터만(규칙 9), 0이면 줄 없음 */
 const leftOf = c => { const r=remainingWeekly(c), bm=r.mon.filter(x=>x.slot==='blackmage'); return {w:r.list.reduce((t,x)=>t+x.value,0), m:bm.reduce((t,x)=>t+x.value,0), wn:r.list.length, mn:bm.length}; }; // b221: wn = 남은 주간 결정석 개수(캐릭터당 12칸 − 잡은 수, 켜 둔 안 잡은 보스만큼)
 const leftLine = (cls,ico,lb,v,big,n) => v>0?(big?`<div class="muted rp-line rp-left ${cls}"><span class="rpl"><span class="rpg">${ico}${rpLbl(lb,n)}</span></span><b class="rpn"><span class="tsmn">-${v.toLocaleString()}</span></b></div>`:`<div class="rp-cl rp-left ${cls}">${ico}<span>${lb} -${meso(v)}</span></div>`):'';
-function weekLeftLines(cs){ let w=0,m=0,wn=0,mn=0; for(const c of cs){ if(!charShown(c)) continue; const o=leftOf(c); w+=o.w; m+=o.m; wn+=o.wn; mn+=o.mn; }
+function weekLeftLines(cs){ let w=0,m=0,wn=0,mn=0; const VI=activeIds(); for(const c of cs){ if(!charShown(c)||!VI.has(c.id)) continue; const o=leftOf(c); w+=o.w; m+=o.m; wn+=o.wn; mn+=o.mn; }
   return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',w,1)/* b230: 개수 표시 없음 */+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',m,1)/* b231: 개수 표시 없음 */; }
 function charLeftLines(c){ const o=leftOf(c); return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',o.w)+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',o.m); }
 function weekMonthly(a){ let n=0, meso=0; a.per.forEach(p=>p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week).forEach(x=>{ n++; meso+=x.value; })); return {n,meso}; }
@@ -1871,7 +1881,7 @@ function revPanel(a,cur){
   return `<aside class="revpanel card" aria-label="이번 주 수익 총합">
     <h2>${miniIcon('meso')} 이번 주 수익 총합</h2>
     <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
-    ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=vchars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+itemCnt(k,v,c.dropOut),0)+Object.entries(c.mdrops||{}).reduce((x,[k,v])=>x+(c.monthly?.[parseIK(k).slot]!==S.period.week?0:itemCnt(k,v,c.mdropOut)),0),0); // b121: 반지 상자 제외(아래 '반지 상자' 줄) — b226: 단 결과가 리4·컨4·연마석이면 셈(itemCnt) · b225: 이번 주에 잡은 검마 아이템(mdrops)도 셈 (판매 금액 pItemSale 과 같은 규칙)
+    ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=activeChars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+itemCnt(k,v,c.dropOut),0)+Object.entries(c.mdrops||{}).reduce((x,[k,v])=>x+(c.monthly?.[parseIK(k).slot]!==S.period.week?0:itemCnt(k,v,c.mdropOut)),0),0); // b121: 반지 상자 제외(아래 '반지 상자' 줄) — b226: 단 결과가 리4·컨4·연마석이면 셈(itemCnt) · b225: 이번 주에 잡은 검마 아이템(mdrops)도 셈 (판매 금액 pItemSale 과 같은 규칙)
       return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
     <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${rpLbl('주보 결정석')/* b230: 개수 표시 없음 */}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${rpLbl('검마 결정석')/* b232: 개수 표시 없음 */}</span></span><b class="rpn">${tsm('+'+wm.meso.toLocaleString())}</b></div>`:''}
     <div class="muted rp-line rp-sale rc-g"><span class="rpl"><span class="rpg">${topSaleIco()||'<span class="ric rpico0" aria-hidden="true"></span>'}${rpLbl('이번주 획득 아이템',n,1)}</span></span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
@@ -1888,7 +1898,7 @@ function revPanel(a,cur){
 // 보스+난이도별 가격 행 (싼 순서) — 보스 체크 탭 가격 카드
 let pcMine = localStorage.getItem('mapleBossTracker.pcMine')==='1';
 // 내가 잡는 보스만: 등록된 캐릭터 중 하나라도 켜 둔 보스+난이도 (난이도는 따로)
-const myBossKeys = () => new Set(vchars().flatMap(c=>BOSSES.filter(b=>c.bosses[b.id]?.enabled).map(b=>{ const d=c.bosses[b.id].diff; return priceKey(b,b.diffs.includes(d)?d:b.diffs[0]); })));
+const myBossKeys = () => new Set(activeChars().flatMap(c=>BOSSES.filter(b=>c.bosses[b.id]?.enabled).map(b=>{ const d=c.bosses[b.id].diff; return priceKey(b,b.diffs.includes(d)?d:b.diffs[0]); })));
 const priceRows = g => { const mine=pcMine?myBossKeys():null; return priceRows0(g).filter(r=>!mine||mine.has(r.k)); };
 const priceRows0 = g => BOSSES.filter(b=>b.type===g).flatMap(b=>b.diffs.map(d=>({b,d,k:priceKey(b,d),p:price(b,d)}))).sort((x,y)=>x.p-y.p);
 // b79: '마지막 확인' = KST 'MM.DD HH:MM' (예전 날짜만 있는 값은 'YYYY-MM-DD' 그대로)
@@ -1912,7 +1922,7 @@ function expParts(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit).red
 function fullExpected(c){ const x=expParts(c); return x.w+x.m; }
 /* b227: '패치 후 예상 주간 수익' = 주간 메소(감소율%) + 검마 메소(감소율%) — 합친 한 숫자 대신 따로. 검마를 안 잡는 캐릭터(합계도 검마 0) = 검마 줄 없음(b228) */
 function afterPatchHtml(){
-  const rows=vchars().map(c=>{ const a=expParts(c), b=withUpcoming(()=>expParts(c))||a; return {c,nw:a.w,nm:a.m,xw:b.w,xm:b.m}; }).filter(r=>r.nw||r.nm||r.xw||r.xm);
+  const rows=activeChars().map(c=>{ const a=expParts(c), b=withUpcoming(()=>expParts(c))||a; return {c,nw:a.w,nm:a.m,xw:b.w,xm:b.m}; }).filter(r=>r.nw||r.nm||r.xw||r.xm);
   const sum=k=>rows.reduce((s,r)=>s+(r[k]||0),0);
   const pct=(n,b)=>{ const d=n-b; return `<span class="pa-p ${d<0?'dn':d>0?'upx':''}">(${d>0?'+':d<0?'−':''}${b?Math.abs(d/b*100).toFixed(1):'0.0'}%)</span>`; };
   const part=(lb,n,b)=>(n||b)?`<span class="pa-k">${lb}</span> ${meso(n)} ${pct(n,b)}`:`<span class="pa-k">${lb}</span> <span class="pa-z">0 메소</span>`;
@@ -1990,11 +2000,11 @@ function bossRow(c,b){
  * 주간 수익 = 지난 주간 기록(S.history) + 이번 주 / 월간 = 월간 기록(S.monthHistory) + 이번 달 / ★득템 = 같은 기간 기록한 드롭 (아이템별 합계) */
 const REC_START='2026-10-08';
 function charRecords(){
-  const a=allRevenue(), R={};
+  const a=allRevenue(activeChars()), R={}, VI=activeIds(); // zosu-apikey: 보이는 캐릭터만
   const get=(id,name)=>R[id]||(R[id]={w:0,m:0,items:{},name});
   const addItems=(r,items)=>{ for(const [k,n] of Object.entries(items||{})){ const {it}=parseIK(k); if(ITEMS[it]&&+n>0) r.items[it]=(r.items[it]||0)+(+n); } };
-  (S.history||[]).filter(h=>String(h.week)>=REC_START).forEach(h=>(h.perChar||[]).forEach(p=>{ const r=get(p.id,p.name); r.w+=+p.meso||0; addItems(r,p.items); }));
-  (S.monthHistory||[]).filter(h=>String(h.month)>=REC_START.slice(0,7)).forEach(h=>(h.perChar||[]).forEach(p=>{ const r=get(p.id,p.name); r.m+=+p.meso||0; addItems(r,p.items); }));
+  (S.history||[]).filter(h=>String(h.week)>=REC_START).map(h=>activeRecords(h,VI)).forEach(h=>(h.perChar||[]).forEach(p=>{ const r=get(p.id,p.name); r.w+=+p.meso||0; addItems(r,p.items); }));
+  (S.monthHistory||[]).filter(h=>String(h.month)>=REC_START.slice(0,7)).map(h=>activeRecords(h,VI)).forEach(h=>(h.perChar||[]).forEach(p=>{ const r=get(p.id,p.name); r.m+=+p.meso||0; addItems(r,p.items); }));
   a.per.forEach(p=>{ const r=get(p.c.id,p.c.name); r.w+=p.r.meso; r.m+=p.r.monthMeso||0; addItems(r,charAllDrops(p.c).items); });
   return R;
 }
@@ -2015,10 +2025,10 @@ function renderSummary(){
 // (주간 기록 탭 · renderHistory 는 2026-10-10 삭제 — S.history 데이터는 '캐릭터 별 기록'·'총 수익' 탭이 계속 사용)
 /* 총 수익: 시작 주(S.startWeek)부터 저장된 모든 주간 기록 + 이번 주, 월간 보스는 별도 합계. 기록은 자동 삭제되지 않음 */
 function totalData(skipCur){
-  const VI=visibleCharIds(); // b82: 보이는 캐릭터만
-  const weeks0=[...S.history.slice().sort((a,b)=>a.week<b.week?-1:1).map(h=>({...visHist(h,VI),cur:false})),{...visHist(weekSummary(S.period.week),VI),cur:true}];
+  const VI=activeIds(); // b82: 보이는 캐릭터만 (zosu-apikey 헬퍼)
+  const weeks0=[...S.history.slice().sort((a,b)=>a.week<b.week?-1:1).map(h=>({...activeRecords(h,VI),cur:false})),{...activeRecords(weekSummary(S.period.week),VI),cur:true}];
   const weeks=skipCur?weeks0.filter(w=>!w.cur):weeks0; // b176: skipCur = 끝난 주만 (평균용)
-  const months0=[...S.monthHistory.map(m=>({...visHist(m,VI),cur:false})),{...visHist(monthSummary(S.period.month),VI),cur:true}];
+  const months0=[...S.monthHistory.map(m=>({...activeRecords(m,VI),cur:false})),{...activeRecords(monthSummary(S.period.month),VI),cur:true}];
   // b176: skipCur 이면 이번 주에 잡은 월간 보스(검마) 기록도 뺌 (mweeks 없으면 진행 중인 달 = 이번 주로 봄)
   const months=skipCur?months0.map(m=>({...m,perChar:(m.perChar||[]).filter(p=>!(p.mweeks&&p.mweeks.length?p.mweeks.includes(S.period.week):m.cur)),total:undefined})).map(m=>({...m,total:m.perChar.reduce((t,p)=>t+(+p.meso||0),0)})):months0;
   // b110: 아이템 판매값을 판 캐릭터(perChar)·그 기간(주간 기록 = 주간 보스 아이템, 월간 기록 = 검은 마법사 아이템)에 더함 — 저장된 기록은 그대로, 복사본만
@@ -2144,9 +2154,9 @@ function monthlyByWeek(T){
   return M; }
 function thisWeekChart(T){ // b135: 주간 메소 그래프 = 이번 주만, 목 0시(KST) 0 → 날짜별 누적. 시간 기록(c.wat, b135 부터)이 없는 처치·판매는 목요일에 합산
   const ws=weekStartMs(), dayOf=t=>t&&t>=ws?Math.min(6,Math.floor((t-ws)/864e5)):0, today=dayOf(Date.now());
-  const z=()=>[0,0,0,0,0,0,0], B=z(), Cr=z(), Sa=z(), Mn=z(), Mm=z(), vis=new Set(vchars().map(c=>c.id)); let known=0;
+  const z=()=>[0,0,0,0,0,0,0], B=z(), Cr=z(), Sa=z(), Mn=z(), Mm=z(); let known=0; // zosu-apikey: activeChars()
   const dd=ds=>ds?dayOf(Date.parse(ds+'T12:00:00+09:00')):0;
-  for(const c of S.characters) if(vis.has(c.id)){ const r=charRevenue(c), at=c.wat||{};
+  for(const c of activeChars()){ const r=charRevenue(c), at=c.wat||{};
     r.wlist.filter(x=>x.counted).forEach(x=>{ const i=dayOf(at[x.slot]); Cr[i]+=x.value; known+=x.value; });
     r.mlist.filter(x=>x.counted&&c.monthly[x.slot]===S.period.week).forEach(x=>{ const i=dd((c.mdate||{})[x.slot]); Cr[i]+=x.value; Mn[i]++; Mm[i]+=x.value; known+=x.value; });
     for(const [k,v] of Object.entries(c.drev||{})){ if(!v||!(+v.m>0)) continue; const i=dayOf(at[parseIK(k).slot]); Sa[i]+=+v.m; known+=+v.m; } }
@@ -2296,7 +2306,7 @@ function rankTable(kind,id,title,heads,rows,opt={}){
 rankPage.boss=1; rankPage.epic=1; rankPage.chaos=1; rankPage.miss=1;
 /* zosu-crystal: 결정석 보스왕 = 그 보스가 쌓아준 누적 메소 내림차순 → 같으면 난이도(익스트림>하드=카오스>노말>이지) → 처치 횟수 → 비싼 보스.
  * 키 삭제된 계정(goneAcc·키 없음 = charShown false)의 캐릭터는 visibleCharIds() 로 제외(규칙 9; totalData 의 visHist 와 같은 기준, 한 번 더 확인). */
-function bossKills(T){ const R={}, VI=visibleCharIds();
+function bossKills(T){ const R={}, VI=activeIds();
   const go=p=>{ if(!p||!p.id||!VI.has(p.id)) return; (p.bosses||[]).forEach((t,i)=>{ const m=/^(.+?)\((.+?)\)(?:\/(\d+)인)?/.exec(t); if(!m) return; const b=BOSSES.find(x=>x.name===m[1]); const d=DK[m[2]]; if(!b||!d) return;
     const k=b.id+'|'+d, o=R[k]||(R[k]={b,d,n:0,cry:0,sale:0,meso:0}); o.n++; const v=p.bvals&&p.bvals[i]!=null?+p.bvals[i]:Math.floor(price(b,d)/Math.max(1,+m[3]||1)); o.cry+=v||0; o.meso+=v||0; });
     // b110: 그 보스가 준 아이템의 판매값 (키 '보스|아이템', 난이도 = 그 기록의 보스 태그)

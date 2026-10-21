@@ -10,10 +10,22 @@
 5. **작업을 시작할 때마다** 번호 목록과 함께 **예상 소요 시간**도 사용자에게 알린다.
 6. **작업이 끝나면 테스트 결과를 사진으로 자동 전송** (2026-10-12 b70 사용자 요청): 매 작업 끝에 라이브 사이트에서 바뀐 것이 동작하는 모습을 **변경 전/후** 스크린샷으로 `/workspace/maple-boss-tracker/` 에 저장하고, 완료 보고에 그 경로를 넣어 사용자가 묻지 않아도 사진을 보내게 한다(변경 전 화면은 이전 커밋의 index.html 을 라이브 주소로 띄워 재현 가능 — b70 참고).
 7. **빈 칸 경고 = 빨간 테두리** (2026-10-12 b75 사용자 요청): 칸을 비워서 경고(빨간 글·알림)가 나오면 그 입력 칸에 `.inerr`(빨간 테두리)를 붙이고(`markEmpty(el)`), 사용자가 입력하면 바로 지운다(전역 input 리스너). 새 입력 칸·경고를 만들 때도 똑같이.
-8. **합계·표·차트는 보이는 캐릭터만** (2026-10-12 b82 사용자 요청): 모든 탭(지금·앞으로)의 합계·순위·표·차트는 `visibleCharIds()`(= `vchars()`, 키가 등록된 계정의 캐릭터 + 계정 없는 수동 캐릭터)에 든 캐릭터만 센다. 지난 기록은 `visHist(h)` 로 걸러 합계를 다시 계산(저장된 기록은 절대 지우지 않음 → 키를 다시 넣으면 합계 복귀). 새 집계 코드는 `totalData()` 를 쓰거나 같은 헬퍼를 쓸 것.
+8. **합계·표·차트는 보이는 캐릭터만** (2026-10-12 b82 사용자 요청): 모든 탭(지금·앞으로)의 합계·순위·표·차트는 `visibleCharIds()`(= `vchars()`, 키가 등록된 계정의 캐릭터 + 계정 없는 수동 캐릭터)에 든 캐릭터만 센다. 지난 기록은 `visHist(h)` 로 걸러 합계를 다시 계산(저장된 기록은 절대 지우지 않음 → 키를 다시 넣으면 합계 복귀). 새 집계 코드는 `totalData()` 를 쓰거나 같은 헬퍼를 쓸 것. **(zosu-apikey) 공용 헬퍼 `activeChars()`·`activeIds()`·`activeRecords(h)`·`activeMiss(r)` 만 쓸 것** — 아래 'zosu-apikey' 섹션.
 9. **작업 시간 측정** (2026-10-14 b107 사용자 요청): 작업을 시작한 시각부터 사용자에게 결과를 보낸 시각까지 항상 **한국 시간(KST)으로** 재서 완료 보고에 알린다(작업 시간·테스트 시간 비율도). 사용자가 말하지 않아도 매번.
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
+
+## zosu-apikey (2026-10-19, origin/main b220 위로 rebase) — 키 삭제된 계정 캐릭터 데이터 전부 제외 (공용 헬퍼)
+1. **공용 헬퍼**(`src/app.js`, `visibleCharIds()` 바로 아래): `activeChars()`(= vchars, 보이는 캐릭터 목록), `activeIds()`(= visibleCharIds, id Set), `activeRecords(h,ids)`(= visHist: 기록 1개의 perChar 를 걸러 total·cleared·crystals·items 다시 계산), `activeMiss(r,ids)`(빠뜨린 보스메소 기록 1개의 list 를 걸러 n·meso 다시 계산; 예전 기록은 id 없이 이름만 → 숨은 캐릭터 이름이고 보이는 캐릭터에 같은 이름이 없으면 제외). 기준 = `charShown`(키 없는 계정 또는 `settings.goneAccs`(b102) → 숨김). **새 탭·집계는 이 헬퍼만 쓸 것**(규칙 8). 저장 데이터는 안 지움 → 키 다시 넣으면(b219 재연결 포함) 복귀.
+2. **누출 → 고친 곳**
+   - **빠뜨린 보스메소 차트(주간·월간, 수익 분석 탭 `missHtml`·`missChart`, '총 누적' 포함)** — 저장된 `S.missW/missM` 를 그대로 그려, 기록 뒤 키를 지운 캐릭터의 손해가 점·말풍선·총 누적에 남음 → `activeMiss` 로 거름. (사진: 58억 → 1억)
+   - `missNow`(초기화 때 기록)·`missBackfill`: 이제 **모든 캐릭터를 id 와 함께 저장**(예전엔 그때 숨은 캐릭터를 아예 저장 안 해서 키를 다시 넣어도 복귀 불가), 화면에서 `activeMiss` 로 거름.
+   - `charRecords()`(캐릭터 별 기록): 지난 기록·이번 주를 전체 캐릭터로 합산하던 것 → `activeRecords`·`allRevenue(activeChars())`.
+3. **헬퍼로 바꾼 곳(동작 같음, 기준 하나로 통일)**: `totalData()`(visHist → activeRecords; 총 합계·주간 메소 그래프·메소왕·보스메소왕·결정석 보스왕·득템 분석·전체 주 목록·`doneAvgs`/`monthlyByWeek`/`lootSummary` 가 이걸 씀), `bossKills`(이중 확인), b135 `thisWeekChart`(이번 주 그래프, `S.characters`+vis Set → `activeChars()`), b185 `weekLeftLines`(이번 주 남은 결정석, charShown → activeIds), 이번 주 수익 패널 `revPanel(allRevenue(activeChars()))`, `topSaleIco`, 반지 상자 개수, 이번주 획득 아이템 수, `myBossKeys`, 결정석 가격 변동 예상 rows, 사이드바 `worldGroups`·`activeChar`, 길드 현황 `guildCands`·`fillGuildCands`·지하 수로 `suroChars`·수로 추가 후보.
+4. 확인만(거를 것 없음): 관리자 창 `renderAdmin` 은 서버 `/api/admin/users` 의 사용자별 대표 캐릭터·캐릭터 수만 표시(로컬 캐릭터 데이터 안 씀, server/worker.js 는 손대지 않음). 라이브 탭·피드(사료감지/패치/테섭)는 캐릭터 데이터 없음. 일퀘 현황 탭은 TABS 에 없음(b119 삭제; S.dq 설정만 보존). 동기화(keySync)는 원래 vchars 만.
+5. 그대로 둔 곳(데이터 보존용): `weekSummary`/`monthSummary`/`allRevenue()` 기본값(초기화 때 저장 = 전체 캐릭터), 동기화 충돌 카드의 캐릭터 수, 키 모달 `linkedOf`, b134 보스 복원, 길드 목록(`guildList`, 사용자가 추가한 길드 자체는 남음).
+6. 테스트: **tests/test_tracker103.py**(포트 8946, run_all.sh 등록; 처음 이름 test79 는 main 의 test_tracker79 와 겹쳐 바꿈) — 결정석/득템/보스/길드 탭 화면에 숨은 이름 없음, 총 합계·메소왕·보스왕·빠뜨린 보스메소(저장본 3명 유지·화면 1명)·charRecords·수익 패널·수로·관리자 창, 키 다시 넣으면 복귀, missNow id 저장. `MBT_ROOT`/`MBT_SHOT`(+`-miss.png` 카드만)/`MBT_NOCHECK` 지원.
+7. 사진(모의 데이터): 변경 전 = origin/main(b220) 빌드, 변경 후 = 이 브랜치. /workspace/zosu/shots/apikey-before.png · apikey-after.png (수익 분석 탭 전체), apikey-before-miss.png(빠뜨린 보스메소 총 누적 58억 = 키없는캐 50억·삭제계정캐 7억 포함) · apikey-after-miss.png(1억).
 
 ## b195 (2026-10-17) — 주간 메소 점: hover 때 안 커짐, hit 영역 = 점 자체 (03:43 KST)
 - perWeek 차트(`.linechart.wk`): 열 전체 투명 rect·b191 큰 hit 원(.dhit) 삭제, 말풍선 data-tip 을 점(`circle.wdot`)에 직접. `.lpt:hover circle` 확대 규칙을 wk 에서는 r 4(이번 주 5) 그대로로 덮음. 흐림·맥박은 `:has(.wdot:hover)`. 막대 hover(b186) 그대로.
