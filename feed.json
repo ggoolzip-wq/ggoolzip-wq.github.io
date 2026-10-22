@@ -1,33 +1,33 @@
 {
  "version": 1,
- "updatedAt": "2026-10-22T10:24:10+09:00",
+ "updatedAt": "2026-10-22T11:35:30+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": false,
-   "checkedAt": "2026-10-22T10:23:52+09:00",
+   "checkedAt": "2026-10-22T11:35:07+09:00",
    "lastOkAt": "2026-10-22T04:21:51+09:00",
    "error": "HTTP 400 https://open.api.nexon.com/maplestory/v1/notice {\"error\":{\"name\":\"OPENAPI00010\",\"message\":\"Please wait until the game maintenance is finished\"}}"
   },
   "patch": {
    "label": "패치내역",
-   "ok": false,
-   "checkedAt": "2026-10-22T10:23:53+09:00",
-   "lastOkAt": "2026-10-22T09:06:16+09:00",
-   "error": "HTTP 400 https://open.api.nexon.com/maplestory/v1/notice-update {\"error\":{\"name\":\"OPENAPI00010\",\"message\":\"Please wait until the game maintenance is finished\"}}"
+   "ok": true,
+   "checkedAt": "2026-10-22T11:35:09+09:00",
+   "lastOkAt": "2026-10-22T11:35:09+09:00",
+   "error": ""
   },
   "test": {
    "label": "테섭",
    "ok": true,
-   "checkedAt": "2026-10-22T10:23:54+09:00",
-   "lastOkAt": "2026-10-22T10:23:54+09:00",
+   "checkedAt": "2026-10-22T11:35:10+09:00",
+   "lastOkAt": "2026-10-22T11:35:10+09:00",
    "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-10-22T10:24:10+09:00",
-   "lastOkAt": "2026-10-22T10:24:10+09:00",
+   "checkedAt": "2026-10-22T11:35:30+09:00",
+   "lastOkAt": "2026-10-22T11:35:30+09:00",
    "error": ""
   }
  },
@@ -60,15 +60,15 @@
    {
     "id": "minor:150275",
     "title": "[패치완료] 10/8(목) ver1.2.419 마이너버전(8) 패치 (18:10 적용)",
-    "url": "https://maplestory.nexon.com/News/Notice/Notice/150275",
-    "date": "2026-10-08T18:11:00+09:00",
+    "url": "https://maplestory.nexon.com/News/Notice/All/150275",
+    "date": "2026-10-08T00:00:00+09:00",
     "src": "minor"
    },
    {
     "id": "minor:150249",
-    "title": "[패치완료] 10/2(금) ver1.2.419 마이너버전(7) 패치(15:01 적용)",
-    "url": "https://maplestory.nexon.com/News/Notice/Notice/150249",
-    "date": "2026-10-02T15:02:00+09:00",
+    "title": "(수정)[패치완료] 10/2(금)ver1.2.419 마이너버전(7) 패치(15:01 적용)",
+    "url": "https://maplestory.nexon.com/News/Notice/All/150249",
+    "date": "2026-10-02T00:00:00+09:00",
     "src": "minor"
    },
    {
