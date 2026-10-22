@@ -1,41 +1,41 @@
 {
  "version": 1,
- "updatedAt": "2026-10-22T13:19:41+09:00",
+ "updatedAt": "2026-10-22T14:31:24+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-10-22T13:19:21+09:00",
-   "lastOkAt": "2026-10-22T13:19:21+09:00",
+   "checkedAt": "2026-10-22T14:31:03+09:00",
+   "lastOkAt": "2026-10-22T14:31:03+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-10-22T13:19:21+09:00",
-   "lastOkAt": "2026-10-22T13:19:21+09:00",
+   "checkedAt": "2026-10-22T14:31:03+09:00",
+   "lastOkAt": "2026-10-22T14:31:03+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
    "ok": true,
-   "checkedAt": "2026-10-22T13:19:23+09:00",
-   "lastOkAt": "2026-10-22T13:19:23+09:00",
+   "checkedAt": "2026-10-22T14:31:04+09:00",
+   "lastOkAt": "2026-10-22T14:31:04+09:00",
    "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-10-22T13:19:41+09:00",
-   "lastOkAt": "2026-10-22T13:19:41+09:00",
+   "checkedAt": "2026-10-22T14:31:22+09:00",
+   "lastOkAt": "2026-10-22T14:31:22+09:00",
    "error": ""
   }
  },
  "state": {
   "watermarks": {
-   "notice": 150343,
+   "notice": 150346,
    "notice-event": 1404,
-   "notice-update": 814,
+   "notice-update": 815,
    "test": 202,
    "inven:5974": 7336462,
    "inven:2304": 48379,
@@ -57,6 +57,12 @@
    }
   ],
   "patch": [
+   {
+    "id": "update:815",
+    "title": "클라이언트 1.2.420 업데이트 안내",
+    "url": "https://maplestory.nexon.com/news/update/815",
+    "date": "2026-10-22T10:00:00+09:00"
+   },
    {
     "id": "minor:150275",
     "title": "[패치완료] 10/8(목) ver1.2.419 마이너버전(8) 패치 (18:10 적용)",
