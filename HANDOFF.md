@@ -2027,3 +2027,12 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 팝업 아래 기존 '기록 금액 : X (1인)' 미리보기(#rvPrev, b244)는 그대로 둠(test_b244 가 사용).
 - 테스트: tests/test_b249.py 새로(run_all 끝; 두 창 × solo/party × dark/light × 1280/390: 문구·색·크기·대비·창 안). test_b248/test_tracker80 은 금액을 .rval 에서 읽게, test_b248 팝업 위치 = 왼쪽 같은 줄 또는 바로 위. 전체 153개: tracker53(로그아웃 동기화) 만 직렬 재시도에서도 1번 실패 — 단독 재실행 통과, b248 에서도 같은 간헐 실패.
 - 사진 /workspace/b249/{before,after}_{editall,popup}_{solo,party}.png
+
+## b250 (2026-10-22 21:52~22:01 KST) 버그: 목 리셋 뒤 주간 보스 12개가 몇 개만 보임
+- 사용자 제보(21:51): 캐릭터 정보에 주간 보스 12개가 안 보임.
+- 원인(b242 회귀): applyScheduler 의 regNo(등록 'false') 판단이 **난이도 줄 단위**였음. 넥슨 scheduler/character-state 응답은 보스마다 모든 난이도 줄을 주고 등록한 난이도만 true(예: 스우 노말/하드 false, 익스트림 true) → 이미 켜진 등록 보스가 '해제됨'으로 꺼짐. 꺼진 보스는 다음 동기화 때 '새 등록(adds)'으로 다시 켜지고 켜진 건 또 꺼져서 동기화마다 12 ↔ 몇 개로 번갈아 바뀜. 리셋 전(잡은 보스)은 bossNext '빼기' 대기로 들어가 목 리셋 때 꺼짐.
+- 실서버 확인(MAPLE_ADMIN_KEY 로그인 → /api/state, 넥슨 응답은 본계정 키로 8캐릭터만): 등록 12인데 저장 상태 켜진 주간 = 림강혼망 0, 트딕이 3, zetking·랑트킹·린벨자 4, 타이니호프·브레이크드루 3, 부계정 캐릭터(14명)도 2~5. Drcancel 은 12 정상(이번 주 응답 아님). 이번 주 날짜 키·리셋 경계 이상 없음(period.week 2026-10-22, bossNext 없음).
+- 수정: 루프 뒤 regYes 에 있는 보스는 regNo 에서 빼고, clrEdit 의 {enabled:false}(잡은 보스 빼기 대기)도 지움. 진짜 해제(모든 난이도 false)는 b242 그대로.
+- 서버 데이터는 고치지 않음 — 사용자가 사이트를 열어 동기화하면 등록 기준으로 12개로 돌아감(시뮬레이션: 실제 저장 상태 + 실제 응답으로 applyScheduler 2번 → 이전 빌드 12→3, b250 12→12).
+- 테스트 tests/test_b250.py(run_all 끝; b249 에서는 실패 재현). 전체 154개 통과(직렬 재시도 2개 = 병렬 부하).
+- 사진 /workspace/b250/{before,after}_{트딕이,zetking}.png (실제 저장 상태 + 실제 응답, 로컬 시뮬레이션)

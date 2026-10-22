@@ -3361,6 +3361,9 @@ function applyScheduler(c, data){
   //  → 동기화는 등록을 켜기만 하고 절대 끄지 않음 (빼려면 사용자가 직접 끔). regYes/regNo 는 기록용.
   // b242: 예외 — 이번 주 응답에서 registration_flag 가 명시적으로 'false'(regNo)인 주간 보스는, 이번 주에 안 잡았고 같은 응답에 등록(true) 보스가 있을 때만 끔
   //  (스케줄러에서 안 잡은 보스를 다른 보스로 바꾼 경우 → 바로 적용. b136 의 '플래그 없음'은 regNo 에 안 들어가므로 그대로 안전). 난이도·파티 인원은 남김.
+  // b250 버그 수정: 스케줄러 응답은 보스마다 난이도 줄이 전부 옴(등록 안 한 난이도 = 'false'). 예전엔 다른 난이도의 'false' 줄 하나만 있어도 regNo 에 들어가
+  //  등록된 보스(예: 스우 익스트림 true, 노말/하드 false)를 끄거나(목 리셋 뒤 12개 → 몇 개만) 잡은 보스를 '빼기' 대기에 넣었음. 같은 보스의 어떤 난이도든 등록(true)이면 regNo 아님.
+  for(const id of Object.keys(regYes)){ delete regNo[id]; if(clrEdit[id]&&clrEdit[id].enabled===false) delete clrEdit[id]; }
   if(!staleWeek&&Object.values(regYes).some(b=>b.type==='weekly')) for(const [id,b] of Object.entries(regNo)){
     if(b.type!=='weekly'||!c.bosses[id]?.enabled) continue; if(c.weekly[id]){ clrEdit[id]=clrEdit[id]||{enabled:false}; continue; } c.bosses[id].enabled=false; }
   if(!staleWeek){ // b242
