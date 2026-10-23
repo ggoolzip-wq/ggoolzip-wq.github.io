@@ -1,4 +1,4 @@
-"""드롭 아이템 아이콘(32px) → src/itemicons.json  (사용법: python3 tools/build_items.py, Pillow 필요)"""
+"""드롭 아이템 아이콘(b254: 원본 32px → ESPCN x2 + 언샵 = 64px 선명) → src/itemicons.json  (사용법: python3 tools/build_items.py, Pillow 필요)"""
 from PIL import Image
 import base64,io,json,os
 os.chdir(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'src','assets'))
@@ -30,16 +30,45 @@ SRC={ # key: file
  'e_kalos_f':'itemicons/2636606.png','e_kalos':'itemicons/2634472.png','e_kaling_f':'itemicons/2636607.png','e_kaling':'itemicons/2635747.png',
  'e_limbo':'itemicons/2638063.png','e_baldrix':'itemicons/2639252.png',
  'e_adv_f':'itemicons/eternal_adv_f.png','e_adv':'itemicons/eternal_adv.png','e_star_f':'itemicons/eternal_star_f.png','e_star':'itemicons/eternal_star.png',
- 'e_bellona':'itemicons/eternal_bellona.png','e_jupiter':'itemicons/eternal_jupiter.png'}  # 솔 에르다의 기운 2636421 (maplestory.io KMS 389) — 정보 표시 전용  # 강렬한 힘의 결정 (주간), item 4001928 (maplestory.io GMS 255 game data = maplestorywiki 'Etc Intense Power Crystal (Weekly)')
+ 'e_bellona':'itemicons/eternal_bellona.png','e_jupiter':'itemicons/eternal_jupiter.png',
+ # b254: 에테르넬 방어구 상자 8종 + 익셉셔널 해머(포켓·펜던트) = 나무위키 각 보스 문서의 게임 아이콘 파일(i.namu.wiki, 2026-10-23)
+ 'b_kalos':'itemicons/b_kalos.png','b_adv':'itemicons/b_adv.png','b_kaling':'itemicons/b_kaling.png','b_star':'itemicons/b_star.png',
+ 'b_limbo':'itemicons/b_limbo.png','b_baldrix':'itemicons/b_baldrix.png','b_bellona':'itemicons/b_bellona.png','b_jupiter':'itemicons/b_jupiter.png',
+ 'h_pocket':'itemicons/h_pocket.png','h_pendant':'itemicons/h_pendant.png',
+ # b254: 에리온의 조각 = maplestory.io GMS 270 item 4009615 'Vestige of Erion'
+ 'erion':'itemicons/erion.png',
+ # b254: 앱솔랩스 무기/방어구 상자 2633912/2633913, 아케인셰이드 무기/방어구 상자 2633914/2633915 (maplestory.io KMS 389)
+ 'ab_w':'itemicons/2633912.png','ab_a':'itemicons/2633913.png','ar_w':'itemicons/2633914.png','ar_a':'itemicons/2633915.png'}  # 솔 에르다의 기운 2636421 (maplestory.io KMS 389) — 정보 표시 전용  # 강렬한 힘의 결정 (주간), item 4001928 (maplestory.io GMS 255 game data = maplestorywiki 'Etc Intense Power Crystal (Weekly)')
+import cv2, numpy as np
+_SR=cv2.dnn_superres.DnnSuperResImpl_create(); _SR.readModel(os.path.join(os.path.dirname(os.path.abspath(__file__)),'models','ESPCN_x2.pb')); _SR.setModel('espcn',2)
+def up2(c):
+    """RGBA 32px → 64px: RGB = ESPCN x2(투명 부분은 이웃 색으로 채워 테두리 번짐 방지) + 언샵, 알파 = 바이큐빅 + 살짝 대비."""
+    a=np.array(c); rgb=a[...,:3].astype(np.float32); al=a[...,3].astype(np.float32)/255
+    m=(al>0.02).astype(np.float32); fill=rgb*m[...,None]; w=m.copy()
+    for _ in range(6):
+        k=lambda x: cv2.blur(x,(3,3))
+        nf=k(fill); nw=k(w); upd=(w==0)&(nw>0)
+        fill[upd]=nf[upd]/nw[upd][...,None]; w[upd]=1
+    big=_SR.upsample(np.clip(fill,0,255).astype(np.uint8)[...,::-1])[...,::-1].astype(np.float32)
+    bl=cv2.GaussianBlur(big,(0,0),1.0); big=np.clip(big+0.6*(big-bl),0,255)
+    A=cv2.resize(al,(al.shape[1]*2,al.shape[0]*2),interpolation=cv2.INTER_CUBIC); A=np.clip((A-0.5)*1.15+0.5,0,1)
+    return Image.fromarray(np.dstack([big,A*255]).astype(np.uint8),'RGBA')
+def enc(c):
+    b=io.BytesIO(); c.save(b,'WEBP',quality=92,method=6,alpha_quality=100); l=b.getvalue()
+    return 'data:image/webp;base64,'+base64.b64encode(l).decode()
+old=json.load(open('../itemicons.json')) if os.path.exists('../itemicons.json') else {}
 out={}; S=32
 for k,f in SRC.items():
     im=Image.open(f).convert('RGBA'); bb=im.getbbox(); im=im.crop(bb) if bb else im
     w,h=im.size; sc=min(S/w,S/h,1.0) if max(w,h)<=S else S/max(w,h)
     if max(w,h)>S: im=im.resize((max(1,round(w*sc)),max(1,round(h*sc))),Image.LANCZOS)
     c=Image.new('RGBA',(S,S),(0,0,0,0)); c.alpha_composite(im,((S-im.width)//2,(S-im.height)//2))
-    b=io.BytesIO(); c.save(b,'WEBP',lossless=True); l=b.getvalue()
-    b2=io.BytesIO(); c.save(b2,'PNG',optimize=True); p=b2.getvalue()
-    out[k]=('data:image/webp;base64,'+base64.b64encode(l).decode()) if len(l)<=len(p) else ('data:image/png;base64,'+base64.b64encode(p).decode())
+    out[k]=enc(up2(c))
+# 수동 추가 키(blink·emo·dif·mc·guildbless·pcmedal 등) 보존: 32px 이하 아이템 아이콘만 64px 로 올림(이모지·난이도 배지·UI 는 그대로)
+for k,v in old.items():
+    if k in out: continue
+    im=Image.open(io.BytesIO(base64.b64decode(v.split(',')[1]))).convert('RGBA')
+    out[k]=enc(up2(im)) if (max(im.size)<=32 and not k.startswith(('emo_','dif_','mc_'))) else v
 json.dump(out,open('../itemicons.json','w'))
 print(len(out),'items',sum(map(len,out.values())),'chars')
 T=40; sh=Image.new('RGBA',(T*len(out),T),(40,40,48,255))

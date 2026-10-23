@@ -1,4 +1,4 @@
-# test_b253: 드롭 전수 보강 — 로이드·소울 조각·에테르넬 방어구 상자 추가(2출처), 에리온의 조각 칩, 정렬 유지, 못 가진 아이템 목록 제외
+# test_b253: 드롭 전수 보강 — 에테르넬 방어구 상자 추가(2출처; b254: 로이드·소울 조각 삭제, 칼로스·대적자·카링 상자는 정보 칩), 에리온의 조각 칩, 정렬 유지, 못 가진 아이템 목록 제외
 import os, sys, json, tempfile, shutil, subprocess
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _tutil
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); sys.path.insert(0, os.path.join(ROOT,'scripts'))
@@ -21,12 +21,12 @@ try:
       const order=(id,x)=>{const L=d(id,x);const ri=L.findIndex(k=>RING_DROPS&&String(k).includes('ring')||(ITEMS[k]&&/반지/.test(ITEMS[k].n)));return {L,ri}};
       return {ke:d('kalos','extreme'),ae:d('adversary','extreme'),jh:d('jupiter','hard'),le:order('limbo','extreme'),
         er:[erionFor(f('jupiter'),'hard'),erionFor(f('kalos'),'extreme'),erionFor(f('adversary'),'hard'),erionFor(f('kaling'),'extreme')],
-        miss:missingItems(totalData()).some(o=>['로이드','소울','방어구'].includes((ITEMS[o.k]||{}).set)),
-        names:[ITEMS.a_kalos.n,ITEMS.s_kalos.n,ITEMS.b_jupiter.n,ITEMS.b_limbo.n,ITEMS.b_baldrix.n]}}""")
-    check('칼로스 익스트림: 니키로이드·소울 조각·의지 방어구 상자', all(k in r['ke'] for k in ('a_kalos','s_kalos','b_kalos')), r['ke'])
-    check('대적자 익스트림: 로이드·소울·고대 방어구 상자', all(k in r['ae'] for k in ('a_adv','s_adv','b_adv')), r['ae'])
-    check('유피테르 하드: 로이드·소울·갈망 방어구 상자', all(k in r['jh'] for k in ('a_jupiter','s_jupiter','b_jupiter')), r['jh'])
-    check('이름: 니키로이드/소울 조각/갈망·욕망·맹세 방어구 상자', r['names']==['니키로이드','감시자 칼로스의 소울 조각','갈망의 에테르넬 방어구 상자','욕망의 에테르넬 방어구 상자','맹세의 에테르넬 방어구 상자'], r['names'])
+        miss:missingItems(totalData()).some(o=>['방어구','정보'].includes((ITEMS[o.k]||{}).set)),
+        names:[ITEMS.b_jupiter.n,ITEMS.b_limbo.n,ITEMS.b_baldrix.n], gone:Object.keys(ITEMS).filter(k=>/^[as]_/.test(k)), ib:[infoBoxFor(f('kalos'),'extreme'),infoBoxFor(f('adversary'),'extreme')]}}""")
+    check('b254: 칼로스·대적자 익스트림 방어구 상자 = 기록 안 함(DROPS 에 없음, 정보 칩)', 'b_kalos' not in r['ke'] and 'b_adv' not in r['ae'] and r['ib']==[['b_kalos'],['b_adv']], [r['ke'],r['ae'],r['ib']])
+    check('유피테르 하드: 갈망 방어구 상자 기록 가능, 로이드·소울 없음', 'b_jupiter' in r['jh'] and not any(k.startswith(('a_','s_')) for k in r['jh']), r['jh'])
+    check('b254: 로이드·소울 조각 아이템 전부 삭제', r['gone']==[], r['gone'])
+    check('이름: 갈망·욕망·맹세 방어구 상자', r['names']==['갈망의 에테르넬 방어구 상자','욕망의 에테르넬 방어구 상자','맹세의 에테르넬 방어구 상자'], r['names'])
     L=r['le']['L']; check('정렬: 반지 상자 맨 끝 유지, 새 항목은 그 앞', 'b_limbo' in L and L.index('b_limbo')<len(L)-1 and '반지' in pg.evaluate("k=>ITEMS[k].n",L[-1]), L)
     check('에리온: 유피테르 하드 360·칼로스 익스 180·대적자 하드 30, 단일출처(카링 익스)는 없음', r['er'][:3]==[360,180,30] and not r['er'][3], r['er'])
     check('못 가진 아이템 목록에 새 세트 없음', not r['miss'])

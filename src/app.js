@@ -123,7 +123,9 @@ const ITEMS = {
   whisper:{n:'근원의 속삭임',set:'광휘'}, oath:{n:'죽음의 맹세',set:'광휘'}, bliss:{n:'황홀한 악몽',set:'광휘'},
   sin:{n:'오만의 원죄',set:'광휘'}, spirit:{n:'굶주리는 핏빛 원혼',set:'광휘'}, legacy:{n:'불멸의 유산',set:'광휘'},
   h_face:{n:'익셉셔널 해머 (얼굴장식)',set:'해머'}, h_eye:{n:'익셉셔널 해머 (눈장식)',set:'해머'}, h_belt:{n:'익셉셔널 해머 (벨트)',set:'해머'}, h_ear:{n:'익셉셔널 해머 (귀고리)',set:'해머'},
-  h_pocket:{n:'익셉셔널 해머 (포켓)',set:'해머'}, h_pendant:{n:'익셉셔널 해머 (펜던트)',set:'해머'}, // b252: 공지 815 아이템명 (KMST V1207 id 2644209/2644210, maplestory.io 아이콘 미수록 → 기본 아이콘)
+  h_pocket:{n:'익셉셔널 해머 (포켓)',set:'해머'}, h_pendant:{n:'익셉셔널 해머 (펜던트)',set:'해머'}, // b252: 공지 815 아이템명 (KMST V1207 id 2644209/2644210) · b254: 아이콘 = 나무위키 림보/발드릭스 문서 게임 아이콘
+  // b254: 정보 칩 전용(기록 안 함) — 앱솔랩스/아케인셰이드 무기·방어구 상자 (maplestory.io KMS 389 2633912~2633915)
+  ab_w:{n:'앱솔랩스 무기 상자',set:'정보'}, ab_a:{n:'앱솔랩스 방어구 상자',set:'정보'}, ar_w:{n:'아케인셰이드 무기 상자',set:'정보'}, ar_a:{n:'아케인셰이드 방어구 상자',set:'정보'},
   cfs:{n:'응축된 힘의 결정석',set:'보장'}, aquatic:{n:'아쿠아틱 레터 눈장식',set:'보장'}, zbelt:{n:'분노한 자쿰의 벨트',set:'보장'},
   papmark:{n:'파풀라투스 마크',set:'보장'}, wentus:{n:'크리스탈 웬투스 뱃지',set:'보장'}, shoulder:{n:'로얄 블랙메탈 숄더',set:'보장'},
   // 연마석 (특수 스킬 반지 레벨 상승 재료) — 나무위키 각 보스 문서 '보상' · peak.nexon.com/post/1277 · mitemprice.kr (2026-10-10 열람)
@@ -141,14 +143,14 @@ const ITEMS = {
   r_life:{n:'생명의 보스 반지 상자',s:'생명 반지 상자',set:'반지',note:'3~4레벨 특수 스킬 반지 또는 생명의 연마석'},
   // b253: 로이드·소울 조각·에테르넬 방어구 상자 — 나무위키 각 보스 문서 '보상'(2026-10-23 열람) + matsu1207.tistory.com/937(2026-10-16 수정) 두 출처 일치분만.
   //   교환 불가·시세 출처 없음 → 가격 미표시(정렬 맨 뒤, 반지 상자 앞). 아이콘 미확보 → 기본 글자 아이콘. 못 가진 아이템 목록에서는 제외(MISS_SKIP_SET).
-  a_kalos:{n:'니키로이드',set:'로이드'}, s_kalos:{n:'감시자 칼로스의 소울 조각',s:'칼로스 소울 조각',set:'소울'}, b_kalos:{n:'의지의 에테르넬 방어구 상자',s:'의지의 방어구 상자',set:'방어구'},
-  a_adv:{n:'대적자로이드',set:'로이드'}, s_adv:{n:'최초의 대적자의 소울 조각',s:'대적자 소울 조각',set:'소울'}, b_adv:{n:'고대의 에테르넬 방어구 상자',s:'고대의 방어구 상자',set:'방어구'},
-  a_kaling:{n:'카링로이드',set:'로이드'}, s_kaling:{n:'카링의 소울 조각',s:'카링 소울 조각',set:'소울'}, b_kaling:{n:'흉수의 에테르넬 방어구 상자',s:'흉수의 방어구 상자',set:'방어구'},
-  a_star:{n:'흉성로이드',set:'로이드'}, s_star:{n:'찬란한 흉성의 소울 조각',s:'흉성 소울 조각',set:'소울'}, b_star:{n:'환상의 에테르넬 방어구 상자',s:'환상의 방어구 상자',set:'방어구'},
-  a_bellona:{n:'벨로나로이드',set:'로이드'}, s_bellona:{n:'벨로나의 소울 조각',s:'벨로나 소울 조각',set:'소울'}, b_bellona:{n:'광기의 에테르넬 방어구 상자',s:'광기의 방어구 상자',set:'방어구'},
-  a_limbo:{n:'림보로이드',set:'로이드'}, s_limbo:{n:'림보의 소울 조각',s:'림보 소울 조각',set:'소울'}, b_limbo:{n:'욕망의 에테르넬 방어구 상자',s:'욕망의 방어구 상자',set:'방어구'},
-  a_baldrix:{n:'발드릭스로이드',set:'로이드'}, s_baldrix:{n:'발드릭스의 소울 조각',s:'발드릭스 소울 조각',set:'소울'}, b_baldrix:{n:'맹세의 에테르넬 방어구 상자',s:'맹세의 방어구 상자',set:'방어구'},
-  a_jupiter:{n:'유피테르로이드',set:'로이드'}, s_jupiter:{n:'유피테르의 소울 조각',s:'유피테르 소울 조각',set:'소울'}, b_jupiter:{n:'갈망의 에테르넬 방어구 상자',s:'갈망의 방어구 상자',set:'방어구'},
+  b_kalos:{n:'의지의 에테르넬 방어구 상자',s:'의지의 방어구 상자',set:'방어구'},
+  b_adv:{n:'고대의 에테르넬 방어구 상자',s:'고대의 방어구 상자',set:'방어구'},
+  b_kaling:{n:'흉수의 에테르넬 방어구 상자',s:'흉수의 방어구 상자',set:'방어구'},
+  b_star:{n:'환상의 에테르넬 방어구 상자',s:'환상의 방어구 상자',set:'방어구'},
+  b_bellona:{n:'광기의 에테르넬 방어구 상자',s:'광기의 방어구 상자',set:'방어구'},
+  b_limbo:{n:'욕망의 에테르넬 방어구 상자',s:'욕망의 방어구 상자',set:'방어구'},
+  b_baldrix:{n:'맹세의 에테르넬 방어구 상자',s:'맹세의 방어구 상자',set:'방어구'},
+  b_jupiter:{n:'갈망의 에테르넬 방어구 상자',s:'갈망의 방어구 상자',set:'방어구'},
   // 에테르넬 방어구 교환 재료 — 확정 지급, 정보 칩 전용(클릭·기록·수익 없음). ETERNAL 참고
   e_kalos_f:{n:'남겨진 칼로스의 의지 조각',set:'에테르넬'}, e_kalos:{n:'남겨진 칼로스의 의지',set:'에테르넬'},
   e_adv_f:{n:'이어진 고대의 결의 조각',set:'에테르넬'}, e_adv:{n:'이어진 고대의 결의',set:'에테르넬'},
@@ -191,8 +193,8 @@ const RING_DROPS = {
   r_white:{lotus:['extreme'],blackmage:['hard','extreme'],seren:['hard','extreme'],kalos:['easy','normal'],kaling:['easy','normal'],adversary:['easy','normal'],star:['normal'],bellona:['easy','normal']},
   r_life:{kalos:['chaos','extreme'],kaling:['hard','extreme'],limbo:['normal','hard','extreme'],baldrix:['normal','hard','extreme'],adversary:['hard','extreme'],star:['hard'],jupiter:['normal','hard'],bellona:['hard']}
 };
-const SET_LABEL = {'반지':'특수 스킬 반지 상자 (낮은 확률)','광휘':'광휘의 보스 세트','칠흑':'칠흑의 보스 세트','여명':'여명의 보스 세트','보장':'보스 장신구 세트','해머':'익셉셔널 강화 재료','연마석':'연마석 (특수 스킬 반지 강화 재료)','에테르':'소울 에테르 (소울웨폰 재료)','로이드':'안드로이드','소울':'소울 조각','방어구':'에테르넬 방어구 상자'};
-const MISS_SKIP_SET=new Set(['로이드','소울','방어구']); // b253
+const SET_LABEL = {'반지':'특수 스킬 반지 상자 (낮은 확률)','광휘':'광휘의 보스 세트','칠흑':'칠흑의 보스 세트','여명':'여명의 보스 세트','보장':'보스 장신구 세트','해머':'익셉셔널 강화 재료','연마석':'연마석 (특수 스킬 반지 강화 재료)','에테르':'소울 에테르 (소울웨폰 재료)','방어구':'에테르넬 방어구 상자'};
+const MISS_SKIP_SET=new Set(['방어구','정보']); // b253 · b254: 로이드·소울 삭제, 정보 칩(앱솔/아케인 상자) 제외
 // 보스별 [아이템, 드롭 난이도들] — 해당 난이도를 선택했을 때만 표시
 const DROPS = {
   // 2026-10-10: 보스 장신구 세트(파풀라투스 마크 제외)·여명의 보스 세트는 드롭 표에서 뺌 (ITEMS 는 남겨 예전 기록은 그대로 표시)
@@ -205,16 +207,16 @@ const DROPS = {
   jinhilla:[['sos',['hard']]],
   dunkel:[['cfe',['hard']]],
   seren:[['mitra',['hard','extreme']],['h_face',['extreme']]],
-  kalos:[['h_eye',['extreme']],['g_life',['normal','chaos','extreme']],['a_kalos',['normal', 'chaos', 'extreme']],['s_kalos',['easy', 'normal', 'chaos', 'extreme']],['b_kalos',['chaos', 'extreme']]],
-  adversary:[['legacy',['hard','extreme']],['g_life',['normal','hard','extreme']],['se1',['normal','hard','extreme']],['a_adv',['normal', 'hard', 'extreme']],['s_adv',['easy', 'normal', 'hard', 'extreme']],['b_adv',['hard', 'extreme']]],
-  kaling:[['chaosbox',['normal','hard','extreme']],['h_ear',['extreme']],['g_life',['normal']],['g_faith',['hard','extreme']],['se1',['normal','hard','extreme']],['a_kaling',['normal', 'hard', 'extreme']],['s_kaling',['easy', 'normal', 'hard']],['b_kaling',['hard', 'extreme']]],
-  star:[['bliss',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']],['a_star',['normal', 'hard']],['s_star',['normal', 'hard']],['b_star',['hard']]],
+  kalos:[['h_eye',['extreme']],['g_life',['normal','chaos','extreme']]],
+  adversary:[['legacy',['hard','extreme']],['g_life',['normal','hard','extreme']],['se1',['normal','hard','extreme']]],
+  kaling:[['chaosbox',['normal','hard','extreme']],['h_ear',['extreme']],['g_life',['normal']],['g_faith',['hard','extreme']],['se1',['normal','hard','extreme']]],
+  star:[['bliss',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']],['b_star',['hard']]],
   // b252: 익스트림 — 공지 815(1.2.420)·인벤 322439/322167: 익림 → 익셉셔널 해머 (포켓), 익발 → 익셉셔널 해머 (펜던트). 시세 출처 없음 → 가격 미표시라 맨 뒤(반지 상자 앞).
   //   하드 공통 보상 이월은 namu.wiki 림보/발드릭스 보상 + matsu1207.tistory.com/937 두 출처 일치.
-  limbo:[['whisper',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pocket',['extreme']],['a_limbo',['normal', 'hard', 'extreme']],['s_limbo',['normal', 'hard', 'extreme']],['b_limbo',['hard', 'extreme']]],
-  baldrix:[['oath',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pendant',['extreme']],['a_baldrix',['normal', 'hard', 'extreme']],['s_baldrix',['normal', 'hard', 'extreme']],['b_baldrix',['hard', 'extreme']]],
-  bellona:[['spirit',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']],['a_bellona',['normal', 'hard']],['s_bellona',['easy', 'normal', 'hard']],['b_bellona',['hard']]],
-  jupiter:[['sin',['hard']],['chaosbox',['normal','hard']],['g_faith',['normal','hard']],['se4',['normal','hard']],['a_jupiter',['normal', 'hard']],['s_jupiter',['normal', 'hard']],['b_jupiter',['hard']]],
+  limbo:[['whisper',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pocket',['extreme']],['b_limbo',['hard', 'extreme']]],
+  baldrix:[['oath',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pendant',['extreme']],['b_baldrix',['hard', 'extreme']]],
+  bellona:[['spirit',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']],['b_bellona',['hard']]],
+  jupiter:[['sin',['hard']],['chaosbox',['normal','hard']],['g_faith',['normal','hard']],['se4',['normal','hard']],['b_jupiter',['hard']]],
   blackmage:[['genesis',['hard','extreme']],['h_belt',['extreme']]]
 };
 // 2026-10-10: 보스 장신구 세트(파풀라투스 마크 제외)·여명 세트 = 드롭 표 끝에 회색 칩(누를 수 없음, 기록 안 함)
@@ -243,6 +245,14 @@ const erdaFor = (b,diff) => +(ERDA[b?.id]?.[diff])||0;
 const ERION = { seren:{extreme:30}, kalos:{extreme:180}, adversary:{hard:30,extreme:240}, kaling:{hard:60}, star:{hard:90},
   limbo:{hard:60}, baldrix:{hard:120}, jupiter:{normal:45,hard:360} };
 const erionFor = (b,diff) => +(ERION[b?.id]?.[diff])||0;
+/* b254: 기록하지 않는 상자 정보 칩 (에리온의 조각 칩 바로 뒤, 에리온이 없는 보스도 같은 자리). 아이콘만 + aria-label, data-tip 없음.
+ * 에테르넬 방어구 상자: 칼로스·최초의 대적자·카링은 기록 안 함(정보), 흉성·림보·발드릭스·벨로나·유피테르는 DROPS 에서 기록 그대로.
+ * 앱솔랩스 상자: 하드 스우·하드 데미안 (나무위키 '앱솔랩스 세트' + 메이플 보스 보상표 matsu937). 익스트림 스우 = 보상표 '하드 이상'.
+ * 아케인셰이드 상자: 하드 루시드·하드 윌·카오스 더스크·노멀/하드 진 힐라·하드 듄켈·하드/익스트림 검은 마법사 (나무위키 '아케인셰이드 세트' + 보상표). */
+const AB=['ab_w','ab_a'], AR=['ar_w','ar_a'];
+const INFOBOX = { kalos:{chaos:['b_kalos'],extreme:['b_kalos']}, adversary:{hard:['b_adv'],extreme:['b_adv']}, kaling:{hard:['b_kaling'],extreme:['b_kaling']},
+  lotus:{hard:AB,extreme:AB}, damien:{hard:AB}, lucid:{hard:AR}, will:{hard:AR}, dusk:{chaos:AR}, jinhilla:{normal:AR,hard:AR}, dunkel:{hard:AR}, blackmage:{hard:AR,extreme:AR} };
+const infoBoxFor = (b,diff) => INFOBOX[b?.id]?.[diff]||[];
 /* 확정 지급 에테르넬 방어구 교환 재료 (정보 표시 전용: 클릭·집계·수익 기록 없음). [아이템 키, 개수]
  * 출처: 나무위키 '에테르넬 세트' 3. 획득처 표 (namu.moe 미러, 2026-10-10 열람) — 칼로스·대적자·카링·흉성 = 단체 보상, 벨로나·림보·발드릭스·유피테르 = 개인 보상.
  * 이지/노멀의 '○○ 조각'(파편) 2개 = 상위 재료 1개, 상위 재료 10개 = 에테르넬 방어구 1개(부위 선택). 아이콘: maplestory.io(KMST 1170·GMS 270) / 나무위키 파일. */
@@ -283,7 +293,7 @@ const hnCls = k => isHong(k)?' vh':''; // b229: 홍옥 리4/컨4 = 아이콘 2�
 function itemIcon(k){
   if(k==='hong_r4'||k==='hong_c4') return `<span class="hongico">${itemIcon('r_red')}${miniIcon(k==='hong_r4'?'ring_restraint':'ring_continuous')}</span>`;
   const it=ITEMS[k], src=ITEM_ICONS[k];
-  return src?`<img src="${src}" alt="" aria-hidden="true">`:`<span class="ifb" aria-hidden="true">${esc((it?.n||'?').slice(0,1))}</span>`;
+  return src?`<img src="${src}" alt="" width="32" height="32" aria-hidden="true">`:`<span class="ifb" aria-hidden="true">${esc((it?.n||'?').slice(0,1))}</span>`;
 }
 /* b239: 드롭 칩 가격 등급 (공용 시세 admPriceOf = 수익 기록 칸과 같은 값). 테두리 t-*, 기록하면 같은 등급 채움 f-*, 움직이는 등급 tza.
  * ≥1000억 aur(오로라) · ≥100억 gold(금빛) · ≥10억 pur(보라) · b240: 10억 미만/시세 없음 = 하늘색(sky, 반지 상자와 같음; 초록 등급 삭제).
@@ -298,12 +308,13 @@ function dropTierCls(c,b,k,got){
 const dropSortP = k => { if(isRing(k)){ const p=ring4(k); return p?(p.r4/100)*tierP('ring:r4')+(p.c4/100)*tierP('ring:c4'):0; } return tierP(k); };
 const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
-  const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!erionFor(b,diff)&&!eternalFor(b,diff)&&!mementoFor(b,diff)) return '';
+  const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!erionFor(b,diff)&&!eternalFor(b,diff)&&!mementoFor(b,diff)&&!infoBoxFor(b,diff).length) return '';
   const et=eternalFor(b,diff);
   const eo=erionFor(b,diff);
   const erda=(en?`<span class="drop erda" aria-label="솔 에르다의 기운 ${en}개">${itemIcon('erda')}<b class="ecnt">${en}</b></span>`:'')
     +(et?`<span class="drop erda eter" data-tip="${esc(eternalTip(et.k,et.n,diff))}" aria-label="${esc(ITEMS[et.k].n)} ${et.n}개">${itemIcon(et.k)}<b class="ecnt">${et.n}</b></span>`:'')
     +(eo?`<span class="drop erda erion" aria-label="에리온의 조각 ${eo}개">${ITEM_ICONS.erion?itemIcon('erion'):'<span class="ifb" aria-hidden="true">에</span>'}<b class="ecnt">${eo}</b></span>`:'')
+    +infoBoxFor(b,diff).map(k=>`<span class="drop erda ibox" aria-label="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}</span>`).join('')
     +mementoHtml(mementoFor(b,diff));
   const cnt=k=>c?dropCount(c,b,k):0;
   const chip=k=>{const it=ITEMS[k], n=cnt(k);
@@ -935,7 +946,7 @@ function openChaos(key){
     pendStart(); askBbang(cc,b,key,()=>{ dropMap(cc,b.type)[key]=1; outMap(cc,b.type)[key]=['cb:'+k]; },()=>askRev(cc,b,key,'cb:'+k,()=>celebrate(null,k,b)),{ico:itemIcon(k),name:ITEMS[k].n}); };
 }
 const OUT_NAME = {r4:'리스트레인트 링 4레벨', c4:'컨티뉴어스 링 4레벨'};
-const miniIcon = k => ITEM_ICONS[k] ? `<img class="ric" src="${ITEM_ICONS[k]}" alt="" aria-hidden="true">` : '';
+const miniIcon = k => ITEM_ICONS[k] ? `<img class="ric" src="${ITEM_ICONS[k]}" alt="" width="32" height="32" aria-hidden="true">` : '';
 const outIcon = o => o==='r4'?miniIcon('ring_restraint'):o==='c4'?miniIcon('ring_continuous'):o==='gl'?miniIcon('g_life'):'';
 const xN = n => 'x'+n;
 /* b221: 이번 주 수익 총합 줄 = 이름 칸(고정 너비) + 개수 칸 xN — 주보·검마 결정석·획득 아이템·반지 상자·남은 결정석 개수가 한 세로줄 */

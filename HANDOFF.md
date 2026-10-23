@@ -2064,3 +2064,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - fitMiss: 아이콘 생략 후에도 안 되면 .tight(구분점·간격 좁힘) 한 번 더 → 1600px 생명 반지 상자 줄 한 줄. test_tracker45 vw>=1600 복구.
 - 미확인(추가 안 함): 카링 익 에리온(480 vs 400), 벨로나 하 에리온 100(matsu만), 림보/발드릭스 익 에리온(?), 카링 익 소울 조각(matsu 공통 행만), 스우·데미안·루시드·윌·진힐라·듄켈 로이드/소울, 앱솔·아케인 상자 등.
 - 테스트: test_b253 신규, b252/tracker18/tracker45 기대값 갱신. 전체 통과.
+
+## b254 — 로이드·소울 삭제 · 에테르넬/앱솔/아케인 상자 정보 칩 · 아이콘 64px 고화질 (2026-10-23 16:58–17:40 KST)
+- 로이드·소울 조각(a_*/s_*) ITEMS·DROPS 전부 삭제.
+- 칼로스·대적자·카링 에테르넬 방어구 상자 → DROPS 에서 빼고 INFOBOX 정보 칩(에리온 칩 뒤, `.drop.erda.ibox`, aria-label "…(기록하지 않음)", data-tip/data-drop 없음, 클릭 무반응). 흉성·림보·발드릭스·벨로나·유피테르 상자는 기록 가능 유지.
+- 앱솔랩스(ab_w/ab_a) 하드·익스 스우, 하드 데미안 / 아케인셰이드(ar_w/ar_a) 하드 루시드·윌·듄켈, 카오스 더스크, 진힐라(노말·하드), 검마(하드·익스) 정보 칩. 출처: 나무위키 "앱솔랩스 세트"/"아케인셰이드 세트" + matsu937 표(익스 스우는 matsu "하드 이상"만).
+- 아이콘: tools/build_items.py 가 ESPCN x2(tools/models/ESPCN_x2.pb)+unsharp, 알파 bicubic → 64px webp q92 data-URI 인라인(새 배포 파일 없음 → pages_dist.sh 변경 불필요). img 에 width/height=32 고정, extra.css pixelated→auto. 새 원본 15종 src/assets/itemicons/ (나무 boss 페이지, maplestory.io KMS389/GMS270). 위컴알 원본은 미사용(Item.wz 없음). 에리온=GMS 4009615 "Vestige of Erion" 추정.
+- 테스트: test_b252(발드릭스 익스 7), test_b253 갱신, test_b254 신규. 전체 suite 158 통과.
