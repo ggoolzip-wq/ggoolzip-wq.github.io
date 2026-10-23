@@ -19,7 +19,7 @@ b = O.benefits(lines1397)
 check("1397 lines → ability + starforce benefits", b == ["어빌리티 재설정 명성치 비용 50% 할인", "21성 이하 스타포스 파괴 확률 30% 감소"], b)
 box = O.crop_box(lines1397, 876, 1395)
 check("crop box = period line .. last note (before '바로가기')", box and box[1] < 520 and 1055 <= box[3] < 1252 and box[0] == 0 and box[2] == 876, box)
-check("미라클 타임 alone counts; sums/notes skipped", O.benefits([L(100, "미라클 타임"), L(200, "몬스터 파크 클리어 경험치 추가 250%"), L(240, "경험치 100% + 혜택 50% = 400%"), L(300, "ㆍ 단, 미라클 타임은 …")]) == ["미라클 타임", "몬스터 파크 클리어 경험치 추가 250%"])
+check("미라클 타임 alone counts; sums/notes skipped", O.benefits([L(100, "미라클 타임"), L(200, "몬스터 파크 클리어 경험치 추가 250%"), L(240, "경험치 100% + 혜택 50% = 400%"), L(300, "ㆍ 단, 미라클 타임은 …")]) == ["미라클 타임", "몬스터파크 클리어 경험치 추가 250%"])  # b256: 사전 문장으로 맞춤
 check("no period/benefit → no crop", O.crop_box([L(10, "썬데이 메이플")], 876, 1000) is None)
 # 3) update_feed: OCR 필요 판단 (글 하나당 한 번, 실패는 3번까지)
 img = "https://lwi.nexon.com/x.png"

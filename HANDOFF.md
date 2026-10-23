@@ -2078,3 +2078,12 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 테스트: 신규 tests/test_b255.py (모의 아이템 솔 에르다/솔 에르다의 조각/블랙 큐브/명장의 큐브를 세렌에 넣고 순서·그룹 안 가격·전체 줄·정보 칩 순서; `MBT_SHOTDIR` 1600px 사진, `MBT_ROOT` 변경 전), run_all.sh 등록. tests/test_b246.py 정렬 검사 = 그룹 안 비싼 순.
 - 사진(모의 아이템·시세): /workspace/b255/before_seren_drops_1600.png · after_seren_drops_1600.png.
 - 전체 테스트 run_par 159개 통과 (test_tracker14·test_b239 병렬 1차 실패 → 직렬 재시도 통과).
+
+## b256 (2026-10-23 21:15~21:55 KST) — 썬데이 혜택 글자 인식 바로잡기 (공지 1405: 4줄)
+1. 원인: 반투명 상자 위 흰 글씨 OCR 오인식 + 쪼개진 줄 이어 붙이기 + 최대 3줄 제한 → 쓰레기 문장 표시.
+2. `scripts/sunday_ocr.py`: 전처리 4회(반전+확대 / 원본 / 이진화 / 흰 글씨 R·G 마스크) 결과 합침, 알려진 혜택 문장 사전(KNOWN) + difflib 퍼지 매칭(0.72), 허용 값 집합(룬 경험치 버프 100%), 안내 문구·수식 상자(100%+100%=300%)·조각 글자·낱말 반복 거르기, 최대 4줄. 믿을 만한 줄 없으면 benefit 지우고 `ocr.lowConf=true` → 카드는 공지 제목/요약으로 대체. HTML 본문 글(benefitSrc=text)은 OCR이 덮어쓰지 않음(우선).
+3. `src/app.js` renderSun: `.slice(0,4)` (3→4줄). 1366x768·1600x1000·1920x1080에서 페이지 세로 스크롤 생기지 않음 확인.
+4. feed.json 다시 만듦(1405 = 메인 스탯의 강화 확률 20% 증가 · 룬 기본 지속시간 50% 증가 · 룬 경험치 버프 +100% · 콤보킬 경험치 획득량 +300%), sunday.png 갱신.
+5. 지난 썬데이 공지 이미지 시험: 정답 정리한 10개(1405·1399·1397·1396·1391·1390·1379·1377·1376·1375) 10/10 정확. 추가 10개(1330~1369)는 쓰레기 줄 0, 1369·1354 완전 정확, 1356·1330은 사전에 없는 항목 일부 빠짐.
+6. 테스트: 신규 tests/test_b256.py(+fixtures/sunday_1405.jpg·_lines.json), run_all.sh 등록, test_sunday_ocr.py 기대값 수정. 전체 run_par 166개 통과(test_tracker8·14·b239 병렬 실패 → 직렬 재시도 통과).
+7. 사진: /workspace/b256/sunday_before.png · sunday_after.png(배포 후 실사이트).

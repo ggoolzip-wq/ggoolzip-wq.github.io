@@ -4188,7 +4188,7 @@ function renderSun(){
   const src=s&&(sunCropUrl(s)||s.image);
   if(s&&src){
     const when=s.start?fdShort(s.start)+(s.end&&fdShort(s.end)!==fdShort(s.start)?' ~ '+fdShort(s.end):''):fdShort(s.date||'');
-    const bens=(s.benefit?String(s.benefit).split(/\s*·\s*/).filter(Boolean):[]).slice(0,3);
+    const bens=(s.benefit?String(s.benefit).split(/\s*·\s*/).filter(Boolean):[]).slice(0,4); // b256: 최대 4줄
     const lines=bens.length?bens:[s.title||'썬데이 메이플'];
     body=`<button type="button" class="sunimg" data-sunopen title="크게 보기"><img src="${esc(src)}" alt="${esc(s.title||'썬데이 메이플')}" loading="lazy" referrerpolicy="no-referrer"></button>`+
       `<div class="suncap"><span class="ftt">${esc(s.title||'썬데이 메이플')}</span><span class="fdt">${esc(when)}</span></div>`+
