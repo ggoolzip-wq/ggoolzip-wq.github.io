@@ -55,6 +55,9 @@ const PRICE_CONFIG = {
   'star_normal':576000000, 'star_hard':2678000000,
   'limbo_normal':995000000, 'limbo_hard':2385000000,
   'baldrix_normal':1320000000, 'baldrix_hard':3078000000,
+  // b252: 익스트림 림보·발드릭스 — 공식 미발표, 사용자 승인 커뮤니티 값 (namu.wiki '강렬한 힘의 결정' + matsu1207.tistory.com/757).
+  //   내장값 우선 — 공식 공지 가격이 다르면 boss_auto 가 conflicts 로 기록만 함.
+  'limbo_extreme':7500000000, 'baldrix_extreme':9600000000,
   'bellona_easy':396000000, 'bellona_normal':824000000, 'bellona_hard':2950000000,
   'jupiter_normal':1560000000, 'jupiter_hard':5387000000,
   // 월간
@@ -86,8 +89,8 @@ const BOSSES = [
   {id:'adversary',name:'최초의 대적자',type:'weekly',diffs:['easy','normal','hard','extreme'],aliases:['대적자']},
   {id:'kaling',name:'카링',type:'weekly',diffs:['easy','normal','hard','extreme']},
   {id:'star',name:'찬란한 흉성',type:'weekly',diffs:['normal','hard'],aliases:['흉성']},
-  {id:'limbo',name:'림보',type:'weekly',diffs:['normal','hard']},
-  {id:'baldrix',name:'발드릭스',type:'weekly',diffs:['normal','hard']},
+  {id:'limbo',name:'림보',type:'weekly',diffs:['normal','hard','extreme']},
+  {id:'baldrix',name:'발드릭스',type:'weekly',diffs:['normal','hard','extreme']},
   {id:'bellona',name:'벨로나',type:'weekly',diffs:['easy','normal','hard']},
   {id:'jupiter',name:'유피테르',type:'weekly',diffs:['normal','hard']},
   {id:'blackmage',name:'검은 마법사',type:'monthly',diffs:['hard','extreme'],aliases:['검마']}
@@ -120,6 +123,7 @@ const ITEMS = {
   whisper:{n:'근원의 속삭임',set:'광휘'}, oath:{n:'죽음의 맹세',set:'광휘'}, bliss:{n:'황홀한 악몽',set:'광휘'},
   sin:{n:'오만의 원죄',set:'광휘'}, spirit:{n:'굶주리는 핏빛 원혼',set:'광휘'}, legacy:{n:'불멸의 유산',set:'광휘'},
   h_face:{n:'익셉셔널 해머 (얼굴장식)',set:'해머'}, h_eye:{n:'익셉셔널 해머 (눈장식)',set:'해머'}, h_belt:{n:'익셉셔널 해머 (벨트)',set:'해머'}, h_ear:{n:'익셉셔널 해머 (귀고리)',set:'해머'},
+  h_pocket:{n:'익셉셔널 해머 (포켓)',set:'해머'}, h_pendant:{n:'익셉셔널 해머 (펜던트)',set:'해머'}, // b252: 공지 815 아이템명 (KMST V1207 id 2644209/2644210, maplestory.io 아이콘 미수록 → 기본 아이콘)
   cfs:{n:'응축된 힘의 결정석',set:'보장'}, aquatic:{n:'아쿠아틱 레터 눈장식',set:'보장'}, zbelt:{n:'분노한 자쿰의 벨트',set:'보장'},
   papmark:{n:'파풀라투스 마크',set:'보장'}, wentus:{n:'크리스탈 웬투스 뱃지',set:'보장'}, shoulder:{n:'로얄 블랙메탈 숄더',set:'보장'},
   // 연마석 (특수 스킬 반지 레벨 상승 재료) — 나무위키 각 보스 문서 '보상' · peak.nexon.com/post/1277 · mitemprice.kr (2026-10-10 열람)
@@ -175,7 +179,7 @@ const RING_DROPS = {
   r_red:{lotus:['hard'],damien:['hard'],lucid:['hard'],will:['hard'],jinhilla:['normal']},
   r_black:{dusk:['chaos'],dunkel:['hard'],slime:['chaos'],jinhilla:['hard'],seren:['normal']},
   r_white:{lotus:['extreme'],blackmage:['hard','extreme'],seren:['hard','extreme'],kalos:['easy','normal'],kaling:['easy','normal'],adversary:['easy','normal'],star:['normal'],bellona:['easy','normal']},
-  r_life:{kalos:['chaos','extreme'],kaling:['hard','extreme'],limbo:['normal','hard'],baldrix:['normal','hard'],adversary:['hard','extreme'],star:['hard'],jupiter:['normal','hard'],bellona:['hard']}
+  r_life:{kalos:['chaos','extreme'],kaling:['hard','extreme'],limbo:['normal','hard','extreme'],baldrix:['normal','hard','extreme'],adversary:['hard','extreme'],star:['hard'],jupiter:['normal','hard'],bellona:['hard']}
 };
 const SET_LABEL = {'반지':'특수 스킬 반지 상자 (낮은 확률)','광휘':'광휘의 보스 세트','칠흑':'칠흑의 보스 세트','여명':'여명의 보스 세트','보장':'보스 장신구 세트','해머':'익셉셔널 강화 재료','연마석':'연마석 (특수 스킬 반지 강화 재료)','에테르':'소울 에테르 (소울웨폰 재료)'};
 // 보스별 [아이템, 드롭 난이도들] — 해당 난이도를 선택했을 때만 표시
@@ -194,8 +198,10 @@ const DROPS = {
   adversary:[['legacy',['hard','extreme']],['g_life',['normal','hard','extreme']],['se1',['normal','hard','extreme']]],
   kaling:[['chaosbox',['normal','hard','extreme']],['h_ear',['extreme']],['g_life',['normal']],['g_faith',['hard','extreme']],['se1',['normal','hard','extreme']]],
   star:[['bliss',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']]],
-  limbo:[['whisper',['hard']],['chaosbox',['normal','hard']],['g_faith',['normal','hard']],['se3',['normal','hard']]],
-  baldrix:[['oath',['hard']],['chaosbox',['normal','hard']],['g_faith',['normal','hard']],['se3',['normal','hard']]],
+  // b252: 익스트림 — 공지 815(1.2.420)·인벤 322439/322167: 익림 → 익셉셔널 해머 (포켓), 익발 → 익셉셔널 해머 (펜던트). 시세 출처 없음 → 가격 미표시라 맨 뒤(반지 상자 앞).
+  //   하드 공통 보상 이월은 namu.wiki 림보/발드릭스 보상 + matsu1207.tistory.com/937 두 출처 일치.
+  limbo:[['whisper',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pocket',['extreme']]],
+  baldrix:[['oath',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pendant',['extreme']]],
   bellona:[['spirit',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']]],
   jupiter:[['sin',['hard']],['chaosbox',['normal','hard']],['g_faith',['normal','hard']],['se4',['normal','hard']]],
   blackmage:[['genesis',['hard','extreme']],['h_belt',['extreme']]]
@@ -231,8 +237,8 @@ const ETERNAL = {
   adversary:{normal:['e_adv_f',4],hard:['e_adv',6],extreme:['e_adv',16]},
   kaling:{easy:['e_kaling_f',1],normal:['e_kaling_f',5],hard:['e_kaling',7],extreme:['e_kaling',18]},
   star:{normal:['e_star_f',6],hard:['e_star',18]},
-  bellona:{normal:['e_bellona',1],hard:['e_bellona',2]}, limbo:{normal:['e_limbo',1],hard:['e_limbo',2]},
-  baldrix:{normal:['e_baldrix',1],hard:['e_baldrix',2]}, jupiter:{normal:['e_jupiter',1],hard:['e_jupiter',2]}
+  bellona:{normal:['e_bellona',1],hard:['e_bellona',2]}, limbo:{normal:['e_limbo',1],hard:['e_limbo',2],extreme:['e_limbo',5]},
+  baldrix:{normal:['e_baldrix',1],hard:['e_baldrix',2]}, jupiter:{normal:['e_jupiter',1],hard:['e_jupiter',2]}  // b252: 발드릭스 익스트림 개수는 matsu937(5개) 단일 출처라 미추가 (namu '?개'); 림보 익스트림 5개는 namu+matsu937 일치
 };
 const eternalFor = (b,diff) => { const v=ETERNAL[b?.id]?.[diff]; return v?{k:v[0],n:v[1]}:null; };
 /* 확정 지급 메멘토 큐브 개수 (정보 표시 전용: 클릭·집계·수익 기록 없음). b=메멘토 수상한 에디셔널(브론즈 에디셔널) 큐브, s=메멘토 실버 큐브, g=메멘토 골드 큐브
@@ -655,6 +661,7 @@ function applyAutoBosses(j){
       if(!b.diffs.includes(d)){ b.diffs.push(d); b.diffs.sort((x,y)=>DIFF_ORDER.indexOf(x)-DIFF_ORDER.indexOf(y)); (b.autoDiffs=b.autoDiffs||[]).push(d); ch=true; }
       const k=priceKey(b,d), p=Math.round(+v.price);
       if(!(k in PRICE_CONFIG) && p>=1e5 && p<=5e10){ PRICE_CONFIG[k]=p; ch=true; }
+      else if(k in BUILTIN_PRICE_LOCK && p>0 && p!==BUILTIN_PRICE_LOCK[k]) noteConflict(k,p,v.src&&v.src.url);
       const pm=+v.partyMax; if(pm>=1&&pm<=6&&PARTY_MAX[b.id]==null){ PARTY_MAX[b.id]={[d]:pm}; ch=true; }
       else if(pm>=1&&pm<=6&&typeof PARTY_MAX[b.id]==='object'&&PARTY_MAX[b.id][d]==null){ PARTY_MAX[b.id][d]=pm; ch=true; }
       for(const nm of (Array.isArray(v.drops)?v.drops:[])){ if(typeof nm!=='string'||!nm||nm.length>30) continue;
@@ -2980,12 +2987,17 @@ function parseBossLabel(label){
 // 테섭 예정 가격으로 잠깐 바꿔 계산 (예정 가격이 없으면 null)
 function withUpcoming(fn){ const up=officialInfo&&officialInfo.upcoming; if(!up||!Object.keys(up).length) return null; const keep={};
   for(const k in up){ keep[k]=PRICE_CONFIG[k]; PRICE_CONFIG[k]=up[k]; } try{ return fn(); } finally{ for(const k in keep) PRICE_CONFIG[k]=keep[k]; } }
+// b252: 사용자 승인 내장값 — 공식/자동 수집 가격보다 우선. 다른 공식 값이 오면 덮지 않고 priceConflicts 에 기록.
+const BUILTIN_PRICE_LOCK={limbo_extreme:7500000000, baldrix_extreme:9600000000};
+const priceConflicts=[];
+const noteConflict=(k,v,src)=>{ if(!priceConflicts.some(c=>c.key===k&&c.official===v)){ priceConflicts.push({key:k,builtin:BUILTIN_PRICE_LOCK[k],official:v,src}); try{console.info('[price-conflict]',k,'내장',BUILTIN_PRICE_LOCK[k],'공식',v,src||'');}catch(e){} } };
 function applyOfficialPrices(pj){
   if(!pj||!Array.isArray(pj.rows)) return false;
   const today=dayId(); let changed=false, applied=0; const pending=[];
   for(const r of pj.rows){ const m=parseBossLabel(r.boss); const v=Math.round(+r.new); if(!m||!(v>0)) continue;
     const k=priceKey(m.b,m.d);
     if(r.effective && r.effective>today){ pending.push({key:k,effective:r.effective,price:v}); continue; } // 적용일 전에는 기존 값 유지
+    if(k in BUILTIN_PRICE_LOCK){ if(v!==BUILTIN_PRICE_LOCK[k]) noteConflict(k,v,(pj.source||{}).url); continue; }
     if(PRICE_CONFIG[k]!==v){ PRICE_CONFIG[k]=v; changed=true; } applied++;
   }
   // 테섭 예정 가격 (pj.upcoming): 실서버 가격은 그대로, 다른 값만 '테섭 예정 → N' 표시

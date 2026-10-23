@@ -59,7 +59,7 @@ try:
       return {k:r.querySelector('[data-mk]').getAttribute('aria-label'),no:!!x,txt:x&&x.textContent,col:x&&getComputedStyle(x).color,fam:x&&getComputedStyle(x).fontFamily,nameFam:getComputedStyle(n).fontFamily,
         left:x?Math.round(ir.left-xr.right):null,clip:n.scrollWidth>n.clientWidth+1,h:Math.round(r.getBoundingClientRect().height),one:x?xr.height<24:true}})""")
     no=[x['k'].split(' 시세')[0] for x in R if x['no']]
-    check("'시세 정보 없음' = 최신 날짜에 값 못 받은 아이템만(오만의 원죄·귀고리·소울 에테르 1~4)", sorted(no)==sorted(['오만의 원죄','익셉셔널 해머 (귀고리)','1단계 소울 에테르','2단계 소울 에테르','3단계 소울 에테르','4단계 소울 에테르']), no)
+    check("'시세 정보 없음' = 최신 날짜에 값 못 받은 아이템만(오만의 원죄·귀고리·포켓·펜던트(b252)·소울 에테르 1~4)", sorted(no)==sorted(['오만의 원죄','익셉셔널 해머 (귀고리)','익셉셔널 해머 (포켓)','익셉셔널 해머 (펜던트)','1단계 소울 에테르','2단계 소울 에테르','3단계 소울 에테르','4단계 소울 에테르']), no)
     bad=[x for x in R if x['no'] and not (x['txt']=='시세 정보 없음' and x['col'] in ('rgb(255, 107, 107)',) and 0<=x['left']<=12 and x['one'] and x['fam']==x['nameFam'])]
     check('빨간 글씨·메소 칸 바로 왼쪽·한 줄·이름과 같은 글꼴', not bad, bad[:2])
     check('이름 안 잘림·줄 높이 같음', not [x for x in R if x['clip']] and len({x['h'] for x in R})==1, ([x['k'] for x in R if x['clip']],{x['h'] for x in R}))

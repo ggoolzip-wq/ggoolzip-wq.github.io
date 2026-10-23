@@ -65,7 +65,7 @@ try:
         check('아이템 가격 탭: 체크박스 없음', pg.locator('.pricecard #pcMine').count()==0)
         rows=pg.eval_on_selector_all('.pc-it',"e=>e.map(x=>[x.dataset.pit,x.querySelector('.pc-nm').innerText,x.querySelector('b').innerText,!!x.querySelector('img')])")
         exp=pg.evaluate("revItems()")
-        check('목록 = 수익 기록 가능한 아이템 전부, itemCmp 순서, 아이콘', [x[0] for x in rows]==exp and pg.evaluate("(l=>l.every((k,i)=>!i||itemCmp(l[i-1],k)<=0))(revItems())") and all(x[3] for x in rows) and len(rows)>20, len(rows))
+        check('목록 = 수익 기록 가능한 아이템 전부, itemCmp 순서, 아이콘', [x[0] for x in rows]==exp and pg.evaluate("(l=>l.every((k,i)=>!i||itemCmp(l[i-1],k)<=0))(revItems())") and all(x[3] for x in rows if x[0] not in ('h_pocket','h_pendant')) and len(rows)>20, len(rows))
         check('칠흑 상자 대신 장신구, 반지 상자 대신 리4·컨4·생명의 연마석', 'chaosbox' not in exp and ('cb:belt' in exp or 'belt' in exp) and 'ring:r4' in exp and 'g_life' in exp and not any(x.startswith('r_') for x in exp), exp[:8])
         d={x[0]:x[2] for x in rows}
         check('시세 표시 (서버 /api/prices): 근원의 속삭임 62억, 익셉셔널 해머(얼굴장식) 61억 9,900만', d.get('whisper')=='62.00억 메소' and d.get('h_face')=='61.99억 메소' and SRV['pub']>=1, (d.get('whisper'),d.get('h_face'),SRV['pub']))

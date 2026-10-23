@@ -91,7 +91,7 @@ try:
     check('창 열 때 서버 mai 받음', SRV['getp']>g0)
     rows=pg.evaluate("[...document.querySelectorAll('#mktModal .rarow')].map(r=>r.dataset.pid)")
     exp=sorted(k for k in rows if k not in MAI['got'])
-    check("자동 갱신만으로 '시세 정보 없음' 표시 (손 입력 아이템)", auto_miss==exp and set(auto_miss)<=set(HAND) and 'sin' in auto_miss, (auto_miss,exp))
+    check("자동 갱신만으로 '시세 정보 없음' 표시 (손 입력 아이템)", auto_miss==exp and set(auto_miss)<=set(HAND)|{'h_pocket','h_pendant'} and 'sin' in auto_miss, (auto_miss,exp))
     R=pg.evaluate("[...document.querySelectorAll('#mktModal .mkno')].map(x=>{const inp=x.nextElementSibling;return {t:x.textContent,c:getComputedStyle(x).color,next:inp&&inp.classList.contains('rain')}})")
     check('빨간 글씨·메소 칸 바로 왼쪽', R and all(x['t']=='시세 정보 없음' and x['c']=='rgb(255, 107, 107)' and x['next'] for x in R), R[:2])
     check('입력값은 그대로(손 입력 오만의 원죄 111억)', pg.evaluate("document.querySelector('#mktModal .rarow[data-pid=sin] input').value")=='111')

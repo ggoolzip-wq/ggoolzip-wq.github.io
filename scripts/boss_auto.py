@@ -38,6 +38,12 @@ def builtin(app_path=APP):
         out.append({"id": m.group(1), "name": m.group(2), "type": m.group(3), "diffs": q(m.group(4)), "aliases": q(m.group(5))})
     return out
 
+def builtin_prices(app_path=APP):
+    """src/app.js PRICE_CONFIG → {key: price}"""
+    s = open(app_path, encoding="utf-8").read()
+    m = re.search(r"PRICE_CONFIG\s*=\s*\{(.*?)\n\};", s, re.S)
+    return {k: int(v) for k, v in re.findall(r"'([a-z0-9_]+)'\s*:\s*(\d+)", m.group(1) if m else "")}
+
 def find_boss(name, bosses):
     n = norm(name)
     for b in bosses:
@@ -155,6 +161,15 @@ def apply(d, findings, src, live, built=None, at=None):
             continue
         b = find_boss(f["name"], built)
         if b and f["diff"] in b["diffs"]:
+            # b252: 내장 우선 — 공지 가격이 내장 가격과 다르면 덮지 않고 conflicts 에 기록만
+            bp = builtin_prices().get(f"{b['id']}_{f['diff']}")
+            if bp and isinstance(f.get("price"), int) and f["price"] != bp:
+                c = {"boss": b["name"], "diff": f["diff"], "builtin": bp, "official": f["price"], "src": src}
+                cl = d.setdefault("conflicts", [])
+                if not any(x["boss"] == c["boss"] and x["diff"] == c["diff"] and x["official"] == c["official"] for x in cl):
+                    cl.append(c); changed = True
+                    d["log"].append({"at": at, "action": "conflict", **c})
+                    print(f"[boss-auto] 가격 충돌 {b['name']}({f['diff']}) 내장 {bp} ≠ 공지 {f['price']} → 내장 유지")
             continue  # 내장 데이터 우선: 이미 있는 보스·난이도는 절대 건드리지 않음
         name = b["name"] if b else f["name"]
         lst = d["bosses"] if live else d["pending"]

@@ -2045,3 +2045,13 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 림보·발드릭스 익스트림: 815 공지로 난이도만 추가. 결정석 가격은 공식 미공개 → "가격 미확인"(0원 행은 가격 카드 맨 아래). 커뮤니티 75억/96억은 넣지 않음. 인원 3(기존 값), 드롭·아이콘 미추가.
 - 테스트 test_b251(샘플 파서·가상 신규 보스·병합·덮어쓰기 금지·림보/발드릭스 매칭). tracker9(48줄, 0원 맨 아래)·tracker44(가격 미확인) 기대값 수정. 전체 통과.
 - 사진 /workspace/b251/{before,after}.png
+
+## b252 (2026-10-23 15:36~15:56 KST) 익스트림 림보·발드릭스 내장 데이터 (결정석·드롭)
+- 결정석(PRICE_CONFIG, 공식 미발표 → 사용자 승인 커뮤니티 값): 림보 익스트림 7,500,000,000 / 발드릭스 익스트림 9,600,000,000. 출처 namu.wiki '강렬한 힘의 결정', matsu1207.tistory.com/757. 가격 미확인 해제.
+- 내장 우선: BUILTIN_PRICE_LOCK — prices.json(공식)·bosses_auto.json 값이 다르면 덮지 않고 priceConflicts + console '[price-conflict]' 기록. scripts/boss_auto.py 도 내장 가격과 다른 공지 가격을 data/bosses_auto.json "conflicts"·log(action=conflict)에 기록.
+- BOSSES 내장 diffs 에 extreme 추가 (bosses_auto.json 은 그대로, 중복 무해).
+- 새 아이템: 익셉셔널 해머 (포켓) h_pocket = 익림, 익셉셔널 해머 (펜던트) h_pendant = 익발. 출처 공지 815(1.2.420), 인벤 322439·322167, namu, matsu1207 /937. KMST V1207 id 2644209/2644210 — maplestory.io 아이콘 없음(404) → 기본 글자 아이콘. 시세 출처 없음 → 가격 없음.
+- 하드 이월(익스트림에도 드롭, namu+matsu937 일치): 근원의 속삭임/죽음의 맹세, 혼돈의 칠흑 장신구 상자, 신념의 연마석, 3단계 소울 에테르, 생명의 보스 반지 상자(맨 끝). 에테르넬: 왜곡된 욕망의 결정 익림 5개(2출처).
+- 미추가(단일/미확인): 영원한 충성의 흔적 익발 5개(matsu937만, namu '?'), 에리온의 조각 익스트림 개수(양쪽 '?'), 솔 에르다 기운 익스트림 개수, 근원의 그림자 모몽(드롭 보스 미확인). 에테르넬 방어구 상자·에리온·로이드·소울 조각은 b253 전체 감사에서.
+- 테스트 test_b252 추가. b251(내장 우선으로 815 추가 없음, 75억), tracker84(새 해머 아이콘 예외), tracker45(1600px 반지 상자 줄 2줄 허용, 1920 유지), b208·b220(새 해머 = 시세 없는 손입력) 기대값 수정. 전체 통과.
+- 사진 /workspace/b252/{before,after}.png, {before,after}_price.png
