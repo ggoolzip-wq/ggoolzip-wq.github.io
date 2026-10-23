@@ -752,6 +752,7 @@ tr.rkpad td{border-color:transparent}
 .missbn .dlv{margin-left:1px}.missbn .dlv+.dlv{margin-left:0}
 .misstbl .missbn .hbi{width:18px;height:18px;flex:none}
 .missbl.noico .hbi{display:none}
+.missbl.tight .missbn{gap:1px}.missbl.tight .missbn:not(:last-child)::after{margin:0 2px 0 1px}.missbl.tight{letter-spacing:-.02em}
 /* 시드링 획득 타율: 반지 상자 결과 크고 굵게, 라벨 초록 / 기댓값은 작고 색 없음 */
 .ringsum{font-size:1.1rem;font-weight:800;white-space:nowrap;overflow-x:auto}
 .ringsum .rslab{color:#3fd07a;font-weight:900}

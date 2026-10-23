@@ -36,7 +36,7 @@ try:
             pg.evaluate(f"()=>{{rankPage.miss={i};render()}}"); pg.wait_for_timeout(120)
             m=pg.evaluate(MISS)
             check(f'(1) {vw}px {i}쪽: 가로 스크롤·잘림 없음, 이름/보스 묶음 한 줄, 글자>=10px', m['ovw']<=0 and m['ovc']<=1 and not m['names'] and not m['groups'] and m['minfs']>=10, m)
-            if vw>=1920: check(f'(1) {vw}px {i}쪽: 줄바꿈 없음(전부 한 줄)', m['wrapped']==0, m)  # b252: 생명 반지 상자 줄(보스 8개·난이도 15칸)은 1600px 에서 2줄 허용 — 묶음 안 쪼개짐·잘림 없음은 위에서 확인
+            if vw>=1600: check(f'(1) {vw}px {i}쪽: 줄바꿈 없음(전부 한 줄)', m['wrapped']==0, m)  # b253: tight 단계 추가로 1600px 도 한 줄 복구
         if vw in (1920,1280,1024,390): pg.locator('#missItems').screenshot(path=os.path.join(SHOT,f'oct12_after_miss_{vw}.png'))
     # (2) 낮은 창: 아래 카드가 잘리지 않고 스크롤로 전부 보임 (캐릭터 8명 = 사이드바가 긴 경우 포함)
     VIS="""(sel=>{const e=document.querySelector(sel);if(!e)return null;if(getComputedStyle(e).display==='none')return {hidden:true};
