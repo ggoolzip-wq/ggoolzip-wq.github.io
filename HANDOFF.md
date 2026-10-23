@@ -2071,3 +2071,10 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 앱솔랩스(ab_w/ab_a) 하드·익스 스우, 하드 데미안 / 아케인셰이드(ar_w/ar_a) 하드 루시드·윌·듄켈, 카오스 더스크, 진힐라(노말·하드), 검마(하드·익스) 정보 칩. 출처: 나무위키 "앱솔랩스 세트"/"아케인셰이드 세트" + matsu937 표(익스 스우는 matsu "하드 이상"만).
 - 아이콘: tools/build_items.py 가 ESPCN x2(tools/models/ESPCN_x2.pb)+unsharp, 알파 bicubic → 64px webp q92 data-URI 인라인(새 배포 파일 없음 → pages_dist.sh 변경 불필요). img 에 width/height=32 고정, extra.css pixelated→auto. 새 원본 15종 src/assets/itemicons/ (나무 boss 페이지, maplestory.io KMS389/GMS270). 위컴알 원본은 미사용(Item.wz 없음). 에리온=GMS 4009615 "Vestige of Erion" 추정.
 - 테스트: test_b252(발드릭스 익스 7), test_b253 갱신, test_b254 신규. 전체 suite 158 통과.
+
+## b255 (2026-10-23 19:10~19:20 KST) — 드롭 표 칩 순서: 에르다 → 큐브 → 나머지 (각 그룹 안 비싼 순)
+- `src/app.js` `dropGrp(k)`: 아이템 이름(n·s)에 '에르다' = 0, '큐브' = 1, 그 외 = 2. `dropsHtml` 의 `shown` 정렬 = dropGrp → (나머지 안에서 반지 상자 맨 끝, b247) → `dropSortP` 비싼 순 → 원래 순서. 지금 내장 기록 아이템 중 이름에 에르다/큐브인 것은 없음(새 보스 자동 추가·앞으로 추가될 아이템용 규칙).
+- 정보 칩(기록 안 함): 솔 에르다의 기운 → 메멘토 큐브(예전엔 상자 칩 뒤) → 에테르넬·에리온·칼로스/카링/대적자/앱솔/아케인 상자(그대로). 모멘텀 큐브 등 off 칩 위치 그대로.
+- 테스트: 신규 tests/test_b255.py (모의 아이템 솔 에르다/솔 에르다의 조각/블랙 큐브/명장의 큐브를 세렌에 넣고 순서·그룹 안 가격·전체 줄·정보 칩 순서; `MBT_SHOTDIR` 1600px 사진, `MBT_ROOT` 변경 전), run_all.sh 등록. tests/test_b246.py 정렬 검사 = 그룹 안 비싼 순.
+- 사진(모의 아이템·시세): /workspace/b255/before_seren_drops_1600.png · after_seren_drops_1600.png.
+- 전체 테스트 run_par 159개 통과 (test_tracker14·test_b239 병렬 1차 실패 → 직렬 재시도 통과).

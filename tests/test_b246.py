@@ -14,7 +14,7 @@ srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.
 B=lambda d,p=1:{'enabled':True,'diff':d,'party':p}
 C={'id':'c0','name':'zetking','level':285,'job':'히어로','world':'스카니아','ocid':'','accId':'','isMain':True,'image':'','bosses':{'seren':B('extreme'),'kaling':B('hard'),'kalos':B('chaos'),'limbo':B('hard'),'lucid':B('hard'),'will':B('hard')},'weekly':{},'monthly':{},'auto':{},'drops':{},'sync':{}}
 ST={'version':5,'theme':'dark','activeId':'c0','characters':[C],'history':[],'monthHistory':[],'worldOrder':[],'settings':{'accounts':[]}}
-ORD="""()=>[...document.querySelectorAll('.drops')].filter(d=>d.offsetParent).map(d=>[...d.querySelectorAll('[data-drop]')].map(e=>{const k=e.dataset.drop.split('|')[1];return [k,dropSortP(k)]}).filter(x=>!isRing(x[0])))"""
+ORD="""()=>[...document.querySelectorAll('.drops')].filter(d=>d.offsetParent).map(d=>[...d.querySelectorAll('[data-drop]')].map(e=>{const k=e.dataset.drop.split('|')[1];return [k,dropSortP(k),typeof dropGrp==='function'?dropGrp(k):2]}).filter(x=>!isRing(x[0])))"""
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
@@ -30,7 +30,7 @@ try:
       if CHECK:
         rows=pg.evaluate(ORD)
         check(f'drop rows found {vw}', len([r for r in rows if len(r)>1])>=3, len(rows))
-        bad=[r for r in rows if any(r[i][1]<r[i+1][1] for i in range(len(r)-1))]
+        bad=[r for r in rows if any((r[i][2],-r[i][1])>(r[i+1][2],-r[i+1][1]) for i in range(len(r)-1))]  # b255: 에르다→큐브→나머지 그룹 안에서 비싼 순
         check(f'chips sorted by price desc {vw}', not bad, bad[:1])
         anyp=[r for r in rows if any(x[1]>0 for x in r) and any(x[1]==0 for x in r)]
         check(f'unpriced last {vw}', all(r.index(next(x for x in r if x[1]==0))>=sum(1 for x in r if x[1]>0) for r in anyp), anyp[:1])

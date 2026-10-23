@@ -306,21 +306,23 @@ function dropTierCls(c,b,k,got){
   const t=priceTier(tierP(k))||'sky'; return tierCls(t,got?t:''); } // b240: 10억 미만·시세 없음 = 하늘색
 // b246: 드롭 칩 정렬 가격 = 테두리 등급과 같은 시세(tierP). 반지 상자 = 리4·컨4 확률(ring4, BOX_INFO) × 리4/컨4 시세 기댓값
 const dropSortP = k => { if(isRing(k)){ const p=ring4(k); return p?(p.r4/100)*tierP('ring:r4')+(p.c4/100)*tierP('ring:c4'):0; } return tierP(k); };
+// b255: 드롭 칩 그룹 = 에르다(이름에 '에르다') 0 → 큐브(이름에 '큐브') 1 → 나머지 2, 그룹 안은 비싼 순(나머지 안에서 반지 상자 맨 끝 b247 유지)
+const dropGrp = k => { const n=(ITEMS[k]?.n||'')+' '+(ITEMS[k]?.s||''); return /에르다/.test(n)?0:/큐브/.test(n)?1:2; };
 const dropOpen=new Set(); // '+N'을 눌러 펼친 보스 행
 function dropsHtml(b,diff,c){
   const ks=dropsFor(b,diff), off=dropsOff(b,diff), en=erdaFor(b,diff); if(!ks.length&&!off.length&&!en&&!erionFor(b,diff)&&!eternalFor(b,diff)&&!mementoFor(b,diff)&&!infoBoxFor(b,diff).length) return '';
   const et=eternalFor(b,diff);
   const eo=erionFor(b,diff);
   const erda=(en?`<span class="drop erda" aria-label="솔 에르다의 기운 ${en}개">${itemIcon('erda')}<b class="ecnt">${en}</b></span>`:'')
+    +mementoHtml(mementoFor(b,diff)) // b255: 큐브 정보 칩 = 에르다 다음
     +(et?`<span class="drop erda eter" data-tip="${esc(eternalTip(et.k,et.n,diff))}" aria-label="${esc(ITEMS[et.k].n)} ${et.n}개">${itemIcon(et.k)}<b class="ecnt">${et.n}</b></span>`:'')
     +(eo?`<span class="drop erda erion" aria-label="에리온의 조각 ${eo}개">${ITEM_ICONS.erion?itemIcon('erion'):'<span class="ifb" aria-hidden="true">에</span>'}<b class="ecnt">${eo}</b></span>`:'')
-    +infoBoxFor(b,diff).map(k=>`<span class="drop erda ibox" aria-label="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}</span>`).join('')
-    +mementoHtml(mementoFor(b,diff));
+    +infoBoxFor(b,diff).map(k=>`<span class="drop erda ibox" aria-label="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}</span>`).join('');
   const cnt=k=>c?dropCount(c,b,k):0;
   const chip=k=>{const it=ITEMS[k], n=cnt(k);
     return `<span class="drop s-${it.set} ${n?'got':''}${dropTierCls(c,b,k,n>0)}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span></span>`;};
   // 2026-10-10 사용자 요청: 아이템을 '+N' 묶음 칩으로 합치지 않음 — 생명/신념 연마석, 소울 에테르 1~4단계, 반지 상자 모두 각자 칩(각자 아이콘·클릭 +1), 넘치면 다음 줄로
-  const shown=ks.map((k,i)=>[k,i,dropSortP(k)]).sort((a,b)=>(isRing(a[0])-isRing(b[0]))||b[2]-a[2]||a[1]-b[1]).map(a=>a[0]); // b246: 비싼 순(시세 없음 = 뒤, 같으면 원래 순서) · b247: 반지 상자는 항상 맨 끝(상자끼리는 기댓값 순)
+  const shown=ks.map((k,i)=>[k,i,dropSortP(k)]).sort((a,b)=>dropGrp(a[0])-dropGrp(b[0])||(isRing(a[0])-isRing(b[0]))||b[2]-a[2]||a[1]-b[1]).map(a=>a[0]); // b246: 비싼 순(시세 없음 = 뒤, 같으면 원래 순서) · b247: 반지 상자는 항상 맨 끝(상자끼리는 기댓값 순)
   // 아래 줄: 이 보스에서 획득한 아이템 (모든 화면과 같은 형식: 이름(N인 분배) ×개수 결과)
   const mine=c?(d=>({items:Object.fromEntries(Object.entries(d.items).filter(([k])=>k.split('|')[0]===b.id)),outcomes:d.outcomes}))(charDrops(c,b.type)):null;
   const ringLine=mine?itemsInline(mine.items,{outs:mine.outcomes}):'';
