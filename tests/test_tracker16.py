@@ -87,7 +87,7 @@ try:
             pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(250); pg.evaluate('feedFit()')
             c=pg.evaluate(CARDS); h0=pg.evaluate(NOSIDE)
             ratio=c['fh']/(c['fh']+c['sh'])
-            check(f'{vw}x{vh} {t}: feed ≈1/3 (or its 2-row minimum), sun the rest', c['sdisp']!='none' and (0.28<=ratio<=0.40 or (ratio>0.40 and c['fh']<=133)), (round(ratio,3),c['fh'],c['sh']))
+            check(f'{vw}x{vh} {t}: feed ≈1/3 (or b257 5-row minimum while sun keeps 140px), sun the rest', c['sdisp']!='none' and (0.28<=ratio<=0.40 or (ratio>0.40 and (c['fh']<=133 or (c['fh']<=231 and c['sh']>=140)))), (round(ratio,3),c['fh'],c['sh']))
             if vw==1920: check(f'{vw}x{vh} {t}: ratio ≈1/3 exactly', 0.30<=ratio<=0.37, round(ratio,3))
             check(f'{vw}x{vh} {t}: no extra page height, both cards inside viewport', c['doc']<=max(h0,c['ih']) and c['sbot']<=c['ih'], (c['doc'],h0,c['sbot'],c['ih']))
             check(f'{vw}x{vh} {t}: image contained, benefit line last & inside card', c['img'] and c['img']['fit']=='contain' and c['img']['nw']>0 and c['img']['h']<=c['sh'] and c['ben'] and c['ben']['last'] and c['ben']['ws']=='nowrap' and c['ben']['bot']<=c['sbot'] and c['img']['bot']<=c['ben']['bot'], c)

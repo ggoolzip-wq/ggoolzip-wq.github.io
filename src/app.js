@@ -4218,7 +4218,7 @@ function sunLbClose(){ const lb=$('#sunLb'); if(!lb) return; lb.remove(); docume
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('#sunLb')){ e.preventDefault(); e.stopPropagation(); sunLbClose(); } },true);
 $('#sunCard').addEventListener('click',e=>{ if(e.target.closest('[data-sunopen]')) sunLightbox(); });
 /* 카드 높이 = 남은 화면 높이 (페이지가 이 카드 때문에 스크롤되지 않게), 쪽당 글 수 = 그 높이에 들어가는 줄 수 */
-const FEED_FLOW_ROWS=5, SUN_FLOW_H=320; // b61: 낮은 창(.side-flow)일 때 소식 줄 수·썬데이 높이
+const FEED_FLOW_ROWS=5, FEED_MIN_ROWS=5, FEED_PAD=76, SUN_FLOW_H=320; // b257: FEED_PAD = 머리글·탭·쪽 번호 높이(실측 74px, 예전 70 이라 5줄 자리에 4줄만 들어갔음) // b61: 낮은 창(.side-flow)일 때 소식 줄 수·썬데이 높이
 function feedFit(){
   const c=$('#feedCard'); if(!c) return; let old=feed.per;
   const sun=$('#sunCard');
@@ -4234,13 +4234,13 @@ function feedFit(){
     const hStatic=Math.max(innerHeight-topDoc-below, viewBot-topDoc);
     const hStick=innerHeight-stick-inner-16;                                                        // 따라 내려올 때도 화면 안
     const h=Math.floor(Math.min(hStatic,hStick))-1;
-    const minH=FEED_ROW*2+70, SUN_MIN=140, gap=12;
+    const minH=FEED_ROW*2+FEED_PAD, want=FEED_ROW*FEED_MIN_ROWS+FEED_PAD, SUN_MIN=140, gap=12; // b257: 소식(공지) 칸 = 썬데이 최소 높이가 남는 한 5줄
     // 남은 높이를 소식 1/3 : 썬데이 2/3 로 나눔. 썬데이 칸이 너무 작아지면(SUN_MIN 미만) 썬데이를 숨기고 소식이 전부 사용
     // b61: 화면이 낮아(또는 캐릭터 카드가 길어) 소식 최소 + 썬데이 최소가 안 들어가면 → 사이드바를 따라오지 않게(.side-flow, position:static)
     // 하고 두 카드를 기본 높이로 → 페이지가 길어지고 스크롤로 전부 닿음 (예전: 썬데이를 숨기고 sticky 라 아래가 잘림)
     const flow=h-gap<minH+(sun?SUN_MIN:0); aside.classList.toggle('side-flow',flow);
-    let fh=Math.max(minH,Math.round((h-gap)/3)), sh=h-gap-fh;
-    if(flow){ fh=FEED_ROW*FEED_FLOW_ROWS+70; sh=SUN_FLOW_H; }
+    let fh=Math.max(minH,Math.round((h-gap)/3),Math.min(want,h-gap-SUN_MIN)), sh=h-gap-fh;
+    if(flow){ fh=FEED_ROW*FEED_FLOW_ROWS+FEED_PAD; sh=SUN_FLOW_H; }
     if(sun){ if(sh>=SUN_MIN){ sun.style.display=''; sun.style.height=sh+'px'; sun.classList.toggle('tight',sh<230); } else { sun.style.display='none'; fh=h; } }
     c.style.height=Math.max(minH,fh)+'px';
     const fb=c.querySelector('.fbody'); const avail=fb?fb.clientHeight:0;
