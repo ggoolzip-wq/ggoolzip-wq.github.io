@@ -431,8 +431,41 @@ def test_prices(new_items, fetch=None):
 def today_kst():
     return datetime.datetime.now(KST).strftime("%Y-%m-%d")
 
+def _post_no(u):
+    m = re.search(r"/(\d+)/?$", str(u or "")); return int(m.group(1)) if m else 0
+
+def merge_partial(prices, rows, it, info):
+    """작은(부분) 가격표를 기존 rows 에 반영. 라벨이 '이름(난이도)' 이고 1e5~5e10 메소일 때만, 기존 표보다 새 공지일 때만"""
+    base = prices.get("rows") or []
+    if len(base) < PATCH_MIN_ROWS or _post_no(it.get("url")) <= _post_no((prices.get("source") or {}).get("url")):
+        return False
+    if (prices.get("partial") or {}).get("url") == it.get("url"):
+        return False
+    lab = re.compile(r"^.+?\s*[(（]\s*(이지|노멀|노말|하드|카오스|익스트림)\s*[)）]\s*$")
+    if not all(lab.match(r["boss"]) and 100000 <= r["new"] <= 50_000_000_000 for r in rows):
+        return False
+    k = lambda b: re.sub(r"\s+", "", str(b))
+    idx = {k(r["boss"]): i for i, r in enumerate(base)}
+    out = [dict(r) for r in base]
+    for r in rows:
+        if k(r["boss"]) in idx: out[idx[k(r["boss"])]] = r
+        else: out.append(r)  # 새 보스·난이도 가격
+    prices["rows"] = out
+    prices["changedAt"] = (it.get("date") or "").replace(".", "-")[:10] or today_kst()
+    prices["partial"] = {"url": it["url"], "title": info.get("title") or it.get("title", ""), "date": (it.get("date") or "")[:10], "rows": len(rows)}
+    prices["checkedAt"] = now_iso()
+    up = prices.get("upcoming") or {}
+    if up.get("rows"):
+        live = {k(r["boss"]): r["new"] for r in out}
+        keep = [r for r in up["rows"] if live.get(k(r["boss"])) != r.get("new")]
+        if keep: up["rows"] = keep
+        else: prices.pop("upcoming", None)
+    log(f"[patch-prices] 부분 가격표 {len(rows)}줄 반영 ← {it['url']}")
+    return True
+
 # 본섭 업데이트 공지(패치내역 새 글) + 테섭 예정 가격이 있을 때만: 그 공지의 가격표로 실서버 가격 갱신, 예정 표시 삭제
 _PATCH_NEW = []
+_PATCH_ALL = []  # b251: 마이너 패치 포함 (새 보스 감지용)
 PATCH_MIN_ROWS = 20
 def patch_prices(new_items, fetch=None):
     try:
@@ -454,7 +487,13 @@ def patch_prices(new_items, fetch=None):
             log(f"::warning::[patch-prices] {it['url']} 본문 실패: {e}"); continue
         rows = [{k: r[k] for k in ("boss", "old", "new", "effective", "effective_note") if k in r} for r in info["rows"]]
         log(f"[patch-prices] {it['title'][:40]} → 가격 줄 {len(rows)}개")
-        if len(rows) < PATCH_MIN_ROWS or any(not isinstance(r.get("new"), int) or r["new"] <= 0 for r in rows):
+        if any(not isinstance(r.get("new"), int) or r["new"] <= 0 for r in rows):
+            continue
+        if len(rows) < PATCH_MIN_ROWS:  # b251: 일부 보스만 바뀌는 작은 가격표 → 기존 표의 그 줄만 바꿈 (예: 1.2.420 카링 익스트림↔유피테르 하드)
+            if rows and merge_partial(prices, rows, it, info):
+                with open(PRICES, "w", encoding="utf-8") as f:
+                    json.dump(prices, f, ensure_ascii=False, indent=1); f.write("\n")
+                return True
             continue
         if rows != prices.get("rows"):  # b171: 본섭 반영으로 가격이 바뀌면 '가격 변동일'도 그 공지 날짜로
             prices["changedAt"] = (it.get("date") or "").replace(".", "-")[:10] or today_kst()
@@ -465,6 +504,18 @@ def patch_prices(new_items, fetch=None):
             json.dump(prices, f, ensure_ascii=False, indent=1); f.write("\n")
         return True
     return False
+
+# b251: 새 보스·새 난이도 자동 추가 (scripts/boss_auto.py → data/bosses_auto.json). 테섭 = 대기, 본섭 = 확정
+def boss_auto_run(test_items, patch_items, fetch=None):
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import boss_auto
+    fetch = fetch or (lambda u: http_get(u, proxy=True)[1])
+    ch = False
+    if test_items:
+        ch = boss_auto.process(sorted(test_items, key=lambda x: str(x["id"])), False, fetch) or ch
+    if patch_items:
+        ch = boss_auto.process(sorted(patch_items, key=lambda x: str(x["id"])), True, fetch) or ch
+    return ch
 
 # ---------------- 마빡도로시 (인벤) ----------------
 def inven_rows(s):
@@ -718,6 +769,7 @@ def main():
                 _TEST_NEW[:] = new
             if k == "patch":
                 _PATCH_NEW[:] = [x for x in new if str(x["id"]).startswith("update:")]
+                _PATCH_ALL[:] = [x for x in new if x.get("url")]
             n = merge(lst, new)
             for x in lst:  # b70: 날짜 없는 글은 처음 수집한 시각(seen) 기록 → 사이트가 7일 지나면 N 표시 안 함
                 if not x.get("date") and not x.get("seen"):
@@ -749,6 +801,12 @@ def main():
         prices_changed = patch_prices(_PATCH_NEW) or prices_changed
     except Exception as e:
         log(f"::warning::[test-prices] 실패: {e}")
+    bosses_changed = False
+    try:
+        bosses_changed = boss_auto_run(_TEST_NEW, _PATCH_ALL)
+    except Exception as e:
+        log(f"::warning::[boss-auto] 실패: {e}")
+    prices_changed = prices_changed or bosses_changed  # 커밋·배포 트리거 공유
     sun_changed = False
     try:
         sun_changed = src_sunday(feed, run_all, minute)

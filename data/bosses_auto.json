@@ -1,0 +1,71 @@
+{
+ "version": 1,
+ "bosses": [
+  {
+   "id": "limbo",
+   "name": "림보",
+   "diffs": {
+    "extreme": {
+     "src": {
+      "url": "https://maplestory.nexon.com/News/Update/815",
+      "title": "메이플스토리 1.2.420 업데이트 (10/22)",
+      "date": "2026-10-22",
+      "server": "live"
+     },
+     "addedAt": "2026-10-23T15:16:31+09:00"
+    }
+   },
+   "builtin": true,
+   "type": "weekly"
+  },
+  {
+   "id": "baldrix",
+   "name": "발드릭스",
+   "diffs": {
+    "extreme": {
+     "src": {
+      "url": "https://maplestory.nexon.com/News/Update/815",
+      "title": "메이플스토리 1.2.420 업데이트 (10/22)",
+      "date": "2026-10-22",
+      "server": "live"
+     },
+     "addedAt": "2026-10-23T15:16:31+09:00"
+    }
+   },
+   "builtin": true,
+   "type": "weekly"
+  }
+ ],
+ "pending": [],
+ "log": [
+  {
+   "at": "2026-10-23T15:16:31+09:00",
+   "action": "add",
+   "boss": "림보",
+   "diff": "extreme",
+   "fields": [],
+   "how": "sentence",
+   "src": {
+    "url": "https://maplestory.nexon.com/News/Update/815",
+    "title": "메이플스토리 1.2.420 업데이트 (10/22)",
+    "date": "2026-10-22",
+    "server": "live"
+   }
+  },
+  {
+   "at": "2026-10-23T15:16:31+09:00",
+   "action": "add",
+   "boss": "발드릭스",
+   "diff": "extreme",
+   "fields": [],
+   "how": "sentence",
+   "src": {
+    "url": "https://maplestory.nexon.com/News/Update/815",
+    "title": "메이플스토리 1.2.420 업데이트 (10/22)",
+    "date": "2026-10-22",
+    "server": "live"
+   }
+  }
+ ],
+ "updatedAt": "2026-10-23T15:16:31+09:00"
+}

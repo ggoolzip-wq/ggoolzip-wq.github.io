@@ -33,8 +33,9 @@ try:
     pg.wait_for_function('typeof officialInfo!=="undefined" && !!officialInfo',timeout=8000); pg.evaluate('render()'); foot=pg.inner_text('.pricecard .pc-foot'); check('card foot auto line', foot.startswith('공식 패치 노트 기준 자동 갱신\n(') and '마지막 확인 ' in foot, foot)  # b79: (가격 변동일 …, 마지막 확인 MM.DD HH:MM)
     check('card title(b112: 결정석 가격 탭) has crystal icon', pg.query_selector('.pricecard .pc-kind [data-pckind=cry] img.ric') is not None)
     check('no 수정 link in card', pg.query_selector('.pricecard [data-tab]') is None)
-    check('46 official rows applied', pg.evaluate('officialInfo.applied')==46 and not pg.evaluate('officialInfo.pending.length'))
-    wk=pg.evaluate("priceRows('weekly').map(r=>r.p)"); shown=pg.eval_on_selector_all('.pricecard .pc-list > .pc-row','e=>e.length')
+    check('48 official rows applied', pg.evaluate('officialInfo.applied')==48 and not pg.evaluate('officialInfo.pending.length'))
+    wk=pg.evaluate("priceRows('weekly').map(r=>r.p>0?r.p:Infinity)");  # b251: 가격 미확인(0) = 맨 아래
+    shown=pg.eval_on_selector_all('.pricecard .pc-list > .pc-row','e=>e.length')
     check('card rows sorted ascending', wk==sorted(wk) and shown==len(wk)+2, (shown,len(wk)))
     check('card list scrolls inside, tall enough (2026-10-10: ~16 rows when space)', pg.evaluate("(()=>{const l=document.querySelector('.pc-list');return l.scrollHeight>l.clientHeight&&l.clientHeight>=200})()"))
     check('no settings tab / price editing / update button', pg.query_selector('[data-tab="settings"]') is None and pg.query_selector('input[data-price]') is None and pg.query_selector('#priceUpdBtn') is None and pg.query_selector('#priceModal') is None)

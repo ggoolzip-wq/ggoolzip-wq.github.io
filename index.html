@@ -2196,12 +2196,12 @@ const PRICE_CONFIG = {
   'seren_normal':167000000, 'seren_hard':302000000, 'seren_extreme':1840000000,
   'kalos_easy':238000000, 'kalos_normal':479000000, 'kalos_chaos':1230000000, 'kalos_extreme':4104000000,
   'adversary_easy':261000000, 'adversary_normal':532000000, 'adversary_hard':1390000000, 'adversary_extreme':4712000000,
-  'kaling_easy':320000000, 'kaling_normal':593000000, 'kaling_hard':1560000000, 'kaling_extreme':5387000000,
+  'kaling_easy':320000000, 'kaling_normal':593000000, 'kaling_hard':1560000000, 'kaling_extreme':4845000000,
   'star_normal':576000000, 'star_hard':2678000000,
   'limbo_normal':995000000, 'limbo_hard':2385000000,
   'baldrix_normal':1320000000, 'baldrix_hard':3078000000,
   'bellona_easy':396000000, 'bellona_normal':824000000, 'bellona_hard':2950000000,
-  'jupiter_normal':1560000000, 'jupiter_hard':4845000000,
+  'jupiter_normal':1560000000, 'jupiter_hard':5387000000,
   // 월간
   'blackmage_hard':465000000, 'blackmage_extreme':5680000000
 };
@@ -2780,6 +2780,46 @@ function migrate(){
 /* 보스·난이도별 최대 파티 인원 (기본 CONFIG.MAX_PARTY=6). 익스트림 스우 2인 · 최초의 대적자/찬란한 흉성/벨로나/림보/발드릭스/유피테르 3인 */
 const PARTY_MAX = { lotus:{extreme:2}, adversary:3, star:3, bellona:3, limbo:3, baldrix:3, jupiter:3 };
 const partyMax = (b,diff) => { const v=PARTY_MAX[b?.id??b]; const n=typeof v==='object'?v?.[diff]:v; return Math.max(1,Math.min(CONFIG.MAX_PARTY,+n||CONFIG.MAX_PARTY)); };
+/* =====================================================================
+ *  b251: 새 보스·새 난이도 자동 추가 (scripts/boss_auto.py 가 공식 공지에서 찾아 data/bosses_auto.json 에 기록, Actions 가 커밋)
+ *  - 빌드 때 그 파일을 AUTO_BOSSES 로 넣고, 접속하면 ./data/bosses_auto.json 을 다시 받아 합침 (이 브라우저에 보관)
+ *  - 더하기만 함: 없는 난이도·보스만 추가, 가격·파티 인원·드롭은 내장 값이 없을 때만. 내장 데이터가 항상 우선
+ * ===================================================================== */
+const AUTO_BOSSES={"version":1,"bosses":[{"id":"limbo","name":"림보","diffs":{"extreme":{"src":{"url":"https://maplestory.nexon.com/News/Update/815","title":"메이플스토리 1.2.420 업데이트 (10/22)","date":"2026-10-22","server":"live"},"addedAt":"2026-10-23T15:16:31+09:00"}},"builtin":true,"type":"weekly"},{"id":"baldrix","name":"발드릭스","diffs":{"extreme":{"src":{"url":"https://maplestory.nexon.com/News/Update/815","title":"메이플스토리 1.2.420 업데이트 (10/22)","date":"2026-10-22","server":"live"},"addedAt":"2026-10-23T15:16:31+09:00"}},"builtin":true,"type":"weekly"}],"pending":[],"log":[{"at":"2026-10-23T15:16:31+09:00","action":"add","boss":"림보","diff":"extreme","fields":[],"how":"sentence","src":{"url":"https://maplestory.nexon.com/News/Update/815","title":"메이플스토리 1.2.420 업데이트 (10/22)","date":"2026-10-22","server":"live"}},{"at":"2026-10-23T15:16:31+09:00","action":"add","boss":"발드릭스","diff":"extreme","fields":[],"how":"sentence","src":{"url":"https://maplestory.nexon.com/News/Update/815","title":"메이플스토리 1.2.420 업데이트 (10/22)","date":"2026-10-22","server":"live"}}],"updatedAt":"2026-10-23T15:16:31+09:00"};
+const AUTO_KEY='mapleBossTracker.autoBosses';
+const DIFF_ORDER=['easy','normal','hard','chaos','extreme'];
+function applyAutoBosses(j){
+  if(!j||!Array.isArray(j.bosses)) return false; let ch=false;
+  for(const e of j.bosses){ if(!e||typeof e.name!=='string'||!e.diffs||typeof e.diffs!=='object') continue;
+    const n=normName(e.name);
+    let b=BOSSES.find(x=>x.id===e.id)||BOSSES.find(x=>[x.name,...(x.aliases||[])].map(normName).includes(n));
+    if(!b){ if(!/^auto_[0-9a-f]{8}$/.test(String(e.id))) continue;
+      b={id:e.id,name:e.name.slice(0,20),type:e.type==='monthly'?'monthly':'weekly',diffs:[],auto:true};
+      const i=b.type==='weekly'?BOSSES.findIndex(x=>x.type==='monthly'):-1; if(i<0) BOSSES.push(b); else BOSSES.splice(i,0,b); ch=true; }
+    for(const [d,v] of Object.entries(e.diffs)){ if(!DIFF_ORDER.includes(d)||!v) continue;
+      if(!b.diffs.includes(d)){ b.diffs.push(d); b.diffs.sort((x,y)=>DIFF_ORDER.indexOf(x)-DIFF_ORDER.indexOf(y)); (b.autoDiffs=b.autoDiffs||[]).push(d); ch=true; }
+      const k=priceKey(b,d), p=Math.round(+v.price);
+      if(!(k in PRICE_CONFIG) && p>=1e5 && p<=5e10){ PRICE_CONFIG[k]=p; ch=true; }
+      const pm=+v.partyMax; if(pm>=1&&pm<=6&&PARTY_MAX[b.id]==null){ PARTY_MAX[b.id]={[d]:pm}; ch=true; }
+      else if(pm>=1&&pm<=6&&typeof PARTY_MAX[b.id]==='object'&&PARTY_MAX[b.id][d]==null){ PARTY_MAX[b.id][d]=pm; ch=true; }
+      for(const nm of (Array.isArray(v.drops)?v.drops:[])){ if(typeof nm!=='string'||!nm||nm.length>30) continue;
+        let key=Object.keys(ITEMS).find(x=>ITEMS[x].n===nm);
+        if(!key){ key='auto_'+[...nm].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7).toString(16); ITEMS[key]={n:nm,set:'기타',auto:true}; }
+        const L=DROPS[b.id]=DROPS[b.id]||[]; const r=L.find(x=>x[0]===key);
+        if(!r){ L.push([key,[d]]); ch=true; } else if(!r[1].includes(d)){ r[1].push(d); ch=true; } }
+    }
+  }
+  return ch;
+}
+let autoSig='';
+function fetchAutoBosses(){
+  if(!/^https?:$/.test(location.protocol)) return;
+  fetch(`./data/bosses_auto.json?t=${Math.floor(Date.now()/300000)}`,{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(j=>{
+    if(!j||!Array.isArray(j.bosses)) return; const sig=JSON.stringify(j); if(sig===autoSig) return; autoSig=sig;
+    try{ localStorage.setItem(AUTO_KEY,sig); }catch(e){}
+    if(applyAutoBosses(j)){ try{ const c=JSON.parse(localStorage.getItem(PRICES_CACHE_KEY)||'null'); if(c) applyOfficialPrices(prMerge(c,srvPr())); }catch(e){} render(); }
+  }).catch(()=>{});
+}
 /* 저장된 파티 인원이 한도를 넘으면 한도로 낮춤 (나머지는 그대로) */
 function clampParty(c,slot){ const cfg=c?.bosses?.[slot]; if(!cfg) return; const b=findBoss(slot); if(!b) return; const m=partyMax(b,cfg.diff||b.diffs[0]); if((parseInt(cfg.party)||1)>m) cfg.party=m; }
 let dropClampN=0; // 2026-10-10: 보스·아이템당 기간 1개로 — 예전 2개 이상 기록을 1로 줄인 수 (콘솔 보고)
@@ -4182,7 +4222,7 @@ let pcMine = localStorage.getItem('mapleBossTracker.pcMine')==='1';
 // 내가 잡는 보스만: 등록된 캐릭터 중 하나라도 켜 둔 보스+난이도 (난이도는 따로)
 const myBossKeys = () => new Set(activeChars().flatMap(c=>BOSSES.filter(b=>bossOn(c,b)).map(b=>{ const d=c.bosses[b.id].diff; return priceKey(b,b.diffs.includes(d)?d:b.diffs[0]); })));
 const priceRows = g => { const mine=pcMine?myBossKeys():null; return priceRows0(g).filter(r=>!mine||mine.has(r.k)); };
-const priceRows0 = g => BOSSES.filter(b=>b.type===g).flatMap(b=>b.diffs.map(d=>({b,d,k:priceKey(b,d),p:price(b,d)}))).sort((x,y)=>x.p-y.p);
+const priceRows0 = g => BOSSES.filter(b=>b.type===g).flatMap(b=>b.diffs.map(d=>({b,d,k:priceKey(b,d),p:price(b,d)}))).sort((x,y)=>(x.p>0?x.p:Infinity)-(y.p>0?y.p:Infinity)); // b251: 가격 미확인(0) = 맨 아래
 // b79: '마지막 확인' = KST 'MM.DD HH:MM' (예전 날짜만 있는 값은 'YYYY-MM-DD' 그대로)
 const ckText = v => { const t=v&&/T\d/.test(v)?Date.parse(v):NaN; if(!isFinite(t)) return v||'-'; const d=new Date(t+9*3600e3), p=n=>String(n).padStart(2,'0'); return `${p(d.getUTCMonth()+1)}.${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`; };
 // b171: 마지막 확인 = checkedAt·테섭 예정 반영 시각 중 늦은 것 (예전 prices.json 은 테섭 반영 때 checkedAt 을 안 바꿨음)
@@ -4234,7 +4274,7 @@ function fitOnePrice(card){ if(!card||!card.querySelector('.pc-row')) return;
 function priceCard(opt={}){ /* b203: opt.kind = 종류 고정, opt.land = 로그인 전 첫 화면(읽기 전용: 종류 버튼 1개만·누를 수 없음, '내가 잡는 보스만'·패치 후 탭 없음) */
   const kind=opt.kind||pcKind, land=!!opt.land, LA=land?` data-land="${kind}"`:'';
   const up=(officialInfo&&officialInfo.upcoming)||{}, PR=land?priceRows0:priceRows;
-  const row=r=>{ const u=up[r.k]; return `<div class="pc-row${u?' has-up':''}" title="${esc(r.b.name)} ${D[r.d]} — ${r.p.toLocaleString()} 메소${u?` · 테섭 예정 ${u.toLocaleString()} 메소`:''}">${bossPic(r.b,r.d,false)}<span class="pc-nm">${esc(r.b.name)} ${dlvHtml(r.d)}</span><b>${meso(r.p)}${u?`<span class="pc-up">테섭 예정 → ${meso(u)}</span>`:''}</b></div>`; };
+  const row=r=>{ const u=up[r.k]; return `<div class="pc-row${u?' has-up':''}" title="${esc(r.b.name)} ${D[r.d]} — ${r.p.toLocaleString()} 메소${u?` · 테섭 예정 ${u.toLocaleString()} 메소`:''}">${bossPic(r.b,r.d,false)}<span class="pc-nm">${esc(r.b.name)} ${dlvHtml(r.d)}</span><b>${r.p>0?meso(r.p):'<span class="muted" title="공식 결정석 가격 미발표">가격 미확인</span>'}${u?`<span class="pc-up">테섭 예정 → ${meso(u)}</span>`:''}</b></div>`; };
   const kt0=`<div class="pc-kind" role="tablist"><button type="button" role="tab" data-pckind="cry" class="${pcKind==='cry'?'on':''}" aria-selected="${pcKind==='cry'}">${miniIcon('ipc')} 결정석 가격</button><button type="button" role="tab" data-pckind="item" class="${pcKind==='item'?'on':''}" aria-selected="${pcKind==='item'}">${itemIcon('genesis')} 아이템 가격</button></div>`;
   const kt=land?`<div class="pc-kind pc-kind-land"><span class="on">${kind==='item'?`${itemIcon('genesis')} 아이템 가격`:`${miniIcon('ipc')} 결정석 가격`}</span></div>`:kt0;
   if(kind==='item'){ const P=itemPrices();
@@ -4264,7 +4304,7 @@ function bossRow(c,b){
     return `<div class="boss" style="${cfg.enabled?'':'opacity:.7'}">
       <label class="chk ${cfg.enabled?'on':''}" data-toggle="${slot}">${cfg.enabled?'✓':''}</label>
       <div class="grow"><div class="bn">${bossIcon(b)}${esc(b.name)}</div>
-        <div class="diffs">${b.diffs.map(d=>`<span class="diff ${d===diff?'sel':''}" data-setdiff="${slot}|${d}">${D[d]} · ${meso(price(b,d))}</span>`).join('')}</div></div>
+        <div class="diffs">${b.diffs.map(d=>`<span class="diff ${d===diff?'sel':''}" data-setdiff="${slot}|${d}">${D[d]} · ${price(b,d)>0?meso(price(b,d)):'가격 미확인'}</span>`).join('')}</div></div>
     </div>`;
   }
   return `<div class="boss ${done?'done':''}">
@@ -6008,7 +6048,8 @@ try{ if(SV_ON&&!svTok()&&(S.characters.length||accounts().length||S.history.leng
 // b217: 예전(b216 전) 방식으로 본계정 키를 지운 기기 = 세션은 남았는데 키가 하나도 없음 → 처음 온 사람 상태(예시 화면). 서버 데이터는 그대로(세션만 끝냄)
 try{ if(SV_ON&&svTok()&&!accounts().some(a=>a.key||a.bk)&&!svPend()){ const t=svTok(); svWipeAll(); fetch(SV_ON+'/api/logout',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json',Authorization:'Bearer '+t}}).catch(()=>{}); } }catch(e){ console.warn('b217 keyless session',e); }
 if(!S.activeId && S.characters[0]) S.activeId=S.characters[0].id;
-checkResets(); loadOfficialPrices(); save(); applyTheme(); bootRender('start'); // b217: 이 시점엔 아래쪽 const(admPrices·feed 등)가 아직 없음 → 오류가 나도 스크립트가 멈추지 않게, 파일 끝에서 다시 그림
+try{ applyAutoBosses(AUTO_BOSSES); applyAutoBosses(JSON.parse(localStorage.getItem(AUTO_KEY)||'null')); }catch(e){ console.warn('auto bosses',e); } // b251: 가격 적용 전에 보스·난이도부터
+checkResets(); loadOfficialPrices(); fetchAutoBosses(); save(); applyTheme(); bootRender('start'); // b217: 이 시점엔 아래쪽 const(admPrices·feed 등)가 아직 없음 → 오류가 나도 스크립트가 멈추지 않게, 파일 끝에서 다시 그림
 addEventListener('resize',()=>{ clearTimeout(fitPriceCard._t); fitPriceCard._t=setTimeout(()=>{ fitPriceCard(); fitMiss(); },150); });
 /* b109: 왼쪽 위 '메보수' → '이번 주 보스' 탭 (탭 버튼 클릭과 같은 경로: 저장 안 한 변경 확인 포함) */
 document.getElementById('logoHome')?.addEventListener('click',e=>{ e.preventDefault(); document.querySelector('#tabs [data-tab="boss"]')?.click(); });

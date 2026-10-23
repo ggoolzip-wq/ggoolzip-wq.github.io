@@ -2036,3 +2036,12 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 서버 데이터는 고치지 않음 — 사용자가 사이트를 열어 동기화하면 등록 기준으로 12개로 돌아감(시뮬레이션: 실제 저장 상태 + 실제 응답으로 applyScheduler 2번 → 이전 빌드 12→3, b250 12→12).
 - 테스트 tests/test_b250.py(run_all 끝; b249 에서는 실패 재현). 전체 154개 통과(직렬 재시도 2개 = 병렬 부하).
 - 사진 /workspace/b250/{before,after}_{트딕이,zetking}.png (실제 저장 상태 + 실제 응답, 로컬 시뮬레이션)
+
+## b251 (2026-10-23 15:10~15:35 KST) 신규 보스/난이도 자동 추가 + 림보·발드릭스 익스트림
+- scripts/boss_auto.py: 공식 패치(본섭)·테스트서버 공지에서 "보스 X에 <난이도> 모드 추가", "신규 보스 'X'(난이도) 추가", 가격표 "X(난이도)"(1e5~5e10만), "최대 N인", 주간/월간, "처치 시 '아이템' 획득"을 찾음. 불확실한 칸은 비워 둠.
+- update_feed.py 가 매 실행 boss_auto_run → data/bosses_auto.json(Actions 가 커밋, pages_dist 로 _site/data 복사). 테섭 발견 = pending, 본섭 공지가 나오면 bosses 로 확정. 중복 제거, 지우거나 덮어쓰지 않음(빈 칸만 채움), log 300개.
+- app.js applyAutoBosses: 기본 데이터 우선(가격·인원은 없을 때만, 신규 보스 id 는 auto_xxxxxxxx 만). build.py 가 JSON 을 박아 넣고 부팅 때 data/bosses_auto.json 도 새로 받아 적용.
+- 부분 가격표(20줄 미만) merge_partial: 1.2.420(News/Update/815) 의 카링(익스트림) 48.45억 / 유피테르(하드) 53.87억 반영(prices.json 48줄).
+- 림보·발드릭스 익스트림: 815 공지로 난이도만 추가. 결정석 가격은 공식 미공개 → "가격 미확인"(0원 행은 가격 카드 맨 아래). 커뮤니티 75억/96억은 넣지 않음. 인원 3(기존 값), 드롭·아이콘 미추가.
+- 테스트 test_b251(샘플 파서·가상 신규 보스·병합·덮어쓰기 금지·림보/발드릭스 매칭). tracker9(48줄, 0원 맨 아래)·tracker44(가격 미확인) 기대값 수정. 전체 통과.
+- 사진 /workspace/b251/{before,after}.png

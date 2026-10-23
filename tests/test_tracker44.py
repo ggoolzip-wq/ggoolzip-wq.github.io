@@ -26,7 +26,7 @@ try:
     load('boss')
     m=pg.evaluate("[meso(0),meso(5000),meso(150000000),meso(60000)]")
     check('A: meso() 단위 메소', m==['0 메소','5,000 메소','1.50억 메소','6만 메소'], m)
-    pr=pg.evaluate("[...document.querySelectorAll('.pricecard .pc-row b')].every(e=>/메소/.test(e.innerText))")
+    pr=pg.evaluate("[...document.querySelectorAll('.pricecard .pc-row b')].every(e=>/메소|가격 미확인/.test(e.innerText))")
     check('A: 가격 카드 금액 전부 메소', pr)
     pg.evaluate("()=>{S.characters[0].bosses.lotus.diff='normal';render()}")
     off=pg.evaluate("(()=>{const e=Object.entries(RING_DROPS.r_red)[0],b=findBoss(e[0]),d=e[1][0];return [dropsFor(b,d).includes('r_red'),dropsOff(b,d).includes('r_red'),missingItems(totalData()).some(o=>o.k==='r_red'),b.id+d]})()")

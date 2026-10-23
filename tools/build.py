@@ -25,6 +25,9 @@ s = s.replace('/*__BOSS_ICONS__*/{}', json.dumps(js('icons.json'), separators=('
 s = s.replace('/*__ITEM_ICONS__*/{}', json.dumps(js('itemicons.json'), separators=(',', ':')))
 if os.path.exists(os.path.join(SRC, 'worldicons.json')):  # 공식 월드 아이콘 (tools/build_worlds.py)
     s = s.replace('/*__WORLD_ICONS__*/{}', json.dumps(js('worldicons.json'), separators=(',', ':'), ensure_ascii=False))
+AUTO = os.path.join(os.path.dirname(os.path.abspath(SRC)), 'data', 'bosses_auto.json')  # b251
+if os.path.exists(AUTO):
+    s = s.replace('/*__AUTO_BOSSES__*/{}', json.dumps(json.load(open(AUTO, encoding='utf-8')), separators=(',', ':'), ensure_ascii=False).replace('</', '<\\/'))
 css = rd('style_v1.css').replace('</style>', rd('extra.css') + '</style>')
 LOGO = js("logo.json")  # b109: 강렬한 힘의 결정 (주간) item 4001928 (assets/ringicons/4001928.png) — 예전 주황버섯
 head = ('<!DOCTYPE html>\n<html lang="ko" data-theme="dark">\n<head>\n<meta charset="UTF-8">\n'
