@@ -29,14 +29,14 @@ try:
     r=pg.evaluate("""()=>{const f=id=>BOSSES.find(b=>b.id===id);
       const allD=BOSSES.flatMap(b=>b.diffs.map(d=>dropsFor(b,d))).flat();
       return {as:Object.keys(ITEMS).filter(k=>/^[as]_/.test(k)), asD:allD.filter(k=>/^[as]_/.test(k)),
-        noRec:['b_kalos','b_adv','b_kaling'].filter(k=>allD.includes(k)), rec:['b_star','b_limbo','b_baldrix','b_bellona','b_jupiter'].filter(k=>allD.includes(k)),
+        noRec:['b_kalos','b_adv','b_kaling','b_star'].filter(k=>allD.includes(k)), rec:['b_limbo','b_baldrix','b_bellona','b_jupiter'].filter(k=>allD.includes(k)),
         ib:Object.fromEntries(BOSSES.flatMap(b=>b.diffs.map(d=>[b.id+'|'+d,infoBoxFor(b,d)])).filter(x=>x[1].length)),
         noIcon:Object.keys(ITEMS).filter(k=>!ITEM_ICONS[k]&&!/^hong_/.test(k)), sl:[...SET_LABEL?Object.keys(SET_LABEL):[]]}}""")
     check('로이드·소울 조각 ITEMS·DROPS 에서 삭제', not r['as'] and not r['asD'], r['as']+r['asD'])
     check('칼로스·대적자·카링 방어구 상자 = DROPS 에 없음(기록 안 함)', not r['noRec'], r['noRec'])
-    check('흉성·림보·발드릭스·벨로나·유피테르 상자 = 기록 가능 유지', len(r['rec'])==5, r['rec'])
+    check('흉성·림보·발드릭스·벨로나·유피테르 상자 = 기록 가능 유지', len(r['rec'])==4, r['rec'])
     AB=['ab_w','ab_a']; AR=['ar_w','ar_a']
-    exp={'kalos|chaos':['b_kalos'],'kalos|extreme':['b_kalos'],'adversary|hard':['b_adv'],'adversary|extreme':['b_adv'],'kaling|hard':['b_kaling'],'kaling|extreme':['b_kaling'],
+    exp={'kalos|chaos':['b_kalos'],'kalos|extreme':['b_kalos'],'adversary|hard':['b_adv'],'adversary|extreme':['b_adv'],'kaling|hard':['b_kaling'],'kaling|extreme':['b_kaling'],'star|hard':['b_star'],
       'lotus|hard':AB,'lotus|extreme':AB,'damien|hard':AB,'lucid|hard':AR,'will|hard':AR,'dusk|chaos':AR,'jinhilla|normal':AR,'jinhilla|hard':AR,'dunkel|hard':AR,'blackmage|hard':AR,'blackmage|extreme':AR}
     check('정보 칩 보스·난이도 표 (앱솔: 하드 스우·데미안 / 아케인: 하드 루시드·윌·듄켈, 카오스 더스크, 진힐라, 검마)', r['ib']==exp, r['ib'])
     check('모든 ITEMS 에 이미지 아이콘(글자 아이콘 없음)', not r['noIcon'], r['noIcon'])

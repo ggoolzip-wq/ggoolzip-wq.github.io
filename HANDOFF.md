@@ -21,6 +21,14 @@
 3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
+## b262 (2026-10-24 KST, 작업 20:34~20:42 KST)
+- 요청: 흉성의 방어구 상자(b_star '환상의 에테르넬 방어구 상자')도 칼로스·카링·대적자처럼 아이콘 정보 칩으로.
+- 찬란한 흉성(하드)만 해당: DROPS 에서 b_star 제거 → INFOBOX star:{hard:['b_star']}. 에리온 칩 바로 옆 `.drop.erda.ibox`, data-tip 이름 말풍선, data-drop 없음 → 클릭해도 기록 없음.
+- ITEMS.b_star 는 그대로 → 지난 기록(드롭·수익·history) 표시 유지.
+- 테스트: test_b262 추가, test_b254 (b_star = 기록 안 함, 정보 칩 표에 star|hard) 수정.
+- 전체 테스트: test_tracker28 만 실패(기존부터), tracker14 는 직렬 재시도 통과. Worker 변경 없음.
+- 사진: /workspace/b262 (before_/after_ star_drops·star_tip).
+
 ## b261 (2026-10-24 KST, 작업 19:56~20:06 KST)
 - 요청: 드랍 테이블의 보스별 장신망 상자는 이름을 바꾸지 않음. b260 의 b_sjm 합치기를 되돌림.
 - 드롭표(DROPS) = 원래 상자 키·이름·WZ 아이콘: 광기 b_bellona(벨로나 H), 욕망 b_limbo(림보 H/EX), 맹세 b_baldrix(발드릭스 H/EX), 갈망 b_jupiter(유피테르 H).

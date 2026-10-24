@@ -219,7 +219,7 @@ const DROPS = {
   kalos:[['h_eye',['extreme']],['g_life',['normal','chaos','extreme']]],
   adversary:[['legacy',['hard','extreme']],['g_life',['normal','hard','extreme']],['se1',['normal','hard','extreme']]],
   kaling:[['chaosbox',['normal','hard','extreme']],['h_ear',['extreme']],['g_life',['normal']],['g_faith',['hard','extreme']],['se1',['normal','hard','extreme']]],
-  star:[['bliss',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']],['b_star',['hard']]],
+  star:[['bliss',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']]], // b262: b_star(환상의 상자) → INFOBOX 정보 칩
   // b252: 익스트림 — 공지 815(1.2.420)·인벤 322439/322167: 익림 → 익셉셔널 해머 (포켓), 익발 → 익셉셔널 해머 (펜던트). 시세 출처 없음 → 가격 미표시라 맨 뒤(반지 상자 앞).
   //   하드 공통 보상 이월은 namu.wiki 림보/발드릭스 보상 + matsu1207.tistory.com/937 두 출처 일치.
   limbo:[['whisper',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pocket',['extreme']],['b_limbo',['hard', 'extreme']]],
@@ -255,11 +255,11 @@ const ERION = { seren:{extreme:30}, kalos:{extreme:180}, adversary:{hard:30,extr
   limbo:{hard:60}, baldrix:{hard:120}, jupiter:{normal:45,hard:360} };
 const erionFor = (b,diff) => +(ERION[b?.id]?.[diff])||0;
 /* b254: 기록하지 않는 상자 정보 칩 (에리온의 조각 칩 바로 뒤, 에리온이 없는 보스도 같은 자리). 아이콘만 + aria-label · b258: data-tip = 아이템 이름(여명 장신구 off 칩과 같은 말풍선).
- * 에테르넬 방어구 상자: 칼로스·최초의 대적자·카링은 기록 안 함(정보), 흉성·림보·발드릭스·벨로나·유피테르는 DROPS 에서 기록 그대로.
+ * 에테르넬 방어구 상자: 칼로스·최초의 대적자·카링·흉성(b262)은 기록 안 함(정보), 림보·발드릭스·벨로나·유피테르는 DROPS 에서 기록 그대로.
  * 앱솔랩스 상자: 하드 스우·하드 데미안 (나무위키 '앱솔랩스 세트' + 메이플 보스 보상표 matsu937). 익스트림 스우 = 보상표 '하드 이상'.
  * 아케인셰이드 상자: 하드 루시드·하드 윌·카오스 더스크·노멀/하드 진 힐라·하드 듄켈·하드/익스트림 검은 마법사 (나무위키 '아케인셰이드 세트' + 보상표). */
 const AB=['ab_w','ab_a'], AR=['ar_w','ar_a'];
-const INFOBOX = { kalos:{chaos:['b_kalos'],extreme:['b_kalos']}, adversary:{hard:['b_adv'],extreme:['b_adv']}, kaling:{hard:['b_kaling'],extreme:['b_kaling']},
+const INFOBOX = { kalos:{chaos:['b_kalos'],extreme:['b_kalos']}, adversary:{hard:['b_adv'],extreme:['b_adv']}, kaling:{hard:['b_kaling'],extreme:['b_kaling']}, star:{hard:['b_star']}, /* b262: 흉성 하드 상자 = 정보 칩 */
   lotus:{hard:AB,extreme:AB}, damien:{hard:AB}, lucid:{hard:AR}, will:{hard:AR}, dusk:{chaos:AR}, jinhilla:{normal:AR,hard:AR}, dunkel:{hard:AR}, blackmage:{hard:AR,extreme:AR} };
 const infoBoxFor = (b,diff) => INFOBOX[b?.id]?.[diff]||[];
 /* 확정 지급 에테르넬 방어구 교환 재료 (정보 표시 전용: 클릭·집계·수익 기록 없음). [아이템 키, 개수]
