@@ -21,6 +21,13 @@
 3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
+## b259 (2026-10-24 KST, 작업 18:59~19:23 KST) — 아이템 아이콘 전부 KMS 클라이언트 WZ 원본으로 교체 + 에리온의 조각 ID 확정
+1. 원본: 사용자 PC C:\Nexon\Maple\Data (읽기만) → Desktop\wz 로 복사 → 박스 /workspace/wz. KMS 현행 WZ 는 암호화된 PKG2 분할 형식(X.wz 색인 + X_000.wz + _Canvas\_Canvas_00N.wz)이라 위컴알 master 는 못 읽음 → Rust wz_reader 0.0.26(pkg2_kmst1205/1206 지원)으로 X_000.wz 를 열고 `<id>.img/info/icon`(장비) · `<앞4자리>.img/<id>/info/icon`(소비·기타)의 `_outlink` 를 해당 `_Canvas_00N.wz` 에서 풀어 PNG 로 저장(위컴알과 같은 방식). 도구 소스는 박스 /tmp/wzt (저장소 밖).
+2. 아이템 ID: 같은 클라이언트 String_000.wz(Eqp/Consume/Etc) 의 이름과 정확히 일치하는 것. 이름 기반이던 키 전부 ID 확정(예: 컴플리트 언더컨트롤 1672095(Character/Android), 근원의 속삭임 1113341, 죽음의 맹세 1122447, 황홀한 악몽 1113360, 오만의 원죄 1012911, 굶주리는 핏빛 원혼 1022397, 불멸의 유산 1143471, 혼돈의 칠흑 장신구 상자 2830338, 익셉셔널 해머 2644204~2644210, 생명 반지 상자 2028430, 리스트레인트 링 1113098, 컨티뉴어스 링 1113329, 소울 에테르 2539020~2539023, 에테르넬 재료·방어구 상자 26380xx/2830xxx/2831xxx/2832xxx). **에리온의 조각 = 4009615 (KMS Etc.img 이름 일치 확인, 추정 아님)**. 같은 이름이 둘인 방어구 상자(의지·흉수·욕망)는 앞 번호.
+3. `tools/build_items.py` SRC = `itemicons/kms/<id>.png` 76종(+ 메소 주머니 9000003 만 KMS String 에 없어 옛 ringicons 유지). 같은 b254 파이프라인(bbox 자르기 → 32px 맞춤 → ESPCN x2 + 언샵 = 64px, 화면 32px). 원본 아이콘은 26~41px 라 모두 업스케일 거침(64px 이상 원본 없음). 수동 키(blink·emo_·dif_·mc_·hong_*) 그대로, itemicons.json 94키.
+4. 테스트: 전체(run_par, 382초, 162개) — test_tracker28 만 실패(b258 과 같은 기존 '캐릭터별 누적' 대기 시간 초과, origin/main 에서도 실패). 새 테스트 없음(아이콘 64×64 는 test_b254 가 검사, 통과).
+5. 사진: /workspace/b259/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png.
+
 ## b242 (2026-10-21 KST)
 - 빨간 안내(.bover) 문구 두 줄: '*스케줄러에 등록된 보스가 12마리를 초과했거나, 보스 클리어 후 스케줄러를 수정하여' / ' 일부 보스가 미출력됩니다.' — weeklyOver(c) 또는 c.bossNext 있음일 때 표시. 위치·색 같음. ⏳ 대기 안내(.bnext)는 유지(빼기 항목은 '○○ 빼기').
 - 버그 수정: 이번 주 응답에서 registration_flag='false' 인 안 잡은 주간 보스는 꺼짐(스케줄러 교체가 바로 적용; 이전엔 옛 보스가 남음). 잡은 보스는 절대 바로 끄지 않음.

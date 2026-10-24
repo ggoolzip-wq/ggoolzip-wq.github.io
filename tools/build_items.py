@@ -1,44 +1,25 @@
-"""드롭 아이템 아이콘(b254: 원본 32px → ESPCN x2 + 언샵 = 64px 선명) → src/itemicons.json  (사용법: python3 tools/build_items.py, Pillow 필요)"""
+"""드롭 아이템 아이콘(b259: KMS WZ 원본 → b254 파이프라인 ESPCN x2 + 언샵 = 64px, 화면 32px) → src/itemicons.json  (사용법: python3 tools/build_items.py, Pillow·opencv 필요)"""
 from PIL import Image
 import base64,io,json,os
 os.chdir(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'src','assets'))
-SRC={ # key: file
- 'lcm':'itemicons/1012632.png','tc':'itemicons_msw/Eqp_Total_Control.png','eye':'itemicons/1022278.png','belt':'itemicons/1132308.png',
- 'book':'itemicons/2633926.png','terror':'itemicons/1113306.png','cfe':'itemicons/1032316.png','sos':'itemicons/1122430.png',
- 'genesis':'itemicons/1182285.png','mitra':'itemicons/2633927.png','twilight':'itemicons/1012757.png','estella':'itemicons/1032330.png',
- 'daybreak':'itemicons/1122443.png','gar':'itemicons/1113313.png',
- 'whisper':'itemicons_msw/Eqp_Whisper_of_the_Source.png','oath':'itemicons_msw/Eqp_Oath_of_Death.png','bliss':'itemicons_msw/Eqp_Blissful_Nightmare.png',
- 'sin':'itemicons_msw/Eqp_Original_Sin_of_Pride.png','spirit':'itemicons_msw/Eqp_Starving_Blood-Red_Vengeful_Spirit.png','legacy':'itemicons_msw/Eqp_Immortal_Legacy.png',
- 'chaosbox':'itemicons_msw/Use_Chaos_Pitched_Accessory_Box.png',
- 'h_face':'itemicons_msw/Use_Exceptional_Hammer_(Face_Acc).png','h_eye':'itemicons_msw/Use_Exceptional_Hammer_(Eye_Acc).png',
- 'h_belt':'itemicons_msw/Use_Exceptional_Hammer_(Belt).png','h_ear':'itemicons_msw/Use_Exceptional_Hammer_(Earrings).png',
- 'cfs':'itemicons/1012478.png','aquatic':'itemicons/1022231.png','zbelt':'itemicons/1132296.png','papmark':'itemicons/1022277.png',
- 'wentus':'itemicons/1182087.png','shoulder':'itemicons/1152170.png',
- 'r_green':'ringicons/2028407.png','r_red':'ringicons/2028408.png','r_black':'ringicons/2028409.png','r_white':'ringicons/2028410.png','r_life':'ringicons/Use_Life_Boss_Ring_Box.png',
- 'ring_restraint':'ringicons/Eqp_Ring_of_Restraint.png','ring_continuous':'ringicons/Eqp_Continuous_Ring.png',
- 'ipcm':'ringicons/4001929.png',  # b110: 강렬한 힘의 결정 (월간), item 4001929 (maplestory.io GMS 255) — itemicons.json 에 직접 추가함(이 스크립트 전체 재실행 시 blink·emo 등 수동 키가 빠지니 주의)
- 'ipc':'ringicons/4001928.png',  # 강렬한 힘의 결정 (주간), item 4001928 (maplestory.io GMS 255 game data = maplestorywiki 'Etc Intense Power Crystal (Weekly)')
- 'meso':'ringicons/9000003.png',  # 메소 주머니, item 9000003 (maplestory.io GMS 255 game data)
- 'symsel':'ringicons/2437750.png',  # 아케인심볼 선택권 (선택 아케인심볼 1개 교환권), item 2437750 (maplestory.io GMS 255 / KMS 389 game data)
- # 연마석: 생명 2539001 (maplestory.io KMS 389), 신념 2539003 (maplestory.io GMS 270 'Grindstone of Faith' — KMS 데이터에 아직 없음)
- 'g_life':'itemicons/2539001.png','g_faith':'itemicons/2539003.png',
- # 소울 에테르 1~4단계 (2026-09-17 추가, maplestory.io 미수록) — maple.ai.kr 소울웨폰 개편 글의 게임 아이콘 이미지를 잘라 배경 제거
- 'se1':'itemicons/soul_ether_1.png','se2':'itemicons/soul_ether_2.png','se3':'itemicons/soul_ether_3.png','se4':'itemicons/soul_ether_4.png',
- 'erda':'itemicons/2636421.png',
- # 에테르넬 방어구 교환 재료 (정보 칩): 칼로스·카링 = maplestory.io KMST 1170 (2636606/2634472/2636607/2635747), 림보 2638063·발드릭스 2639252 = maplestory.io GMS 270,
- # 대적자·흉성·벨로나·유피테르 = 나무위키 '에테르넬 세트' 문서의 게임 아이콘 파일(i.namu.wiki, 2026-10-10)
- 'e_kalos_f':'itemicons/2636606.png','e_kalos':'itemicons/2634472.png','e_kaling_f':'itemicons/2636607.png','e_kaling':'itemicons/2635747.png',
- 'e_limbo':'itemicons/2638063.png','e_baldrix':'itemicons/2639252.png',
- 'e_adv_f':'itemicons/eternal_adv_f.png','e_adv':'itemicons/eternal_adv.png','e_star_f':'itemicons/eternal_star_f.png','e_star':'itemicons/eternal_star.png',
- 'e_bellona':'itemicons/eternal_bellona.png','e_jupiter':'itemicons/eternal_jupiter.png',
- # b254: 에테르넬 방어구 상자 8종 + 익셉셔널 해머(포켓·펜던트) = 나무위키 각 보스 문서의 게임 아이콘 파일(i.namu.wiki, 2026-10-23)
- 'b_kalos':'itemicons/b_kalos.png','b_adv':'itemicons/b_adv.png','b_kaling':'itemicons/b_kaling.png','b_star':'itemicons/b_star.png',
- 'b_limbo':'itemicons/b_limbo.png','b_baldrix':'itemicons/b_baldrix.png','b_bellona':'itemicons/b_bellona.png','b_jupiter':'itemicons/b_jupiter.png',
- 'h_pocket':'itemicons/h_pocket.png','h_pendant':'itemicons/h_pendant.png',
- # b254: 에리온의 조각 = maplestory.io GMS 270 item 4009615 'Vestige of Erion'
- 'erion':'itemicons/erion.png',
- # b254: 앱솔랩스 무기/방어구 상자 2633912/2633913, 아케인셰이드 무기/방어구 상자 2633914/2633915 (maplestory.io KMS 389)
- 'ab_w':'itemicons/2633912.png','ab_a':'itemicons/2633913.png','ar_w':'itemicons/2633914.png','ar_a':'itemicons/2633915.png'}  # 솔 에르다의 기운 2636421 (maplestory.io KMS 389) — 정보 표시 전용  # 강렬한 힘의 결정 (주간), item 4001928 (maplestory.io GMS 255 game data = maplestorywiki 'Etc Intense Power Crystal (Weekly)')
+# b259: 아이콘 전부 KMS 클라이언트 WZ 원본(C:\Nexon\Maple\Data, PKG2 분할 형식) info/icon 을 _outlink → _Canvas 로 풀어 뽑음(위컴알과 같은 방식, wz_reader 0.0.26).
+#   아이템 ID = 같은 클라이언트 String.wz(Eqp/Consume/Etc) 의 이름과 일치하는 것. 메소 주머니(9000003)만 KMS String 에 없어 옛 파일 유지.
+SRC={k:'itemicons/kms/%d.png'%i for k,i in {
+ 'lcm':1012632, 'tc':1672095, 'eye':1022278, 'belt':1132308, 'book':2633926, 'terror':1113306,
+ 'cfe':1032316, 'sos':1122430, 'genesis':1182285, 'mitra':2633927, 'twilight':1012757, 'estella':1032330,
+ 'daybreak':1122443, 'gar':1113313, 'whisper':1113341, 'oath':1122447, 'bliss':1113360, 'sin':1012911,
+ 'spirit':1022397, 'legacy':1143471, 'chaosbox':2830338, 'h_face':2644205, 'h_eye':2644206, 'h_belt':2644204,
+ 'h_ear':2644207, 'cfs':1012478, 'aquatic':1022231, 'zbelt':1132296, 'papmark':1022277, 'wentus':1182087,
+ 'shoulder':1152170, 'r_green':2028407, 'r_red':2028408, 'r_black':2028409, 'r_white':2028410, 'r_life':2028430,
+ 'ring_restraint':1113098, 'ring_continuous':1113329, 'ipcm':4001929, 'ipc':4001928, 'symsel':2437750, 'g_life':2539001,
+ 'g_faith':2539003, 'se1':2539020, 'se2':2539021, 'se3':2539022, 'se4':2539023, 'erda':2636421,
+ 'e_kalos_f':2636606, 'e_kalos':2634472, 'e_kaling_f':2636607, 'e_kaling':2635747, 'e_limbo':2638063, 'e_baldrix':2639252,
+ 'e_adv_f':2830305, 'e_adv':2830304, 'e_star_f':2831408, 'e_star':2831103, 'e_bellona':2832967, 'e_jupiter':2831104,
+ 'b_kalos':2638064, 'b_adv':2830306, 'b_kaling':2638065, 'b_star':2831105, 'b_limbo':2638066, 'b_baldrix':2639253,
+ 'b_bellona':2832969, 'b_jupiter':2831106, 'h_pocket':2644209, 'h_pendant':2644210, 'erion':4009615, 'ab_w':2633912,
+ 'ab_a':2633913, 'ar_w':2633914, 'ar_a':2633915, 'pcmedal':1142145, 'guildbless':2432290,
+ }.items()}
+SRC['meso']='ringicons/9000003.png'
 import cv2, numpy as np
 _SR=cv2.dnn_superres.DnnSuperResImpl_create(); _SR.readModel(os.path.join(os.path.dirname(os.path.abspath(__file__)),'models','ESPCN_x2.pb')); _SR.setModel('espcn',2)
 def up2(c):
