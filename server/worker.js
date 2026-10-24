@@ -325,15 +325,20 @@ const MAI_NAMES = { lcm: ['루컨마', '루즈 컨트롤 머신 마크'], tc: ['
   whisper: ['근원의 속삭임'], oath: ['죽음의 맹세'], bliss: ['황홀한 악몽'], spirit: ['굶주리는 핏빛 원혼'], legacy: ['불멸의 유산'], papmark: ['파풀마', '파풀라투스 마크'], g_life: ['연마석(스카)', '생명의 연마석'], g_faith: ['신마석(스카)', '신념의 연마석'],
   ring_r4: ['리4', '리스트레인트 링 4레벨'], ring_c4: ['컨4', '컨티뉴어스 링 4레벨'], h_face: ['익셉셔널 얼장'], h_eye: ['익셉셔널 눈장'], h_belt: ['익셉셔널 벨트'], h_ear: ['익셉셔널 귀고리', '익셉셔널 이어링'],
   sin: ['오만의 원죄', '원죄'], se1: ['1단계 소울 에테르', '소울 에테르 1단계', '소울에테르1'], se2: ['2단계 소울 에테르', '소울 에테르 2단계', '소울에테르2'], se3: ['3단계 소울 에테르', '소울 에테르 3단계', '소울에테르3'], se4: ['4단계 소울 에테르', '소울 에테르 4단계', '소울에테르4'] };
+/* b260: 평균 시세 아이템 — 우리 키 = maple.ai.kr 여러 이름 값의 평균(전부 있어야 함). 에테르넬 장신망 상자 = 장갑·신발·망토 중 1개 선택 → 세 값 평균 */
+const MAI_AVG = { b_sjm: ['에테르넬 장갑', '에테르넬 신발', '에테르넬 망토'] };
 const maiNorm = n => String(n || '').replace(/[\s:()\[\]·\-]/g, '').replace(/해머/g, '').replace(/얼굴장식/g, '얼장').replace(/눈장식/g, '눈장').replace(/귀걸이/g, '귀고리');
 const MAI_BY = (() => { const o = {}; for (const [k, L] of Object.entries(MAI_NAMES)) for (const n of L) o[maiNorm(n)] = k; return o; })();
+const MAI_AVG_N = new Set(Object.values(MAI_AVG).flat().map(maiNorm));
 // 값이 없거나 0·숫자 아님 → 그 아이템은 빼고(덮지도 지우지도 않음). 같은 키에 이름이 여럿이면 앞(지금 이름) 우선
 export function maiMap(items, t) { const P = {}, rank = {};
   for (const [n, o] of Object.entries(items || {})) { const k = MAI_BY[maiNorm(n)]; if (!k) continue; const v = +o?.main; if (!(v > 0 && v < 1e6)) continue;
     const r = MAI_NAMES[k].findIndex(x => maiNorm(x) === maiNorm(n)); if (k in rank && rank[k] <= r) continue; rank[k] = r; P[k] = { p: Math.round(v * 1e8), t }; }
+  const byN = {}; for (const [n, o] of Object.entries(items || {})) { const v = +o?.main; if (v > 0 && v < 1e6) byN[maiNorm(n)] = v; }
+  for (const [k, L] of Object.entries(MAI_AVG)) { const vs = L.map(n => byN[maiNorm(n)]); if (vs.every(v => v > 0)) P[k] = { p: Math.round(vs.reduce((a, b) => a + b, 0) / vs.length * 1e8), t }; }
   return P; }
-export const maiUnmatched = items => Object.keys(items || {}).filter(n => !MAI_BY[maiNorm(n)]).sort();
-export const MAI_KEYS = Object.keys(MAI_NAMES); export const maiKeysList = () => MAI_KEYS;
+export const maiUnmatched = items => Object.keys(items || {}).filter(n => !MAI_BY[maiNorm(n)] && !MAI_AVG_N.has(maiNorm(n))).sort();
+export const MAI_KEYS = [...Object.keys(MAI_NAMES), ...Object.keys(MAI_AVG)]; export const maiKeysList = () => MAI_KEYS;
 // b220: 시세 등록 창 '시세 정보 없음' 상태 = 이것 하나 (자동 cron·[최저가 갱신] 둘 다 mai_cache 기준으로 같은 값) — got = 가장 새 시세 날짜에 값을 받은 우리 키
 export const maiInfo = cv => (cv && cv.items ? { date: cv.date, got: Object.keys(maiMap(cv.items, 0)), unmatched: maiUnmatched(cv.items), fetchedAt: cv.fetchedAt || 0 } : null);
 /* b207: maple.ai.kr 시세 자동 갱신 (주인 허락 받음, 예의 있게).

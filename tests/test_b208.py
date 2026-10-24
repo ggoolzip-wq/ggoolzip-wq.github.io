@@ -23,7 +23,7 @@ C={'id':'c1','name':'테스트캐','level':285,'job':'히어로','world':'스카
    'bosses':{'lucid':B('hard'),'kaling':B('normal'),'blackmage':B('extreme'),'zakum':B('chaos')},'weekly':{'lucid':True,'kaling':True},'monthly':{},'auto':{},'sync':{},
    'drops':{'lucid|whisper':1,'lucid|g_faith':1,'kaling|oath':1},'drev':{'lucid|whisper':{'m':500000000,'a':5,'p':1,'i':'whisper'},'kaling|oath':{'m':900000000,'a':9,'p':1,'i':'oath'}}}
 ST={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':[],'monthHistory':[],'characters':[C],'settings':{'accounts':[{'id':'a1','label':'본계정','key':'live_K1_0123456789abcdefgh','main':True}]}}
-MAI={'date':'2026-10-17','got':['lcm','tc','eye','belt','book','terror','cfe','sos','genesis','mitra','whisper','oath','bliss','spirit','legacy','papmark','g_life','g_faith','ring_r4','ring_c4','h_face','h_eye','h_belt']}
+MAI={'date':'2026-10-17','got':['lcm','tc','eye','belt','book','terror','cfe','sos','genesis','mitra','whisper','oath','bliss','spirit','legacy','papmark','g_life','g_faith','ring_r4','ring_c4','h_face','h_eye','h_belt','b_sjm']}
 SRV={'prices':{'whisper':{'p':6200000000,'t':1760000000000},'h_face':{'p':6199000000,'t':1760000000000}},'puts':[],'pub':0,'nx':[]}
 try:
   with sync_playwright() as p:

@@ -37,7 +37,7 @@ check('cron 새 날짜 받음', O['cron']=='new', O['cron'])
 check('자동(cron) mai == 수동([최저가 갱신]) mai (같은 날짜·같은 got)', O['auto']['date']==O['manual']['date']=='2026-10-18' and sorted(O['auto']['got'])==sorted(O['manual']['got'])==O['mapped'], (O['auto'],O['manual']))
 check('got 에 없는 키 = 손 입력 아이템(오만의 원죄·소울 에테르 1~4·귀고리)뿐', sorted(set(O['um']['missing']))==HAND and not (set(HAND)&set(O['auto']['got'])), O['um']['missing'])
 check('손 입력 값 보존(cron 이 안 덮음)', all(O['prices'][k]['p']>0 and O['prices'][k]['t']==1792238400000 for k in HAND), {k:O['prices'][k] for k in HAND})
-check('짝 없는 18개 = 사이트가 기록하지 않는 아이템(여명 회색 칩·에테르넬 방어구·훈장 등) — 짝 버그 아님', len(O['um']['names'])==18 and '데브팬' in O['um']['names'], O['um']['names'])
+check('짝 없는 15개(b260: 에테르넬 장갑·신발·망토 = 장신망 상자 평균) = 사이트가 기록하지 않는 아이템(여명 회색 칩·에테르넬 방어구·훈장 등) — 짝 버그 아님', len(O['um']['names'])==15 and '에테르넬 장갑' not in O['um']['names'] and '데브팬' in O['um']['names'], O['um']['names'])
 check('두 GET 이 같은 maiInfo 사용', O['hasMaiInMaple'] and O['getUses'])
 check('maple.ai.kr 요청 = 모의 2번(cron 1·수동 1, 304)', O['nf']==2 and O['manualStatus']=='same', O['nf'])
 MAI={k:O['auto'][k] for k in ('date','got')}

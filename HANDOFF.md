@@ -21,6 +21,14 @@
 3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
+## b260 (2026-10-24 KST, 작업 19:26~19:40 KST) — 에테르넬 장신망 상자(장갑/신발/망토) 아이템 시세 + 기록 드롭
+1. `src/app.js` ITEMS `b_sjm:{n:'에테르넬 장신망 상자',set:'장신망'}` 1개만 추가(직업/종류별 상자 따로 안 만듦). SET_LABEL '장신망'.
+2. 드롭표: 예전 보스별 상자 칩 b_bellona(광기)·b_limbo(욕망)·b_baldrix(맹세)·b_jupiter(갈망) → `b_sjm` 하나로 교체(기록 가능 칩). 벨로나 하드, 림보 하드·익스트림, 발드릭스 하드·익스트림, 유피테르 하드 (KMS String 설명 '에테르넬 신발, 장갑, 망토 중 1개' + 넥슨 가이드/나무위키 확인). 시즌 보스 카이·메이린 상자도 같은 종류지만 트래커 보스가 아님. 예전 키는 ITEMS 에 남김(옛 기록 표시용).
+3. 아이콘: WZ Item/Consume 0263.img/02638066(욕망의 에테르넬 방어구 상자, 원하는 종류 선택형) → tools/build_items.py `'b_sjm':2638066`.
+4. 시세: `server/worker.js` `MAI_AVG = {b_sjm:['에테르넬 장갑','에테르넬 신발','에테르넬 망토']}` — maiMap 이 maple.ai.kr 세 값이 모두 >0 일 때만 평균 → admin_prices.b_sjm(cron :00/:30 자동 갱신 + 관리자 [최저가 갱신] 같은 길). MAI_KEYS 에 포함, 세 이름은 unmatched 에서 빠짐. 2026-10-24 값: 장갑 18.41 · 신발 19.1 · 망토 18.62 → 18.71억(1,871,000,000).
+   - ⚠ **Worker 배포 필요** (`cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`) — 이번 작업에선 배포 안 함. 배포 전엔 서버가 b_sjm 시세를 안 만들어 '- 메소'/빈 칸.
+5. 테스트: `tests/test_b260.py`(run_all.sh 등록) — maiMap 평균·누락/0 처리·unmatched·MAI_KEYS, 드롭표, 시세 표 1줄, 기록 창 자동 채움 18.71. b253/b254/b208/b220 기대값 갱신. 사진: /workspace/b260 (before/after_pricecard·limbo_drops·record).
+
 ## b259 (2026-10-24 KST, 작업 18:59~19:23 KST) — 아이템 아이콘 전부 KMS 클라이언트 WZ 원본으로 교체 + 에리온의 조각 ID 확정
 1. 원본: 사용자 PC C:\Nexon\Maple\Data (읽기만) → Desktop\wz 로 복사 → 박스 /workspace/wz. KMS 현행 WZ 는 암호화된 PKG2 분할 형식(X.wz 색인 + X_000.wz + _Canvas\_Canvas_00N.wz)이라 위컴알 master 는 못 읽음 → Rust wz_reader 0.0.26(pkg2_kmst1205/1206 지원)으로 X_000.wz 를 열고 `<id>.img/info/icon`(장비) · `<앞4자리>.img/<id>/info/icon`(소비·기타)의 `_outlink` 를 해당 `_Canvas_00N.wz` 에서 풀어 PNG 로 저장(위컴알과 같은 방식). 도구 소스는 박스 /tmp/wzt (저장소 밖).
 2. 아이템 ID: 같은 클라이언트 String_000.wz(Eqp/Consume/Etc) 의 이름과 정확히 일치하는 것. 이름 기반이던 키 전부 ID 확정(예: 컴플리트 언더컨트롤 1672095(Character/Android), 근원의 속삭임 1113341, 죽음의 맹세 1122447, 황홀한 악몽 1113360, 오만의 원죄 1012911, 굶주리는 핏빛 원혼 1022397, 불멸의 유산 1143471, 혼돈의 칠흑 장신구 상자 2830338, 익셉셔널 해머 2644204~2644210, 생명 반지 상자 2028430, 리스트레인트 링 1113098, 컨티뉴어스 링 1113329, 소울 에테르 2539020~2539023, 에테르넬 재료·방어구 상자 26380xx/2830xxx/2831xxx/2832xxx). **에리온의 조각 = 4009615 (KMS Etc.img 이름 일치 확인, 추정 아님)**. 같은 이름이 둘인 방어구 상자(의지·흉수·욕망)는 앞 번호.
