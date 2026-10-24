@@ -21,12 +21,14 @@
 3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
-## b260 (2026-10-24 KST, 작업 19:26~19:40 KST) — 에테르넬 장신망 상자(장갑/신발/망토) 아이템 시세 + 기록 드롭
+## b260 (2026-10-24 KST, 작업 19:26~19:45 KST) — 에테르넬 장신망 상자(장갑/신발/망토) 아이템 시세 + 기록 드롭
 1. `src/app.js` ITEMS `b_sjm:{n:'에테르넬 장신망 상자',set:'장신망'}` 1개만 추가(직업/종류별 상자 따로 안 만듦). SET_LABEL '장신망'.
 2. 드롭표: 예전 보스별 상자 칩 b_bellona(광기)·b_limbo(욕망)·b_baldrix(맹세)·b_jupiter(갈망) → `b_sjm` 하나로 교체(기록 가능 칩). 벨로나 하드, 림보 하드·익스트림, 발드릭스 하드·익스트림, 유피테르 하드 (KMS String 설명 '에테르넬 신발, 장갑, 망토 중 1개' + 넥슨 가이드/나무위키 확인). 시즌 보스 카이·메이린 상자도 같은 종류지만 트래커 보스가 아님. 예전 키는 ITEMS 에 남김(옛 기록 표시용).
 3. 아이콘: WZ Item/Consume 0263.img/02638066(욕망의 에테르넬 방어구 상자, 원하는 종류 선택형) → tools/build_items.py `'b_sjm':2638066`.
 4. 시세: `server/worker.js` `MAI_AVG = {b_sjm:['에테르넬 장갑','에테르넬 신발','에테르넬 망토']}` — maiMap 이 maple.ai.kr 세 값이 모두 >0 일 때만 평균 → admin_prices.b_sjm(cron :00/:30 자동 갱신 + 관리자 [최저가 갱신] 같은 길). MAI_KEYS 에 포함, 세 이름은 unmatched 에서 빠짐. 2026-10-24 값: 장갑 18.41 · 신발 19.1 · 망토 18.62 → 18.71억(1,871,000,000).
-   - ⚠ **Worker 배포 필요** (`cd server && PATH=~/.n22/bin:$PATH npx wrangler deploy`) — 이번 작업에선 배포 안 함. 배포 전엔 서버가 b_sjm 시세를 안 만들어 '- 메소'/빈 칸.
+   - **Worker 배포함** 19:40 KST, Version b96320b6-8075-4038-af01-0246a6b654b1 (`cd server && WRANGLER_CACHE_DIR=/tmp/wrcache PATH=~/.n22/bin:$PATH npx wrangler deploy` — 캐시 폴더 없이 하면 '/node_modules/.cache/wrangler' 권한 오류).
+   - 첫 값: 관리자 [최저가 갱신] 경로(GET /api/admin/maple-prices)가 Worker→maple.ai.kr **530** 으로 실패(박스 curl 은 200). 그래서 같은 페이지를 박스에서 받아 Worker 의 maiMap 으로 계산한 b_sjm 만 관리자 PUT /api/admin/prices 로 등록(19:42 KST, 18.71억). 오늘 날짜는 이미 받아 cron 은 내일 새 날짜부터 자동 갱신 — 그때도 530 이면 시세 전체가 안 바뀌니 확인할 것.
+   - 실사이트 확인: 아이템 가격 표 '에테르넬 장신망 상자 18.71억 메소', 기록 창 자동 채움 18.71 (/workspace/b260/live_price.png, live_record.png).
 5. 테스트: `tests/test_b260.py`(run_all.sh 등록) — maiMap 평균·누락/0 처리·unmatched·MAI_KEYS, 드롭표, 시세 표 1줄, 기록 창 자동 채움 18.71. b253/b254/b208/b220 기대값 갱신. 사진: /workspace/b260 (before/after_pricecard·limbo_drops·record).
 
 ## b259 (2026-10-24 KST, 작업 18:59~19:23 KST) — 아이템 아이콘 전부 KMS 클라이언트 WZ 원본으로 교체 + 에리온의 조각 ID 확정
