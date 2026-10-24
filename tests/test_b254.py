@@ -47,7 +47,7 @@ try:
       ord:ch.map(x=>x.classList.contains('erion')?'E':x.classList.contains('ibox')?'I':x.classList.contains('eter')?'T':x.classList.contains('erda')?'e':'d').join(''),
       ifb:d.querySelectorAll('.ifb').length}})""")
     ibs=[x for d in q for x in d['ib']]
-    check('정보 칩: aria-label(…기록하지 않음), data-tip·data-drop·role·tabindex 없음, 이미지', ibs and all(x['al'].endswith('(기록하지 않음)') and not x['tip'] and not x['drop'] and not x['role'] and not x['tab'] and x['img'] for x in ibs), ibs[:4])
+    check('정보 칩: aria-label(…기록하지 않음), data-tip(b258: 이름)·data-drop·role·tabindex 없음, 이미지', ibs and all(x['al'].endswith('(기록하지 않음)') and x['tip'] and not x['drop'] and not x['role'] and not x['tab'] and x['img'] for x in ibs), ibs[:4])
     check('정보 칩 아이콘 크기 = 다른 칩과 같은 26px', all(abs(x['w']-26)<0.6 for x in ibs), [x['w'] for x in ibs])
     names={x['al'] for x in ibs}
     check('화면: 의지·고대·흉수 + 앱솔·아케인 상자 칩', all(any(n in a for a in names) for n in ['의지의 에테르넬','고대의 에테르넬','흉수의 에테르넬','앱솔랩스 무기 상자','앱솔랩스 방어구 상자','아케인셰이드 무기 상자','아케인셰이드 방어구 상자']), names)

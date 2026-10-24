@@ -66,8 +66,9 @@ try:
         bad=pg.evaluate("""[...document.querySelectorAll('.drop')].filter(e=>{const k=(e.dataset.drop||'').split('|')[1]||'';
           const want=e.classList.contains('eter')||k==='chaosbox'||['r_black','r_white','r_life'].includes(k);
           if(e.classList.contains('off')) return false;
+          if(e.classList.contains('erion')||e.classList.contains('ibox')) return !e.hasAttribute('data-tip'); /* b258: 에리온·상자 정보 칩 = 이름 말풍선 */
           return want!==e.hasAttribute('data-tip') || e.hasAttribute('title') || !!e.querySelector('[title]');}).map(e=>e.className+' '+(e.dataset.drop||''))""")
-        check('tooltips only on ring boxes (not green), chaos box, eternal; no title anywhere in chips (erda too; b214: 누를 수 없는 아이콘 칩은 이름 말풍선)', not bad and pg.locator('.drop.erda:not(.eter):not(.off)[data-tip]').count()==0, bad)
+        check('tooltips only on ring boxes (not green), chaos box, eternal; no title anywhere in chips (erda too; b214: 누를 수 없는 아이콘 칩은 이름 말풍선)', not bad and pg.locator('.drop.erda:not(.eter):not(.off):not(.erion):not(.ibox)[data-tip]').count()==0, bad)
         check('green ring box: no tooltip', pg.evaluate("itemTip('r_green')")=='' and pg.evaluate("itemTip('g_life')+itemTip('se1')+itemTip('lcm')")=='')
         pg.hover(f'{ROW("kaling")} [data-drop="kaling|g_faith"]'); pg.wait_for_timeout(150); check('hovering 연마석: no tooltip', tip()=='', tip())
         pg.hover(f'{ROW("kaling")} [data-drop="kaling|chaosbox"]'); pg.wait_for_timeout(150); t=tip()

@@ -15,6 +15,12 @@
 10. **테스트 빨리** (2026-10-14 13:29 KST 사용자 요청): (a) 전체 테스트는 병렬로 — `CHROME=/usr/bin/google-chrome python3 tests/run_par.py`(동시 8개, `MBT_JOBS`로 6~8 조절; 테스트 파일의 포트 숫자가 겹치면 동시에 안 돌림; 실패한 것만 끝에 직렬로 1번 재시도). 직렬 대체: `MBT_JOBS=1` 또는 `bash tests/run_all.sh`. (b) 작업 중에는 바꾼 것과 관련된 테스트만, **전체 테스트는 배포 직전에 1번만**. (c) 변경 전/후 스크린샷은 따로 브라우저를 띄우지 말고 테스트 실행 안에서 찍는다(`MBT_SHOTDIR`·`MBT_SHOT` 같은 환경 변수).
 - 작업 방식: `src/` 수정 → `python3 tools/build.py` → 테스트 → `git pull --rebase` → main 일반 push(강제 push 금지). GitHub 로그인(gh) 필요.
 
+## b258 (2026-10-24 KST, 작업 18:46~18:58 KST) — 에리온·방어구/앱솔/아케인 상자 정보 칩 말풍선 + (위컴알 아이콘 교체는 PC 파일 복사 차단으로 보류)
+1. `src/app.js` dropsHtml: 에리온의 조각 칩(`.drop.erion`) `data-tip="에리온의 조각"`, 기록하지 않는 상자 칩(`.drop.ibox`: 칼로스·대적자·카링 에테르넬 방어구 상자 + 앱솔랩스·아케인셰이드 무기/방어구 상자) `data-tip=아이템 이름` — 여명 장신구 off 칩과 같은 말풍선(#mbtTip, 같은 tipShow·스타일). 클릭·기록 없음 그대로.
+2. 테스트: 신규 tests/test_b258.py (data-tip 이름, hover 말풍선 글자·스타일 = 여명 칩과 같음, 클릭 기록 없음; `MBT_ROOT`·`MBT_NOCHECK`·`MBT_SHOTDIR`·`MBT_SHOT`), run_all.sh 등록. tests/test_b254.py 정보 칩 'data-tip 없음' → 'data-tip 있음', tests/test_tracker21.py 말풍선 허용 목록에 erion·ibox. 전체 테스트(run_par, 412초): test_tracker21(위에서 고침, 재실행 통과) 외 실패는 test_tracker28 뿐 — origin/main 빌드에서도 같은 '캐릭터별 누적' 카드 대기 시간 초과로 실패(이번 변경과 무관, 기존 문제).
+3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
+4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
+
 ## b242 (2026-10-21 KST)
 - 빨간 안내(.bover) 문구 두 줄: '*스케줄러에 등록된 보스가 12마리를 초과했거나, 보스 클리어 후 스케줄러를 수정하여' / ' 일부 보스가 미출력됩니다.' — weeklyOver(c) 또는 c.bossNext 있음일 때 표시. 위치·색 같음. ⏳ 대기 안내(.bnext)는 유지(빼기 항목은 '○○ 빼기').
 - 버그 수정: 이번 주 응답에서 registration_flag='false' 인 안 잡은 주간 보스는 꺼짐(스케줄러 교체가 바로 적용; 이전엔 옛 보스가 남음). 잡은 보스는 절대 바로 끄지 않음.

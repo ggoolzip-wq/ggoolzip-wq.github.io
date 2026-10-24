@@ -245,7 +245,7 @@ const erdaFor = (b,diff) => +(ERDA[b?.id]?.[diff])||0;
 const ERION = { seren:{extreme:30}, kalos:{extreme:180}, adversary:{hard:30,extreme:240}, kaling:{hard:60}, star:{hard:90},
   limbo:{hard:60}, baldrix:{hard:120}, jupiter:{normal:45,hard:360} };
 const erionFor = (b,diff) => +(ERION[b?.id]?.[diff])||0;
-/* b254: 기록하지 않는 상자 정보 칩 (에리온의 조각 칩 바로 뒤, 에리온이 없는 보스도 같은 자리). 아이콘만 + aria-label, data-tip 없음.
+/* b254: 기록하지 않는 상자 정보 칩 (에리온의 조각 칩 바로 뒤, 에리온이 없는 보스도 같은 자리). 아이콘만 + aria-label · b258: data-tip = 아이템 이름(여명 장신구 off 칩과 같은 말풍선).
  * 에테르넬 방어구 상자: 칼로스·최초의 대적자·카링은 기록 안 함(정보), 흉성·림보·발드릭스·벨로나·유피테르는 DROPS 에서 기록 그대로.
  * 앱솔랩스 상자: 하드 스우·하드 데미안 (나무위키 '앱솔랩스 세트' + 메이플 보스 보상표 matsu937). 익스트림 스우 = 보상표 '하드 이상'.
  * 아케인셰이드 상자: 하드 루시드·하드 윌·카오스 더스크·노멀/하드 진 힐라·하드 듄켈·하드/익스트림 검은 마법사 (나무위키 '아케인셰이드 세트' + 보상표). */
@@ -316,8 +316,8 @@ function dropsHtml(b,diff,c){
   const erda=(en?`<span class="drop erda" aria-label="솔 에르다의 기운 ${en}개">${itemIcon('erda')}<b class="ecnt">${en}</b></span>`:'')
     +mementoHtml(mementoFor(b,diff)) // b255: 큐브 정보 칩 = 에르다 다음
     +(et?`<span class="drop erda eter" data-tip="${esc(eternalTip(et.k,et.n,diff))}" aria-label="${esc(ITEMS[et.k].n)} ${et.n}개">${itemIcon(et.k)}<b class="ecnt">${et.n}</b></span>`:'')
-    +(eo?`<span class="drop erda erion" aria-label="에리온의 조각 ${eo}개">${ITEM_ICONS.erion?itemIcon('erion'):'<span class="ifb" aria-hidden="true">에</span>'}<b class="ecnt">${eo}</b></span>`:'')
-    +infoBoxFor(b,diff).map(k=>`<span class="drop erda ibox" aria-label="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}</span>`).join('');
+    +(eo?`<span class="drop erda erion" data-tip="에리온의 조각" aria-label="에리온의 조각 ${eo}개">${ITEM_ICONS.erion?itemIcon('erion'):'<span class="ifb" aria-hidden="true">에</span>'}<b class="ecnt">${eo}</b></span>`:'')
+    +infoBoxFor(b,diff).map(k=>`<span class="drop erda ibox" data-tip="${esc(ITEMS[k].n)}" aria-label="${esc(ITEMS[k].n)} (기록하지 않음)">${itemIcon(k)}</span>`).join('');
   const cnt=k=>c?dropCount(c,b,k):0;
   const chip=k=>{const it=ITEMS[k], n=cnt(k);
     return `<span class="drop s-${it.set} ${n?'got':''}${dropTierCls(c,b,k,n>0)}" ${c?`data-drop="${b.id}|${k}" role="button" tabindex="0"`:''}${(t=>t?` data-tip="${esc(t)}"`:'')(itemTip(k))}>${itemIcon(k)}<span class="dn">${esc(it.s||it.n)}</span></span>`;};
