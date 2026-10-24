@@ -21,6 +21,16 @@
 3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
+## b261 (2026-10-24 KST, 작업 19:56~20:06 KST)
+- 요청: 드랍 테이블의 보스별 장신망 상자는 이름을 바꾸지 않음. b260 의 b_sjm 합치기를 되돌림.
+- 드롭표(DROPS) = 원래 상자 키·이름·WZ 아이콘: 광기 b_bellona(벨로나 H), 욕망 b_limbo(림보 H/EX), 맹세 b_baldrix(발드릭스 H/EX), 갈망 b_jupiter(유피테르 H).
+- 기록 = 상자 자기 키(`보스|b_limbo` 등)·i 로 저장. 자동 채움 금액만 b_sjm 시세(`priceId`/`admPriceOf` 가 SJM_KEYS → b_sjm).
+- 아이템 시세 탭 = b_sjm(에테르넬 장신망 상자) 1줄만(revItems: 상자 4종 → b_sjm, 4종 자체는 방어구 세트라 제외).
+- 이전: `sjmMigrate` (normState) — characters·history·monthHistory 의 `보스|b_sjm(#n)` 키와 `i:'b_sjm'` 을 보스별 상자로 옮김. 보스를 모르면 그대로 둠(장신망 상자로 표시).
+- 테스트: test_b261 추가(드롭표·시세 목록·자동 채움·저장 키·이전·지난 기록·전체 수정 창). test_b260 드롭 검사 b261 기준으로, test_b253/b254 는 b260 이전 상태로 되돌림.
+- 전체 테스트: test_tracker28 만 실패(기존부터). Worker 변경 없음 → 배포 안 함.
+- 사진: /workspace/b261 (before_/after_ limbo_drops·record·pricecard).
+
 ## b260 (2026-10-24 KST, 작업 19:26~19:45 KST) — 에테르넬 장신망 상자(장갑/신발/망토) 아이템 시세 + 기록 드롭
 1. `src/app.js` ITEMS `b_sjm:{n:'에테르넬 장신망 상자',set:'장신망'}` 1개만 추가(직업/종류별 상자 따로 안 만듦). SET_LABEL '장신망'.
 2. 드롭표: 예전 보스별 상자 칩 b_bellona(광기)·b_limbo(욕망)·b_baldrix(맹세)·b_jupiter(갈망) → `b_sjm` 하나로 교체(기록 가능 칩). 벨로나 하드, 림보 하드·익스트림, 발드릭스 하드·익스트림, 유피테르 하드 (KMS String 설명 '에테르넬 신발, 장갑, 망토 중 1개' + 넥슨 가이드/나무위키 확인). 시즌 보스 카이·메이린 상자도 같은 종류지만 트래커 보스가 아님. 예전 키는 ITEMS 에 남김(옛 기록 표시용).

@@ -29,12 +29,12 @@ try:
     r=pg.evaluate("""()=>{const f=id=>BOSSES.find(b=>b.id===id);
       const allD=BOSSES.flatMap(b=>b.diffs.map(d=>dropsFor(b,d))).flat();
       return {as:Object.keys(ITEMS).filter(k=>/^[as]_/.test(k)), asD:allD.filter(k=>/^[as]_/.test(k)),
-        noRec:['b_kalos','b_adv','b_kaling'].filter(k=>allD.includes(k)), rec:['b_star','b_sjm'].filter(k=>allD.includes(k)),
+        noRec:['b_kalos','b_adv','b_kaling'].filter(k=>allD.includes(k)), rec:['b_star','b_limbo','b_baldrix','b_bellona','b_jupiter'].filter(k=>allD.includes(k)),
         ib:Object.fromEntries(BOSSES.flatMap(b=>b.diffs.map(d=>[b.id+'|'+d,infoBoxFor(b,d)])).filter(x=>x[1].length)),
         noIcon:Object.keys(ITEMS).filter(k=>!ITEM_ICONS[k]&&!/^hong_/.test(k)), sl:[...SET_LABEL?Object.keys(SET_LABEL):[]]}}""")
     check('로이드·소울 조각 ITEMS·DROPS 에서 삭제', not r['as'] and not r['asD'], r['as']+r['asD'])
     check('칼로스·대적자·카링 방어구 상자 = DROPS 에 없음(기록 안 함)', not r['noRec'], r['noRec'])
-    check('흉성 상자 + 장신망 상자(b260: 림보·발드릭스·벨로나·유피테르 합침) = 기록 가능 유지', len(r['rec'])==2, r['rec'])
+    check('흉성·림보·발드릭스·벨로나·유피테르 상자 = 기록 가능 유지', len(r['rec'])==5, r['rec'])
     AB=['ab_w','ab_a']; AR=['ar_w','ar_a']
     exp={'kalos|chaos':['b_kalos'],'kalos|extreme':['b_kalos'],'adversary|hard':['b_adv'],'adversary|extreme':['b_adv'],'kaling|hard':['b_kaling'],'kaling|extreme':['b_kaling'],
       'lotus|hard':AB,'lotus|extreme':AB,'damien|hard':AB,'lucid|hard':AR,'will|hard':AR,'dusk|chaos':AR,'jinhilla|normal':AR,'jinhilla|hard':AR,'dunkel|hard':AR,'blackmage|hard':AR,'blackmage|extreme':AR}

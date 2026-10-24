@@ -161,6 +161,13 @@ const ITEMS = {
   e_bellona:{n:'저주받은 원혼의 잔재',set:'에테르넬'}, e_limbo:{n:'왜곡된 욕망의 결정',set:'에테르넬'},
   e_baldrix:{n:'영원한 충성의 흔적',set:'에테르넬'}, e_jupiter:{n:'뒤틀린 갈망의 편린',set:'에테르넬'}
 };
+// b261: 드롭표 = 보스별 원래 상자(광기·욕망·맹세·갈망, 이름·아이콘·기록 키 그대로) — 시세만 b_sjm(장갑·신발·망토 평균) 공용. 시세 목록엔 b_sjm 1줄
+const SJM_BOX={bellona:'b_bellona',limbo:'b_limbo',baldrix:'b_baldrix',jupiter:'b_jupiter'}, SJM_KEYS=new Set(Object.values(SJM_BOX));
+/* b261: b260 때 b_sjm 으로 저장된 기록 → 그 기록 보스의 상자 키로 옮김(키 '보스|b_sjm…' + 값 i:'b_sjm'). 보스를 모르면 그대로(장신망 상자로 표시) */
+function sjmMigrate(o,d=0){ if(!o||typeof o!=='object'||d>8) return; if(Array.isArray(o)){ o.forEach(x=>sjmMigrate(x,d+1)); return; }
+  for(const k of Object.keys(o)){ const m=/^([a-z0-9_]+)\|b_sjm(#.*)?$/.exec(k), bx=m&&SJM_BOX[m[1]], v=o[k];
+    if(bx){ const nk=`${m[1]}|${bx}${m[2]||''}`; if(v&&typeof v==='object'&&v.i==='b_sjm') v.i=bx; if(!(nk in o)) o[nk]=v; else if(typeof v==='number'&&typeof o[nk]==='number') o[nk]+=v; delete o[k]; }
+    else sjmMigrate(v,d+1); } }
 /* 마우스 올림/터치 툴팁에 쓰는 구성품 (2026-10-10).
  * 반지 상자: 넥슨 공식 확률 공개 maplestory.nexon.com/Guide/OtherProbability/bossRingBox/ringBox{Green,Red,Black,White,Life}Jade (2026-10-10 열람)
  *   — 레벨 확률(lv) · 반지별 획득 확률(r = 리스트레인트, c = 컨티뉴어스, %). 4레벨 확률 = 반지 확률 × 4레벨 확률 (반지 종류와 레벨은 따로 정해짐).
@@ -215,10 +222,10 @@ const DROPS = {
   star:[['bliss',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']],['b_star',['hard']]],
   // b252: 익스트림 — 공지 815(1.2.420)·인벤 322439/322167: 익림 → 익셉셔널 해머 (포켓), 익발 → 익셉셔널 해머 (펜던트). 시세 출처 없음 → 가격 미표시라 맨 뒤(반지 상자 앞).
   //   하드 공통 보상 이월은 namu.wiki 림보/발드릭스 보상 + matsu1207.tistory.com/937 두 출처 일치.
-  limbo:[['whisper',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pocket',['extreme']],['b_sjm',['hard', 'extreme']]],
-  baldrix:[['oath',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pendant',['extreme']],['b_sjm',['hard', 'extreme']]],
-  bellona:[['spirit',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']],['b_sjm',['hard']]],
-  jupiter:[['sin',['hard']],['chaosbox',['normal','hard']],['g_faith',['normal','hard']],['se4',['normal','hard']],['b_sjm',['hard']]],
+  limbo:[['whisper',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pocket',['extreme']],['b_limbo',['hard', 'extreme']]],
+  baldrix:[['oath',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pendant',['extreme']],['b_baldrix',['hard', 'extreme']]],
+  bellona:[['spirit',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']],['b_bellona',['hard']]],
+  jupiter:[['sin',['hard']],['chaosbox',['normal','hard']],['g_faith',['normal','hard']],['se4',['normal','hard']],['b_jupiter',['hard']]],
   blackmage:[['genesis',['hard','extreme']],['h_belt',['extreme']]]
 };
 // 2026-10-10: 보스 장신구 세트(파풀라투스 마크 제외)·여명 세트 = 드롭 표 끝에 회색 칩(누를 수 없음, 기록 안 함)
@@ -613,6 +620,7 @@ function normState(obj){
     // ↑ 예전 연결 방식(로컬 프록시) 설정 — 이제 항상 open.api.nexon.com 직접 호출
     S.settings.weeklyLimit=CONFIG.WEEKLY_BOSS_LIMIT; S.settings.monthlyLimit=CONFIG.MONTHLY_BOSS_LIMIT; // 처치 한도는 고정값 (설정 화면 제거)
     delete S.settings.worldLimit; // 월드 결정석 판매 한도 기능 제거 (수익 = 클리어한 보스 합계, 상한 없음)
+    sjmMigrate(S.characters); sjmMigrate(S.history); sjmMigrate(S.monthHistory); // b261
     S.characters.forEach(normChar);
     S.dq=Object.assign(defaultDq(),S.dq&&typeof S.dq==='object'?S.dq:{}); ['off','charOff','hide'].forEach(k=>{ if(!S.dq[k]||typeof S.dq[k]!=='object') S.dq[k]={}; }); // b111: 일퀘 현황 탭 복원
     if(typeof S.updatedAt!=='number') S.updatedAt=0;
@@ -2129,9 +2137,9 @@ const priceAutoText = () => officialInfo?`공식 패치 노트 기준 자동 갱
 let pcTab='price', pcKind='cry'; // b112: 가격 카드 탭 — 결정석 가격 / 아이템 가격
 /* b112: 보스 드롭 표에서 수익 기록이 가능한 아이템 — 칠흑 상자 = 고른 장신구, 반지 상자 = 결과(리4·컨4·생명의 연마석). 정렬 = itemCmp(사용자 아이템 우선순위) */
 function revItems(){ const set=new Set();
-  BOSSES.forEach(b=>b.diffs.forEach(d=>dropsFor(b,d).forEach(k=>{ if(k==='chaosbox') CHAOS_PICK.forEach(x=>set.add('cb:'+x)); else if(isRing(k)){ set.add('ring:r4'); set.add('ring:c4'); set.add('g_life'); } else if(!MISS_SKIP_SET.has(ITEMS[k]?.set)) set.add(k); }))); // b253: 로이드·소울 조각·방어구 상자 = 정보용(교환 불가·시세 없음) → 수익/시세 목록 제외
+  BOSSES.forEach(b=>b.diffs.forEach(d=>dropsFor(b,d).forEach(k=>{ if(k==='chaosbox') CHAOS_PICK.forEach(x=>set.add('cb:'+x)); else if(isRing(k)){ set.add('ring:r4'); set.add('ring:c4'); set.add('g_life'); } else if(SJM_KEYS.has(k)) set.add('b_sjm'); /* b261 */ else if(!MISS_SKIP_SET.has(ITEMS[k]?.set)) set.add(k); }))); // b253: 로이드·소울 조각·방어구 상자 = 정보용(교환 불가·시세 없음) → 수익/시세 목록 제외
   const seen=new Set(); return [...set].sort(itemCmp).filter(k=>{ const id=priceId(k); if(seen.has(id)) return false; seen.add(id); return true; }); } /* b114: 칠흑 상자 선택(cb:lcm)과 직접 드롭(lcm)은 같은 아이템·같은 시세 → 한 번만 */
-const priceId = k => String(k||'').replace(/^cb:/,'').replace(/^(?:ring:|hong_)(r4|c4)$/,'ring_$1'); // b229: 홍옥 리4/컨4 = 같은 반지 → 같은 시세
+const priceId = k => (x=>SJM_KEYS.has(x)?'b_sjm':x)(String(k||'').replace(/^cb:/,'').replace(/^(?:ring:|hong_)(r4|c4)$/,'ring_$1')); // b261: 보스별 장신망 상자 4종 = b_sjm 시세 // b229: 홍옥 리4/컨4 = 같은 반지 → 같은 시세
 document.addEventListener('click',e=>{ const t=e.target.closest('[data-pckind]'); if(!t) return; pcKind=t.dataset.pckind; repaintPrices(); });
 /* b227: 주간(상위 N) · 검마(월간) 따로 — fullExpected = 둘의 합(예전 그대로) */
 function expParts(c){ const w=expectedAll(c).slice(0,S.settings.weeklyLimit).reduce((s,x)=>s+x.value,0);
@@ -4024,7 +4032,7 @@ const ADM_PRICE_KEY='mapleBossTracker.admPrices';
 const kstStamp=t=>new Date(t+9*3600e3).toISOString().slice(0,16).replace('T',' ');
 function admPrices(){ try{ return JSON.parse(localStorage.getItem('mapleBossTracker.admPrices')||'{}')||{}; }catch(e){ return {}; } } // b217: 함수 선언(호이스팅) — 시작 렌더 때 'Cannot access admPrices before initialization' 로 스크립트가 멈췄음
 // 반지 상자 결과 'ring:r4'·'ring:c4'(리스트레인트·컨티뉴어스 링 4레벨) → ring_r4·ring_c4, 칠흑 상자 결과 'cb:키' → 키
-function admPriceOf(ik){ /* b112: 공용 시세 → 모든 사용자 수익 기록 칸 채움 */ const k=String(ik||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1'), o=(typeof itemPrices==='function'?itemPrices():admPrices())[k]; /* b112: 이 기기 + 서버에서 받은 시세 */ return o&&+o.p>0&&+o.t>0?o:null; }
+function admPriceOf(ik){ /* b112: 공용 시세 → 모든 사용자 수익 기록 칸 채움 */ const k=(x=>SJM_KEYS.has(x)?'b_sjm':x)(String(ik||'').replace(/^cb:/,'').replace(/^ring:(r4|c4)$/,'ring_$1')), /* b261 */ o=(typeof itemPrices==='function'?itemPrices():admPrices())[k]; /* b112: 이 기기 + 서버에서 받은 시세 */ return o&&+o.p>0&&+o.t>0?o:null; }
 let admPriceMsg='', admPriceBusy=false;
 /* b112: 아이템 시세 = 관리자가 등록·갱신한 값(서버 admin_prices) — 로그인한 사용자 누구나 GET /api/prices 로 읽어 이 기기에 보관. 관리자 기기는 admPrices 와 합침(최신 시각 우선) */
 const ITEM_PRICE_KEY='mapleBossTracker.itemPrices';

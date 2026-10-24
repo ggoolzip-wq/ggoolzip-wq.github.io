@@ -44,13 +44,12 @@ try:
         rev:revItems().filter(k=>k==='b_sjm').length, ap:admPriceOf('b_sjm'), cnt:Object.values(ITEMS).filter(o=>o.n==='에테르넬 장신망 상자').length}}""")
     if not NOCHK:
         check('이름 = 에테르넬 장신망 상자 (항목 1개)', r['n']=='에테르넬 장신망 상자' and r['cnt']==1, r['n'])
-        check('림보 하드·익스트림, 발드릭스 하드·익스트림, 벨로나 하드, 유피테르 하드 = 기록 드롭', all('b_sjm' in r[k] for k in ['lh','le','bh','be','eh','jh']), r)
-        check('노멀(림보·벨로나·유피테르) 엔 없음', not any('b_sjm' in r[k] for k in ['ln','en','jn']))
-        check('예전 보스별 상자 4종은 드롭표에서 빠짐(하나로 합침)', not r['old'], r['old'])
+        check('b261: 드롭표 = 보스별 원래 상자(림보 H·EX, 발드릭스 H·EX, 벨로나 H, 유피테르 H), b_sjm 은 드롭표에 없음', all(x in r[k] for k,x in [('lh','b_limbo'),('le','b_limbo'),('bh','b_baldrix'),('be','b_baldrix'),('eh','b_bellona'),('jh','b_jupiter')]) and not any('b_sjm' in r[k] for k in ['lh','le','bh','be','eh','jh']), r)
+        check('노멀(림보·벨로나·유피테르) 엔 상자 없음', not any(x in r[k] for k in ['ln','en','jn'] for x in ['b_limbo','b_bellona','b_jupiter']))
         check('아이템 시세 목록에 1번', r['rev']==1, r['rev'])
         check('시세 자동 채움 값 = 공용 시세', r['ap'] and r['ap']['p']==1871000000, r['ap'])
-        ch=pg.evaluate("()=>[...document.querySelectorAll('.drop[data-drop$=\"|b_sjm\"]')].map(x=>x.dataset.drop+' '+x.className+' '+x.innerText)")
-        check('보스 카드에 장신망 칩(기록 칩, 정보 칩 아님)', ch and not any('ibox' in c for c in ch), ch)
+        ch=pg.evaluate("()=>[...document.querySelectorAll('.drop[data-drop$=\"|b_limbo\"]')].map(x=>x.dataset.drop+' '+x.className+' '+x.innerText)")
+        check('b261: 보스 카드에 욕망 상자 기록 칩(정보 칩 아님)', ch and not any('ibox' in c for c in ch), ch)
         ico=pg.evaluate("()=>{const d=document.createElement('div');d.innerHTML=itemIcon('b_sjm');const i=d.querySelector('img');return i?i.src.slice(0,22):d.innerHTML.slice(0,80)}")
         check('WZ 아이콘(2638066) 사용', ico.startswith('data:image'), ico)
     pg.evaluate("()=>{pcKind='item';repaintPrices();}"); pg.wait_for_timeout(300)
@@ -58,10 +57,10 @@ try:
     if not NOCHK: check('아이템 가격 표: 에테르넬 장신망 상자 18.71억', pr and '장신망' in pr and '18억 7,100만' in pr.replace('\n',' ') or (pr and '18.71' in pr), pr)
     if SD:
         el=pg.locator('.pricecard').first; el.scroll_into_view_if_needed(); pg.evaluate("()=>{const r=document.querySelector('.pricecard .pc-row[data-pit=b_sjm]'), l=document.querySelector('.pricecard .pc-list'); if(r&&l) l.scrollTop=r.offsetTop-l.offsetTop-l.clientHeight/2;}"); pg.wait_for_timeout(200); shot(pg,'.pricecard','pricecard')
-        lb=pg.locator('.drop[data-drop^="limbo|"]').first
-        try: lb.scroll_into_view_if_needed(); pg.wait_for_timeout(200); shot2(pg,'.drop[data-drop^="limbo|"]','limbo_drops')
+        lb=pg.locator('.drop[data-drop^="limbo|b_"]').first
+        try: lb.scroll_into_view_if_needed(); pg.wait_for_timeout(200); shot2(pg,'.drop[data-drop^="limbo|b_"]','limbo_drops')
         except Exception as e: print('shot limbo skip',e)
-    pg.evaluate("askRev(S.characters[0],findBoss('limbo'),'limbo|b_sjm','b_sjm',()=>{})"); pg.wait_for_timeout(300)
+    pg.evaluate("askRev(S.characters[0],findBoss('limbo'),'limbo|b_limbo','b_limbo',()=>{})"); pg.wait_for_timeout(300)
     v=pg.evaluate("()=>{const i=document.getElementById('rvAmt');return i?i.value:null}")
     if not NOCHK: check('기록 창 금액 자동 채움 = 18.71 억', v=='18.71', v)
     if SD and v is not None: shot(pg,'#revModal .modal','record')
