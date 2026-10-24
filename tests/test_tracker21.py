@@ -64,7 +64,7 @@ try:
         check('kaling hard eternal tooltip: 단체보상 without 하드', t.startswith('뒤엉킨 흉수의 고리 7개 (단체보상)') and '하드' not in t, t)
         # 2026-10-10: 툴팁은 반지 상자(녹옥 제외)·혼돈의 칠흑 장신구 상자·에테르넬 칩에만
         bad=pg.evaluate("""[...document.querySelectorAll('.drop')].filter(e=>{const k=(e.dataset.drop||'').split('|')[1]||'';
-          const want=e.classList.contains('eter')||k==='chaosbox'||['r_black','r_white','r_life'].includes(k);
+          const want=e.classList.contains('eter')||k==='chaosbox'||['r_black','r_white','r_life','moon'].includes(k); /* b263: 달빛 포션 이름 말풍선 */
           if(e.classList.contains('off')) return false;
           if(e.classList.contains('erion')||e.classList.contains('ibox')) return !e.hasAttribute('data-tip'); /* b258: 에리온·상자 정보 칩 = 이름 말풍선 */
           return want!==e.hasAttribute('data-tip') || e.hasAttribute('title') || !!e.querySelector('[title]');}).map(e=>e.className+' '+(e.dataset.drop||''))""")

@@ -17,7 +17,7 @@ SRC={k:'itemicons/kms/%d.png'%i for k,i in {
  'e_adv_f':2830305, 'e_adv':2830304, 'e_star_f':2831408, 'e_star':2831103, 'e_bellona':2832967, 'e_jupiter':2831104,
  'b_kalos':2638064, 'b_adv':2830306, 'b_kaling':2638065, 'b_star':2831105, 'b_limbo':2638066, 'b_sjm':2638066, 'b_baldrix':2639253,
  'b_bellona':2832969, 'b_jupiter':2831106, 'h_pocket':2644209, 'h_pendant':2644210, 'erion':4009615, 'ab_w':2633912,
- 'ab_a':2633913, 'ar_w':2633914, 'ar_a':2633915, 'pcmedal':1142145, 'guildbless':2432290,
+ 'ab_a':2633913, 'ar_w':2633914, 'ar_a':2633915, 'pcmedal':1142145, 'guildbless':2432290, 'moon':2023136,
  }.items()}
 SRC['meso']='ringicons/9000003.png'
 import cv2, numpy as np

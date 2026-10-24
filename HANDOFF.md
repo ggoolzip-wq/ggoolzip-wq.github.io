@@ -21,6 +21,16 @@
 3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
+## b263 (2026-10-25 KST, 작업 00:01~00:20 KST) — 영롱한 달빛 포션 드롭표 기록 버튼
+- 요청: 영롱한 달빛 포션을 보스 드랍 테이블에서 기록할 수 있게 버튼으로.
+- ITEMS `moon:{n:'영롱한 달빛 포션',set:'포션'}` (SET_LABEL '포션'='소비 아이템', extra.css `.drop.s-포션`). DROPS 세렌·칼로스·대적자·카링·림보·발드릭스 **익스트림**에 `['moon',['extreme']]` (근거: KMS WZ Etc ContentsGuide.img/boss extendReward 2023136 = 이 6개 익스트림만).
+- 아이콘: WZ Item/Consume 0202.img/02023136/info/icon → src/assets/itemicons/kms/2023136.png, tools/build_items.py `'moon':2023136` (b259 파이프라인 64px).
+- 말풍선: itemTip('moon') = 이름. 정렬은 기존 규칙(시세 없음 → 뒤, 반지 상자 앞).
+- 시세: maple.ai.kr 가격 추적 페이지에 달빛 포션 없음 → Worker 변경·배포 없음. 기록 창은 금액 수동 입력, 아이템 시세 탭에 손 입력 줄로 나옴('시세 정보 없음').
+- ERION 개수는 바꾸지 않음(벨로나 90·카링 익스 480 미승인).
+- 테스트: test_b263 추가(run_all.sh). b208·b220·b252·tracker21 기대값에 moon 반영. 전체: test_tracker28 만 실패(기존).
+- 사진: /workspace/b263 (before_kaling_drops, after_kaling_drops, after_kaling_tip).
+
 ## b262 (2026-10-24 KST, 작업 20:34~20:42 KST)
 - 요청: 흉성의 방어구 상자(b_star '환상의 에테르넬 방어구 상자')도 칼로스·카링·대적자처럼 아이콘 정보 칩으로.
 - 찬란한 흉성(하드)만 해당: DROPS 에서 b_star 제거 → INFOBOX star:{hard:['b_star']}. 에리온 칩 바로 옆 `.drop.erda.ibox`, data-tip 이름 말풍선, data-drop 없음 → 클릭해도 기록 없음.

@@ -1886,3 +1886,4 @@ header .logo .logo-d{display:flex;align-items:center}
 [data-theme=light] .ram .rlab{color:#a86b00}[data-theme=light] .ram .rval{color:#13803d}
 .rvamtrow{flex-wrap:wrap;row-gap:4px}
 @media(max-width:480px){.ram,.rvamtrow .rvram{font-size:.92rem}}
+.drop.s-포션{border-color:#c9a64a}

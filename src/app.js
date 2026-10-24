@@ -123,6 +123,7 @@ const ITEMS = {
   whisper:{n:'근원의 속삭임',set:'광휘'}, oath:{n:'죽음의 맹세',set:'광휘'}, bliss:{n:'황홀한 악몽',set:'광휘'},
   sin:{n:'오만의 원죄',set:'광휘'}, spirit:{n:'굶주리는 핏빛 원혼',set:'광휘'}, legacy:{n:'불멸의 유산',set:'광휘'},
   h_face:{n:'익셉셔널 해머 (얼굴장식)',set:'해머'}, h_eye:{n:'익셉셔널 해머 (눈장식)',set:'해머'}, h_belt:{n:'익셉셔널 해머 (벨트)',set:'해머'}, h_ear:{n:'익셉셔널 해머 (귀고리)',set:'해머'},
+  moon:{n:'영롱한 달빛 포션',set:'포션'}, // b263: 익스트림 6보스(세렌·칼로스·대적자·카링·림보·발드릭스) 기록 가능 칩, WZ 2023136, 시세 출처 없음(maple.ai.kr 없음) → 수동 입력
   h_pocket:{n:'익셉셔널 해머 (포켓)',set:'해머'}, h_pendant:{n:'익셉셔널 해머 (펜던트)',set:'해머'}, // b252: 공지 815 아이템명 (KMST V1207 id 2644209/2644210) · b254: 아이콘 = 나무위키 림보/발드릭스 문서 게임 아이콘
   // b254: 정보 칩 전용(기록 안 함) — 앱솔랩스/아케인셰이드 무기·방어구 상자 (maplestory.io KMS 389 2633912~2633915)
   ab_w:{n:'앱솔랩스 무기 상자',set:'정보'}, ab_a:{n:'앱솔랩스 방어구 상자',set:'정보'}, ar_w:{n:'아케인셰이드 무기 상자',set:'정보'}, ar_a:{n:'아케인셰이드 방어구 상자',set:'정보'},
@@ -190,6 +191,7 @@ const CHAOS_BOX=['루즈 컨트롤 머신 마크 (얼굴장식)','마력이 깃�
  * 반지 상자 = 이름 + '리4: x%' + '컨4: y%' 만 / 칠흑 상자 = 이름 + 구성품. 난이도·'클릭: 획득 +1' 같은 안내 줄 없음. */
 function itemTip(k){
   const it=ITEMS[k]; if(!it) return '';
+  if(k==='moon') return it.n; // b263: 이름 말풍선
   if(k==='chaosbox') return `${it.n}\n칠흑 장신구 7종 중 1개 (무작위)\n${CHAOS_BOX.map(x=>'· '+x).join('\n')}`;
   const r=BOX_INFO[k]&&BOX_INFO[k].lv4>0?ring4(k):null; // 녹옥(4레벨 없음): 툴팁 없음
   return r?`${it.n}\n리4: ${fmtPct(r.r4)}\n컨4: ${fmtPct(r.c4)}`:'';
@@ -202,7 +204,7 @@ const RING_DROPS = {
   r_white:{lotus:['extreme'],blackmage:['hard','extreme'],seren:['hard','extreme'],kalos:['easy','normal'],kaling:['easy','normal'],adversary:['easy','normal'],star:['normal'],bellona:['easy','normal']},
   r_life:{kalos:['chaos','extreme'],kaling:['hard','extreme'],limbo:['normal','hard','extreme'],baldrix:['normal','hard','extreme'],adversary:['hard','extreme'],star:['hard'],jupiter:['normal','hard'],bellona:['hard']}
 };
-const SET_LABEL = {'반지':'특수 스킬 반지 상자 (낮은 확률)','광휘':'광휘의 보스 세트','칠흑':'칠흑의 보스 세트','여명':'여명의 보스 세트','보장':'보스 장신구 세트','해머':'익셉셔널 강화 재료','연마석':'연마석 (특수 스킬 반지 강화 재료)','에테르':'소울 에테르 (소울웨폰 재료)','방어구':'에테르넬 방어구 상자','장신망':'에테르넬 장신망 상자 (장갑·신발·망토)'};
+const SET_LABEL = {'반지':'특수 스킬 반지 상자 (낮은 확률)','광휘':'광휘의 보스 세트','칠흑':'칠흑의 보스 세트','여명':'여명의 보스 세트','보장':'보스 장신구 세트','해머':'익셉셔널 강화 재료','연마석':'연마석 (특수 스킬 반지 강화 재료)','에테르':'소울 에테르 (소울웨폰 재료)','방어구':'에테르넬 방어구 상자','장신망':'에테르넬 장신망 상자 (장갑·신발·망토)','포션':'소비 아이템'};
 const MISS_SKIP_SET=new Set(['방어구','정보']); // b253 · b254: 로이드·소울 삭제, 정보 칩(앱솔/아케인 상자) 제외
 // 보스별 [아이템, 드롭 난이도들] — 해당 난이도를 선택했을 때만 표시
 const DROPS = {
@@ -215,15 +217,15 @@ const DROPS = {
   dusk:[['terror',['chaos']]],
   jinhilla:[['sos',['hard']]],
   dunkel:[['cfe',['hard']]],
-  seren:[['mitra',['hard','extreme']],['h_face',['extreme']]],
-  kalos:[['h_eye',['extreme']],['g_life',['normal','chaos','extreme']]],
-  adversary:[['legacy',['hard','extreme']],['g_life',['normal','hard','extreme']],['se1',['normal','hard','extreme']]],
-  kaling:[['chaosbox',['normal','hard','extreme']],['h_ear',['extreme']],['g_life',['normal']],['g_faith',['hard','extreme']],['se1',['normal','hard','extreme']]],
+  seren:[['mitra',['hard','extreme']],['h_face',['extreme']],['moon',['extreme']]],
+  kalos:[['h_eye',['extreme']],['g_life',['normal','chaos','extreme']],['moon',['extreme']]],
+  adversary:[['legacy',['hard','extreme']],['g_life',['normal','hard','extreme']],['se1',['normal','hard','extreme']],['moon',['extreme']]],
+  kaling:[['chaosbox',['normal','hard','extreme']],['h_ear',['extreme']],['g_life',['normal']],['g_faith',['hard','extreme']],['se1',['normal','hard','extreme']],['moon',['extreme']]],
   star:[['bliss',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']]], // b262: b_star(환상의 상자) → INFOBOX 정보 칩
   // b252: 익스트림 — 공지 815(1.2.420)·인벤 322439/322167: 익림 → 익셉셔널 해머 (포켓), 익발 → 익셉셔널 해머 (펜던트). 시세 출처 없음 → 가격 미표시라 맨 뒤(반지 상자 앞).
   //   하드 공통 보상 이월은 namu.wiki 림보/발드릭스 보상 + matsu1207.tistory.com/937 두 출처 일치.
-  limbo:[['whisper',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pocket',['extreme']],['b_limbo',['hard', 'extreme']]],
-  baldrix:[['oath',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pendant',['extreme']],['b_baldrix',['hard', 'extreme']]],
+  limbo:[['whisper',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pocket',['extreme']],['b_limbo',['hard', 'extreme']],['moon',['extreme']]],
+  baldrix:[['oath',['hard','extreme']],['chaosbox',['normal','hard','extreme']],['g_faith',['normal','hard','extreme']],['se3',['normal','hard','extreme']],['h_pendant',['extreme']],['b_baldrix',['hard', 'extreme']],['moon',['extreme']]],
   bellona:[['spirit',['hard']],['chaosbox',['normal','hard']],['g_life',['normal']],['g_faith',['hard']],['se2',['normal','hard']],['b_bellona',['hard']]],
   jupiter:[['sin',['hard']],['chaosbox',['normal','hard']],['g_faith',['normal','hard']],['se4',['normal','hard']],['b_jupiter',['hard']]],
   blackmage:[['genesis',['hard','extreme']],['h_belt',['extreme']]]
