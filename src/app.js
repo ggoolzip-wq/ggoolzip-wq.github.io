@@ -253,7 +253,8 @@ const erdaFor = (b,diff) => +(ERDA[b?.id]?.[diff])||0;
 /* b253: 확정 지급 에리온의 조각 개수 (정보 표시 전용: 클릭·집계·수익 기록 없음, 에르다 칩 옆).
  * 출처 두 곳 일치분만: 나무위키 각 보스 문서 '보상'(2026-10-23 열람) · matsu1207.tistory.com/937 (2026-10-16 수정).
  * 미추가(출처 불일치/단일): 익스트림 카링(나무 480 · matsu 400), 하드 벨로나(matsu 100 단독), 익스트림 림보·발드릭스(두 곳 모두 '?'). */
-const ERION = { seren:{extreme:30}, kalos:{extreme:180}, adversary:{hard:30,extreme:240}, kaling:{hard:60}, star:{hard:90},
+// b264: 나무위키 아스트라 보조무기(2.1.2.2) 기준 — 카링 EX 480·벨로나 H 90 추가. 림보/발드릭스 EX = 나무위키 '?' → 생략
+const ERION = { seren:{extreme:30}, kalos:{extreme:180}, adversary:{hard:30,extreme:240}, kaling:{hard:60,extreme:480}, star:{hard:90}, bellona:{hard:90},
   limbo:{hard:60}, baldrix:{hard:120}, jupiter:{normal:45,hard:360} };
 const erionFor = (b,diff) => +(ERION[b?.id]?.[diff])||0;
 /* b254: 기록하지 않는 상자 정보 칩 (에리온의 조각 칩 바로 뒤, 에리온이 없는 보스도 같은 자리). 아이콘만 + aria-label · b258: data-tip = 아이템 이름(여명 장신구 off 칩과 같은 말풍선).

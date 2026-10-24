@@ -31,7 +31,7 @@ try:
     r=pg.evaluate("""()=>Object.fromEntries(BOSSES.map(b=>[b.id,b.diffs.filter(d=>dropsFor(b,d).includes('moon'))]))""")
     got={k:v for k,v in r.items() if v}
     check('달빛 포션 = 6보스 익스트림만', got=={k:['extreme'] for k in ['seren','kalos','adversary','kaling','limbo','baldrix']}, got)
-    check('ERION 그대로', pg.evaluate("[erionFor(findBoss('kaling'),'extreme'),erionFor(findBoss('bellona'),'hard')]")==[0,0])
+    check('ERION b264 값', pg.evaluate("[erionFor(findBoss('kaling'),'extreme'),erionFor(findBoss('bellona'),'hard')]")==[480,90])
     q=pg.evaluate("""()=>{const d=document.querySelector('.drop[data-drop="kaling|moon"]'); if(!d) return null; const im=d.querySelector('img');
       return {tip:d.getAttribute('data-tip'),txt:d.textContent.trim(),role:d.getAttribute('role'),nw:im&&im.naturalWidth,last:d.parentElement.querySelector('.drop[data-drop]:last-of-type')===d}}""")
     check('칩 = 기록 버튼, 이름·말풍선', q and q['role']=='button' and q['tip']=='영롱한 달빛 포션' and '영롱한 달빛 포션' in q['txt'], q)

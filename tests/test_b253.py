@@ -28,7 +28,7 @@ try:
     check('b254: 로이드·소울 조각 아이템 전부 삭제', r['gone']==[], r['gone'])
     check('이름: 갈망·욕망·맹세 방어구 상자', r['names']==['갈망의 에테르넬 방어구 상자','욕망의 에테르넬 방어구 상자','맹세의 에테르넬 방어구 상자'], r['names'])
     L=r['le']['L']; check('정렬: 반지 상자 맨 끝 유지, 새 항목은 그 앞', 'b_limbo' in L and L.index('b_limbo')<len(L)-1 and '반지' in pg.evaluate("k=>ITEMS[k].n",L[-1]), L)
-    check('에리온: 유피테르 하드 360·칼로스 익스 180·대적자 하드 30, 단일출처(카링 익스)는 없음', r['er'][:3]==[360,180,30] and not r['er'][3], r['er'])
+    check('에리온: 유피테르 하드 360·칼로스 익스 180·대적자 하드 30, 카링 익스 480(b264 나무위키)', r['er']==[360,180,30,480], r['er'])
     check('못 가진 아이템 목록에 새 세트 없음', not r['miss'])
     pg.evaluate("()=>{const c=S.characters[0];c.bosses={jupiter:{enabled:true,diff:'hard',party:1}};render()}"); pg.wait_for_timeout(500)
     e=pg.evaluate("()=>[...document.querySelectorAll('.drop.erion')].map(x=>x.getAttribute('aria-label')+'|'+x.innerText)")
