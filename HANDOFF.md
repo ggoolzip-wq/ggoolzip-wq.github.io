@@ -21,6 +21,13 @@
 3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
+## b265 (2026-10-26 KST, 작업 00:03~00:12 KST)
+- 요청: '마빡 도로시 공지 제목에 포탈 단어가 있다면 가져오지마'.
+- scripts/update_feed.py: mabbak_skip(title) — src_mabbak 이 제목에 '포탈' 있는 글은 건너뜀(워터마크는 넘겨 다시 안 받음). main() 시작 때 저장된 마빡도로시 포탈 글도 제거.
+- feed.json: 마빡도로시 포탈 글 3건 제거(7→4). 다른 탭 그대로.
+- src/app.js: feedSkip — feedItems('mabbak') 이 feed.json·서버(feed.srv) 둘 다에서 포탈 글 숨김. 마빡도로시 탭만.
+- 테스트: test_b265 신규(수집기 모의·feed.json·화면·서버 글), fixture_b265_feed.json(변경 전 feed). 전체 스위트 = test_tracker28 기존 실패 + test_b239 1회 흔들림(단독 2회 통과).
+
 ## b264 (2026-10-25 KST, 작업 00:29~00:38 KST)
 - 요청: '에리온 조각은 나무위키 기준으로 싹 반영해'. 출처 = 나무위키 '아스트라 보조무기' 에리온의 조각 표(2026-10-22 수정본) + 카링/림보/발드릭스 보스 문서.
 - ERION 변경: 카링 익스 없음→480, 벨로나 하드 없음→90 (칩 자동 생성). 나머지(세렌EX30·칼로스EX180·대적자H30/EX240·카링H60·스타H90·림보H60·발드릭스H120·유피테르N45/H360)는 나무와 동일.

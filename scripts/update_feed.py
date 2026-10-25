@@ -540,6 +540,10 @@ def inven_post(url):
     iso = (d.replace(" ", "T") + ":00+09:00") if re.match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}$", d) else ""
     return t, iso
 
+MABBAK_SKIP = "포탈"   # b265: 제목에 '포탈' 이 있는 마빡도로시 글은 가져오지 않음
+def mabbak_skip(title):
+    return MABBAK_SKIP in (title or "")
+
 def src_mabbak(st, wm, run_all, minute):
     new, errs, ok = [], [], 0
     q = urllib.parse.quote(INVEN_NICK)
@@ -556,6 +560,8 @@ def src_mabbak(st, wm, run_all, minute):
             for url, _, n in sorted(set(rows), key=lambda r: r[2]):
                 if n > w:
                     title, iso = inven_post(url)
+                    if mabbak_skip(title):
+                        log("  마빡도로시 건너뜀(포탈):", title); time.sleep(1); continue
                     new.append({"id": f"inven:{b}:{n}", "title": title, "url": url, "date": iso, "board": b})
                     log("  마빡도로시 새 글:", title)
                     time.sleep(1)
@@ -753,6 +759,7 @@ def main():
     feed.setdefault("version", 1)
     items = feed.setdefault("items", {}); srcs = feed.setdefault("sources", {})
     wm = feed.setdefault("state", {}).setdefault("watermarks", {})
+    if items.get("mabbak"): items["mabbak"] = [x for x in items["mabbak"] if not mabbak_skip(x.get("title"))]  # b265
     _API_NOTICES.clear(); _API_EVENTS.clear()
     _HAVE_MINOR.clear(); _HAVE_MINOR.update(int(x["id"].split(":")[1]) for x in items.get("patch", []) if str(x.get("id", "")).startswith("minor:"))
     run_all = os.environ.get("FEED_ALL") == "1" or os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"

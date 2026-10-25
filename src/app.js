@@ -4125,7 +4125,9 @@ const FEED_LIVE='https://ggoolzip-wq.github.io/feed.json', FEED_SEEN_KEY='mapleB
 const feed={data:null,err:'',tab:'saryo',page:1,per:5,at:0,srv:null,srvKey:''};
 let feedSeen=new Set((()=>{ try{ return JSON.parse(localStorage.getItem(FEED_SEEN_KEY))||[]; }catch(e){ return []; } })());
 /* b170: 서버(Worker)가 서비스 키로 넥슨 공지를 1분 동안 계속 확인한 결과(feed.srv) — /api/live 30초 폴링에 실려 옴. feed.json(5분) 과 id 로 합침 */
-const feedItems=t=>{ const a=(feed.data&&feed.data.items&&feed.data.items[t])||[], b=(feed.srv&&feed.srv.items&&feed.srv.items[t])||[]; if(!b.length) return a;
+// b265: 마빡도로시 탭은 제목에 '포탈' 이 있는 글을 보이지 않음 (수집기도 건너뜀)
+const feedSkip=(t,x)=>t==='mabbak'&&String(x&&x.title||'').includes('포탈');
+const feedItems=t=>{ const a=((feed.data&&feed.data.items&&feed.data.items[t])||[]).filter(x=>!feedSkip(t,x)), b=((feed.srv&&feed.srv.items&&feed.srv.items[t])||[]).filter(x=>!feedSkip(t,x)); if(!b.length) return a;
   const ids=new Set(a.map(x=>x.id)), extra=b.filter(x=>!ids.has(x.id)); return extra.length?[...extra,...a].sort((x,y)=>String(y.date||'').localeCompare(String(x.date||''))):a; };
 const feedSun=()=>{ const a=feed.data&&feed.data.sunday, b=feed.srv&&feed.srv.sunday; return b&&(!a||+b.id>+a.id)?b:a; };
 function feedSrvApply(f){ if(!f||!f.items) return; const k=JSON.stringify([f.items,f.sunday]); if(k===feed.srvKey) return; feed.srv=f; feed.srvKey=k; renderFeed(); }
