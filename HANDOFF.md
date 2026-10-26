@@ -21,6 +21,11 @@
 3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
+## b267 (2026-10-26 KST, 작업 13:35~13:43 KST)
+- 요청: 게이지 오른쪽 7/12 → 'N% 진행중', 글자 조금 작게, 게이지 왼쪽 밑에 더 작은 글씨로 7/12.
+- src/app.js weekGauge: 오른쪽 = seg7(N%, 높이 22→17px, '%' 7세그먼트 글리프 추가) + '진행중'. weekGaugePct = 내림 정수(143/144 = 99%), 100% 는 다 잡았을 때만. 게이지 밑 왼쪽 .rpg-xy = X/Y(.68rem). 색 구간·금색 빛 그대로.
+- 테스트: test_b267 신규(25/58/91/100%, 99%·0%, X/Y 위치·크기, 숫자 높이 17px), test_b266 은 X/Y 를 .rpg-xy 에서 읽게. 전체 = test_tracker28 기존 실패만.
+
 ## b266 (2026-10-26 KST, 작업 13:04~13:24 KST)
 - 요청: '이번 주 수익 총합'에 이번 주 현황 게이지(결정석 개수만), X/Y 디지털 글씨, 메소 총합과 주보 결정석 사이. 색 0~32.99 빨강·33~65.99 주황·66~99.99 밝은 하늘·100 빛나는 순금. 날짜 문구 ' · 전체 캐릭터' 삭제.
 - src/app.js weekGaugeData/weekGauge/seg7: 보이는(API 키 있는) 캐릭터마다 Y += min(주간 한도 12, 켜 둔 주간 보스 수)(잡은 수보다 작으면 잡은 수), X += min(12, 이번 주 잡은 주간 보스 수). 7세그먼트 = 인라인 SVG(꺼진 칸 흐리게), 외부 글꼴 없음.

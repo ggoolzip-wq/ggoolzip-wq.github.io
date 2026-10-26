@@ -2105,12 +2105,15 @@ function weekGaugeData(cs){ const lim=S.settings.weeklyLimit, VI=activeIds(); le
   const pct=total?done/total*100:0; return {done,total,pct,cls:total&&done>=total?'g-gold':pct>=66?'g-sky':pct>=33?'g-org':'g-red'}; }
 const SEG7={0:'abcdef',1:'bc',2:'abged',3:'abgcd',4:'fgbc',5:'afgcd',6:'afgedc',7:'abc',8:'abcdefg',9:'abcdfg'};
 const SEG7P={a:'2,1 8,1 7,2.6 3,2.6',b:'8.6,1.6 8.6,8.4 7.4,7.6 7.4,2.6',c:'8.6,9.6 8.6,16.4 7.4,15.4 7.4,10.4',d:'2,17 8,17 7,15.4 3,15.4',e:'1.4,9.6 2.6,10.4 2.6,15.4 1.4,16.4',f:'1.4,1.6 2.6,2.6 2.6,7.6 1.4,8.4',g:'2,9 3,8.2 7,8.2 8,9 7,9.8 3,9.8'};
-function seg7(str){ let x=0; const g=[...String(str)].map(ch=>{ let o='';
+function seg7(str,h=22){ let x=0; const g=[...String(str)].map(ch=>{ let o='';
+    if(ch==='%'){ o=`<rect x="${x+1}" y="1.5" width="2.6" height="2.6" class="on"/><rect x="${x+6.4}" y="13.9" width="2.6" height="2.6" class="on"/><polygon points="${x+1.2},17 ${x+2.6},17 ${x+8.8},1 ${x+7.4},1" class="on"/>`; x+=10.5; return o; }
     if(ch==='/'){ o=`<polygon points="${x+1},17 ${x+2.4},17 ${x+7},1 ${x+5.6},1" class="on"/>`; x+=8; return o; }
     const on=SEG7[ch]||''; o=Object.entries(SEG7P).map(([k,p])=>`<polygon transform="translate(${x} 0)" points="${p}" class="${on.includes(k)?'on':'off'}"/>`).join(''); x+=10.5; return o; }).join('');
-  return `<svg class="seg7" viewBox="0 0 ${x} 18" width="${(x*22/18).toFixed(1)}" height="22" role="img" aria-label="${esc(String(str))}">${g}</svg>`; }
+  return `<svg class="seg7" viewBox="0 0 ${x} 18" width="${(x*h/18).toFixed(1)}" height="${h}" role="img" aria-label="${esc(String(str))}">${g}</svg>`; }
 function weekGauge(cs){ const g=weekGaugeData(cs); if(!g.total) return '';
-  return `<div class="rp-gauge ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="이번 주 주간 결정석 ${g.done}/${g.total} (${Math.floor(g.pct*100)/100}%)"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-num">${seg7(g.done+'/'+g.total)}</span></div>`; }
+  return `<div class="rp-gauge ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="이번 주 주간 결정석 ${g.done}/${g.total} (${Math.floor(g.pct*100)/100}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${g.done}/${g.total}</span></div><span class="rpg-num">${seg7(weekGaugePct(g)+'%',17)}<span class="rpg-ing">진행중</span></span></div>`; }
+// b267: 진행률 = 내림 정수(99.9% → 99%) → 100% 는 다 잡았을 때만
+const weekGaugePct = g => g.total&&g.done>=g.total?100:Math.floor(g.pct);
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
 function revPanel(a,cur){
   const lim=S.settings.weeklyLimit;
