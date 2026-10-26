@@ -75,7 +75,7 @@ try:
                 D,K=ink(pg,r,fn)
                 if not SD: os.remove(fn)
                 print(f'INK {th} {name} {sel}: digit {D} hangul {K}' + (f' dTop {K[0]-D[0]:+.2f} dBot {K[1]-D[1]:+.2f}' if D and K else ''))
-                check(f'[{th}] {name} {sel} (b272: 같은 크기) 진행중/완료 잉크 = 숫자와 가운데 맞춤 ±.7px, 위·아래 차 ≤1.6px', D and K and abs((K[0]+K[1])/2-(D[0]+D[1])/2)<=.7 and abs(K[0]-D[0])<=1.6 and abs(K[1]-D[1])<=1.6, [D,K])
+                check(f'[{th}] {name} {sel} (b275: 사용자 요청 1px 위) 진행중/완료 잉크 가운데 = 숫자 가운데 -1px ±.7px, 위·아래 차 ≤2.6px', D and K and abs((K[0]+K[1])/2-(D[0]+D[1])/2+1)<=.7 and abs(K[0]-D[0])<=2.6 and abs(K[1]-D[1])<=2.6, [D,K])
     b.close()
 finally: srv.terminate()
 if NOCHK: print('shots done'); sys.exit(0)
