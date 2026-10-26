@@ -2063,6 +2063,10 @@ header .logo .logo-d{display:flex;align-items:center}
 .rp-gauge{gap:6px}
 /* b272: 같은 크기면 Orbit 한글 잉크가 숫자보다 위·아래로 약 1.2px씩 큼 → 단어 전체(글자별 아님)를 .02em(≈.27px) 올려 숫자와 가운데 맞춤 */
 .rpg-num .tsmn.rpg-ing{position:relative!important;top:0!important;transform:translateY(-.025em)!important}
+/* b273: Orbit '진' 이 행/중보다 위로 큼(잉크 위 778 vs 행 762/1000) → '진' 한 글자만 아래로 .016em, 글씨·크기 그대로 */
+.rpg-num .rpg-ing .rpg-j{display:inline-block;transform:translateY(var(--jy,.016em));font:inherit;letter-spacing:inherit}
+/* b273: 배율 100%(DPR 1) 에선 Chrome 이 글자 이동을 정수 px 로 맞춰 .016em(.2px)이 0px 이 됨 → 1px 내림 (측정: 진 위 끝 = 행) */
+@media (max-resolution:1.1dppx){.rpg-num .rpg-ing .rpg-j{--jy:1px}}
 </style>
 </head>
 <body>
@@ -4315,7 +4319,7 @@ function monthGaugeData(cs){ const VI=activeIds(); let done=0,total=0;
   for(const c of cs){ if(!charShown(c)||!VI.has(c.id)||!c.bosses?.blackmage?.enabled) continue; total++; if(c.monthly?.blackmage) done++; }
   const pct=total?done/total*100:0; return {done,total,pct,cls:total&&done>=total?'g-mred':pct>=66?'g-pink':pct>=33?'g-yel':'g-gray'}; }
 function gaugeHtml(g,lab,kind){ const p=weekGaugePct(g), full=g.total&&g.done>=g.total;
-  return `<div class="rp-gauge ${kind} ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="${lab} ${g.done}/${g.total} (${p}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${lab} ${g.done}/${g.total}</span></div><span class="rpg-num"><span class="tsmn rpg-t">${p}%</span><span class="tsmn rpg-ing">${full?'완료':'진행중'}</span></span></div>`; }
+  return `<div class="rp-gauge ${kind} ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="${lab} ${g.done}/${g.total} (${p}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${lab} ${g.done}/${g.total}</span></div><span class="rpg-num"><span class="tsmn rpg-t">${p}%</span><span class="tsmn rpg-ing">${full?'완료':'<span class="rpg-j">진</span>행중'}</span></span></div>`; }
 function weekGauge(cs){ const g=weekGaugeData(cs), m=monthGaugeData(cs); return (g.total?gaugeHtml(g,'이번 주 결정석 진행도','rpg-w'):'')+(m.total?gaugeHtml(m,'이번 달 검마 진행도','rpg-m'):''); }
 // b269: 진행률 = 소수 둘째 자리 내림(58.333 → 58.33) → 100.00% 는 다 잡았을 때만
 const weekGaugePct = g => g.total&&g.done>=g.total?'100.00':Math.min(99.99,Math.floor(g.done*10000/(g.total||1))/100).toFixed(2);

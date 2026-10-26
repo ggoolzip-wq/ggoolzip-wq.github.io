@@ -1939,3 +1939,7 @@ header .logo .logo-d{display:flex;align-items:center}
 .rp-gauge{gap:6px}
 /* b272: 같은 크기면 Orbit 한글 잉크가 숫자보다 위·아래로 약 1.2px씩 큼 → 단어 전체(글자별 아님)를 .02em(≈.27px) 올려 숫자와 가운데 맞춤 */
 .rpg-num .tsmn.rpg-ing{position:relative!important;top:0!important;transform:translateY(-.025em)!important}
+/* b273: Orbit '진' 이 행/중보다 위로 큼(잉크 위 778 vs 행 762/1000) → '진' 한 글자만 아래로 .016em, 글씨·크기 그대로 */
+.rpg-num .rpg-ing .rpg-j{display:inline-block;transform:translateY(var(--jy,.016em));font:inherit;letter-spacing:inherit}
+/* b273: 배율 100%(DPR 1) 에선 Chrome 이 글자 이동을 정수 px 로 맞춰 .016em(.2px)이 0px 이 됨 → 1px 내림 (측정: 진 위 끝 = 행) */
+@media (max-resolution:1.1dppx){.rpg-num .rpg-ing .rpg-j{--jy:1px}}

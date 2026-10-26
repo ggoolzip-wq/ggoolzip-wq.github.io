@@ -39,9 +39,9 @@ def ink(pg,r,fn):
         return (ys[0]/S,(ys[-1]+1)/S) if ys else None
     return rows(*r['dx']), (rows(*r['kx']) if r['kx'] else None)
 
-OB={"진":(-106,778),"행":(-134,762),"중":(-133,735),"완":(-114,767),"료":(-20,697)}  # Orbit-Regular 글자 잉크 yMin,yMax (1000 단위)
-GLY="""sel=>{const g=document.querySelector('.revpanel '+sel), t=g.querySelector('.rpg-ing').firstChild, out=[];
-  for(let i=0;i<t.length;i++){const r=document.createRange(); r.setStart(t,i); r.setEnd(t,i+1); const b=r.getBoundingClientRect(); out.push([t.data[i],b.left,b.right,b.top,b.bottom]);} return out;}"""
+OB={"진":(-122,762),"행":(-134,762),"중":(-133,735),"완":(-114,767),"료":(-20,697)}  # Orbit-Regular 글자 잉크 yMin,yMax (1000 단위) · b273: 진 = .016em 내림 반영
+GLY="""sel=>{const g=document.querySelector('.revpanel '+sel), w=document.createTreeWalker(g.querySelector('.rpg-ing'),NodeFilter.SHOW_TEXT), out=[]; let t;
+  while(t=w.nextNode()) for(let i=0;i<t.length;i++){const r=document.createRange(); r.setStart(t,i); r.setEnd(t,i+1); const b=r.getBoundingClientRect(); out.push([t.data[i],b.left,b.right,b.top,b.bottom]);} return out;}"""
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
@@ -59,10 +59,10 @@ try:
                 F=cdp.send('CSS.getPlatformFontsForNode',{'nodeId':nid})['fonts']
                 check(f'{name} {sel} {part}: 실제 그려진 폰트 = Orbit 웹폰트만 (대체 폰트 없음)', F and all(f['familyName']=='Orbit' and not f['isCustomFont']==False for f in F), F)
         G=pg.evaluate("""(()=>{const r=[];document.querySelectorAll('.revpanel .rp-gauge').forEach(g=>{const bar=g.querySelector('.rpg-bar').getBoundingClientRect(),t=g.querySelector('.rpg-num .rpg-t'),i=g.querySelector('.rpg-ing'),tb=t.getBoundingClientRect(),ib=i.getBoundingClientRect(),gb=g.getBoundingClientRect();
-          r.push({gap:tb.left-bar.right,fsT:parseFloat(getComputedStyle(t).fontSize),fsI:parseFloat(getComputedStyle(i).fontSize),oneLine:Math.abs(tb.top-ib.top)<3&&i.getClientRects().length===1,spans:g.querySelectorAll('.rpg-num span span').length,tail:gb.right-ib.right,bar:bar.width});});return r;})()""")
+          r.push({gap:tb.left-bar.right,fsT:parseFloat(getComputedStyle(t).fontSize),fsI:parseFloat(getComputedStyle(i).fontSize),oneLine:Math.abs(tb.top-ib.top)<3&&i.getClientRects().length===1,spans:g.querySelectorAll('.rpg-num span span:not(.rpg-j)').length,tail:gb.right-ib.right,bar:bar.width});});return r;})()""")
         check(f'{name}: 막대 끝 → 숫자 사이 6px (빈 칸 없음)', all(abs(x['gap']-6)<0.6 for x in G), G)
         check(f'{name}: 숫자·진행중/완료 같은 글자 크기', all(abs(x['fsT']-x['fsI'])<0.01 for x in G), G)
-        check(f'{name}: 한 줄 · 글자별 span 없음', all(x['oneLine'] and x['spans']==0 for x in G), G)
+        check(f'{name}: 한 줄 · 글자별 span 없음(b273: 진 만 예외)', all(x['oneLine'] and x['spans']==0 for x in G), G)
         check(f'{name}: 글자 뒤 남는 칸 ≤ 숫자 한 칸(9px)', all(-0.5<=x['tail']<=9 for x in G), G)
     pg.add_style_tag(content=NOGLOW)
     for th in ['dark','light']:
