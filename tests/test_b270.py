@@ -1,3 +1,4 @@
+# (b271: 게이지 글자 = 주보 결정석과 같은 글씨체 · 숫자/진행중 잉크 위·아래 ±1px · 라벨 13px)
 # test_b270: 두 게이지 막대 폭 = 글자 상관없이 항상 같음(0/58.33/99.99/100) · '진행중/완료' 실제 잉크(스샷 픽셀) 위·아래 끝 = 숫자 잉크 ±1px, 두 테마
 # MBT_ROOT = 다른 빌드(변경 전 사진용, MBT_NOCHECK=1) · MBT_SHOTDIR = 사진 폴더 · MBT_SHOT = before/after
 import os, sys, tempfile, shutil, subprocess
@@ -17,10 +18,10 @@ SETUP="""n=>{ const W=BOSSES.filter(b=>b.type==='weekly').slice(0,12);
     bosses:Object.assign(Object.fromEntries(W.map(b=>[b.id,{enabled:true,diff:b.diffs[0],party:1}])),{blackmage:{enabled:true,diff:'hard',party:1}}),weekly:{},monthly:{},auto:{},drops:{},sync:{}}));
   S.activeId='c0'; save&&save(); render(); return W.map(b=>b.id); }"""
 SET="""([ks,k,m])=>{ S.characters.forEach((c,i)=>{ c.weekly={}; ks.slice(0,k[i]).forEach(s=>c.weekly[s]=true); c.monthly={}; if(m[i]) c.monthly.blackmage=S.period.week; }); render();
-  const f=g=>g?{cls:g.className,xy:g.querySelector('.rpg-xy').textContent,pc:g.querySelector('.rpg-num .rpg-t .tir-sr').textContent,ing:g.querySelector('.rpg-ing .tir-sr').textContent,
-     kfont:getComputedStyle(g.querySelector('.rpg-ing .tir-k')).fontFamily,col:getComputedStyle(g.querySelector('.rpg-num')).color,flt:getComputedStyle(g.querySelector('.rpg-num')).filter,
-     dH:g.querySelector('.rpg-num .rpg-t .tir-g').getBoundingClientRect().height,dB:g.querySelector('.rpg-num .rpg-t .tir-g').getBoundingClientRect().bottom,
-     kB:g.querySelector('.rpg-ing .tir-k').getBoundingClientRect().bottom,kH:g.querySelector('.rpg-ing .tir-k').getBoundingClientRect().height}:null;
+  const f=g=>g?{cls:g.className,xy:g.querySelector('.rpg-xy').textContent,pc:g.querySelector('.rpg-num .rpg-t').textContent,ing:g.querySelector('.rpg-ing').textContent,
+     kfont:getComputedStyle(g.querySelector('.rpg-ing')).fontFamily,col:getComputedStyle(g.querySelector('.rpg-num')).color,flt:getComputedStyle(g.querySelector('.rpg-num')).filter,
+     dH:g.querySelector('.rpg-num .rpg-t').getBoundingClientRect().height,dB:g.querySelector('.rpg-num .rpg-t').getBoundingClientRect().bottom,
+     kB:g.querySelector('.rpg-ing').getBoundingClientRect().bottom,kH:g.querySelector('.rpg-ing').getBoundingClientRect().height}:null;
   return {w:f(document.querySelector('.revpanel .rp-gauge.rpg-w')),m:f(document.querySelector('.revpanel .rp-gauge.rpg-m')),order:(()=>{const w=document.querySelector('.revpanel .rpg-w');return !!w&&w.nextElementSibling===document.querySelector('.revpanel .rpg-m')})(),
     sh:document.scrollingElement.scrollHeight}; }"""
 from PIL import Image
@@ -29,7 +30,7 @@ def shot(pg,name,clip=None):
     os.makedirs(SD,exist_ok=True); pg.mouse.move(5,5); pg.wait_for_timeout(400)
     if clip: pg.screenshot(path=os.path.join(SD,f'{PFX}_{name}.png'),clip=clip)
     else: pg.locator('.revpanel').first.screenshot(path=os.path.join(SD,f'{PFX}_{name}.png'))
-INFO="""sel=>{const g=document.querySelector('.revpanel '+sel); if(!g) return null; const q=s=>g.querySelector(s), n=q('.rpg-num').getBoundingClientRect(), d=(q('.rpg-num .tir-g')||q('.rpg-num svg')).getBoundingClientRect(), ks=[...g.querySelectorAll('.rpg-ing .tir-k')], k0=ks.length?ks[0].getBoundingClientRect():null, k1=ks.length?ks[ks.length-1].getBoundingClientRect():null;
+INFO="""sel=>{const g=document.querySelector('.revpanel '+sel); if(!g) return null; const q=s=>g.querySelector(s), n=q('.rpg-num').getBoundingClientRect(), d=q('.rpg-num .rpg-t').getBoundingClientRect(), ks=[...g.querySelectorAll('.rpg-ing')], k0=ks.length?ks[0].getBoundingClientRect():null, k1=ks.length?ks[ks.length-1].getBoundingClientRect():null;
   return {n:[n.left-4,n.top-6,n.right+4,n.bottom+6],dx:[d.left,d.right],kx:k0?[k0.left,k1.right]:null,bar:q('.rpg-bar').getBoundingClientRect().width}}"""
 NOGLOW='.rpg-num,.rpg-num *{filter:none!important;text-shadow:none!important}'
 def ink(pg,r,fn):
@@ -58,6 +59,11 @@ try:
         check('막대 폭 항상 같음(주간 0/58.33/99.99/100, 검마 0/100)', max(W)-min(W)<0.01 and W[0]>150, W)
         ov=pg.evaluate("(()=>{ const r=[]; document.querySelectorAll('.revpanel .rpg-num').forEach(n=>{ const c=[...n.children].reduce((a,e)=>a+e.getBoundingClientRect().width,0); r.push([c,n.clientWidth]); }); return r; })()")
         check('글자가 고정 칸 안에 들어감', all(c<=w for c,w in ov), ov)
+    if not NOCHK:
+        F=pg.evaluate("(()=>{const s=e=>{const c=getComputedStyle(e);return [c.fontFamily,c.fontWeight,c.fontStyle]};const l=document.querySelector('.revpanel .rp-cry .rplb');return [s(l),...[...document.querySelectorAll('.revpanel .rpg-num .tsmn')].map(s)]})()")
+        check('b271: NN.NN%·진행중 = 주보 결정석과 같은 글씨체/굵기/모양', len(F)>=3 and all(x==F[0] for x in F), F)
+        X=pg.evaluate("[...document.querySelectorAll('.revpanel .rpg-xy')].map(e=>[parseFloat(getComputedStyle(e).fontSize),e.scrollWidth<=e.parentElement.clientWidth+1])")
+        check('b271: 작은 라벨 ≥12.5px · 한 줄에 들어감', X and all(f>=12.5 and ok for f,ok in X), X)
     pg.add_style_tag(content=NOGLOW)
     for th in ['dark','light']:
         pg.evaluate(f"document.documentElement.dataset.theme='{th}'")

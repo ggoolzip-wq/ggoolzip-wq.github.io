@@ -2116,7 +2116,7 @@ function monthGaugeData(cs){ const VI=activeIds(); let done=0,total=0;
   for(const c of cs){ if(!charShown(c)||!VI.has(c.id)||!c.bosses?.blackmage?.enabled) continue; total++; if(c.monthly?.blackmage) done++; }
   const pct=total?done/total*100:0; return {done,total,pct,cls:total&&done>=total?'g-mred':pct>=66?'g-pink':pct>=33?'g-yel':'g-gray'}; }
 function gaugeHtml(g,lab,kind){ const p=weekGaugePct(g), full=g.total&&g.done>=g.total;
-  return `<div class="rp-gauge ${kind} ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="${lab} ${g.done}/${g.total} (${p}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${lab} ${g.done}/${g.total}</span></div><span class="rpg-num">${tir(p+'%','rpg-t')}${tir(full?'완료':'진행중','rpg-t rpg-ing')}</span></div>`; }
+  return `<div class="rp-gauge ${kind} ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="${lab} ${g.done}/${g.total} (${p}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${lab} ${g.done}/${g.total}</span></div><span class="rpg-num"><span class="tsmn rpg-t">${p}%</span><span class="tsmn rpg-ing">${full?'완료':'진행중'}</span></span></div>`; }
 function weekGauge(cs){ const g=weekGaugeData(cs), m=monthGaugeData(cs); return (g.total?gaugeHtml(g,'이번 주 결정석 진행도','rpg-w'):'')+(m.total?gaugeHtml(m,'이번 달 검마 진행도','rpg-m'):''); }
 // b269: 진행률 = 소수 둘째 자리 내림(58.333 → 58.33) → 100.00% 는 다 잡았을 때만
 const weekGaugePct = g => g.total&&g.done>=g.total?'100.00':Math.min(99.99,Math.floor(g.done*10000/(g.total||1))/100).toFixed(2);

@@ -19,10 +19,10 @@ SETUP="""n=>{ const W=BOSSES.filter(b=>b.type==='weekly').slice(0,12);
     bosses:Object.assign(Object.fromEntries(W.map(b=>[b.id,{enabled:true,diff:b.diffs[0],party:1}])),{blackmage:{enabled:true,diff:'hard',party:1}}),weekly:{},monthly:{},auto:{},drops:{},sync:{}}));
   S.activeId='c0'; save&&save(); render(); return W.map(b=>b.id); }"""
 SET="""([ks,k,m])=>{ S.characters.forEach((c,i)=>{ c.weekly={}; ks.slice(0,k[i]).forEach(s=>c.weekly[s]=true); c.monthly={}; if(m[i]) c.monthly.blackmage=S.period.week; }); render();
-  const f=g=>g?{cls:g.className,xy:g.querySelector('.rpg-xy').textContent,pc:g.querySelector('.rpg-num .rpg-t .tir-sr').textContent,ing:g.querySelector('.rpg-ing .tir-sr').textContent,
-     kfont:getComputedStyle(g.querySelector('.rpg-ing .tir-k')).fontFamily,col:getComputedStyle(g.querySelector('.rpg-num')).color,flt:getComputedStyle(g.querySelector('.rpg-num')).filter,
-     dH:g.querySelector('.rpg-num .rpg-t .tir-g').getBoundingClientRect().height,dB:g.querySelector('.rpg-num .rpg-t .tir-g').getBoundingClientRect().bottom,
-     kB:g.querySelector('.rpg-ing .tir-k').getBoundingClientRect().bottom,kH:g.querySelector('.rpg-ing .tir-k').getBoundingClientRect().height}:null;
+  const f=g=>g?{cls:g.className,xy:g.querySelector('.rpg-xy').textContent,pc:g.querySelector('.rpg-num .rpg-t').textContent,ing:g.querySelector('.rpg-ing').textContent,
+     kfont:getComputedStyle(g.querySelector('.rpg-ing')).fontFamily,col:getComputedStyle(g.querySelector('.rpg-num')).color,flt:getComputedStyle(g.querySelector('.rpg-num')).filter,
+     dH:g.querySelector('.rpg-num .rpg-t').getBoundingClientRect().height,dB:g.querySelector('.rpg-num .rpg-t').getBoundingClientRect().bottom,
+     kB:g.querySelector('.rpg-ing').getBoundingClientRect().bottom,kH:g.querySelector('.rpg-ing').getBoundingClientRect().height}:null;
   return {w:f(document.querySelector('.revpanel .rp-gauge.rpg-w')),m:f(document.querySelector('.revpanel .rp-gauge.rpg-m')),order:(()=>{const w=document.querySelector('.revpanel .rpg-w');return !!w&&w.nextElementSibling===document.querySelector('.revpanel .rpg-m')})(),
     sh:document.scrollingElement.scrollHeight}; }"""
 def shot(pg,name):
@@ -48,7 +48,7 @@ try:
         check(f'[{th}] 검마 {md}/3 = {mp} {mc} · 라벨', mm and mm['pc']==mp and mm['xy']==f'이번 달 검마 진행도 {md}/3' and mc in mm['cls'] and mm['ing']==('완료' if md==3 else '진행중'), mm)
         check(f'[{th}] 검마 게이지 = 주간 게이지 바로 아래', r['order'])
         for g in (w,mm):
-            check(f'[{th}] 진행중/완료 = MrjUnitKo · 숫자와 높이(±25%)·아래 끝(±2px)', 'MrjUnitKo' in g['kfont'] and abs(g['kH']-g['dH'])<=g['dH']*.25 and abs(g['kB']-g['dB'])<=2, g)
+            check(f'[{th}] (b271) 진행중/완료 = 주보 결정석 글씨체(Orbit) · 숫자와 높이(±25%)·아래 끝(±2px)', 'Orbit' in g['kfont'] and abs(g['kH']-g['dH'])<=g['dH']*.25 and abs(g['kB']-g['dB'])<=2, g)
         if md==3: check(f'[{th}] 검마 100% = 빛나는 빨강', 'drop-shadow' in mm['flt'] and mm['col'].startswith('rgb(2'), mm)
     if not NOCHK:
         cl=pg.evaluate("monthGaugeData.toString()"); check('검마 분류식', "pct>=66?'g-pink':pct>=33?'g-yel':'g-gray'" in cl and 'blackmage' in cl)
