@@ -2042,6 +2042,10 @@ header .logo .logo-d{display:flex;align-items:center}
 [data-theme="light"] .rp-gauge.g-gray{--gc:#6b7380}[data-theme="light"] .rp-gauge.g-yel{--gc:#c99a00}[data-theme="light"] .rp-gauge.g-pink{--gc:#e0369a}[data-theme="light"] .rp-gauge.g-mred{--gc:#e00000}
 .rp-gauge.g-mred .rpg-bar i{background:linear-gradient(90deg,#ff8a8a,#ff1a1a 40%,#ff5c5c 60%,#ff1a1a);background-size:200% 100%;box-shadow:0 0 10px #ff2a2a,0 0 18px rgba(255,40,40,.75);animation:rpgGlow 1.6s ease-in-out infinite}
 .rp-gauge.g-mred .rpg-xy,.rp-gauge.g-mred .rpg-num{filter:drop-shadow(0 0 3px #ff2a2a) drop-shadow(0 0 7px rgba(255,40,40,.85))}
+/* b270: 진행중/완료 글자 = 숫자와 잉크(실제 픽셀) 위·아래 끝 맞춤 (스샷 측정: 2.33px 아래 → 위로 .173em 더) */
+.rpg-num .rpg-ing .tir-k{--ky:-.193em}
+/* b270: 오른쪽 글자 칸 고정 폭(가장 넓은 '99.99% 진행중' ≈ 88px 기준 6.2rem) → 두 게이지 막대 길이 항상 같음 */
+.rpg-num{width:var(--rpgw,6.2rem);justify-content:flex-start;box-sizing:border-box}
 </style>
 </head>
 <body>
