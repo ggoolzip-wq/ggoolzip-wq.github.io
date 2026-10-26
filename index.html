@@ -2066,7 +2066,9 @@ header .logo .logo-d{display:flex;align-items:center}
 /* b273: Orbit '진' 이 행/중보다 위로 큼(잉크 위 778 vs 행 762/1000) → '진' 한 글자만 아래로 .016em, 글씨·크기 그대로 */
 .rpg-num .rpg-ing .rpg-j{display:inline-block;transform:translateY(var(--jy,.016em));font:inherit;letter-spacing:inherit}
 /* b273: 배율 100%(DPR 1) 에선 Chrome 이 글자 이동을 정수 px 로 맞춰 .016em(.2px)이 0px 이 됨 → 1px 내림 (측정: 진 위 끝 = 행) */
-@media (max-resolution:1.1dppx){.rpg-num .rpg-ing .rpg-j{--jy:1px}}
+/* b274: DPR1 1px 규칙 삭제 — 사용자 화면(배율 100%)에서 진 전체가 1px 아래로 내려감(받침 ㄴ 아래 끝 58 vs 행·중 57). 정수 이동 대신 .02em(≈.27px) translateY 하나만 */
+
+.rpg-num .rpg-ing .rpg-j{--jy:.02em}
 </style>
 </head>
 <body>
