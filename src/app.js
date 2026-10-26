@@ -2110,10 +2110,16 @@ function seg7(str,h=22){ let x=0; const g=[...String(str)].map(ch=>{ let o='';
     if(ch==='/'){ o=`<polygon points="${x+1},17 ${x+2.4},17 ${x+7},1 ${x+5.6},1" class="on"/>`; x+=8; return o; }
     const on=SEG7[ch]||''; o=Object.entries(SEG7P).map(([k,p])=>`<polygon transform="translate(${x} 0)" points="${p}" class="${on.includes(k)?'on':'off'}"/>`).join(''); x+=10.5; return o; }).join('');
   return `<svg class="seg7" viewBox="0 0 ${x} 18" width="${(x*h/18).toFixed(1)}" height="${h}" role="img" aria-label="${esc(String(str))}">${g}</svg>`; }
-function weekGauge(cs){ const g=weekGaugeData(cs); if(!g.total) return '';
-  return `<div class="rp-gauge ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="이번 주 주간 결정석 ${g.done}/${g.total} (${Math.floor(g.pct*100)/100}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${g.done}/${g.total}</span></div><span class="rpg-num">${tir(weekGaugePct(g)+'%','rpg-t')}<span class="rpg-ing">진행중</span></span></div>`; }
-// b267: 진행률 = 내림 정수(99.9% → 99%) → 100% 는 다 잡았을 때만
-const weekGaugePct = g => g.total&&g.done>=g.total?100:Math.floor(g.pct);
+/* b269: 이번 달 검마 진행도 — 검은 마법사만, 월간 기간(S.period.month, 매달 1일 00:00 KST 초기화) 그대로. 검마 켜 둔 보이는(키 있는) 캐릭터 = Y, 이번 달 잡음(c.monthly.blackmage) = X
+ * 0~32.99% 회색 · 33~65.99% 노랑 · 66~99.99% 분홍 · 100% 빛나는 빨강 */
+function monthGaugeData(cs){ const VI=activeIds(); let done=0,total=0;
+  for(const c of cs){ if(!charShown(c)||!VI.has(c.id)||!c.bosses?.blackmage?.enabled) continue; total++; if(c.monthly?.blackmage) done++; }
+  const pct=total?done/total*100:0; return {done,total,pct,cls:total&&done>=total?'g-mred':pct>=66?'g-pink':pct>=33?'g-yel':'g-gray'}; }
+function gaugeHtml(g,lab,kind){ const p=weekGaugePct(g), full=g.total&&g.done>=g.total;
+  return `<div class="rp-gauge ${kind} ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="${lab} ${g.done}/${g.total} (${p}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${lab} ${g.done}/${g.total}</span></div><span class="rpg-num">${tir(p+'%','rpg-t')}${tir(full?'완료':'진행중','rpg-t rpg-ing')}</span></div>`; }
+function weekGauge(cs){ const g=weekGaugeData(cs), m=monthGaugeData(cs); return (g.total?gaugeHtml(g,'이번 주 결정석 진행도','rpg-w'):'')+(m.total?gaugeHtml(m,'이번 달 검마 진행도','rpg-m'):''); }
+// b269: 진행률 = 소수 둘째 자리 내림(58.333 → 58.33) → 100.00% 는 다 잡았을 때만
+const weekGaugePct = g => g.total&&g.done>=g.total?'100.00':Math.min(99.99,Math.floor(g.done*10000/(g.total||1))/100).toFixed(2);
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
 function revPanel(a,cur){
   const lim=S.settings.weeklyLimit;

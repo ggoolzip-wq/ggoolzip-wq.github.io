@@ -1,3 +1,4 @@
+# (b269: X/Y 앞 '이번 주 결정석 진행도' 글자는 떼고 비교 · % = 소수 둘째 자리 내림 · 100% 면 '완료')
 # (b267: X/Y = 게이지 왼쪽 밑 .rpg-xy, 오른쪽 = 'N% 진행중')
 # test_b266: 이번 주 수익 총합 — 현황 게이지(주간 결정석 개수 X/Y, 7세그먼트), 색 구간, 날짜 문구에서 ' · 전체 캐릭터' 제거
 # MBT_ROOT = 다른 빌드(변경 전 사진용, MBT_NOCHECK=1) · MBT_SHOTDIR = 사진 폴더 · MBT_SHOT = before/after
@@ -18,7 +19,7 @@ SETUP="""n=>{ const W=BOSSES.filter(b=>b.type==='weekly').slice(0,12);
     bosses:Object.fromEntries(W.map(b=>[b.id,{enabled:true,diff:b.diffs[0],party:1}])),weekly:{},monthly:{},auto:{},drops:{},sync:{}}));
   S.activeId='c0'; save&&save(); render(); return W.map(b=>b.id); }"""
 SETW="""([ks,k])=>{ S.characters.forEach((c,i)=>{ c.weekly={}; ks.slice(0,k[i]).forEach(s=>c.weekly[s]=true); }); render(); const g=document.querySelector('.revpanel .rp-gauge');
-  return g?{cls:g.className,lab:(g.querySelector('.rpg-xy')||g.querySelector('.seg7')).textContent||g.querySelector('.seg7').getAttribute('aria-label'),pc:(g.querySelector('.rpg-num .tir-sr')||{}).textContent||(g.querySelector('.rpg-num .seg7')||{getAttribute:()=>null}).getAttribute('aria-label'),ing:(g.querySelector('.rpg-ing')||{}).textContent||'',pct:+g.dataset.pct,col:getComputedStyle(g.querySelector('.rpg-num')).color}:null; }"""
+  return g?{cls:g.className,lab:(g.querySelector('.rpg-xy')||g.querySelector('.seg7')).textContent.replace(/^[^0-9]+/,'')||g.querySelector('.seg7').getAttribute('aria-label'),pc:(g.querySelector('.rpg-num .tir-sr')||{}).textContent||(g.querySelector('.rpg-num .seg7')||{getAttribute:()=>null}).getAttribute('aria-label'),ing:(g.querySelector('.rpg-ing')||{}).textContent||'',pct:+g.dataset.pct,col:getComputedStyle(g.querySelector('.rpg-num')).color}:null; }"""
 def shot(pg,name):
     if not SD: return
     os.makedirs(SD,exist_ok=True); pg.mouse.move(5,5); pg.wait_for_timeout(400); pg.locator('.revpanel').first.screenshot(path=os.path.join(SD,f'{PFX}_{name}.png'))

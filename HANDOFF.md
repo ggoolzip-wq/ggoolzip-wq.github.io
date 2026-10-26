@@ -22,6 +22,14 @@
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
 
+
+## b269 — 진행중/완료 디지털 한글 · % 소수 둘째 자리 · 이번 달 검마 진행도 게이지 (2026-10-26 14:33~14:43 KST)
+- 요청: '진행중 글씨도 내가 만든 디지털 폰트로 … 100% 되면 완료 … 7/12 앞에 이번 주 결정석 진행도 … 바로 아래 이번 달 검마 진행도 게이지 … 소수점 2번째 자리까지'
+- MrjUnitKo 서브셋(Fusion Pixel 12px monospaced ko v2026.09.25, b147/b158 과 같은 판)을 조억만메소록지 + 진행중완료 12글자로 재생성. '진행중/완료' = tir() 한글(.tir-k), 색 = 게이지 색, 숫자와 같은 1.35em·아래 끝 맞춤.
+- % = weekGaugePct: 소수 둘째 자리 내림(정수 계산 floor(done*10000/total)/100), 100.00% 는 다 잡았을 때만(그 전엔 최대 99.99).
+- 작은 라벨 '이번 주 결정석 진행도 X/Y'. gaugeHtml(g,lab,kind) 공용, weekGauge() 가 주간(.rpg-w) + 검마(.rpg-m) 두 개 출력.
+- 검마 게이지 monthGaugeData: 보이는(키 있는, activeIds) 캐릭 중 검은 마법사 켠 캐릭 = Y, c.monthly.blackmage 있음 = X. 월 기준 = 기존 월간 초기화(S.period.month, 매달 1일 00:00 KST 에 c.monthly 비움) 그대로. 0~32.99 회색 · 33~65.99 노랑 · 66~99.99 분홍 · 100 빛나는 빨강(glow 애니메이션), 라이트 테마 색 별도. 검마 켠 캐릭 없으면 숨김.
+- 테스트: test_b266/b267 갱신(라벨 접두어 제거 비교, 25.00%/58.33%/91.66%/100.00% 완료, 99.30%), test_b269 추가(두 게이지·두 테마·폰트·높이/아래 끝·내림·키 지운 캐릭 제외·페이지 높이 그대로). 스샷 /workspace/b269.
 ## b268 — 주간 게이지 'N% 진행중' 숫자를 사이트 디지털 폰트(tir)로 (2026-10-26 13:59~14:07 KST)
 - 요청: '몇퍼 진행중에서 숫자 크기를 진행중과 맞추고 숫자는 내가 저장해놓은 디지털 폰트 그걸로해'
 - 저장된 디지털 폰트 = tir() (SVG 계산기 숫자 + Fusion Pixel 12px MrjUnitKo/HPIX '%', b147/b162). seg7 → tir(pct+'%','rpg-t').

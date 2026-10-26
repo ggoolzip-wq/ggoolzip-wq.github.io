@@ -1,3 +1,4 @@
+# (b269: X/Y 앞 '이번 주 결정석 진행도' 글자는 떼고 비교 · % = 소수 둘째 자리 내림 · 100% 면 '완료')
 # test_b267: 게이지 오른쪽 = 'N% 진행중'(7세그먼트, 내림 정수 — 100% 는 다 잡았을 때만), 게이지 왼쪽 밑 작은 X/Y.
 # (b267: X/Y = 게이지 왼쪽 밑 .rpg-xy, 오른쪽 = 'N% 진행중')
 # test_b266: 이번 주 수익 총합 — 현황 게이지(주간 결정석 개수 X/Y, 7세그먼트), 색 구간, 날짜 문구에서 ' · 전체 캐릭터' 제거
@@ -19,7 +20,7 @@ SETUP="""n=>{ const W=BOSSES.filter(b=>b.type==='weekly').slice(0,12);
     bosses:Object.fromEntries(W.map(b=>[b.id,{enabled:true,diff:b.diffs[0],party:1}])),weekly:{},monthly:{},auto:{},drops:{},sync:{}}));
   S.activeId='c0'; save&&save(); render(); return W.map(b=>b.id); }"""
 SETW="""([ks,k])=>{ S.characters.forEach((c,i)=>{ c.weekly={}; ks.slice(0,k[i]).forEach(s=>c.weekly[s]=true); }); render(); const g=document.querySelector('.revpanel .rp-gauge');
-  return g?{cls:g.className,lab:(g.querySelector('.rpg-xy')||g.querySelector('.seg7')).textContent||g.querySelector('.seg7').getAttribute('aria-label'),pc:(g.querySelector('.rpg-num .tir-sr')||{}).textContent||(g.querySelector('.rpg-num .seg7')||{getAttribute:()=>null}).getAttribute('aria-label'),ing:(g.querySelector('.rpg-ing')||{}).textContent||'',pct:+g.dataset.pct,col:getComputedStyle(g.querySelector('.rpg-num')).color}:null; }"""
+  return g?{cls:g.className,lab:(g.querySelector('.rpg-xy')||g.querySelector('.seg7')).textContent.replace(/^[^0-9]+/,'')||g.querySelector('.seg7').getAttribute('aria-label'),pc:(g.querySelector('.rpg-num .tir-sr')||{}).textContent||(g.querySelector('.rpg-num .seg7')||{getAttribute:()=>null}).getAttribute('aria-label'),ing:(g.querySelector('.rpg-ing')||{}).textContent||'',pct:+g.dataset.pct,col:getComputedStyle(g.querySelector('.rpg-num')).color}:null; }"""
 def shot(pg,name):
     if not SD: return
     os.makedirs(SD,exist_ok=True); pg.mouse.move(5,5); pg.wait_for_timeout(400); pg.locator('.revpanel').first.screenshot(path=os.path.join(SD,f'{PFX}_{name}.png'))
@@ -33,16 +34,16 @@ try:
     for k,cls in [(3,'red'),(7,'org'),(11,'sky'),(12,'gold')]:
         r=pg.evaluate(SETW,[ks,[k]]); shot(pg,f'{cls}_{k}of12')
         if not NOCHK:
-            want={3:'25%',7:'58%',11:'91%',12:'100%'}[k]
-            check(f'{k}/12 → {want} 진행중 · 작은 {k}/12', r and r['pc']==want and r['ing'].endswith('진행중') and r['lab']==f'{k}/12', r)
+            want={3:'25.00%',7:'58.33%',11:'91.66%',12:'100.00%'}[k]
+            check(f'{k}/12 → {want} 진행중 · 작은 {k}/12', r and r['pc']==want and r['ing'].endswith('완료' if k==12 else '진행중') and r['lab']==f'{k}/12', r)
     if not NOCHK:
-        pg.evaluate(SETUP,12); r=pg.evaluate(SETW,[ks,[12]*11+[11]]); check('143/144 = 99% (100% 아님)', r['pc']=='99%' and 'g-sky' in r['cls'] and r['lab']=='143/144', r)
-        r=pg.evaluate(SETW,[ks,[0]*12]); check('0/144 = 0%', r['pc']=='0%' and r['lab']=='0/144', r)
+        pg.evaluate(SETUP,12); r=pg.evaluate(SETW,[ks,[12]*11+[11]]); check('143/144 = 99% (100% 아님)', r['pc']=='99.30%' and 'g-sky' in r['cls'] and r['lab']=='143/144', r)
+        r=pg.evaluate(SETW,[ks,[0]*12]); check('0/144 = 0%', r['pc']=='0.00%' and r['lab']=='0/144', r)
         pg.evaluate(SETUP,1); pg.evaluate(SETW,[ks,[7]])
         L=pg.evaluate("""(()=>{const g=document.querySelector('.rp-gauge'),b=g.querySelector('.rpg-bar').getBoundingClientRect(),x=g.querySelector('.rpg-xy').getBoundingClientRect(),n=(g.querySelector('.rpg-num .tir')||g.querySelector('.rpg-num .seg7')).getBoundingClientRect();
           return {xyLeft:x.left-b.left,xyBelow:x.top-b.bottom,xyFs:parseFloat(getComputedStyle(g.querySelector('.rpg-xy')).fontSize),numH:n.height,fsT:parseFloat(getComputedStyle(g.querySelector('.rpg-num .tir')).fontSize),fsI:parseFloat(getComputedStyle(g.querySelector('.rpg-ing')).fontSize),dig:!!g.querySelector('.rpg-num .tir .tir-g'),bl:(()=>{const a=g.querySelector('.rpg-num .tir .tir-g').getBoundingClientRect(),i=g.querySelector('.rpg-ing').getBoundingClientRect();return [a.bottom,i.bottom]})(),numRight:n.left>=b.right}})()""")
         check('X/Y = 게이지 왼쪽 끝 바로 밑, 더 작은 글씨', abs(L['xyLeft'])<1 and 0<=L['xyBelow']<6 and L['xyFs']<12, L)
-        check('b268: % 숫자 = 사이트 디지털(tir), 크기 = 진행중 글자, 게이지 오른쪽', L['dig'] and abs(L['fsT']-1.35*L['fsI'])<0.2 and L['numRight'], L)
+        check('b268: % 숫자 = 사이트 디지털(tir), 크기 = 진행중 글자, 게이지 오른쪽', L['dig'] and abs(L['fsT']-L['fsI'])<0.2 and L['numRight'], L)
         check('b268: 숫자 아래 끝 ≈ 진행중 아래 끝(기준선)', abs(L['bl'][0]-L['bl'][1])<3, L['bl'])
         check('색 구간 유지(7/12 주황)', 'g-org' in pg.evaluate("document.querySelector('.rp-gauge').className"))
     b.close()
