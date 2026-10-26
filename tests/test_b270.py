@@ -1,3 +1,4 @@
+# (b272: 숫자·한글 같은 크기 → 잉크 가운데 맞춤)
 # (b271: 게이지 글자 = 주보 결정석과 같은 글씨체 · 숫자/진행중 잉크 위·아래 ±1px · 라벨 13px)
 # test_b270: 두 게이지 막대 폭 = 글자 상관없이 항상 같음(0/58.33/99.99/100) · '진행중/완료' 실제 잉크(스샷 픽셀) 위·아래 끝 = 숫자 잉크 ±1px, 두 테마
 # MBT_ROOT = 다른 빌드(변경 전 사진용, MBT_NOCHECK=1) · MBT_SHOTDIR = 사진 폴더 · MBT_SHOT = before/after
@@ -74,7 +75,7 @@ try:
                 D,K=ink(pg,r,fn)
                 if not SD: os.remove(fn)
                 print(f'INK {th} {name} {sel}: digit {D} hangul {K}' + (f' dTop {K[0]-D[0]:+.2f} dBot {K[1]-D[1]:+.2f}' if D and K else ''))
-                check(f'[{th}] {name} {sel} 진행중/완료 잉크 위·아래 = 숫자 ±1px', D and K and abs(K[0]-D[0])<=1 and abs(K[1]-D[1])<=1, [D,K])
+                check(f'[{th}] {name} {sel} (b272: 같은 크기) 진행중/완료 잉크 = 숫자와 가운데 맞춤 ±.7px, 위·아래 차 ≤1.6px', D and K and abs((K[0]+K[1])/2-(D[0]+D[1])/2)<=.7 and abs(K[0]-D[0])<=1.6 and abs(K[1]-D[1])<=1.6, [D,K])
     b.close()
 finally: srv.terminate()
 if NOCHK: print('shots done'); sys.exit(0)

@@ -2056,6 +2056,13 @@ header .logo .logo-d{display:flex;align-items:center}
 .rpg-xy{font-size:13px!important}
 /* b271: Orbit 한글이 숫자보다 키가 커서(잉크 12.7 vs 10.3px) 아래로 처져 보임 → 한글 .84em + 위로 올려 잉크 위·아래 끝 = 숫자 */
 .rpg-num .tsmn.rpg-ing{font-size:.84em!important;position:relative;top:var(--ingy,-.06em)}
+/* b272: 게이지 글자 = 숫자·진행중/완료 모두 같은 크기(1em)·같은 글씨(Orbit, 주보 결정석과 동일), 글자별 이동/축소 없음.
+   글자 칸 폭 = 가장 넓은 'NN.NN% 진행중'(Orbit 폭 6.111em) + 사이 .4em → 막대 끝 바로 옆에 글자, 막대 길이 항상 같음, 한 줄 */
+.rpg-num{width:6.52em!important;gap:.4em!important;justify-content:flex-start!important;white-space:nowrap;overflow:visible}
+.rpg-num .tsmn.rpg-ing,.rpg-num .tsmn.rpg-t{font-size:1em!important;top:0!important;position:static!important;transform:none!important;margin:0!important;font-family:inherit}
+.rp-gauge{gap:6px}
+/* b272: 같은 크기면 Orbit 한글 잉크가 숫자보다 위·아래로 약 1.2px씩 큼 → 단어 전체(글자별 아님)를 .02em(≈.27px) 올려 숫자와 가운데 맞춤 */
+.rpg-num .tsmn.rpg-ing{position:relative!important;top:0!important;transform:translateY(-.025em)!important}
 </style>
 </head>
 <body>
