@@ -39,7 +39,7 @@ def ink(pg,r,fn):
         return (ys[0]/S,(ys[-1]+1)/S) if ys else None
     return rows(*r['dx']), (rows(*r['kx']) if r['kx'] else None)
 
-OB={"진":(-52,832),"행":(-134,762),"중":(-133,735),"완":(-60,821),"료":(-20,697)}  # Orbit-Regular 글자 잉크 yMin,yMax (1000 단위) · b276: 진·완 = 1px-.02em 올림 반영(13.5px 기준 54 단위)
+OB={"진":(-106,778),"행":(-134,762),"중":(-133,735),"완":(-60,821),"료":(-20,697)}  # Orbit-Regular 글자 잉크 yMin,yMax (1000 단위) · b277: 진 개별 이동 없음 · b276: 완 = 1px-.02em 올림 반영(13.5px 기준 54 단위)
 GLY="""sel=>{const g=document.querySelector('.revpanel '+sel), w=document.createTreeWalker(g.querySelector('.rpg-ing'),NodeFilter.SHOW_TEXT), out=[]; let t;
   while(t=w.nextNode()) for(let i=0;i<t.length;i++){const r=document.createRange(); r.setStart(t,i); r.setEnd(t,i+1); const b=r.getBoundingClientRect(); out.push([t.data[i],b.left,b.right,b.top,b.bottom]);} return out;}"""
 try:

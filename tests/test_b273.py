@@ -45,8 +45,8 @@ try:
             print(f'TOP {"full " if os.environ.get("FULL")=="1" else ""}dpr{dpr} {th} {sel}: 기기px {tops}')
             if '진' in tops:
                 d=tops['진'][0]-tops['행'][0]; db=tops['진'][1]-max(tops['행'][1],tops['중'][1])
-                check(f'dpr{dpr} {th} {sel}: (b274) 진 아래 끝 = 행·중 아래 끝(차 {db}, 허용 -(2+DPR)~+1 기기px, b276 진 1px 위, Orbit 진 받침이 원래 .4px 높음) · 위 끝 진-행 {d} (허용 -(1+DPR)~+1)', -2-dpr<=db<=1 and -1-dpr<=d<=1, tops)
-                check(f'dpr{dpr} {th} {sel}: 진 = 진행중과 같은 글씨·크기', R['font'][0]==R['font'][2] and R['font'][1]==R['font'][3], R['font'])
+                check(f'dpr{dpr} {th} {sel}: (b274) 진 아래 끝 = 행·중 아래 끝(차 {db}, 허용 -(2+DPR)~+1 기기px, b276 진 1px 위, Orbit 진 받침이 원래 .4px 높음) · 위 끝 진-행 {d} (허용 -(1+DPR)~+1)', -2<=db<=1 and -1<=d<=1, tops)
+                check(f'dpr{dpr} {th} {sel}: (b277) 진에 개별 span/이동 없음 — 진행중 한 덩어리', R['font'][2] is None, R['font'])
         pg.close()
     b.close()
 finally: srv.terminate()
