@@ -2018,8 +2018,14 @@ header .logo .logo-d{display:flex;align-items:center}
 [data-theme="light"] .rp-gauge.g-red{--gc:#e02424}[data-theme="light"] .rp-gauge.g-org{--gc:#f07800}[data-theme="light"] .rp-gauge.g-sky{--gc:#13a8e0}[data-theme="light"] .rp-gauge.g-gold{--gc:#e6b800}
 .rpg-bar{flex:1;height:10px;border-radius:6px;background:rgba(127,127,127,.22);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
 .rpg-bar i{display:block;height:100%;border-radius:6px;background:var(--gc);box-shadow:0 0 6px var(--gc);transition:width .3s}
-.rpg-num{color:var(--gc);line-height:1;flex:none;display:flex;align-items:center;gap:4px;align-self:flex-start}
-.rpg-ing{font-size:.78rem;font-weight:700}
+.rpg-num{color:var(--gc);line-height:1;flex:none;display:flex;align-items:baseline;gap:4px;align-self:flex-start;font-size:.78rem}
+.rpg-ing{font-size:1em;font-weight:700}
+/* b268: % 숫자 = 사이트 디지털(tir: 계산기 숫자 + Fusion Pixel '%'), 크기 = '진행중' 글자(1em), 색 = 게이지 색 */
+.rpg-num .tir.rpg-t{font-size:1.35em!important;line-height:1} /* 계산기 숫자 몸통이 글자보다 작아서 1.35배(.tsm 과 같은 값) = 진행중 글자 높이 */
+.rpg-num .rpg-t .tir-g{filter:none}
+.rpg-num .rpg-t .tir-g .tl{fill:currentColor!important;stroke:none!important}
+.rpg-num .rpg-t .tir-g .tg{fill:currentColor!important;opacity:.1}
+[data-theme=light] .rpg-num .rpg-t .tir-g{filter:none!important}
 .rpg-col{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;padding-top:4px}
 .rpg-bar{flex:none!important}
 .rpg-xy{font-size:.68rem;color:var(--gc);opacity:.85;line-height:1;font-variant-numeric:tabular-nums;text-align:left}
@@ -4275,7 +4281,7 @@ function seg7(str,h=22){ let x=0; const g=[...String(str)].map(ch=>{ let o='';
     const on=SEG7[ch]||''; o=Object.entries(SEG7P).map(([k,p])=>`<polygon transform="translate(${x} 0)" points="${p}" class="${on.includes(k)?'on':'off'}"/>`).join(''); x+=10.5; return o; }).join('');
   return `<svg class="seg7" viewBox="0 0 ${x} 18" width="${(x*h/18).toFixed(1)}" height="${h}" role="img" aria-label="${esc(String(str))}">${g}</svg>`; }
 function weekGauge(cs){ const g=weekGaugeData(cs); if(!g.total) return '';
-  return `<div class="rp-gauge ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="이번 주 주간 결정석 ${g.done}/${g.total} (${Math.floor(g.pct*100)/100}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${g.done}/${g.total}</span></div><span class="rpg-num">${seg7(weekGaugePct(g)+'%',17)}<span class="rpg-ing">진행중</span></span></div>`; }
+  return `<div class="rp-gauge ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="이번 주 주간 결정석 ${g.done}/${g.total} (${Math.floor(g.pct*100)/100}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${g.done}/${g.total}</span></div><span class="rpg-num">${tir(weekGaugePct(g)+'%','rpg-t')}<span class="rpg-ing">진행중</span></span></div>`; }
 // b267: 진행률 = 내림 정수(99.9% → 99%) → 100% 는 다 잡았을 때만
 const weekGaugePct = g => g.total&&g.done>=g.total?100:Math.floor(g.pct);
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */

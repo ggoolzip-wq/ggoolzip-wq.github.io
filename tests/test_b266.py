@@ -18,7 +18,7 @@ SETUP="""n=>{ const W=BOSSES.filter(b=>b.type==='weekly').slice(0,12);
     bosses:Object.fromEntries(W.map(b=>[b.id,{enabled:true,diff:b.diffs[0],party:1}])),weekly:{},monthly:{},auto:{},drops:{},sync:{}}));
   S.activeId='c0'; save&&save(); render(); return W.map(b=>b.id); }"""
 SETW="""([ks,k])=>{ S.characters.forEach((c,i)=>{ c.weekly={}; ks.slice(0,k[i]).forEach(s=>c.weekly[s]=true); }); render(); const g=document.querySelector('.revpanel .rp-gauge');
-  return g?{cls:g.className,lab:(g.querySelector('.rpg-xy')||g.querySelector('.seg7')).textContent||g.querySelector('.seg7').getAttribute('aria-label'),pc:g.querySelector('.rpg-num .seg7').getAttribute('aria-label'),ing:g.querySelector('.rpg-num').textContent,pct:+g.dataset.pct,col:getComputedStyle(g.querySelector('.rpg-num')).color}:null; }"""
+  return g?{cls:g.className,lab:(g.querySelector('.rpg-xy')||g.querySelector('.seg7')).textContent||g.querySelector('.seg7').getAttribute('aria-label'),pc:(g.querySelector('.rpg-num .tir-sr')||{}).textContent||(g.querySelector('.rpg-num .seg7')||{getAttribute:()=>null}).getAttribute('aria-label'),ing:(g.querySelector('.rpg-ing')||{}).textContent||'',pct:+g.dataset.pct,col:getComputedStyle(g.querySelector('.rpg-num')).color}:null; }"""
 def shot(pg,name):
     if not SD: return
     os.makedirs(SD,exist_ok=True); pg.mouse.move(5,5); pg.wait_for_timeout(400); pg.locator('.revpanel').first.screenshot(path=os.path.join(SD,f'{PFX}_{name}.png'))

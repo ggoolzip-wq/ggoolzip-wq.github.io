@@ -21,6 +21,12 @@
 3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
+
+## b268 — 주간 게이지 'N% 진행중' 숫자를 사이트 디지털 폰트(tir)로 (2026-10-26 13:59~14:07 KST)
+- 요청: '몇퍼 진행중에서 숫자 크기를 진행중과 맞추고 숫자는 내가 저장해놓은 디지털 폰트 그걸로해'
+- 저장된 디지털 폰트 = tir() (SVG 계산기 숫자 + Fusion Pixel 12px MrjUnitKo/HPIX '%', b147/b162). seg7 → tir(pct+'%','rpg-t').
+- .rpg-num baseline 정렬, .rpg-t 1.35em(숫자 몸통 높이 ≈ 진행중 글자 높이), 색/금빛 glow 유지. 작은 X/Y 는 원래 일반 글씨라 그대로.
+- 테스트: test_b266/b267 갱신(tir 숫자, fs=1.35×진행중, 아래 끝 ±3px). 스샷 /workspace/b268.
 ## b267 (2026-10-26 KST, 작업 13:35~13:43 KST)
 - 요청: 게이지 오른쪽 7/12 → 'N% 진행중', 글자 조금 작게, 게이지 왼쪽 밑에 더 작은 글씨로 7/12.
 - src/app.js weekGauge: 오른쪽 = seg7(N%, 높이 22→17px, '%' 7세그먼트 글리프 추가) + '진행중'. weekGaugePct = 내림 정수(143/144 = 99%), 100% 는 다 잡았을 때만. 게이지 밑 왼쪽 .rpg-xy = X/Y(.68rem). 색 구간·금색 빛 그대로.
