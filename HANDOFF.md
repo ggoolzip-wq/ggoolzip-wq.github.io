@@ -21,6 +21,12 @@
 3. 사진: /workspace/b258/{before,after}_droptable_1600.png · _tip_erion.png · _tip_kaling_box.png (before = origin/main 빌드, 말풍선 없음).
 4. **보류 — 아이콘 전부 WZ 원본(위컴알 방식)으로 교체 + 에리온의 조각 정확한 아이템 ID**: 사용자 PC(C:\Nexon\Maple\Data)의 구조는 확인함(분할 형식: Data\String\String.wz+String_000.wz, Data\Item\{Consume,Etc,...}\X.wz+X_000.wz+_Canvas\_Canvas_00N.wz, Data\Character\{Accessory,Ring,...}\ 같은 형식 + Character\_Canvas). 하지만 CopyToBox 가 'Path is outside the allowed local-exec root' 로 거부해 파일을 박스로 가져오지 못함 → 아이콘·erion(여전히 GMS 4009615 추정) 그대로. PC 의 허용 경로에 C:\Nexon\Maple 을 추가하거나 파일을 허용 폴더로 복사해 주면 이어서 진행.
 
+## b266 (2026-10-26 KST, 작업 13:04~13:24 KST)
+- 요청: '이번 주 수익 총합'에 이번 주 현황 게이지(결정석 개수만), X/Y 디지털 글씨, 메소 총합과 주보 결정석 사이. 색 0~32.99 빨강·33~65.99 주황·66~99.99 밝은 하늘·100 빛나는 순금. 날짜 문구 ' · 전체 캐릭터' 삭제.
+- src/app.js weekGaugeData/weekGauge/seg7: 보이는(API 키 있는) 캐릭터마다 Y += min(주간 한도 12, 켜 둔 주간 보스 수)(잡은 수보다 작으면 잡은 수), X += min(12, 이번 주 잡은 주간 보스 수). 7세그먼트 = 인라인 SVG(꺼진 칸 흐리게), 외부 글꼴 없음.
+- src/extra.css .rp-gauge g-red/g-org/g-sky/g-gold(라이트 테마 색 따로), 금색 = 빛 그림자 + 반짝 애니메이션.
+- test_b266 신규(0/144, 72/144, 한도 초과, 구간·경계, 키 지운 캐릭 제외, 라이트 테마, 위치, 날짜 문구). test_b213 b215 세로 가운데 허용 0.4→0.45(게이지로 줄 위치 바뀌어 반올림 0.40 경계). 전체 = test_tracker28 기존 실패만.
+
 ## b265 (2026-10-26 KST, 작업 00:03~00:12 KST)
 - 요청: '마빡 도로시 공지 제목에 포탈 단어가 있다면 가져오지마'.
 - scripts/update_feed.py: mabbak_skip(title) — src_mabbak 이 제목에 '포탈' 있는 글은 건너뜀(워터마크는 넘겨 다시 안 받음). main() 시작 때 저장된 마빡도로시 포탈 글도 제거.

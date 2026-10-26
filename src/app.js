@@ -2098,6 +2098,19 @@ function weekLeftLines(cs){ let w=0,m=0,wn=0,mn=0; const VI=activeIds(); for(con
   return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',w,1)/* b230: 개수 표시 없음 */+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',m,1)/* b231: 개수 표시 없음 */; }
 function charLeftLines(c){ const o=leftOf(c); return leftLine('rl-w',miniIcon('ipc'),'이번 주 남은 결정석',o.w)+leftLine('rl-m',miniIcon('ipcm'),'검마 남은 결정석',o.m); }
 function weekMonthly(a){ let n=0, meso=0; a.per.forEach(p=>p.r.mlist.filter(x=>x.counted&&p.c.monthly[x.slot]===S.period.week).forEach(x=>{ n++; meso+=x.value; })); return {n,meso}; }
+/* b266: 이번 주 현황 게이지 — 주간 결정석 개수만. 캐릭터마다 min(주간 한도, 켜 둔 주간 보스 수) 칸, 잡은 수 = min(한도, weeklyCount). 보이는(키 있는) 캐릭터만
+ * 0~32.99% 빨강 · 33~65.99% 주황 · 66~99.99% 밝은 하늘 · 100% 빛나는 순금. X/Y = 7세그먼트(SVG) 디지털 글씨 */
+function weekGaugeData(cs){ const lim=S.settings.weeklyLimit, VI=activeIds(); let done=0,total=0;
+  for(const c of cs){ if(!charShown(c)||!VI.has(c.id)) continue; const d=Math.min(lim,weeklyCount(c)); done+=d; total+=Math.max(d,Math.min(lim,expectedAll(c).length)); }
+  const pct=total?done/total*100:0; return {done,total,pct,cls:total&&done>=total?'g-gold':pct>=66?'g-sky':pct>=33?'g-org':'g-red'}; }
+const SEG7={0:'abcdef',1:'bc',2:'abged',3:'abgcd',4:'fgbc',5:'afgcd',6:'afgedc',7:'abc',8:'abcdefg',9:'abcdfg'};
+const SEG7P={a:'2,1 8,1 7,2.6 3,2.6',b:'8.6,1.6 8.6,8.4 7.4,7.6 7.4,2.6',c:'8.6,9.6 8.6,16.4 7.4,15.4 7.4,10.4',d:'2,17 8,17 7,15.4 3,15.4',e:'1.4,9.6 2.6,10.4 2.6,15.4 1.4,16.4',f:'1.4,1.6 2.6,2.6 2.6,7.6 1.4,8.4',g:'2,9 3,8.2 7,8.2 8,9 7,9.8 3,9.8'};
+function seg7(str){ let x=0; const g=[...String(str)].map(ch=>{ let o='';
+    if(ch==='/'){ o=`<polygon points="${x+1},17 ${x+2.4},17 ${x+7},1 ${x+5.6},1" class="on"/>`; x+=8; return o; }
+    const on=SEG7[ch]||''; o=Object.entries(SEG7P).map(([k,p])=>`<polygon transform="translate(${x} 0)" points="${p}" class="${on.includes(k)?'on':'off'}"/>`).join(''); x+=10.5; return o; }).join('');
+  return `<svg class="seg7" viewBox="0 0 ${x} 18" width="${(x*22/18).toFixed(1)}" height="22" role="img" aria-label="${esc(String(str))}">${g}</svg>`; }
+function weekGauge(cs){ const g=weekGaugeData(cs); if(!g.total) return '';
+  return `<div class="rp-gauge ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="이번 주 주간 결정석 ${g.done}/${g.total} (${Math.floor(g.pct*100)/100}%)"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-num">${seg7(g.done+'/'+g.total)}</span></div>`; }
 /* 보스 체크 탭 오른쪽 패널: 이번 주 수익 합계 · 캐릭터별 수익 (좁은 화면에서는 아래로 쌓임) */
 function revPanel(a,cur){
   const lim=S.settings.weeklyLimit;
@@ -2109,9 +2122,9 @@ function revPanel(a,cur){
   per.sort((x,y)=>pmeso(y)-pmeso(x)); const rk=new Map(); per.forEach((p,i)=>rk.set(p,pmeso(p)>0?(i&&pmeso(per[i-1])===pmeso(p)?rk.get(per[i-1]):i+1):0));
   return `<aside class="revpanel card" aria-label="이번 주 수익 총합">
     <h2>${miniIcon('meso')} 이번 주 수익 총합</h2>
-    <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)} · 전체 캐릭터</div>
+    <div class="muted" style="font-size:.75rem;margin-top:-6px">${fmtWeek(S.period.week)}</div>
     ${(()=>{ const cry=a.total+wm.meso, sale=per.reduce((t,p)=>t+pItemSale(p.c),0), n=activeChars().reduce((t,c)=>t+Object.entries(c.drops||{}).reduce((x,[k,v])=>x+itemCnt(k,v,c.dropOut),0)+Object.entries(c.mdrops||{}).reduce((x,[k,v])=>x+(c.monthly?.[parseIK(k).slot]!==S.period.week?0:itemCnt(k,v,c.mdropOut)),0),0); // b121: 반지 상자 제외(아래 '반지 상자' 줄) — b226: 단 결과가 리4·컨4·연마석이면 셈(itemCnt) · b225: 이번 주에 잡은 검마 아이템(mdrops)도 셈 (판매 금액 pItemSale 과 같은 규칙)
-      return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>
+      return `<div class="rp-total tirv tgoldv">${tirN(cry+sale,'eok','rp',' 메소')}</div>${weekGauge(per.map(p=>p.c))}
     <div class="muted rp-line rp-cry rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipc')}${rpLbl('주보 결정석')/* b230: 개수 표시 없음 */}</span></span><b class="rpn">${tsm('+'+a.total.toLocaleString())}</b></div>${wm.n||wm.meso?`<div class="muted rp-line rp-cry rp-cm rc-g"><span class="rpl"><span class="rpg">${miniIcon('ipcm')}${rpLbl('검마 결정석')/* b232: 개수 표시 없음 */}</span></span><b class="rpn">${tsm('+'+wm.meso.toLocaleString())}</b></div>`:''}
     <div class="muted rp-line rp-sale rc-g"><span class="rpl"><span class="rpg">${topSaleIco()||'<span class="ric rpico0" aria-hidden="true"></span>'}${rpLbl('이번주 획득 아이템',n,1)}</span></span><b class="rpn">${tsm('+'+sale.toLocaleString())}</b></div>${weekRingLine()}${weekLeftLines(per.map(p=>p.c))}`; })()}
     <div class="rp-sec">캐릭터별</div>

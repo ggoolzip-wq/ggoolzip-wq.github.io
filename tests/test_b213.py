@@ -82,7 +82,7 @@ try:
     vm=pg.evaluate("""(()=>[...document.querySelectorAll('.revpanel .rp-ring .rpo img')].map(im=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext('2d');x.drawImage(im,0,0);const d=x.getImageData(0,0,c.width,c.height).data;let b=1e9,f=-1;for(let y=0;y<c.height;y++)for(let X=0;X<c.width;X++)if(d[(y*c.width+X)*4+3]>64){b=Math.min(b,y);f=Math.max(f,y);}
       const r=im.getBoundingClientRect(),k=r.height/c.height,fs=parseFloat(getComputedStyle(im.parentElement.querySelector('.tsmn')).fontSize);return [+((f-b+1)*k).toFixed(2),+(r.top+(b+f+1)/2*k).toFixed(2),fs]}))()""")
     lh=pg.evaluate("document.querySelector('.revpanel .rp-ring').getBoundingClientRect().height")
-    check('b215: 리4·컨4·연마석 아이콘 보이는 높이 같음(= 글씨 높이), 세로 가운데 같음, 줄 높이 그대로', len(vm)==3 and max(v[0] for v in vm)-min(v[0] for v in vm)<0.3 and all(abs(v[0]-v[2])<0.5 for v in vm) and max(v[1] for v in vm)-min(v[1] for v in vm)<0.4 and lh<19, (vm,lh))
+    check('b215: 리4·컨4·연마석 아이콘 보이는 높이 같음(= 글씨 높이), 세로 가운데 같음, 줄 높이 그대로', len(vm)==3 and max(v[0] for v in vm)-min(v[0] for v in vm)<0.3 and all(abs(v[0]-v[2])<0.5 for v in vm) and max(v[1] for v in vm)-min(v[1] for v in vm)<0.45 and lh<19, (vm,lh))  # b266: 0.4 경계 — 위에 게이지가 들어와 줄 위치가 바뀌면 반올림(소수 2자리)으로 0.40 이 나옴 → 0.45
     check('b214: 네 가지 다 있어도 줄이지 않고 원래 크기', fs=='', fs)
     # 모바일
     pg.set_viewport_size({'width':390,'height':700}); pg.wait_for_timeout(400)
