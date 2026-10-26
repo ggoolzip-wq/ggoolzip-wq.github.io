@@ -14,10 +14,10 @@ from playwright.sync_api import sync_playwright
 from PIL import Image
 site=tempfile.mkdtemp(); shutil.copy(os.path.join(SRCR,'index.html'),site); shutil.copy(os.path.join(ROOT,'prices.json'),site); shutil.copytree(os.path.join(ROOT,'data'),os.path.join(site,'data'))
 PORT=_tutil.free_port(); srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=site,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-SETUP="""()=>{ const W=BOSSES.filter(b=>b.type==='weekly').slice(0,12);
+SETUP="""FULL=>{ const W=BOSSES.filter(b=>b.type==='weekly').slice(0,12);
   S.characters=[{id:'c0',name:'zet',level:280,job:'히어로',world:'스카니아',ocid:'',accId:'',isMain:true,image:'',
     bosses:Object.assign(Object.fromEntries(W.map(b=>[b.id,{enabled:true,diff:b.diffs[0],party:1}])),{blackmage:{enabled:true,diff:'hard',party:1}}),weekly:{},monthly:{},auto:{},drops:{},sync:{}}];
-  S.activeId='c0'; W.slice(0,7).forEach(b=>S.characters[0].weekly[b.id]=true); save&&save(); render(); }"""
+  S.activeId='c0'; (FULL?W:W.slice(0,7)).forEach(b=>S.characters[0].weekly[b.id]=true); if(FULL) S.characters[0].monthly.blackmage=S.period.week; save&&save(); render(); }"""
 GLY="""sel=>{const g=document.querySelector('.revpanel '+sel), e=g.querySelector('.rpg-ing'), w=document.createTreeWalker(e,NodeFilter.SHOW_TEXT), out=[]; let t;
   while(t=w.nextNode()) for(let i=0;i<t.length;i++){const r=document.createRange(); r.setStart(t,i); r.setEnd(t,i+1); const b=r.getBoundingClientRect(); out.push([t.data[i],b.left,b.right]);}
   const n=g.querySelector('.rpg-num').getBoundingClientRect(); const j=g.querySelector('.rpg-j');
@@ -31,7 +31,7 @@ try:
         pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR',device_scale_factor=dpr); pg.on('pageerror',lambda e:errs.append(str(e)))
         pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
         pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(1200)
-        pg.evaluate(SETUP); pg.evaluate("document.fonts.ready"); pg.evaluate(f"document.documentElement.dataset.theme='{th}'"); pg.add_style_tag(content=NOGLOW+(os.environ.get('JY') and '.rpg-num .rpg-ing .rpg-j{--jy:'+os.environ['JY']+'!important}' or '')); pg.mouse.move(5,5); pg.wait_for_timeout(300)
+        pg.evaluate(SETUP,os.environ.get('FULL')=='1'); pg.evaluate("document.fonts.ready"); pg.evaluate(f"document.documentElement.dataset.theme='{th}'"); pg.add_style_tag(content=NOGLOW+(os.environ.get('JY') and '.rpg-num .rpg-ing .rpg-j{--jy:'+os.environ['JY']+'!important}' or '')); pg.mouse.move(5,5); pg.wait_for_timeout(300)
         for sel in ['.rpg-w','.rpg-m']:
             R=pg.evaluate(GLY,sel); x0,y0,x1,y1=R['box']; fn=os.path.join(SD or tempfile.gettempdir(),f'{PFX}_zoom_dpr{dpr}_{th}_{sel[5:]}.png'); os.makedirs(os.path.dirname(fn),exist_ok=True)
             pg.screenshot(path=fn,clip=dict(x=x0,y=y0,width=x1-x0,height=y1-y0))
@@ -42,10 +42,10 @@ try:
                 ys=[y for y in range(H) if any(sum(abs(u-v) for u,v in zip(px[x,y],bg))>120 for x in range(A,C))]
                 tops[ch]=(ys[0],ys[-1]) if ys else None
             if not SD: os.remove(fn)
-            print(f'TOP dpr{dpr} {th} {sel}: 기기px {tops}')
+            print(f'TOP {"full " if os.environ.get("FULL")=="1" else ""}dpr{dpr} {th} {sel}: 기기px {tops}')
             if '진' in tops:
                 d=tops['진'][0]-tops['행'][0]; db=tops['진'][1]-max(tops['행'][1],tops['중'][1])
-                check(f'dpr{dpr} {th} {sel}: (b274) 진 아래 끝 = 행·중 아래 끝(차 {db}, 허용 -2~+1 기기px, Orbit 진 받침이 원래 .4px 높음) · 위 끝 진-행 {d} (허용 -1~+1)', -2<=db<=1 and -1<=d<=1, tops)
+                check(f'dpr{dpr} {th} {sel}: (b274) 진 아래 끝 = 행·중 아래 끝(차 {db}, 허용 -(2+DPR)~+1 기기px, b276 진 1px 위, Orbit 진 받침이 원래 .4px 높음) · 위 끝 진-행 {d} (허용 -(1+DPR)~+1)', -2-dpr<=db<=1 and -1-dpr<=d<=1, tops)
                 check(f'dpr{dpr} {th} {sel}: 진 = 진행중과 같은 글씨·크기', R['font'][0]==R['font'][2] and R['font'][1]==R['font'][3], R['font'])
         pg.close()
     b.close()

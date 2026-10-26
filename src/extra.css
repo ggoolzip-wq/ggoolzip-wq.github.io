@@ -1948,3 +1948,5 @@ header .logo .logo-d{display:flex;align-items:center}
 /* b275: 사용자 요청 — 진행중/완료 단어 전체 1px 위로(기존 -.025em 에 더함), '진' 은 .3px 더 위로(기존 +.02em 에 더함) */
 .rpg-num .tsmn.rpg-ing{transform:translateY(calc(-.025em - 1px))!important}
 .rpg-num .rpg-ing .rpg-j{--jy:calc(.02em - .3px)}
+/* b276: 사용자 요청 — '진'·'완' 만 1px 위로 (기존 .02em 에 -1px; 이전 -.3px 대체). 같은 span(.rpg-j)·transform */
+.rpg-num .rpg-ing .rpg-j{--jy:calc(.02em - 1px)}
