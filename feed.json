@@ -1,33 +1,33 @@
 {
  "version": 1,
- "updatedAt": "2026-10-27T09:29:48+09:00",
+ "updatedAt": "2026-10-27T10:20:13+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-10-27T09:29:28+09:00",
-   "lastOkAt": "2026-10-27T09:29:28+09:00",
+   "checkedAt": "2026-10-27T10:19:52+09:00",
+   "lastOkAt": "2026-10-27T10:19:52+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-10-27T09:29:28+09:00",
-   "lastOkAt": "2026-10-27T09:29:28+09:00",
+   "checkedAt": "2026-10-27T10:19:52+09:00",
+   "lastOkAt": "2026-10-27T10:19:52+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
-   "ok": false,
-   "checkedAt": "2026-10-27T09:29:29+09:00",
-   "lastOkAt": "2026-10-27T08:54:56+09:00",
-   "error": "HTTP 403 https://maplestory.nexon.com/Testworld/News/Update <!doctype html>\n<html lang=\"ko-kr\">\n<head>\n<meta charset=\"UTF-8\">\n<title>NEXON</title>\n<style>\n.wrap{\n\t\tdisplay:flex;\n\t\tjustify-content:center;\n\t\talign-items:ce"
+   "ok": true,
+   "checkedAt": "2026-10-27T10:19:52+09:00",
+   "lastOkAt": "2026-10-27T10:19:52+09:00",
+   "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-10-27T09:29:48+09:00",
-   "lastOkAt": "2026-10-27T09:29:48+09:00",
+   "checkedAt": "2026-10-27T10:20:13+09:00",
+   "lastOkAt": "2026-10-27T10:20:13+09:00",
    "error": ""
   }
  },
