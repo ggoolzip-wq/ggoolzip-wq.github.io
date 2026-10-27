@@ -2075,6 +2075,10 @@ header .logo .logo-d{display:flex;align-items:center}
 /* b276: 사용자 요청 — '진'·'완' 만 1px 위로 (기존 .02em 에 -1px; 이전 -.3px 대체). 같은 span(.rpg-j)·transform */
 .rpg-num .rpg-ing .rpg-j{--jy:calc(.02em - 1px)}
 /* b277: 사용자 요청 — '진' 개별 span/이동 제거, '진행중' 한 덩어리(단어 -1px 은 유지). '완' 만 .rpg-j */
+
+/* b279: 판매 누적 수익 쪽 나눔 */
+#salesCard .sl[hidden]{display:none!important}
+#salesCard .slpager{margin-top:6px}
 </style>
 </head>
 <body>
@@ -4907,15 +4911,22 @@ function ringCardHtml(T){ return `  <div class="card ringcard"><h2>${miniIcon('r
       const ks=Object.keys(R).sort((x,y)=>lootOrd(x)-lootOrd(y));
       return ks.length?`<div class="totloot">${ks.map(k=>`<div class="tl"><span class="loot">${lootIco(k)}<span class="ln">${esc(lootName(k))}${modeTag(k)}</span> <b class="lx">${xN(R[k].n)}</b></span>${outHtml(R[k].outs,R[k].n,true)}</div>`).join('')}</div>`:'<p class="muted">아직 획득한 반지 상자가 없습니다.</p>'; })()}</div>`; }
 // b62-8: 아이템 판매 수익 (드롭 때 '수익을 기록할까요?' 에서 입력한 값, 분배는 내 몫) — 간단 카드 (사용자가 나중에 다듬을 예정)
+/* b279: 판매 누적 수익 — 10줄씩 쪽 나눔, 소식 카드(.fpg)와 같은 번호 버튼. 10줄 이하면 버튼 없음. 데이터가 줄면 쪽 번호 맞춤(clamp). 쪽 넘김 = 다시 그리지 않고 숨김만 바꿈 */
+const SL_PER=10; let SL_PAGE=1;
+function slPager(n){ const pages=Math.max(1,Math.ceil(n/SL_PER)); SL_PAGE=Math.min(Math.max(1,SL_PAGE),pages); if(pages<2) return '';
+  return `<div class="fpager slpager" role="group" aria-label="판매 수익 쪽">${Array.from({length:pages},(_,i)=>`<button type="button" class="fpg${i+1===SL_PAGE?' on':''}" data-slpage="${i+1}"${i+1===SL_PAGE?' aria-current="page"':''}>${i+1}</button>`).join('')}</div>`; }
+document.addEventListener('click',e=>{ const b=e.target.closest?.('[data-slpage]'); if(!b) return; const card=b.closest('#salesCard'); if(!card) return; SL_PAGE=+b.dataset.slpage;
+  card.querySelectorAll('.sl[data-slp]').forEach(r=>r.hidden=+r.dataset.slp!==SL_PAGE); card.querySelectorAll('[data-slpage]').forEach(x=>{ const on=+x.dataset.slpage===SL_PAGE; x.classList.toggle('on',on); on?x.setAttribute('aria-current','page'):x.removeAttribute('aria-current'); }); });
 function salesHtml(T){ // b76: '아이템 판매 누적 수익' — 아이템·분배 인원별 줄, 제목 아이콘 = 누적 판매 금액 1위 아이템(b229)
   const S_=T.sales||{}, ok=k=>{ try{ return !!lootName(S_[k].i||k.split('#')[0]); }catch(e){ return false; } };
   const ks=Object.keys(S_).filter(ok).sort((a,b)=>S_[b].m-S_[a].m||itemCmp(S_[a].i||a,S_[b].i||b)||(S_[a].p||1)-(S_[b].p||1)), tot=ks.reduce((x,k)=>x+S_[k].m,0);
+  SL_PAGE=Math.min(Math.max(1,SL_PAGE),Math.max(1,Math.ceil(ks.length/SL_PER))); // b279: 쪽 clamp
   const top={}; ks.forEach(k=>{ const i=S_[k].i||k.split('#')[0]; top[i]=(top[i]||0)+S_[k].m; }); // b229: 제목 아이콘 = 누적 판매 금액이 가장 큰 아이템 (분배 인원 줄 합침)
   const best=Object.keys(top).sort((a,b)=>top[b]-top[a]||itemCmp(a,b))[0];
   const ico=best?`<span class="hbi">${lootIco(best)}</span>`:miniIcon('meso'), pl=p=>p>1?`${p}인 분배`:'1인';
   return `<div class="card" id="salesCard"><h2>${ico} 아이템 판매 누적 수익</h2>
     <div class="stats s3"><div class="stat"><div class="k">${miniIcon('meso')}<span class="kt">총 판매 수익</span></div><div class="v acc tirv tgoldv">${tot?tirN(tot,'eok','sales',' 메소'):tir('-')}</div><div class="muted" id="salesAvg">${tsm(avgTxt('주',doneAvgs(T).sales))}</div></div></div>
-    ${ks.length?`<div class="slist">${ks.map(k=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"><span class="loot"${isHong(i)?` title="${esc(lootName(i))}"`:''}>${lootLabel(i)} <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm tirv">${tirMeso(o.m,'sl:'+k)}</b></div>`; }).join('')}</div>`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
+    ${ks.length?`<div class="slist">${ks.map((k,ix)=>{ const o=S_[k], i=o.i||k.split('#')[0]; return `<div class="sl"${Math.floor(ix/SL_PER)+1!==SL_PAGE?' hidden':''} data-slp="${Math.floor(ix/SL_PER)+1}"><span class="loot"${isHong(i)?` title="${esc(lootName(i))}"`:''}>${lootLabel(i)} <span class="slp">${pl(o.p||1)}</span> <b class="lx">${xN(o.n)}</b></span><b class="slm tirv">${tirMeso(o.m,'sl:'+k)}</b></div>`; }).join('')}</div>${slPager(ks.length)}`:'<p class="muted" style="margin:8px 0 0">아직 기록한 판매 수익이 없어요 — 보스 드롭을 기록할 때 금액을 넣으면 여기에 모여요.</p>'}</div>`; }
 /* b229: '주별 득템 캐릭터 정리' — 한 쪽 = 한 주(목요일 초기화 주, 최신 주가 기본). 캐릭터별 그 주에 얻은 아이템 아이콘 xN.
  * 셈법 = 득템왕과 같은 lootOf(블빵패배 제외) + 꽝 제외 + 반지 상자는 결과(리4·컨4·생명의 연마석)만(b226 이번주 획득 아이템과 같음, 결과 미기록 상자는 안 셈).
  * 검마(월간 기록) 아이템 = 그 검마를 잡은 주(mweeks)로. 주간 기록(S.history)마다 perChar.items·outcomes 가 있어 지난 주도 그대로 나옴.
@@ -6611,7 +6622,7 @@ new MutationObserver(()=>demoTopPut()).observe(document.getElementById('view'),{
 document.addEventListener('click',e=>{ if(!(demoAllowed()&&demoTabOk())) return; const t=e.target;
   if(t.closest('#importAccBtn,#addCharBtn,.side .addbtn,#charAdd')) return; // 실제 로그인 흐름 그대로
   const ch=t.closest('#charList .char[data-id]'); if(ch&&!t.closest('.drag-h,[data-edit],[data-move]')){ e.preventDefault(); e.stopImmediatePropagation(); if(DEMO_ST){ const sw=tab!=='boss', sy=scrollY, sx=scrollX; DEMO_ST.activeId=ch.dataset.id; tab='boss'; syncTabs(); render(); if(sw) tabTop(); else { const back=()=>{ if(scrollY!==sy||scrollX!==sx) scrollTo(sx,sy); }; back(); requestAnimationFrame(back); } } return; }
-  const OK='[data-wkpg],[data-wlpg],select.wlsel,[data-tab],[data-filter],[data-pckind],[data-pctab],[data-cpage],.sortlink,[data-sort],[data-lt],[data-page],.pgbtn,a[href]';
+  const OK='[data-slpage],[data-wkpg],[data-wlpg],select.wlsel,[data-tab],[data-filter],[data-pckind],[data-pctab],[data-cpage],.sortlink,[data-sort],[data-lt],[data-page],.pgbtn,a[href]';
   if(t.closest('#view,#charList')&&!t.closest(OK)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
 // 처음 열 때(로그인 전): 이번 주 보스 예시
 setTimeout(()=>{ if(demoAllowed()&&tab!=='live'){ tab='boss'; syncTabs(); render(); } },0);

@@ -2,6 +2,11 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b279 (2026-10-28 01:38–01:45 KST) 판매 누적 수익 쪽 나눔
+- 요청: '아이템 판매 누적 수익' 목록 10줄씩, 소식 카드 같은 번호 버튼(.fpager/.fpg 그대로), 10줄 넘을 때만 버튼.
+- app.js SL_PER=10·SL_PAGE, salesHtml 에서 clamp(데이터 줄면 마지막 쪽으로), 줄마다 data-slp + hidden. 버튼 클릭 = 다시 그리지 않고 숨김·on 만 바꿈. CSS #salesCard .sl[hidden]{display:none}.
+- 새 test_b279 (10줄 버튼 없음·23줄 3쪽·쪽 넘김·15줄로 줄면 clamp).
+
 ## b278 (2026-10-28 01:20–01:38 KST) 게이지 카운팅 애니메이션
 - 요청: 게이지들(이번 주 결정석 진행도·이번 달 검마 진행도)도 숫자처럼 올라가는 애니메이션.
 - app.js gaugeAnimOne: 숫자 카운팅(tirAnimOne)과 같은 1.2초 ease-out(1-(1-q)^3)·IntersectionObserver·GAUGE_LAST(kind별 이전 값) — 같은 값 재렌더면 안 돎, 바뀌면 이전 값→새 값. reduced-motion 이면 바로 최종.

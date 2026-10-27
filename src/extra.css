@@ -1951,3 +1951,7 @@ header .logo .logo-d{display:flex;align-items:center}
 /* b276: 사용자 요청 — '진'·'완' 만 1px 위로 (기존 .02em 에 -1px; 이전 -.3px 대체). 같은 span(.rpg-j)·transform */
 .rpg-num .rpg-ing .rpg-j{--jy:calc(.02em - 1px)}
 /* b277: 사용자 요청 — '진' 개별 span/이동 제거, '진행중' 한 덩어리(단어 -1px 은 유지). '완' 만 .rpg-j */
+
+/* b279: 판매 누적 수익 쪽 나눔 */
+#salesCard .sl[hidden]{display:none!important}
+#salesCard .slpager{margin-top:6px}
