@@ -2,6 +2,11 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b280 (2026-10-28 01:45–01:52 KST) 득템왕 누적 획득 아이템 글씨 크기 통일
+- 원인: .md-gold/.md-silver/.md-bronze .spk{font-size:1.3em} 가 1~3위 아이템 이름(.ln.spk)도 키움(17.55px vs 13.5px).
+- extra.css #lootKing .loots .spk{font-size:1em!important} — 모든 순위 13.5px, 반짝임은 그대로. 순위 숫자·이름·점수 확대는 그대로. hover 확대 없음 확인.
+- 새 test_b280.
+
 ## b279 (2026-10-28 01:38–01:45 KST) 판매 누적 수익 쪽 나눔
 - 요청: '아이템 판매 누적 수익' 목록 10줄씩, 소식 카드 같은 번호 버튼(.fpager/.fpg 그대로), 10줄 넘을 때만 버튼.
 - app.js SL_PER=10·SL_PAGE, salesHtml 에서 clamp(데이터 줄면 마지막 쪽으로), 줄마다 data-slp + hidden. 버튼 클릭 = 다시 그리지 않고 숨김·on 만 바꿈. CSS #salesCard .sl[hidden]{display:none}.

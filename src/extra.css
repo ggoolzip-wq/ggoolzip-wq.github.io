@@ -1955,3 +1955,6 @@ header .logo .logo-d{display:flex;align-items:center}
 /* b279: 판매 누적 수익 쪽 나눔 */
 #salesCard .sl[hidden]{display:none!important}
 #salesCard .slpager{margin-top:6px}
+
+/* b280: 득템왕 누적 획득 아이템 — 1~3위도 글씨 확대 없음(.md-* .spk 1.3em 제외), 모든 순위 같은 크기. 반짝임은 그대로 */
+#lootKing .loots .spk{font-size:1em!important}
