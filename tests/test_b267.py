@@ -45,6 +45,7 @@ try:
         check('X/Y = 게이지 왼쪽 끝 바로 밑, 더 작은 글씨', abs(L['xyLeft'])<1 and 0<=L['xyBelow']<6 and L['xyFs']<14, L)
         check('b268: (b271: 주보 결정석 글씨체) % 숫자, 크기 = 진행중 글자, 게이지 오른쪽', L['dig'] and 0.8<=L['fsI']/L['fsT']<=1.0 and L['numRight'], L)
         check('b268: 숫자 아래 끝 ≈ 진행중 아래 끝(기준선)', abs(L['bl'][0]-L['bl'][1])<3, L['bl'])
+        pg.wait_for_function("![...document.querySelectorAll('.rp-gauge')].some(g=>g.dataset.ganim==='run')")  # b278: 게이지 카운팅 끝난 뒤
         check('색 구간 유지(7/12 주황)', 'g-org' in pg.evaluate("document.querySelector('.rp-gauge').className"))
     b.close()
 finally: srv.terminate()

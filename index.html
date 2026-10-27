@@ -4327,7 +4327,26 @@ function monthGaugeData(cs){ const VI=activeIds(); let done=0,total=0;
   for(const c of cs){ if(!charShown(c)||!VI.has(c.id)||!c.bosses?.blackmage?.enabled) continue; total++; if(c.monthly?.blackmage) done++; }
   const pct=total?done/total*100:0; return {done,total,pct,cls:total&&done>=total?'g-mred':pct>=66?'g-pink':pct>=33?'g-yel':'g-gray'}; }
 function gaugeHtml(g,lab,kind){ const p=weekGaugePct(g), full=g.total&&g.done>=g.total;
-  return `<div class="rp-gauge ${kind} ${g.cls}" data-pct="${g.pct.toFixed(2)}" title="${lab} ${g.done}/${g.total} (${p}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${lab} ${g.done}/${g.total}</span></div><span class="rpg-num"><span class="tsmn rpg-t">${p}%</span><span class="tsmn rpg-ing">${full?'<span class="rpg-j">완</span>료':'진행중'}</span></span></div>`; }
+  return `<div class="rp-gauge ${kind} ${g.cls}" data-pct="${g.pct.toFixed(2)}" data-gd="${g.done}" data-gt="${g.total}" data-gl="${esc(lab)}" title="${lab} ${g.done}/${g.total} (${p}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${lab} ${g.done}/${g.total}</span></div><span class="rpg-num"><span class="tsmn rpg-t">${p}%</span><span class="tsmn rpg-ing">${full?'<span class="rpg-j">완</span>료':'진행중'}</span></span></div>`; }
+/* b278: 게이지 카운팅 — 숫자 카운팅(b162 tirAnimOne)과 같은 1.2초 ease-out(1-(1-q)^3)·화면에 보일 때 시작·같은 게이지(kind) 값이 그대로면 재렌더해도 안 돎(바뀌면 이전 값→새 값).
+ * 막대 0→목표, % 0.00→목표(둘째 자리 내림), X/Y 의 X 0→목표. 색은 올라가며 구간 따라 바뀜, 100% 금/빨강 빛·'완료' 는 도착한 뒤에만. reduced-motion 이면 바로 최종 */
+const GAUGE_LAST=new Map();
+function gaugeCls(kind,d,t){ const p=t?d/t*100:0, full=t&&d>=t; return kind==='rpg-m'?(full?'g-mred':p>=66?'g-pink':p>=33?'g-yel':'g-gray'):(full?'g-gold':p>=66?'g-sky':p>=33?'g-org':'g-red'); }
+function gaugeAnimOne(el){ if(el._gDone) return; el._gDone=1; const kind=el.classList.contains('rpg-m')?'rpg-m':'rpg-w', T=+el.dataset.gt, D1=+el.dataset.gd, lab=el.dataset.gl;
+  const from=GAUGE_LAST.has(kind)&&GAUGE_LAST.get(kind).t===T?GAUGE_LAST.get(kind).d:0; GAUGE_LAST.set(kind,{d:D1,t:T}); el.dataset.gdone='1';
+  if(from===D1||!T||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  const bar=el.querySelector('.rpg-bar i'), pt=el.querySelector('.rpg-t'), ing=el.querySelector('.rpg-ing'), xy=el.querySelector('.rpg-xy'), fin={cls:el.className,w:bar.style.width,p:pt.innerHTML,i:ing.innerHTML,x:xy.innerHTML};
+  const ALL=['g-red','g-org','g-sky','g-gold','g-gray','g-yel','g-pink','g-mred'];
+  const set=c=>{ const q=c/T*100, k=gaugeCls(kind,c,T)===(kind==='rpg-m'?'g-mred':'g-gold')&&c<D1?(kind==='rpg-m'?'g-pink':'g-sky'):gaugeCls(kind,c,T); ALL.forEach(x=>el.classList.toggle(x,x===k)); bar.style.width=Math.min(100,q).toFixed(2)+'%';
+    pt.textContent=Math.min(99.99,Math.floor(c*10000/T)/100).toFixed(2)+'%'; ing.textContent='진행중'; xy.textContent=`${lab} ${Math.floor(c)}/${T}`; };
+  bar.style.transition='none'; el.dataset.ganim='run'; set(from);
+  const t0=performance.now(), D=1200, step=now=>{ if(!el.isConnected) return; const q=Math.min(1,(now-t0)/D), e=1-Math.pow(1-q,3);
+    if(q>=1){ el.className=fin.cls; bar.style.width=fin.w; bar.style.transition=''; pt.innerHTML=fin.p; ing.innerHTML=fin.i; xy.innerHTML=fin.x; el.dataset.ganim='done'; return; }
+    set(from+(D1-from)*e); requestAnimationFrame(step); };
+  requestAnimationFrame(step); }
+(()=>{ const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ io.unobserve(e.target); gaugeAnimOne(e.target); } }),{threshold:.3}):null;
+  const scan=()=>document.querySelectorAll('.rp-gauge[data-gt]:not([data-gobs])').forEach(el=>{ el.dataset.gobs='1'; const k=el.classList.contains('rpg-m')?'rpg-m':'rpg-w', L=GAUGE_LAST.get(k); if(L&&L.d===+el.dataset.gd&&L.t===+el.dataset.gt){ el._gDone=1; el.dataset.gdone='1'; return; } io?io.observe(el):gaugeAnimOne(el); });
+  let qd=0; new MutationObserver(()=>{ if(qd) return; qd=1; requestAnimationFrame(()=>{ qd=0; scan(); }); }).observe(document.documentElement,{childList:true,subtree:true}); })();
 function weekGauge(cs){ const g=weekGaugeData(cs), m=monthGaugeData(cs); return (g.total?gaugeHtml(g,'이번 주 결정석 진행도','rpg-w'):'')+(m.total?gaugeHtml(m,'이번 달 검마 진행도','rpg-m'):''); }
 // b269: 진행률 = 소수 둘째 자리 내림(58.333 → 58.33) → 100.00% 는 다 잡았을 때만
 const weekGaugePct = g => g.total&&g.done>=g.total?'100.00':Math.min(99.99,Math.floor(g.done*10000/(g.total||1))/100).toFixed(2);
