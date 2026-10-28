@@ -58,6 +58,7 @@ try:
             W.append(pg.evaluate("([d,t])=>{ const g=weekGaugeData; window.weekGaugeData=()=>({done:d,total:t,pct:d/t*100,cls:d>=t?'g-gold':'g-org'}); render(); window.weekGaugeData=g; return document.querySelector('.revpanel .rpg-w .rpg-bar').getBoundingClientRect().width }",[d,t]))
         for m in ([0],[1]): pg.evaluate(SET,[ks,[0],m]); W.append(pg.evaluate("document.querySelector('.revpanel .rpg-m .rpg-bar').getBoundingClientRect().width"))
         check('막대 폭 항상 같음(주간 0/58.33/99.99/100, 검마 0/100)', max(W)-min(W)<0.01 and W[0]>150, W)
+        pg.wait_for_function("![...document.querySelectorAll('.rp-gauge[data-ganim=run]')].length",timeout=5000)
         ov=pg.evaluate("(()=>{ const r=[]; document.querySelectorAll('.revpanel .rpg-num').forEach(n=>{ const c=[...n.children].reduce((a,e)=>a+e.getBoundingClientRect().width,0); r.push([c,n.clientWidth]); }); return r; })()")
         check('글자가 고정 칸 안에 들어감', all(c<=w for c,w in ov), ov)
     if not NOCHK:

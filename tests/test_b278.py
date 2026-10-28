@@ -43,7 +43,7 @@ try:
     ctx=b.new_context(viewport={'width':1600,'height':1000},locale='ko-KR',reduced_motion='reduce'); pg=ctx.new_page(); pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(1500)
     pg.evaluate(SETUP,7); pg.wait_for_timeout(150); w=[g for g in pg.evaluate(ST) if g['k']=='rpg-w'][0]
-    check('reduced-motion: 바로 최종', w['an']=='' and w['p']=='58.33%', w)
+    check('b281 reduced-motion(Windows 애니메이션 효과 끔)에도 카운팅', w['an']=='run' and w['p']!='58.33%', w)
     b.close()
 finally: srv.terminate()
 check('JS 오류 없음', not errs, errs)

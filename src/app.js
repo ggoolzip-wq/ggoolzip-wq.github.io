@@ -1855,7 +1855,7 @@ function expLine(c){
   if(e.level&&c.level&&+e.level!==+c.level) return '';
   const p=Math.max(0,Math.min(100,+e.rate));
   const tip=`EXP ${p.toFixed(3)}%`+(e.exp?` (${Number(e.exp).toLocaleString()})`:'')+(e.date?` · 기준 ${String(e.date).slice(0,10)}`:'');
-  return `<div class="expl" title="${esc(tip)}"><span class="expbar" role="progressbar" aria-label="경험치" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.toFixed(2)}"><i style="width:${p.toFixed(2)}%"></i></span><span class="exppct">${p.toFixed(2)}%</span></div>`;
+  return `<div class="expl" title="${esc(tip)}" data-gk="exp:${esc(c.id)}" data-gy="pct" data-gw="${p.toFixed(2)}" data-gn="${p.toFixed(2)}"><span class="expbar" role="progressbar" aria-label="경험치" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p.toFixed(2)}"><i data-gbar style="width:${p.toFixed(2)}%"></i></span><span class="exppct gnum">${p.toFixed(2)}%</span></div>`;
 }
 /* 사이드바 카드: 이번 주 주간 보스 12/12면 반투명 검정 덮개 + '★ 이번 주 보스 완료'
  * (월간 보스를 선택해 두었는데 이번 달 아직 안 잡았으면 그 아래 줄에 빨간 (!) '검마 격파 필요' 추가). 마우스를 올리면 사라짐, 클릭은 통과 */
@@ -2050,8 +2050,8 @@ function renderBoss(){
     ${c.medal?.bad?`<div class="medalrow" role="alert" title="${esc(medalTip(c))}"><span class="mdico"><img src="${ITEM_ICONS.pcmedal||''}" alt="${MEDAL_BAD} 훈장" width="32" height="32"><span class="mdtri" aria-hidden="true">!</span></span><span class="mdtxt">${c.medal.empty?`보스 프리셋${c.medal.preset?" "+c.medal.preset:""}에 훈장이 없는 캐릭터 입니다.`:"프리미엄 PC방 훈장을 착용한 캐릭터 입니다."}</span></div>`:''}
     <div class="stats s3">
       <div class="stat"><div class="k">이번 주 주간 보스 수익</div><div class="v acc tirv">${tirMeso(r.meso+pWeekMonthly({c,r}).meso+pItemSale(c),'ci:'+c.id)}</div></div>
-      <div class="stat"><div class="k">주간 보스 처치</div><div class="v">${r.weekly} / ${lim}</div><div class="bar ${r.weekly>lim?'over':''}"><i style="width:${Math.min(100,r.weekly/lim*100)}%"></i></div></div>
-      <div class="stat"><div class="k">이번달 검마${(ds=>ds.length?` <span class="mdate">(${ds.join(', ')} 격파 완료)</span>`:'')(Object.keys(c.monthly).map(k=>(c.mdate||{})[k]).filter(Boolean).map(d=>`${+d.slice(5,7)}월 ${+d.slice(8,10)}일`))}</div><div class="v">${monthlyCount(c)} / ${S.settings.monthlyLimit}${r.monthMeso?` <span class="mmeso">${meso(r.monthMeso)}</span>`:''}</div><div class="bar"><i style="width:${Math.min(100,monthlyCount(c)/S.settings.monthlyLimit*100)}%"></i></div></div>
+      <div class="stat" data-gk="wk:${esc(c.id)}" data-gy="cnt" data-gw="${Math.min(100,r.weekly/lim*100)}" data-gn="${r.weekly}"><div class="k">주간 보스 처치</div><div class="v"><span class="gnum">${r.weekly}</span> / ${lim}</div><div class="bar ${r.weekly>lim?'over':''}"><i data-gbar style="width:${Math.min(100,r.weekly/lim*100)}%"></i></div></div>
+      <div class="stat" data-gk="mo:${esc(c.id)}" data-gy="cnt" data-gw="${Math.min(100,monthlyCount(c)/S.settings.monthlyLimit*100)}" data-gn="${monthlyCount(c)}"><div class="k">이번달 검마${(ds=>ds.length?` <span class="mdate">(${ds.join(', ')} 격파 완료)</span>`:'')(Object.keys(c.monthly).map(k=>(c.mdate||{})[k]).filter(Boolean).map(d=>`${+d.slice(5,7)}월 ${+d.slice(8,10)}일`))}</div><div class="v"><span class="gnum">${monthlyCount(c)}</span> / ${S.settings.monthlyLimit}${r.monthMeso?` <span class="mmeso">${meso(r.monthMeso)}</span>`:''}</div><div class="bar"><i data-gbar style="width:${Math.min(100,monthlyCount(c)/S.settings.monthlyLimit*100)}%"></i></div></div>
       
     </div>
    </div>
@@ -2116,26 +2116,40 @@ function monthGaugeData(cs){ const VI=activeIds(); let done=0,total=0;
   for(const c of cs){ if(!charShown(c)||!VI.has(c.id)||!c.bosses?.blackmage?.enabled) continue; total++; if(c.monthly?.blackmage) done++; }
   const pct=total?done/total*100:0; return {done,total,pct,cls:total&&done>=total?'g-mred':pct>=66?'g-pink':pct>=33?'g-yel':'g-gray'}; }
 function gaugeHtml(g,lab,kind){ const p=weekGaugePct(g), full=g.total&&g.done>=g.total;
-  return `<div class="rp-gauge ${kind} ${g.cls}" data-pct="${g.pct.toFixed(2)}" data-gd="${g.done}" data-gt="${g.total}" data-gl="${esc(lab)}" title="${lab} ${g.done}/${g.total} (${p}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${lab} ${g.done}/${g.total}</span></div><span class="rpg-num"><span class="tsmn rpg-t">${p}%</span><span class="tsmn rpg-ing">${full?'<span class="rpg-j">완</span>료':'진행중'}</span></span></div>`; }
-/* b278: 게이지 카운팅 — 숫자 카운팅(b162 tirAnimOne)과 같은 1.2초 ease-out(1-(1-q)^3)·화면에 보일 때 시작·같은 게이지(kind) 값이 그대로면 재렌더해도 안 돎(바뀌면 이전 값→새 값).
- * 막대 0→목표, % 0.00→목표(둘째 자리 내림), X/Y 의 X 0→목표. 색은 올라가며 구간 따라 바뀜, 100% 금/빨강 빛·'완료' 는 도착한 뒤에만. reduced-motion 이면 바로 최종 */
-const GAUGE_LAST=new Map();
+  return `<div class="rp-gauge ${kind} ${g.cls}" data-pct="${g.pct.toFixed(2)}" data-gk="${kind}" data-gy="rpg" data-gw="${Math.min(100,g.pct).toFixed(2)}" data-gn="${g.done}" data-gt="${g.total}" data-gl="${esc(lab)}" title="${lab} ${g.done}/${g.total} (${p}%)"><div class="rpg-col"><div class="rpg-bar"><i style="width:${Math.min(100,g.pct).toFixed(2)}%"></i></div><span class="rpg-xy">${lab} ${g.done}/${g.total}</span></div><span class="rpg-num"><span class="tsmn rpg-t">${p}%</span><span class="tsmn rpg-ing">${full?'<span class="rpg-j">완</span>료':'진행중'}</span></span></div>`; }
+/* b278→b281: 게이지·진행 막대 카운팅 (대시보드 전체). 숫자 카운팅과 같은 1.2초 ease-out(1-(1-q)^3), 화면에 보일 때 시작.
+ * b281: 상태를 DOM 이 아닌 키(data-gk)별로 보관 → 시작 직후 데이터·가격 불러오기로 다시 그려져도 새 요소에서 이어서 돎(b278 은 다시 그려지면 끝 값으로 튐).
+ * 같은 값 재렌더 = 다시 안 돎, 값이 바뀌면 이전 값→새 값, 탭을 떠났다 오면(키가 화면에서 사라졌다 나타나면) 0→다시. 사용자 요청으로 Windows '애니메이션 효과 끔'(reduced-motion)에도 돎.
+ * 대상: [data-gk] — data-gw 막대 폭(%) · data-gn 숫자 · data-gy 종류(rpg = 결정석/검마 게이지, pct = 'N.NN%', cnt = 정수) */
+const GA_ST=new Map(); let GA_SEEN=new Set(), GA_RAF=0; const GA_D=1200;
 function gaugeCls(kind,d,t){ const p=t?d/t*100:0, full=t&&d>=t; return kind==='rpg-m'?(full?'g-mred':p>=66?'g-pink':p>=33?'g-yel':'g-gray'):(full?'g-gold':p>=66?'g-sky':p>=33?'g-org':'g-red'); }
-function gaugeAnimOne(el){ if(el._gDone) return; el._gDone=1; const kind=el.classList.contains('rpg-m')?'rpg-m':'rpg-w', T=+el.dataset.gt, D1=+el.dataset.gd, lab=el.dataset.gl;
-  const from=GAUGE_LAST.has(kind)&&GAUGE_LAST.get(kind).t===T?GAUGE_LAST.get(kind).d:0; GAUGE_LAST.set(kind,{d:D1,t:T}); el.dataset.gdone='1';
-  if(from===D1||!T||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
-  const bar=el.querySelector('.rpg-bar i'), pt=el.querySelector('.rpg-t'), ing=el.querySelector('.rpg-ing'), xy=el.querySelector('.rpg-xy'), fin={cls:el.className,w:bar.style.width,p:pt.innerHTML,i:ing.innerHTML,x:xy.innerHTML};
-  const ALL=['g-red','g-org','g-sky','g-gold','g-gray','g-yel','g-pink','g-mred'];
-  const set=c=>{ const q=c/T*100, k=gaugeCls(kind,c,T)===(kind==='rpg-m'?'g-mred':'g-gold')&&c<D1?(kind==='rpg-m'?'g-pink':'g-sky'):gaugeCls(kind,c,T); ALL.forEach(x=>el.classList.toggle(x,x===k)); bar.style.width=Math.min(100,q).toFixed(2)+'%';
-    pt.textContent=Math.min(99.99,Math.floor(c*10000/T)/100).toFixed(2)+'%'; ing.textContent='진행중'; xy.textContent=`${lab} ${Math.floor(c)}/${T}`; };
-  bar.style.transition='none'; el.dataset.ganim='run'; set(from);
-  const t0=performance.now(), D=1200, step=now=>{ if(!el.isConnected) return; const q=Math.min(1,(now-t0)/D), e=1-Math.pow(1-q,3);
-    if(q>=1){ el.className=fin.cls; bar.style.width=fin.w; bar.style.transition=''; pt.innerHTML=fin.p; ing.innerHTML=fin.i; xy.innerHTML=fin.x; el.dataset.ganim='done'; return; }
-    set(from+(D1-from)*e); requestAnimationFrame(step); };
-  requestAnimationFrame(step); }
-(()=>{ const io=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ io.unobserve(e.target); gaugeAnimOne(e.target); } }),{threshold:.3}):null;
-  const scan=()=>document.querySelectorAll('.rp-gauge[data-gt]:not([data-gobs])').forEach(el=>{ el.dataset.gobs='1'; const k=el.classList.contains('rpg-m')?'rpg-m':'rpg-w', L=GAUGE_LAST.get(k); if(L&&L.d===+el.dataset.gd&&L.t===+el.dataset.gt){ el._gDone=1; el.dataset.gdone='1'; return; } io?io.observe(el):gaugeAnimOne(el); });
-  let qd=0; new MutationObserver(()=>{ if(qd) return; qd=1; requestAnimationFrame(()=>{ qd=0; scan(); }); }).observe(document.documentElement,{childList:true,subtree:true}); })();
+const GA_ALL=['g-red','g-org','g-sky','g-gold','g-gray','g-yel','g-pink','g-mred'];
+function gaPaint(el,w,n,end){
+  if(end){ if(el._gaFin!=null){ el.className=el._gaFin.c; el.innerHTML=el._gaFin.h; } el.dataset.ganim='done'; return; }
+  if(el._gaFin==null) el._gaFin={c:el.className,h:el.innerHTML};
+  const b=el.querySelector('.rpg-bar i,[data-gbar]'); if(b){ b.style.transition='none'; b.style.width=Math.max(0,Math.min(100,w)).toFixed(2)+'%'; }
+  const y=el.dataset.gy, T=+el.dataset.gt||0;
+  if(y==='rpg'){ const kind=el.classList.contains('rpg-m')?'rpg-m':'rpg-w', top=kind==='rpg-m'?'g-mred':'g-gold', k0=gaugeCls(kind,n,T), k=k0===top?(kind==='rpg-m'?'g-pink':'g-sky'):k0; GA_ALL.forEach(x=>el.classList.toggle(x,x===k));
+    el.querySelector('.rpg-t').textContent=Math.min(99.99,Math.floor(n*10000/(T||1))/100).toFixed(2)+'%'; el.querySelector('.rpg-ing').textContent='진행중'; el.querySelector('.rpg-xy').textContent=`${el.dataset.gl} ${Math.floor(n)}/${T}`; }
+  else el.querySelectorAll('.gnum').forEach(t=>{ t.textContent=y==='pct'?n.toFixed(2)+'%':String(Math.floor(n)); });
+  el.dataset.ganim='run'; }
+function gaTick(now){ GA_RAF=0; let live=0;
+  GA_ST.forEach((st,k)=>{ if(st.t0==null||st.done) return; const els=[...document.querySelectorAll(`[data-gk="${CSS.escape(k)}"]`)]; if(!els.length){ GA_ST.delete(k); return; }
+    const q=Math.min(1,(now-st.t0)/GA_D), e=1-Math.pow(1-q,3); st.cw=st.fw+(st.tw-st.fw)*e; st.cn=st.fn+(st.tn-st.fn)*e;
+    els.forEach(el=>gaPaint(el,st.cw,st.cn,q>=1)); if(q>=1) st.done=1; else live=1; });
+  if(live) GA_RAF=requestAnimationFrame(gaTick); }
+const gaRun=()=>{ if(!GA_RAF) GA_RAF=requestAnimationFrame(gaTick); };
+const GA_IO=typeof IntersectionObserver==='function'?new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; GA_IO.unobserve(e.target); const st=GA_ST.get(e.target.dataset.gk); if(st&&st.t0==null&&!st.done){ st.t0=performance.now(); gaRun(); } }),{threshold:.3}):null;
+function gaScan(){ const now=new Set();
+  document.querySelectorAll('[data-gk]').forEach(el=>{ const k=el.dataset.gk; now.add(k); if(el._gaSeen) return; el._gaSeen=1;
+    const tw=+el.dataset.gw||0, tn=+el.dataset.gn||0; let st=GA_ST.get(k);
+    if(st&&!GA_SEEN.has(k)&&st.done) st=null; // 탭을 떠났다 돌아옴 → 0부터
+    if(st&&st.tw===tw&&st.tn===tn){ if(!st.done){ gaPaint(el,st.cw??st.fw,st.cn??st.fn,false); if(st.t0==null) GA_IO?GA_IO.observe(el):(st.t0=performance.now(),gaRun()); } return; } // 다시 그려짐 → 이어서
+    let fw=st?(st.cw??st.tw):0, fn=st?(st.cn??st.tn):0; if(tn<fn||tw<fw-0.001) fw=fn=0; // 값이 줄었음(다른 캐릭터·새 주) → 0부터 다시 if(fw===tw&&fn===tn){ GA_ST.set(k,{fw,fn,tw,tn,cw:tw,cn:tn,done:1}); return; }
+    st={fw,fn,tw,tn,cw:fw,cn:fn,t0:null}; GA_ST.set(k,st); document.querySelectorAll(`[data-gk="${CSS.escape(k)}"]`).forEach(x=>gaPaint(x,fw,fn,false));
+    if(GA_IO) GA_IO.observe(el); else { st.t0=performance.now(); gaRun(); } });
+  GA_SEEN=now; }
+(()=>{ new MutationObserver(()=>gaScan()).observe(document.documentElement,{childList:true,subtree:true}); })(); // 그리기 전에(마이크로태스크) 0 으로 → 최종 값이 한 번 번쩍이지 않음
 function weekGauge(cs){ const g=weekGaugeData(cs), m=monthGaugeData(cs); return (g.total?gaugeHtml(g,'이번 주 결정석 진행도','rpg-w'):'')+(m.total?gaugeHtml(m,'이번 달 검마 진행도','rpg-m'):''); }
 // b269: 진행률 = 소수 둘째 자리 내림(58.333 → 58.33) → 100.00% 는 다 잡았을 때만
 const weekGaugePct = g => g.total&&g.done>=g.total?'100.00':Math.min(99.99,Math.floor(g.done*10000/(g.total||1))/100).toFixed(2);
@@ -2159,7 +2173,7 @@ function revPanel(a,cur){
     <div class="rp-list">${per.map(p=>`<div class="rp-char ${p.c===cur?'on':''}" data-id="${p.c.id}" title="${esc(p.c.name)} 선택">
       <div class="rp-row rp-top">${(r=>`<span class="rp-rk">${r?rankNo(r):'<span class="rkno"><span class="rkn">-</span></span>'}</span>${avatar(p.c,'sm av24 rp-av')/* b233: 주별 득템 표와 같은 24px 초상화(사진 없으면 같은 크기 글자 칸) */}<span class="rp-nm rkname${medal(r)?' md-'+medal(r):''}"><span class="${medal(r)?'spk':''}">${esc(p.c.name)}</span>${p.c.isMain?' <span class="mainbadge">★</span>':''}</span>`)(rk.get(p))}<b>${meso(pmeso(p))}</b></div>
       ${charLeftLines(p.c)}
-      <div class="rp-row"><span class="mini"><i style="width:${(pmeso(p)/max*100).toFixed(1)}%"></i></span><span class="muted" style="font-size:.72rem;white-space:nowrap">${p.r.weekly}/${lim}</span></div>
+      <div class="rp-row" data-gk="mini:${esc(p.c.id)}" data-gy="cnt" data-gw="${(pmeso(p)/max*100).toFixed(1)}" data-gn="${p.r.weekly}"><span class="mini"><i data-gbar style="width:${(pmeso(p)/max*100).toFixed(1)}%"></i></span><span class="muted" style="font-size:.72rem;white-space:nowrap"><span class="gnum">${p.r.weekly}</span>/${lim}</span></div>
       ${(L=>L.length?`<div class="rp-boss">${L.slice().sort((x,y)=>bossTblOrd(x.slot)-bossTblOrd(y.slot)).map(x=>bossPic(findBoss(x.slot),x.diff,false)).join('')}</div>`:'')([...p.r.wlist,...p.r.mlist.filter(x=>p.c.monthly[x.slot]===S.period.week)])}
       ${(w=>w?`<div class="rp-cl rc-g">${miniIcon('ipc')}<span>주간 결정석 +${meso(w)}</span></div>`:'')(p.r.wlist.length?p.r.meso:0)}${(m=>m?`<div class="rp-cl rc-g">${miniIcon('ipcm')}<span>검마 결정석 +${meso(m)}</span></div>`:'')(pm.get(p).meso)}${charSaleLine(p.c)}
       ${(d=>itemsInline(d.items)?`<div class="rp-items">${itemsInline(d.items,{outs:d.outcomes,revs:d.revs,byBoss:true,bpic:true,diffOf:cfgDiff(p.c)})}</div>`:'')(charAllDrops(p.c))}</div>`).join('')}</div>
