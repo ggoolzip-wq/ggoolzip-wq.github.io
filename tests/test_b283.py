@@ -33,7 +33,7 @@ try:
     pg.evaluate(SETUP)
     pg.evaluate(SCENE,['하드 루시드','제트루','belt',False])
     pg.evaluate("navigator.mediaDevices.getDisplayMedia=async()=>{ setInterval(()=>{ const g=window._scene.getContext('2d'); g.fillStyle='rgba(0,0,0,.02)'; g.fillRect(0,0,1,1); },100); return window._scene.captureStream(4); }")
-    pg.click('#arBtn'); pg.click('#arPanel [data-ar=connect]')
+    pg.click('#arBtn')  # b288: 헤더 버튼 한 번에 연결
     try: pg.wait_for_function("window.AR.stream&&window.AR.ocr",timeout=60000)
     except Exception:
         print("DBG",pg.evaluate("({s:!!window.AR.stream,e:window.AR.ocrErr,o:!!window.AR.ocr,T:typeof Tesseract})"),errs,[u for u in reqs if "ocr" in u]); raise

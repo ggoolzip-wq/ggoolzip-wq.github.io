@@ -45,19 +45,19 @@ try:
     check('주간·월간 보스 목록의 힐라는 진 힐라 노멀·하드뿐 (하드 힐라는 일간)', wk==[['jinhilla','진 힐라','weekly',['normal','hard']]], wk)
     # 2) 바닥 아이템
     pg.evaluate(SETUP,{'boss':'lotus','diff':'hard'}); h=pg.evaluate(SCAN,'s04.jpg'); ks=sorted(x[0] for x in h)
-    check('s04 바닥: 앱솔 무기 상자(왼쪽)·방어구 상자(오른쪽) 둘 다, 다른 것 없음', ks==['ab_a','ab_w'] and [x for x in h if x[0]=='ab_w'][0][2]<400 and [x for x in h if x[0]=='ab_a'][0][2]>1300, h)
+    check('b288 s04 바닥: 앱솔 상자(기록 안 되는 아이템)는 아예 안 찾음 → 결과 없음', ks==[], h)
     check('Worker 로 돌았음', pg.evaluate("!!window.AR.wk"))
     pg.evaluate(SETUP,{'boss':'lotus','diff':'hard','worker':False}); h2=pg.evaluate(SCAN,'s04.jpg')
     check('메인 스레드(Worker 없음) 결과도 같음', sorted(x[0] for x in h2)==ks, h2)
     pg.evaluate("()=>{ window.AR.wk=undefined; }")
     pg.evaluate(SETUP,{'boss':'star','diff':'normal'}); h=pg.evaluate(SCAN,'s11.jpg')
-    check('s11 바닥: 황홀한 환상의 단편 조각 4개 이상 (같은 줄 y≈916)', len([x for x in h if x[0]=='e_star_f' and 880<x[3]<950])>=4 and all(x[0]=='e_star_f' for x in h), h)
+    check('b288 s11 바닥: 에테르넬 단편 조각(정보용)도 안 찾음', h==[], h)
     pg.evaluate(SETUP,{'boss':'bellona','diff':'normal'}); h=pg.evaluate(SCAN,'s13.jpg')
     check('s13: 닮은 바닥 무늬(벨로나 조각 모양) 오인식 없음', h==[], h)
     # 3) 추적·중복
-    pg.evaluate(SETUP,{'boss':'lotus','diff':'hard'})
-    n=pg.evaluate("""()=>{ const H=[{k:'ab_w',score:.86,x:190,y:740,w:67,h:67}]; const t=Date.now(); arTrack(H,1080,t); arTrack([{...H[0],x:194}],1080,t+500); arTrack([{...H[0],x:196}],1080,t+1000);
-       return window.AR.log.filter(l=>l.includes('앱솔랩스 무기 상자')).length; }""")
+    pg.evaluate(SETUP,{'boss':'lotus','diff':'extreme'})
+    n=pg.evaluate("""()=>{ const H=[{k:'tc',score:.86,x:190,y:740,w:67,h:67}]; const t=Date.now(); arTrack(H,1080,t); arTrack([{...H[0],x:194}],1080,t+500); arTrack([{...H[0],x:196}],1080,t+1000);
+       return window.AR.log.filter(l=>l.includes(ITEMS.tc.n)).length; }""")
     check('같은 자리 바닥 아이템 3번 보여도 1번만', n==1, pg.evaluate("window.AR.log"))
     pg.evaluate(SETUP,{'boss':'adversary','diff':'normal'})
     lg=pg.evaluate("""()=>{ arRecord('r_white',.8,'배너 순간'); const t=Date.now(); const H=[{k:'r_white',score:.8,x:900,y:850,w:71,h:71}]; arTrack(H,1080,t); arTrack(H,1080,t+400); return window.AR.log; }""")
