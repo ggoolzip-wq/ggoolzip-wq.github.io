@@ -2,6 +2,13 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b283 화면 공유 자동 아이템 기록 (2026-10-29 20:59 KST)
+- 헤더 '🎮 게임 화면 연결'(getDisplayMedia, 모바일 폭 ≤760px 숨김). 모든 분석은 브라우저 안, 프레임 업로드 없음.
+- src/autorec.js(ARX, window.AR): 맵 이름 OCR→보스/난이도, 캐릭터 이름 OCR→등록 캐릭터, 아이템은 드롭표 아이콘 템플릿 매칭(iconPx/thr/confirm/영역 조정 가능, localStorage mbt_autorec). 수동 선택은 대체용.
+- 기록=changeDrop(key,+1) (이미 기록된 키는 건너뜀), 중복막기 dedupSec, 토스트 #arToast [취소].
+- OCR: tesseract.js 5.1.1 + kor(tessdata_fast) ./ocr 자체 호스팅, 연결할 때만 로드. pages_dist.sh가 ocr/ 복사.
+- 테스트 test_b283 (합성 1280x720 장면).
+
 ## b282 — 수익 총합 캐릭터별 막대 = 주간 처치/한도 (2026-10-29 20:02 KST)
 - 원인: revPanel 캐릭터별 .mini 막대 폭이 (그 캐릭터 메소 / 1등 캐릭터 메소)였음 → 1등 캐릭터는 10/12 여도 꽉 참, 다른 캐릭터도 메소 비율로 표시.
 - 수정: 폭 = min(100, 주간 처치/S.settings.weeklyLimit) (data-gw 애니메이션 목표값도 동일). test_b282 (10/12≈83%, 12/12=100%, 3/12=25%).

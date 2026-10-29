@@ -21,6 +21,7 @@ else:
 rd = lambda n: open(os.path.join(SRC, n), encoding='utf-8').read()
 js = lambda n: json.load(open(os.path.join(SRC, n), encoding='utf-8'))
 s = rd('app.js')
+if os.path.exists(os.path.join(SRC, 'autorec.js')): s += '\n' + rd('autorec.js')  # b283: 게임 화면 자동 기록
 s = s.replace('/*__BOSS_ICONS__*/{}', json.dumps(js('icons.json'), separators=(',', ':')))
 s = s.replace('/*__ITEM_ICONS__*/{}', json.dumps(js('itemicons.json'), separators=(',', ':')))
 if os.path.exists(os.path.join(SRC, 'worldicons.json')):  # 공식 월드 아이콘 (tools/build_worlds.py)
