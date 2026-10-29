@@ -16,9 +16,9 @@ SETUP="""()=>{ S.characters=[
 SCENE="""async ([map,name,item,show])=>{ const cv=window._scene||(window._scene=document.createElement('canvas')); cv.width=1280; cv.height=720; const g=cv.getContext('2d');
   const gr=g.createLinearGradient(0,0,0,720); gr.addColorStop(0,'#2b3a55'); gr.addColorStop(1,'#4a3a2a'); g.fillStyle=gr; g.fillRect(0,0,1280,720);
   g.fillStyle='#6b5a3a'; g.fillRect(0,560,1280,30); for(let i=0;i<40;i++){ g.fillStyle=`hsl(${i*37%360},30%,35%)`; g.fillRect((i*97)%1280,(i*53)%500+40,60,20); }
-  g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(0,0,280,44); g.fillStyle='#fff'; g.font='bold 15px NanumGothic'; g.fillText(map,10,28);
-  g.fillStyle='rgba(0,0,0,.7)'; g.fillRect(560,664,160,26); g.fillStyle='#fff'; g.font='bold 15px NanumGothic'; g.fillText(name,580,683);
-  if(show){ const im=new Image(); im.src=ITEM_ICONS[item]; await im.decode(); g.drawImage(im,612,530,32,32); }
+  g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(0,0,256,32); g.fillStyle='#fff'; g.font='bold 15px NanumGothic'; g.fillText(map,8,22);
+  g.fillStyle='rgba(0,0,0,.7)'; g.fillRect(0,688,256,20); g.fillStyle='#fff'; g.font='bold 14px NanumGothic'; g.fillText(name?'Lv.280 '+name:'',8,703); /* b284: 실제 화면처럼 왼쪽 아래 상태바 */
+  if(show){ const im=new Image(); im.src=ITEM_ICONS[item]; await im.decode(); g.drawImage(im,612,530,24,24); }
   window.AR.testSrc=cv; return 1; }"""
 try:
   with sync_playwright() as p:
@@ -47,7 +47,8 @@ try:
     check('이름 OCR → 제트루(c0)', d['det']['cid']=='c0', d)
     check('아이콘 없으면 기록 없음', not pg.evaluate("Object.keys(S.characters[0].drops).length"))
     pg.evaluate(SCENE,['하드 루시드','제트루','belt',True])
-    pg.wait_for_function("S.characters[0].drops['lucid|belt']",timeout=15000)
+    try: pg.wait_for_function("S.characters[0].drops['lucid|belt']",timeout=15000)
+    except Exception: print('DBG',pg.evaluate("JSON.stringify({sc:window.AR.scores,f:window.AR.found,det:window.AR.det,cand:(window.arCandidates?arCandidates().map(c=>c.k||c):null)})")[:600])
     st=pg.evaluate("({d0:S.characters[0].drops,d1:S.characters[1].drops,act:S.activeId,t:document.querySelector('#arToast')?.textContent,sc:window.AR.lastScore})")
     check('몽환의 벨트 → 제트루·루시드 자동 기록 (같은 저장 키)', st['d0'].get('lucid|belt')==1 and not st['d1'] and st['act']=='c0', st)
     check('토스트', '자동 기록: 몽환의 벨트 · 루시드' in (st['t'] or ''), st['t'])
