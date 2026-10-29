@@ -1981,3 +1981,4 @@ header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 .ar-toast .ar-undo{background:none;border:1px solid var(--line);color:var(--accent);border-radius:8px;padding:3px 10px;cursor:pointer}
 .ar-panel .btn.primary{border-color:var(--accent);color:var(--accent);font-weight:700}
 @media (max-width:760px){.arbtn{display:none!important}}
+.ar-perf{font-size:12px;color:var(--muted,#888);margin:2px 0 4px;font-variant-numeric:tabular-nums}

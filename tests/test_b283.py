@@ -18,7 +18,7 @@ SCENE="""async ([map,name,item,show])=>{ const cv=window._scene||(window._scene=
   g.fillStyle='#6b5a3a'; g.fillRect(0,560,1280,30); for(let i=0;i<40;i++){ g.fillStyle=`hsl(${i*37%360},30%,35%)`; g.fillRect((i*97)%1280,(i*53)%500+40,60,20); }
   g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(0,0,256,32); g.fillStyle='#fff'; g.font='bold 15px NanumGothic'; g.fillText(map,8,22);
   g.fillStyle='rgba(0,0,0,.7)'; g.fillRect(0,688,256,20); g.fillStyle='#fff'; g.font='bold 14px NanumGothic'; g.fillText(name?'Lv.280 '+name:'',8,703); /* b284: 실제 화면처럼 왼쪽 아래 상태바 */
-  if(show){ const im=new Image(); im.src=ITEM_ICONS[item]; await im.decode(); g.drawImage(im,612,530,24,24); }
+  if(show){ const im=new Image(); im.src=ITEM_ICONS[item]; await im.decode(); g.drawImage(im,612,513,47,47); } /* b287: 실제 바닥 아이콘 크기(1080p 71px → 720p 47px) */
   window.AR.testSrc=cv; return 1; }"""
 try:
   with sync_playwright() as p:
