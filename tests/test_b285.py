@@ -19,7 +19,7 @@ SETUP="""()=>{ const all={}; for(const b of BOSSES) all[b.id]={enabled:true,part
 STEP="""async ([f,force,on])=>{ const im=new Image(); im.src='fx/'+f; await im.decode(); const cv=document.createElement('canvas'); cv.width=im.width; cv.height=im.height; cv.getContext('2d').drawImage(im,0,0);
   const A=window.AR; A.cfg.on=on; await arFrame(cv,force); const lg=await arLogFrame(cv)||[]; return {map:A.mapText,name:A.nameText,det:{...A.det},log:A.logText,new:lg.map(x=>x.k+'x'+x.n)}; }"""
 RESET="()=>{const A=window.AR; A.logPrev=[]; A.recent={}; A.hits={}; A.counted=[]; A.infoSeen=[]; A.log=[]; A.det={cid:'',boss:'',diff:'',src:''}; A.detT=0; A.cidT=0;}"
-TRUTH={'v01':('adversary','normal'),'v02':('jinhilla','hard'),'v03':('blackmage','hard'),'v04':('kalos','normal'),'v05':('dusk','chaos'),
+TRUTH={'v01':('adversary','normal'),'v02':('jinhilla','hard'),'v03':('dunkel','hard'),'v04':('kalos','normal'),'v05':('dusk','chaos'),
        'v06':('slime','chaos'),'v07':('bellona','easy'),'v08':('seren','hard'),'v09':('kaling','easy'),'v10':('will','hard')}
 try:
   with sync_playwright() as p:

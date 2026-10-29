@@ -22,14 +22,17 @@ const AR_DEF={on:true, fps:3, ocrEvery:3000, logFps:6, stickySec:600,
   ds:4,           // 대략 찾기 축소 배율
   thr:.84,        // 아이콘 일치 점수 (NCC, -1~1) 기준 — 실제 배너: 정답 .88 / 닮은 상자 .80 / 배너 없음 < .5
   confirm:2,      // 연속 프레임 수
+  bannerThr:.7,   // b286: 배너 순간 감시(바뀐 프레임만) 기준 — 보상이 한꺼번에 오면 배너 하나가 1프레임(33ms)만 보임 (v01 백옥 .76)
+  watchFps:30,    // b286: 배너 변화 감시 횟수/초 (작은 축소본 비교만, 바뀐 프레임만 아이콘 매칭)
   dedupSec:120,   // 같은 아이템 다시 기록 막는 시간
   nameThr:.5, mapAlias:{}, cid:'', boss:''};
 /* 맵 이름 → 보스 (미니맵 제목에 보스 이름이 없는 맵). 난이도는 제목 끝 <노멀>/<하드>/<익스트림>... 에서 읽음 */
 const AR_MAPS=[['잠든환상','star'],['고요해진함선','lotus'],['흉성','star'],
   // b285: 실제 영상 미니맵 제목 (지역 + 맵). 둘 중 하나만 읽혀도 되게 두 단어씩
-  ['증명의전장','adversary'],['의지가증명된','adversary'],['고통의미궁','jinhilla'],['욕망의제단','jinhilla'],['끝에가까운곳','blackmage'],
+  ['증명의전장','adversary'],['의지가증명된','adversary'],['고통의미궁','jinhilla'],['욕망의제단','jinhilla'],['끝에가까운곳','dunkel'],
   ['카로테마천루','kalos'],['문브릿지','dusk'],['공허의눈','dusk'],['라무라무','slime'],['고요한제단','slime'],['솔라툼골짜기','bellona'],['솔라툼의유산','bellona'],
-  ['세르니움왕궁','seren'],['왕궁메인홀','seren'],['도원경','kaling'],['빛을되찾은사계','kaling'],['에스페라','will'],['바스러지는빛','will']];
+  ['세르니움왕궁','seren'],['왕궁메인홀','seren'],['도원경','kaling'],['빛을되찾은사계','kaling'],['에스페라','will'],['바스러지는빛','will'],
+  ['타락한세계수','damien'],['세계수정상','damien'],['레헬른','lucid'],['악몽의시계탑','lucid'],['블랙헤븐','lotus']];
 const AR_DIFFW=[['익스트림','extreme'],['카오스','chaos'],['노멀','normal'],['노말','normal'],['하드','hard'],['이지','easy']];
 const ARX={logPrev:[], lastLog:0, logText:'', logBusy:false, counted:[], cfg:null, stream:null, video:null, timer:0, busy:false, ocr:null, ocrP:null, lastOcr:0, mapText:'', nameText:'',
   det:{cid:'',boss:'',diff:'',src:''}, hits:{}, recent:{}, recentVia:{}, log:[], tpl:null, tplKey:'', lastScore:[]};
@@ -55,12 +58,17 @@ function arDetectBoss(text){ const t=arNorm(text); if(!t) return null;
   let best=null; for(const b of BOSSES){ const s=arSim(t,b.name); if(s>=.75&&(!best||s>best.s||(s===best.s&&b.name.length>best.b.name.length))) best={b,s}; }
   if(!best) return null; let diff=''; for(const [k,v] of Object.entries(D)) if(t.includes(v)&&best.b.diffs.includes(k)) diff=k; if(!diff&&t.includes('노멀')&&best.b.diffs.includes('normal')) diff='normal';
   return {boss:best.b.id,diff,src:'맵 이름'}; }
-function arDetectChar(text){ const L=String(text||'').split('\n').find(l=>/[가-힣]{2}/.test(l))||''; const hn=x=>(x.match(/[가-힣]/g)||[]).length, tok=L.trim().split(/\s+/).filter(x=>hn(x)).reduce((a,x)=>hn(x)>=hn(a)&&hn(x)>=Math.min(2,hn(a)+1)?x:a,''); // b285: 이름 뒤 잡티 한 글자('뇨')보다 글자 많은 토큰
+function arDetectChar(text){ const lat=arLatChar(text); if(lat) return lat; const L=String(text||'').split('\n').find(l=>/[가-힣]{2}/.test(l))||''; const hn=x=>(x.match(/[가-힣]/g)||[]).length, tok=L.trim().split(/\s+/).filter(x=>hn(x)).reduce((a,x)=>hn(x)>=hn(a)&&hn(x)>=Math.min(2,hn(a)+1)?x:a,''); // b285: 이름 뒤 잡티 한 글자('뇨')보다 글자 많은 토큰
   const pre=tok.match(/^[^가-힣]*/)[0], hg=tok.replace(/[^가-힣]/g,''); ARX.nameRead=tok; if(hg.length<1) return '';
   // 상태바 글꼴에서 앞 숫자('2터래플'의 2)는 OCR 이 '<'·'6'·'ㅇ' 등으로 읽음 → 한글 부분은 자모 비교, 앞 기호 유무는 '숫자로 시작하는 이름'과 맞춰 봄
   let best=null; for(const c of S.characters){ const cp=(c.name.match(/^[^가-힣]*/)||[''])[0], ch=c.name.replace(/[^가-힣]/g,''); if(!ch) continue;
     const j=arSimJ(hg,ch); if(j<ARX.cfg.nameThr) continue; let s=j; s+=(!!cp===!!pre)?.15:-.15; if(cp&&pre&&pre.includes(cp)) s+=.1;
     if(!best||s>best.s) best={c,s}; } return best?best.c.id:''; }
+/* b285: 영문 닉네임 (예: Drcancel) — 한글이 없는 캐릭터만, 'Lv.285' 뒤 영문 토큰을 소문자로 비교 (OCR 이 l↔I/1, rn↔m 헷갈림) */
+function arLatChar(text){ const fx=x=>String(x||'').toLowerCase().replace(/[1|!]/g,'l').replace(/0/g,'o').replace(/rn/g,'m').replace(/[^a-z]/g,'');
+  const toks=String(text||'').split(/\s+/).map(fx).filter(x=>x.length>=3&&!/^lv/.test(x)); if(!toks.length) return ''; let best=null;
+  for(const c of S.characters){ if(/[가-힣]/.test(c.name)) continue; const n=fx(c.name); if(n.length<2) continue;
+    for(const t of toks){ const s=arSim(t,n); if(s>=.7&&(!best||s>best.s)) best={c,s}; } } return best?best.c.id:''; }
 /* 지금 기록 대상 (인식 우선, 실패하면 수동 선택) */
 function arTarget(){ const c=S.characters.find(x=>x.id===(ARX.det.cid||ARX.cfg.cid))||activeChar(); if(!c) return null;
   const bid=ARX.det.boss||ARX.cfg.boss; const b=bid?findBoss(bid):null; return {c,b,diff:b?((ARX.det.boss===b.id&&ARX.det.diff)||c.bosses?.[b.id]?.diff||b.diffs[0]):''}; }
@@ -100,13 +108,13 @@ function arScore(F,T,ox,oy){ arPrep(T); const I=T.idx,Z=T.z,N=Z.length; let sf=0
   for(let i=0,j=0;i<I.length;i+=2){ const f=((oy+I[i])*F.w+ox+I[i+1])*4; fv[j++]=F.d[f]; fv[j++]=F.d[f+1]; fv[j++]=F.d[f+2]; }
   for(let j=0;j<N;j++) sf+=fv[j]; const m=sf/(N||1); let num=0,den=0; for(let j=0;j<N;j++){ const q=fv[j]-m; num+=q*Z[j]; den+=q*q; } return den?num/(Math.sqrt(den)*T.n):0; }
 /* 영역 이미지(ImageData)에서 아이콘 찾기 → [{k,score,x,y}] */
-async function arFindIcons(img,px){ const C=arCandidates(); if(!C.length) return []; const keys=[...new Set(C.map(c=>c.k))], T=await arTemplates(keys,px), f=Math.max(1,Math.min(ARX.cfg.ds|0,Math.round(px/10))); // b284: 작은 아이콘은 덜 줄여서 대략 찾기가 놓치지 않게
+async function arFindIcons(img,px,thr){ thr=thr??ARX.cfg.thr; const C=arCandidates(); if(!C.length) return []; const keys=[...new Set(C.map(c=>c.k))], T=await arTemplates(keys,px), f=Math.max(1,Math.min(ARX.cfg.ds|0,Math.round(px/10))); // b284: 작은 아이콘은 덜 줄여서 대략 찾기가 놓치지 않게
   const Fc=arDown(img.data,img.width,img.height,f), Ff={d:Float32Array.from(img.data,(v,i)=>i%4===3?1:v),w:img.width,h:img.height}, res=[]; ARX.lastScore=[];
   for(const k of keys){ if(!T[k]) continue; const Tc=arDown(T[k],px,px,f), Tf={d:Float32Array.from(T[k],(v,i)=>i%4===3?v/255:v),w:px,h:px}; let cand=[];
     for(let y=0;y+Tc.h<=Fc.h;y++) for(let x=0;x+Tc.w<=Fc.w;x++){ const s=arScore(Fc,Tc,x,y); cand.push([s,x,y]); }
     cand.sort((a,b)=>b[0]-a[0]); let best=null;
     for(const [,cx,cy] of cand.slice(0,6)) for(let y=Math.max(0,cy*f-f);y<=Math.min(img.height-px,cy*f+f);y++) for(let x=Math.max(0,cx*f-f);x<=Math.min(img.width-px,cx*f+f);x++){ const s=arScore(Ff,Tf,x,y); if(!best||s>best.score) best={k,score:s,x,y}; }
-    ARX.lastScore.push([k,best?+best.score.toFixed(3):0]); if(best&&best.score>=ARX.cfg.thr) res.push(best); }
+    ARX.lastScore.push([k,best?+best.score.toFixed(3):0]); if(best&&best.score>=thr) res.push(best); }
   res.sort((a,b)=>b.score-a.score); const all=ARX.lastScore.map(x=>x[1]).sort((a,b)=>b-a);
   // 비슷한 상자(무기/방어구)처럼 닮은 아이콘: 1등이 2등보다 margin 이상 높을 때만
   return res.filter((h,i)=>i===0&&h.score-(all[1]||0)>=ARX.cfg.margin); }
@@ -139,6 +147,15 @@ async function arFrame2(src,force){ if(ARX.busy) return; ARX.busy=true; try{ con
     for(const h of found){ seen.add(h.k); ARX.hits[h.k]=(ARX.hits[h.k]||0)+1; if(ARX.hits[h.k]>=ARX.cfg.confirm&&ARX.cfg.on) arRecord(h.k,h.score,h.reg==='banner'?'배너':'바닥'); }
     for(const k of Object.keys(ARX.hits)) if(!seen.has(k)) delete ARX.hits[k];
     arPanelPaint(); } finally{ ARX.busy=false; } }
+/* b286: 배너 순간 감시 — 매 프레임 배너 영역을 아주 작게 줄여 이전 프레임과 비교, 바뀐 프레임만 잘라 큐에 넣고 차례로 아이콘 매칭 (1프레임만 떠도 셈, 바쁠 때도 안 버림) */
+function arBannerWatch(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return false; const r=ARX.cfg.banner;
+  const sm=ARX.bsm||(ARX.bsm=document.createElement('canvas')); sm.width=64; sm.height=16; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,64,16);
+  const d=g.getImageData(0,0,64,16).data, p=ARX.bprev; let diff=0; if(p) for(let i=0;i<d.length;i+=4) diff+=Math.abs(d[i]-p[i])+Math.abs(d[i+1]-p[i+1])+Math.abs(d[i+2]-p[i+2]);
+  ARX.bprev=Uint8ClampedArray.from(d); if(p&&diff/(64*16*3)<4) return false;
+  const cv=arCrop(src,sw,sh,r,1); ARX.bq=ARX.bq||[]; ARX.bq.push({img:cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height),px:arIconPx(sh,'banner')}); if(ARX.bq.length>40) ARX.bq.shift();
+  return arBannerPump(); }
+async function arBannerPump(){ if(ARX.bpBusy) return ARX.bpP; ARX.bpBusy=true; ARX.bpP=(async()=>{ try{ while(ARX.bq&&ARX.bq.length){ const q=ARX.bq.shift();
+    for(const h of await arFindIcons(q.img,q.px,ARX.cfg.bannerThr)){ ARX.bannerHits=(ARX.bannerHits||[]).concat([[h.k,+h.score.toFixed(3)]]).slice(-20); if(ARX.cfg.on) arRecord(h.k,h.score,'배너 순간'); } } } finally{ ARX.bpBusy=false; } })(); return ARX.bpP; }
 function arRecord(item,score,via='',n=1){ const t=arTarget(); if(!t) return; const C=arCandidates().filter(c=>c.k===item); if(!C.length) return;
   const b=C.find(c=>t.c.weekly?.[c.b.id]===false)?.b||C[0].b, key=b.id+'|'+item, now=Date.now();
   if(ARX.recent[key]&&now-ARX.recent[key]<ARX.cfg.dedupSec*1000){ if(via) ARX.recentVia[key]=(ARX.recentVia[key]||'')+'+'+via; return; } ARX.recent[key]=now; ARX.recentVia[key]=via;
@@ -154,12 +171,13 @@ function arToast(item,b,key,cid){ let el=$('#arToast'); if(!el){ el=document.cre
 /* 연결 / 끊기 */
 async function arConnect(){ if(ARX.stream) return arPanel(true);
   if(!navigator.mediaDevices?.getDisplayMedia){ alert('이 브라우저는 화면 공유를 지원하지 않아요 (PC 크롬·엣지 권장).'); return; }
-  try{ ARX.stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:ARX.cfg.fps}},audio:false}); }catch(e){ ARX.stream=null; return; }
+  try{ ARX.stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:Math.max(ARX.cfg.fps,ARX.cfg.watchFps||0)}},audio:false}); }catch(e){ ARX.stream=null; return; }
   const v=ARX.video=document.createElement('video'); v.muted=true; v.playsInline=true; v.style.cssText='position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none'; document.body.appendChild(v); v.srcObject=ARX.stream; arOcrLoad(); v.play().catch(()=>{});
   ARX.stream.getVideoTracks()[0]?.addEventListener('ended',arDisconnect); ARX.lastOcr=0; arOcrLoad();
   ARX.timer=setInterval(()=>arFrame(ARX.video),Math.round(1000/Math.max(.5,ARX.cfg.fps)));
+  if(ARX.cfg.watchFps>0){ if(v.requestVideoFrameCallback){ const loop=()=>{ if(ARX.video!==v) return; arBannerWatch(v); v.requestVideoFrameCallback(loop); }; v.requestVideoFrameCallback(loop); } else ARX.wTimer=setInterval(()=>ARX.video&&arBannerWatch(ARX.video),Math.round(1000/ARX.cfg.watchFps)); }
   ARX.logTimer=setInterval(()=>{ if(ARX.ocr) arLogFrame(ARX.video); },Math.round(1000/Math.max(1,ARX.cfg.logFps))); arBtnPaint(); arPanel(true); }
-function arDisconnect(){ clearInterval(ARX.logTimer); ARX.logPrev=[]; clearInterval(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; arBtnPaint(); arPanelPaint(); }
+function arDisconnect(){ clearInterval(ARX.logTimer); clearInterval(ARX.wTimer); ARX.bq=[]; ARX.bprev=null; ARX.logPrev=[]; clearInterval(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; arBtnPaint(); arPanelPaint(); }
 function arBtnPaint(){ const b=$('#arBtn'); if(!b) return; b.classList.toggle('on',!!ARX.stream); b.innerHTML=ARX.stream?'<span class="ar-dot"></span>게임 화면 연결됨':'🎮 게임 화면 연결'; }
 /* 패널: 상태 · 인식 결과 · 수동 선택 · 영역 맞추기(미리보기 드래그) · OCR 미리보기 */
 let arRegionSel='item';
@@ -199,4 +217,4 @@ function arPrev(){ const cv=$('#arPanel .ar-prev'); if(!cv) return; const g=cv.g
   for(const [k,col] of [['log','#ff6bd0'],['banner','#ffe066'],['item','#ffb347'],['map','#5ec8ff'],['name','#7dff9a']]){ const r=ARX.cfg[k]; g.strokeStyle=col; g.lineWidth=k===arRegionSel?2.5:1.2; g.strokeRect(r.x*cv.width,r.y*cv.height,r.w*cv.width,r.h*cv.height); } }
 setInterval(()=>{ if(ARX.stream&&!$('#arPanel')?.hidden) arPrev(); },500);
 document.addEventListener('click',e=>{ if(e.target.closest('#arBtn')) arPanel(true); });
-window.AR=ARX; window.arFrame=arFrame; window.arLogFrame=arLogFrame; window.arLogStep=arLogStep; window.arLogItem=arLogItem; window.arOcrLoad=arOcrLoad; arBtnPaint();
+window.AR=ARX; window.arFrame=arFrame; window.arBannerWatch=arBannerWatch; window.arLogFrame=arLogFrame; window.arLogStep=arLogStep; window.arLogItem=arLogItem; window.arOcrLoad=arOcrLoad; arBtnPaint();
