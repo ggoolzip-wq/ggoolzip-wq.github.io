@@ -2370,3 +2370,12 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 4. 썬데이 카드: 1600x1000 331→265px, 1920x1080 384→345px, 넘침 없음(4줄 혜택 그대로).
 5. 테스트: 신규 tests/test_b257.py(5개 화면 크기 쪽당 5줄·넘침·페이지 길이), run_all.sh 등록, test_tracker16 비율 검사에 b257 5줄 허용. 전체 run_par 167개 통과(test_tracker14·b239 병렬 실패 → 직렬 재시도 통과).
 6. 사진: /workspace/b257/before_1600.png · after_1600.png(배포 후 실사이트, 패치내역 탭).
+
+## b297ui — 보스 득템 자동 기록 탭 네온 리디자인 + 고정 영역
+- extra.css `#arPanel` 범위: 어두운 유리 카드 + 은은한 시안/보라 네온 테두리·제목, 라이트 테마는 맑은 유리 + 옅은 네온.
+- 캐릭터 정보에서 '상태바 이름 인식 · N초' 문구 제거.
+- 현재 보스: bossIcon(기존 BOSS_ICONS) + 이름 + diffImg 1줄, 넘치면 arFitBoss()가 글씨 자동 축소(최소 12.8px, ResizeObserver).
+- 영역은 항상 AR_DEF 고정값(저장된 사용자 영역 무시), 드래그 지정/'영역: … 화면에서 드래그' UI 삭제.
+  '영역 보기'는 고정 박스 + 박스 위 한국어 라벨(미니맵 맵 이름·닉네임·획득 로그·획득 배너·아이템 인식 영역). 미리보기 캔버스 1280x720.
+- 테스트: tests/test_b296.py (1줄·아이콘·잘림 없음·영역 UI) · 스크린샷 tests/out/b296_panel_*.png, b297_roi_*.png.
+- 보상 상자 기반 인식은 구현 안 함(조사만: /workspace/b297).

@@ -2008,3 +2008,26 @@ header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 .ar-pk{color:#ff4fa0}.ar-or{color:#f39b2a}.ar-gf{display:flex;justify-content:center;margin-top:10px}.ar-gf .btn{min-width:120px}
 @media (max-width:1000px){.ar-dash{height:auto}.ar-g{grid-template-columns:1fr;grid-template-rows:none}.ar-g>.ar-c{grid-column:auto;grid-row:auto}.ar-vw{min-height:220px}}
 .ar-cset[hidden]{display:none!important}
+/* b297ui: 보스 득템 자동 기록 탭 — 은은한 네온 · 어두운 유리 카드 (라이트는 맑은 유리 + 옅은 네온) */
+#arPanel{--ng1:#5ee7ff;--ng2:#b48cff;--glass:rgba(14,18,32,.62);--gline:rgba(120,200,255,.22);--gtxt:#e9f1ff}
+[data-theme=light] #arPanel{--ng1:#0aa6d6;--ng2:#7b53e6;--glass:rgba(255,255,255,.72);--gline:rgba(60,120,200,.22);--gtxt:#1a2236}
+#arPanel .ar-sbar,#arPanel .ar-c{position:relative;background:var(--glass);border:1px solid var(--gline);border-radius:16px;backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);
+  box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 10px 30px rgba(0,0,0,.28),0 0 18px color-mix(in srgb,var(--ng1) 14%,transparent);color:var(--gtxt);transition:box-shadow .25s,border-color .25s}
+[data-theme=light] #arPanel .ar-sbar,[data-theme=light] #arPanel .ar-c{box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 8px 24px rgba(40,60,120,.10),0 0 14px color-mix(in srgb,var(--ng1) 12%,transparent)}
+#arPanel .ar-c::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;background:linear-gradient(135deg,color-mix(in srgb,var(--ng1) 55%,transparent),transparent 40%,transparent 60%,color-mix(in srgb,var(--ng2) 50%,transparent));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.7}
+#arPanel .ar-c:hover{border-color:color-mix(in srgb,var(--ng1) 40%,transparent);box-shadow:0 10px 30px rgba(0,0,0,.28),0 0 26px color-mix(in srgb,var(--ng1) 22%,transparent)}
+#arPanel .ar-c h2{font-size:.78rem;font-weight:700;letter-spacing:.14em;color:color-mix(in srgb,var(--ng1) 75%,var(--gtxt));text-shadow:0 0 10px color-mix(in srgb,var(--ng1) 35%,transparent)}
+#arPanel .ar-big{font-size:1.45rem;font-weight:800;letter-spacing:-.01em;color:var(--gtxt);text-shadow:0 0 14px color-mix(in srgb,var(--ng2) 25%,transparent)}
+#arPanel .ar-big .dimg{vertical-align:middle;margin-left:6px;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--ng1) 40%,transparent))}
+#arPanel .ar-st{letter-spacing:.04em}#arPanel .ar-st.on{color:#49f2a0;text-shadow:0 0 10px rgba(73,242,160,.55)}[data-theme=light] #arPanel .ar-st.on{color:#0f9d63;text-shadow:0 0 8px rgba(15,157,99,.25)}
+#arPanel .ar-vw{border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px var(--gline) inset,0 0 22px color-mix(in srgb,var(--ng2) 16%,transparent) inset}
+#arPanel .ar-recl li{background:color-mix(in srgb,var(--ng1) 6%,transparent);border:1px solid var(--gline);border-radius:10px}
+#arPanel .btn.primary{background:linear-gradient(135deg,var(--ng1),var(--ng2));color:#fff;border:0;box-shadow:0 0 14px color-mix(in srgb,var(--ng1) 45%,transparent)}
+@media (prefers-reduced-motion:reduce){#arPanel .ar-c{transition:none}}
+
+#arPanel .ar-prev{cursor:default}
+#arPanel .ar-bline{display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;min-width:0}
+#arPanel .ar-bline .ar-bn{flex:none}
+#arPanel .ar-bline .bicon{flex:none;width:1.6em;height:1.6em;border-radius:8px;box-shadow:0 0 10px color-mix(in srgb,var(--ng1) 35%,transparent)}
+#arPanel .ar-bline .dimg{flex:none;margin-left:2px}
