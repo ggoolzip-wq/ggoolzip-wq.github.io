@@ -2,6 +2,9 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b294b (핫픽스)
+- 보스 득템 자동 기록 안내 창의 예시 이미지(data/ar_guide_*.webp)가 Cloudflare Pages 배포 폴더에 빠져 깨지던 문제: tools/pages_dist.sh가 data/ar_guide_*.webp도 복사하도록 수정.
+
 ## b294 — 닉네임 즉시 인식 + '보스 득템 자동 기록' 탭 (2026-10-30 KST)
 - 원인: 이름 OCR이 arFrame2 안에서 ocrEvery(3초)마다, 맵 OCR·아이템 단계 뒤에 순서대로 돌았음 + 오인식(예: 드티니)은 퍼지 기준 못 넘어 옛 이름(stickySec 600) 유지 + OCR 모델은 arStart 때 늦게 불러옴.
 - 고침: arNameWatch(200ms) — 상태바 이름 칸 96x12 축소 비교, 바뀌면(평균차 ≥3) 4초 안 바로 OCR, 이름 없으면 1초마다, 배율 3/4 번갈아. arLoose 느슨 자모 매칭(거센→예사소리, ㅇ→ㄴ, 받침 무시, 같은 글자 수, 0.9 가중, 2위와 .15 차). getDisplayMedia 직후 arOcrLoad 미리 불러옴.
