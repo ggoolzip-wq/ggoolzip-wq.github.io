@@ -2454,3 +2454,34 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - arMesoNow: 같은 (캐릭터·인벤·창고·창 종류) 값이 연속 `mesoVotes`(기본 3)번 읽혀야 saveMeso. 1초 주기라 저장까지 약 3초. 그 전엔 {why:'vote',votes}.
 - 사용자 예시 이미지(203억 2829만 4388)는 box에 파일이 없어 fixture/8·0 분류 개선은 못 함 — 이미지 받으면 숫자 모양(가운데 가로획·구멍 2개) 검사 추가 예정.
 - b302: 1번만 읽으면 저장 안 함 확인 추가, 기존 20장 그대로 통과.
+
+## t551/t552 (2026-10-31 KST) 목록에 없는 닉네임 → 캐릭터 '-' · 기록 대상 없음
+- 원인: arTarget()이 인식 캐릭터(det.cid)가 비면 수동 선택(cfg.cid)·활성 캐릭터(activeChar)로 넘어가서, 목록에 없는 캐릭터로 플레이해도 이전 캐릭터에 기록됨. 또 상태바가 바뀌어도 stickySec 동안 직전 이름 유지.
+- 수정: 화면 공유 중(arLive)에는 det.cid 없으면 대상 null → 아이템(arRecord)·메소(arMesoNow nocid)·클리어 시간(arClrFinish) 저장 안 함.
+- 상태바 OCR 처리를 arNameRes(t)로 분리: 'Lv.### 이름'이 읽혔는데 목록에 없으면(상태바 변경 후) 즉시 det.cid='' + unkName → 캐릭터 카드 '-'.
+- t552: 빈 OCR·잡음(검은 화면, 맵 이동)이면 직전 캐릭터 유지 (예전 stickySec 후 비우던 코드 제거, arFrame 경로도 동일).
+- "왼쪽 아래 상태바 'Lv.000 이름'을 읽어요 → 지금 기록 대상: …" 문구 제거.
+- 테스트 tests/test_b309.py (스크린샷 tests/out/b309_{known,unknown}.png).
+
+## t554/t555 (2026-10-31 KST) 메소 단일 판독 즉시 확정 + 서버 저장 1분 스로틀 (t550 3회 다수결 폐기)
+- 문제: 3번 연속 같은 값이어야 저장 → 사냥 중 메소가 계속 변하면 영원히 저장 안 됨.
+- arMesoRead 가 hi(배율 3·4 판독이 처음부터 전 자리 일치 = 글리프 신뢰도 높음)를 돌려줌. hi 면 그 판독 1번으로 즉시 확정.
+  hi 가 아니면(배율 2까지 가서 겨우 맞춘 판독) ARX.mesoSus 에 두고, 다음 판독이 같은 값이면 확정(why2='recheck'), 다르면 계속 보류(why='suspect').
+- t555: 직전값 대비 급증 상한(튐 검사) 없음 — 결정석 판매로 한 번에 50억+ 가능.
+- 저장: arMesoSave → ARX.mesoPend 에 최신 값, arMesoFlush 가 값이 바뀌었을 때만, 최소 1분(cfg.mesoSaveMs=60000) 간격으로 saveMeso. 보류값은 arMesoTick 마다 확인, 연결 끊을 때 강제 저장.
+- 참고: Tesseract 자리별 confidence 는 지금 OCR 래퍼(arOcr)가 글자만 돌려줘서 못 씀 → '여러 배율 전 자리 일치'를 신뢰도로 사용.
+- 테스트 tests/test_b310.py, test_b302 수정(1번 판독 즉시 저장).
+
+## t556 (2026-10-31 KST) 현재 보스 상태: 못 읽으면 유지, 무관한 맵이면 '-'
+- arMapState: 맵 이름 OCR 이 비었거나 글자 2개 미만(검은 화면·맵 이동) → mapSt/det.boss/lock 그대로(대기 중/진행 중/보상 인식 중 유지).
+- 글자는 읽혔는데 보스 맵 표에 없음이 2번 연속(잡음 1번 무시) → mapSt·det.boss·lock·box 비움 → 현재 보스 '-', 기록 안 함.
+- arFrame 의 stickySec 만료로 보스 비우는 경로도 맵 이름을 실제로 읽었을 때만.
+- 테스트 tests/test_b311.py, 스크린샷 tests/out/b311_{keep,off}.png.
+
+## t558 (2026-10-31 KST) 도핑 준비 맵 = 대기맵 이름 + <난이도> → 대기 중(노랑), 태그로 난이도 갱신
+- /workspace/bossmaps/boss_maps.json (사본 tests/fixtures/boss_maps.json): 보스마다 waiting_base(태그 없는 대기맵), prep{난이도:[대기맵 <난이도>, id]} 추가.
+- arDetectBMap 은 원래 태그를 떼고 이름 비교 + 태그로 난이도(runDiff 갱신). 버그였던 것:
+  - arDetectBoss 의 옛 보상 규칙(AR_REWARD 부분 일치)이 '욕망의 제단 입구 <하드>'·'공허의 눈 앞 <카오스>' 등을 보상 맵으로 잡음 → 표에 정확히 있는 대기(w) 맵이면 옛 규칙 안 탐, '입구/앞' 검사도 태그 뗀 뒤.
+  - 루시드 대기맵 '꿈의 도시 레헬른：악몽의 시계탑' 이 전투·보상 '레헬른：악몽의 시계탑' 과 이름 같음 → 지역명(AR_WREG)으로 구분.
+  - 세렌 '왕궁 메인홀'·검마 '거인의 심장'은 대기·보상(세렌은 1페이즈도) 이름·지역 모두 같음 → 상자 보이기 전엔 대기 중, 상자 보이면 보상 인식 중 (세렌 1페이즈도 노랑으로 보임 — 이름만으로 구분 불가).
+- 테스트 tests/test_b312.py (18보스 대기맵·준비맵 전부).
