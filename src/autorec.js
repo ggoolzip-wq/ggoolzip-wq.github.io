@@ -109,11 +109,11 @@ function arUiScale(gw,gh){ const o=+ARX.cfg.uiScale||0; if(o>0) return o; const 
 /* t523: 해상도 프로필 5종 (사용자 기준 스크린샷 20장 실측). s=UI 배율(1920 최적 = 1). 기본 비율 = 1366x768 화면을 통째로 키운 것.
  * 고정 영역(px, 게임 화면 기준): inv=인벤토리 메소, sto=창고 메소, stoInv=창고 열었을 때 옆 인벤토리 메소. 텍스트·닉네임은 AR_UI×s, 상자(월드)는 화면 높이 비율 */
 const AR_PROF=[
-  {id:'1366',w:1366,h:768,s:1,lab:'1366 x 768',inv:[550,538,272,26],sto:[635,582,200,30],stoInv:[877,582,188,30]},
-  {id:'1920o',w:1920,h:1080,s:1,lab:'1920 x 1080(최적 비율)',inv:[728,674,272,26],sto:[830,728,200,30],stoInv:[1072,728,188,30]},
-  {id:'1920b',w:1920,h:1080,s:1.40625,lab:'1920 x 1080(기본 비율)',inv:[773,757,382,37],sto:[776,804,281,42],stoInv:[1118,804,264,42]},
-  {id:'2560b',w:2560,h:1440,s:1.875,lab:'2560 x 1440(기본 비율)',inv:[1031,1009,510,49],sto:[1037,1073,375,56],stoInv:[1491,1073,352,56]},
-  {id:'2560o',w:2560,h:1440,s:2,lab:'2560 x 1440(최적 비율)',inv:[100,1012,544,52],sto:[1020,1096,400,60],stoInv:[1504,1096,376,60]}];
+  {id:'1366',w:1366,h:768,s:1,lab:'1366 x 768',inv:[550,538,272,26],sto:[635,582,200,30],stoInv:[877,582,218,30]},
+  {id:'1920o',w:1920,h:1080,s:1,lab:'1920 x 1080(최적 비율)',inv:[728,674,272,26],sto:[830,728,200,30],stoInv:[1072,728,218,30]},
+  {id:'1920b',w:1920,h:1080,s:1.40625,lab:'1920 x 1080(기본 비율)',inv:[773,757,382,37],sto:[776,804,281,42],stoInv:[1118,804,306,42]},
+  {id:'2560b',w:2560,h:1440,s:1.875,lab:'2560 x 1440(기본 비율)',inv:[1031,1009,510,49],sto:[1037,1073,375,56],stoInv:[1491,1073,408,56]},
+  {id:'2560o',w:2560,h:1440,s:2,lab:'2560 x 1440(최적 비율)',inv:[100,1012,544,52],sto:[1020,1096,400,60],stoInv:[1504,1096,436,60]}];
 const AR_LVTPL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACIAAAAYCAAAAAC6zXDVAAACW0lEQVQoFWXBSY9MURgG4Pc759x7q25N3apVIWLYlBpiWIgYYk6ERhohSC+wEbEgISGGBRYkxJBYCCLCgq2QIBaN8BMs/AAJCaV1tRruufecT8vpTfM81ICjfpRi6GxPAIwJlCgx807q06et1MCk7JhQOugp/MXQ5Z/6yP4Xp/qnUR1Oacu9QBlKJAAGwIiz+w6cG8nEVIez9Oz2AGQEA4wJXjuTVFc8a7KkOpzateVlnQu2vfnmz1v+KBUpjjIdI3yeT3U4iy+sKfb82bde3smdn3FIBTSWb+fbstO4QnU4C89sLnMbN/MH048/Hy9DF1o+ydaqE2mqw1lyZm0xTb09245Nv3rj1axm4HPHx9rh0nuqw2lcXD1g/PTM61fKw4d+pRE0s7a94bh3/zHV4Cy4uHFOV3ud52/7CkcKUV7LOCyeKz94WKYanEWnN5R9Ynt07sC726VuEFHw/fCO95fzlmpwKpcGvZRq5dfvzV17PTC91Pyi5K7Buy+LCdXg1E9++8XZe1+LV+VQWu4bevFEqN07R1rjIVXhTFsnlOiN/Eht4qcFtWrlxw863LIrySCmKhw/0jFEQNL0kn4bU6QyRscdoVNUxaROBsamxvs0+10BjjySsIKjDC2A4xkrYg828lSSiEBxLIygnukbpwocK6Oc5d+hihOZ1+0oMGE3SVFuNEUVOGQjH8KkY04oFio0MUsP7Sg0VIHDJDUp2ZHChqP5WAtfS5uE1kiqMEmryWP8ixkgAFS1IDAJg/8x/qJlZC0JsoSpGAQwg0D9CrGVMBJTMQTAzBJ/AFRD8y/NHqJpAAAAAElFTkSuQmCC'; // 1배 'Lv.' 글자+레벨 바 (34x24, 05번 스크린샷)
 function arLvTpl(){ if(ARX.lvT) return ARX.lvT; return ARX.lvT=new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>res(null); im.src=AR_LVTPL; }); }
 function arGray(g,w,h){ const d=g.getImageData(0,0,w,h).data, o=new Float32Array(w*h); for(let i=0;i<w*h;i++) o[i]=d[i*4]*.299+d[i*4+1]*.587+d[i*4+2]*.114; return o; }
@@ -446,6 +446,30 @@ async function arConnect(){ if(arLive()) return arPanel(true); if(ARX.stream||AR
   catch(e){ console.warn('[분석 시작 실패 → 메인 스레드로]',e); try{ ARX.wkOff=String(e); try{ ARX.wk?.terminate(); }catch(_){ } ARX.wk=null; arStart(ARX.video||document.querySelector('video[style*="-9999px"]')); }catch(e2){ ARX.connErr='분석 시작 실패: '+(e2?.message||e2); try{ arDisconnect(); }catch(_){ } arPanel(true); } } }
 /* b294: 상태바 이름 빠른 감시 — 0.2초마다 이름 영역 축소본(96x12)만 비교, 바뀌었거나(캐릭터 접속·변경) 아직 못 읽었으면 바로 OCR 1번.
    예전: 맵+이름 OCR 을 3초(ocrEvery)마다 한 번, 보스·아이템 처리 뒤에 → 접속 후 이름 인식까지 7~9초 */
+/* t520u: 보유 메소 — 프로필 고정 영역(인벤 'inv' / 창고 열림 'sto'+'stoInv')에서 읽음. 닉네임 → 메소 → 닉네임 순서, 앞뒤 닉네임이 같을 때만 저장 */
+function arMesoParse(t){ let s=String(t||'').replace(/[Oo○◯]/g,'0').replace(/[Il!]/g,'1').replace(/[역얻억엌먹]/g,'억').replace(/[민많안믄맨반]/g,'만').replace(/[죠즈]/g,'조').replace(/[^0-9조억만]/g,'');
+  const m=s.match(/^(?:(\d{1,4})조)?(?:(\d{1,4})억)?(?:(\d{1,4})만)?(\d{1,4})?$/); if(!s||!m||!/\d/.test(s)) return null;
+  return (+m[1]||0)*1e12+(+m[2]||0)*1e8+(+m[3]||0)*1e4+(+m[4]||0); }
+function arMesoPanel(src,k){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR(k,src); if(!sw||!sh||!r) return false; const cv=arCrop(src,sw,sh,{x:r.x+r.w*.18,y:r.y+r.h*.15,w:r.w*(k==='inv'?.5:.8),h:r.h*.7});
+  const d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height).data; let wh=0,dk=0,n=d.length/4; for(let i=0;i<d.length;i+=4){ const lo=Math.min(d[i],d[i+1],d[i+2]), hi=Math.max(d[i],d[i+1],d[i+2]); if(lo>205) wh++; else if(hi<120) dk++; }
+  return wh/n>.55&&(k==='sto'||dk/n>.01); } // 흰 바탕 + 어두운 숫자 = 메소 칸
+async function arMesoRead1(src,k,sc,thr){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR(k,src); const cv=arCrop(src,sw,sh,{x:r.x+r.w*.17,y:r.y,w:r.w*(k==='inv'?.53:.79),h:r.h},sc);
+  const g=cv.getContext('2d',{willReadFrequently:true}), im=g.getImageData(0,0,cv.width,cv.height), d=im.data; for(let i=0;i<d.length;i+=4){ d[i]=255-d[i]; d[i+1]=255-d[i+1]; d[i+2]=255-d[i+2]; } g.putImageData(im,0,0); // 어두운 글자 → 밝게 (arOcr 는 밝은 글자용)
+  const t=await arMesoOcr(cv,thr); return {t,v:arMesoParse(t)}; }
+/* 배율 3·4 두 번 읽어 같을 때만 인정 (다르면 배율 2로 한 번 더 → 두 번 나온 값) */
+async function arMesoRead(src,k){ const thr=+ARX.cfg.mesoThr||100, sl=ARX.cfg.mesoSc?[+ARX.cfg.mesoSc]:[3,4,2], got=[]; let t='';
+  for(const sc of sl){ const r=await arMesoRead1(src,k,sc,thr); t=t||r.t; if(r.v==null) continue; if(got.includes(r.v)||sl.length===1) return {t:r.t,v:r.v}; got.push(r.v); }
+  return {t,v:null}; }
+/* 메소 전용 워커: 숫자·조억만만 허용(한 줄) → '억'을 '먹', '만'을 '반'으로 읽는 일 줄임 */
+function arMesoWLoad(){ if(ARX.ocrMP) return ARX.ocrMP; ARX.ocrMP=arOcrLoad().then(()=>window.Tesseract?Tesseract.createWorker('kor',1,{workerPath:new URL('ocr/worker.min.js',location.href).href,corePath:new URL('ocr/',location.href).href,langPath:new URL('ocr',location.href).href,gzip:false,workerBlobURL:false}):null)
+  .then(async w=>{ if(w) await w.setParameters({tessedit_char_whitelist:'0123456789조억만 ',tessedit_pageseg_mode:'7'}); return ARX.ocrM=w; }).catch(e=>{ ARX.ocrMP=null; }); return ARX.ocrMP; }
+async function arMesoOcr(cv,thr){ await arMesoWLoad(); if(!ARX.ocrM) return arOcr(cv,thr,1); const k=ARX.ocrF; ARX.ocrF=ARX.ocrM; try{ return await arOcr(cv,thr,1); } finally{ ARX.ocrF=k; } }
+async function arMesoNow(src){ const cid0=ARX.det.cid; if(!cid0) return {why:'nocid'}; const stoOpen=arMesoPanel(src,'sto')&&arMesoPanel(src,'stoInv'), invOpen=!stoOpen&&arMesoPanel(src,'inv'); if(!stoOpen&&!invOpen) return {why:'closed'};
+  const a=await arMesoRead(src,stoOpen?'stoInv':'inv'), b=stoOpen?await arMesoRead(src,'sto'):null; if(a.v==null) return {why:'ocr',t:a.t};
+  const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, nt=await arOcr(arCrop(src,sw,sh,arR('name',src),arSc(sh,3,src)),150,1), cid1=(ARX.nameOf||arDetectChar)(nt); /* nameOf: 테스트용 */
+  if(cid1!==cid0||ARX.det.cid!==cid0) return {why:'name',cid0,cid1}; // 메소 읽는 동안 캐릭터가 바뀌었으면 버림
+  const res={cid:cid0,inv:a.v,sto:b&&b.v!=null?b.v:null,src:stoOpen?'storage':'inventory'}; if(typeof saveMeso==='function'&&saveMeso(cid0,res.inv,res.sto)) arLog(`보유 메소 저장: ${(S.characters.find(c=>c.id===cid0)||{}).name||''} ${fmtMesoFull(res.inv)}${res.sto!=null?` · 창고 ${fmtMesoFull(res.sto)}`:''}`); return res; }
+function arMesoTick(src,now){ if(ARX.mesoBusy||now-(ARX.mesoT||0)<(+ARX.cfg.mesoEvery||4000)) return; ARX.mesoT=now; ARX.mesoBusy=true; arMesoNow(src).then(r=>{ ARX.mesoLast=r; }).catch(()=>{}).finally(()=>{ ARX.mesoBusy=false; }); }
 function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return; const r=arR('name',src), now=Date.now(); if(!ARX.bbT||now-ARX.bbT>3000){ ARX.bbT=now; const b=arBBox(src); const k=b?[b.x,b.y,b.w,b.h].map(v=>Math.round(v/16)).join(','):''; if(k!==ARX.bbKey){ ARX.bbox=b; ARX.bbKey=k; ARX.profT=0; } }
   if(!ARX.profBusy&&(!ARX.profT||now-ARX.profT>(ARX.prof?15000:3000))){ ARX.profT=now; ARX.profBusy=true; const was=ARX.prof?.lab; arProfDetect(src).then(P=>{ ARX.profBusy=false; if(P&&P.lab!==was){ arLog(`해상도 프로필: ${P.lab} (UI 배율 ${P.s}, 일치 ${P.score})`); try{ arPanel(); }catch(e){} } }).catch(()=>{ ARX.profBusy=false; }); }
   const sm=ARX.nsm||(ARX.nsm=document.createElement('canvas')); sm.width=96; sm.height=12; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,96,12);
@@ -453,6 +477,7 @@ function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, 
   const changed=!p||diff/(96*12*3)>=3; ARX.nprev=Uint8ClampedArray.from(d); if(changed){ ARX.nChgT=now; ARX.nameOk=false; }
   const need=(!ARX.nameOk&&now-(ARX.nChgT||0)<4000)||(!ARX.det.cid&&now-(ARX.nOcrT||0)>1000)||now-(ARX.nOcrT||0)>ARX.cfg.ocrEvery;
   if(ARX.nameBusy&&now-(ARX.nOcrT||0)>(+ARX.cfg.ocrTimeout||6000)+2000) ARX.nameBusy=false; /* b296: 바쁨 표시가 안 풀리면 강제로 풂 */ if(!ARX.ocr){ if(!ARX.ocrP) try{ arOcrLoad(); }catch(e){} return; } /* b296: 워커가 죽었으면 다시 띄움 */
+  arMesoTick(src,now); /* t520u: 인벤·창고 창이 열려 있으면 보유 메소 읽기 */
   if(!need||ARX.nameBusy) return; ARX.nameBusy=true; ARX.nOcrT=now; const cv=arCrop(src,sw,sh,r,arSc(sh,[3,4,2][(ARX.nTry=(ARX.nTry||0)+1)%3],src)); /* 못 읽으면 다음 번엔 다른 배율 */
   return arOcr(cv,150,1).then(t=>{ ARX.nameText=t; const cid=arDetectChar(t), n2=Date.now(); if(cid){ ARX.nameOk=true; ARX.cidT=n2; if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=n2-(ARX.nChgT||n2); arLivePaint(); } }
     else if((ARX.nChgT||0)>(ARX.cidT||0)&&n2-ARX.nChgT>ARX.cfg.stickySec*1000) ARX.det.cid=''; /* b296: 상태바가 안 바뀌었으면 마지막 확인 이름 유지 */ }).catch(()=>{}).finally(()=>{ ARX.nameBusy=false; }); }

@@ -1130,6 +1130,7 @@ async function listAccount(a){
     all.push({ocid:id,character_name:name,world_name:String(ch.world_name||''),character_class:String(ch.character_class||''),character_level:Number(ch.character_level)||0,account_id:String(x?.account_id||''),accIdx:i});
   }); });
   listCache[a.id]={all,accounts:accs.length,at:Date.now(),key:a.key};
+  for(const c of S.characters){ const x=c.ocid&&all.find(y=>y.ocid===c.ocid); if(x&&x.account_id) c.mapleAcc=x.account_id; } // t520u: 메소를 메이플 ID별로 묶을 때 씀
   a.status={ok:true,count:all.length,accounts:accs.length,at:Date.now(),msg:''};
   return all;
 }
@@ -1758,6 +1759,14 @@ function tsvAnim(chart){ if(window.matchMedia&&matchMedia('(prefers-reduced-moti
     const step=now=>{ if(!g.isConnected) return; const q=Math.min(1,(now-t0)/D); if(q>=1){ set(T); g.dataset.tanim='done'; return; } set(fmt(v*(1-Math.pow(1-q,3)))+m[2]); requestAnimationFrame(step); };
     requestAnimationFrame(step); }); }
 /* b150: 1억 이상은 소수 둘째 자리 억(32.51억), 1조 이상은 조(1.23조) — 사이트 전체 공통 */
+/* t520u: 보유 메소 전체 표기 "1조 2345억 6789만 1234메소" · 메이플 ID(account_id)별로 묶어 저장 */
+function fmtMesoFull(n){ n=Math.max(0,Math.round(+n||0)); const u=[[1e12,'조'],[1e8,'억'],[1e4,'만']], p=[]; let r=n; for(const [d,l] of u){ const q=Math.floor(r/d); r-=q*d; if(q||p.length) p.push(q+l); } p.push(r+'메소'); return p.join(' '); }
+function mapleAccOf(c){ if(!c) return ''; if(c.ocid) for(const k in listCache){ const x=(listCache[k].all||[]).find(y=>y.ocid===c.ocid); if(x&&x.account_id){ c.mapleAcc=x.account_id; break; } } return c.mapleAcc||''; }
+const mesoKey = c => { const a=mapleAccOf(c); return a?'a:'+a:'c:'+c.id; };
+function mesoOf(c){ return c&&(S.meso||{})[mesoKey(c)]||null; }
+function saveMeso(cid,inv,sto){ const c=S.characters.find(x=>x.id===cid); if(!c||!(inv>=0)) return false; S.meso=S.meso||{}; const k=mesoKey(c), o=S.meso[k]||{};
+  S.meso[k]={inv:Math.round(inv),sto:sto!=null&&sto>=0?Math.round(sto):(o.sto??null),stoAt:sto!=null?Date.now():(o.stoAt||0),at:Date.now(),by:c.id,name:c.name}; save(); try{ render(); }catch(e){} return true; }
+const mesoTime = t => { const d=new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
 function fmtEok(n){ n=+n||0; const a=Math.abs(n); return a>=1e12?(n/1e12).toFixed(2)+'조':(n/1e8).toFixed(2)+'억'; }
 function meso(n){
   n=Math.round(n||0); if(n===0) return '0 메소';
@@ -2047,6 +2056,7 @@ function renderBoss(){
       <div class="muted">Lv.${esc(c.level||'?')} · ${esc(c.job||'')} · ${esc(worldOf(c))}${(()=>{ const ex=remainingWeekly(c); if(!ex.list.length&&!ex.mon.length) return ''; // 주간 12개 + 월간 다 잡으면 숨김
         return ` <span class="expinc" title="${esc(`남은 예상 수익 — 이번 주 ${ex.done}/${S.settings.weeklyLimit} 처치, 남은 ${ex.left}칸을 아직 안 잡은 보스 중 1인당 결정석 가격 상위로 채울 때\n`+[...ex.list,...ex.mon].map(x=>`· ${x.monthly?'[월간] ':''}${bossTag(x)} ${meso(x.value)}`).join('\n'))}">${miniIcon('ipc')}예상 <b>${meso(ex.meso)}</b><small>(${[ex.list.length?`상위 ${ex.list.length}개`:'',ex.mon.length?`월간 ${ex.mon.length}개`:''].filter(Boolean).join(' + ')})</small>${(u=>u!==null&&u!==ex.meso?`<small class="exp-up">테섭 예정 → ${meso(u)}</small>`:'')(withUpcoming(()=>remainingWeekly(c).meso))}</span>`; })()}</div><div style="margin-top:4px;font-size:.85rem">${syncLine}</div>${bossNextNote(c)}</div></div>
     ${c.medal?.bad?`<div class="medalrow" role="alert" title="${esc(medalTip(c))}"><span class="mdico"><img src="${ITEM_ICONS.pcmedal||''}" alt="${MEDAL_BAD} 훈장" width="32" height="32"><span class="mdtri" aria-hidden="true">!</span></span><span class="mdtxt">${c.medal.empty?`보스 프리셋${c.medal.preset?" "+c.medal.preset:""}에 훈장이 없는 캐릭터 입니다.`:"프리미엄 PC방 훈장을 착용한 캐릭터 입니다."}</span></div>`:''}
+    ${(m=>m?`<div class="mesorow"><span class="mesolast" title="${esc(`자동 기록 화면에서 읽은 값 (${m.name||''})${m.sto!=null?`\n창고 메소: ${fmtMesoFull(m.sto)}`:''}`)}">최근 보유 메소 : ${fmtMesoFull(m.inv)} (${mesoTime(m.at)})${m.sto!=null?` <span class="mesosto">· 창고 ${fmtMesoFull(m.sto)}</span>`:''}</span></div>`:'')(mesoOf(c))}
     <div class="stats s3">
       <div class="stat"><div class="k">이번 주 주간 보스 수익</div><div class="v acc tirv">${tirMeso(r.meso+pWeekMonthly({c,r}).meso+pItemSale(c),'ci:'+c.id)}</div></div>
       <div class="stat" data-gk="wk:${esc(c.id)}" data-gy="cnt" data-gw="${Math.min(100,r.weekly/lim*100)}" data-gn="${r.weekly}"><div class="k">주간 보스 처치</div><div class="v"><span class="gnum">${r.weekly}</span> / ${lim}</div><div class="bar ${r.weekly>lim?'over':''}"><i data-gbar style="width:${Math.min(100,r.weekly/lim*100)}%"></i></div></div>

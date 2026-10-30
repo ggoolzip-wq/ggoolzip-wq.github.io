@@ -2049,3 +2049,9 @@ header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 #view .card.empty #importAccBtn::after,#view .dmkey #importAccBtn::after{box-shadow:0 0 8px 1px color-mix(in srgb,var(--nb1) 60%,transparent),0 0 26px 4px color-mix(in srgb,var(--nb2) 30%,transparent)}
 #arPanel .ar-prof{margin-left:8px;font-size:.74rem;font-weight:600;letter-spacing:.02em;color:var(--gtxt);opacity:.85;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){#arGuide .ar-gf .btn[data-arg="ok"],#arPanel .btn.ar-roib,#addCharBtn,#importAccBtn{transition:none}}
+
+/* t520u: 최근 보유 메소 — '이번달 검마' 칸 바로 위 (3열 중 셋째 칸에 맞춤) */
+.mesorow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 4px}
+.mesorow .mesolast{grid-column:2 / 4;justify-self:end;font-size:12px;color:var(--muted,#8a8f98);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.mesorow .mesosto{opacity:.8}
+@media(max-width:600px){.mesorow{grid-template-columns:1fr}.mesorow .mesolast{grid-column:1;white-space:normal}}
