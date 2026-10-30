@@ -40,7 +40,7 @@ try:
     st=pg.evaluate("({gdm:window._gdm,sync:window._gdmSync,panel:!!document.querySelector('#arPanel'),txt:document.querySelector('#arPanel')?.innerText||''})")
     check('헤더 버튼 한 번 → getDisplayMedia 1번 (클릭 처리 안에서 바로)', len(st['gdm'])==1 and st['sync'], st['gdm'])
     check('frameRate 는 ideal (exact 아님)', 'ideal' in st['gdm'][0] and 'exact' not in st['gdm'][0], st['gdm'])
-    check('패널: 연결됨 + 분석 fps 표시', '연결됨' in st['txt'] and '분석' in st['txt'] and 'fps' in st['txt'], st['txt'][:300])
+    check('패널: 연결됨 (b296: 분석 fps 줄은 숨김)', '연결됨' in st['txt'] and '분석 fps' not in st['txt'], st['txt'][:300])
     if SD: os.makedirs(SD,exist_ok=True); pg.screenshot(path=os.path.join(SD,'connected.png'))
     # 끊긴 스트림 (트랙 ended 이벤트 없이 멈춤) → 다시 누르면 새로 연결
     pg.evaluate("()=>{ const t=window.AR.stream.getVideoTracks()[0]; t.removeEventListener('ended',arDisconnect); t.stop(); }")

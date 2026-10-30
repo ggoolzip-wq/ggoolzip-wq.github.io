@@ -10,7 +10,7 @@ const AR_KEY='mbt_autorec';
 /* b284: 실제 화면(1920x1080, 13장) 기준으로 튜닝. 영역은 전부 화면 비율이라 해상도와 무관.
  *  1순위 = 오른쪽 아래 획득 로그 OCR ('<아이템>.. 아이템을 N 개 얻었습니다') — 자주(logFps) 잘라 읽고, 이전 프레임 줄과 맞춰 새 줄만 1번씩 셈.
  *  2순위 = 가운데 획득 배너('<아이템>를 획득했습니다.') 아이콘 매칭 + 바닥 아이콘 — 로그와 같은 아이템이면 dedup 으로 한 번만. */
-const AR_DEF={on:true, fps:3, ocrEvery:3000, logFps:6, stickySec:600,
+const AR_DEF={on:true, fps:3, ocrEvery:3000, ocrTimeout:6000, logFps:6, stickySec:600,
   item:{x:0,y:.2,w:1,h:.76},      // 바닥·공중 아이콘 찾는 영역 (b287: 화면 전체 폭 — 왼쪽 끝 상자도)
   banner:{x:.25,y:.15,w:.5,h:.17}, // b288: 위쪽 '남은 시간' 타이머 상자(y<.145)가 불멸의 유산으로 오인식돼 제외  // 가운데 획득 배너 (아이콘)
   log:{x:.68,y:.55,w:.32,h:.33},  // 오른쪽 아래 획득 로그 (OCR, 1순위)
@@ -275,7 +275,9 @@ function arCrop(src,sw,sh,r,scale=1){ const cv=document.createElement('canvas');
 async function arOcr(cv,thr=150){ await arOcrLoad(); if(!ARX.ocr) return ''; const g=cv.getContext('2d',{willReadFrequently:true}), im=g.getImageData(0,0,cv.width,cv.height), d=im.data;
   for(let i=0;i<d.length;i+=4){ const v=Math.max(d[i],d[i+1],d[i+2]); const o=v>thr?0:255; d[i]=d[i+1]=d[i+2]=o; } g.putImageData(im,0,0); // 밝은 글자 → 흰 바탕 검은 글자
   const pc=document.createElement('canvas'); pc.width=cv.width+24; pc.height=cv.height+24; const pg=pc.getContext('2d'); pg.fillStyle='#fff'; pg.fillRect(0,0,pc.width,pc.height); pg.drawImage(cv,12,12); // 흰 여백 (tesseract 가 가장자리 글자를 덜 놓침)
-  const r=await ARX.ocr.recognize(pc); return (r?.data?.text||'').trim(); }
+  const w=ARX.ocr, T=+ARX.cfg.ocrTimeout||6000; let to; // b296: tesseract 가 응답 안 하면(멈춤) 끝없이 기다리지 않음 → 시간 초과 시 워커를 버리고 다음에 새로 띄움
+  try{ const r=await Promise.race([w.recognize(pc),new Promise((_,rej)=>{ to=setTimeout(()=>rej(new Error('ocr timeout')),T); })]); return (r?.data?.text||'').trim(); }
+  catch(e){ if(String(e).includes('ocr timeout')&&ARX.ocr===w){ ARX.ocrHang=(ARX.ocrHang||0)+1; ARX.ocr=null; ARX.ocrP=null; try{ w.terminate?.(); }catch(_){} } throw e; } finally{ clearTimeout(to); } }
 /* 한 프레임 처리 (src = video 또는 canvas) — 테스트도 이걸 바로 부름 */
 async function arLogFrame(src){ if(ARX.logBusy) return; ARX.logBusy=true; try{ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return;
     return arLogStep(await arOcr(arCrop(src,sw,sh,ARX.cfg.log,arSc(sh,2)),170)); } finally{ ARX.logBusy=false; } }
@@ -358,9 +360,10 @@ function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, 
   const d=g.getImageData(0,0,96,12).data, p=ARX.nprev; let diff=0; if(p) for(let i=0;i<d.length;i+=4) diff+=Math.abs(d[i]-p[i])+Math.abs(d[i+1]-p[i+1])+Math.abs(d[i+2]-p[i+2]);
   const changed=!p||diff/(96*12*3)>=3; ARX.nprev=Uint8ClampedArray.from(d); if(changed){ ARX.nChgT=now; ARX.nameOk=false; }
   const need=(!ARX.nameOk&&now-(ARX.nChgT||0)<4000)||(!ARX.det.cid&&now-(ARX.nOcrT||0)>1000)||now-(ARX.nOcrT||0)>ARX.cfg.ocrEvery;
-  if(!need||ARX.nameBusy||!ARX.ocr) return; ARX.nameBusy=true; ARX.nOcrT=now; const cv=arCrop(src,sw,sh,r,arSc(sh,(ARX.nTry=(ARX.nTry||0)+1)%2?3:4)); /* 못 읽으면 다음 번엔 다른 배율 */
+  if(ARX.nameBusy&&now-(ARX.nOcrT||0)>(+ARX.cfg.ocrTimeout||6000)+2000) ARX.nameBusy=false; /* b296: 바쁨 표시가 안 풀리면 강제로 풂 */ if(!ARX.ocr){ if(!ARX.ocrP) try{ arOcrLoad(); }catch(e){} return; } /* b296: 워커가 죽었으면 다시 띄움 */
+  if(!need||ARX.nameBusy) return; ARX.nameBusy=true; ARX.nOcrT=now; const cv=arCrop(src,sw,sh,r,arSc(sh,(ARX.nTry=(ARX.nTry||0)+1)%2?3:4)); /* 못 읽으면 다음 번엔 다른 배율 */
   return arOcr(cv).then(t=>{ ARX.nameText=t; const cid=arDetectChar(t), n2=Date.now(); if(cid){ ARX.nameOk=true; ARX.cidT=n2; if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=n2-(ARX.nChgT||n2); arLivePaint(); } }
-    else if(n2-(ARX.cidT||0)>ARX.cfg.stickySec*1000) ARX.det.cid=''; }).catch(()=>{}).finally(()=>{ ARX.nameBusy=false; }); }
+    else if((ARX.nChgT||0)>(ARX.cidT||0)&&n2-ARX.nChgT>ARX.cfg.stickySec*1000) ARX.det.cid=''; /* b296: 상태바가 안 바뀌었으면 마지막 확인 이름 유지 */ }).catch(()=>{}).finally(()=>{ ARX.nameBusy=false; }); }
 /* b287: 연결된 영상 분석 시작 (테스트는 <video src=mp4> 로 바로 부름). 메인 스레드엔 64x16 배너 비교만 매 프레임 — 나머지는 바뀐 프레임만·예산 안에서·Worker */
 function arStart(v){ ARX.video=v; ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
   ARX.nprev=null; ARX.nameOk=false; clearInterval(ARX.nTimer); ARX.nTimer=setInterval(()=>{ if(ARX.video) arNameWatch(ARX.video); },200);
@@ -395,7 +398,7 @@ function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c
     <div class="card ar-c ar-crec"><h2>이번 판 기록</h2><div class="ar-b"></div></div>
     <div class="card ar-c ar-cset"><div class="ar-b"></div></div></div>`; }
   const q=s=>p.querySelector(s), vid=q('.ar-vid'); if(vid){ const ss=on?ARX.stream:null; if(vid.srcObject!==ss){ vid.srcObject=ss; if(ss) vid.play().catch(()=>{}); } q('.ar-vw').classList.toggle('on',!!ss||!!ARX.testSrc); }
-  q('.ar-sbar').innerHTML=`<span class="ar-st ${on?'on':''}">${on?'● 연결됨':'○ 끊김'}</span><span class="ar-perf" aria-live="off">${arPerfText()}</span><span class="hspace"></span>
+  q('.ar-sbar').innerHTML=`<span class="ar-st ${on?'on':''}">${on?'● 연결됨':'○ 끊김'}</span><span class="hspace"></span>
     <label class="ar-sw"><input type="checkbox" name="on" ${c.on?'checked':''}> 자동 기록</label>${on?'<button type="button" class="btn" data-ar="stop">연결 끊기</button>':'<button type="button" class="btn primary" data-ar="guide">연결</button>'}${ARX.connErr?`<div class="ar-err" role="alert">${esc(ARX.connErr)}</div>`:''}`;
   q('.ar-cchar .ar-b').innerHTML=detC?`<div class="ar-who">${typeof avatar==='function'?avatar(detC):''}<div><div class="ar-big">${esc(detC.name)}</div><div class="muted">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${acc?.name?' · '+esc(acc.name):''}${detC.world?' · '+esc(detC.world):''}</div><small class="ar-ok">상태바 이름 인식${ARX.nameMs!=null?` · ${(ARX.nameMs/1000).toFixed(1)}초`:''}</small></div></div>`
     :`<div class="ar-big dim">${on?'인식 중…':'-'}</div><div class="muted">왼쪽 아래 상태바 'Lv.000 이름'을 읽어요 → 지금 기록 대상: ${esc(t?.c?.name||'-')}</div>`;

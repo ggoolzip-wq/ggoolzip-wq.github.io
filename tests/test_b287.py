@@ -61,7 +61,7 @@ try:
     check('배너로 센 아이템은 바닥에서 다시 안 셈', len([l for l in lg if '자동 기록' in l])==1, lg)
     # 4) 패널: 분석 fps · 놓친 프레임 · 미리보기 끄기
     pg.evaluate("()=>{ window.AR.pf={t0:performance.now()-2000,frames:120,watched:118,missed:2,bannerMs:30,banners:3,items:2,iskip:1,last:null}; window.AR.video={}; arPanel(true); }")
-    txt=pg.inner_text('#arPanel .ar-perf'); check("패널에 '분석 fps · 놓친 프레임' 표시", '분석 fps' in txt and '놓친 프레임' in txt and '2' in txt, txt)
+    txt=pg.inner_text('#arPanel .ar-sbar'); check("b296: 패널에 디버그 줄(분석 fps · 놓친 프레임) 안 보임", '분석 fps' not in txt and '놓친 프레임' not in txt, txt)
     r0=pg.evaluate("!!window.AR.cfg.roi"); pg.evaluate("document.querySelector('#arPanel [data-ar=roi]').click()"); pg.wait_for_timeout(100)
     check('b294: ROI 표시 토글', pg.evaluate("!!window.AR.cfg.roi")!=r0)
     pg.evaluate("()=>{ window.AR.video=null; }")

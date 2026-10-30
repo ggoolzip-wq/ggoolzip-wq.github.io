@@ -2,6 +2,12 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b296 (핫픽스) — 이름 '인식 중…' 고정 버그 · 디버그 줄 삭제 (2026-10-30 KST)
+- 자동 기록 탭 상태 줄: '● 연결됨/○ 끊김' 만. `분석 fps · 놓친 프레임 · full-rate` 줄 삭제(arPerfText 는 남김, 화면엔 안 씀).
+- 원인: ① tesseract recognize 가 응답 없으면 `ARX.nameBusy` 가 영원히 true → 이름 감시 멈춤 ② 상태바가 그대로여도 OCR 이 10분(stickySec) 못 읽으면 det.cid 를 비움 → '인식 중…' ③ 워커가 죽으면 다시 안 띄움.
+- 수정: arOcr 에 시간 초과(cfg.ocrTimeout 6초) → 워커 버리고(terminate) 다음에 arOcrLoad 로 새로; nameBusy 가 시간 초과+2초 넘으면 강제 해제; 상태바가 마지막 확인 뒤 안 바뀌었으면 이름 유지(바뀐 뒤 stickySec 지나야 비움).
+- 테스트 test_b296: 가상 시계 15분 — OCR 못 읽음 11분·멈춤 여러 번·캐릭터 3번 → 이름 빈 적 0, 바꾼 캐릭터 1초 안. b287/b288/b294 디버그 줄 검사를 '안 보임'으로 바꿈.
+
 ## b294b (핫픽스)
 - 보스 득템 자동 기록 안내 창의 예시 이미지(data/ar_guide_*.webp)가 Cloudflare Pages 배포 폴더에 빠져 깨지던 문제: tools/pages_dist.sh가 data/ar_guide_*.webp도 복사하도록 수정.
 
