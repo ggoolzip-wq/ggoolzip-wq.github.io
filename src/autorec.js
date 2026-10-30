@@ -31,7 +31,7 @@ const AR_DEF={on:true, fps:3, ocrEvery:3000, ocrTimeout:6000, logFps:6, stickySe
   airCand:.7,     // b289: 전체 검사에서 이 이상이면 '후보' → 보관해 둔 앞뒤 프레임을 그 근처만 다시 봄 (기록은 airThr·airSad 넘은 것만)
   airKeep:10,     // b289: 보관할 띠 프레임 수 (airFps 6 → 약 1.7초)
   airWin:1.2,     // b289: 후보 앞뒤 몇 초까지 다시 볼지
-  airThr:.76,     // b289: 공중 기준 (v01·v07·v11 백옥 .78~.89 / 엉뚱한 곳·다른 아이콘 ≤ .7)
+  airThr:.73,     // b296: WZ 원본 아이콘 기준 (v01·v07·v11 백옥 .73~.91). b289: 공중 기준 (v01·v07·v11 백옥 .78~.89 / 엉뚱한 곳·다른 아이콘 ≤ .7)
   airSad:40,      // b289: 공중 색 차이 상한 (정답 24~37, 빗나간 각도 ≥ 40)
   itemFps:2,      // b287: 바닥·공중 찾기 최대 횟수/초 (화면이 바뀐 때만, Worker 에서)
   prev:1,         // b287: 미리보기 갱신 횟수/초 (0 = 숨김)
@@ -178,7 +178,7 @@ function arR(k,src){ if(k==='inv'||k==='sto'||k==='stoInv') return arProfR(k,src
   x=Math.max(0,x); y=Math.max(0,y); return {x:x/sw,y:y/sh,w:Math.min(w,sw-x)/sw,h:Math.min(h,sh-y)/sh}; }
 const arGH=(src,sh)=>{ const sw=src?.videoWidth||src?.width; return sw?arGeom(sw,sh).gh:sh; };
 const arUS=(src,sh)=>{ const sw=src?.videoWidth||src?.width; return sw?arGeom(sw,sh).s:1; };
-const arIconPx=(sh,reg,src)=>reg==='banner'?(ARX.cfg.bannerPx>0?ARX.cfg.bannerPx:Math.max(16,Math.round(46*(src?arUS(src,sh):sh/1080)))):(ARX.cfg.iconPx>0?ARX.cfg.iconPx:Math.max(12,Math.round(arGH(src,sh)*36/1080))); // b295: 배너=UI(46px×배율), 바닥=월드(게임 높이 비율)
+const arIconPx=(sh,reg,src)=>reg==='banner'?(ARX.cfg.bannerPx>0?ARX.cfg.bannerPx:Math.max(16,Math.round(56*(src?arUS(src,sh):sh/1080)))):(ARX.cfg.iconPx>0?ARX.cfg.iconPx:Math.max(12,Math.round(arGH(src,sh)*40/1080))); // b295: 배너=UI(46px×배율), 바닥=월드(게임 높이 비율)
 /* 획득 로그 한 줄 → {k,n} (이름은 '앱솔랩스 방어구..' 처럼 잘려 있어 앞부분으로 맞춤) */
 function arLogItem(line){ const L=String(line||''); if(!/[템탬팀플].{0,4}[\d|Il]+\s*[개거]|얻었|얼었|획득|습니|슬니|있슬|었슬|줍니|니다|\(\s*[소기조][비타]|\)\s*$/.test(L)) return null; const q=+(L.match(/(\d+)\s*개/)||[])[1]||1;
   let name=L.split(/\.\s?\.|…|[,.]\s*[가-힣]?[미이비]?[이디]?[템탬팀]|[아마바미][이미디][템탬팀][을흘플즐글를]|을\s*획득|를\s*획득/)[0]; const pm=L.match(/\(([^()]*)\)\s*$/); if(/^\s*\S+\s*아이템을\s*얻었/.test(L)&&pm) name=pm[1]; // '소비 아이템을 얻었습니다 (이름)'
@@ -196,8 +196,10 @@ function arLogStep(text){ const cur=arLogLines(text), add=arLogDiff(ARX.logPrev,
   for(const line of add){ arSoulHint(line); const it=arLogItem(line); if(!it) continue; out.push({...it,line}); ARX.counted.push({k:it.k,n:it.n,line,t:Date.now()}); if(ARX.counted.length>200) ARX.counted.shift(); if(ARX.cfg.on) arRecord(it.k,it.s,'로그',it.n); }
   return out; }
 /* 아이콘 템플릿 (px 크기로 줄인 RGBA) */
+/* b296: WZ 원본 아이콘(가로세로 26~38px, 크기 제각각)은 늘리지 않고 원래 비율·상대 크기 그대로 px×px 칸 가운데에 — px 는 '40px 칸' 기준 (투명 여백은 매칭 제외) */
+const AR_WZREF=40;
 async function arTemplates(keys,px){ px=px||32; const sig=px+'|'+keys.join(','); ARX.tplC=ARX.tplC||{}; if(ARX.tplC[sig]) return ARX.tplC[sig]; const T={};
-  await Promise.all(keys.map(k=>new Promise(res=>{ const im=new Image(); im.onload=()=>{ const cv=document.createElement('canvas'); cv.width=cv.height=px; const x=cv.getContext('2d',{willReadFrequently:true}); x.drawImage(im,0,0,px,px); T[k]=x.getImageData(0,0,px,px).data; res(); }; im.onerror=res; im.src=ITEM_ICONS[k]; })));
+  await Promise.all(keys.map(k=>new Promise(res=>{ const im=new Image(); im.onload=()=>{ const cv=document.createElement('canvas'); cv.width=cv.height=px; const x=cv.getContext('2d',{willReadFrequently:true}); const iw=im.naturalWidth||px, ih=im.naturalHeight||px; if(iw<=AR_WZREF&&ih<=AR_WZREF){ const sc=px/AR_WZREF, w=Math.round(iw*sc), h=Math.round(ih*sc); x.imageSmoothingQuality='high'; x.drawImage(im,Math.round((px-w)/2),Math.round((px-h)/2),w,h); } else x.drawImage(im,0,0,px,px); T[k]=x.getImageData(0,0,px,px).data; res(); }; im.onerror=res; im.src=ITEM_ICONS[k]; })));
   ARX.tplC[sig]=T; return T; }
 /* ===== b287: 매칭 코어 — 순수 함수라 Web Worker 안에서도 그대로 돎 (화면 공유 미리보기 끊김 해결: 무거운 계산은 전부 Worker) ===== */
 function arDown(d,w,h,f){ const W=Math.floor(w/f),H=Math.floor(h/f),o=new Float32Array(W*H*4); for(let y=0;y<H;y++) for(let x=0;x<W;x++){ let r=0,g=0,b=0,a=0;
@@ -292,7 +294,7 @@ async function arFindIcons(img,px,thr,opt){ const C=arCandidates(); if(!C.length
   const r=await arMatchRun(G,keys,opt?.pxs||[px],Object.assign({thr:thr??ARX.cfg.thr},opt||{})); ARX.lastScore=r.scores; ARX.lastMs=r.ms; return r.hits; }
 /* b287: 바닥·공중 아이템 — 파티 격파는 자동으로 안 주워져 바닥에 깔림. 바닥 아이콘은 인벤토리 아이콘보다 ~1.11배 (1080p 에서 64→71px, 상자류 67px).
    공중(튀어 오를 때)은 회전·세로 눌림. 프레임 사이 추적해서 같은 자리면 1번, 배너·로그와는 arRecord 에서 중복 제거 */
-function arGroundPx(sh){ const b=ARX.cfg.iconPx>0?ARX.cfg.iconPx:Math.round(sh*71/1080); return [Math.round(b*.94),b,Math.round(b*1.06)]; }
+function arGroundPx(sh){ const b=ARX.cfg.iconPx>0?ARX.cfg.iconPx:Math.round(sh*84/1080); return [Math.round(b*.97),b,Math.round(b*1.03)]; }
 async function arItemScan(src){ const C=arCandidates(true); if(!C.length) return []; const sh=src.videoHeight||src.height, keys=[...new Set(C.map(c=>c.k))], G=await arGrab(src,arR('item',src)), pxs=arGroundPx(arGH(src,sh));
   const opt={multi:true,tiles:true,sad:ARX.cfg.groundSad,thr:ARX.cfg.groundThr,f:Math.max(2,Math.round(pxs[1]/9)),angles:[0],sq:[1],pxs}; // b289: 공중(회전)은 arAirScan 으로 옮김
   const r0=await arMatchRun(G,keys,pxs,opt); const hits=[...r0.hits];
@@ -302,8 +304,8 @@ async function arItemScan(src){ const C=arCandidates(true); if(!C.length) return
    ③ 공중 회전 단계가 보스 모를 때 모든 아이콘으로 돌아 엉뚱한 아이콘이 이김. 그래서: 위쪽 띠를 airFps 로 떠서 최근 airKeep 장 보관 → 최신 것 전체 검사(회전 airStep 도) →
    후보(airCand 이상)가 보이면 보관해 둔 앞뒤 프레임을 그 자리 근처만 다시 검사 → 기준(airThr·airSad) 넘는 것만 추적, 같은 아이템 2번 보이면 1번 기록 */
 function arAirAngles(){ const st=Math.max(5,+ARX.cfg.airStep||10), a=[]; for(let x=0;x<360;x+=st) a.push(x); return a; }
-async function arAirScan(G,sh,ox,oy,thr){ const C=arCandidates(true); if(!C.length){ G.bmp&&G.bmp.close&&G.bmp.close(); return []; } const keys=[...new Set(C.map(c=>c.k))], px=arGroundPx(sh)[1];
-  const r=await arMatchRun(G,keys,[px],{multi:true,tiles:true,sad:thr<ARX.cfg.airThr?999:ARX.cfg.airSad,thr:thr??ARX.cfg.airThr,f:Math.max(2,Math.round(px/9)),angles:arAirAngles(),sq:[1]});
+async function arAirScan(G,sh,ox,oy,thr){ const C=arCandidates(true); if(!C.length){ G.bmp&&G.bmp.close&&G.bmp.close(); return []; } const keys=[...new Set(C.map(c=>c.k))], gp=arGroundPx(sh), px=gp[1];
+  const r=await arMatchRun(G,keys,[gp[0],px],{multi:true,tiles:true,sad:thr<ARX.cfg.airThr?999:ARX.cfg.airSad,thr:thr??ARX.cfg.airThr,f:Math.max(2,Math.round(px/9)),angles:arAirAngles(),sq:[1]});
   ARX.airScore=r.scores; ARX.airMs=r.ms||0; return r.hits.map(h=>Object.assign(h,{x:h.x+ox,y:h.y+oy,air:true,ok:h.score>=ARX.cfg.airThr&&h.sad<=ARX.cfg.airSad})); }
 async function arAirCrop(e,x,y,w,h){ x=Math.max(0,Math.round(x)); y=Math.max(0,Math.round(y)); w=Math.round(Math.min(w,e.w-x)); h=Math.round(Math.min(h,e.h-y)); if(w<8||h<8) return null;
   if(e.bmp) return {bmp:await createImageBitmap(e.bmp,x,y,w,h)};
@@ -429,8 +431,8 @@ async function arBoxStep(src,force){ if(!arBoxNeed()) return; if(arBoxOk()){ con
   const K=RK.length?RK:Object.keys(AR_BOX), R=force||RK.length?1:Math.max(1,ARX.cfg.boxRounds||3), per=Math.ceil(K.length/R), st=(ARX.boxRR||0)%R; ARX.boxRR=st+1; // 한 번에 1/R 씩 돌아가며 (상자는 몇 초 이상 보임)
   let best=null; for(const k of K.slice(st*per,st*per+per)){ const sc=await arBoxScore(src,k); if(sc>=AR_BOX[k].thr&&(!best||sc-AR_BOX[k].thr>best.sc-AR_BOX[best.k].thr)) best={k,sc}; }
   ARX.boxLast=best?[best.k,+best.sc.toFixed(3)]:null; if(!best) return;
-  arBoxHit(best,now); } finally{ ARX.boxBusy=false; } }
-function arBoxHit(best,now){
+  arBoxHit(best,now,src); } finally{ ARX.boxBusy=false; } }
+function arBoxHit(best,now,src){
   const boss=AR_BOX[best.k].boss||best.k, b=findBoss(boss), m=ARX.mapDet&&ARX.mapDet.boss===boss&&ARX.mapDet.diff?ARX.mapDet.diff:'';
   ARX.box={boss,key:best.k,t:now,score:best.sc}; ARX.det.boss=boss; ARX.det.diff=m; ARX.det.diffSrc=m?'맵 이름':'캐릭터 설정'; ARX.det.src='보상 상자'; ARX.detT=now; arClrFinish(boss,m||ARX.det.diff,now); arLockTry(src,boss,now);
   arLog(`보상 상자 감지: ${b?.name||boss} (${best.sc.toFixed(2)}) → 현재 보스로 정하고 아이템 기록 시작${m?' · 난이도 '+({easy:'이지',normal:'노멀',hard:'하드',chaos:'카오스',extreme:'익스트림'}[m]||m)+' (맵 이름)':' · 난이도는 캐릭터 설정'}`); }

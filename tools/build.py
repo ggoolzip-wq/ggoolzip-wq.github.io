@@ -31,7 +31,7 @@ AUTO = os.path.join(os.path.dirname(os.path.abspath(SRC)), 'data', 'bosses_auto.
 if os.path.exists(AUTO):
     s = s.replace('/*__AUTO_BOSSES__*/{}', json.dumps(json.load(open(AUTO, encoding='utf-8')), separators=(',', ':'), ensure_ascii=False).replace('</', '<\\/'))
 css = rd('style_v1.css').replace('</style>', rd('extra.css') + '</style>')
-LOGO = js("logo.json")  # b109: 강렬한 힘의 결정 (주간) item 4001928 (assets/ringicons/4001928.png) — 예전 주황버섯
+LOGO = js("logo.json")  # b109: 강렬한 힘의 결정 (주간) item 4001928 (현재 원본: assets/itemicons_wz/4001928.png) — 예전 주황버섯
 head = ('<!DOCTYPE html>\n<html lang="ko" data-theme="dark">\n<head>\n<meta charset="UTF-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>메보기 - 메이플 보스 수익·결정석 기록 사이트</title>\n'
         f'<link rel="icon" type="image/png" sizes="32x32" href="{LOGO["s32"]}">\n'

@@ -1,4 +1,4 @@
-# test_b263: 영롱한 달빛 포션(moon, WZ 2023136) = 익스트림 6보스(세렌·칼로스·대적자·카링·림보·발드릭스) 드롭표 기록 가능 칩. 이름 말풍선, 64px 아이콘, 가격순 정렬, 시세 없음 → 수동 입력.
+# test_b263: 영롱한 달빛 포션(moon, WZ 2023136) = 익스트림 6보스(세렌·칼로스·대적자·카링·림보·발드릭스) 드롭표 기록 가능 칩. 이름 말풍선, WZ 원본 아이콘, 가격순 정렬, 시세 없음 → 수동 입력.
 # MBT_ROOT = 다른 빌드(변경 전 사진용, MBT_NOCHECK=1) · MBT_SHOTDIR = 사진 폴더 · MBT_SHOT = before/after
 import os, sys, tempfile, shutil, subprocess, base64, io
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _tutil
@@ -35,7 +35,7 @@ try:
     q=pg.evaluate("""()=>{const d=document.querySelector('.drop[data-drop="kaling|moon"]'); if(!d) return null; const im=d.querySelector('img');
       return {tip:d.getAttribute('data-tip'),txt:d.textContent.trim(),role:d.getAttribute('role'),nw:im&&im.naturalWidth,last:d.parentElement.querySelector('.drop[data-drop]:last-of-type')===d}}""")
     check('칩 = 기록 버튼, 이름·말풍선', q and q['role']=='button' and q['tip']=='영롱한 달빛 포션' and '영롱한 달빛 포션' in q['txt'], q)
-    check('아이콘 64px', q and q['nw']==64, q)
+    check('아이콘 WZ 원본 31px (b296)', q and q['nw']==31, q)
     o=pg.evaluate("""()=>{const b=findBoss('limbo');return [...document.querySelectorAll('.drop[data-drop^="limbo|"]')].map(e=>e.dataset.drop.split('|')[1])}""")
     check('정렬: 가격 없음 → 뒤쪽(반지 상자 앞), 기존 순서 유지', o[-1]=='moon' or o.index('moon')>o.index('whisper'), o)
     t=pg.evaluate("()=>{const t=document.getElementById('mbtTip');return t&&t.classList.contains('show')?t.textContent:null}")

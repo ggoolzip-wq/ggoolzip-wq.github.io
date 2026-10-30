@@ -1,4 +1,4 @@
-# test_b254: 로이드·소울 조각 삭제 · 칼로스/대적자/카링 에테르넬 방어구 상자 + 앱솔랩스/아케인셰이드 상자 = 기록 안 하는 정보 칩(에리온 칩 뒤) · 아이템 아이콘 전부 64px 고화질
+# test_b254: 로이드·소울 조각 삭제 · 칼로스/대적자/카링 에테르넬 방어구 상자 + 앱솔랩스/아케인셰이드 상자 = 기록 안 하는 정보 칩(에리온 칩 뒤) · 아이템 아이콘 전부 WZ 원본(b296)
 import os, sys, json, base64, io, tempfile, shutil, subprocess
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _tutil
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -10,9 +10,10 @@ from PIL import Image
 IC=json.load(open(os.path.join(ROOT,'src','itemicons.json')))
 def sz(k): return Image.open(io.BytesIO(base64.b64decode(IC[k].split(',')[1]))).size
 NEW=['erion','b_kalos','b_adv','b_kaling','b_star','b_limbo','b_baldrix','b_bellona','b_jupiter','h_pocket','h_pendant','ab_w','ab_a','ar_w','ar_a']
-check('새 아이콘 15종 존재 + 64px', all(k in IC and sz(k)==(64,64) for k in NEW), [(k,k in IC and sz(k)) for k in NEW])
+WZ=lambda t:20<=t[0]<=42 and 20<=t[1]<=42  # b296: WZ 원본 크기 그대로(늘리지 않음)
+check('새 아이콘 15종 존재 + WZ 원본 크기', all(k in IC and WZ(sz(k)) for k in NEW), [(k,k in IC and sz(k)) for k in NEW])
 items=[k for k in IC if not k.startswith(('emo_','dif_','mc_')) and k not in ('guildbless','pcmedal')]
-check('아이템 아이콘 전부 64×64 (이모지·난이도 배지·모멘텀 제외)', all(sz(k)==(64,64) for k in items), [(k,sz(k)) for k in items if sz(k)!=(64,64)])
+check('아이템 아이콘 전부 WZ 원본 크기 (이모지·난이도 배지·모멘텀 제외)', all(WZ(sz(k)) for k in items if k not in ('meso','blink')), [(k,sz(k)) for k in items if k not in ('meso','blink') and not WZ(sz(k))])
 check('투명 배경(모서리 알파 0)', all(Image.open(io.BytesIO(base64.b64decode(IC[k].split(',')[1]))).convert('RGBA').getpixel((0,0))[3]==0 for k in NEW))
 check('수동 키 보존(blink·emo·dif·mc·guildbless·pcmedal)', all(k in IC for k in ['blink','emo_1f389','dif_hard','dif_clear','mc_b','guildbless','pcmedal']))
 from playwright.sync_api import sync_playwright
