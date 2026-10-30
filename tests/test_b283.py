@@ -31,7 +31,7 @@ try:
     check('헤더 버튼', pg.inner_text('#arBtn').strip()=='🎮 게임 화면 연결')
     if SD: os.makedirs(SD,exist_ok=True); pg.locator('header').screenshot(path=os.path.join(SD,'button.png'))
     pg.evaluate(SETUP)
-    pg.evaluate(SCENE,['하드 루시드','제트루','belt',False])
+    pg.evaluate(SCENE,['레헬른 악몽의 시계탑 <하드>','제트루','belt',False])
     pg.evaluate("navigator.mediaDevices.getDisplayMedia=async()=>{ setInterval(()=>{ const g=window._scene.getContext('2d'); g.fillStyle='rgba(0,0,0,.02)'; g.fillRect(0,0,1,1); },100); return window._scene.captureStream(4); }")
     pg.click('#arBtn')  # b288: 헤더 버튼 한 번에 연결
     try: pg.wait_for_function("window.AR.stream&&window.AR.ocr",timeout=60000)
@@ -46,7 +46,7 @@ try:
     check('맵 이름 OCR → 루시드 하드', d['det']['boss']=='lucid' and d['det']['diff']=='hard', d)
     check('이름 OCR → 제트루(c0)', d['det']['cid']=='c0', d)
     check('아이콘 없으면 기록 없음', not pg.evaluate("Object.keys(S.characters[0].drops).length"))
-    pg.evaluate(SCENE,['하드 루시드','제트루','belt',True])
+    pg.evaluate(SCENE,['레헬른 악몽의 시계탑 <하드>','제트루','belt',True])
     try: pg.wait_for_function("S.characters[0].drops['lucid|belt']",timeout=15000)
     except Exception: print('DBG',pg.evaluate("JSON.stringify({sc:window.AR.scores,f:window.AR.found,det:window.AR.det,cand:(window.arCandidates?arCandidates().map(c=>c.k||c):null)})")[:600])
     st=pg.evaluate("({d0:S.characters[0].drops,d1:S.characters[1].drops,act:S.activeId,t:document.querySelector('#arToast')?.textContent,sc:window.AR.lastScore})")

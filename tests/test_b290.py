@@ -29,12 +29,12 @@ try:
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800); pg.evaluate(SETUP)
     D=lambda t: pg.evaluate("t=>arDetectBoss(t)",t)
     for t in ['고통의 미궁\n욕망의 제단 입구','[ 고통의 미궁\n록망의 제단 입구','고통의 미궁\n혹망의 께단 입구','고통의 미궁\n옥망의 제단 입구']:
-      r=D(t); check(f'입구 맵 → lobby (보스 아님) {t!r}',r and r.get('lobby') and not r.get('boss'),r)
+      r=D(t); check(f'입구 맵 → 무시 (b291: 보상 맵 아님 → null) {t!r}',r is None,r)
     for t,bo,di in [('고통의 미궁\n욕망의 제단 <하드>','jinhilla','hard'),('도원경 빛을 되찾은 사계 <미지>','kaling','easy'),('도원경 빛을 되찾은 사계 <이지>','kaling','easy')]:
-      r=D(t); check(f'보스 방 {t!r} → {bo} {di}',r and not r.get('lobby') and r['boss']==bo and r['diff']==di,r)
+      r=D(t); check(f'보스 방 {t!r} → {bo} {di}',r and r['boss']==bo and r['diff']==di,r)
     # 실제 미니맵 (v11 #421 카링 이지 → #691 진 힐라 입구, OCR 그대로)
     r1=pg.evaluate("u=>_step(u,500)",u('v11_0421')); check('v11 #421 실제 OCR → 카링 이지',r1['det']==['kaling','easy'],r1)
-    r2=pg.evaluate("u=>_step(u,500)",u('v11_0691')); check('v11 #691 진 힐라 입구 → 카링 이지 유지 (예전: 진 힐라 하드)',r2['det']==['kaling','easy'] and r2['tgt']==['kaling','easy'] and r2['lobby'],r2)
+    r2=pg.evaluate("u=>_step(u,500)",u('v11_0691')); check('v11 #691 진 힐라 입구 → 카링 이지 유지 (예전: 진 힐라 하드)',r2['det']==['kaling','easy'] and r2['tgt']==['kaling','easy'],r2)
     for k in range(6): r3=pg.evaluate("u=>_step(u,2000)",u('v11_0691'))
     check('입구에 오래 있어도 진 힐라로 안 바뀜',r3['det']==['kaling','easy'],r3)
     r4=pg.evaluate("u=>_step(u,500)",u('v02_0181')); check('v02 진 힐라 방 실제 OCR → 진 힐라 하드 (입구에서 들어가면 바로 바뀜)',r4['det']==['jinhilla','hard'],r4)

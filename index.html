@@ -6718,21 +6718,11 @@ const AR_DEF={on:true, fps:3, ocrEvery:3000, logFps:6, stickySec:600,
   watchFps:30,    // b286: 배너 변화 감시 횟수/초 (작은 축소본 비교만, 바뀐 프레임만 아이콘 매칭)
   dedupSec:120,   // 같은 아이템 다시 기록 막는 시간
   nameThr:.5, mapAlias:{}, cid:'', boss:''};
-/* 맵 이름 → 보스 (미니맵 제목에 보스 이름이 없는 맵). 난이도는 제목 끝 <노멀>/<하드>/<익스트림>... 에서 읽음 */
-/* b287: 사용자 확인 보스 맵 표 (/workspace/b287/boss_maps.md) — 맵 이름(구체적)을 먼저, 지역 이름은 나중에.
-   '리멘'만 읽히면 듄켈(기본) → 소울 조각 로그가 검은 마법사면 바꿈. 힐라(일간)와 진 힐라는 다른 보스 */
-const AR_MAPS=[['잠든환상','star'],['찬란한연회장','star'],['환영이벗겨진폐허','star'],['검은바다','star'],['흉성','star'],['고요해진함선','lotus'],
-  ['증명의전장','adversary'],['의지가증명된','adversary'],['물러서지않는용기','adversary'],['진실을꿰뚫는지혜','adversary'],['전설로거듭나는운명','adversary'],
-  ['욕망의제단','jinhilla'],['고통의미궁','jinhilla'],
-  ['존재하지않는공간','blackmage'],['어둠의신전','blackmage'],['어둠의왕좌','blackmage'],['시작과끝의경계','blackmage'],['끝에가까운곳','dunkel'],
-  ['카로테마천루','kalos'],['격전의마천루','kalos'],['공허의눈','dusk'],['문브릿지','dusk'],['고요한제단','slime'],['가디언엔젤슬라임의제단','slime'],['라무라무','slime'],
-  ['솔라툼의유산','bellona'],['테네아신전','bellona'],['솔라툼골짜기','bellona'],
-  ['왕궁메인홀','seren'],['세계의경계','seren'],['세르니움왕궁','seren'],
-  ['빛을되찾은사계','kaling'],['죽음을두른사계','kaling'],['생기를잃은봄','kaling'],['빛을잃은여름','kaling'],['색을잃은가을','kaling'],['참혹의겨울','kaling'],
-  ['바스러지는빛','will'],['회절의회랑','will'],['깊은거울','will'],['에스페라','will'],['세계수정상','damien'],['타락한세계수','damien'],
-  ['악몽의시계탑','lucid'],['무너지는시계탑','lucid'],['몽환의숲','lucid'],['레헬른','lucid'],
-  ['해방된나무정상','limbo'],['카르시온','limbo'],['폭풍이사그라든여명','baldrix'],['탈라하트','baldrix'],['적막한용광로','jupiter'],['균형과질서의영역','jupiter'],['기어드락','jupiter'],
-  ['블랙헤븐','lotus'],['도원경','kaling'],['리멘','dunkel']];
+/* b291 (사용자 규칙): 보스 보상 맵 18개만 읽음 — 미니맵이 이 맵 이름(+ <난이도>)일 때만 보스를 정하고 아이템을 인식.
+   입구·전투 맵·마을 등 다른 맵은 전부 무시 (보스 안 바꿈, 기록 안 함). 근거: /workspace/b287/boss_maps.md */
+const AR_REWARD=[['고요해진함선','lotus'],['세계수정상','damien'],['고요한제단','slime'],['악몽의시계탑','lucid'],['바스러지는빛','will'],['공허의눈','dusk'],
+  ['욕망의제단','jinhilla'],['끝에가까운곳','dunkel'],['존재하지않는공간','blackmage'],['왕궁메인홀','seren'],['카로테마천루','kalos'],['의지가증명된자리','adversary'],
+  ['빛을되찾은사계','kaling'],['잠든환상','star'],['솔라툼의유산','bellona'],['해방된나무정상','limbo'],['폭풍이사그라든여명','baldrix'],['적막한용광로','jupiter']];
 const AR_DIFFW=[['익스트림','extreme'],['카오스','chaos'],['노멀','normal'],['노말','normal'],['하드','hard'],['이지','easy']];
 const ARX={logPrev:[], lastLog:0, logText:'', logBusy:false, counted:[], cfg:null, stream:null, video:null, timer:0, busy:false, ocr:null, ocrP:null, lastOcr:0, mapText:'', nameText:'',
   det:{cid:'',boss:'',diff:'',src:''}, hits:{}, recent:{}, recentVia:{}, log:[], tpl:null, tplKey:'', lastScore:[]};
@@ -6750,17 +6740,15 @@ function arSim(text,word){ const t=arNorm(text), w=arNorm(word); if(!t||!w) retu
   for(let L=Math.max(1,w.length-1);L<=w.length+1;L++) for(let i=0;i+L<=t.length;i++) best=Math.max(best,1-arLev(t.slice(i,i+L),w)/w.length);
   if(t.length<w.length) best=Math.max(best,1-arLev(t,w)/w.length); return best; }
 /* 보스·난이도: 사용자가 묶은 맵 이름 → 보스 이름 들어 있음 → 난이도 글자 */
-function arDetectBoss(text){ const t=arNorm(text); if(!t) return null;
-  // b290: '욕망의 제단 입구' 같은 입구(대기 맵)는 보스 방이 아님 — 다음 보스로 바꾸지 않고 직전 인식 유지 (v11: 카링 이지 끝나고 진 힐라 입구로 이동 → 진 힐라 하드로 바뀌던 것)
-  if(arSimJ(String(text).split('\n').map(l=>l.trim()).filter(Boolean).pop()||'','입구')>=1||/입\s*구\s*$/m.test(String(text))) return {lobby:true,boss:'',diff:'',src:'입구'};
-  for(const [k,v] of Object.entries(ARX.cfg.mapAlias||{})) if(arSim(t,k)>=.8) return {boss:v.boss,diff:v.diff,src:'맵 등록'};
-  const diffOf=b=>{ for(const [w,k] of AR_DIFFW) if(t.includes(w)&&b.diffs.includes(k)) return k; // b285: '<미지>'(이지)·'<노말>' 같은 OCR 변형 → 괄호 안을 자모로 비교
-    const m=String(text).match(/<\s*([^<>]{1,6})\s*>?\s*$/m)||String(text).match(/<\s*([^<>]{1,6})\s*>/); if(!m) return ''; let best=null;
-    for(const [w,k] of AR_DIFFW){ if(!b.diffs.includes(k)) continue; const s=arSimJ(m[1],w); if(s>=.6&&(!best||s>best.s)) best={k,s}; } return best?best.k:''; };
-  for(const [m,id] of AR_MAPS) if(arSim(t,m)>=.8||(m.length>=3&&arSimJ(t,m)>=.85)){ const b=findBoss(id); if(b) return {boss:id,diff:diffOf(b),src:m==='리멘'?'리멘(지역만)':m==='도원경'?'지역 이름':'맵 이름'}; }
-  let best=null; for(const b of BOSSES){ const s=arSim(t,b.name); if(s>=.75&&(!best||s>best.s||(s===best.s&&b.name.length>best.b.name.length))) best={b,s}; }
-  if(!best) return null; let diff=''; for(const [k,v] of Object.entries(D)) if(t.includes(v)&&best.b.diffs.includes(k)) diff=k; if(!diff&&t.includes('노멀')&&best.b.diffs.includes('normal')) diff='normal';
-  return {boss:best.b.id,diff,src:'맵 이름'}; }
+function arDetectBoss(text){ if(!arNorm(text)) return null;
+  for(const line of String(text).split('\n')){ const L=line.trim(), t=arNorm(L); if(!t||!/[<>]/.test(L)) continue; // 보상 맵 제목줄엔 항상 <난이도>
+    if(/(입\s*구|앞)\s*$/.test(L)) continue;
+    const diffOf=b=>{ for(const [w,k] of AR_DIFFW) if(t.includes(w)&&b.diffs.includes(k)) return k; // '<미지>'(이지)·'<노말>' 같은 OCR 변형 → 괄호 안을 자모로 비교
+      const m=L.match(/<\s*([^<>]{1,6})\s*>?\s*$/)||L.match(/<\s*([^<>]{1,6})\s*>/); if(!m) return ''; let best=null;
+      for(const [w,k] of AR_DIFFW){ if(!b.diffs.includes(k)) continue; const s=arSimJ(m[1],w); if(s>=.6&&(!best||s>best.s)) best={k,s}; } return best?best.k:''; };
+    for(const [k,v] of Object.entries(ARX.cfg.mapAlias||{})) if(arSim(t,k)>=.8){ return {boss:v.boss,diff:v.diff,src:'맵 등록'}; }
+    for(const [m,id] of AR_REWARD) if(arSim(t,m)>=.8||arSimJ(t,m)>=.85){ const b=findBoss(id); if(b) return {boss:id,diff:diffOf(b),src:'보상 맵'}; } }
+  return null; }
 function arDetectChar(text){ const lat=arLatChar(text); if(lat) return lat; const L=String(text||'').split('\n').find(l=>/[가-힣]{2}/.test(l))||''; const hn=x=>(x.match(/[가-힣]/g)||[]).length, tok=L.trim().split(/\s+/).filter(x=>hn(x)).reduce((a,x)=>hn(x)>=hn(a)&&hn(x)>=Math.min(2,hn(a)+1)?x:a,''); // b285: 이름 뒤 잡티 한 글자('뇨')보다 글자 많은 토큰
   const pre=tok.match(/^[^가-힣]*/)[0], hg=tok.replace(/[^가-힣]/g,''); ARX.nameRead=tok; if(hg.length<1) return '';
   // 상태바 글꼴에서 앞 숫자('2터래플'의 2)는 OCR 이 '<'·'6'·'ㅇ' 등으로 읽음 → 한글 부분은 자모 비교, 앞 기호 유무는 '숫자로 시작하는 이름'과 맞춰 봄
@@ -6790,11 +6778,8 @@ function arLogItem(line){ const L=String(line||''); if(!/[템탬팀플].{0,4}[\d
 const arLineEq=(a,b)=>{ const x=arNorm(a),y=arNorm(b); return x===y||(x.length>4&&y.length>4&&1-arLev(x,y)/Math.max(x.length,y.length)>=.85); };
 function arLogDiff(prev,cur){ for(let i=0;i<=prev.length;i++){ const tail=prev.slice(i); if(tail.length>cur.length) continue; if(tail.every((l,j)=>arLineEq(l,cur[j]))) return cur.slice(tail.length); } return cur.slice(); }
 function arLogLines(text){ return String(text||'').split(/\n+/).map(x=>x.trim()).filter(x=>arNorm(x).length>=4); }
-/* b285: '소비 아이템을 얻었습니다 (벨로나의 소울 조각)' → 맵 이름을 못 읽었을 때 보스 힌트 (난이도는 모름) */
-function arSoulHint(line){ const m=String(line).match(/\(([^()]{2,})의\s*소/); if(!m||(ARX.det.boss&&ARX.det.src!=='리멘(지역만)')) return; let best=null;
-  for(const b of BOSSES) for(const n of [b.name,...(b.aliases||[])]){ const s=(/진\s*힐/.test(n)!==/진\s*힐/.test(m[1])&&/힐라/.test(n))?0:arSimJ(m[1],n); if(s>=.75&&(!best||s>best.s)) best={b,s}; }
-  if(best&&ARX.det.src==='리멘(지역만)'&&!['dunkel','blackmage'].includes(best.b.id)) return;
-  if(best){ ARX.det.boss=best.b.id; ARX.det.diff=''; ARX.det.src='소울 조각'; ARX.detT=Date.now(); } }
+/* b291: 소울 조각 로그로 보스를 정하던 것(b285) 제거 — 보스는 보상 맵 이름으로만 정함 */
+function arSoulHint(line){}
 /* 로그 텍스트 한 번 처리 (테스트도 바로 부름) → 새로 센 [{k,n,line}] */
 function arLogStep(text){ const cur=arLogLines(text), add=arLogDiff(ARX.logPrev,cur); ARX.logPrev=cur; ARX.logText=text; const out=[];
   for(const line of add){ arSoulHint(line); const it=arLogItem(line); if(!it) continue; out.push({...it,line}); ARX.counted.push({k:it.k,n:it.n,line,t:Date.now()}); if(ARX.counted.length>200) ARX.counted.shift(); if(ARX.cfg.on) arRecord(it.k,it.s,'로그',it.n); }
@@ -6965,10 +6950,7 @@ async function arFrame2(src,force){ if(ARX.busy) return; ARX.busy=true; try{ con
       ARX.mapText=await arOcr(arCrop(src,sw,sh,ARX.cfg.map,arSc(sh,3))); ARX.nameText=await arOcr(arCrop(src,sw,sh,ARX.cfg.name,arSc(sh,3)));
       const b=arDetectBoss(ARX.mapText), cid=arDetectChar(ARX.nameText), now=Date.now(), stale=now-(ARX.detT||0)>ARX.cfg.stickySec*1000;
       // b285: 화면이 번쩍이거나 컷신이라 못 읽은 프레임은 직전 인식을 유지 (stickySec 지나면 비움)
-      if(b&&b.lobby){ ARX.detT=now; ARX.lobby=true; } else ARX.lobby=false;
-      if(b&&b.src==='리멘(지역만)'&&ARX.det.boss==='blackmage'&&ARX.det.src==='소울 조각'){ ARX.detT=Date.now(); b.boss='blackmage'; b.src='소울 조각'; } // b287: 리멘만 읽히면 소울 조각 판정 유지
-      if(b&&b.lobby){}
-      else if(b){ const keep=b.boss===ARX.det.boss?ARX.det.diff:''; ARX.det.boss=b.boss; ARX.det.diff=b.diff||keep; ARX.det.src=b.src; ARX.detT=now; }
+      if(b){ const keep=b.boss===ARX.det.boss?ARX.det.diff:''; ARX.det.boss=b.boss; ARX.det.diff=b.diff||keep; ARX.det.src=b.src; ARX.detT=now; }
       else if(stale){ ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; }
       if(cid){ ARX.det.cid=cid; ARX.cidT=now; } else if(now-(ARX.cidT||0)>ARX.cfg.stickySec*1000) ARX.det.cid=''; }
     const found=[], seen=new Set(); ARX.found=[]; ARX.scores=ARX.scores||{};
@@ -7002,7 +6984,7 @@ async function arBannerPump(){ if(ARX.bpBusy) return ARX.bpP; ARX.bpBusy=true; A
     const G=q.bmpP?{bmp:await q.bmpP}:{img:q.img}; if(!G.bmp&&!G.img) continue; const C=arCandidates(); if(!C.length){ G.bmp&&G.bmp.close(); continue; }
     const r=await arMatchRun(G,[...new Set(C.map(c=>c.k))],[q.px],{thr:ARX.cfg.bannerThr}); pf.banners++; pf.bannerMs+=r.ms||0; ARX.lastScore=r.scores;
     for(const h of r.hits){ ARX.bannerHits=(ARX.bannerHits||[]).concat([[h.k,+h.score.toFixed(3)]]).slice(-20); if(ARX.cfg.on) arPick(h,'배너 순간'); } } } finally{ ARX.bpBusy=false; } })(); return ARX.bpP; }
-function arRecord(item,score,via='',n=1){ const t=arTarget(); if(!t) return; const C=arCandidates(true).filter(c=>c.k===item); if(!C.length) return;
+function arRecord(item,score,via='',n=1){ if(!ARX.det.boss) return; /* b291: 보상 맵에서 보스를 읽었을 때만 기록 */ const t=arTarget(); if(!t) return; const C=arCandidates(true).filter(c=>c.k===item); if(!C.length) return;
   const b=C.find(c=>t.c.weekly?.[c.b.id]===false)?.b||C[0].b, key=b.id+'|'+item, now=Date.now();
   if(ARX.recent[key]&&now-ARX.recent[key]<ARX.cfg.dedupSec*1000){ if(via) ARX.recentVia[key]=(ARX.recentVia[key]||'')+'+'+via; return; } ARX.recent[key]=now; ARX.recentVia[key]=via;
   if(C.find(c=>c.b===b)?.info){ arLog(`획득 감지(정보 칩, 기록 안 함): ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via}]`); ARX.infoSeen=(ARX.infoSeen||[]).concat(key); arPanelPaint(); return; }

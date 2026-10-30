@@ -51,7 +51,7 @@ try:
     check('로그 OCR 변형: 백옥 줄 3개 인식 · 관계없는 줄 무시', q==['r_white','r_white','r_white',''], q)
     # 소울 조각 줄 → 맵을 못 읽었을 때 보스 힌트
     h=pg.evaluate("()=>{ const A=window.AR; A.det={cid:'c0',boss:'',diff:'',src:''}; arSoulHint('소비 아이템을 얻었습니다 (벨로나의 소울 조각)'); const a=A.det.boss; A.det.boss=''; arSoulHint('소비 아이템을 얻었습니다 (최초의 대적자의 소..)'); return [a,A.det.boss]; }")
-    check('소울 조각 줄 → 보스 힌트', h==['bellona','adversary'], h)
+    check('b291: 소울 조각 줄로 보스 안 정함 (보상 맵 이름으로만)', h==['',''], h)
     nm=pg.evaluate("()=>['07.209 드틱니      “ 뇨','17.208 드닉니','Lv.289 터래플'].map(arDetectChar)")
     check('상태바 이름: 뒤 잡티 한 글자 무시 · 흐린 OCR(드틱니/드닉니) → 트딕이', nm==['c0','c0','c2'], nm)
     b.close()

@@ -27,20 +27,17 @@ try:
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800)
     # 1) 맵 표
     D=lambda t: pg.evaluate("t=>{ const r=arDetectBoss(t); return r&&[r.boss,r.diff,r.src]; }",t)
-    cases=[('해방된 나무 정상 <노멀>','limbo','normal'),('탈라하트 폭풍이 사그라든 여명 <하드>','baldrix','hard'),('기어드락 적막한 용광로','jupiter',''),('검은 바다 잠든 환상 <노멀>','star','normal'),
-           ('레헬른 악몽의 시계탑 <하드>','lucid','hard'),('존재하지 않는 공간 <익스트림>','blackmage','extreme'),('어둠의 왕좌','blackmage',''),('카로테 격전의 마천루','kalos',''),
+    cases=[('해방된 나무 정상 <노멀>','limbo','normal'),('탈라하트 폭풍이 사그라든 여명 <하드>','baldrix','hard'),('기어드락 적막한 용광로 <노멀>','jupiter','normal'),('검은 바다 잠든 환상 <노멀>','star','normal'),
+           ('레헬른 악몽의 시계탑 <하드>','lucid','hard'),('존재하지 않는 공간 <익스트림>','blackmage','extreme'),
            ('도원경 빛을 되찾은 사계 <이지>','kaling','easy'),('고통의 미궁 욕망의 제단 <하드>','jinhilla','hard'),('리멘 끝에 가까운 곳 <하드>','dunkel','hard')]
     for t,bid,df in cases:
-        r=D(t); check(f"맵 '{t}' → {bid} {df}", r and r[0]==bid and (not df or r[1]==df) and r[2]=='맵 이름', r)
-    r=D('리멘 <하드>'); check("'리멘'만 → 듄켈 (기본, 지역만 표시)", r and r[0]=='dunkel' and r[2]=='리멘(지역만)', r)
-    pg.evaluate(SETUP,{}); pg.evaluate("()=>{ const r=arDetectBoss('리멘 <하드>'); Object.assign(window.AR.det,{boss:r.boss,diff:r.diff,src:r.src}); arLogStep('소비 아이템을 얻었습니다 (검은 마법사의 소울 조각)'); }")
-    check("'리멘' + 소울 조각(검은 마법사) → 검은 마법사", pg.evaluate("window.AR.det.boss")=='blackmage', pg.evaluate("window.AR.det"))
-    pg.evaluate(SETUP,{}); pg.evaluate("()=>{ const r=arDetectBoss('리멘 <하드>'); Object.assign(window.AR.det,{boss:r.boss,diff:r.diff,src:r.src}); arLogStep('소비 아이템을 얻었습니다 (윌의 소울 조각)'); }")
-    check("'리멘' + 다른 보스 소울 조각 → 듄켈 유지", pg.evaluate("window.AR.det.boss")=='dunkel', pg.evaluate("window.AR.det"))
+        r=D(t); check(f"맵 '{t}' → {bid} {df}", r and r[0]==bid and (not df or r[1]==df) and r[2]=='보상 맵', r)
+    for t in ['리멘 <하드>','어둠의 왕좌','카로테 격전의 마천루']:
+        r=D(t); check(f"b291: 보상 맵 아님 '{t}' → 무시", r is None, r)
     pg.evaluate(SETUP,{}); pg.evaluate("()=>{ window.AR.det.boss=''; arLogStep('소비 아이템을 얻었습니다 (힐라의 소울 조각)'); }")
     check("'(힐라의 소울 조각)'(일간 하드 힐라) → 진 힐라로 안 바꿈", pg.evaluate("window.AR.det.boss")!='jinhilla', pg.evaluate("window.AR.det"))
     pg.evaluate(SETUP,{}); pg.evaluate("()=>{ window.AR.det.boss=''; arLogStep('소비 아이템을 얻었습니다 (진 힐라의 소울 조각)'); }")
-    check("'(진 힐라의 소울 조각)' → 진 힐라", pg.evaluate("window.AR.det.boss")=='jinhilla', pg.evaluate("window.AR.det"))
+    check("b291: 소울 조각으로 보스 안 정함", pg.evaluate("window.AR.det.boss")=='', pg.evaluate("window.AR.det"))
     wk=pg.evaluate("BOSSES.filter(b=>/힐라/.test(b.name)).map(b=>[b.id,b.name,b.type,b.diffs])")
     check('주간·월간 보스 목록의 힐라는 진 힐라 노멀·하드뿐 (하드 힐라는 일간)', wk==[['jinhilla','진 힐라','weekly',['normal','hard']]], wk)
     # 2) 바닥 아이템
