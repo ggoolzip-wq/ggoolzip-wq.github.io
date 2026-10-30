@@ -105,7 +105,40 @@ function arCandidates(withE){ const t=arTarget(); if(!t) return [];
 const AR_RES=[[800,600],[1024,768],[1280,720],[1280,960],[1366,768],[1600,900],[1680,1050],[1920,1080],[1920,1200],[2560,1080],[2560,1440],[2732,1536],[3440,1440],[3840,2160]];
 const AR_UI={ // 1배(UI px) 기준, 1920x1080 최적 비율 실측(b284~b294 화면 비율을 UI px 로 옮김). a=붙는 모서리
   name:{a:'bl',l:0,b:46,w:384,h:28}, log:{a:'br',r:0,b:356+130,w:614,h:356}, map:{a:'tl',l:0,t:0,w:384,h:86}, banner:{a:'tc',t:162,w:960,h:184} };
-function arUiScale(gw,gh){ const o=+ARX.cfg.uiScale||0; if(o>0) return o; return gh>=1400?2:1; }
+function arUiScale(gw,gh){ const o=+ARX.cfg.uiScale||0; if(o>0) return o; const P=ARX.prof; if(P&&P.gw===gw&&P.gh===gh) return P.s; return gh>=1400?2:1; }
+/* t523: 해상도 프로필 5종 (사용자 기준 스크린샷 20장 실측). s=UI 배율(1920 최적 = 1). 기본 비율 = 1366x768 화면을 통째로 키운 것.
+ * 고정 영역(px, 게임 화면 기준): inv=인벤토리 메소, sto=창고 메소, stoInv=창고 열었을 때 옆 인벤토리 메소. 텍스트·닉네임은 AR_UI×s, 상자(월드)는 화면 높이 비율 */
+const AR_PROF=[
+  {id:'1366',w:1366,h:768,s:1,lab:'1366 x 768',inv:[550,538,272,26],sto:[635,582,200,30],stoInv:[877,582,188,30]},
+  {id:'1920o',w:1920,h:1080,s:1,lab:'1920 x 1080(최적 비율)',inv:[728,674,272,26],sto:[830,728,200,30],stoInv:[1072,728,188,30]},
+  {id:'1920b',w:1920,h:1080,s:1.40625,lab:'1920 x 1080(기본 비율)',inv:[773,757,382,37],sto:[776,804,281,42],stoInv:[1118,804,264,42]},
+  {id:'2560b',w:2560,h:1440,s:1.875,lab:'2560 x 1440(기본 비율)',inv:[1031,1009,510,49],sto:[1037,1073,375,56],stoInv:[1491,1073,352,56]},
+  {id:'2560o',w:2560,h:1440,s:2,lab:'2560 x 1440(최적 비율)',inv:[100,1012,544,52],sto:[1020,1096,400,60],stoInv:[1504,1096,376,60]}];
+const AR_LVTPL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACIAAAAYCAAAAAC6zXDVAAACW0lEQVQoFWXBSY9MURgG4Pc759x7q25N3apVIWLYlBpiWIgYYk6ERhohSC+wEbEgISGGBRYkxJBYCCLCgq2QIBaN8BMs/AAJCaV1tRruufecT8vpTfM81ICjfpRi6GxPAIwJlCgx807q06et1MCk7JhQOugp/MXQ5Z/6yP4Xp/qnUR1Oacu9QBlKJAAGwIiz+w6cG8nEVIez9Oz2AGQEA4wJXjuTVFc8a7KkOpzateVlnQu2vfnmz1v+KBUpjjIdI3yeT3U4iy+sKfb82bde3smdn3FIBTSWb+fbstO4QnU4C89sLnMbN/MH048/Hy9DF1o+ydaqE2mqw1lyZm0xTb09245Nv3rj1axm4HPHx9rh0nuqw2lcXD1g/PTM61fKw4d+pRE0s7a94bh3/zHV4Cy4uHFOV3ud52/7CkcKUV7LOCyeKz94WKYanEWnN5R9Ynt07sC726VuEFHw/fCO95fzlmpwKpcGvZRq5dfvzV17PTC91Pyi5K7Buy+LCdXg1E9++8XZe1+LV+VQWu4bevFEqN07R1rjIVXhTFsnlOiN/Eht4qcFtWrlxw863LIrySCmKhw/0jFEQNL0kn4bU6QyRscdoVNUxaROBsamxvs0+10BjjySsIKjDC2A4xkrYg828lSSiEBxLIygnukbpwocK6Oc5d+hihOZ1+0oMGE3SVFuNEUVOGQjH8KkY04oFio0MUsP7Sg0VIHDJDUp2ZHChqP5WAtfS5uE1kiqMEmryWP8ixkgAFS1IDAJg/8x/qJlZC0JsoSpGAQwg0D9CrGVMBJTMQTAzBJ/AFRD8y/NHqJpAAAAAElFTkSuQmCC'; // 1배 'Lv.' 글자+레벨 바 (34x24, 05번 스크린샷)
+function arLvTpl(){ if(ARX.lvT) return ARX.lvT; return ARX.lvT=new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>res(null); im.src=AR_LVTPL; }); }
+function arGray(g,w,h){ const d=g.getImageData(0,0,w,h).data, o=new Float32Array(w*h); for(let i=0;i<w*h;i++) o[i]=d[i*4]*.299+d[i*4+1]*.587+d[i*4+2]*.114; return o; }
+/* 왼쪽 아래 'Lv.' 바를 배율 후보마다 키워 맞춰 본 최고 점수 (NCC) */
+function arLvScore(src,G,im,s){ const tw=Math.max(4,Math.round(34*s)), th=Math.max(4,Math.round(24*s)), rw=Math.round(80*s), rh=Math.round(60*s);
+  const tc=document.createElement('canvas'); tc.width=tw; tc.height=th; const tg=tc.getContext('2d',{willReadFrequently:true}); tg.drawImage(im,0,0,tw,th); const T=arGray(tg,tw,th);
+  const rc=document.createElement('canvas'); rc.width=rw; rc.height=rh; const rg=rc.getContext('2d',{willReadFrequently:true}); rg.drawImage(src,G.gx,G.gy+G.gh-rh,rw,rh,0,0,rw,rh); const I=arGray(rg,rw,rh);
+  let tm=0; for(const v of T) tm+=v; tm/=T.length; let tt=0; for(let i=0;i<T.length;i++){ T[i]-=tm; tt+=T[i]*T[i]; } let best=-1; const N=T.length;
+  for(let y=0;y+th<=rh;y++) for(let x=0;x+tw<=rw;x++){ let a=0,b=0,c=0; for(let j=0;j<th;j++){ const r=(y+j)*rw+x, q=j*tw; for(let i=0;i<tw;i++){ const v=I[r+i]; a+=T[q+i]*v; b+=v; c+=v*v; } }
+    const vv=c-b*b/N; if(vv>1e-6){ const n=a/Math.sqrt(vv*tt); if(n>best) best=n; } } return best; }
+/* 화면 공유 영상에서 프로필 고르기: 같은 해상도면 UI 크기(Lv 바)로 기본/최적 구분, 모르는 해상도는 가장 가까운 프로필 배율로 + '(추정)' */
+async function arProfDetect(src){ const sw=src?.videoWidth||src?.width, sh=src?.videoHeight||src?.height; if(!sw||!sh) return null; const im=await arLvTpl(); if(!im) return null;
+  ARX.geo=null; const keep=ARX.prof; ARX.prof=null; const G=arGeom(sw,sh); ARX.prof=keep; const exact=AR_PROF.filter(p=>p.w===G.gw&&p.h===G.gh);
+  const near=t=>{ let n=null,bd=1e9; for(const p of AR_PROF){ if(p.id==='1366'?(t==='o'&&G.gw>1400):p.id.slice(-1)!==t) continue; /* 1366 창고 위치는 화면이 좁아 다르게 붙음 → 큰 최적 화면은 1920 기준 */ const d=Math.abs(p.h-G.gh)+Math.abs(p.w-G.gw)*.5; if(d<bd){ bd=d; n=p; } } return n; };
+  const cand=exact.length?exact.map(p=>({p,s:p.s,t:p.id==='1366'?'':p.id.slice(-1)})):[{p:near('o'),s:G.gh>=1400?2:1,t:'o'},{p:near('b'),s:+(G.gh/768).toFixed(5),t:'b'}];
+  let best=null; for(const c of cand){ const sc=arLvScore(src,G,im,c.s); if(!best||sc>best.sc) best={...c,sc}; }
+  if(!best||(best.sc<.55&&cand.length>1)) return null; const est=!exact.length, P=best.p;
+  const lab=est?`${G.gw} x ${G.gh}(${best.t==='b'?'기본 비율':'최적 비율'})(추정)`:P.lab;
+  ARX.prof={id:P.id,base:P,s:best.s,gw:G.gw,gh:G.gh,est,lab,score:+best.sc.toFixed(3)}; ARX.geo=null; return ARX.prof; }
+/* 프로필 고정 영역 → 스트림 비율 rect. 추정이면 가까운 프로필의 화면 가운데 기준 UI px × 배율 */
+function arProfR(k,src){ const sw=src?.videoWidth||src?.width||1920, sh=src?.videoHeight||src?.height||1080, G=arGeom(sw,sh); let P=ARX.prof, base=P?.base;
+  if(!base){ base=AR_PROF.find(p=>p.w===G.gw&&p.h===G.gh&&p.s===G.s)||AR_PROF[1]; P={s:G.s}; } const a=base[k]; if(!a) return null; let [x,y,w,h]=a;
+  if(base.w!==G.gw||base.h!==G.gh||base.s!==P.s){ const k2=P.s/base.s; x=G.gw/2+(x-base.w/2)*k2; y=G.gh/2+(y-base.h/2)*k2; w*=k2; h*=k2; }
+  x+=G.gx; y+=G.gy; return {x:x/sw,y:y/sh,w:Math.min(w,sw-x)/sw,h:Math.min(h,sh-y)/sh}; }
+function arProfLab(){ const P=ARX.prof; return P?P.lab:''; }
 function arSnapRes(w,h){ let best=null,bd=1e9; for(const [W,H] of AR_RES){ const d=Math.abs(W-w)+Math.abs(H-h); if(d<bd){ bd=d; best=[W,H]; } } return bd<=Math.max(8,.012*(w+h))?best:null; }
 function arGameRect(sw,sh,bbox){ // bbox = 검은 테두리 뺀 내용 상자(px) 또는 null
   let x=0,y=0,w=sw,h=sh; if(bbox&&bbox.w>sw*.3&&bbox.h>sh*.3&&(bbox.w<sw-24||bbox.h<sh-24)){ const S=arSnapRes(bbox.w,bbox.h); if(S) return {x:bbox.x+Math.round((bbox.w-S[0])/2),y:bbox.y+Math.round((bbox.h-S[1])/2),w:S[0],h:S[1]}; } // 큰 화면 가운데 검은 테두리(창·작은 해상도 전체화면)
@@ -122,7 +155,7 @@ function arBBox(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight||sr
 function arGeom(sw,sh){ const G=ARX.geo; if(G&&G.sw===sw&&G.sh===sh&&G.bb===ARX.bbKey) return G; const R=arGameRect(sw,sh,ARX.bbox||null), s=arUiScale(R.w,R.h);
   return ARX.geo={sw,sh,bb:ARX.bbKey,...R,gx:R.x,gy:R.y,gw:R.w,gh:R.h,s}; }
 /* 영역(스트림 비율 rect). 사용자가 바꾼 영역(기본값과 다름)은 게임 화면 비율 그대로, 기본값이면 UI 모서리 기준 */
-function arR(k,src){ const sw=src?.videoWidth||src?.width||1920, sh=src?.videoHeight||src?.height||1080, G=arGeom(sw,sh), c=ARX.cfg[k], d=AR_DEF[k], U=AR_UI[k];
+function arR(k,src){ if(k==='inv'||k==='sto'||k==='stoInv') return arProfR(k,src); const sw=src?.videoWidth||src?.width||1920, sh=src?.videoHeight||src?.height||1080, G=arGeom(sw,sh), c=ARX.cfg[k], d=AR_DEF[k], U=AR_UI[k];
   const same=c&&d&&c.x===d.x&&c.y===d.y&&c.w===d.w&&c.h===d.h; let x,y,w,h;
   if(U&&same&&!ARX.cfg.uiProp){ const s=G.s; w=Math.min(G.gw,U.w*s); h=Math.min(G.gh,U.h*s);
     x=U.a==='bl'||U.a==='tl'?G.gx+U.l*s:U.a==='br'?G.gx+G.gw-U.r*s-w:G.gx+(G.gw-w)/2; y=U.a==='tl'||U.a==='tc'?G.gy+U.t*s:G.gy+G.gh-U.b*s; if(U.a==='br') y=G.gy+G.gh-U.b*s; }
@@ -368,7 +401,7 @@ function arBoxTpl(k,D){ const c=ARX.boxT||(ARX.boxT={}), id=k+'/'+D; if(c[id]) r
 function arNcc(I,W,H,T,x0,x1,y0,y1){ const out=[]; for(let y=Math.max(0,y0);y<=Math.min(H-T.h,y1);y++) for(let x=Math.max(0,x0);x<=Math.min(W-T.w,x1);x++){ let st=0, s0=0,s1=0,s2=0,q=0;
     for(let j=0;j<T.n;j++){ const p=((y+T.oy[j])*W+x+T.ox[j])*4, a=I[p], b=I[p+1], c=I[p+2]; st+=T.t[j*3]*a+T.t[j*3+1]*b+T.t[j*3+2]*c; s0+=a; s1+=b; s2+=c; q+=a*a+b*b+c*c; }
     const vi=q-(s0*s0+s1*s1+s2*s2)/T.n, den=Math.sqrt(Math.max(0,vi)*T.tt); out.push([den>1e-6?st/den:0,x,y]); } return out; }
-function arBoxGrab(src,D){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR('item',src), k=1080/sh/D, cv=document.createElement('canvas'); cv.width=Math.round(r.w*sw*k); cv.height=Math.round(r.h*sh*k);
+function arBoxGrab(src,D){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR('item',src), k=1080/arGH(src,sh)/D, cv=document.createElement('canvas'); cv.width=Math.round(r.w*sw*k); cv.height=Math.round(r.h*sh*k);
   const g=cv.getContext('2d',{willReadFrequently:true}); g.imageSmoothingQuality='high'; g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,cv.width,cv.height); return {d:g.getImageData(0,0,cv.width,cv.height).data,w:cv.width,h:cv.height}; }
 async function arBoxScore(src,k){ const T8=await arBoxTpl(k,8), T4=await arBoxTpl(k,4); if(!T8||!T4) return 0; const G8=arBoxGrab(src,8), G4=arBoxGrab(src,4);
   const r=arNcc(G8.d,G8.w,G8.h,T8,0,1e9,0,1e9).sort((a,b)=>b[0]-a[0]), top=[]; for(const c of r){ if(c[0]<.4||top.length>=3) break; if(top.every(t=>Math.abs(t[1]-c[1])>2||Math.abs(t[2]-c[2])>2)) top.push(c); }
@@ -413,7 +446,8 @@ async function arConnect(){ if(arLive()) return arPanel(true); if(ARX.stream||AR
   catch(e){ console.warn('[분석 시작 실패 → 메인 스레드로]',e); try{ ARX.wkOff=String(e); try{ ARX.wk?.terminate(); }catch(_){ } ARX.wk=null; arStart(ARX.video||document.querySelector('video[style*="-9999px"]')); }catch(e2){ ARX.connErr='분석 시작 실패: '+(e2?.message||e2); try{ arDisconnect(); }catch(_){ } arPanel(true); } } }
 /* b294: 상태바 이름 빠른 감시 — 0.2초마다 이름 영역 축소본(96x12)만 비교, 바뀌었거나(캐릭터 접속·변경) 아직 못 읽었으면 바로 OCR 1번.
    예전: 맵+이름 OCR 을 3초(ocrEvery)마다 한 번, 보스·아이템 처리 뒤에 → 접속 후 이름 인식까지 7~9초 */
-function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return; const r=arR('name',src), now=Date.now(); if(!ARX.bbT||now-ARX.bbT>3000){ ARX.bbT=now; const b=arBBox(src); const k=b?[b.x,b.y,b.w,b.h].map(v=>Math.round(v/16)).join(','):''; if(k!==ARX.bbKey){ ARX.bbox=b; ARX.bbKey=k; } }
+function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return; const r=arR('name',src), now=Date.now(); if(!ARX.bbT||now-ARX.bbT>3000){ ARX.bbT=now; const b=arBBox(src); const k=b?[b.x,b.y,b.w,b.h].map(v=>Math.round(v/16)).join(','):''; if(k!==ARX.bbKey){ ARX.bbox=b; ARX.bbKey=k; ARX.profT=0; } }
+  if(!ARX.profBusy&&(!ARX.profT||now-ARX.profT>(ARX.prof?15000:3000))){ ARX.profT=now; ARX.profBusy=true; const was=ARX.prof?.lab; arProfDetect(src).then(P=>{ ARX.profBusy=false; if(P&&P.lab!==was){ arLog(`해상도 프로필: ${P.lab} (UI 배율 ${P.s}, 일치 ${P.score})`); try{ arPanel(); }catch(e){} } }).catch(()=>{ ARX.profBusy=false; }); }
   const sm=ARX.nsm||(ARX.nsm=document.createElement('canvas')); sm.width=96; sm.height=12; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,96,12);
   const d=g.getImageData(0,0,96,12).data, p=ARX.nprev; let diff=0; if(p) for(let i=0;i<d.length;i+=4) diff+=Math.abs(d[i]-p[i])+Math.abs(d[i+1]-p[i+1])+Math.abs(d[i+2]-p[i+2]);
   const changed=!p||diff/(96*12*3)>=3; ARX.nprev=Uint8ClampedArray.from(d); if(changed){ ARX.nChgT=now; ARX.nameOk=false; }
@@ -468,7 +502,7 @@ function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c
   if(!p.querySelector('.ar-g')){ p.innerHTML=`<div class="ar-sbar"></div><div class="ar-g">
     <div class="card ar-c ar-cchar"><h2>캐릭터 정보</h2><div class="ar-b"></div></div>
     <div class="card ar-c ar-cboss"><h2>현재 보스</h2><div class="ar-b"></div></div>
-    <div class="card ar-c ar-clive"><h2>라이브 화면 <span class="hspace"></span><button type="button" class="btn sm ar-roib" data-ar="roi"></button></h2><div class="ar-vw"><video class="ar-vid" muted playsinline autoplay></video><canvas class="ar-prev" width="1280" height="720"></canvas><div class="ar-vnone">연결하면 게임 화면이 여기에 보여요</div></div><div class="ar-b ar-regs"></div></div>
+    <div class="card ar-c ar-clive"><h2>라이브 화면 <span class="hspace"></span><button type="button" class="btn sm ar-roib" data-ar="roi"></button><span class="ar-prof"></span></h2><div class="ar-vw"><video class="ar-vid" muted playsinline autoplay></video><canvas class="ar-prev" width="1280" height="720"></canvas><div class="ar-vnone">연결하면 게임 화면이 여기에 보여요</div></div><div class="ar-b ar-regs"></div></div>
     <div class="card ar-c ar-crec"><h2>현재까지 기록</h2><div class="ar-b"></div></div>
     <div class="card ar-c ar-cset" hidden><div class="ar-b"></div></div></div>`; }
   const q=s=>p.querySelector(s), vid=q('.ar-vid'); if(vid){ const ss=on?ARX.stream:null; if(vid.srcObject!==ss){ vid.srcObject=ss; if(ss) vid.play().catch(()=>{}); } q('.ar-vw').classList.toggle('on',!!ss||!!ARX.testSrc); }
@@ -479,7 +513,7 @@ function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c
   q('.ar-cboss .ar-b').innerHTML=detB?`<div class="ar-big ar-bline">${typeof bossIcon==='function'?bossIcon(detB):''}<span class="ar-bn">${esc(detB.name)}</span>${ARX.det.diff?' '+(typeof diffImg==='function'?diffImg(ARX.det.diff):esc(D[ARX.det.diff])):''}</div>`
     :`<div class="ar-big dim">-</div>`;
   arFitBoss();
-  q('.ar-roib').textContent=c.roi?'영역 숨기기':'영역 보기'; 
+  q('.ar-roib').textContent=c.roi?'영역 숨기기':'영역 보기'; { const pl=q('.ar-prof'); if(pl){ const L=arProfLab(); pl.textContent=L?L:(ARX.stream?'해상도 확인 중…':''); pl.title=L?'화면 공유 영상에서 자동 감지한 해상도·UI 비율':''; } } 
   const R=ARX.runRec||[]; q('.ar-crec .ar-b').innerHTML=`${(ARX.amb||[]).map((A,i)=>`<div class="ar-amb">닮은 아이템 — 직접 고르기 ${A.ks.map(k=>`<button type="button" class="chipb" data-ar="pick:${i}:${k}">${ITEM_ICONS[k]?`<img src="${ITEM_ICONS[k]}" alt="">`:''}${esc(ITEMS[k]?.n||k)}</button>`).join('')}</div>`).join('')}
     ${R.length?`<ul class="ar-recl">${R.map(r=>`<li>${ITEM_ICONS[r.k]?`<img src="${ITEM_ICONS[r.k]}" alt="">`:''}<span><b>${esc(ITEMS[r.k]?.n||r.k)}</b><small class="muted">${esc(r.b)} · ${esc(r.c)}</small></span><time>${r.t}</time></li>`).join('')}</ul>`:'<div class="muted">아직 기록 없음</div>'}`;
   q('.ar-cset .ar-b').innerHTML=`<details class="ar-dbg"><summary>수동 선택 · 조정 · 디버그</summary>
@@ -496,7 +530,7 @@ function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c
 function arPrev(){ const cv=$('#arPanel .ar-prev'); if(!cv) return; const g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height); const src=ARX.stream?null:ARX.testSrc;
   if(src&&(src.videoWidth||src.width)) g.drawImage(src,0,0,cv.width,cv.height); if(!ARX.cfg.roi) return;
   const fs=Math.max(11,Math.round(cv.width/48)); g.font=`700 ${fs}px system-ui,sans-serif`; g.textBaseline='bottom';
-  for(const [k,col,lb] of [['item','#ffb347','아이템 인식 영역'],['banner','#ffe066','획득 배너'],['log','#ff6bd0','획득 로그'],['map','#5ec8ff','미니맵 맵 이름'],['name','#7dff9a','닉네임']]){ const r=arR(k,ARX.video||ARX.testSrc), x=r.x*cv.width, y=r.y*cv.height, w=r.w*cv.width, h=r.h*cv.height; g.strokeStyle=col; g.lineWidth=2; g.strokeRect(x,y,w,h);
+  for(const [k,col,lb] of [['item','#ffb347','아이템 인식 영역'],['banner','#ffe066','획득 배너'],['log','#ff6bd0','획득 로그'],['map','#5ec8ff','미니맵 맵 이름'],['name','#7dff9a','닉네임'],['inv','#c0ff40','인벤토리 메소'],['sto','#40e0ff','창고 메소'],['stoInv','#40e0ff','창고 옆 인벤 메소']]){ const r=arR(k,ARX.video||ARX.testSrc), x=r.x*cv.width, y=r.y*cv.height, w=r.w*cv.width, h=r.h*cv.height; g.strokeStyle=col; g.lineWidth=2; g.strokeRect(x,y,w,h);
     const tw=g.measureText(lb).width+10, ly=y-fs-6<0?y+fs+6:y, lx=Math.min(Math.max(0,x),cv.width-tw); g.fillStyle='rgba(8,10,20,.82)'; g.fillRect(lx,ly-fs-6,tw,fs+6); g.fillStyle=col; g.fillText(lb,lx+5,ly-2); } }
 /* b287: 분석 상태 — 분석 fps(배너 감시) · 놓친 프레임(영상 프레임 중 감시 못 한 것) · 바닥 찾기 횟수·건너뜀 · 1회 시간 */
 function arPerfText(){ const f=ARX.pf; if(!f||!ARX.video) return '분석 fps - · 놓친 프레임 -'; const s=Math.max(.001,(performance.now()-f.t0)/1000), L=f.last||{watched:0,missed:0,t:f.t0}, ds=Math.max(.001,(performance.now()-L.t)/1000);

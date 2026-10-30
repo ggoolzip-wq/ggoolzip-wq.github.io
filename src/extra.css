@@ -2031,3 +2031,21 @@ header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 #arPanel .ar-bline .ar-bn{flex:none}
 #arPanel .ar-bline .bicon{flex:none;width:1.6em;height:1.6em;border-radius:8px;box-shadow:0 0 10px color-mix(in srgb,var(--ng1) 35%,transparent)}
 #arPanel .ar-bline .dimg{flex:none;margin-left:2px}
+
+/* t523: 고급 네온 버튼 — 안내창 '확인' · '영역 숨기기/보기' · 캐릭터 '추가' (b297ui 네온과 같은 색: 시안 → 보라) */
+:root{--nb1:#5ee7ff;--nb2:#b48cff;--nbbg:rgba(12,16,30,.78);--nbtx:#eaf6ff}
+[data-theme=light]{--nb1:#0aa6d6;--nb2:#7b53e6;--nbbg:rgba(255,255,255,.9);--nbtx:#1a2236}
+#arGuide .ar-gf .btn[data-arg="ok"],#arPanel .btn.ar-roib,#addCharBtn,#importAccBtn{position:relative;isolation:isolate;color:var(--nbtx)!important;font-weight:700;letter-spacing:.04em;
+  background:linear-gradient(var(--nbbg),var(--nbbg)) padding-box,linear-gradient(135deg,var(--nb1),var(--nb2)) border-box!important;border:1.5px solid transparent!important;border-radius:999px;
+  box-shadow:0 0 10px color-mix(in srgb,var(--nb1) 38%,transparent),0 0 22px color-mix(in srgb,var(--nb2) 22%,transparent),inset 0 0 10px color-mix(in srgb,var(--nb1) 14%,transparent)!important;
+  text-shadow:0 0 8px color-mix(in srgb,var(--nb1) 55%,transparent);transition:box-shadow .2s,transform .15s,filter .2s}
+[data-theme=light] #arGuide .ar-gf .btn[data-arg="ok"],[data-theme=light] #arPanel .btn.ar-roib,[data-theme=light] #addCharBtn,[data-theme=light] #importAccBtn{
+  box-shadow:0 2px 10px rgba(40,60,120,.12),0 0 12px color-mix(in srgb,var(--nb1) 26%,transparent),inset 0 1px 0 rgba(255,255,255,.9)!important;text-shadow:none}
+#arGuide .ar-gf .btn[data-arg="ok"]:hover,#arPanel .btn.ar-roib:hover,#addCharBtn:hover,#importAccBtn:hover{transform:translateY(-1px);filter:brightness(1.08);
+  box-shadow:0 0 14px color-mix(in srgb,var(--nb1) 60%,transparent),0 0 34px color-mix(in srgb,var(--nb2) 35%,transparent),inset 0 0 12px color-mix(in srgb,var(--nb1) 22%,transparent)!important}
+#arGuide .ar-gf .btn[data-arg="ok"]:active,#arPanel .btn.ar-roib:active,#addCharBtn:active,#importAccBtn:active{transform:translateY(0) scale(.98)}
+#arGuide .ar-gf .btn[data-arg="ok"]:focus-visible,#arPanel .btn.ar-roib:focus-visible,#addCharBtn:focus-visible,#importAccBtn:focus-visible{outline:2px solid var(--nb1);outline-offset:3px}
+#arGuide .ar-gf .btn[data-arg="ok"]{min-width:120px;padding:8px 26px}
+#view .card.empty #importAccBtn::after,#view .dmkey #importAccBtn::after{box-shadow:0 0 8px 1px color-mix(in srgb,var(--nb1) 60%,transparent),0 0 26px 4px color-mix(in srgb,var(--nb2) 30%,transparent)}
+#arPanel .ar-prof{margin-left:8px;font-size:.74rem;font-weight:600;letter-spacing:.02em;color:var(--gtxt);opacity:.85;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){#arGuide .ar-gf .btn[data-arg="ok"],#arPanel .btn.ar-roib,#addCharBtn,#importAccBtn{transition:none}}
