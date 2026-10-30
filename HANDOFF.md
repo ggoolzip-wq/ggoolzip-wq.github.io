@@ -8,6 +8,14 @@
 - 수정: arOcr 에 시간 초과(cfg.ocrTimeout 6초) → 워커 버리고(terminate) 다음에 arOcrLoad 로 새로; nameBusy 가 시간 초과+2초 넘으면 강제 해제; 상태바가 마지막 확인 뒤 안 바뀌었으면 이름 유지(바뀐 뒤 stickySec 지나야 비움).
 - 테스트 test_b296: 가상 시계 15분 — OCR 못 읽음 11분·멈춤 여러 번·캐릭터 3번 → 이름 빈 적 0, 바꾼 캐릭터 1초 안. b287/b288/b294 디버그 줄 검사를 '안 보임'으로 바꿈.
 
+## b296 추가 — 맵·보스 즉시 전환 · 자동 기록 탭 정리 · 데이터 동시 로딩 (2026-10-30 KST)
+- 원인(가엔슬인데 '윌' 고정): 미니맵 OCR 이 arFrame 안에서 3초(ocrEvery)마다, 바닥 찾기와 같은 busy 뒤 · 로그 OCR(초당 6번)과 같은 tesseract 워커에 줄 섬 · 보상 맵이 아닌 맵에선 이전 보스를 10분(stickySec) 유지.
+- 수정: arMapWatch — 0.2초마다 미니맵 96x16 비교, 바뀌면 바로 OCR. 이름·미니맵은 전용 두 번째 워커(arOcrFLoad). 보상 맵 아닌 제목 2번 연속 → 이전 보스 비움. 연결 중엔 arFrame 이 맵 OCR 안 함.
+- 측정(tests/test_b296_speed.py, 실제 tesseract, 1080p 캔버스 스트림; B296_INDEX=예전 index.html 로 예전 측정): 윌→다른 맵→고요한 제단(가엔슬 카오스)
+  예전(4c87d1e): 가엔슬 전환 5059ms · 윌 비움 안 됨(10분 유지). 지금: 가엔슬 전환 142~516ms · 윌 비움 1.4~3.5초 · 첫 윌 인식 0.56~0.94초.
+- UI: '인식 보스'→'현재 보스', 값 = 보스 이름 + 드랍표와 같은 난이도 아이콘(diffImg). 맵 이름 줄·'아이템 인식 중'·'수동 선택 · 조정 · 디버그'(카드 hidden, 값은 그대로 동작)·'어디에도 보내지 않아요' 삭제. '이번 판 기록'→'현재까지 기록'. 스크린샷 tests/out/b296_panel_dark.png · b296_panel_light.png.
+- 다른 탭: 동기화 뒤 계정 목록(bgList)·길드 후보(fillGuildCands) 를 차례 호출 → pool(SYNC_CONC=6) 동시 호출 (키별 rateGate 4건/1.1초는 그대로라 넥슨 한도 안 넘음).
+
 ## b294b (핫픽스)
 - 보스 득템 자동 기록 안내 창의 예시 이미지(data/ar_guide_*.webp)가 Cloudflare Pages 배포 폴더에 빠져 깨지던 문제: tools/pages_dist.sh가 data/ar_guide_*.webp도 복사하도록 수정.
 

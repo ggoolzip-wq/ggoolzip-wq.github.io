@@ -2007,3 +2007,4 @@ header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 .ar-gimg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 2px}.ar-gimg img{width:100%;height:auto;border-radius:6px;border:1px solid var(--line)}
 .ar-pk{color:#ff4fa0}.ar-or{color:#f39b2a}.ar-gf{display:flex;justify-content:center;margin-top:10px}.ar-gf .btn{min-width:120px}
 @media (max-width:1000px){.ar-dash{height:auto}.ar-g{grid-template-columns:1fr;grid-template-rows:none}.ar-g>.ar-c{grid-column:auto;grid-row:auto}.ar-vw{min-height:220px}}
+.ar-cset[hidden]{display:none!important}

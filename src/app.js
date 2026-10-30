@@ -1410,7 +1410,7 @@ async function syncAll(opts={}){
     if(todo.length&&netN===todo.length) throw new Error('네트워크 오류 — 인터넷 연결 또는 브라우저 확장 프로그램·네트워크의 차단 여부를 확인하세요.'); // b184: 목록을 뒤로 미뤄도 전부 네트워크 오류면 '새로고침 실패'
     /* b184: 보스 체크(스케줄러)가 끝나면 바로 '완료' — 되짚기·레벨/이미지·훈장은 뒤에서 이어서 (같은 rateGate = 4건/1.1초 그대로) */
     if(lb.length||later.length||bgList.length) syncBg=(async()=>{ let bt=0; const bp=()=>{ if(bt) return; bt=setTimeout(()=>{ bt=0; renderChars(); },150); };
-      for(const a of bgList){ try{ if(assignFromList(a, await listAccount(a))) bp(); }catch(e){} }
+      await pool(bgList,SYNC_CONC,async a=>{ try{ if(assignFromList(a, await listAccount(a))) bp(); }catch(e){} }); /* b296: 계정 목록 동시에 (키별 rateGate 그대로) */
       await pool(lb,SYNC_CONC,async([c,a])=>{ try{ if(await schedLookback(c,a)) bp(); }catch(e){} });
       await pool(later,SYNC_CONC,async f=>{ try{ await f(); bp(); }catch(e){} });
       clearTimeout(bt); save(); if(!syncing) render(); })().finally(()=>{ syncBg=null; });
@@ -1545,7 +1545,7 @@ async function refreshGuild(force){
 async function fillGuildCands(){
   if(guildCandBusy) return; const todo=activeChars().filter(c=>c.guildAt==null&&c.ocid&&accOf(c)?.key); if(!todo.length) return;
   guildCandBusy=true; renderTabView();
-  try{ for(const c of todo){ try{ await fetchBasic(c,accOf(c).key); }catch(e){ if(e.code==='OPENAPI00007'||e.status===429||e.code==='NETWORK') break; } } save(); }
+  try{ let stop=false; await pool(todo,SYNC_CONC,async c=>{ if(stop) return; try{ await fetchBasic(c,accOf(c).key); }catch(e){ if(e.code==='OPENAPI00007'||e.status===429||e.code==='NETWORK') stop=true; } }); save(); } /* b296: 동시에 */
   finally{ guildCandBusy=false; renderTabView(); }
 }
 function guildCands(){ const have=new Set(guildList().map(gKey)), m=new Map();
