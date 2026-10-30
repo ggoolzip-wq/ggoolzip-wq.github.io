@@ -33,6 +33,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800); pg.evaluate(SETUP)
+    pg.evaluate("ARX.cfg.boxGate=false")  # t522: 맵 이름 인식만 봄 — 상자로 보스 정하는 건 test_b300
     D=lambda t: pg.evaluate("t=>arDetectBoss(t)",t)
     check('보상 맵 18개',pg.evaluate("AR_REWARD.length")==18 and pg.evaluate("typeof AR_MAPS")=='undefined')
     for t,bo,di in REWARD:

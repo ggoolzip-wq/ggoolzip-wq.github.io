@@ -27,6 +27,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800)
+    pg.evaluate("ARX.cfg.boxGate=false")  # t522: 이 테스트는 아이템 인식만 봄 — 보상 상자 게이트는 test_b300
     pg.evaluate(SETUP); pg.evaluate("arOcrLoad()"); pg.wait_for_function("window.AR.ocr||window.AR.ocrErr",timeout=60000)
     bad=[]; badc=[]
     for v,t in sorted(TRUTH.items()):

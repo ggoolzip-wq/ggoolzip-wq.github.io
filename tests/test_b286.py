@@ -25,6 +25,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800)
+    pg.evaluate("ARX.cfg.boxGate=false")  # t522: 이 테스트는 아이템 인식만 봄 — 보상 상자 게이트는 test_b300
     # 1) 예전 방식: 3fps 로 받은 프레임(0128, 0138)만 → 배너 1프레임은 안 보임 (기록 없음이 맞음 — 놓치던 이유 재현)
     pg.evaluate(SETUP)
     for f in ['v01_0128.jpg','v01_0138.jpg']: pg.evaluate(LOAD,f); pg.evaluate("arFrame(window._cv,false)")

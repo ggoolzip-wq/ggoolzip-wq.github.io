@@ -27,6 +27,7 @@ try:
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     reqs=[]; big=[]; pg.on('request',lambda r:(reqs.append(r.url), (r.post_data_buffer and len(r.post_data_buffer)>20000 and big.append(r.url))))
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(1000)
+    pg.evaluate("ARX.cfg.boxGate=false")  # t522: 이 테스트는 아이템 인식만 봄 — 보상 상자 게이트는 test_b300
     check('연결 전 OCR 안 불러옴', not any('/ocr/' in u for u in reqs), [u for u in reqs if 'ocr' in u])
     check('b294: 헤더 버튼 없음 → 자동 기록 탭', pg.locator('#arBtn').count()==0 and pg.locator('#tabs [data-tab=auto]').count()==1)
     if SD: os.makedirs(SD,exist_ok=True); pg.locator('#tabs').screenshot(path=os.path.join(SD,'button.png'))

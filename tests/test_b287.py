@@ -25,6 +25,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800)
+    pg.evaluate("ARX.cfg.boxGate=false")  # t522: 이 테스트는 아이템 인식만 봄 — 보상 상자 게이트는 test_b300
     # 1) 맵 표
     D=lambda t: pg.evaluate("t=>{ const r=arDetectBoss(t); return r&&[r.boss,r.diff,r.src]; }",t)
     cases=[('해방된 나무 정상 <노멀>','limbo','normal'),('탈라하트 폭풍이 사그라든 여명 <하드>','baldrix','hard'),('기어드락 적막한 용광로 <노멀>','jupiter','normal'),('검은 바다 잠든 환상 <노멀>','star','normal'),

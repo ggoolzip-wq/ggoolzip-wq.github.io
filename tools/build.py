@@ -24,6 +24,7 @@ s = rd('app.js')
 if os.path.exists(os.path.join(SRC, 'autorec.js')): s += '\n' + rd('autorec.js')  # b283: 게임 화면 자동 기록
 s = s.replace('/*__BOSS_ICONS__*/{}', json.dumps(js('icons.json'), separators=(',', ':')))
 s = s.replace('/*__ITEM_ICONS__*/{}', json.dumps(js('itemicons.json'), separators=(',', ':')))
+if os.path.exists(os.path.join(SRC, 'boxicons.json')): s = s.replace('/*__BOX_ICONS__*/{}', json.dumps(js('boxicons.json'), separators=(',', ':')))  # b300 보상 상자
 if os.path.exists(os.path.join(SRC, 'worldicons.json')):  # 공식 월드 아이콘 (tools/build_worlds.py)
     s = s.replace('/*__WORLD_ICONS__*/{}', json.dumps(js('worldicons.json'), separators=(',', ':'), ensure_ascii=False))
 AUTO = os.path.join(os.path.dirname(os.path.abspath(SRC)), 'data', 'bosses_auto.json')  # b251

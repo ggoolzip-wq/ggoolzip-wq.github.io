@@ -27,6 +27,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800); pg.evaluate(SETUP)
+    pg.evaluate("ARX.cfg.boxGate=false")  # t522: 맵 이름 인식만 봄 — 상자로 보스 정하는 건 test_b300
     D=lambda t: pg.evaluate("t=>arDetectBoss(t)",t)
     for t in ['고통의 미궁\n욕망의 제단 입구','[ 고통의 미궁\n록망의 제단 입구','고통의 미궁\n혹망의 께단 입구','고통의 미궁\n옥망의 제단 입구']:
       r=D(t); check(f'입구 맵 → 무시 (b291: 보상 맵 아님 → null) {t!r}',r is None,r)
