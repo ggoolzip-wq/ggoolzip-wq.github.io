@@ -1,3 +1,4 @@
+import sys; print('SKIP: b294 길드 현황 탭 삭제 (화면 없음)'); sys.exit(0)
 import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
 _P8881=_tutil.free_port()
 # b85: 길드 현황 — 고정 '봉사활동' 삭제, '+ 길드 추가'(보이는 캐릭터의 월드+길드, 다중), 길드별 수로·플래그 정보, ✕ 제거, settings.guilds 저장. (원래 b83: 득템 분석 '보스 득템왕' — 득템왕과 에픽빔왕 사이, 보스(난이도)별 득템 횟수 순위, 1위 보스 아이콘, 1~3위 지역 색, 한 줄·가로 스크롤 없음, 숨은 캐릭터 제외

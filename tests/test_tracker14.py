@@ -50,38 +50,14 @@ try:
     today=pg.evaluate('dayId()'); yday=pg.evaluate('dayId(Date.now()-864e5)')
     # 1) 탭 바: 총 수익 → ㅡ 구분선 → 길드 현황 (b119: 일퀘 현황 삭제)
     tabs=pg.eval_on_selector_all('#tabs > *',"e=>e.map(x=>x.tagName==='SPAN'?'|'+x.className:x.textContent.trim())")
-    check('tab order with divider', tabs==['이번 주 보스','수익 분석','득템 분석','|tabsep','길드 현황','|tabsep','신창섭 라이브LIVE'], tabs)
+    check('tab order with divider', tabs==['이번 주 보스','수익 분석','득템 분석','|tabsep','보스 득템 자동 기록','|tabsep','신창섭 라이브LIVE'], tabs)
     sep=pg.evaluate("(()=>{const r=document.querySelector('#tabs .tabsep').getBoundingClientRect(),t=document.querySelector('[data-tab=total]').getBoundingClientRect();return {w:r.width,h:r.height,mid:Math.abs((r.top+r.bottom)/2-(t.top+t.bottom)/2)}})()")
     check('divider is a short horizontal line, vertically centered', 8<=sep['w']<=20 and 1<=sep['h']<=3 and sep['mid']<6, sep)
     check('no API calls before opening tabs', not sched_calls() and not guild_calls(), CALLS)
     n1=len(sched_calls())
-    # 5) 길드 현황
-    pg.click('[data-tab=guild]'); pg.wait_for_selector('.gtile'); wait_idle(pg)
-    gc=guild_calls(); print('guild calls',gc)
-    ready=pg.evaluate("(()=>{const k=kst();return k.getUTCHours()*60+k.getUTCMinutes()>=570})()"); exp=today if ready else yday
-    check('guild ranking called for type 2 and 1 with date', sorted(gc)==sorted([(exp,'2'),(exp,'1')]), gc)
-    tiles=pg.eval_on_selector_all('.gtile','e=>e.map(x=>x.innerText.replace(/\\s+/g," ").trim())'); print(tiles)
-    check('지하 수로 tile', '지하 수로' in tiles[0] and '137,591' in tiles[0] and '532위' in tiles[0], tiles)
-    check('플래그 레이스 tile', '플래그 레이스' in tiles[1] and '4,000' in tiles[1] and '523위' in tiles[1], tiles)
-    gt=pg.inner_text('.gcard'); check('guild level/master/date shown', 'Lv.30' in gt and '터래플' in gt and f'기준 {exp}' in gt and '봉사활동' in gt and '스카니아' in gt, gt)
-    rows=pg.eval_on_selector_all('.grow-r','e=>e.map(x=>x.innerText.replace(/\\s+/g," ").trim())'); print(rows)
-    check('main characters only, with 지하 수로 score from scheduler', len(rows)==1 and '단풍용사' in rows[0] and '23,513' in rows[0] and '플래그' not in rows[0], rows)
-    check('guild tab: one scheduler call for main only', len(sched_calls())==n1+1, sched_calls()[n1:])
-    pg.mouse.move(5,5); shot(pg,'tab_guild.png')
-    # 랭킹 미준비 → 어제로 대체
-    GUILD_EMPTY.add(today); g0=len(guild_calls())
-    pg.evaluate("guildC={}; refreshGuild(true)"); wait_idle(pg)
-    gt=pg.inner_text('.gcard'); check('fallback to yesterday when today empty', f'기준 {yday}' in gt and '어제' in gt and '137,591' in gt, (gt,guild_calls()[g0:]))
-    GUILD_EMPTY.add(yday); pg.evaluate("refreshGuild(true)"); wait_idle(pg)
-    gt=pg.inner_text('.gcard'); check('both empty → message, keeps last data', '찾지 못했습니다' in gt and '137,591' in gt, gt)
-    GUILD_EMPTY.clear()
-    # 본캐가 여러 명이어도 모두 표시 (현재 UI는 1명) / 없으면 안내
-    pg.evaluate("S.settings.suroChars=[]; renderGuild()"); check('no 수로 chars → hint', '+ 캐릭터 추가로' in pg.inner_text('#view'))  # b84: 본캐 대신 고른 캐릭터
-    pg.evaluate("S.settings.suroChars=['c1']; save(); renderGuild()")
-    gr=pg.inner_text('#view .card:nth-child(2)')
-    check('지하 수로 row: only 지하 수로 score (no 플래그 / 주간 미션)', '지하 수로' in gr and '플래그' not in gr and '주간 미션' not in gr, gr)
-    pth=os.path.join(OUT,'guild_suro_only.png'); pg.locator('#view').screenshot(path=pth); SHOTDIR and shutil.copy(pth,SHOTDIR)
-    pg.click('[data-tab=guild]'); pg.wait_for_timeout(150)
+    # 5) b294: 길드 현황 탭 삭제 → 그 자리에 '보스 득템 자동 기록'
+    check('b294: 길드 탭 없음', pg.locator('[data-tab=guild]').count()==0 and pg.locator('[data-tab=auto]').count()==1)
+    check('b294: 길드 API 안 부름', not guild_calls(), guild_calls())
     # 6) 사이드바 캐릭터 클릭 → 보스 체크로 이동, 기존 탭 정상
     pg.click('#charList .char[data-id=c2]'); pg.wait_for_timeout(150); check('sidebar click → boss tab', pg.evaluate('tab')=='boss' and pg.evaluate('S.activeId')=='c2')
     for t in ['total','boss']: pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(80)
@@ -89,11 +65,11 @@ try:
     # 7) 모바일 375 / 320
     for w in (375,320):
         pg.set_viewport_size({'width':w,'height':800})
-        pg.click('[data-tab=guild]'); wait_idle(pg); pg.wait_for_timeout(150)
-        check(f'{w}px guild: no horizontal overflow', pg.evaluate(NOOVF), pg.evaluate(OVFD))
-        if w==375: shot(pg,'tab_guild_mobile.png',full_page=True)
+        pg.click('[data-tab=auto]'); pg.wait_for_timeout(400)
+        check(f'{w}px auto: no horizontal overflow', pg.evaluate(NOOVF), pg.evaluate(OVFD))
+        if w==375: shot(pg,'tab_auto_mobile.png',full_page=True)
     # 8) 라이트 테마도 깨지지 않음
-    pg.set_viewport_size({'width':1366,'height':900}); pg.click('[data-tab=guild]'); wait_idle(pg)
+    pg.set_viewport_size({'width':1366,'height':900}); pg.click('[data-tab=auto]'); pg.wait_for_timeout(300)
     check('b182: default dark + header theme toggle', pg.evaluate("document.documentElement.dataset.theme")=='dark' and pg.locator('header #themeBtn').count()==1)
     check('b119: 일퀘 현황 탭 삭제', pg.locator('[data-tab=daily]').count()==0 and pg.evaluate("typeof renderDaily==='undefined'"))
     b.close()

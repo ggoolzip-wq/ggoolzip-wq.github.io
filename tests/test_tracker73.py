@@ -1,3 +1,4 @@
+import sys; print('SKIP: b294 길드 현황 탭 삭제 (화면 없음)'); sys.exit(0)
 import _tutil  # zosu-testfix: 빈 포트·서버 정리(atexit/PDEATHSIG)·bind 실패 감지·운영 Worker 차단 (tests/_tutil.py)
 _P8898=_tutil.free_port()
 # b99: 길드 현황 — '길드' 제목 아이콘 = 길드의 축복 아이콘, 길드 이름 앞 = 그 길드의 길드 마크 (guild/id → guild/basic: guild_mark_custom(base64) 우선, 없으면 guild_mark(URL), 둘 다 없으면 기본 아이콘)

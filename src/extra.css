@@ -1959,7 +1959,6 @@ header .logo .logo-d{display:flex;align-items:center}
 /* b280: 득템왕 누적 획득 아이템 — 1~3위도 글씨 확대 없음(.md-* .spk 1.3em 제외), 모든 순위 같은 크기. 반짝임은 그대로 */
 #lootKing .loots .spk{font-size:1em!important}
 /* b283: 게임 화면 자동 기록 */
-header .hbtn.arbtn{margin-right:6px;white-space:nowrap;gap:6px}
 header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 [data-theme=light] header .hbtn.arbtn.on{color:#1d7a44!important;border-color:#5fd38a!important}
 .ar-dot{width:8px;height:8px;border-radius:50%;background:#3ee07a;box-shadow:0 0 6px #3ee07a;animation:arblink 1.4s infinite}
@@ -1983,3 +1982,28 @@ header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 @media (max-width:760px){.arbtn{display:none!important}}
 .ar-perf{font-size:12px;color:var(--muted,#888);margin:2px 0 4px;font-variant-numeric:tabular-nums}
 .ar-amb{margin:4px 0;font-size:12px}.ar-amb .btn{margin-left:4px}
+
+/* b294: '보스 득템 자동 기록' 탭 — 대시보드 (1080p 에서 스크롤 없음) */
+#tabs [data-tab=auto].arlive::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ee07a;margin-left:6px;vertical-align:middle;animation:arblink 1.6s infinite}
+.ar-dash{display:flex;flex-direction:column;gap:10px;height:calc(100vh - 175px);min-height:520px;font-size:.88rem}
+.ar-sbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r,12px)}
+.ar-sbar .ar-st{font-size:.9rem;font-weight:700}.ar-sbar .ar-perf{color:var(--muted);font-size:.78rem}.ar-sbar .ar-err{flex-basis:100%}
+.ar-g{flex:1;min-height:0;display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,2.4fr) minmax(260px,1.1fr);grid-template-rows:auto auto minmax(0,1fr);gap:10px}
+.ar-c{margin:0;min-height:0;overflow:auto;display:flex;flex-direction:column}.ar-c h2{display:flex;align-items:center;gap:6px;margin:0 0 8px}
+.ar-cchar{grid-column:1;grid-row:1}.ar-cboss{grid-column:1;grid-row:2}.ar-cset{grid-column:1;grid-row:3}
+.ar-clive{grid-column:2;grid-row:1/4}.ar-crec{grid-column:3;grid-row:1/4}
+.ar-big{font-size:1.35rem;font-weight:800;line-height:1.3}.ar-big.dim{color:var(--muted)}.ar-ok{color:var(--ok,#3ee07a)}.ar-diff{font-size:.9rem;color:var(--accent)}
+.ar-who{display:flex;gap:10px;align-items:center}.ar-who .avatar{width:56px;height:56px;flex:none}
+.ar-vw{position:relative;flex:1;min-height:0;background:#0b0d12;border-radius:8px;border:1px solid var(--line);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.ar-vw .ar-vid,.ar-vw .ar-prev{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;margin:0;border:0;aspect-ratio:auto}
+.ar-vw .ar-vid{display:none}.ar-vw.on .ar-vid{display:block}.ar-vw.on .ar-vnone{display:none}.ar-vnone{color:#8a93a6;font-size:.9rem}
+.ar-clive .ar-regs{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:0}
+.ar-recl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.ar-recl li{display:flex;align-items:center;gap:8px;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
+.ar-recl img,.chipb img{width:30px;height:30px;object-fit:contain}.ar-recl span{flex:1;display:flex;flex-direction:column}.ar-recl time{color:var(--muted);font-size:.75rem}
+.ar-amb{margin-bottom:8px}.chipb{display:inline-flex;align-items:center;gap:4px;margin:3px;padding:3px 8px;border:1px solid var(--accent);border-radius:999px;background:none;color:var(--text);cursor:pointer}
+.ar-dash .btn.primary{border-color:var(--accent);color:var(--accent);font-weight:700}
+.ar-guide{position:fixed;z-index:960;max-height:calc(100vh - 140px);overflow:auto;padding:14px 16px;background:var(--panel);color:var(--text);border:1px solid var(--accent);border-radius:14px;box-shadow:var(--shadow);font-size:.9rem}
+.ar-guide .ar-gh{display:flex;align-items:center}.ar-guide .ar-gh b{flex:1;font-size:1rem}.ar-guide ul{margin:8px 0;padding-left:18px;line-height:1.6}
+.ar-gimg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 2px}.ar-gimg img{width:100%;height:auto;border-radius:6px;border:1px solid var(--line)}
+.ar-pk{color:#ff4fa0}.ar-or{color:#f39b2a}.ar-gf{display:flex;justify-content:center;margin-top:10px}.ar-gf .btn{min-width:120px}
+@media (max-width:1000px){.ar-dash{height:auto}.ar-g{grid-template-columns:1fr;grid-template-rows:none}.ar-g>.ar-c{grid-column:auto;grid-row:auto}.ar-vw{min-height:220px}}

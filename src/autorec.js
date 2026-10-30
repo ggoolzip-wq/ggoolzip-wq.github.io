@@ -78,9 +78,13 @@ function arDetectBoss(text){ if(!arNorm(text)) return null;
 function arDetectChar(text){ const lat=arLatChar(text); if(lat) return lat; const L=String(text||'').split('\n').find(l=>/[가-힣]{2}/.test(l))||''; const hn=x=>(x.match(/[가-힣]/g)||[]).length, tok=L.trim().split(/\s+/).filter(x=>hn(x)).reduce((a,x)=>hn(x)>=hn(a)&&hn(x)>=Math.min(2,hn(a)+1)?x:a,''); // b285: 이름 뒤 잡티 한 글자('뇨')보다 글자 많은 토큰
   const pre=tok.match(/^[^가-힣]*/)[0], hg=tok.replace(/[^가-힣]/g,''); ARX.nameRead=tok; if(hg.length<1) return '';
   // 상태바 글꼴에서 앞 숫자('2터래플'의 2)는 OCR 이 '<'·'6'·'ㅇ' 등으로 읽음 → 한글 부분은 자모 비교, 앞 기호 유무는 '숫자로 시작하는 이름'과 맞춰 봄
-  let best=null; for(const c of S.characters){ const cp=(c.name.match(/^[^가-힣]*/)||[''])[0], ch=c.name.replace(/[^가-힣]/g,''); if(!ch) continue;
-    const j=arSimJ(hg,ch); if(j<ARX.cfg.nameThr) continue; let s=j; s+=(!!cp===!!pre)?.15:-.15; if(cp&&pre&&pre.includes(cp)) s+=.1;
-    if(!best||s>best.s) best={c,s}; } return best?best.c.id:''; }
+  let best=null, sec=null; for(const c of S.characters){ const cp=(c.name.match(/^[^가-힣]*/)||[''])[0], ch=c.name.replace(/[^가-힣]/g,''); if(!ch) continue;
+    const j0=arSimJ(hg,ch), jl=hg.length===ch.length?.9*arSim(arLoose(hg),arLoose(ch)):0, j=Math.max(j0,jl); if(j<ARX.cfg.nameThr) continue; let s=j; s+=(!!cp===!!pre)?.15:-.15; if(cp&&pre&&pre.includes(cp)) s+=.1;
+    const e={c,s,loose:jl>j0}; if(!best||s>best.s){ sec=best; best=e; } else if(!sec||s>sec.s) sec=e; }
+  if(best&&best.loose&&sec&&best.s-sec.s<.15) return ''; // b294: 느슨한 비교로만 맞으면 2등과 확실히 차이 날 때만
+  return best?best.c.id:''; }
+/* b294: 상태바 글꼴에서 OCR 이 거센소리↔예사소리(트↔드, 딕↔틱), 받침, ㅇ↔ㄴ 을 자주 헷갈림 → 같은 글자 수일 때 이걸 묶어서 한 번 더 비교 (드티니·드특니 → 트딕이) */
+function arLoose(s){ const M={'\u1110':'\u1103','\u110F':'\u1100','\u1111':'\u1107','\u110E':'\u110C','\u110B':'\u1102'}; return [...arJamo(s)].filter(x=>!(x>='\u11A8'&&x<='\u11C2')).map(x=>M[x]||x).join(''); }
 /* b285: 영문 닉네임 (예: Drcancel) — 한글이 없는 캐릭터만, 'Lv.285' 뒤 영문 토큰을 소문자로 비교 (OCR 이 l↔I/1, rn↔m 헷갈림) */
 function arLatChar(text){ const fx=x=>String(x||'').toLowerCase().replace(/[1|!]/g,'l').replace(/0/g,'o').replace(/rn/g,'m').replace(/[^a-z]/g,'');
   const toks=String(text||'').split(/\s+/).map(fx).filter(x=>x.length>=3&&!/^lv/.test(x)); if(!toks.length) return ''; let best=null;
@@ -279,12 +283,12 @@ const arSc=(sh,k)=>Math.max(1,Math.min(4,Math.round(k*1080/sh)));  // 작은 화
 function arFrame(src,force){ return arFrame2(src,force); }
 async function arFrame2(src,force){ if(ARX.busy) return; ARX.busy=true; try{ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return;
     if(force||Date.now()-ARX.lastOcr>ARX.cfg.ocrEvery){ ARX.lastOcr=Date.now();
-      ARX.mapText=await arOcr(arCrop(src,sw,sh,ARX.cfg.map,arSc(sh,3))); ARX.nameText=await arOcr(arCrop(src,sw,sh,ARX.cfg.name,arSc(sh,3)));
-      const b=arDetectBoss(ARX.mapText), cid=arDetectChar(ARX.nameText), now=Date.now(), stale=now-(ARX.detT||0)>ARX.cfg.stickySec*1000;
+      ARX.mapText=await arOcr(arCrop(src,sw,sh,ARX.cfg.map,arSc(sh,3))); if(force||!ARX.nTimer) ARX.nameText=await arOcr(arCrop(src,sw,sh,ARX.cfg.name,arSc(sh,3))); /* b294: 연결 중엔 arNameWatch 가 0.2초마다 따로 봄 */
+      const b=arDetectBoss(ARX.mapText), cid=ARX.nTimer&&!force?'':arDetectChar(ARX.nameText), now=Date.now(), stale=now-(ARX.detT||0)>ARX.cfg.stickySec*1000;
       // b285: 화면이 번쩍이거나 컷신이라 못 읽은 프레임은 직전 인식을 유지 (stickySec 지나면 비움)
       if(b){ const keep=b.boss===ARX.det.boss?ARX.det.diff:''; ARX.det.boss=b.boss; ARX.det.diff=b.diff||keep; ARX.det.src=b.src; ARX.detT=now; }
       else if(stale){ ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; }
-      if(cid){ ARX.det.cid=cid; ARX.cidT=now; } else if(now-(ARX.cidT||0)>ARX.cfg.stickySec*1000) ARX.det.cid=''; }
+      if(cid){ ARX.det.cid=cid; ARX.cidT=now; } else if(!ARX.nTimer&&now-(ARX.cidT||0)>ARX.cfg.stickySec*1000) ARX.det.cid=''; }
     const found=[], seen=new Set(); ARX.found=[]; ARX.scores=ARX.scores||{};
     if(!(ARX.stream&&ARX.cfg.watchFps>0)){ // 배너는 연결 중엔 배너 순간 감시(매 프레임)가 맡음 — 여기선 테스트·감시 없음일 때만
       const cv=arCrop(src,sw,sh,ARX.cfg.banner,1), img=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height);
@@ -322,7 +326,7 @@ function arRecord(item,score,via='',n=1){ if(!ARX.det.boss) return; /* b291: 보
   if(C.find(c=>c.b===b)?.info){ arLog(`획득 감지(정보 칩, 기록 안 함): ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via}]`); ARX.infoSeen=(ARX.infoSeen||[]).concat(key); arPanelPaint(); return; }
   if((+dropMap(t.c,b.type)[key]||0)>=1){ arLog(`이미 기록됨: ${ITEMS[item]?.n} · ${b.name}`); return; } // 다시 누르면 취소되는 수동 칩과 달리 건드리지 않음
   if(S.activeId!==t.c.id){ S.activeId=t.c.id; render(); }
-  changeDrop(key,+1); arLog(`자동 기록: ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via} ${(+score).toFixed(2)}]`); arToast(item,b,key,t.c.id); }
+  changeDrop(key,+1); (ARX.runRec=ARX.runRec||[]).unshift({k:item,b:b.name,c:t.c.name,t:new Date().toTimeString().slice(0,5)}); ARX.runRec.length=Math.min(ARX.runRec.length,30); arLog(`자동 기록: ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via} ${(+score).toFixed(2)}]`); arToast(item,b,key,t.c.id); }
 /* b288: 색까지 봤는데도 닮은 두 아이콘 중 확실하지 않으면 자동 기록 안 하고 '직접 고르기' 칩 */
 function arPick(h,via){ if(!ARX.det?.boss){ if(!ARX.noBossT||Date.now()-ARX.noBossT>5000){ ARX.noBossT=Date.now(); arLog(`보스 확인 전이라 기록 안 함: ${ITEMS[h.k]?.n||h.k} [${via}]`); } return; } // b288: 보스 모를 땐 모든 보스 아이콘 후보 → UI·글자 오인식
   if(!h.amb||h.amb.length<2) return arRecord(h.k,h.score,via); const C=arCandidates(), am=h.amb.filter(k=>C.some(c=>c.k===k)); if(am.length===1) return arRecord(am[0],h.score,via+' 색');
@@ -340,25 +344,40 @@ async function arConnect(){ if(arLive()) return arPanel(true); if(ARX.stream||AR
   const md=navigator.mediaDevices; if(!md?.getDisplayMedia){ ARX.connErr='이 브라우저는 화면 공유를 지원하지 않아요 (PC 크롬·엣지 권장, https 주소).'; arPanel(true); return; }
   ARX.connErr=''; let fr=Math.max(+ARX.cfg.fps||0,+ARX.cfg.watchFps||0); if(!(fr>0)) fr=30; let p;
   try{ p=md.getDisplayMedia({video:{frameRate:{ideal:fr}},audio:false}); }catch(e){ p=Promise.reject(e); }
+  try{ arOcrLoad(); }catch(e){} // b294: 화면 고르는 동안 OCR 모델 미리 불러옴
   try{ ARX.stream=await p; }catch(e){ ARX.stream=null;
     if(e&&(e.name==='OverconstrainedError'||e.name==='TypeError')){ try{ ARX.stream=await md.getDisplayMedia({video:true,audio:false}); }catch(e2){ e=e2; } }
     if(!ARX.stream){ ARX.connErr=e?.name==='NotAllowedError'?'화면 공유가 취소됐거나 브라우저·윈도우 설정에서 막혀 있어요. (다시 눌러 주세요)':`화면 공유 실패: ${e?.name||''} ${e?.message||e}`; console.warn('[화면 공유]',e); arPanel(true); return; } }
   try{ const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.style.cssText='position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none'; document.body.appendChild(v); v.srcObject=ARX.stream; v.play().catch(()=>{});
     ARX.stream.getVideoTracks()[0]?.addEventListener('ended',arDisconnect); arStart(v); }
   catch(e){ console.warn('[분석 시작 실패 → 메인 스레드로]',e); try{ ARX.wkOff=String(e); try{ ARX.wk?.terminate(); }catch(_){ } ARX.wk=null; arStart(ARX.video||document.querySelector('video[style*="-9999px"]')); }catch(e2){ ARX.connErr='분석 시작 실패: '+(e2?.message||e2); try{ arDisconnect(); }catch(_){ } arPanel(true); } } }
+/* b294: 상태바 이름 빠른 감시 — 0.2초마다 이름 영역 축소본(96x12)만 비교, 바뀌었거나(캐릭터 접속·변경) 아직 못 읽었으면 바로 OCR 1번.
+   예전: 맵+이름 OCR 을 3초(ocrEvery)마다 한 번, 보스·아이템 처리 뒤에 → 접속 후 이름 인식까지 7~9초 */
+function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return; const r=ARX.cfg.name, now=Date.now();
+  const sm=ARX.nsm||(ARX.nsm=document.createElement('canvas')); sm.width=96; sm.height=12; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,96,12);
+  const d=g.getImageData(0,0,96,12).data, p=ARX.nprev; let diff=0; if(p) for(let i=0;i<d.length;i+=4) diff+=Math.abs(d[i]-p[i])+Math.abs(d[i+1]-p[i+1])+Math.abs(d[i+2]-p[i+2]);
+  const changed=!p||diff/(96*12*3)>=3; ARX.nprev=Uint8ClampedArray.from(d); if(changed){ ARX.nChgT=now; ARX.nameOk=false; }
+  const need=(!ARX.nameOk&&now-(ARX.nChgT||0)<4000)||(!ARX.det.cid&&now-(ARX.nOcrT||0)>1000)||now-(ARX.nOcrT||0)>ARX.cfg.ocrEvery;
+  if(!need||ARX.nameBusy||!ARX.ocr) return; ARX.nameBusy=true; ARX.nOcrT=now; const cv=arCrop(src,sw,sh,r,arSc(sh,(ARX.nTry=(ARX.nTry||0)+1)%2?3:4)); /* 못 읽으면 다음 번엔 다른 배율 */
+  return arOcr(cv).then(t=>{ ARX.nameText=t; const cid=arDetectChar(t), n2=Date.now(); if(cid){ ARX.nameOk=true; ARX.cidT=n2; if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=n2-(ARX.nChgT||n2); arLivePaint(); } }
+    else if(n2-(ARX.cidT||0)>ARX.cfg.stickySec*1000) ARX.det.cid=''; }).catch(()=>{}).finally(()=>{ ARX.nameBusy=false; }); }
 /* b287: 연결된 영상 분석 시작 (테스트는 <video src=mp4> 로 바로 부름). 메인 스레드엔 64x16 배너 비교만 매 프레임 — 나머지는 바뀐 프레임만·예산 안에서·Worker */
 function arStart(v){ ARX.video=v; ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
+  ARX.nprev=null; ARX.nameOk=false; clearInterval(ARX.nTimer); ARX.nTimer=setInterval(()=>{ if(ARX.video) arNameWatch(ARX.video); },200);
   ARX.timer=setInterval(()=>{ if(ARX.video) arFrame(ARX.video); },Math.round(1000/Math.max(.5,ARX.cfg.fps)));
   if(ARX.cfg.watchFps>0){ if(v.requestVideoFrameCallback){ const loop=(now,meta)=>{ if(ARX.video!==v) return; arPf().frames++; arBannerWatch(v,meta); arAirWatch(v); if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } v.requestVideoFrameCallback(loop); }; v.requestVideoFrameCallback(loop); } else ARX.wTimer=setInterval(()=>{ if(ARX.video){ arBannerWatch(ARX.video); arAirWatch(ARX.video); } },Math.round(1000/ARX.cfg.watchFps)); }
   ARX.logTimer=setInterval(()=>{ if(ARX.ocr&&ARX.video) arLogFrame(ARX.video); },Math.round(1000/Math.max(1,ARX.cfg.logFps)));
   ARX.pfTimer=setInterval(()=>{ try{ arPerfPaint(); }catch(e){} },1000); arBtnPaint(); arPanel(true); }
-function arDisconnect(){ clearInterval(ARX.pfTimer); clearInterval(ARX.logTimer); clearInterval(ARX.wTimer); ARX.bq=[]; (ARX.abuf||[]).forEach(e=>e.bmp&&e.bmp.close()); ARX.abuf=[]; ARX.alocs=[]; ARX.airT=0; ARX.bprev=null; ARX.logPrev=[]; clearInterval(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.tracks=[]; ARX.iprev=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; arBtnPaint(); arPanelPaint(); }
-function arBtnPaint(){ const b=$('#arBtn'); if(!b) return; b.classList.toggle('on',!!ARX.stream); b.innerHTML=ARX.stream?'<span class="ar-dot"></span>게임 화면 연결됨':'🎮 게임 화면 연결'; }
+function arDisconnect(){ clearInterval(ARX.nTimer); ARX.nTimer=0; clearInterval(ARX.pfTimer); clearInterval(ARX.logTimer); clearInterval(ARX.wTimer); ARX.bq=[]; (ARX.abuf||[]).forEach(e=>e.bmp&&e.bmp.close()); ARX.abuf=[]; ARX.alocs=[]; ARX.airT=0; ARX.bprev=null; ARX.logPrev=[]; clearInterval(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.tracks=[]; ARX.iprev=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; arBtnPaint(); arPanelPaint(); }
+function arBtnPaint(){ const b=$('#tabs [data-tab="auto"]'); if(b) b.classList.toggle('arlive',!!ARX.stream); arPanelPaint(); } // b294: 헤더 버튼 대신 탭에 초록 점
 /* 패널: 상태 · 인식 결과 · 수동 선택 · 영역 맞추기(미리보기 드래그) · OCR 미리보기 */
 let arRegionSel='item';
-function arPanel(open){ let p=$('#arPanel'); if(!p){ p=document.createElement('div'); p.id='arPanel'; p.className='ar-panel'; p.hidden=true; document.body.appendChild(p);
+/* b294: 패널 = '보스 득템 자동 기록' 탭 내용 (예전 오른쪽 위 작은 떠 있는 패널 대신). 탭이 아닐 땐 그리지 않음 */
+function renderAuto(){ const v=$('#view'); v.innerHTML='<div id="arPanel" class="ar-dash"></div>'; ARX.liveSig=''; arPanelBind(v.firstChild); arPanelPaint(); }
+function arPanel(open){ if(open&&typeof tab!=='undefined'&&tab!=='auto'&&typeof render==='function'){ tab='auto'; render(); return; } arPanelPaint(); }
+function arPanelBind(p){ {
     p.addEventListener('click',e=>{ const a=e.target.closest('[data-ar]')?.dataset.ar; if(!a) return;
-      if(a==='close') p.hidden=true; else if(a==='stop') arDisconnect(); else if(a==='connect') arConnect(); else if(a.startsWith('pick:')){ const [,i,k]=a.split(':'), A=(ARX.amb||[])[+i]; if(A){ ARX.amb.splice(+i,1); arRecord(k,A.score,A.via+' 직접 고름'); arPanelPaint(); } }
+      if(a==='guide') return; if(a==='roi'){ ARX.cfg.roi=!ARX.cfg.roi; arSave(); } else if(a==='stop') arDisconnect(); else if(a==='connect') arConnect(); else if(a.startsWith('pick:')){ const [,i,k]=a.split(':'), A=(ARX.amb||[])[+i]; if(A){ ARX.amb.splice(+i,1); arRecord(k,A.score,A.via+' 직접 고름'); arPanelPaint(); } }
       else if(a==='bindmap'){ const t=arNorm(ARX.mapText), bid=ARX.cfg.boss; if(t&&bid){ ARX.cfg.mapAlias[t]={boss:bid,diff:''}; arSave(); arLog(`맵 등록: ${ARX.mapText} → ${findBoss(bid)?.name}`); } }
       else if(a.startsWith('reg:')){ arRegionSel=a.slice(4); } else if(a==='reset'){ const keep=ARX.cfg.mapAlias; ARX.cfg=Object.assign({},AR_DEF,{mapAlias:keep}); arSave(); }
       arPanelPaint(); });
@@ -366,39 +385,55 @@ function arPanel(open){ let p=$('#arPanel'); if(!p){ p=document.createElement('d
     p.addEventListener('pointerdown',e=>{ const cv=e.target.closest('.ar-prev'); if(!cv) return; const R=cv.getBoundingClientRect(), x0=(e.clientX-R.left)/R.width, y0=(e.clientY-R.top)/R.height;
       const mv=ev=>{ const x1=Math.min(1,Math.max(0,(ev.clientX-R.left)/R.width)), y1=Math.min(1,Math.max(0,(ev.clientY-R.top)/R.height)); ARX.cfg[arRegionSel]={x:Math.min(x0,x1),y:Math.min(y0,y1),w:Math.max(.01,Math.abs(x1-x0)),h:Math.max(.01,Math.abs(y1-y0))}; arPrev(); };
       const up=()=>{ removeEventListener('pointermove',mv); removeEventListener('pointerup',up); arSave(); arPanelPaint(); }; addEventListener('pointermove',mv); addEventListener('pointerup',up); }); }
-  if(open) p.hidden=false; arPanelPaint(); }
-function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c=ARX.cfg, t=arTarget(), on=!!ARX.stream, dn=k=>({log:'획득 로그',banner:'획득 배너',item:'바닥 아이콘',map:'맵 이름',name:'상태바 이름'})[k];
-  const detC=S.characters.find(x=>x.id===ARX.det.cid), detB=ARX.det.boss&&findBoss(ARX.det.boss);
-  p.innerHTML=`<div class="ar-h"><b>게임 화면 자동 기록</b><span class="ar-st ${on?'on':''}">${on?'● 연결됨':'○ 연결 안 됨'}</span><button type="button" class="ar-x" data-ar="close" aria-label="닫기">✕</button></div>
-  <div class="ar-row">${on?'<button type="button" class="btn" data-ar="stop">연결 종료</button>':'<button type="button" class="btn primary" data-ar="connect">게임 화면 연결</button>'}
-    <label class="ar-sw"><input type="checkbox" name="on" ${c.on?'checked':''}> 자동 기록</label></div>
-  <div class="ar-perf" aria-live="off">${arPerfText()}</div>${ARX.connErr?`<div class="ar-err" role="alert">${esc(ARX.connErr)}</div>`:''}${(ARX.amb||[]).map((A,i)=>`<div class="ar-amb">닮은 아이템 — 직접 고르기 <small>[${esc(A.via)}]</small> ${A.ks.map(k=>`<button type="button" class="btn sm" data-ar="pick:${i}:${k}">${esc(ITEMS[k]?.n||k)}</button>`).join('')}</div>`).join('')}
-  <div class="ar-det">캐릭터: <b>${detC?esc(detC.name)+' <small>(이름 인식)</small>':'인식 실패 → '+esc(t?.c?.name||'-')}</b><br>보스: <b>${detB?esc(detB.name)+(ARX.det.diff?' '+D[ARX.det.diff]:'')+` <small>(${ARX.det.src})</small>`:'인식 실패 → '+(t?.b?esc(t.b.name):'캐릭터의 모든 보스')}</b>${ARX.ocrErr?`<br><span class="ar-err">OCR 불러오기 실패</span>`:''}</div>
-  <div class="ar-row"><select name="cid" aria-label="수동 캐릭터"><option value="">(수동) 캐릭터: 현재 선택</option>${S.characters.map(x=>`<option value="${esc(x.id)}" ${x.id===c.cid?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+  }
+function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c=ARX.cfg, t=arTarget(), on=arLive(), dn=k=>({log:'획득 로그',banner:'획득 배너',item:'바닥 아이콘',map:'맵 이름',name:'상태바 이름'})[k];
+  const detC=S.characters.find(x=>x.id===ARX.det.cid), detB=ARX.det.boss&&findBoss(ARX.det.boss), mapN=(AR_REWARD.find(m=>m[1]===ARX.det.boss)||[''])[0], acc=detC&&typeof accOf==='function'?accOf(detC):null;
+  if(!p.querySelector('.ar-g')){ p.innerHTML=`<div class="ar-sbar"></div><div class="ar-g">
+    <div class="card ar-c ar-cchar"><h2>캐릭터 정보</h2><div class="ar-b"></div></div>
+    <div class="card ar-c ar-cboss"><h2>인식 보스</h2><div class="ar-b"></div></div>
+    <div class="card ar-c ar-clive"><h2>라이브 화면 <span class="hspace"></span><button type="button" class="btn sm ar-roib" data-ar="roi"></button></h2><div class="ar-vw"><video class="ar-vid" muted playsinline autoplay></video><canvas class="ar-prev" width="480" height="270"></canvas><div class="ar-vnone">연결하면 게임 화면이 여기에 보여요</div></div><div class="ar-b ar-regs"></div></div>
+    <div class="card ar-c ar-crec"><h2>이번 판 기록</h2><div class="ar-b"></div></div>
+    <div class="card ar-c ar-cset"><div class="ar-b"></div></div></div>`; }
+  const q=s=>p.querySelector(s), vid=q('.ar-vid'); if(vid){ const ss=on?ARX.stream:null; if(vid.srcObject!==ss){ vid.srcObject=ss; if(ss) vid.play().catch(()=>{}); } q('.ar-vw').classList.toggle('on',!!ss||!!ARX.testSrc); }
+  q('.ar-sbar').innerHTML=`<span class="ar-st ${on?'on':''}">${on?'● 연결됨':'○ 끊김'}</span><span class="ar-perf" aria-live="off">${arPerfText()}</span><span class="hspace"></span>
+    <label class="ar-sw"><input type="checkbox" name="on" ${c.on?'checked':''}> 자동 기록</label>${on?'<button type="button" class="btn" data-ar="stop">연결 끊기</button>':'<button type="button" class="btn primary" data-ar="guide">연결</button>'}${ARX.connErr?`<div class="ar-err" role="alert">${esc(ARX.connErr)}</div>`:''}`;
+  q('.ar-cchar .ar-b').innerHTML=detC?`<div class="ar-who">${typeof avatar==='function'?avatar(detC):''}<div><div class="ar-big">${esc(detC.name)}</div><div class="muted">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${acc?.name?' · '+esc(acc.name):''}${detC.world?' · '+esc(detC.world):''}</div><small class="ar-ok">상태바 이름 인식${ARX.nameMs!=null?` · ${(ARX.nameMs/1000).toFixed(1)}초`:''}</small></div></div>`
+    :`<div class="ar-big dim">${on?'인식 중…':'-'}</div><div class="muted">왼쪽 아래 상태바 'Lv.000 이름'을 읽어요 → 지금 기록 대상: ${esc(t?.c?.name||'-')}</div>`;
+  q('.ar-cboss .ar-b').innerHTML=detB?`<div class="ar-big">${esc(detB.name)}${ARX.det.diff?' <span class="ar-diff">'+D[ARX.det.diff]+'</span>':''}</div><div class="muted">${esc(mapN||ARX.det.src)}</div><small class="ar-ok">${esc(ARX.det.src)} · 아이템 인식 중</small>`
+    :`<div class="ar-big dim">보상 맵 아님</div><div class="muted">보스 보상 맵(미니맵 제목)일 때만 기록해요</div><small class="muted">맵 OCR: ${esc((ARX.mapText||'-').slice(0,40))}</small>`;
+  q('.ar-roib').textContent=c.roi?'영역 숨기기':'영역 보기'; q('.ar-regs').innerHTML=c.roi?`영역: ${['log','banner','item','map','name'].map(k=>`<button type="button" class="btn sm ${arRegionSel===k?'primary':''}" data-ar="reg:${k}">${dn(k)}</button>`).join('')} <small class="muted">화면에서 드래그</small>`:'';
+  const R=ARX.runRec||[]; q('.ar-crec .ar-b').innerHTML=`${(ARX.amb||[]).map((A,i)=>`<div class="ar-amb">닮은 아이템 — 직접 고르기 ${A.ks.map(k=>`<button type="button" class="chipb" data-ar="pick:${i}:${k}">${ITEM_ICONS[k]?`<img src="${ITEM_ICONS[k]}" alt="">`:''}${esc(ITEMS[k]?.n||k)}</button>`).join('')}</div>`).join('')}
+    ${R.length?`<ul class="ar-recl">${R.map(r=>`<li>${ITEM_ICONS[r.k]?`<img src="${ITEM_ICONS[r.k]}" alt="">`:''}<span><b>${esc(ITEMS[r.k]?.n||r.k)}</b><small class="muted">${esc(r.b)} · ${esc(r.c)}</small></span><time>${r.t}</time></li>`).join('')}</ul>`:'<div class="muted">아직 기록 없음</div>'}`;
+  q('.ar-cset .ar-b').innerHTML=`<details class="ar-dbg"><summary>수동 선택 · 조정 · 디버그</summary>
+    <div class="ar-row"><select name="cid" aria-label="수동 캐릭터"><option value="">(수동) 캐릭터: 현재 선택</option>${S.characters.map(x=>`<option value="${esc(x.id)}" ${x.id===c.cid?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
     <select name="boss" aria-label="수동 보스"><option value="">(수동) 보스: 자동</option>${BOSSES.filter(b=>DROPS[b.id]||Object.values(RING_DROPS).some(m=>m[b.id])).map(b=>`<option value="${b.id}" ${b.id===c.boss?'selected':''}>${esc(b.name)}</option>`).join('')}</select></div>
-  <div class="ar-row ar-regs">영역: ${['log','banner','item','map','name'].map(k=>`<button type="button" class="btn sm ${arRegionSel===k?'primary':''}" data-ar="reg:${k}">${dn(k)}</button>`).join('')}<small>미리보기에서 드래그</small></div>
-  <label class="ar-sw"><input type="checkbox" name="prevOn" ${c.prev>0?'checked':''}> 미리보기 (1초에 ${c.prev>0?c.prev:0}번 — 끄면 더 가벼움)</label>${c.prev>0?'<canvas class="ar-prev" width="240" height="135"></canvas>':''}
-  <details class="ar-dbg"><summary>조정 · 디버그</summary>
-    <div class="ar-grid">${[['thr','아이콘 일치 기준',.5,1,.01],['groundThr','바닥 아이콘 기준',.5,1,.01],['itemFps','바닥 찾기(회/초)',.2,5,.2],['iconPx','아이콘 크기(px, 0=자동)',0,64,1],['logFps','로그 읽기(회/초)',1,6,1],['ds','대략 찾기 축소',1,8,1],['confirm','연속 프레임',1,5,1],['fps','초당 프레임',1,4,1],['prev','미리보기(회/초)',0,4,1],['dedupSec','중복 막기(초)',10,600,10]].map(([n,l,a,b,s])=>`<label>${l}<input type="number" name="${n}" min="${a}" max="${b}" step="${s}" value="${c[n]}"></label>`).join('')}</div>
+    <div class="ar-grid">${[['thr','아이콘 일치 기준',.5,1,.01],['groundThr','바닥 아이콘 기준',.5,1,.01],['itemFps','바닥 찾기(회/초)',.2,5,.2],['iconPx','아이콘 크기(px, 0=자동)',0,64,1],['logFps','로그 읽기(회/초)',1,6,1],['ds','대략 찾기 축소',1,8,1],['confirm','연속 프레임',1,5,1],['fps','초당 프레임',1,4,1],['dedupSec','중복 막기(초)',10,600,10]].map(([n,l,a,b,s])=>`<label>${l}<input type="number" name="${n}" min="${a}" max="${b}" step="${s}" value="${c[n]}"></label>`).join('')}</div>
     <label class="ar-sw"><input type="checkbox" name="air" ${c.air?'checked':''}> 공중 아이템(회전)도 찾기</label>
     <div>맵 OCR: <code>${esc(ARX.mapText||'-')}</code> ${ARX.cfg.boss&&ARX.mapText?'<button type="button" class="btn sm" data-ar="bindmap">이 맵 = 선택한 보스로 등록</button>':''}</div>
-    <div>로그 OCR: <code>${esc((ARX.logText||'-').slice(-200))}</code></div>
-    <div>이름 OCR: <code>${esc(ARX.nameText||'-')}</code></div>
+    <div>로그 OCR: <code>${esc((ARX.logText||'-').slice(-200))}</code></div><div>이름 OCR: <code>${esc(ARX.nameText||'-')}</code></div>
     <div>아이콘 점수: <code>${ARX.lastScore.map(([k,s])=>`${esc(ITEMS[k]?.s||ITEMS[k]?.n||k)} ${s}`).join(' · ')||'-'}</code></div>
-    <button type="button" class="btn sm" data-ar="reset">조정값 처음으로</button></details>
-  <ul class="ar-log">${ARX.log.slice(0,6).map(s=>`<li>${esc(s)}</li>`).join('')}</ul>
-  <p class="ar-note">화면은 이 브라우저 안에서만 분석하고 어디에도 보내지 않아요.</p>`;
+    <button type="button" class="btn sm" data-ar="reset">조정값 처음으로</button><ul class="ar-log">${ARX.log.slice(0,8).map(s=>`<li>${esc(s)}</li>`).join('')}</ul></details>
+    <p class="ar-note">화면은 이 브라우저 안에서만 분석하고 어디에도 보내지 않아요.${ARX.ocrErr?' <span class="ar-err">OCR 불러오기 실패</span>':''}</p>`;
   arPrev(); }
-function arPrev(){ const cv=$('#arPanel .ar-prev'); if(!cv) return; const g=cv.getContext('2d'); g.fillStyle='#111'; g.fillRect(0,0,cv.width,cv.height); const src=ARX.video||ARX.testSrc;
-  if(src&&(src.videoWidth||src.width)) g.drawImage(src,0,0,cv.width,cv.height);
-  for(const [k,col] of [['log','#ff6bd0'],['banner','#ffe066'],['item','#ffb347'],['map','#5ec8ff'],['name','#7dff9a']]){ const r=ARX.cfg[k]; g.strokeStyle=col; g.lineWidth=k===arRegionSel?2.5:1.2; g.strokeRect(r.x*cv.width,r.y*cv.height,r.w*cv.width,r.h*cv.height); } }
-setInterval(()=>{ if(!ARX.stream||$('#arPanel')?.hidden||!(ARX.cfg.prev>0)) return; const now=Date.now(); if(now-(ARX.prevT||0)<1000/ARX.cfg.prev-20) return; ARX.prevT=now; arPrev(); },250);
+function arPrev(){ const cv=$('#arPanel .ar-prev'); if(!cv) return; const g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height); const src=ARX.stream?null:ARX.testSrc;
+  if(src&&(src.videoWidth||src.width)) g.drawImage(src,0,0,cv.width,cv.height); if(!ARX.cfg.roi) return;
+  for(const [k,col] of [['log','#ff6bd0'],['banner','#ffe066'],['item','#ffb347'],['map','#5ec8ff'],['name','#7dff9a']]){ const r=ARX.cfg[k]; g.strokeStyle=col; g.lineWidth=k===arRegionSel?3:1.5; g.strokeRect(r.x*cv.width,r.y*cv.height,r.w*cv.width,r.h*cv.height); } }
 /* b287: 분석 상태 — 분석 fps(배너 감시) · 놓친 프레임(영상 프레임 중 감시 못 한 것) · 바닥 찾기 횟수·건너뜀 · 1회 시간 */
 function arPerfText(){ const f=ARX.pf; if(!f||!ARX.video) return '분석 fps - · 놓친 프레임 -'; const s=Math.max(.001,(performance.now()-f.t0)/1000), L=f.last||{watched:0,missed:0,t:f.t0}, ds=Math.max(.001,(performance.now()-L.t)/1000);
   const fps=(f.watched-L.watched)/ds; return `분석 fps <b>${fps.toFixed(0)}</b> · 놓친 프레임 <b>${f.missed}</b>${f.watched?` (${(100*f.missed/(f.watched+f.missed)).toFixed(1)}%)`:''} · 배너 매칭 ${f.banners}회${f.banners?` (${(f.bannerMs/f.banners).toFixed(0)}ms)`:''} · 바닥/공중 ${f.items}회${ARX.itemMs?` (${ARX.itemMs.toFixed(0)}ms)`:''}${f.iskip?` · 건너뜀 ${f.iskip}`:''} · 공중 ${f.air||0}회${f.air?` (${((f.airMs||0)/f.air).toFixed(0)}ms)`:''}${f.airDrop?` · 버린 프레임 ${f.airDrop}`:''}${ARX.airHot?' · <b>full-rate</b>':''}${ARX.wk?'':' · Worker 없음'}`; }
-function arPerfPaint(){ const f=ARX.pf; const el=$('#arPanel .ar-perf'); if(el&&!$('#arPanel').hidden) el.innerHTML=arPerfText(); if(f) f.last={watched:f.watched,missed:f.missed,t:performance.now()}; }
+function arPerfPaint(){ const f=ARX.pf; const el=$('#arPanel .ar-perf'); if(el) el.innerHTML=arPerfText(); if(f) f.last={watched:f.watched,missed:f.missed,t:performance.now()}; }
 /* 프레임마다 패널 전체를 다시 그리지 않음 (입력·스크롤 유지, 가벼움) — 인식 결과만 */
-function arLivePaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; if(!p.querySelector('.ar-det')) return arPanelPaint(); const sig=JSON.stringify([ARX.det,ARX.log[0],ARX.ocrErr]); if(sig===ARX.liveSig) return; ARX.liveSig=sig;
+function arLivePaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const sig=JSON.stringify([ARX.det,ARX.log[0],ARX.ocrErr,(ARX.amb||[]).length,arLive()]); if(sig===ARX.liveSig) return; ARX.liveSig=sig;
   const open=p.querySelector('details.ar-dbg')?.open, foc=document.activeElement&&p.contains(document.activeElement); if(foc) return; arPanelPaint(); const d=p.querySelector('details.ar-dbg'); if(d&&open) d.open=true; }
-document.addEventListener('click',e=>{ if(!e.target.closest('#arBtn')) return; if(!arLive()) arConnect(); else arPanel(true); }); // b288: 위쪽 버튼 한 번에 화면 선택 창 (전엔 패널만 열고 패널의 버튼을 또 눌러야 했음)
-window.AR=ARX; window.arFrame=arFrame; window.arBannerWatch=arBannerWatch; window.arLogFrame=arLogFrame; window.arLogStep=arLogStep; window.arStart=arStart; window.arItemScan=arItemScan; window.arTrack=arTrack; window.arMatchCore=arMatchCore; window.arDetectBoss=arDetectBoss; window.arLogItem=arLogItem; window.arOcrLoad=arOcrLoad; arBtnPaint();
+/* b294: '보스 득템 자동 기록' 탭 → (연결 안 됐으면) 탭 바로 아래 안내 창 → '확인' 클릭 안에서 바로 getDisplayMedia (사용자 동작). 닫으면 연결 안 함. 이미 연결됐으면 다시 묻지 않음 */
+function arGuide(){ if(arLive()) return; let m=$('#arGuide'); if(!m){ m=document.createElement('div'); m.id='arGuide'; m.className='ar-guide'; m.setAttribute('role','dialog'); m.setAttribute('aria-label','게임 화면 연결 안내'); document.body.appendChild(m);
+    m.addEventListener('click',e=>{ if(e.target.closest('[data-arg="ok"]')){ m.hidden=true; arConnect(); } else if(e.target.closest('[data-arg="x"]')) m.hidden=true; }); }
+  m.innerHTML=`<div class="ar-gh"><b>게임 화면 연결 전에</b><button type="button" class="ar-x" data-arg="x" aria-label="닫기">✕</button></div>
+    <ul><li>오른쪽 아래 <b class="ar-pk">획득 로그</b>를 읽어야 하니 파티 목록 등으로 가리지 마세요.</li><li>캐릭터 능력치·장비창·인벤토리 등 <b class="ar-or">아이템 인식</b>을 방해하는 창은 띄우지 마세요.</li></ul>
+    <div class="ar-gimg"><img src="data/ar_guide_07.webp" alt="예시: 분홍 = 획득 로그, 주황 = 아이템 떨어지는 곳" width="640" height="360"><img src="data/ar_guide_01.webp" alt="예시 2" width="640" height="360" loading="lazy"></div>
+    <small class="muted">분홍 = 획득 로그 · 주황 = 아이템 떨어지는 곳</small><div class="ar-gf"><button type="button" class="btn primary" data-arg="ok">확인</button></div>`;
+  const tb=$('#tabs [data-tab="auto"]')?.getBoundingClientRect(); m.hidden=false; if(tb){ const w=Math.min(560,innerWidth-24); m.style.width=w+'px'; m.style.top=Math.round(tb.bottom+8)+'px'; m.style.left=Math.round(Math.max(12,Math.min(innerWidth-w-12,tb.left+tb.width/2-w/2)))+'px'; } }
+document.addEventListener('click',e=>{ if(e.target.closest('#tabs [data-tab="auto"]')||e.target.closest('#arPanel [data-ar="guide"]')){ if(!arLive()) setTimeout(arGuide,0); return; }
+  const m=$('#arGuide'); if(m&&!m.hidden&&!m.contains(e.target)) m.hidden=true; });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const m=$('#arGuide'); if(m) m.hidden=true; } }); // b288: 위쪽 버튼 한 번에 화면 선택 창 (전엔 패널만 열고 패널의 버튼을 또 눌러야 했음)
+window.arNameWatch=arNameWatch; window.arGuide=arGuide; window.renderAuto=renderAuto; window.AR=ARX; window.arFrame=arFrame; window.arBannerWatch=arBannerWatch; window.arLogFrame=arLogFrame; window.arLogStep=arLogStep; window.arStart=arStart; window.arItemScan=arItemScan; window.arTrack=arTrack; window.arMatchCore=arMatchCore; window.arDetectBoss=arDetectBoss; window.arLogItem=arLogItem; window.arOcrLoad=arOcrLoad; arBtnPaint();

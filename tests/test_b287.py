@@ -62,8 +62,8 @@ try:
     # 4) 패널: 분석 fps · 놓친 프레임 · 미리보기 끄기
     pg.evaluate("()=>{ window.AR.pf={t0:performance.now()-2000,frames:120,watched:118,missed:2,bannerMs:30,banners:3,items:2,iskip:1,last:null}; window.AR.video={}; arPanel(true); }")
     txt=pg.inner_text('#arPanel .ar-perf'); check("패널에 '분석 fps · 놓친 프레임' 표시", '분석 fps' in txt and '놓친 프레임' in txt and '2' in txt, txt)
-    check('미리보기 끄기 체크박스', pg.locator('#arPanel input[name=prevOn]').count()==1)
-    pg.locator('#arPanel input[name=prevOn]').uncheck(); check('미리보기 끄면 미리보기 캔버스 없음', pg.locator('#arPanel .ar-prev').count()==0 and pg.evaluate("window.AR.cfg.prev")==0)
+    r0=pg.evaluate("!!window.AR.cfg.roi"); pg.evaluate("document.querySelector('#arPanel [data-ar=roi]').click()"); pg.wait_for_timeout(100)
+    check('b294: ROI 표시 토글', pg.evaluate("!!window.AR.cfg.roi")!=r0)
     pg.evaluate("()=>{ window.AR.video=null; }")
     b.close()
 finally: srv.terminate()

@@ -72,8 +72,9 @@ try:
     check('체크한 아이템 있으면 [전체 수정][취소] 그대로', r==['전체 수정','취소'], r)
     pg.evaluate("document.querySelector('#revAllModal')?.remove()")
     # 2: 다른 탭에서 왼쪽 캐릭터 클릭 → 이번 주 보스 탭 + 그 캐릭터
-    for t in ('total','loot','guild','live'):
+    for t in ('total','loot','auto','live'):
         pg.locator(f'#tabs [data-tab={t}]').click(); pg.wait_for_timeout(300)
+        if t=='auto': pg.click('#arGuide [data-arg=x]'); pg.wait_for_timeout(150)  # b294: 안내 창 닫기
         tgt='c2' if pg.evaluate("S.activeId")=='c1' else 'c1'
         pg.locator(f'#charList .char[data-id={tgt}]').click(); pg.wait_for_timeout(350)
         r=pg.evaluate("[tab,S.activeId,localStorage.getItem('mapleBossTracker.tab'),document.querySelector('#tabs [data-tab=boss]').classList.contains('on'),!!document.querySelector('#view .bosslay .boss-list'),document.querySelector('#view .bosslay h2')?.innerText||'']")

@@ -35,9 +35,9 @@ try:
     pg.evaluate("""()=>{ const all={}; for(const b of BOSSES) all[b.id]={enabled:true,party:1};
       S.characters=[{id:'c0',name:'트딕이',level:285,job:'',world:'스카니아',ocid:'',accId:'',isMain:true,image:'',bosses:all,weekly:{},monthly:{},auto:{},drops:{},sync:{}}]; S.activeId='c0'; save&&save(); render(); }""")
     # 1) 연결
-    pg.evaluate(STUB,'ok'); pg.click('#arBtn')
+    pg.evaluate(STUB,'ok'); pg.click('#tabs [data-tab=auto]'); pg.wait_for_selector('#arGuide [data-arg=ok]'); pg.click('#arGuide [data-arg=ok]')
     pg.wait_for_function("window.AR.stream&&window.AR.video",timeout=15000); pg.wait_for_timeout(2500)
-    st=pg.evaluate("({gdm:window._gdm,sync:window._gdmSync,panel:!!document.querySelector('#arPanel'),txt:document.querySelector('#arPanel')?.innerText||'',btn:document.querySelector('#arBtn').innerText})")
+    st=pg.evaluate("({gdm:window._gdm,sync:window._gdmSync,panel:!!document.querySelector('#arPanel'),txt:document.querySelector('#arPanel')?.innerText||''})")
     check('헤더 버튼 한 번 → getDisplayMedia 1번 (클릭 처리 안에서 바로)', len(st['gdm'])==1 and st['sync'], st['gdm'])
     check('frameRate 는 ideal (exact 아님)', 'ideal' in st['gdm'][0] and 'exact' not in st['gdm'][0], st['gdm'])
     check('패널: 연결됨 + 분석 fps 표시', '연결됨' in st['txt'] and '분석' in st['txt'] and 'fps' in st['txt'], st['txt'][:300])
@@ -45,16 +45,16 @@ try:
     # 끊긴 스트림 (트랙 ended 이벤트 없이 멈춤) → 다시 누르면 새로 연결
     pg.evaluate("()=>{ const t=window.AR.stream.getVideoTracks()[0]; t.removeEventListener('ended',arDisconnect); t.stop(); }")
     pg.evaluate(STUB,'ok'); pg.evaluate("arPanel(false)") if pg.evaluate("typeof arPanel")=='function' else None
-    pg.click('#arBtn'); pg.wait_for_timeout(800)
+    pg.click('#tabs [data-tab=auto]'); pg.wait_for_selector('#arGuide [data-arg=ok]'); pg.click('#arGuide [data-arg=ok]'); pg.wait_for_timeout(800)
     s2=pg.evaluate("({n:window._gdm.length,live:window.AR.stream?.getVideoTracks()[0]?.readyState})")
     check('끊긴 스트림이 남아 있어도 → 다시 연결 (예전: 패널만 열리고 아무 일 없음)', s2['n']==1 and s2['live']=='live', s2)
     pg.evaluate("arDisconnect()")
     # frameRate 거절 → 제약 없이 재시도
-    pg.evaluate(STUB,'overc'); pg.click('#arBtn'); pg.wait_for_function("window.AR.stream&&window.AR.video",timeout=10000)
+    pg.evaluate(STUB,'overc'); pg.click('#tabs [data-tab=auto]'); pg.wait_for_selector('#arGuide [data-arg=ok]'); pg.click('#arGuide [data-arg=ok]'); pg.wait_for_function("window.AR.stream&&window.AR.video",timeout=10000)
     g=pg.evaluate("window._gdm"); check('frameRate 거절(OverconstrainedError) → {video:true} 로 재시도해 연결', len(g)==2 and 'frameRate' not in g[1], g)
     pg.evaluate("arDisconnect()")
     # 거부 → 이유 표시
-    pg.evaluate(STUB,'deny'); pg.click('#arBtn'); pg.wait_for_timeout(500)
+    pg.evaluate(STUB,'deny'); pg.click('#tabs [data-tab=auto]'); pg.wait_for_selector('#arGuide [data-arg=ok]'); pg.click('#arGuide [data-arg=ok]'); pg.wait_for_timeout(500)
     t=pg.evaluate("document.querySelector('#arPanel')?.innerText||''")
     check('공유 취소·차단 → 패널에 이유 표시 (조용히 실패 안 함)', '화면 공유' in t and ('취소' in t or '막혀' in t), t[:300])
     check('지원 안 하는 브라우저 문구', pg.evaluate("()=>{ const o=navigator.mediaDevices.getDisplayMedia; navigator.mediaDevices.getDisplayMedia=undefined; arConnect(); const r=window.AR.connErr; navigator.mediaDevices.getDisplayMedia=o; return r; }").find('지원')>=0)

@@ -46,7 +46,7 @@ try:
         for vw,vh in [(1366,650),(1280,720),(1024,700),(1280,560)]:
             pg.set_viewport_size({'width':vw,'height':vh}); pg.goto(URL); pg.evaluate("([s])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','boss')}",[st]); pg.reload(); pg.wait_for_timeout(1000)
             pg.wait_for_timeout(300); pg.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
-            for t in ['boss','total','loot','guild']:
+            for t in ['boss','total','loot','auto']:
                 pg.click(f'[data-tab={t}]'); pg.wait_for_timeout(400)
                 sels=['#feedCard','#sunCard']+(['.rcol>.revpanel','.rcol>.pricecard','.rcol>.resetcard'] if t=='boss' else [])
                 for sel in sels:

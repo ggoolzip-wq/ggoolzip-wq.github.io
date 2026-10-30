@@ -26,6 +26,7 @@ try:
         pg.goto(f'http://localhost:{PORT}/index.html'); pg.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s))}",ST); pg.reload(); pg.wait_for_timeout(800)
         tabs=pg.evaluate("TABS")
         for t in tabs:
+            if t=='auto': continue  # b294: 자동 기록 탭은 계정 없이도 대시보드
             pg.evaluate(f"tab='{t}'; render()"); pg.wait_for_timeout(250)
             if t=='live':  # b161: 라이브 탭은 캐릭터 없어도 영상/목록을 보여줌(b87 예외)
                 check(f'{nm}/live: live view (not empty prompt)', pg.evaluate("!!document.querySelector('#view .lvgrid') && !document.querySelector('#view .card.empty')")); continue

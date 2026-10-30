@@ -58,13 +58,13 @@ try:
     shot(pg.locator('#view'),'view_saved_daily')
     if not NOCHK:
         tabs=pg.evaluate("[...document.querySelectorAll('nav [data-tab]')].map(b=>b.textContent.trim())")
-        check('일퀘 현황 탭 버튼 없음, 길드 현황은 그대로', '일퀘 현황' not in tabs and '길드 현황' in tabs, tabs)
+        check('일퀘 현황 탭 버튼 없음, 길드 현황은 그대로', '일퀘 현황' not in tabs and '길드 현황' not in tabs and '보스 득템 자동 기록' in tabs, tabs)
         check('일퀘 전용 코드 없음', pg.evaluate("['renderDaily','dqCell','dqState','DQ_ITEMS','DQ_ICONS','dqChars'].every(n=>{try{return typeof eval(n)==='undefined'}catch(e){return true}})"))
         check('저장된 daily 탭 → 이번 주 보스로', pg.evaluate("tab")=='boss' and pg.locator('.dqtop').count()==0, pg.evaluate("tab"))
         dq=pg.evaluate("JSON.parse(localStorage.getItem('mapleBossTracker.v1')).dq")
         check('저장 데이터 S.dq 그대로 (서버 동기화 데이터 보존)', dq and dq.get('off')=={'cer':1} and dq.get('charOff')=={'c1':{'arcs':1}}, dq)
-        pg.click('[data-tab=guild]'); pg.wait_for_timeout(400)
-        check('길드 현황 탭 동작', pg.evaluate("tab")=='guild' and len(pg.inner_text('#view'))>0)
+        pg.click('[data-tab=total]'); pg.wait_for_timeout(400)
+        check('b294: 길드 대신 다른 탭 동작', pg.evaluate("tab")=='total' and len(pg.inner_text('#view'))>0)
     check('no page errors', not errs, errs[:3])
     b.close()
 finally:

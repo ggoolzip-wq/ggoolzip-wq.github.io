@@ -28,12 +28,12 @@ try:
     reqs=[]; big=[]; pg.on('request',lambda r:(reqs.append(r.url), (r.post_data_buffer and len(r.post_data_buffer)>20000 and big.append(r.url))))
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(1000)
     check('연결 전 OCR 안 불러옴', not any('/ocr/' in u for u in reqs), [u for u in reqs if 'ocr' in u])
-    check('헤더 버튼', pg.inner_text('#arBtn').strip()=='🎮 게임 화면 연결')
-    if SD: os.makedirs(SD,exist_ok=True); pg.locator('header').screenshot(path=os.path.join(SD,'button.png'))
+    check('b294: 헤더 버튼 없음 → 자동 기록 탭', pg.locator('#arBtn').count()==0 and pg.locator('#tabs [data-tab=auto]').count()==1)
+    if SD: os.makedirs(SD,exist_ok=True); pg.locator('#tabs').screenshot(path=os.path.join(SD,'button.png'))
     pg.evaluate(SETUP)
     pg.evaluate(SCENE,['레헬른 악몽의 시계탑 <하드>','제트루','belt',False])
     pg.evaluate("navigator.mediaDevices.getDisplayMedia=async()=>{ setInterval(()=>{ const g=window._scene.getContext('2d'); g.fillStyle='rgba(0,0,0,.02)'; g.fillRect(0,0,1,1); },100); return window._scene.captureStream(4); }")
-    pg.click('#arBtn')  # b288: 헤더 버튼 한 번에 연결
+    pg.click('#tabs [data-tab=auto]'); pg.wait_for_selector('#arGuide [data-arg=ok]'); pg.click('#arGuide [data-arg=ok]')  # b288: 헤더 버튼 한 번에 연결
     try: pg.wait_for_function("window.AR.stream&&window.AR.ocr",timeout=60000)
     except Exception:
         print("DBG",pg.evaluate("({s:!!window.AR.stream,e:window.AR.ocrErr,o:!!window.AR.ocr,T:typeof Tesseract})"),errs,[u for u in reqs if "ocr" in u]); raise
@@ -61,7 +61,7 @@ try:
     check('다른 아이콘(윌 마도서)은 루시드 맵에선 후보 아님', 'book' not in [k for k,_ in pg.evaluate("window.AR.lastScore")])
     ext=[u for u in reqs if u.startswith('http') and '127.0.0.1' not in u and not any(h in u for h in ('fonts.googleapis','fonts.gstatic','accounts.google.com','ggoolzip-sync.bossmaple.workers.dev','nexon'))]
     check('프레임을 밖으로 안 보냄(큰 업로드·새 외부 요청 없음, OCR은 ./ocr 자체 호스팅)', not big and not ext and not any(('tesseract' in u or 'traineddata' in u) and '127.0.0.1' not in u for u in reqs), (big,ext))
-    pg.click('#arPanel [data-ar=stop]'); check('연결 종료', pg.inner_text('#arBtn').strip()=='🎮 게임 화면 연결' and not pg.evaluate("!!window.AR.stream"))
+    pg.click('#arPanel [data-ar=stop]'); check('연결 종료', not pg.evaluate("!!window.AR.stream"))
     check('JS 오류 없음', not errs, errs)
     b.close()
 finally:

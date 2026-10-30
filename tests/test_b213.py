@@ -39,7 +39,7 @@ try:
     ST={'version':5,'theme':'dark','activeId':'c1','worldOrder':[],'history':HI,'monthHistory':[],'characters':CH,'startWeek':wkm(8),'settings':{'accounts':[]}}
     pg.evaluate("([s])=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','boss')}",[ST]); pg.reload(); pg.wait_for_timeout(1200)
     pg.add_style_tag(content=SMOOTH)
-    seq=['total','loot','guild','live','boss']; res=[]
+    seq=['total','loot','auto','live','boss']; res=[]
     for t in seq:
         y0=down(pg); y1=tabclick(pg,t); pg.wait_for_timeout(300); res.append((t,y0,y1,pg.evaluate("scrollY")))
     check('실제: 탭 바꿀 때마다 맨 위로 (스크롤 smooth CSS 있어도 바로 0)', all(r[1]>0 and r[2]==0 and r[3]==0 for r in res if r[0]!='live') and all(r[3]==0 for r in res), res)

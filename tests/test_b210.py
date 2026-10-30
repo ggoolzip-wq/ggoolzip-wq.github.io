@@ -56,7 +56,7 @@ try:
     pg.evaluate("itemPriceLoad&&itemPriceLoad()"); pg.wait_for_timeout(2500)
     g=pg.evaluate("(()=>{let o=[]; demoRun(()=>{ for(const c of S.characters) for(const x of Object.values(c.drev||{})) if(x.i==='g_life') o.push(x.m*x.p); for(const h of S.history) for(const pc of h.perChar) for(const x of Object.values(pc.revs||{})) if(x.i==='g_life') o.push(x.m*x.p); },[]); return o;})()")
     check('시세가 바뀌면 예시도 새 시세로 다시 계산', g and all(abs(x-1200000000)<10 for x in g), g)
-    for t,need in (('total','누적 수입'),('loot','누적 득템'),('guild','지하 수로')):
+    for t,need in (('total','누적 수입'),('loot','누적 득템')):
         pg.click(f'#tabs [data-tab={t}]'); pg.wait_for_timeout(900)
         s=pg.evaluate("(()=>({top:!!document.querySelector('#view>.demotop'),txt:document.getElementById('view').innerText}))()")
         check(f'{t} 탭 클릭 → 예시 화면', s['top'] and need in s['txt'] and TXT in s['txt'], s['txt'][:120])

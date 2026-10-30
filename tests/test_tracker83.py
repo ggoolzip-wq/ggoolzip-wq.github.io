@@ -114,7 +114,7 @@ try:
     pg2.goto(f'http://127.0.0.1:{PORT}/index.html'); pg2.evaluate("s=>{localStorage.clear();localStorage.setItem('mapleBossTracker.v1',JSON.stringify(s));localStorage.setItem('mapleBossTracker.tab','guild')}",PRE); pg2.reload(); pg2.wait_for_timeout(1500)
     pg2.wait_for_timeout(300); pg2.evaluate("(()=>{const t=localStorage.getItem('mapleBossTracker.tab');if(TABS.includes(t)&&t!==tab){tab=t;syncTabs();render();}})()")
     tabs=pg2.eval_on_selector_all('#tabs button',"e=>e.map(x=>x.dataset.tab)")
-    check('b119: 일퀘 현황 탭 없음, 길드 현황 있음', 'daily' not in tabs and 'guild' in tabs, tabs)
+    check('b119: 일퀘 현황 탭 없음, b294 길드 현황도 없음', 'daily' not in tabs and 'guild' not in tabs and 'auto' in tabs, tabs)
     if pg2.locator('#guildAdd').count():
         pg2.click('#guildAdd'); pg2.wait_for_timeout(600)
         g=pg2.evaluate("(()=>{const h=document.querySelector('#guildCard h2'),a=h.querySelector('#guildAdd'),x=h.querySelector('#guildCancel'),o=h.querySelector('#guildOk');return [!!x,!!o,x&&o&&x.getBoundingClientRect().right<=o.getBoundingClientRect().left+1&&o.getBoundingClientRect().right<=a.getBoundingClientRect().left+1,document.querySelectorAll('#guildCard .suropick-b').length,x?getComputedStyle(x).backgroundColor:'']})()")
