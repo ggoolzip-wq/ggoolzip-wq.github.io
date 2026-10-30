@@ -72,6 +72,8 @@ function arSim(text,word){ const t=arNorm(text), w=arNorm(word); if(!t||!w) retu
   if(t.length<w.length) best=Math.max(best,1-arLev(t,w)/w.length); return best; }
 /* 보스·난이도: 사용자가 묶은 맵 이름 → 보스 이름 들어 있음 → 난이도 글자 */
 function arDetectBoss(text){ const t=arNorm(text); if(!t) return null;
+  // b290: '욕망의 제단 입구' 같은 입구(대기 맵)는 보스 방이 아님 — 다음 보스로 바꾸지 않고 직전 인식 유지 (v11: 카링 이지 끝나고 진 힐라 입구로 이동 → 진 힐라 하드로 바뀌던 것)
+  if(arSimJ(String(text).split('\n').map(l=>l.trim()).filter(Boolean).pop()||'','입구')>=1||/입\s*구\s*$/m.test(String(text))) return {lobby:true,boss:'',diff:'',src:'입구'};
   for(const [k,v] of Object.entries(ARX.cfg.mapAlias||{})) if(arSim(t,k)>=.8) return {boss:v.boss,diff:v.diff,src:'맵 등록'};
   const diffOf=b=>{ for(const [w,k] of AR_DIFFW) if(t.includes(w)&&b.diffs.includes(k)) return k; // b285: '<미지>'(이지)·'<노말>' 같은 OCR 변형 → 괄호 안을 자모로 비교
     const m=String(text).match(/<\s*([^<>]{1,6})\s*>?\s*$/m)||String(text).match(/<\s*([^<>]{1,6})\s*>/); if(!m) return ''; let best=null;
@@ -284,8 +286,10 @@ async function arFrame2(src,force){ if(ARX.busy) return; ARX.busy=true; try{ con
       ARX.mapText=await arOcr(arCrop(src,sw,sh,ARX.cfg.map,arSc(sh,3))); ARX.nameText=await arOcr(arCrop(src,sw,sh,ARX.cfg.name,arSc(sh,3)));
       const b=arDetectBoss(ARX.mapText), cid=arDetectChar(ARX.nameText), now=Date.now(), stale=now-(ARX.detT||0)>ARX.cfg.stickySec*1000;
       // b285: 화면이 번쩍이거나 컷신이라 못 읽은 프레임은 직전 인식을 유지 (stickySec 지나면 비움)
+      if(b&&b.lobby){ ARX.detT=now; ARX.lobby=true; } else ARX.lobby=false;
       if(b&&b.src==='리멘(지역만)'&&ARX.det.boss==='blackmage'&&ARX.det.src==='소울 조각'){ ARX.detT=Date.now(); b.boss='blackmage'; b.src='소울 조각'; } // b287: 리멘만 읽히면 소울 조각 판정 유지
-      if(b){ const keep=b.boss===ARX.det.boss?ARX.det.diff:''; ARX.det.boss=b.boss; ARX.det.diff=b.diff||keep; ARX.det.src=b.src; ARX.detT=now; }
+      if(b&&b.lobby){}
+      else if(b){ const keep=b.boss===ARX.det.boss?ARX.det.diff:''; ARX.det.boss=b.boss; ARX.det.diff=b.diff||keep; ARX.det.src=b.src; ARX.detT=now; }
       else if(stale){ ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; }
       if(cid){ ARX.det.cid=cid; ARX.cidT=now; } else if(now-(ARX.cidT||0)>ARX.cfg.stickySec*1000) ARX.det.cid=''; }
     const found=[], seen=new Set(); ARX.found=[]; ARX.scores=ARX.scores||{};
