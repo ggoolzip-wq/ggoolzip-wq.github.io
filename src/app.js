@@ -1800,7 +1800,7 @@ function charEnter(){ const id=S.activeId, v=$('#view'); if(enterFor===id) retur
   /* b197: 칸 = 정보 카드의 각 줄·스탯 칸 + 드롭 표 툴바·보스 줄. 순번(--ei, 최대 14)으로 시차 */
   v.querySelectorAll('.bosslay>.grid>.card>:not(.stats):not(.boss-list),.bosslay>.grid .stats>.stat,.bosslay>.grid .boss-list>*').forEach((e,i)=>{ e.classList.add('cpop'); e.style.setProperty('--ei',Math.min(i,14)); });
   v.classList.remove('center'); void v.offsetWidth; v.classList.add('center'); clearTimeout(enterT); enterT=setTimeout(()=>v.classList.remove('center'),1000); }
-function render(){ paintThemeBtn(); tirDefs(); logoDigital(); orbitFont(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
+function render(){ paintThemeBtn(); tirDefs(); logoDigital(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length&&tab!=='live'&&tab!=='auto'){ $('#view').innerHTML=emptyView(); fitPriceCard(); renderResetInfo(); return; } /* b161: 라이브 탭은 캐릭터·로그인 없어도 보임 */

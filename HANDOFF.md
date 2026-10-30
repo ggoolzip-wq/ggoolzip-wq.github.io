@@ -2,6 +2,13 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b314~b315 (t569·t570) 사이트 전체 글씨체 통일 · 클리어 시간 글씨 키움
+- **원인(탭마다 글씨체가 달랐던 이유)**: b156 규칙(extra.css) — 사이트 기본은 `'Orbit'`(Google Fonts) + 자간 -.03em, 그런데 `body[data-curtab="boss"]` 일 때만 캐릭터 닉네임·보스 카드·가격 카드를 Pretendard 스택(자간 보통)으로 바꾸는 예외가 있었음. 그래서 '이번 주 보스' 탭을 누르면 왼쪽 캐릭터 목록 글씨가 바뀜. Pretendard 는 웹폰트로 싣지 않아 PC 에 설치된 것(없으면 Malgun Gothic)으로 그려짐.
+- **변경(b314)**: html,body = `"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif`, letter-spacing normal. 보스 탭 전용 예외 삭제, .pc-foot/.pc-date 의 Orbit 강제 삭제, Orbit 웹폰트 로드(orbitFont 호출) 중단. **규칙: 새 글씨체를 탭별로 지정하지 말 것. 예외는 사용자가 만든 디지털 글씨(MrjUnitKo: .tir-k·.tsk·.hdot·로고)뿐.**
+- **b315(t570)**: 이번 주 보스 칸 오른쪽 위 `.clrtime` = 'N분 N초'(0분도 '0분 25초', 기존 형식 그대로), 글씨 크기 = 같은 칸 `.price`(.8rem) × 1.3 → `calc(.8rem * 1.3)`.
+- 테스트: tests/test_b314.py(모든 탭 computed font 같음·Orbit 0개·MrjUnitKo 유지), tests/test_b315.py(형식·크기 1.3배, 다크/라이트).
+- 스크린샷: /workspace/t569/{before,after}/{dark,light}_{boss,total,loot,auto,live}.png, tests/out/after_clr_{dark,light}.png
+
 ## t565·t567·t568 (b297) — 메소 칸 화면 전체에서 찾기 + 자동 기록 탭 전체 실시간 갱신
 - **규칙: '보스 득템 자동 기록' 탭은 현재와 미래의 모든 표시가 실시간 갱신된다.** 탭이 열려 있으면 0.2초마다(`ARX.uiTimer`) `arPanelPaint()` 전체를 돌리고, 칸마다 `arSetH(el,html)` 로 HTML 이 바뀐 칸만 DOM 에 씀(서버 호출 없음, 로컬 DOM 만). 새 표시를 추가할 땐 반드시 `arPanelPaint`/`arPanelLive` 안에서 `arSetH` 로 그릴 것 — 버튼·이벤트로만 갱신되는 표시 금지. 입력에 포커스가 있으면 설정 칸(.ar-cset)만 건너뜀, 열린 `<details>` 는 유지.
 - 원인(보스 줄이 '영역 보기/숨기기' 눌러야 갱신): arLivePaint 서명에 보스 상태(대기/진행/보상)·맵 상태가 없었고, 패널 안 포커스(방금 누른 버튼 포함)면 통째로 건너뜀.
