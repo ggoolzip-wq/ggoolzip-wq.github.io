@@ -1765,6 +1765,7 @@ function mapleAccOf(c){ if(!c) return ''; if(c.ocid) for(const k in listCache){ 
 const mesoKey = c => { const a=mapleAccOf(c); return a?'a:'+a:'c:'+c.id; };
 function mesoOf(c){ return c&&(S.meso||{})[mesoKey(c)]||null; }
 function saveMeso(cid,inv,sto){ const c=S.characters.find(x=>x.id===cid); if(!c||!(inv>=0)) return false; S.meso=S.meso||{}; const k=mesoKey(c), o=S.meso[k]||{};
+  if(S.meso[k]&&o.inv===Math.round(inv)&&(sto==null||o.sto===Math.round(sto))) return false; /* t543: 같은 값이면 저장·서버 호출 안 함 */
   S.meso[k]={inv:Math.round(inv),sto:sto!=null&&sto>=0?Math.round(sto):(o.sto??null),stoAt:sto!=null?Date.now():(o.stoAt||0),at:Date.now(),by:c.id,name:c.name}; save(); try{ render(); }catch(e){} return true; }
 const mesoTime = t => { const d=new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
 function fmtEok(n){ n=+n||0; const a=Math.abs(n); return a>=1e12?(n/1e12).toFixed(2)+'조':(n/1e8).toFixed(2)+'억'; }
@@ -2278,7 +2279,8 @@ function bossRow(c,b){
         <div class="diffs">${b.diffs.map(d=>`<span class="diff ${d===diff?'sel':''}" data-setdiff="${slot}|${d}">${D[d]} · ${price(b,d)>0?meso(price(b,d)):'가격 미확인'}</span>`).join('')}</div></div>
     </div>`;
   }
-  return `<div class="boss ${done?'done':''}">
+  const ck=S.clears?.[b.id+'|'+diff], clr=ck&&ck.sec>0?`<span class="clrtime${ck.est?' est':''}" title="최근 클리어 시간${ck.est?' (추정: 맵 이름 기준)':''}">${Math.floor(ck.sec/60)}분 ${ck.sec%60}초${ck.est?' (추정)':''}</span>`:''; /* t529 */
+  return `<div class="boss ${done?'done':''}">${clr}
     <div class="grow"><div class="bn">${bossPic(b,diff)}${esc(b.name)} ${diffImg(diff)}${done?clearImg():''}
       ${cr&&!cr.counted?'<span class="pill err">한도 초과</span>':''}</div>
       ${dropsHtml(b,diff,c)}
@@ -3556,10 +3558,14 @@ async function gdCommit(m,remote){
   if(toLocal&&!toRemote) toast('☁ '+GD_RES_MSG.pulled); // zosu: 자동 병합(merged) 알림은 화면 아래에 띄우지 않음
   return toLocal&&toRemote?'merged':toLocal?'pulled':toRemote?'pushed':'same';
 }
-function gdLoad(m){ localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(m)); load(); checkResets(); localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); applyTheme(); render(); }
+function gdLoad(m){ /* t536: 드라이브/서버에서 합친 값을 적용해도 선택 캐릭터·테마는 이 PC 값 — 다른 기기(또는 다른 탭)가 저장한 activeId 가 3-way 병합에서 '상대만 바뀜'으로 들어와 다른 캐릭터가 떴다가, 이 PC 가 다시 저장/선택하면 돌아오던 문제 */
+  if(S.activeId&&(m.characters||[]).some(c=>c.id===S.activeId)) m.activeId=S.activeId; if(S.theme!=null) m.theme=S.theme;
+  localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(m)); load(); checkResets(); localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(S)); applyTheme(); render(); }
 // 드라이브 데이터를 통째로 사용 (이 PC 가 비었을 때 / 처음 연결 질문에서 '드라이브' 선택)
 function gdApply(remote,msg){
   const d=JSON.parse(JSON.stringify(remote.data)); d.updatedAt=+remote.updatedAt||Date.now();
+  /* t536: 선택 캐릭터(activeId)·테마는 이 PC 값 (GD_LOCAL_RE). 예전엔 드라이브에 저장된 다른 PC/예전 선택이 1분마다 덮어써서 다른 캐릭터가 잠깐 뜸 */
+  const keepId=S.activeId; if(keepId&&(d.characters||[]).some(c=>c.id===keepId)) d.activeId=keepId; if(S.theme!=null) d.theme=S.theme;
   applyData(d); // load() 로 updatedAt 이 드라이브 값 그대로 유지됨 (드라이브의 API 키도 함께 복원)
   gdMeta.lastLoad=Date.now(); gdMarkSynced(+remote.updatedAt||0);
   if(!SV_ON && (gdKeyDiff(d).push || !remote.withKeys)) gdPush(); // 이 PC에만 있던 키를 드라이브에도 저장 (서버 모드는 키를 저장하지 않음)

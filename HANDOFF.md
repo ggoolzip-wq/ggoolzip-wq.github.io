@@ -2410,3 +2410,47 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   '영역 보기'는 고정 박스 + 박스 위 한국어 라벨(미니맵 맵 이름·닉네임·획득 로그·획득 배너·아이템 인식 영역). 미리보기 캔버스 1280x720.
 - 테스트: tests/test_b296.py (1줄·아이콘·잘림 없음·영역 UI) · 스크린샷 tests/out/b296_panel_*.png, b297_roi_*.png.
 - 보상 상자 기반 인식은 구현 안 함(조사만: /workspace/b297).
+
+## t529~t531 보스 클리어 시간 (2026-10-30 KST)
+- src/autorec.js: `arClrParse/arClrRead`(위 가운데 560×220·UI 배율 1 로 줄여 '남은시간' 7세그먼트 판독, 노란 띠+흰 윗줄, 분↔초 간격 검사), `arClrTick`(1초마다, arNameWatch 에서), `arClrMap`(arMapHit 보스 맵 시각=추정 시작 후보), `arClrLeave`(arMapWatch 다른 맵 2번 + 타이머 3초 이상 안 보임 → 버림), `arClrFinish`(arBoxStep 상자 감지 = 끝).
+- 입장 = t−(제한−남은) 중앙값. 제한 = AR_CLR_LIM['보스|난이도'] (비어 있음) 또는 첫 값 올림 ceil((rem+1)/60)분. 3번 이상 읽으면 예상값 ±3초만 받음(오판 무시), 예상+10초 넘는 값 2번 연속 = 클리어 리셋 신호 → 이후 무시. 상자 뒤 clrHold 로 맵 나갈 때까지 무시.
+- PRACTICE MODE: 세션 중 5초마다 위 가운데 영역 OCR /PRACTICE/ → 기록 안 함 (실제 화면으로는 미검증).
+- 저장 S.clears['보스id|난이도']={sec,at,est,n}. app.js bossRow 오른쪽 위 `.clrtime` "m분 s초"(추정이면 " (추정)", 주황). extra.css 네온, 라이트는 main * text-shadow:none!important 때문에 !important.
+- tests/test_b303.py: b284/b286 실제 1920 화면 13장 × 배율 1/1.33/1.875 (가려진 s04·s11·s12 는 null), 세션 시나리오 6개, 표시 다크/라이트 → tests/out/b303_clear_{dark,light}.png
+
+## t536 캐릭터 정보가 잠깐 다른 캐릭터로 바뀌었다 돌아오는 버그 (2026-10-30 KST)
+- 원인: 드라이브 동기화(1분마다 gdPull → gdSync → gdMerge 3-way 병합 → gdLoad)에서 activeId(선택 캐릭터)를 일반 데이터처럼 합침. 다른 PC/다른 탭이 저장한 activeId 가 '상대 쪽만 바뀐 값'으로 들어와 이 PC 선택을 덮어씀 → 다른 캐릭터 화면이 뜨고, 이 PC 가 다시 저장·선택하면 돌아옴. gdApply(통째 불러오기)도 같은 문제.
+- 수정: gdLoad·gdApply 에서 activeId(그 캐릭터가 있으면)·theme 은 이 PC 값 유지. (서버 모드 gdServerWins 는 GD_LOCAL_RE 로 이미 지켜짐)
+- tests/test_b304.py: 수정 전 drive 병합·통째 불러오기 2개 FAIL 재현 → 수정 후 통과.
+
+## t537 — 보스 인식: 맵 이름+보상 상자 동시 확정, 맵 이름 바뀌면 즉시 중단 (2026-10-30 KST)
+- `src/autorec.js`: `arLockTry`(상자 감지 시 최근 맵 이름 인식과 같은 보스면 `ARX.lock={boss,text,hash}` 저장. 그때 맵 이름이 없으면 상자가 보이는 동안 `arBoxStep`이 다시 확인),
+  `arBoxOk`는 lock 중이면 boxHoldSec 무시하고 계속 기록, stickySec 만료로도 안 지움.
+- 중단: `arLockCheck` — OCR 글자(공백 제거) 가 저장값과 다르고 **맵 이름 영역 글자 픽셀 지문(밝기>170 마스크, XOR/합집합)** 도 `AR_LOCK_DIST`(.02) 넘게 다르면 즉시 `arLockStop`.
+  글자만 다르고 픽셀 같으면 OCR 흔들림으로 무시. 못 읽은 프레임은 픽셀이 .06 넘게 다를 때만 중단. `arMapWatch`는 lock 중 0.4초마다 지문 비교해 다르면 OCR 즉시 재실행.
+- 클리어 시간 끝점은 그대로 상자 최초 감지(`arClrFinish`). 테스트 `tests/test_b305.py`. 받침 하나(맵→맴) 차이가 0.026 이라 임계값 여유가 작음 — 실제 영상 압축 잡음에서 오중단이 보이면 마스크 해상도/임계값 조정.
+
+## t538/t539 — 보스 18종 대기/전투/보상 맵 표로 인식·클리어 시간 (2026-10-30 KST)
+- `src/autorec.js` `AR_BMAP`: /workspace/bossmaps/boss_maps.json 에서 생성(/workspace/bossmaps/emit_js.py), [맵 이름(지역·<난이도> 제외), 보스, 종류 b/r/w] 71개.
+- `arDetectBMap`: 줄의 마지막 '：' 뒤 이름을 표와 비교(정확 일치 우선, 같으면 긴 이름 — '공허의 눈 앞' vs '공허의 눈'). 난이도 = 줄 끝 꺾쇠(<노멀>·OCR 변형 자모 비교), 없으면 `ARX.runDiff`(같은 판 마지막 난이도). `arDetectBoss`가 먼저 이걸 씀(기존 AR_REWARD 는 표에 없을 때만).
+- `arMapHit`: 대기 맵(w)=진행 중 클리어 시간 버림·(고정 아니면) 상자 해제. 전투 맵(b) 진입 = 클리어 시간 시작(mapT). 보상 전용 맵만으로는 시작 안 함. 보스 확정은 t537(맵 이름+상자).
+- 테스트 `tests/test_b306.py` ('고요한 제단 <노멀>' 등 글자 기준). 사용자 스크린샷 01M66D*.jpg 는 박스에서 접근 불가라 OCR 이미지 테스트는 못 함.
+
+## t541 — '현재 보스' 상태 표시 (대기 중 / 진행 중 / 보상 인식 중)
+- `arMapState(text,now)`: 맵 표(AR_BMAP)로 읽은 맵을 `ARX.mapSt`에 저장(보스 기록용 `ARX.det`과 별개). 대기 맵 → 클리어 시간 버림·(고정 아니면) 상자 해제, 전투 전용 맵 → 클리어 시간 시작. arMapWatch/arFrame2 맵 OCR 직후 호출.
+- `arDetectBoss`는 다시 '보상 맵'(표 kind에 r, 아니면 기존 AR_REWARD)만 보스로 돌려줌 → 기록은 보상 인식 때만.
+- `arBossState()`: rew(det.boss + 상자 OK/고정, 상자 템플릿 없으면 det.boss만) / run(대기 아닌 맵) / wait(대기 맵). 대기·진행 중에도 mapSt의 보스·난이도 표시.
+- CSS `.ar-bst` (extra.css): 노랑/빨강/밝은 초록 네온 점, 라이트 테마는 진한 글자색 + `!important` 그림자.
+- 테스트 b307 (스샷 tests/out/b307_{wait,run,rew}_{dark,light}.png), b306은 arDetectBMap/arMapState 사용으로 수정.
+
+## t542~t549 — 인식 주기 · 서버 호출 · CPU 측정
+- 메소: `mesoEvery` 기본 4000→1000ms (arMesoTick, 프레임 3fps라 실제 1~1.33초). 한 번 읽기 비용은 OCR 워커라 메인 스레드 거의 0.
+- `saveMeso`: 인벤/창고 값이 같으면 저장·render·gdChanged 안 함 (전엔 `at`이 바뀌어 매 읽기마다 서버 저장 예약). 아이템 기록·클리어 시간 확정은 원래 값이 바뀔 때만 save → gdChanged(5초 디바운스). 테스트 b308: 같은 메소 10번=0회, 값 변경=1회, 클리어 확정=1회.
+- 보상 상자(t547/548): 상자 1종 점수 ≈48ms(이 box, 1366x768), 19종 전부 ≈900ms → 항상 0.2초 전부는 불가. 보상 맵(boss_maps.json kind r, 8초 안에 읽힘)이면 그 보스 상자만 0.2초마다(`AR_BOX_REW_MS`, 별도 `ARX.boxTimer`), 다른 맵은 1초마다 1/3씩 돌아가며(`boxFps` 기본 2→1). `ARX.boxBusy`로 겹침 방지.
+- 고정 중 맵 해시 비교 0.4→0.2초.
+- 측정 b308 → tests/out/b308_perf.json (프로필러+하트비트).
+
+## t550 — 메소 8↔0 오인식 방지 (부분)
+- arMesoNow: 같은 (캐릭터·인벤·창고·창 종류) 값이 연속 `mesoVotes`(기본 3)번 읽혀야 saveMeso. 1초 주기라 저장까지 약 3초. 그 전엔 {why:'vote',votes}.
+- 사용자 예시 이미지(203억 2829만 4388)는 box에 파일이 없어 fixture/8·0 분류 개선은 못 함 — 이미지 받으면 숫자 모양(가운데 가로획·구멍 2개) 검사 추가 예정.
+- b302: 1번만 읽으면 저장 안 함 확인 추가, 기존 20장 그대로 통과.

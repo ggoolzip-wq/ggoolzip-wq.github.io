@@ -2055,3 +2055,19 @@ header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 .mesorow .mesolast{grid-column:2 / 4;justify-self:end;font-size:12px;color:var(--muted,#8a8f98);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .mesorow .mesosto{opacity:.8}
 @media(max-width:600px){.mesorow{grid-template-columns:1fr}.mesorow .mesolast{grid-column:1;white-space:normal}}
+
+/* t529: 보스 칸 오른쪽 위 최근 클리어 시간 (네온) */
+.boss{position:relative}
+.boss .clrtime{position:absolute;top:3px;right:8px;font-size:11px;font-weight:700;line-height:1;letter-spacing:.2px;color:#7ff6ff;text-shadow:0 0 3px #00e5ff,0 0 8px rgba(0,229,255,.7);pointer-events:auto;z-index:1}
+.boss .clrtime.est{color:#ffd27f;text-shadow:0 0 3px #ffb000,0 0 8px rgba(255,176,0,.6)}
+[data-theme=light] main .boss .clrtime{color:#0077a8;text-shadow:0 0 2px #fff,0 0 6px rgba(0,180,255,.75)!important}
+[data-theme=light] main .boss .clrtime.est{color:#a85d00;text-shadow:0 0 2px #fff,0 0 6px rgba(255,160,0,.7)!important}
+/* t541: 현재 보스 상태 점 (네온) */
+.ar-bst{display:flex;align-items:center;gap:6px;font-size:.82rem;font-weight:800;margin-bottom:4px}
+.ar-bst .ar-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.ar-bst.wait{color:#ffd42a}.ar-bst.wait .ar-dot{background:#ffe14d;box-shadow:0 0 4px #ffd42a,0 0 10px #ffc400,0 0 16px rgba(255,196,0,.7)}
+.ar-bst.run{color:#ff4d5e}.ar-bst.run .ar-dot{background:#ff3448;box-shadow:0 0 4px #ff3448,0 0 10px #ff1f3a,0 0 16px rgba(255,31,58,.7)}
+.ar-bst.rew{color:#39ff7a}.ar-bst.rew .ar-dot{background:#3dff7f;box-shadow:0 0 4px #3dff7f,0 0 10px #18f060,0 0 16px rgba(24,240,96,.7)}
+[data-theme=light] .ar-bst.wait{color:#a86d00!important}[data-theme=light] .ar-bst.run{color:#c8102e!important}[data-theme=light] .ar-bst.rew{color:#0a8f3c!important}
+[data-theme=light] main .ar-bst .ar-dot,[data-theme=light] .ar-bst .ar-dot{outline:1px solid rgba(0,0,0,.25)}
+[data-theme=light] .ar-bst.wait .ar-dot{box-shadow:0 0 4px #ffc400,0 0 10px #ffb000!important}[data-theme=light] .ar-bst.run .ar-dot{box-shadow:0 0 4px #ff1f3a,0 0 10px #ff1f3a!important}[data-theme=light] .ar-bst.rew .ar-dot{box-shadow:0 0 4px #18f060,0 0 10px #0fd955!important}

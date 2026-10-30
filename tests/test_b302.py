@@ -50,8 +50,9 @@ try:
     T0=pg.evaluate("new Date(2026,9,30,21,18).getTime()")
     r=pg.evaluate("""async t=>{ const A=window.AR; A.bbox=null;A.bbKey='';A.prof=null;A.geo=null; await arProfDetect(window._cv); const on=Date.now;
       let seq=['c1']; A.nameOf=()=>seq.shift()||'c2'; seq=['c2']; Date.now=()=>t; A.det.cid='c1'; const bad=await arMesoNow(window._cv); const savedBad=JSON.stringify(S.meso);
-      seq=['c1']; A.nameOf=()=>'c1'; A.det.cid='c1'; const good=await arMesoNow(window._cv); A.nameOf=null; Date.now=on; return {bad,savedBad,good,meso:S.meso}; }""",T0)
+      seq=['c1']; A.nameOf=()=>'c1'; A.det.cid='c1'; A.mesoVote=null; const g1=await arMesoNow(window._cv), m1=JSON.stringify(S.meso); await arMesoNow(window._cv); const good=await arMesoNow(window._cv); A.nameOf=null; Date.now=on; return {bad,savedBad,g1,m1,good,meso:S.meso}; }""",T0)
     check('닉네임이 메소 읽는 사이 바뀌면 저장 안 함',r['bad'].get('why')=='name' and r['savedBad']=='{}',r)
+    check('t550: 같은 값 1번만 읽힘 → 아직 저장 안 함 (3번 일치 필요)',r['g1'].get('why')=='vote' and r['m1']=='{}',r)
     check('닉네임 같으면 메이플 ID(maple-A)로 저장 (인벤+창고)',r['good'].get('inv')==22564195389 and r['meso'].get('a:maple-A',{}).get('inv')==22564195389 and r['meso']['a:maple-A'].get('sto')==0,r)
     # 표시
     for th in ['dark','light']:
