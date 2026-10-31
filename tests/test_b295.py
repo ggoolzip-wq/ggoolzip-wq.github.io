@@ -56,7 +56,7 @@ try:
         ex={'full':(0,0),'win':(8,31),'box':((CW-W)//2,(CH-H)//2)}[mode]
         check(f'{tag}: 게임 화면 {W}x{H} @({ex[0]},{ex[1]}) · UI {s}배', (r['G']['w'],r['G']['h'],r['G']['s'])==(W,H,s) and abs(r['G']['x']-ex[0])<=2 and abs(r['G']['y']-ex[1])<=2, r['G'])
         check(f'{tag}: 이름 영역 = 상태바 이름 자리 (모서리 + UI px×배율)', r['iou']>=.85, r['iou'])
-        check(f'{tag}: 이름 OCR → 트딕이', r['cid']=='c0', r['nt'])
+        check(f'{tag}: 이름 OCR → 트딕이 또는 없음 (t574: 정확히 같을 때만 · 다른 캐릭터 절대 아님)', r['cid'] in ('c0',''), r['nt'])
         check(f'{tag}: 맵 OCR → 보스 인식', bool(r['boss']), r['mt'])
         check(f'{tag}: 배너 아이콘 46×배율 · 바닥 아이콘 71×게임높이/1080', r['ban']==46*s and abs(r['gp']-round(71*H/1080))<=1, (r['ban'],r['gp']))
         check(f'{tag}: 로그 영역 오른쪽 아래 붙음', abs(r['log'][0]+r['log'][2]-(ex[0]+W))<=2 and abs(r['log'][1]-(ex[1]+H-486*s))<=2, r['log'])

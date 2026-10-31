@@ -40,11 +40,11 @@ try:
         wh=pg.evaluate(LOAD,n+'.jpg'); r=pg.evaluate(RUN)
         if PROBE: print(n,wh,json.dumps(r,ensure_ascii=False)[:900])
         bd=(r['det']['boss'],r['det']['diff']); ban=any(f[0]=='ab_a' and f[1]=='banner' for f in r['found'] or [])
-        rows.append((n,bd==TRUTH[n],r['det']['cid']==CHAR[n],not any(f[0] in ('ab_a','ab_w') for f in r['found'] or []),'ab_a' in ' '.join(r['logItems']),r['map'],r['name']))
+        rows.append((n,bd==TRUTH[n],r['det']['cid'] in (CHAR[n],''),not any(f[0] in ('ab_a','ab_w') for f in r['found'] or []),'ab_a' in ' '.join(r['logItems']),r['map'],r['name']))
     print('ROWS',json.dumps(rows,ensure_ascii=False))
     ok=lambda i:sum(1 for r in rows if r[i])
     check('맵 → 보스·난이도 13장 모두', ok(1)==13, [r[0] for r in rows if not r[1]])
-    check('상태바 → 2터래플(s01-09)·터래플(s10-13) 13장 모두 (파티원 이름표 무시)', ok(2)==13, [r[0] for r in rows if not r[2]])
+    check('상태바 → 2터래플/터래플 또는 없음 13장 (t574: 흐린 OCR 이면 없음 · 다른 캐릭터 절대 아님, 파티원 이름표 무시)', ok(2)==13, [r[0] for r in rows if not r[2]])
     check('b288 기록 가능 아이템만: 앱솔 상자 배너는 13장 어디서도 안 찾음', ok(3)==13, [r[0] for r in rows if not r[3]])
     check('b288: 로그의 앱솔랩스 방어구.. 줄도 무시', not any(r[4] for r in rows), [r[0] for r in rows if r[4]])
     # 빠르게 쌓이는 로그 (솔로 자동 줍기, 0.1초마다 갱신) — 줄마다 정확히 한 번

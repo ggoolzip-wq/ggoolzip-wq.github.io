@@ -45,7 +45,7 @@ try:
     check('v07: 모든 프레임에서 벨로나 이지 유지 (번쩍이는 프레임 포함)', all(s[1]=='bellona' and s[2]=='easy' for s in seq), seq)
     check('v07: 백옥의 보스 반지 상자 로그 줄 정확히 1번 셈', fin['cnt'].count('r_white')==1, fin['cnt'])
     rec=[l for l in fin['log'] if '자동 기록' in l]
-    check('v07: 트딕이로 전환 · 벨로나 백옥 반지 상자 자동 기록 (반지 결과 고르기 창)', fin['act']=='c0' and fin['cid']=='c0' and len(rec)==1 and '백옥의 보스 반지 상자 · 벨로나' in rec[0], fin)
+    check('v07: (t574) 흐린 OCR 이면 트딕이로 억지 전환 안 함 · 벨로나 백옥 반지 상자 자동 기록 (반지 결과 고르기 창)', fin['cid'] in ('','c0') and fin['act'] in ('c0','c1') and len(rec)==1 and '백옥의 보스 반지 상자 · 벨로나' in rec[0], fin)
     # 로그 줄 OCR 변형 (실제 영상에서 나온 글자)
     q=pg.evaluate("""()=>{ window.AR.det={cid:'c0',boss:'bellona',diff:'easy',src:'t'};
       return ['백옥의 보즈 반.. 마미템을 | 개 얻었습니다. 「 소비 )','백옥의 보스 반.. 아이템플 1 개 얼있슬니다. ( 소비 )','백옥의 보스 반.. 아이템을 1 개 펀켰습니다. ( 소비 )','주문의 흔적 아이템을 240 개 얻었습니다. ( 기타 )'].map(l=>(arLogItem(l)||{}).k||''); }""")
@@ -54,7 +54,7 @@ try:
     h=pg.evaluate("()=>{ const A=window.AR; A.det={cid:'c0',boss:'',diff:'',src:''}; arSoulHint('소비 아이템을 얻었습니다 (벨로나의 소울 조각)'); const a=A.det.boss; A.det.boss=''; arSoulHint('소비 아이템을 얻었습니다 (최초의 대적자의 소..)'); return [a,A.det.boss]; }")
     check('b291: 소울 조각 줄로 보스 안 정함 (보상 맵 이름으로만)', h==['',''], h)
     nm=pg.evaluate("()=>['07.209 드틱니      “ 뇨','17.208 드닉니','Lv.289 터래플'].map(arDetectChar)")
-    check('상태바 이름: 뒤 잡티 한 글자 무시 · 흐린 OCR(드틱니/드닉니) → 트딕이', nm==['c0','c0','c2'], nm)
+    check('상태바 이름: 뒤 잡티 한 글자 무시 · 흐린 OCR(드틱니/드닉니) → t574: 정확히 같지 않으면 없음', nm==['','','c2'], nm)
     b.close()
 finally: srv.terminate()
 check('페이지 오류 없음', not errs, errs)
