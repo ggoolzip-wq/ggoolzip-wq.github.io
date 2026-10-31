@@ -716,7 +716,7 @@ function arGuide(){ if(arLive()) return; let m=$('#arGuide'); if(!m){ m=document
     <ul><li>오른쪽 아래 <b class="ar-pk">획득 로그</b>를 읽어야 하니 파티 목록 등으로 가리지 마세요.</li><li>캐릭터 능력치·장비창·인벤토리 등 <b class="ar-or">아이템 인식</b>을 방해하는 창은 띄우지 마세요.</li></ul>
     <div class="ar-gimg"><img src="data/ar_guide_07.webp" alt="예시: 분홍 = 획득 로그, 주황 = 아이템 떨어지는 곳" width="640" height="360"><img src="data/ar_guide_01.webp" alt="예시 2" width="640" height="360" loading="lazy"></div>
     <small class="muted">분홍 = 획득 로그 · 주황 = 아이템 떨어지는 곳</small><div class="ar-gf"><button type="button" class="btn primary" data-arg="ok">확인</button></div>`;
-  const tb=$('#tabs [data-tab="auto"]')?.getBoundingClientRect(); m.hidden=false; if(tb){ const w=Math.min(560,innerWidth-24); m.style.width=w+'px'; m.style.top=Math.round(tb.bottom+8)+'px'; m.style.left=Math.round(Math.max(12,Math.min(innerWidth-w-12,tb.left+tb.width/2-w/2)))+'px'; } }
+  const tb=$('#tabs [data-tab="auto"]')?.getBoundingClientRect(); m.hidden=false; if(tb){ const w=Math.min(1100,innerWidth-24), tp=Math.round(tb.bottom+8); m.style.width=w+'px'; m.style.top=tp+'px'; m.style.maxHeight=Math.max(200,innerHeight-tp-12)+'px'; /* b317(t572): 안내창 560→1100px, 사진 약 2배, 화면 넘치면 창 안 스크롤 */ m.style.left=Math.round(Math.max(12,Math.min(innerWidth-w-12,tb.left+tb.width/2-w/2)))+'px'; } }
 document.addEventListener('click',e=>{ if(e.target.closest('#tabs [data-tab="auto"]')||e.target.closest('#arPanel [data-ar="guide"]')){ if(!arLive()) setTimeout(arGuide,0); return; }
   const m=$('#arGuide'); if(m&&!m.hidden&&!m.contains(e.target)) m.hidden=true; });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const m=$('#arGuide'); if(m) m.hidden=true; } }); // b288: 위쪽 버튼 한 번에 화면 선택 창 (전엔 패널만 열고 패널의 버튼을 또 눌러야 했음)

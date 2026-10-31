@@ -2,6 +2,12 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b316~b317 (t571·t572) 상단 탭 네온 박스 · 자동 기록 안내창 크게
+- **b316(t571)**: 상단 탭(#tabs button) = 둥근 네모 박스(8px) + t523 네온 버튼 색(--nb1 시안 → --nb2 보라 그라디언트 테두리, 유리 바탕). 선택 탭 = 바탕 색 + 빛 더 큼, hover = 빛 커짐 + 1px 위로. ㅡ 구분선(.tabsep) 유지. 휴대폰(≤640px) = 줄바꿈(가로 스크롤·넘침 없음). 다크/라이트 모두. 규칙은 extra.css 맨 끝(html body nav.tabs …, 예전 밑줄 border-image 규칙들을 덮음).
+- **b317(t572)**: '보스 득템 자동 기록' 안내창(#arGuide) 폭 560 → min(1100, 화면-24)px, 사진 260 → 약 520px(2배), max-height = 화면 아래까지(JS) + overflow 자동 → 넘치면 창 안 스크롤. ≤700px 은 사진 한 줄에 하나.
+- 테스트: tests/test_b316.py (1600·390·낮은 화면 520, 다크/라이트: 탭 박스·겹침 없음·넘침 없음·구분선·선택/hover 빛, 안내창 화면 안·사진 크기·내부 스크롤).
+- 스크린샷: /workspace/t571/{before,after}_{dark,light}_{1600,390}.png, g_{before,after}_{dark,light}_{1600,390}.png
+
 ## b314~b315 (t569·t570) 사이트 전체 글씨체 통일 · 클리어 시간 글씨 키움
 - **원인(탭마다 글씨체가 달랐던 이유)**: b156 규칙(extra.css) — 사이트 기본은 `'Orbit'`(Google Fonts) + 자간 -.03em, 그런데 `body[data-curtab="boss"]` 일 때만 캐릭터 닉네임·보스 카드·가격 카드를 Pretendard 스택(자간 보통)으로 바꾸는 예외가 있었음. 그래서 '이번 주 보스' 탭을 누르면 왼쪽 캐릭터 목록 글씨가 바뀜. Pretendard 는 웹폰트로 싣지 않아 PC 에 설치된 것(없으면 Malgun Gothic)으로 그려짐.
 - **변경(b314)**: html,body = `"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif`, letter-spacing normal. 보스 탭 전용 예외 삭제, .pc-foot/.pc-date 의 Orbit 강제 삭제, Orbit 웹폰트 로드(orbitFont 호출) 중단. **규칙: 새 글씨체를 탭별로 지정하지 말 것. 예외는 사용자가 만든 디지털 글씨(MrjUnitKo: .tir-k·.tsk·.hdot·로고)뿐.**

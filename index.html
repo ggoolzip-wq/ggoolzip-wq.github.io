@@ -2201,6 +2201,28 @@ header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 .boss .clrtime{font-size:calc(.8rem * 1.3);top:4px;right:10px;letter-spacing:normal}
 /* b314: Pretendard 스택은 Orbit 보다 넓음 → 휴대폰 폭에서 API 안내 줄 넘침 방지(넓은 화면은 한 줄 그대로) */
 @media (max-width:520px){#svMainSec .apiguide li{white-space:normal;overflow-wrap:anywhere}}
+/* b316(t571): 상단 탭 = 네모 박스 네온 버튼(t523 네온 버튼과 같은 색 --nb1 시안 → --nb2 보라). 선택 탭 = 더 밝게, hover = 빛 커짐. ㅡ 구분선(.tabsep) 유지. 휴대폰 = 줄바꿈(가로 넘침 없음) */
+nav.tabs{gap:8px!important;padding:3px 12px 4px!important;align-items:center;flex-wrap:wrap;overflow:visible!important}
+html body nav.tabs button{position:relative;padding:5px 16px!important;border-radius:8px!important;border:1.5px solid transparent!important;border-image:none!important;
+  background:linear-gradient(var(--nbbg),var(--nbbg)) padding-box,linear-gradient(135deg,color-mix(in srgb,var(--nb1) 55%,transparent),color-mix(in srgb,var(--nb2) 55%,transparent)) border-box!important;
+  color:color-mix(in srgb,var(--nbtx) 78%,transparent)!important;text-shadow:none!important;filter:none!important;
+  box-shadow:0 0 6px color-mix(in srgb,var(--nb1) 18%,transparent),inset 0 0 8px color-mix(in srgb,var(--nb1) 8%,transparent)!important;transition:box-shadow .2s,color .2s,transform .15s,background .2s}
+html body nav.tabs button:hover{color:var(--nbtx)!important;transform:translateY(-1px);
+  box-shadow:0 0 12px color-mix(in srgb,var(--nb1) 50%,transparent),0 0 26px color-mix(in srgb,var(--nb2) 28%,transparent),inset 0 0 10px color-mix(in srgb,var(--nb1) 18%,transparent)!important}
+html body nav.tabs button.on{color:var(--nbtx)!important;font-weight:800;
+  background:linear-gradient(color-mix(in srgb,var(--nb1) 16%,var(--nbbg)),color-mix(in srgb,var(--nb2) 12%,var(--nbbg))) padding-box,linear-gradient(135deg,var(--nb1),var(--nb2)) border-box!important;
+  text-shadow:0 0 8px color-mix(in srgb,var(--nb1) 70%,transparent)!important;
+  box-shadow:0 0 14px color-mix(in srgb,var(--nb1) 70%,transparent),0 0 32px color-mix(in srgb,var(--nb2) 42%,transparent),inset 0 0 14px color-mix(in srgb,var(--nb1) 30%,transparent)!important}
+[data-theme=light] body nav.tabs button{box-shadow:0 1px 5px rgba(40,60,120,.10),inset 0 1px 0 rgba(255,255,255,.9)!important}
+[data-theme=light] body nav.tabs button:hover{box-shadow:0 2px 10px rgba(40,60,120,.14),0 0 12px color-mix(in srgb,var(--nb1) 35%,transparent)!important}
+[data-theme=light] body nav.tabs button.on{color:#14306e!important;text-shadow:none!important;box-shadow:0 2px 10px rgba(40,60,120,.16),0 0 16px color-mix(in srgb,var(--nb1) 55%,transparent),0 0 28px color-mix(in srgb,var(--nb2) 28%,transparent)!important}
+[data-theme=light] nav.tabs .tabsep{background:color-mix(in srgb,var(--nb2) 60%,#888)}
+html body nav.tabs button:focus-visible{outline:2px solid var(--nb1);outline-offset:2px}
+@media (max-width:640px){nav.tabs{gap:6px!important;padding:6px 8px!important;justify-content:center}html body nav.tabs button{padding:6px 10px!important;font-size:.82rem}nav.tabs .tabsep{width:10px;margin:0 2px}}
+/* b317(t572): 자동 기록 안내창 크게 — 사진 약 2배(260→520px), 글씨 조금 크게, 넘치면 창 내부 스크롤, 휴대폰 = 사진 한 줄에 하나 */
+.ar-guide{padding:18px 22px;font-size:1rem;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box}
+.ar-guide .ar-gh b{font-size:1.15rem}.ar-gimg{gap:12px;margin:10px 0 4px}.ar-gimg img{border-radius:8px}
+@media (max-width:700px){.ar-guide{padding:14px}.ar-gimg{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -7503,7 +7525,7 @@ function arGuide(){ if(arLive()) return; let m=$('#arGuide'); if(!m){ m=document
     <ul><li>오른쪽 아래 <b class="ar-pk">획득 로그</b>를 읽어야 하니 파티 목록 등으로 가리지 마세요.</li><li>캐릭터 능력치·장비창·인벤토리 등 <b class="ar-or">아이템 인식</b>을 방해하는 창은 띄우지 마세요.</li></ul>
     <div class="ar-gimg"><img src="data/ar_guide_07.webp" alt="예시: 분홍 = 획득 로그, 주황 = 아이템 떨어지는 곳" width="640" height="360"><img src="data/ar_guide_01.webp" alt="예시 2" width="640" height="360" loading="lazy"></div>
     <small class="muted">분홍 = 획득 로그 · 주황 = 아이템 떨어지는 곳</small><div class="ar-gf"><button type="button" class="btn primary" data-arg="ok">확인</button></div>`;
-  const tb=$('#tabs [data-tab="auto"]')?.getBoundingClientRect(); m.hidden=false; if(tb){ const w=Math.min(560,innerWidth-24); m.style.width=w+'px'; m.style.top=Math.round(tb.bottom+8)+'px'; m.style.left=Math.round(Math.max(12,Math.min(innerWidth-w-12,tb.left+tb.width/2-w/2)))+'px'; } }
+  const tb=$('#tabs [data-tab="auto"]')?.getBoundingClientRect(); m.hidden=false; if(tb){ const w=Math.min(1100,innerWidth-24), tp=Math.round(tb.bottom+8); m.style.width=w+'px'; m.style.top=tp+'px'; m.style.maxHeight=Math.max(200,innerHeight-tp-12)+'px'; /* b317(t572): 안내창 560→1100px, 사진 약 2배, 화면 넘치면 창 안 스크롤 */ m.style.left=Math.round(Math.max(12,Math.min(innerWidth-w-12,tb.left+tb.width/2-w/2)))+'px'; } }
 document.addEventListener('click',e=>{ if(e.target.closest('#tabs [data-tab="auto"]')||e.target.closest('#arPanel [data-ar="guide"]')){ if(!arLive()) setTimeout(arGuide,0); return; }
   const m=$('#arGuide'); if(m&&!m.hidden&&!m.contains(e.target)) m.hidden=true; });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const m=$('#arGuide'); if(m) m.hidden=true; } }); // b288: 위쪽 버튼 한 번에 화면 선택 창 (전엔 패널만 열고 패널의 버튼을 또 눌러야 했음)
