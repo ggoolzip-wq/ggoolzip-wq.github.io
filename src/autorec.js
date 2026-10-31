@@ -32,6 +32,9 @@ const AR_DEF={on:true, nameTpl:true, /* t603: 투표로 확정된 닉네임만 �
   airKeep:10,     // b289: 보관할 띠 프레임 수 (airFps 6 → 약 1.7초)
   airWin:1.2,     // b289: 후보 앞뒤 몇 초까지 다시 볼지
   airThr:.73,     // b296: WZ 원본 아이콘 기준 (v01·v07·v11 백옥 .73~.91). b289: 공중 기준 (v01·v07·v11 백옥 .78~.89 / 엉뚱한 곳·다른 아이콘 ≤ .7)
+  airScales:[.62,1],airKeyScales:{mc_:[.62],ipc:[1],'':[1]},airKeyThr:{mc_:.7},airKeySad:{mc_:30,ipc:30}, // t619: 공중 크기 배율(× 바닥 기준 px) — 영상 B 메멘토 큐브는 48px(=.65배), 주보 결정석은 1배
+  airErode:2,     // t619: 공중 템플릿 가장자리 깎기(px) + 색 흐리기
+  airRinv:true,   // t619: 회전 평균 템플릿으로 대략 찾기 (공중 1회 0.3초 → 0.1초 이하)
   airSad:40,      // b289: 공중 색 차이 상한 (정답 24~37, 빗나간 각도 ≥ 40)
   itemFps:2,      // b287: 바닥·공중 찾기 최대 횟수/초 (화면이 바뀐 때만, Worker 에서)
   prev:1,         // b287: 미리보기 갱신 횟수/초 (0 = 숨김)
@@ -114,7 +117,9 @@ function arLatChar(text){ const fx=x=>String(x||'').toLowerCase().replace(/[1|!]
 function arTarget(){ if(arLive()&&!ARX.det.cid) return null; /* t551: 화면 공유 중 인식된 캐릭터가 목록에 없으면(또는 아직 모르면) 기록 대상 없음 — 이전·수동 캐릭터로 넘어가지 않음 */
   const c=S.characters.find(x=>x.id===(ARX.det.cid||ARX.cfg.cid))||activeChar(); if(!c) return null;
   const bid=ARX.det.boss||ARX.cfg.boss; const b=bid?findBoss(bid):null; return {c,b,diff:b?((ARX.det.boss===b.id&&ARX.det.diff)||c.bosses?.[b.id]?.diff||b.diffs[0]):''}; }
-function arCandidates(withE){ const t=arTarget(); if(!t) return [];
+const AR_REWX=['ipc','ipcm','mc_b','mc_g','mc_s']; // t619: 보상 인식 중엔 드롭 표 + 결정석·큐브 전부
+function arCandidates(withE){ let o=arCandidates0(withE); if(!(withE&&ARX.rwl&&(o.length||arLive()))) return o; /* 공중 검사만 — 바닥은 혼자면 곧 자동 줍기, 같은 워커라 공중을 늦춤 */ o=o.filter(c=>!/^(emo_|dif_)/.test(c.k)); const b=o[0]?.b||null; for(const k of AR_REWX) if(ITEM_ICONS[k]&&!o.some(c=>c.k===k)) o.push({k,b,info:false,rew:true}); return o; }
+function arCandidates0(withE){ const t=arTarget(); if(!t){ /* t613: 보상 인식 중인데 캐릭터 아직 모름 → 보스 드롭으로 찾기만 하고 기록은 보류(arRecord) */ if(!(arLive()&&ARX.rwl&&ARX.det.boss)) return []; const b=findBoss(ARX.det.boss); if(!b) return []; const out=[]; for(const d of (ARX.det.diff?[ARX.det.diff]:b.diffs)) for(const k of dropsFor(b,d)) if(ITEM_ICONS[k]&&!out.some(o=>o.k===k)) out.push({k,b,info:false}); return out; }
   const list=t.b?[[t.b,t.diff]]:BOSSES.filter(b=>t.c.bosses?.[b.id]?.enabled).flatMap(b=>t.c.bosses[b.id].diff?[[b,t.c.bosses[b.id].diff]]:b.diffs.map(d=>[b,d])); // b285: 난이도 안 정한 보스는 모든 난이도
   const out=[]; for(const [b,d] of list) for(const k of dropsFor(b,d)) if(ITEM_ICONS[k]) out.push({k,b,info:false}); // b288 사용자 규칙: 대시보드 드롭 표에서 수익 기록되는 것만 (앱솔·아케인 상자·에테르넬 조각 등 정보용은 아예 안 찾음)
   return out; }
@@ -225,21 +230,45 @@ function arXform(src,px,ang,sq){ if(!ang&&sq===1) return {d:src,w:px,h:px}; cons
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const dx=x+.5-W/2, dy=y+.5-H/2, u=c*dx+s*dy+px/2, v=(-s*dx+c*dy)/sq+px/2, sx=Math.floor(u), sy=Math.floor(v);
     if(sx<0||sy<0||sx>=px||sy>=px) continue; const p=(sy*px+sx)*4, q=(y*W+x)*4; o[q]=src[p]; o[q+1]=src[p+1]; o[q+2]=src[p+2]; o[q+3]=src[p+3]; } return {d:o,w:W,h:H}; }
 const AR_XC=typeof WeakMap!=='undefined'?new WeakMap():null;
-function arXcache(src,px,ang,sq,f){ let M=AR_XC&&AR_XC.get(src); if(!M&&AR_XC){ M=new Map(); AR_XC.set(src,M); } const key=px+'|'+ang+'|'+sq+'|'+f; let X=M&&M.get(key); if(X) return X;
-  const tv=arXform(src,px,ang,sq), Tf={d:Float32Array.from(tv.d,(v,i)=>i%4===3?v/255:v),w:tv.w,h:tv.h}, Tc=arDown(tv.d,tv.w,tv.h,f); X={Tf,Tc,Pc:arPrepIdx(Tc)}; M&&M.set(key,X); return X; }
+/* t619: 공중 아이템은 영상에서 테두리가 번지고(압축·보라 광택) 서로 겹쳐서 가장자리가 안 맞음 → 알파 er 픽셀 깎고 색 3×3 흐리게 (영상 B 큐브 .73 → .85) */
+function arErode(tv,er){ let w=tv.w,h=tv.h,d=Uint8ClampedArray.from(tv.d); for(let it=0;it<er;it++){ const a=new Uint8Array(w*h); for(let i=0;i<w*h;i++) a[i]=d[i*4+3]>=204?1:0;
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){ if(!a[y*w+x]) continue; let ok=1; for(let j=-1;j<=1&&ok;j++) for(let i=-1;i<=1;i++){ const X=x+i,Y=y+j; if(X<0||Y<0||X>=w||Y>=h||!a[Y*w+X]){ ok=0; break; } } if(!ok) d[(y*w+x)*4+3]=0; } }
+  const o=Uint8ClampedArray.from(d), S=tv.d; for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const q=(y*w+x)*4; if(o[q+3]<204) continue; let r=0,g=0,b=0,n=0; for(let j=-1;j<=1;j++) for(let i=-1;i<=1;i++){ const X=x+i,Y=y+j; if(X<0||Y<0||X>=w||Y>=h) continue; const p=(Y*w+X)*4; if(S[p+3]<128) continue; r+=S[p]; g+=S[p+1]; b+=S[p+2]; n++; } if(n){ o[q]=r/n; o[q+1]=g/n; o[q+2]=b/n; } }
+  return {d:o,w,h}; }
+function arXcache(src,px,ang,sq,f,er){ let M=AR_XC&&AR_XC.get(src); if(!M&&AR_XC){ M=new Map(); AR_XC.set(src,M); } const key=px+'|'+ang+'|'+sq+'|'+f+'|'+(er|0); let X=M&&M.get(key); if(X) return X;
+  let tv=arXform(src,px,ang,sq); if(er) tv=arErode(tv,er); const Tf={d:Float32Array.from(tv.d,(v,i)=>i%4===3?v/255:v),w:tv.w,h:tv.h}, Tc=arDown(tv.d,tv.w,tv.h,f); X={Tf,Tc,Pc:arPrepIdx(Tc)}; M&&M.set(key,X); return X; }
+/* t619: 회전 불변 대략 찾기 — 0~330° 12각을 평균낸 원형 템플릿으로 전체 1번 → 상위 J.rtop 자리(겹침 제거)만 모든 각도로 대략 점수 → V */
+function arRinvT(src,px,f){ let M=AR_XC&&AR_XC.get(src); if(!M&&AR_XC){ M=new Map(); AR_XC.set(src,M); } const key='r|'+px+'|'+f; let X=M&&M.get(key); if(X) return X;
+  const D=Math.ceil(px*1.42), acc=new Float32Array(D*D*4); let n=0; for(let a=0;a<360;a+=30){ const t=arXform(src,px,a,1), ox=Math.floor((D-t.w)/2), oy=Math.floor((D-t.h)/2); n++;
+    for(let y=0;y<t.h;y++) for(let x=0;x<t.w;x++){ const i=(y*t.w+x)*4, al=t.d[i+3]/255, o=((y+oy)*D+x+ox)*4; acc[o]+=t.d[i]*al; acc[o+1]+=t.d[i+1]*al; acc[o+2]+=t.d[i+2]*al; acc[o+3]+=al; } }
+  const u=new Uint8ClampedArray(D*D*4); for(let i=0;i<D*D;i++){ const a=acc[i*4+3]; if(a>0){ u[i*4]=acc[i*4]/a; u[i*4+1]=acc[i*4+1]/a; u[i*4+2]=acc[i*4+2]/a; } u[i*4+3]=a/n*255; }
+  const Tc=arDown(u,D,D,f); X={Tc,Pc:arPrepIdx(Tc),D}; M&&M.set(key,X); return X; }
+function arRinvCoarse(J,Fc,src,px,angs,f,V,k){ const R=arRinvT(src,px,f), Tc=R.Tc; if(Tc.w>Fc.w||Tc.h>Fc.h) return;
+  const g=k&&(J.groups||[]).find(g=>g.includes(k)), gk=(g?g.find(x=>J.keys.includes(x)):k)+'|'+px, TC=J._tops||(J._tops={}); let top=TC[gk]; // t619: 모양 같은 묶음(큐브 3색)은 자리 찾기를 1번만 하고 색·각도는 키마다 따로 (속도)
+  if(!top){ const S=[]; for(let y=0;y+Tc.h<=Fc.h;y++) for(let x=0;x+Tc.w<=Fc.w;x++){ const s=arScoreP(Fc,R.Pc,x,y); if(s>=(J.rmin??.35)) S.push([s,x,y]); }
+    S.sort((a,b)=>b[0]-a[0]); top=[]; const md=px*.5/f; for(const t of S){ if(top.length>=(J.rtop||16)) break; if(!top.some(o=>Math.abs(o[1]-t[1])<md&&Math.abs(o[2]-t[2])<md)) top.push(t); } TC[gk]=top; }
+  const na=J.rang||3, PA=TC[gk+'|a']||(TC[gk+'|a']=[]); top.forEach((t,ti)=>{ const cx=(t[1]+Tc.w/2), cy=(t[2]+Tc.h/2), A=[], st=angs.length>1?angs[1]-angs[0]:10;
+    const AS=PA[ti]?[...new Set(PA[ti].flatMap(a=>[a-st,a,a+st]).map(a=>(a+360)%360))]:angs; // 묶음 둘째부터는 대표가 고른 각도 ±1칸만
+    for(const ang of AS){ const X=arXcache(src,px,ang,1,f,J.er), Tk=X.Tc; const bx=Math.round(cx-Tk.w/2), by=Math.round(cy-Tk.h/2); let best=null;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const x=bx+dx, y=by+dy; if(x<0||y<0||x+Tk.w>Fc.w||y+Tk.h>Fc.h) continue; const s=arScoreP(Fc,X.Pc,x,y); if(!best||s>best.s) best={s,cx:x,cy:y,Tf:X.Tf,ang,sq:1,px}; }
+      if(best) A.push(best); }
+    A.sort((a,b)=>b.s-a.s); const pick=[]; for(const a of A){ if(pick.length>=na) break; if(!pick.some(p=>{ const d=Math.abs(p.ang-a.ang)%360; return Math.min(d,360-d)<20; })) pick.push(a); } if(!PA[ti]) PA[ti]=pick.map(a=>a.ang); V.push(...pick); }); } // 대략 각도는 부정확 → 서로 다른 각도 3개까지 정밀 확인
 /* J={img:{data,width,height}, keys, T:{px:{k:RGBA}}, pxs:[..], thr, margin, ds, f, angles, sq, tiles, multi}
    → {hits:[{k,score,x,y,w,h,ang,sq,occ}], scores:[[k,best]]}  (multi=바닥/공중: 여러 개·여러 종류, 아니면 배너: 1등만) */
 function arMatchCore(J,TS){ const img=J.img, pxs=J.pxs||[J.px], angs=J.angles||[0], sqs=J.sq||[1], W=img.width, H=img.height;
   const pmin=Math.min(...pxs), f=J.f||Math.max(1,Math.min(J.ds|0||4,Math.round(pmin/10))); // 작은 아이콘은 덜 줄여서 대략 찾기가 놓치지 않게
   const Fc=arDown(img.data,W,H,f), Ff={d:(()=>{ const S=img.data, o=new Float32Array(S.length); for(let i=0;i<S.length;i+=4){ o[i]=S[i]; o[i+1]=S[i+1]; o[i+2]=S[i+2]; o[i+3]=1; } return o; })(),w:W,h:H}, all=[], scores=[];
-  for(const k of J.keys){ const V=[];
-    for(const px of pxs){ const src=TS?.[px]?.[k]; if(!src) continue;
-      for(const ang of angs) for(const sq of sqs){ if(ang&&sq!==1) continue; const X=arXcache(src,px,ang,sq,f), Tf=X.Tf, Tc=X.Tc; // b289: 회전 템플릿 캐시 (공중 감시: 24각 × 초당 여러 번)
+  const KS=(J.rinv&&J.collapse)?J.keys.filter(k=>{ const g=(J.groups||[]).find(g=>g.includes(k)); return !g||g.find(x=>J.keys.includes(x))===k; }):J.keys; // t619: 모양 같은 묶음(큐브 3색·결정석 2종)은 대표 1개로 찾고 arVariant 가 색으로 고름
+  for(const k of KS){ const V=[];
+    for(const px of pxs){ const src=TS?.[px]?.[k]; if(!src) continue; if(J.kpx&&J.kpx[k]&&!J.kpx[k].includes(px)) continue; // t619: 키별 크기(큐브 .62·결정석 1)만
+      if(J.rinv&&angs.length>1){ arRinvCoarse(J,Fc,src,px,angs,f,V,k); continue; } // t619: 회전 평균 템플릿으로 1번만 훑고 → 상위 자리에서만 각도 고르기 (공중 0.3초 → 0.1초 이하)
+      for(const ang of angs) for(const sq of sqs){ if(ang&&sq!==1) continue; const X=arXcache(src,px,ang,sq,f,J.er), Tf=X.Tf, Tc=X.Tc; // b289: 회전 템플릿 캐시 (공중 감시: 24각 × 초당 여러 번)
         if(Tc.w>Fc.w||Tc.h>Fc.h||Tf.w>W||Tf.h>H) continue; const Pc=X.Pc; let top=[];
         for(let y=0;y+Tc.h<=Fc.h;y++) for(let x=0;x+Tc.w<=Fc.w;x++){ const s=arScoreP(Fc,Pc,x,y); if(top.length<6||s>top[top.length-1][0]){ top.push([s,x,y]); top.sort((a,b)=>b[0]-a[0]); if(top.length>6) top.pop(); } }
         for(const t of top) V.push({s:t[0],cx:t[1],cy:t[2],Tf,ang,sq,px}); } }
-    V.sort((a,b)=>b.s-a.s); const ref=[];
-    for(const v of V.slice(0,J.multi?8:6)){ const P=v.Tf.P||(v.Tf.P=arPrepIdx(v.Tf)); let best=null; const tryAt=(x,y)=>{ if(x<0||y<0||x+v.Tf.w>W||y+v.Tf.h>H) return; const s=arScoreP(Ff,P,x,y); if(!best||s>best.s) best={s,x,y}; };
+    V.sort((a,b)=>b.s-a.s); if(J.rinv){ const U=[]; for(const v of V){ if(v.s<(J.rcut??.3)) break; const cx=v.cx+v.Tf.w/f/2, cy=v.cy+v.Tf.h/f/2, r=v.px*.5/f; if(U.filter(u=>Math.abs(u.x-cx)<r&&Math.abs(u.y-cy)<r).length>=(J.rang||3)) continue; U.push({x:cx,y:cy,v}); } V.length=0; V.push(...U.map(u=>u.v)); } // t619: 크기·각도 섞어 같은 자리는 상위 3개만 정밀 확인
+    const ref=[];
+    for(const v of V.slice(0,J.vmax||(J.multi?8:6))){ const P=v.Tf.P||(v.Tf.P=arPrepIdx(v.Tf)); let best=null; const tryAt=(x,y)=>{ if(x<0||y<0||x+v.Tf.w>W||y+v.Tf.h>H) return; const s=arScoreP(Ff,P,x,y); if(!best||s>best.s) best={s,x,y}; };
       if(J.multi&&f>2){ for(let y=v.cy*f-f;y<=v.cy*f+f;y+=2) for(let x=v.cx*f-f;x<=v.cx*f+f;x+=2) tryAt(x,y); if(best){ const b0=best; for(let y=b0.y-1;y<=b0.y+1;y++) for(let x=b0.x-1;x<=b0.x+1;x++) tryAt(x,y); } }
       else for(let y=Math.max(0,v.cy*f-f);y<=Math.min(H-v.Tf.h,v.cy*f+f);y++) for(let x=Math.max(0,v.cx*f-f);x<=Math.min(W-v.Tf.w,v.cx*f+f);x++) tryAt(x,y);
       if(!best) continue; let score=best.s, occ=false;
@@ -247,12 +276,12 @@ function arMatchCore(J,TS){ const img=J.img, pxs=J.pxs||[J.px], angs=J.angles||[
         const o=(q[0]+q[1]+q[2])/3*.97; if(o>score&&q[2]>=J.thr){ score=o; occ=true; } } // 다른 아이템·캐릭터에 일부 가려져도 4등분 중 3칸이 맞으면 (b287: 영상에서 하늘·기둥 오인식 → 3칸 모두 기준 이상, 색 차이 완화 없음)
       const sad=J.sad?arSad(Ff,v.Tf,best.x,best.y):0; if(J.sad&&sad>J.sad) score=Math.min(score,J.thr-.01);
       ref.push({k,score,x:best.x,y:best.y,w:v.Tf.w,h:v.Tf.h,ang:v.ang,sq:v.sq,px:v.px,occ,sad:+sad.toFixed(1)}); }
-    ref.sort((a,b)=>b.score-a.score); const keep=[]; for(const r of ref) if(!keep.some(o=>Math.abs(o.x-r.x)<r.w*.6&&Math.abs(o.y-r.y)<r.h*.6)) keep.push(r);
+    ref.sort((a,b)=>b.score-a.score); const keep=[], nd=r=>J.rinv&&r.px?r.px*.5:null; for(const r of ref) if(!keep.some(o=>Math.abs(o.x+o.w/2-r.x-r.w/2)<(nd(r)??r.w*.6)&&Math.abs(o.y+o.h/2-r.y-r.h/2)<(nd(r)??r.h*.6))) keep.push(r); // t619: 공중은 회전 상자(w)가 커서 붙어 있는 큐브(41px 간격)까지 지워짐 → 중심·아이콘 크기 기준
     scores.push([k,keep[0]?+keep[0].score.toFixed(3):0]); all.push(...(J.multi?keep:keep.slice(0,1))); }
   all.sort((a,b)=>b.score-a.score);
   if(!J.multi){ const s2=scores.map(x=>x[1]).sort((a,b)=>b-a); const h=all[0]; return {hits:h&&h.score>=J.thr&&(h.score-(s2[1]||0)>=J.margin||(J.groups||[]).some(g=>g.includes(h.k)&&all.slice(1).every(o=>o.score<h.score-J.margin||g.includes(o.k))))?[arVariant(Ff,TS,h,J)]:[],scores}; }
   // 바닥/공중: 같은 자리에 닮은 아이콘(무기/방어구 상자)이 있으면 1등이 2등보다 margin 이상일 때만
-  const hits=[]; for(const h of all){ if(h.score<J.thr) continue; const near=all.filter(o=>o!==h&&Math.abs(o.x-h.x)<h.w*.6&&Math.abs(o.y-h.y)<h.h*.6);
+  const hits=[]; for(const h of all){ if(h.score<J.thr) continue; const nr=J.rinv&&h.px?h.px*.5:null, near=all.filter(o=>o!==h&&(nr?Math.abs(o.x+o.w/2-h.x-h.w/2)<nr&&Math.abs(o.y+o.h/2-h.y-h.h/2)<nr:Math.abs(o.x-h.x)<h.w*.6&&Math.abs(o.y-h.y)<h.h*.6));
     if(near.some(o=>o.score>h.score)) continue; const grp=(J.groups||[]).find(g=>g.includes(h.k)); if(near.some(o=>o.k!==h.k&&!(grp&&grp.includes(o.k))&&h.score-o.score<J.margin)) continue; hits.push(arVariant(Ff,TS,h,J)); }
   return {hits,scores}; }
 /* b288: 기록 가능한 아이템 전체 (모든 보스·난이도의 드롭 표 ∩ 아이콘) — 템플릿은 이 안에서만 */
@@ -275,22 +304,22 @@ function arVariant(Ff,TS,h,J){ const grp=(J.groups||[]).find(g=>g.includes(h.k))
   if(d[1][1]-d[0][1]<Math.max(J.varAbs??3,(J.varRel??.12)*d[1][1])){ h.amb=d.slice(0,2).map(x=>x[0]).filter((x,i,a)=>a.indexOf(x)===i); return h; } // 확실하지 않음 → 직접 고르기
   if(d[0][0]!==h.k){ h.from=h.k; h.k=d[0][0]; } return h; }
 /* Worker: 위 함수들 그대로 넣어서 Blob 으로 띄움. 화면은 ImageBitmap(영역만 잘라서)으로 넘김 */
-function arWorker(){ if(ARX.wk!==undefined) return ARX.wk; ARX.wk=null; if(ARX.wkOff||ARX.cfg.worker===false||typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined') return null;
-  try{ const src='const AR_XC=new WeakMap();\n'+[arDown,arPrepIdx,arScoreP,arSad,arXform,arXcache,arVarDist,arVariant,arMatchCore].map(f=>f.toString()).join('\n')+`
+function arWorker(lane){ const S=lane?((ARX.wl||(ARX.wl={}))[lane]||(ARX.wl[lane]={})):ARX; if(S.wk!==undefined) return S.wk; S.wk=null; if(ARX.wkOff||ARX.cfg.worker===false||typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined') return null;
+  try{ const src='const AR_XC=new WeakMap();\n'+[arDown,arPrepIdx,arScoreP,arSad,arXform,arErode,arXcache,arRinvT,arRinvCoarse,arVarDist,arVariant,arMatchCore].map(f=>f.toString()).join('\n')+`
 const TC={}; onmessage=e=>{ const J=e.data; try{ if(J.T) TC[J.sig]=J.T; if(J.bmp){ const oc=new OffscreenCanvas(J.bmp.width,J.bmp.height), g=oc.getContext('2d',{willReadFrequently:true}); g.drawImage(J.bmp,0,0); J.img=g.getImageData(0,0,oc.width,oc.height); J.bmp.close(); J.bmp=null; }
   const t0=performance.now(), r=arMatchCore(J,TC[J.sig]); r.ms=performance.now()-t0; r.id=J.id; postMessage(r); }catch(err){ postMessage({id:J.id,err:String(err),hits:[],scores:[]}); } };`;
-    const w=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'}))); ARX.wkP={}; ARX.wkSig=new Set(); ARX.wkId=0;
-    w.onmessage=e=>{ const r=e.data, cb=ARX.wkP[r.id]; delete ARX.wkP[r.id]; cb&&cb(r); }; w.onerror=()=>{ ARX.wk=null; for(const cb of Object.values(ARX.wkP)) cb({hits:[],scores:[],err:'worker'}); ARX.wkP={}; }; ARX.wk=w; }catch(e){ ARX.wk=null; } return ARX.wk; }
+    const w=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'}))); S.wkP={}; S.wkSig=new Set(); S.wkId=0;
+    w.onmessage=e=>{ const r=e.data, cb=S.wkP[r.id]; delete S.wkP[r.id]; cb&&cb(r); }; w.onerror=()=>{ S.wk=null; for(const cb of Object.values(S.wkP)) cb({hits:[],scores:[],err:'worker'}); S.wkP={}; }; S.wk=w; }catch(e){ S.wk=null; } return S.wk; }
 /* 영역 잘라 넘길 것: Worker 있으면 ImageBitmap(메인 스레드에서 픽셀 안 읽음), 없으면 ImageData */
 async function arGrab(src,r){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, x=Math.round(r.x*sw), y=Math.round(r.y*sh), w=Math.max(1,Math.min(sw-x,Math.round(r.w*sw))), h=Math.max(1,Math.min(sh-y,Math.round(r.h*sh)));
   if(arWorker()&&typeof createImageBitmap==='function'){ try{ return {bmp:await createImageBitmap(src,x,y,w,h),ox:x,oy:y,w,h}; }catch(e){} }
   const cv=arCrop(src,sw,sh,r,1); return {img:cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height),ox:x,oy:y,w:cv.width,h:cv.height}; }
-async function arMatchRun(G,keys,pxs,opt){ const rec=arRecordable(), groups=AR_VAR.filter(g=>g.some(k=>keys.includes(k))).map(g=>g.filter(k=>ITEM_ICONS[k]&&rec.has(k))), tk=[...new Set([...keys,...groups.flat()])];
+async function arMatchRun(G,keys,pxs,opt){ const rec=arRecordable(), groups=AR_VAR.filter(g=>g.some(k=>keys.includes(k))).map(g=>g.filter(k=>ITEM_ICONS[k]&&(rec.has(k)||keys.includes(k)))), tk=[...new Set([...keys,...groups.flat()])];
   const TS={}; for(const px of pxs) TS[px]=await arTemplates(tk,px); const sig=pxs.join(',')+'|'+tk.join(',');
-  const J=Object.assign({keys,pxs,groups,thr:ARX.cfg.thr,margin:ARX.cfg.margin,ds:ARX.cfg.ds},opt), w=arWorker(), t0=performance.now();
-  if(w&&(G.bmp||G.img)){ J.id=++ARX.wkId; J.sig=sig; if(!ARX.wkSig.has(sig)){ J.T=TS; ARX.wkSig.add(sig); } if(G.bmp) J.bmp=G.bmp; else J.img=G.img;
-    const r=await new Promise(res=>{ ARX.wkP[J.id]=res; try{ w.postMessage(J,G.bmp?[G.bmp]:[]); }catch(e){ delete ARX.wkP[J.id]; res({err:String(e)}); return; } setTimeout(()=>{ if(ARX.wkP[J.id]){ delete ARX.wkP[J.id]; res({err:'timeout'}); } },8000); }); if(!r.err) return r; ARX.wkSig.delete(sig);
-    ARX.wkFail=(ARX.wkFail||0)+1; if(ARX.wkFail>=2||r.err==='worker'){ try{ w.terminate(); }catch(e){} ARX.wk=null; ARX.wkOff=r.err; } if(G.bmp) return {hits:[],scores:[],ms:0}; } // b288: Worker 실패 → 메인 스레드(b286 방식)로
+  const J=Object.assign({keys,pxs,groups,thr:ARX.cfg.thr,margin:ARX.cfg.margin,ds:ARX.cfg.ds},opt), S=opt&&opt.lane==='air'&&ARX.cfg.airWorker!==false&&ARX.cfg.worker!==false&&ARX.wk!==null?(arWorker(opt.lane2||'air'),ARX.wl[opt.lane2||'air']):ARX, w=S===ARX?arWorker():S.wk, /* t619: 공중은 전용 워커 — 바닥 검사(0.23초) 뒤에 줄 서지 않게 */ t0=performance.now();
+  if(w&&(G.bmp||G.img)){ J.id=++S.wkId; J.sig=sig; if(!S.wkSig.has(sig)){ J.T=TS; S.wkSig.add(sig); } if(G.bmp) J.bmp=G.bmp; else J.img=G.img;
+    const r=await new Promise(res=>{ S.wkP[J.id]=res; try{ w.postMessage(J,G.bmp?[G.bmp]:[]); }catch(e){ delete S.wkP[J.id]; res({err:String(e)}); return; } setTimeout(()=>{ if(S.wkP[J.id]){ delete S.wkP[J.id]; res({err:'timeout'}); } },8000); }); if(!r.err) return r; S.wkSig.delete(sig);
+    ARX.wkFail=(ARX.wkFail||0)+1; if(ARX.wkFail>=2||r.err==='worker'){ try{ w.terminate(); }catch(e){} S.wk=null; ARX.wkOff=r.err; } if(G.bmp) return {hits:[],scores:[],ms:0}; } // b288: Worker 실패 → 메인 스레드(b286 방식)로
   let img=G.img; if(!img&&G.bmp){ const cv=document.createElement('canvas'); cv.width=G.bmp.width; cv.height=G.bmp.height; const g=cv.getContext('2d',{willReadFrequently:true}); g.drawImage(G.bmp,0,0); img=g.getImageData(0,0,cv.width,cv.height); }
   J.img=img; const r=arMatchCore(J,TS); r.ms=performance.now()-t0; return r; }
 /* 영역 이미지(ImageData)에서 아이콘 찾기 → [{k,score,x,y}] (배너: 1등만) */
@@ -308,9 +337,16 @@ async function arItemScan(src){ const C=arCandidates(true); if(!C.length) return
    ③ 공중 회전 단계가 보스 모를 때 모든 아이콘으로 돌아 엉뚱한 아이콘이 이김. 그래서: 위쪽 띠를 airFps 로 떠서 최근 airKeep 장 보관 → 최신 것 전체 검사(회전 airStep 도) →
    후보(airCand 이상)가 보이면 보관해 둔 앞뒤 프레임을 그 자리 근처만 다시 검사 → 기준(airThr·airSad) 넘는 것만 추적, 같은 아이템 2번 보이면 1번 기록 */
 function arAirAngles(){ const st=Math.max(5,+ARX.cfg.airStep||10), a=[]; for(let x=0;x<360;x+=st) a.push(x); return a; }
-async function arAirScan(G,sh,ox,oy,thr){ const C=arCandidates(true); if(!C.length){ G.bmp&&G.bmp.close&&G.bmp.close(); return []; } const keys=[...new Set(C.map(c=>c.k))], gp=arGroundPx(sh), px=gp[1];
-  const r=await arMatchRun(G,keys,[gp[0],px],{multi:true,tiles:true,sad:thr<ARX.cfg.airThr?999:ARX.cfg.airSad,thr:thr??ARX.cfg.airThr,f:Math.max(2,Math.round(px/9)),angles:arAirAngles(),sq:[1]});
-  ARX.airScore=r.scores; ARX.airMs=r.ms||0; return r.hits.map(h=>Object.assign(h,{x:h.x+ox,y:h.y+oy,air:true,ok:h.score>=ARX.cfg.airThr&&h.sad<=ARX.cfg.airSad})); }
+async function arAirScan(G,sh,ox,oy,thr){ const C=arCandidates(true); if(!C.length){ G.bmp&&G.bmp.close&&G.bmp.close(); return []; } const keys=[...new Set(C.map(c=>c.k))], gp=arGroundPx(sh), px=gp[1], sc=ARX.cfg.airScales&&ARX.cfg.airScales.length?ARX.cfg.airScales:[.97,1], pxs=[...new Set(sc.map(k=>Math.round(px*k)))], KSc=ARX.cfg.airKeyScales||{}, kpx={}; for(const k of keys){ const pf=Object.keys(KSc).find(p=>k.startsWith(p)); if(pf) kpx[k]=KSc[pf].map(v=>Math.round(px*v)); }
+  const kx=keys.filter(k=>AR_REWX.includes(k)), ko=keys.filter(k=>!AR_REWX.includes(k)), G2=(kx.length&&ko.length&&G.bmp)?{bmp:await createImageBitmap(G.bmp)}:G;
+  /* t619: 결정·큐브(REWX)만 회전 불변 빠른 검사, 나머지(백옥 등)는 b289 방식 그대로 — 섞으면 백옥 놓침 */
+  const AS=kx.length&&ko.length&&ARX.cfg.worker!==false&&!!ARX.wk&&ARX.cfg.airKoAsync!==false, okF=h=>Object.assign(h,{x:h.x+ox,y:h.y+oy,air:true,ok:h.score>=arAirK('airKeyThr',h.k,ARX.cfg.airThr)&&h.sad<=arAirK('airKeySad',h.k,ARX.cfg.airSad)});
+  /* t619: 결정·큐브가 후보일 때(보상 맵) 나머지 아이콘(0.3초)은 두 번째 공중 워커에서 따로 — 기다리지 않고, 끝나면 추적으로 (밀리면 그 프레임은 건너뜀) */
+  let P2=null; if(ko.length){ if(AS){ if(ARX.koBusy){ G2!==G&&G2.bmp&&G2.bmp.close&&G2.bmp.close(); } else { ARX.koBusy=true; const t0=Date.now(); arMatchRun(G2,ko,[gp[0],px],{multi:true,tiles:true,sad:thr<ARX.cfg.airThr?999:ARX.cfg.airSad,thr:thr??ARX.cfg.airThr,f:Math.max(2,Math.round(px/9)),angles:arAirAngles(),sq:[1],lane:'air',lane2:'air2'}).then(r2=>{ const hs=(r2.hits||[]).map(okF).filter(h=>h.ok); arPf().koN=(arPf().koN||0)+1; if(hs.length&&ARX.cfg.on!==undefined){ ARX.airLog=(ARX.airLog||[]).concat([{t:-1,loc:false,ko:true,hits:hs.map(h=>[h.k,+h.score.toFixed(3),h.x,h.y])}]).slice(-60); arTrack(hs,sh,t0); } }).catch(()=>{}).finally(()=>{ ARX.koBusy=false; }); } } else P2=arMatchRun(G2,ko,[gp[0],px],{multi:true,tiles:true,sad:thr<ARX.cfg.airThr?999:ARX.cfg.airSad,thr:thr??ARX.cfg.airThr,f:Math.max(2,Math.round(px/9)),angles:arAirAngles(),sq:[1],lane:'air',lane2:'air2'}); }
+  const r=kx.length?await arMatchRun(G,kx,pxs,{multi:true,tiles:true,sad:thr<ARX.cfg.airThr?999:ARX.cfg.airSad,thr:Math.min(thr??ARX.cfg.airThr,...Object.values(ARX.cfg.airKeyThr||{})),f:Math.max(2,Math.round(Math.min(...pxs)/(ARX.cfg.airDiv||9))),angles:arAirAngles(),sq:[1],rinv:ARX.cfg.airRinv!==false,er:ARX.cfg.airErode??2,rtop:ARX.cfg.airTop||14,rang:ARX.cfg.airRang||1,vmax:64,kpx,lane:'air'}):{hits:[],scores:[],ms:0};
+  if(P2){ const r2=await P2; r.hits=r.hits.concat(r2.hits); r.scores=(r.scores||[]).concat(r2.scores||[]); r.ms=(r.ms||0)+(r2.ms||0); }
+  ARX.airScore=r.scores; ARX.airMs=r.ms||0; return r.hits.map(h=>Object.assign(h,{x:h.x+ox,y:h.y+oy,air:true,ok:h.score>=arAirK('airKeyThr',h.k,ARX.cfg.airThr)&&h.sad<=arAirK('airKeySad',h.k,ARX.cfg.airSad)})).filter(h=>thr<ARX.cfg.airThr||h.score>=arAirK('airKeyThr',h.k,ARX.cfg.airThr)); }
+function arAirK(n,k,d){ const M=ARX.cfg[n]||{}, p=Object.keys(M).find(p=>k.startsWith(p)); return p?M[p]:d; } // t619: 키별 공중 기준; }
 async function arAirCrop(e,x,y,w,h){ x=Math.max(0,Math.round(x)); y=Math.max(0,Math.round(y)); w=Math.round(Math.min(w,e.w-x)); h=Math.round(Math.min(h,e.h-y)); if(w<8||h<8) return null;
   if(e.bmp) return {bmp:await createImageBitmap(e.bmp,x,y,w,h)};
   const S=e.img.data, o=new Uint8ClampedArray(w*h*4); for(let j=0;j<h;j++) o.set(S.subarray(((y+j)*e.w+x)*4,((y+j)*e.w+x+w)*4),j*w*4); return {img:{data:o,width:w,height:h}}; }
@@ -331,22 +367,28 @@ async function arAirPump(){ if(ARX.apBusy) return ARX.apP; ARX.apBusy=true; ARX.
 /* 한 건 처리 (없으면 false) — 테스트는 이걸 직접 불러 처리 시간을 흉내 냄 */
 async function arAirStep(){ { const B=ARX.abuf||[], pf=arPf();
       // 1) 후보 근처 다시 보기(보관해 둔 앞뒤 프레임) 2) 아직 안 본 최신 프레임 전체
-      let job=null; for(const L of ARX.alocs||[]){ const e=B.find(e=>!e.loc.includes(L.id)&&Math.abs(e.at-L.at)<=ARX.cfg.airWin*1000); if(e){ job={e,L}; break; } }
+      let job=null; const fr=B.length&&!B[B.length-1].done&&!B[B.length-1].busy&&ARX.cfg.airFresh!==false; // t619: 공중 검사가 0.1초 안에 끝나므로 새 프레임 전체 검사가 먼저, 근처 다시 보기는 쉴 때만
+      if(!fr) for(const L of ARX.alocs||[]){ const e=B.find(e=>!e.loc.includes(L.id)&&Math.abs(e.at-L.at)<=ARX.cfg.airWin*1000); if(e){ job={e,L}; break; } }
       if(!job){ const nt=B.length?B[B.length-1].at:0; ARX.alocs=(ARX.alocs||[]).filter(L=>nt-L.at<3000); const e=[...B].reverse().find(e=>!e.done); if(!e) return false; job={e};
         for(const o of B) if(o!==e&&!o.done&&e.at-o.at>=(ARX.cfg.airStale||0)){ o.done=true; pf.airDrop=(pf.airDrop||0)+1; } } // b292: 밀린 옛 프레임은 전체 검사 안 하고 버림(후보 근처 다시 보기용으로만 보관)
-      const e=job.e; e.busy=true; if(e.bmpP) await e.bmpP; if(!e.bmp&&!e.img){ e.done=true; e.loc.push(job.L?.id); e.busy=false; return true; }
+      const e=job.e, tw0=performance.now(); e.busy=true; if(e.bmpP) await e.bmpP; pf.airWait=(pf.airWait||0)+performance.now()-tw0; if(!e.bmp&&!e.img){ e.done=true; e.loc.push(job.L?.id); e.busy=false; return true; }
       let hits=[];
       const K=e.k||1, OS=e.osh||e.sh, un=hs=>hs.map(h=>Object.assign(h,{x:Math.round(h.x/K),y:Math.round(h.y/K),w:Math.round(h.w/K),h:Math.round(h.h/K)})); // b292: 줄인 좌표 → 원래 화면 좌표
       if(job.L){ e.loc.push(job.L.id); const R=job.L.r*K, lx=job.L.x*K, ly=job.L.y*K; const G=await arAirCrop(e,lx-e.x-R,ly-e.y-R,2*R,2*R);
         if(G) hits=un((await arAirScan(G,e.sh,e.x+Math.max(0,Math.round(lx-e.x-R)),e.y+Math.max(0,Math.round(ly-e.y-R)),ARX.cfg.airThr)).filter(h=>h.k===job.L.k)); pf.airLoc=(pf.airLoc||0)+1; }
-      else { e.done=true; const G=await arAirCrop(e,0,0,e.w,e.h); hits=G?un(await arAirScan(G,e.sh,e.x,e.y,ARX.cfg.airCand)):[]; pf.air=(pf.air||0)+1; pf.airMs=(pf.airMs||0)+(ARX.airMs||0); if(hits.length) arBurst(e.at);
+      else { e.done=true; const G=await arAirCrop(e,0,0,e.w,e.h); hits=G?un(await arAirScan(G,e.sh,e.x,e.y,ARX.cfg.airCand)):[]; pf.airWall=(pf.airWall||0)+performance.now()-tw0; pf.air=(pf.air||0)+1; pf.airMs=(pf.airMs||0)+(ARX.airMs||0); if(hits.length) arBurst(e.at);
         for(const h of hits) if(!(ARX.alocs||[]).some(L=>L.k===h.k&&Math.abs(L.at-e.at)<1500&&Math.hypot(L.x-h.x-h.w/2,L.y-h.y-h.h/2)<300*OS/1080)){ // 후보 → 이 자리 근처를 앞뒤 프레임에서
           ARX.alocs=(ARX.alocs||[]).concat([{id:(ARX.alocId=(ARX.alocId||0)+1),k:h.k,x:h.x+h.w/2,y:h.y+h.h/2,r:Math.round(300*OS/1080),at:e.at}]); e.loc.push(ARX.alocId); } }
       e.busy=false; const ok=hits.filter(h=>h.ok);
-      if(ok.length){ ARX.airLog=(ARX.airLog||[]).concat([{t:e.t,loc:!!job.L,hits:ok.map(h=>[h.k,+h.score.toFixed(3),h.x,h.y,h.w,h.h,h.ang,h.sad])}]).slice(-300); for(const h of ok) (ARX.found=ARX.found||[]).push([h.k,'공중',+h.score.toFixed(3)]); }
+      if(ok.length){ if(!job.L) ARX.airOkT=Date.now(); ARX.airLog=(ARX.airLog||[]).concat([{t:e.t,loc:!!job.L,hits:ok.map(h=>[h.k,+h.score.toFixed(3),h.x,h.y,h.w,h.h,h.ang,h.sad])}]).slice(-300); for(const h of ok) (ARX.found=ARX.found||[]).push([h.k,'공중',+h.score.toFixed(3)]); }
       // b289: 공중은 0.4초뿐일 때가 있어 — 전체 훑기 후보(airCand)+근처 확인(airThr) 두 번 보인 걸로 친다
       if(job.L&&ok.length&&!job.L.seed){ job.L.seed=true; const h=ok[0]; arTrack([Object.assign({},h,{air:true})],OS,Math.min(e.at,job.L.at)); }
-      arTrack(ok.map(h=>Object.assign({},h,{air:true})),OS,e.at); return true; } }
+      const okB=ok.filter(h=>AR_REWX.includes(h.k)); if(!job.L) arAirBatch(okB,e.at); // t619: 큐브·결정석은 같은 게 여러 개 붙어 튀어서 자리 추적이 하나로 합쳐짐 → 한 프레임에 동시에 보인 최대 개수로 셈
+      arTrack(ok.filter(h=>!okB.includes(h)).map(h=>Object.assign({},h,{air:true})),OS,e.at); return true; } }
+function arAirBatch(hits,now){ const M=ARX.airMax=ARX.airMax||{}, C={}; for(const h of hits) (C[h.k]=C[h.k]||[]).push(h);
+  for(const k of Object.keys(M)) if(now-M[k].t>(ARX.cfg.airBatchMs||4000)) delete M[k];
+  for(const [k,L] of Object.entries(C)){ const st=M[k]=M[k]||{n:0,seen:0,rec:0,s:0}; st.t=now; st.seen++; st.n=Math.max(st.n,L.length); st.s=Math.max(st.s,...L.map(h=>h.score));
+    if(st.seen>=(ARX.cfg.confirm||2)&&st.n>st.rec){ const d=st.n-st.rec; st.rec=st.n; if(ARX.cfg.on) for(let i=0;i<d;i++) arPick(Object.assign({},L[0],{score:st.s}),'공중'); } } }
 /* 추적: 같은 아이템이 비슷한 자리(바닥 80px·공중 250px, 1080p 기준)에 2.5초 안에 다시 보이면 같은 것 → confirm 번 보이면 1번 기록 */
 function arTrack(hits,sh,now){ now=now||Date.now(); const k1=sh/1080; ARX.tracks=(ARX.tracks||[]).filter(t=>now-t.t<5000); const rec=[];
   for(const h of hits){ const R=(h.air?250:80)*k1; let t=ARX.tracks.find(t=>t.k===h.k&&now-t.t<2500&&Math.hypot(t.x-h.x,t.y-h.y)<R);
@@ -448,7 +490,8 @@ function arBoxHit(best,now,src){
   const boss=AR_BOX[best.k].boss||best.k, b=findBoss(boss), m=ARX.mapDet&&ARX.mapDet.boss===boss&&ARX.mapDet.diff?ARX.mapDet.diff:'';
   ARX.box={boss,key:best.k,t:now,score:best.sc}; if(!ARX.rew){ let h=null; try{ h=arMapHash(src); }catch(e){} ARX.rew={hash:h,t:now,n:0,boss}; } /* t580: 보상 맵+상자 → 배너·공중 감시 켬 (맵 이름 칸 그림이 바뀔 때까지 유지) */ ARX.det.boss=boss; ARX.det.diff=m; ARX.det.diffSrc=m?'맵 이름':'캐릭터 설정'; ARX.det.src='보상 상자'; ARX.detT=now; arClrFinish(boss,m||ARX.det.diff,now); arLockTry(src,boss,now);
   arLog(`보상 상자 감지: ${b?.name||boss} (${best.sc.toFixed(2)}) → 현재 보스로 정하고 아이템 기록 시작${m?' · 난이도 '+({easy:'이지',normal:'노멀',hard:'하드',chaos:'카오스',extreme:'익스트림'}[m]||m)+' (맵 이름)':' · 난이도는 캐릭터 설정'}`); }
-function arRecord(item,score,via='',n=1){ if(!ARX.det.boss) return; if(!arBoxOk()){ if(!ARX.noBoxT||Date.now()-ARX.noBoxT>5000){ ARX.noBoxT=Date.now(); arLog(`보상 상자 확인 전이라 기록 안 함: ${ITEMS[item]?.n||item} [${via}]`); } return; } /* b300 */ /* b291: 보상 맵에서 보스를 읽었을 때만 기록 */ const t=arTarget(); if(!t) return; const C=arCandidates(true).filter(c=>c.k===item); if(!C.length) return;
+function arPendFlush(){ const P=ARX.recPend; if(!P||!P.length||!ARX.det.cid||!S.characters.some(c=>c.id===ARX.det.cid)) return; ARX.recPend=[]; for(const x of P){ if(x.boss!==ARX.det.boss) continue; arLog(`보류 득템 → ${S.characters.find(c=>c.id===ARX.det.cid).name}`); arRecord(x.item,x.score,x.via+' 보류',x.n); } }
+function arRecord(item,score,via='',n=1){ if(!ARX.det.boss) return; if(!arBoxOk()){ if(!ARX.noBoxT||Date.now()-ARX.noBoxT>5000){ ARX.noBoxT=Date.now(); arLog(`보상 상자 확인 전이라 기록 안 함: ${ITEMS[item]?.n||item} [${via}]`); } return; } /* b300 */ /* b291: 보상 맵에서 보스를 읽었을 때만 기록 */ const t=arTarget(); if(!t){ /* t613: 캐릭터 확정 전 보상 맵 득템 → 보류, 목록과 정확히 일치하는 캐릭터가 확정되면 그 캐릭터로 기록 (다른 캐릭터로 대신하지 않음) */ if(arLive()&&ARX.rwl&&arCandidates(true).some(c=>c.k===item)){ const P=ARX.recPend=ARX.recPend||[]; if(!P.some(x=>x.item===item&&x.boss===ARX.det.boss)){ P.push({item,score,via,n,boss:ARX.det.boss,t:Date.now()}); arLog(`캐릭터 확인 전 득템 보류: ${ITEMS[item]?.n||item} [${via}]`); } } return; } const C=arCandidates(true).filter(c=>c.k===item); if(!C.length) return;
   const b=C.find(c=>t.c.weekly?.[c.b.id]===false)?.b||C[0].b, key=b.id+'|'+item, now=Date.now();
   if(ARX.recent[key]&&now-ARX.recent[key]<ARX.cfg.dedupSec*1000){ if(via) ARX.recentVia[key]=(ARX.recentVia[key]||'')+'+'+via; return; } ARX.recent[key]=now; ARX.recentVia[key]=via;
   if(C.find(c=>c.b===b)?.info){ arLog(`획득 감지(정보 칩, 기록 안 함): ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via}]`); ARX.infoSeen=(ARX.infoSeen||[]).concat(key); arPanelPaint(); return; }
@@ -572,6 +615,22 @@ function arNcc1(hp,T,xa,xb){ const W=AR_NT_W; let best=-1,bx=0; for(let y=0;y+T.
 function arNtMake(H){ if(H.x0<0||H.x1-H.x0<6) return null; const w=Math.min(AR_NT_W-H.x0,H.x1-H.x0+10), /* 뒤 빈칸 8px 포함 → '트딕' 템플릿이 '트딕이' 화면에 안 맞음 */ x=Math.max(0,H.x0-1), h=AR_NT_H-4, t=new Float32Array(w*h), raw=new Uint8Array(w*h); let m=0; for(let j=0;j<h;j++) for(let i=0;i<w;i++){ const v=H.d[(j+2)*AR_NT_W+x+i]; raw[j*w+i]=v; t[j*w+i]=v; m+=v; } m/=t.length; let n=0; for(let i=0;i<t.length;i++){ t[i]-=m; n+=t[i]*t[i]; } return n>0?{w,h,t,n:Math.sqrt(n),raw}:null; }
 function arNtLoad(){ if(ARX.ntpl) return ARX.ntpl; ARX.ntpl={}; try{ const J=JSON.parse(localStorage.getItem('arNTpl')||'{}'); for(const [k,v] of Object.entries(J)){ const raw=Uint8Array.from(atob(v.d),c=>c.charCodeAt(0)), t=new Float32Array(raw.length); let m=0; for(let i=0;i<raw.length;i++){ t[i]=raw[i]; m+=raw[i]; } m/=raw.length; let n=0; for(let i=0;i<t.length;i++){ t[i]-=m; n+=t[i]*t[i]; } ARX.ntpl[k]={w:v.w,h:v.h,t,n:Math.sqrt(n),raw}; } }catch(e){} return ARX.ntpl; }
 function arNtSave(){ try{ const J={}; for(const [k,v] of Object.entries(ARX.ntpl||{})){ let s=''; for(const b of v.raw) s+=String.fromCharCode(b); J[k]={w:v.w,h:v.h,d:btoa(s)}; } localStorage.setItem('arNTpl',JSON.stringify(J)); }catch(e){} }
+/* t613: 첫 캐릭터용 글꼴 템플릿 — 굴림 20px(획 1px)로 상태바 'Lv.xxx 이름'을 384×28 에 그려 같은 고역 처리.
+   실영상 대조 결과 굴림 20px/획1/세로중심 4px 가 최고(정답 .63~.69). 전체 NCC 만으론 한 글자 다른 이름과 차이가 작아서
+   ① 화면 이름 폭(x1-x0)과 렌더 폭 차 ≤ 4px ② 글자(음절)별 NCC 최소값 ≥ .45 ③ 2등과 글자별 최소값 차 ≥ .1 일 때만 채택 */
+const AR_NF={fs:20/28,y:4/28,lw:1,faces:['Gulim','Dotum']};
+function arNfHas(face){ ARX.nfh=ARX.nfh||{}; if(face in ARX.nfh) return ARX.nfh[face]; const g=document.createElement('canvas').getContext('2d'), t='가나다라마바사Lv.282'; g.font='20px monospace'; const a=g.measureText(t).width; g.font='20px "'+face+'",monospace'; return ARX.nfh[face]=Math.abs(g.measureText(t).width-a)>.5; }
+function arNtFont(name,face){ const k=face+'|'+name+'|'+AR_NF.fs+'|'+AR_NF.lw+'|'+AR_NF.y; ARX.nfc=ARX.nfc||{}; if(k in ARX.nfc) return ARX.nfc[k]; if(!arNfHas(face)) return ARX.nfc[k]=null;
+  const W=AR_NT_W,H=AR_NT_H,c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d'); g.fillStyle='#24222a'; g.fillRect(0,0,W,H); g.font=(AR_NF.fs*H).toFixed(1)+'px "'+face+'"'; g.textBaseline='middle'; g.fillStyle=g.strokeStyle='#e8e8ea'; g.lineWidth=AR_NF.lw;
+  const lv='Lv.282', x=Math.round(6+g.measureText(lv).width+12), y=H*AR_NF.y; g.fillText(lv,6,y); g.fillText(name,x,y); if(AR_NF.lw>0) g.strokeText(name,x,y);
+  const cut=[]; let acc=x; for(const ch of name){ const w=g.measureText(ch).width; cut.push([Math.round(acc),Math.round(acc+w)]); acc+=w; }
+  const Hp=arNameHp(c,1,1,{x:0,y:0,w:W,h:H}), T=arNtMake(Hp); if(T){ T.x0=Hp.x0; T.span=Hp.x1-Hp.x0; T.cut=cut.map(([a,b])=>[a-Math.max(0,Hp.x0-1),b-Math.max(0,Hp.x0-1)]); } return ARX.nfc[k]=T; }
+function arNccSub(hp,T,x,y,a,b){ const W=AR_NT_W; a=Math.max(0,a); b=Math.min(T.w,b); if(b-a<3) return 0; let s1=0,s2=0,t1=0,t2=0,st=0,n=0; for(let j=0;j<T.h;j++) for(let i=a;i<b;i++){ const v=hp[(y+j)*W+x+i], u=T.raw[j*T.w+i]; s1+=v; s2+=v*v; t1+=u; t2+=u*u; st+=v*u; n++; } const va=s2-s1*s1/n, vb=t2-t1*t1/n; return va>1e-6&&vb>1e-6?(st-s1*t1/n)/Math.sqrt(va*vb):0; }
+function arNtFontScore(H,name){ let best=null; for(const f of AR_NF.faces){ const T=arNtFont(name,f); if(!T) continue; const dw=Math.abs((H.x1-H.x0)-T.span); const xa=Math.max(0,H.x0-5), xb=H.x0+3; let bb={sc:-1,x:0,y:0}; for(let y=0;y+T.h<=AR_NT_H;y++){ const m=arNcc1(H.d.subarray? H.d:H.d,{...T,h:T.h},xa,xb); if(m.sc>bb.sc) bb={sc:m.sc,x:m.x,y:0}; break; }
+    let yb=0,ys=-2; for(let y=0;y+T.h<=AR_NT_H;y++){ const v=arNccSub(H.d,T,bb.x,y,0,T.w); if(v>ys){ ys=v; yb=y; } }
+    let mn=1; for(const [a,b] of T.cut){ mn=Math.min(mn,arNccSub(H.d,T,bb.x,yb,a,b)); } const r={face:f,sc:bb.sc,mn,dw}; if(!best||r.mn>best.mn) best=r; } return best; }
+function arNtFontTick(H){ if(H.x0<0||H.x1-H.x0<6) return null; const sc=[]; for(const c of S.characters){ const r=arNtFontScore(H,c.name); if(r) sc.push([r.dw<=4?r.mn:-1,c.id,r]); } sc.sort((a,b)=>b[0]-a[0]); ARX.nFontSc=sc.slice(0,3).map(x=>[x[1],+x[0].toFixed(3),x[2].dw]);
+  return sc.length&&sc[0][0]>=.45&&(sc.length<2||sc[0][0]-sc[1][0]>=.1)?sc[0][1]:null; }
 function arNameTplTick(src,sw,sh,r,now){ if(ARX.cfg.nameTpl!==true) return null; /* t583: 오인식 0 조건 — 실게임 측정에서 OCR 오독(트딕이→드딕이)을 학습해 오인식을 늘려 기본 끔 */ const H=arNameHp(src,sw,sh,r); ARX.nTplT=now; if(H.E<40) return {blank:true,hp:H,x1:H.x1}; const L=arNtLoad(), sc=[];
   for(const c of S.characters){ const T=L[c.name]; if(!T) continue; const m=arNcc1(H.d,T,40,150); sc.push([m.sc,c.id]); }
   sc.sort((a,b)=>b[0]-a[0]); ARX.nTplSc=sc.slice(0,3).map(x=>[x[1],+x[0].toFixed(3)]); const ok=sc.length&&sc[0][0]>=.88&&(sc.length<2||sc[0][0]-sc[1][0]>=.08);
@@ -733,7 +792,7 @@ function arHashDist(a,b){ if(!a||!b||a.length!==b.length) return 1; let x=0,o=0;
 function arLockTry(src,boss,now){ const M=ARX.mapDet, k=arMapKey(ARX.mapText);
   if(!M||M.boss!==boss||!k||now-(M.t||0)>Math.max(3000,(ARX.cfg.ocrEvery||0)+2000)) return false; /* 맵 이름이 지금 안 보이면 확정 안 함 */
   ARX.lock={boss,diff:ARX.det.diff,text:k,hash:arMapHash(src),t:now}; arLog(`보스 확정(맵 이름+상자): "${k}" — 맵 이름이 바뀔 때까지 유지`); return true; }
-function arLockStop(why){ if(!ARX.lock) return; arLog(`맵 이름 바뀜 → 보스 인식 중단 (${why})`); ARX.lock=null; ARX.box=null; ARX.mapDet=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; arClrLeave(Date.now()+1e7); try{ arLivePaint(); }catch(e){} }
+function arLockStop(why){ if(!ARX.lock) return; if(ARX.rwl&&ARX.rwl.boss===ARX.lock.boss) return; /* t613: 보상 맵 래치 동안 락 유지 (맵 그림 흔들림으로 풀리던 것) */ arLog(`맵 이름 바뀜 → 보스 인식 중단 (${why})`); ARX.lock=null; ARX.box=null; ARX.mapDet=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; arClrLeave(Date.now()+1e7); try{ arLivePaint(); }catch(e){} }
 /* OCR 결과와 현재 프레임으로 고정 검사. 'stop'|'keep'|'jitter'|'' */
 function arLockCheck(src,text){ const L=ARX.lock; if(!L) return ''; const k=arMapKey(text), dist=arHashDist(arMapHash(src),L.hash);
   if(!k) return dist>AR_LOCK_DIST*3?(arLockStop('맵 이름 사라짐'),'stop'):'keep'; /* 못 읽은 프레임: 픽셀도 크게 다를 때만 */
@@ -756,9 +815,9 @@ function arMapState(text,now){ arRwlCheck(text); const T=arDetectBMap(text); con
    검은 화면·잘린/짧은 읽기·오독(자리→파리)은 유지 (보상 맵 이름 2글자 묶음의 30% 이상이 보이면 같은 맵) */
 function arBig(t){ const n=arNorm(t||'').replace(/[^가-힣A-Za-z0-9]/g,''), o=new Set(); for(let i=0;i+1<n.length;i++) o.add(n.slice(i,i+2)); return o; }
 function arRwlSim(t){ const L=ARX.rwl; if(!L) return 1; const b=arBig(t); let best=0; for(const nm of L.names){ const a=arBig(nm); let h=0; for(const x of a) if(b.has(x)) h++; best=Math.max(best,a.size?h/a.size:0); } return best; }
-function arRwlCheck(t){ const L=ARX.rwl; if(!L) return; const n=arNorm(t||'').replace(/[^가-힣]/g,''); if(n.length<3){ return; } if(arRwlSim(t)>=.3){ L.diff=0; return; } if(++L.diff>=2){ ARX.rwl=null; ARX.rew=null; ARX.lock=null; ARX.det.boss=''; ARX.det.diff=''; try{ arLivePaint(); }catch(e){} } }
-function arBossState(){ { const L=ARX.rwl; if(L){ if(ARX.det.boss&&ARX.det.boss!==L.boss&&ARX.rew&&ARX.rew.boss!==L.boss){ ARX.rwl=null; } else { if(!ARX.det.boss){ ARX.det.boss=L.boss; ARX.det.diff=L.diff0||ARX.det.diff; } return 'rew'; } } }
-  const st=arBossState0(); if(st==='rew'&&ARX.det.boss&&!ARX.rwl&&ARX.cfg.rewLatch!==false) ARX.rwl={boss:ARX.det.boss,diff0:ARX.det.diff,names:AR_BMAP.filter(r=>r[1]===ARX.det.boss&&r[2].includes('r')).map(r=>r[0]),diff:0,t:Date.now()}; return st; }
+function arRwlCheck(t){ const L=ARX.rwl; if(!L) return; const n=arNorm(t||'').replace(/[^가-힣]/g,''); if(n.length<3){ return; } if(arRwlSim(t)>=.3){ L.diff=0; return; } if(++L.diff>=2){ ARX.rwl=null; ARX.recPend=[]; ARX.rew=null; ARX.lock=null; ARX.det.boss=''; ARX.det.diff=''; try{ arLivePaint(); }catch(e){} } }
+function arBossState(){ { const L=ARX.rwl; if(L){ if(ARX.det.boss&&ARX.det.boss!==L.boss&&ARX.rew&&ARX.rew.boss!==L.boss){ ARX.rwl=null; } else { if(!ARX.det.boss){ ARX.det.boss=L.boss; ARX.det.diff=L.diff0||ARX.det.diff; } if(!ARX.rew) ARX.rew={boss:L.boss,diff:L.diff0||'',hash:null}; if(!ARX.lock&&L.lock) ARX.lock=L.lock; return 'rew'; } } }
+  const st=arBossState0(); if(st==='rew'&&ARX.det.boss&&!ARX.rwl&&ARX.cfg.rewLatch!==false) ARX.rwl={boss:ARX.det.boss,diff0:ARX.det.diff,names:AR_BMAP.filter(r=>r[1]===ARX.det.boss&&r[2].includes('r')).map(r=>r[0]),diff:0,t:Date.now(),lock:ARX.lock}; return st; }
 function arBossState0(){ if(ARX.det.boss&&ARX.rew&&ARX.rew.boss===ARX.det.boss) return 'rew'; /* t584: 보상 맵+상자로 한 번 '보상 인식 중'이면 맵 이름 칸 그림이 실제로 바뀔 때까지 유지 (스우 떨림) */ if(ARX.det.boss&&(!arBoxNeed()||(ARX.box&&arBoxOk()))) return 'rew'; const M=ARX.mapSt; if(!M) return ''; return M.kind.includes('w')?'wait':'run'; } /* t558: 대기맵과 이름이 같은 맵(세렌 왕궁 메인홀·검마 거인의 심장)은 상자 보이기 전까지 대기 중 */
 function arMapHit(b,now){ const o=ARX.det.boss+'|'+ARX.det.diff;
   if(!b.kind||b.kind.includes('b')) arClrMap(b,now);
@@ -782,13 +841,13 @@ function arMapWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, s
     else if(arNorm(t).length>=2){ ARX.mapOk=++ARX.mOther>=2; if(ARX.mOther>=2){ ARX.mapDet=null; if(!ARX.mapSt) arClrLeave(Date.now()); /* t602: 맵 상태가 남아 있으면(잡음 읽기) 측정 유지 — 예전엔 전투 중 잡음 2번에 진행 시간이 0초로 되돌아감 */ if(ARX.det.boss){ ARX.box=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; arLivePaint(); } } /* t522: 보상 맵 나가면 상자도 해제 */ } }).catch(()=>{}).finally(()=>{ ARX.mapBusy=false; }); }
 /* b287: 연결된 영상 분석 시작 (테스트는 <video src=mp4> 로 바로 부름). 메인 스레드엔 64x16 배너 비교만 매 프레임 — 나머지는 바뀐 프레임만·예산 안에서·Worker */
 function arStart(v){ ARX.video=v; ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
-  ARX.nprev=null; ARX.nameOk=false; clearInterval(ARX.nTimer); ARX.mprev=null; ARX.mOther=0; ARX.nTimer=setInterval(()=>{ if(ARX.video){ arNameWatch(ARX.video); arMapWatch(ARX.video); } },100); /* t603: 0.1초 */
+  ARX.nprev=null; ARX.nameOk=false; clearInterval(ARX.nTimer); ARX.mprev=null; ARX.mOther=0; ARX.nTimer=setInterval(()=>{ if(ARX.video){ arNameWatch(ARX.video); arMapWatch(ARX.video); try{ arPendFlush(); }catch(e){} } },100); /* t603: 0.1초 */
   ARX.timer=setInterval(()=>{ if(!ARX.video) return; const n=Date.now(); if(arBossState()!=='rew'&&n-(ARX.frT||0)<1000/Math.max(.5,ARX.cfg.fps)-20) return; ARX.frT=n; arFrame(ARX.video); },100); /* t603: 보상 맵(보상 인식 중)이면 0.1초마다, 아니면 설정 fps */
   if(ARX.cfg.watchFps>0){ if(v.requestVideoFrameCallback){ const loop=(now,meta)=>{ if(ARX.video!==v) return; arPf().frames++; if(arRewOn()){ arBannerWatch(v,meta); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } v.requestVideoFrameCallback(loop); }; v.requestVideoFrameCallback(loop); } else ARX.wTimer=setInterval(()=>{ if(ARX.video&&arRewOn()){ arBannerWatch(ARX.video); arAirWatch(ARX.video); } },Math.round(1000/ARX.cfg.watchFps)); }
   ARX.boxTimer=setInterval(()=>{ if(ARX.video&&!ARX.boxBusy&&(ARX.cfg.boxAlways!==false||arRewMap(Date.now()))&&!arBoxOk()) arBoxStep(ARX.video,false).catch(()=>{}); },AR_BOX_REW_MS); /* t547: 보상 맵에선 프레임(1/fps)과 별도로 0.2초 */
   ARX.logTimer=setInterval(()=>{ if(ARX.ocr&&ARX.video) arLogFrame(ARX.video); },Math.round(1000/Math.max(1,ARX.cfg.logFps)));
   ARX.pfTimer=setInterval(()=>{ try{ arPerfPaint(); }catch(e){} },1000); arBtnPaint(); arPanel(true); }
-function arDisconnect(){ ARX.rew=null; ARX.rwl=null; try{ arMesoFlush(Date.now(),true); }catch(e){} clearInterval(ARX.nTimer); ARX.nTimer=0; clearInterval(ARX.pfTimer); clearInterval(ARX.logTimer); clearInterval(ARX.wTimer); clearInterval(ARX.boxTimer); ARX.bq=[]; (ARX.abuf||[]).forEach(e=>e.bmp&&e.bmp.close()); ARX.abuf=[]; ARX.alocs=[]; ARX.airT=0; ARX.bprev=null; ARX.logPrev=[]; clearInterval(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.tracks=[]; ARX.iprev=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; ARX.box=null; arBtnPaint(); arPanelPaint(); }
+function arDisconnect(){ ARX.rew=null; ARX.rwl=null; ARX.recPend=[]; try{ arMesoFlush(Date.now(),true); }catch(e){} clearInterval(ARX.nTimer); ARX.nTimer=0; clearInterval(ARX.pfTimer); clearInterval(ARX.logTimer); clearInterval(ARX.wTimer); clearInterval(ARX.boxTimer); ARX.bq=[]; (ARX.abuf||[]).forEach(e=>e.bmp&&e.bmp.close()); ARX.abuf=[]; ARX.alocs=[]; ARX.airT=0; ARX.bprev=null; ARX.logPrev=[]; clearInterval(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.tracks=[]; ARX.iprev=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; ARX.box=null; arBtnPaint(); arPanelPaint(); }
 function arBtnPaint(){ const b=$('#tabs [data-tab="auto"]'); if(b) b.classList.toggle('arlive',!!ARX.stream); arPanelPaint(); } // b294: 헤더 버튼 대신 탭에 초록 점
 /* 패널: 상태 · 인식 결과 · 수동 선택 · 영역 맞추기(미리보기 드래그) · OCR 미리보기 */
 let arRegionSel='item';

@@ -43,7 +43,7 @@ try:
     r=pg.evaluate(SEQ,[seq+[[u('v11_0431'),1020],[u('v11_0437'),1190]],'kaling','easy']); check('같은 자리 또 보여도 1번',len(r['rec'])==1,r)
     r=pg.evaluate(SEQ,[[[u('v02_0187'),0],[u('v12_0146'),200],[u('v02_0187'),400]],'kaling','easy']); check('상자 없는 연속 프레임 → 기록 0',r['rec']==[],r)
     src=pg.evaluate("arStart.toString()+arWorkerSrc?.toString?.()") if pg.evaluate("typeof arWorkerSrc!=='undefined'") else open(os.path.join(ROOT,'index.html'),encoding='utf-8').read()
-    check('Worker 소스에 arXcache·AR_XC',"'const AR_XC=new WeakMap();\\n'+[" in src and 'arXcache,arVarDist' in src)
+    check('Worker 소스에 arXcache·AR_XC',"'const AR_XC=new WeakMap();\\n'+[" in src and 'arXcache,' in src and 'arVarDist,' in src)
     check('페이지 오류 없음',not errs,errs)
     b.close()
 finally:
