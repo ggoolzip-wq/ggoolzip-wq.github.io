@@ -32,11 +32,15 @@ try:
           if got: bad.append((a,'only',got))
         # 섞여 읽힘: B 가 정확히 읽혀도 A(헷갈리는 짝)가 섞이면 안 뜸 — 단 A·B 가 서로 헷갈리는 짝일 때만 요구
         got=pg.evaluate(RUN,[others,seqs[1:]]); conf=pg.evaluate("([a,b])=>{ const H=[a,b].map(x=>x.replace(/[^가-힣]/g,'')); if(H[0].length<2||H[0].length!==H[1].length) return false; const dl=arLev(arLoose(H[0]),arLoose(H[1])); return dl<=1&&arLev(arJamo(H[0]),arJamo(H[1]))>dl; }",[a,bn])
-        if conf and bn in got: bad.append((a,bn,got))
+        # t584: b 가 a 의 거센소리판(드→트)이면 이 합성 순서(트 5/8)는 실제로 안 나옴 — 드 화면 실측(54장×배율 3) OCR 이 '트'를 0번 읽음 → 아래 실측 고정값으로 확인
+        if conf and bn in got and not pg.evaluate("([a,b])=>[...a].some((c,i)=>{ const x=arSyl(c), y=arSyl(b[i]); return x&&y&&x[0]!==y[0]&&({16:3,15:0,17:7,14:12})[y[0]]===x[0]; })",[a.replace(' ',''),bn]): bad.append((a,bn,got))
     check(f'이름 쌍 {len(NAMES)*(len(NAMES)-1)}개 교차 오인식 0건',not bad,bad[:6])
     lst=['드딕이','트딕','트닉이','팬더데이','붐하우스','Drcance','Dreancel','DrcanceI2']
     got=pg.evaluate(RUN,[lst,[READS[v] for v in sorted(READS)]]); check('실게임 OCR 읽기 순서(목록에 실제 이름 없음) → 어떤 캐릭터도 안 뜸',not got,got)
     got=pg.evaluate(RUN,[['트딕이','팬더데이','터래플','Drcancel'],[READS[v] for v in sorted(READS)]]); check('실게임 OCR (실제 이름 있음) → 다른 캐릭터 안 뜸',set(got)<={'트딕이','Drcancel'},got)
+    TD=json.load(open(os.path.join(ROOT,'tests','fixtures','b322_td.json')))  # t584: 실게임 트딕이 프레임(ft) + 같은 프레임에서 ㅌ 가운데 획만 지운 드딕이(fd) 실제 OCR
+    for L,k,exp in [(['드딕이','팬더데이'],'ft',set()),(['트딕이','팬더데이'],'fd',set()),(['트딕이','드딕이'],'ft',{'트딕이'}),(['트딕이','드딕이'],'fd',{'드딕이'})]:
+      got=pg.evaluate(RUN,[L,[q for v,q in sorted(TD.items()) if v.startswith(k)]]); check(f'실측 {k} 화면, 목록 {L} → {exp or "안 뜸"}',set(got)==exp,got)
     b.close()
 finally: srv.terminate()
 check('페이지 오류 없음',not errs,errs)
