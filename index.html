@@ -6890,8 +6890,8 @@ function arTagDiff(L,b){ const t=arNorm(L); if(!/[<>]/.test(L)) return ''; for(c
 /* t558: 대기맵 지역명이 전투·보상맵과 다른 보스 (루시드: '꿈의 도시 레헬른' vs '레헬른') */
 const AR_WREG={lucid:'꿈의도시레헬른'};
 function arDetectBMap(text){ let best=null;
-  for(const line of String(text||'').split('\n')){ const L=line.trim(); if(!L) continue; const nm=arNorm(L.replace(/<[^<>]*>?\s*$/,'').split(/[:：]/).pop()); if(nm.length<2) continue;
-    for(const [n,id,k] of AR_BMAP){ const w=arNorm(n), sc=nm===w?2:Math.max(arSim(nm,w)>=1&&nm.length<=w.length+3?1:0,arSimJ(nm,w)>=.85?arSimJ(nm,w):0); if(!sc) continue;
+  for(const line of String(text||'').split('\n')){ const L=line.trim(); if(!L) continue; const nm0=arNorm(L.replace(/<[^<>]*>?\s*$/,'').split(/[:：]/).filter(x=>arNorm(x).length>=2).pop()||''), nm=nm0.replace(/[0-9]+$/,''); if(nm.length<2) continue; /* t579: 1366 에서 '<이지>'가 '4011:'로 읽혀 끝 ':' 때문에 이름이 비었음 */
+    for(const [n,id,k] of AR_BMAP){ const w=arNorm(n), tl=w.length>=5&&nm.length>w.length+2?nm.slice(-w.length):'', sJ=Math.max(arSimJ(nm,w),tl?arSimJ(tl,w):0), sc=nm===w?2:Math.max(arSim(nm,w)>=1&&nm.length<=w.length+3?1:0,sJ>=.85?sJ:0); if(!sc) continue; /* tl: 지역명+맵 이름이 ':' 없이 붙어 읽힘 → 끝부분만 비교 */
       if(!best||sc>best.sc||(sc===best.sc&&w.length>best.w.length)) best={sc,w,id,k,L,reg:arNorm((L.split(/[:：]/).length>1?L.split(/[:：]/)[0]:''))}; } }
   if(!best) return null; const b=findBoss(best.id); if(!b) return null; let diff=arTagDiff(best.L,b);
   const R=ARX.runDiff; if(diff) ARX.runDiff={boss:best.id,diff}; else if(R&&R.boss===best.id) diff=R.diff;
@@ -6912,7 +6912,7 @@ function arDetectChar(text){ const lat=arLatChar(text); if(lat) return lat; cons
   const toks=L.trim().split(/\s+/).map(x=>x.replace(/[^가-힣]/g,'')).filter(x=>x.length>=2); if(!toks.length) return ''; ARX.nameRead=toks.reduce((a,x)=>x.length>a.length?x:a,'');
   const names=S.characters.map(c=>({c,h:c.name.replace(/[^가-힣]/g,'')})).filter(x=>x.h.length>=2);
   for(const t of toks){ const ex=names.filter(x=>x.h===t); if(ex.length===1) return ex[0].c.id; }
-  for(const t of toks){ const nr=names.filter(x=>x.h.length===t.length&&arLev(arJamo(t),arJamo(x.h))<=1); if(nr.length===1&&!names.some(x=>x!==nr[0]&&arLev(arJamo(t),arJamo(x.h))<=2)) return nr[0].c.id; }
+  /* t578: 자모 1개 차이 예외 폐기 — 실게임 프레임에서 '드딕미' 같은 오독이 목록의 다른 이름(드딕이)으로 잡혔음(오인식 14%) */
   return ''; }
 /* b294: 상태바 글꼴에서 OCR 이 거센소리↔예사소리(트↔드, 딕↔틱), 받침, ㅇ↔ㄴ 을 자주 헷갈림 → 같은 글자 수일 때 이걸 묶어서 한 번 더 비교 (드티니·드특니 → 트딕이) */
 function arLoose(s){ const M={'\u1110':'\u1103','\u110F':'\u1100','\u1111':'\u1107','\u110E':'\u110C','\u110B':'\u1102'}; return [...arJamo(s)].filter(x=>!(x>='\u11A8'&&x<='\u11C2')).map(x=>M[x]||x).join(''); }
@@ -7239,9 +7239,14 @@ async function arBoxScore(src,k){ const T8=await arBoxTpl(k,8), T4=await arBoxTp
   const r=arNcc(G8.d,G8.w,G8.h,T8,0,1e9,0,1e9).sort((a,b)=>b[0]-a[0]), top=[]; for(const c of r){ if(c[0]<.4||top.length>=3) break; if(top.every(t=>Math.abs(t[1]-c[1])>2||Math.abs(t[2]-c[2])>2)) top.push(c); }
   let best=0; for(const [,x,y] of top) for(const c of arNcc(G4.d,G4.w,G4.h,T4,2*x-3,2*x+3,2*y-3,2*y+3)) best=Math.max(best,c[0]); return best; }
 const AR_BOX_REW_MS=200; /* t547 */
+/* t580: 맵 이름 칸이 바뀐 뒤 OCR 결과 — 같은 보스 보상 맵이면(배경·OCR 잡음) 계속, 다른 맵·이름 없음이면 끔 */
+function arRewCheck(T,src){ const R=ARX.rew; if(!R||!R.pend) return; if(T&&T.kind.includes('r')&&T.boss===R.boss){ try{ R.hash=arMapHash(src); }catch(e){} R.pend=0; R.n=0; return; }
+  if(T||arNorm(ARX.mapText||'').length>=2||Date.now()-R.pend>3000){ ARX.rew=null; arLog('맵 이름 바뀜 → 배너·공중 감시 끔'); } }
+/* t580: 배너·공중 감시 켬 여부 — cfg.rewGate=false 면 예전처럼 항상 */
+function arRewOn(){ return ARX.cfg.rewGate===false||!!ARX.rew; }
 function arRewMap(now){ const M=ARX.mapSt; return M&&M.kind.includes('r')&&now-(M.t||0)<8000?M:null; }
 async function arBoxStep(src,force){ if(!arBoxNeed()) return; if(arBoxOk()){ const B=ARX.box, n=Date.now(); /* t537: 상자는 봤는데 그때 맵 이름이 없었으면 상자가 보이는 동안 다시 확인 */
-    if(B&&!ARX.lock&&ARX.mapDet&&ARX.mapDet.boss===B.boss&&(force||n-(ARX.boxScanT||0)>=1000/(ARX.cfg.boxFps||2))){ ARX.boxScanT=n; if(await arBoxScore(src,B.key)>=AR_BOX[B.key].thr) arLockTry(src,B.boss,n); } return; } const now=Date.now(), RM=arRewMap(now), RK=RM?Object.keys(AR_BOX).filter(k=>(AR_BOX[k].boss||k)===RM.boss):[]; /* t547: 보상 맵이면 그 보스 상자만 0.2초마다, 다른 맵은 1초마다 돌아가며 */
+    if(B&&!ARX.lock&&ARX.mapDet&&ARX.mapDet.boss===B.boss&&(force||n-(ARX.boxScanT||0)>=1000/(ARX.cfg.boxFps||2))){ ARX.boxScanT=n; if(await arBoxScore(src,B.key)>=AR_BOX[B.key].thr) arLockTry(src,B.boss,n); } return; } const now=Date.now(), RM=arRewMap(now), RK=RM?Object.keys(AR_BOX).filter(k=>(AR_BOX[k].boss||k)===RM.boss):[]; if(!RM&&!force) return; /* t579: 보상 상자는 보상 맵이 감지됐을 때만 찾음 (다른 맵 0회 — 예전엔 1초마다 모든 상자를 돌아가며) */ /* t547: 보상 맵이면 그 보스 상자만 0.2초마다, 다른 맵은 1초마다 돌아가며 */
   if(!force&&now-(ARX.boxScanT||0)<(RK.length?AR_BOX_REW_MS:1000/(ARX.cfg.boxFps||1))-5) return; if(ARX.boxBusy) return; ARX.boxScanT=now; ARX.boxBusy=true; try{
   const K=RK.length?RK:Object.keys(AR_BOX), R=force||RK.length?1:Math.max(1,ARX.cfg.boxRounds||3), per=Math.ceil(K.length/R), st=(ARX.boxRR||0)%R; ARX.boxRR=st+1; // 한 번에 1/R 씩 돌아가며 (상자는 몇 초 이상 보임)
   let best=null; for(const k of K.slice(st*per,st*per+per)){ const sc=await arBoxScore(src,k); if(sc>=AR_BOX[k].thr&&(!best||sc-AR_BOX[k].thr>best.sc-AR_BOX[best.k].thr)) best={k,sc}; }
@@ -7249,7 +7254,7 @@ async function arBoxStep(src,force){ if(!arBoxNeed()) return; if(arBoxOk()){ con
   arBoxHit(best,now,src); } finally{ ARX.boxBusy=false; } }
 function arBoxHit(best,now,src){
   const boss=AR_BOX[best.k].boss||best.k, b=findBoss(boss), m=ARX.mapDet&&ARX.mapDet.boss===boss&&ARX.mapDet.diff?ARX.mapDet.diff:'';
-  ARX.box={boss,key:best.k,t:now,score:best.sc}; ARX.det.boss=boss; ARX.det.diff=m; ARX.det.diffSrc=m?'맵 이름':'캐릭터 설정'; ARX.det.src='보상 상자'; ARX.detT=now; arClrFinish(boss,m||ARX.det.diff,now); arLockTry(src,boss,now);
+  ARX.box={boss,key:best.k,t:now,score:best.sc}; if(!ARX.rew){ let h=null; try{ h=arMapHash(src); }catch(e){} ARX.rew={hash:h,t:now,n:0,boss}; } /* t580: 보상 맵+상자 → 배너·공중 감시 켬 (맵 이름 칸 그림이 바뀔 때까지 유지) */ ARX.det.boss=boss; ARX.det.diff=m; ARX.det.diffSrc=m?'맵 이름':'캐릭터 설정'; ARX.det.src='보상 상자'; ARX.detT=now; arClrFinish(boss,m||ARX.det.diff,now); arLockTry(src,boss,now);
   arLog(`보상 상자 감지: ${b?.name||boss} (${best.sc.toFixed(2)}) → 현재 보스로 정하고 아이템 기록 시작${m?' · 난이도 '+({easy:'이지',normal:'노멀',hard:'하드',chaos:'카오스',extreme:'익스트림'}[m]||m)+' (맵 이름)':' · 난이도는 캐릭터 설정'}`); }
 function arRecord(item,score,via='',n=1){ if(!ARX.det.boss) return; if(!arBoxOk()){ if(!ARX.noBoxT||Date.now()-ARX.noBoxT>5000){ ARX.noBoxT=Date.now(); arLog(`보상 상자 확인 전이라 기록 안 함: ${ITEMS[item]?.n||item} [${via}]`); } return; } /* b300 */ /* b291: 보상 맵에서 보스를 읽었을 때만 기록 */ const t=arTarget(); if(!t) return; const C=arCandidates(true).filter(c=>c.k===item); if(!C.length) return;
   const b=C.find(c=>t.c.weekly?.[c.b.id]===false)?.b||C[0].b, key=b.id+'|'+item, now=Date.now();
@@ -7347,14 +7352,52 @@ function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, 
   const sm=ARX.nsm||(ARX.nsm=document.createElement('canvas')); sm.width=96; sm.height=12; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,96,12);
   const d=g.getImageData(0,0,96,12).data, p=ARX.nprev; let diff=0; if(p) for(let i=0;i<d.length;i+=4) diff+=Math.abs(d[i]-p[i])+Math.abs(d[i+1]-p[i+1])+Math.abs(d[i+2]-p[i+2]);
   const changed=!p||diff/(96*12*3)>=3; ARX.nprev=Uint8ClampedArray.from(d); if(changed){ ARX.nChgT=now; ARX.nameOk=false; }
-  const need=!ARX.nameOk||now-(ARX.nOcrT||0)>ARX.cfg.ocrEvery; /* t576: 이름이 확인 안 됐으면(상태바 바뀜·미확인) 0.2초 틱마다 OCR (예전: 바뀐 뒤 4초만, 그 뒤엔 3초·1초 간격) — 확인된 이름 + 상태바 픽셀 그대로면 3초마다만 */
+  /* t578: 0.2초 틱마다 항상 확인 (확인 뒤 3초로 늦추던 것 폐기). ① 학습한 실제 화면 닉네임 이미지와 바로 대조(~1ms) ② 대조로 못 정하면 OCR —
+     단 마지막 OCR 때와 픽셀이 같고 그 결과로 이미 정해졌으면 OCR 생략(워커 밀림 방지) */
+  let T=null; try{ T=arNameTplTick(src,sw,sh,r,now); }catch(e){}
   if(ARX.nameBusy&&now-(ARX.nOcrT||0)>(+ARX.cfg.ocrTimeout||6000)+2000) ARX.nameBusy=false; /* b296: 바쁨 표시가 안 풀리면 강제로 풂 */ if(!ARX.ocr){ if(!ARX.ocrP) try{ arOcrLoad(); }catch(e){} return; } /* b296: 워커가 죽었으면 다시 띄움 */
   try{ arClrTick(src,now); }catch(e){}
   arMesoTick(src,now); /* t520u: 인벤·창고 창이 열려 있으면 보유 메소 읽기 */
-  if(!need||ARX.nameBusy) return; ARX.nameBusy=true; ARX.nOcrT=now; const cv=arCrop(src,sw,sh,r,arSc(sh,[3,4,2][(ARX.nTry=(ARX.nTry||0)+1)%3],src)); /* 못 읽으면 다음 번엔 다른 배율 */
+  if(T&&(T.cid||T.blank)) return; /* 이미지 대조로 정해짐 / 검은 화면 → 유지 */
+  let od=1e9; const q=ARX.nOcrPrev; if(q&&q.length===d.length){ od=0; for(let i=0;i<d.length;i+=4) od+=Math.abs(d[i]-q[i])+Math.abs(d[i+1]-q[i+1])+Math.abs(d[i+2]-q[i+2]); od/=96*12*3; }
+  const need=!ARX.nameOk||od>=3; if(!need||ARX.nameBusy) return; ARX.nameBusy=true; ARX.nOcrT=now; ARX.nOcrPrev=Uint8ClampedArray.from(d); ARX.nOcrHp=T&&T.hp||null;
+  const tw=T&&T.hp&&T.hp.x0>0&&T.x1>0?Math.min(1,(T.x1+14)/384):1, r2=tw<1?Object.assign({},r,{w:r.w*tw}):r; /* t578: 글자 끝까지만 잘라 OCR (작을수록 빠름) */
+  const cv=arCrop(src,sw,sh,r2,arSc(sh,[3,4,2][(ARX.nTry=(ARX.nTry||0)+1)%3],src)); /* 못 읽으면 다음 번엔 다른 배율 */
   return arOcr(cv,150,1).then(arNameRes).catch(()=>{}).finally(()=>{ ARX.nameBusy=false; }); }
+/* t578: 닉네임 이미지 대조 — 상태바 이름 영역을 UI 1배(384×28)로 줄이고 고역 통과(글자 획만). OCR 이 목록 이름과 정확히 같게 두 번 읽은 화면을
+   그 캐릭터의 템플릿으로 저장(localStorage) → 다음부턴 매 틱 NCC 대조. 1등 ≥ .88 이고 2등보다 .08 이상 높을 때만 (템플릿 뒤 빈칸 8px 포함) 채택.
+   (글꼴 렌더 템플릿은 실게임 프레임에서 정답 평균 .57, 다른 이름 최대 .76 이라 못 씀 — 실제 화면 템플릿은 정답 .98~1.00, 다른 이름 .20~.24) */
+const AR_NT_W=384, AR_NT_H=28;
+function arNameHp(src,sw,sh,r){ const c=ARX.ntc||(ARX.ntc=document.createElement('canvas')); c.width=AR_NT_W; c.height=AR_NT_H; const g=c.getContext('2d',{willReadFrequently:true}); g.imageSmoothingQuality='high'; g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,AR_NT_W,AR_NT_H);
+  const D=g.getImageData(0,0,AR_NT_W,AR_NT_H).data, W=AR_NT_W, H=AR_NT_H, a=new Float32Array(W*H); for(let i=0;i<a.length;i++) a[i]=Math.min(D[i*4],D[i*4+1],D[i*4+2]);
+  const I=new Float64Array((W+1)*(H+1)); for(let y=0;y<H;y++){ let s=0; for(let x=0;x<W;x++){ s+=a[y*W+x]; I[(y+1)*(W+1)+x+1]=I[y*(W+1)+x+1]+s; } }
+  const o=new Uint8ClampedArray(W*H), col=new Uint16Array(W); let E=0; for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const x0=Math.max(0,x-4),x1=Math.min(W,x+5),y0=Math.max(0,y-4),y1=Math.min(H,y+5); const m=(I[y1*(W+1)+x1]-I[y0*(W+1)+x1]-I[y1*(W+1)+x0]+I[y0*(W+1)+x0])/((x1-x0)*(y1-y0)); const v=Math.max(0,a[y*W+x]-m-6); o[y*W+x]=v; if(v>40&&y>=3&&y<H-3){ col[x]++; E++; } }
+  let x0=-1, x1=-1, gap=0, seen=0; for(let x=8;x<W;x++){ if(col[x]){ if(seen&&x0<0&&gap>=6) x0=x; seen=1; if(x0>=0) x1=x; gap=0; } else { gap++; if(x0>=0&&gap>=14) break; } } /* x0 = 'Lv.NNN' 뒤 빈칸 다음 = 닉네임 시작 */
+  if(x0<45||x0>140) x0=-1; return {d:o,E,x0,x1}; }
+function arNcc1(hp,T,xa,xb){ const W=AR_NT_W; let best=-1,bx=0; for(let y=0;y+T.h<=AR_NT_H;y++) for(let x=Math.max(0,xa);x<=xb&&x+T.w<=W;x++){ let a=0,q=0,b=0; for(let j=0;j<T.h;j++){ const ro=(y+j)*W+x, to=j*T.w; for(let i=0;i<T.w;i++){ const v=hp[ro+i]; a+=v; q+=v*v; b+=v*T.t[to+i]; } }
+    const n=T.w*T.h, va=q-a*a/n; if(va<=1e-6) continue; const sc=b/(Math.sqrt(va)*T.n); if(sc>best){ best=sc; bx=x; } } return {sc:best,x:bx}; }
+function arNtMake(H){ if(H.x0<0||H.x1-H.x0<6) return null; const w=Math.min(AR_NT_W-H.x0,H.x1-H.x0+10), /* 뒤 빈칸 8px 포함 → '트딕' 템플릿이 '트딕이' 화면에 안 맞음 */ x=Math.max(0,H.x0-1), h=AR_NT_H-4, t=new Float32Array(w*h), raw=new Uint8Array(w*h); let m=0; for(let j=0;j<h;j++) for(let i=0;i<w;i++){ const v=H.d[(j+2)*AR_NT_W+x+i]; raw[j*w+i]=v; t[j*w+i]=v; m+=v; } m/=t.length; let n=0; for(let i=0;i<t.length;i++){ t[i]-=m; n+=t[i]*t[i]; } return n>0?{w,h,t,n:Math.sqrt(n),raw}:null; }
+function arNtLoad(){ if(ARX.ntpl) return ARX.ntpl; ARX.ntpl={}; try{ const J=JSON.parse(localStorage.getItem('arNTpl')||'{}'); for(const [k,v] of Object.entries(J)){ const raw=Uint8Array.from(atob(v.d),c=>c.charCodeAt(0)), t=new Float32Array(raw.length); let m=0; for(let i=0;i<raw.length;i++){ t[i]=raw[i]; m+=raw[i]; } m/=raw.length; let n=0; for(let i=0;i<t.length;i++){ t[i]-=m; n+=t[i]*t[i]; } ARX.ntpl[k]={w:v.w,h:v.h,t,n:Math.sqrt(n),raw}; } }catch(e){} return ARX.ntpl; }
+function arNtSave(){ try{ const J={}; for(const [k,v] of Object.entries(ARX.ntpl||{})){ let s=''; for(const b of v.raw) s+=String.fromCharCode(b); J[k]={w:v.w,h:v.h,d:btoa(s)}; } localStorage.setItem('arNTpl',JSON.stringify(J)); }catch(e){} }
+function arNameTplTick(src,sw,sh,r,now){ if(ARX.cfg.nameTpl!==true) return null; /* t583: 오인식 0 조건 — 실게임 측정에서 OCR 오독(트딕이→드딕이)을 학습해 오인식을 늘려 기본 끔 */ const H=arNameHp(src,sw,sh,r); ARX.nTplT=now; if(H.E<40) return {blank:true,hp:H,x1:H.x1}; const L=arNtLoad(), sc=[];
+  for(const c of S.characters){ const T=L[c.name]; if(!T) continue; const m=arNcc1(H.d,T,40,150); sc.push([m.sc,c.id]); }
+  sc.sort((a,b)=>b[0]-a[0]); ARX.nTplSc=sc.slice(0,3).map(x=>[x[1],+x[0].toFixed(3)]); const ok=sc.length&&sc[0][0]>=.88&&(sc.length<2||sc[0][0]-sc[1][0]>=.08);
+  if(ok){ const cid=sc[0][1]; ARX.nameOk=true; ARX.cidT=now; ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='이미지'; if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=now-(ARX.nChgT||now); arLivePaint(); } return {cid,hp:H,x1:H.x1}; }
+  return {hp:H,x1:H.x1}; }
+function arNtLearn(cid){ if(ARX.cfg.nameTpl!==true) return; const H=ARX.nOcrHp, c=S.characters.find(x=>x.id===cid); if(!H||!c) return; const T=arNtMake(H); if(!T) return; const L=arNtLoad(); if(L[c.name]) return;
+  for(const [k,o] of Object.entries(L)) if(k!==c.name&&S.characters.some(x=>x.name===k)&&arNcc1(H.d,o,40,150).sc>=.8) return; /* 다른 캐릭터 템플릿과 닮았으면 저장 안 함 */
+  const P=ARX.ntPend; if(P&&P.name===c.name&&arNcc1(H.d,P.T,40,150).sc>=.95){ if(++P.n>=3){ L[c.name]=P.T; ARX.ntPend=null; arNtSave(); arLog(`닉네임 이미지 학습: ${c.name}`); } } else ARX.ntPend={name:c.name,T,n:1}; } /* OCR 정확 일치 3번(같은 화면)일 때만 학습 — 트딕이 화면을 OCR 이 가끔 '드딕이'로 읽어 다른 캐릭터로 학습되는 것 방지 */
 /* t551/t552: 상태바 OCR 결과 처리 — 목록 캐릭터면 대상, 이름은 읽혔는데 목록에 없으면 '-', 못 읽으면(검은 화면 등) 직전 유지 */
-function arNameRes(t){ ARX.nameText=t; const cid=arDetectChar(t), n2=Date.now(); ARX.nRes=(ARX.nRes||0)+1; if(cid){ ARX.nameOk=true; ARX.cidT=n2; ARX.unkName=0; ARX.nOther=[]; if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=n2-(ARX.nChgT||n2); arLivePaint(); } return; }
+/* t583: 오인식 0 — 실게임 OCR 은 '트딕이' 화면을 '드딕이'로 더 자주 읽음(base: 드 19회 / 트 13회). 그래서 한글 이름은
+   ① 최근 6번 읽기 중 정확히 3번 이상 ② 그 사이에 헷갈리는 짝(거센↔예사소리·받침·ㅇ↔ㄴ 만 다른 다른 글자열: 트딕이↔드딕이)이 한 번도 안 읽혔을 때만 채택.
+   짝이 읽혔으면 지금 그 이름이 떠 있어도 '-' 로 (확실하지 않으면 안 띄움) */
+function arNameAmb(cid){ const c=S.characters.find(x=>x.id===cid); if(!c) return 0; const X=c.name.replace(/[^가-힣]/g,''); if(X.length<2) return 0; const H=ARX.nHist||[], lx=arLoose(X);
+  const jx=arJamo(X); if(H.some(t=>{ if(!t||t===X||t.length!==X.length) return false; const dl=arLev(arLoose(t),lx); return dl<=1&&arLev(arJamo(t),jx)>dl; })) return 2; /* 헷갈리는 짝 글자(트↔드 등)가 섞여 읽힘 */
+  return H.filter(t=>t===X).length>=3?0:1; } /* 실게임 OCR 기록 시뮬레이션: 2번이면 오인식 1건, 3번이면 0건 */
+function arNameRes(t){ ARX.nameText=t; let cid=arDetectChar(t); const n2=Date.now(); ARX.nRes=(ARX.nRes||0)+1; (ARX.nHist=ARX.nHist||[]).push(ARX.nameRead||''); if(ARX.nHist.length>6) ARX.nHist.shift();
+  if(ARX.det.cid&&arNameAmb(ARX.det.cid)===2){ ARX.det.cid=''; ARX.nameOk=false; arLivePaint(); }
+  if(cid&&!arLatChar(t)){ const a=arNameAmb(cid); if(a) cid=''; }
+  if(cid){ ARX.nameOk=true; ARX.cidT=n2; ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='OCR'; try{ arNtLearn(cid); }catch(e){} if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=n2-(ARX.nChgT||n2); arLivePaint(); } return; }
   /* t574/t576: 목록과 정확히 같은 이름 → 그 캐릭터. 아니면 '다른 닉네임이 확실히 읽혔을 때만' '-' : ① 'Lv.NNN 이름' 꼴로 읽힘 ② 연속 두 번 비슷하게 읽힌 한글 이름이 지금 캐릭터 이름과 확실히 다름.
      검은 화면·잡음·한 번만 이상하게 읽힘 → 지금 캐릭터 유지 (근사 매칭으로 다른 캐릭터를 고르는 일은 없음) */
   const tok=ARX.nameRead||'', cur=S.characters.find(x=>x.id===ARX.det.cid), curH=cur?cur.name.replace(/[^가-힣]/g,''):'';
@@ -7446,23 +7489,23 @@ function arMapHit(b,now){ const o=ARX.det.boss+'|'+ARX.det.diff;
 function arMapWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return; const r=arR('map',src), now=Date.now();
   const sm=ARX.msm||(ARX.msm=document.createElement('canvas')); sm.width=96; sm.height=16; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,96,16);
   const d=g.getImageData(0,0,96,16).data, p=ARX.mprev; let diff=0; if(p) for(let i=0;i<d.length;i+=4) diff+=Math.abs(d[i]-p[i])+Math.abs(d[i+1]-p[i+1])+Math.abs(d[i+2]-p[i+2]);
-  if(!p||diff/(96*16*3)>=3){ ARX.mChgT=now; ARX.mapOk=false; } if(ARX.lock&&now-(ARX.lhT||0)>=200){ ARX.lhT=now; if(arHashDist(arMapHash(src),ARX.lock.hash)>AR_LOCK_DIST){ ARX.mapOk=false; ARX.mChgT=now; } } /* t537 */ ARX.mprev=Uint8ClampedArray.from(d);
+  if(!p||diff/(96*16*3)>=3){ ARX.mChgT=now; ARX.mapOk=false; } if(ARX.lock&&now-(ARX.lhT||0)>=200){ ARX.lhT=now; if(arHashDist(arMapHash(src),ARX.lock.hash)>AR_LOCK_DIST){ ARX.mapOk=false; ARX.mChgT=now; } } /* t537 */ if(ARX.rew&&ARX.rew.hash&&!ARX.rew.pend&&now-(ARX.rhT||0)>=200){ ARX.rhT=now; if(arHashDist(arMapHash(src),ARX.rew.hash)>AR_LOCK_DIST){ if(++ARX.rew.n>=2){ ARX.rew.pend=now; ARX.mapOk=false; ARX.mChgT=now; } } else ARX.rew.n=0; } /* t580: 맵 이름 칸 그림이 바뀜 → 바로 OCR 로 맵 이름 확인 (arRewCheck) */ ARX.mprev=Uint8ClampedArray.from(d);
   if(ARX.mapBusy&&now-(ARX.mOcrT||0)>(+ARX.cfg.ocrTimeout||6000)+2000) ARX.mapBusy=false;
   if(!ARX.ocr){ if(!ARX.ocrP) try{ arOcrLoad(); }catch(e){} return; }
   const need=(!ARX.mapOk&&now-(ARX.mChgT||0)<6000)||now-(ARX.mOcrT||0)>ARX.cfg.ocrEvery; if(!need||ARX.mapBusy) return;
   ARX.mapBusy=true; ARX.mOcrT=now; const cv=arCrop(src,sw,sh,r,arSc(sh,3,src));
-  return arOcr(cv,150,1).then(t=>{ ARX.mapText=t; try{ arMapState(t,Date.now()); }catch(e){} if(ARX.lock){ const r=arLockCheck(src,t); if(r){ if(r!=='stop'){ ARX.mapOk=true; ARX.mOther=0; const b=arDetectBoss(t); if(b) arMapHit(b,Date.now()); } return; } } const b=arDetectBoss(t), n2=Date.now();
+  return arOcr(cv,150,1).then(t=>{ ARX.mapText=t; let MS=null; try{ MS=arMapState(t,Date.now()); }catch(e){} arRewCheck(MS,src); if(ARX.lock){ const r=arLockCheck(src,t); if(r){ if(r!=='stop'){ ARX.mapOk=true; ARX.mOther=0; const b=arDetectBoss(t); if(b) arMapHit(b,Date.now()); } return; } } const b=arDetectBoss(t), n2=Date.now();
     if(b){ ARX.mapOk=true; ARX.mOther=0; const ch=arMapHit(b,n2); if(ch){ ARX.mapMs=n2-(ARX.mChgT||n2); arLivePaint(); } }
     else if(arNorm(t).length>=2){ ARX.mapOk=++ARX.mOther>=2; if(ARX.mOther>=2){ ARX.mapDet=null; arClrLeave(Date.now()); if(ARX.det.boss){ ARX.box=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; arLivePaint(); } } /* t522: 보상 맵 나가면 상자도 해제 */ } }).catch(()=>{}).finally(()=>{ ARX.mapBusy=false; }); }
 /* b287: 연결된 영상 분석 시작 (테스트는 <video src=mp4> 로 바로 부름). 메인 스레드엔 64x16 배너 비교만 매 프레임 — 나머지는 바뀐 프레임만·예산 안에서·Worker */
 function arStart(v){ ARX.video=v; ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
   ARX.nprev=null; ARX.nameOk=false; clearInterval(ARX.nTimer); ARX.mprev=null; ARX.mOther=0; ARX.nTimer=setInterval(()=>{ if(ARX.video){ arNameWatch(ARX.video); arMapWatch(ARX.video); } },200);
   ARX.timer=setInterval(()=>{ if(ARX.video) arFrame(ARX.video); },Math.round(1000/Math.max(.5,ARX.cfg.fps)));
-  if(ARX.cfg.watchFps>0){ if(v.requestVideoFrameCallback){ const loop=(now,meta)=>{ if(ARX.video!==v) return; arPf().frames++; arBannerWatch(v,meta); arAirWatch(v); if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } v.requestVideoFrameCallback(loop); }; v.requestVideoFrameCallback(loop); } else ARX.wTimer=setInterval(()=>{ if(ARX.video){ arBannerWatch(ARX.video); arAirWatch(ARX.video); } },Math.round(1000/ARX.cfg.watchFps)); }
+  if(ARX.cfg.watchFps>0){ if(v.requestVideoFrameCallback){ const loop=(now,meta)=>{ if(ARX.video!==v) return; arPf().frames++; if(arRewOn()){ arBannerWatch(v,meta); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } v.requestVideoFrameCallback(loop); }; v.requestVideoFrameCallback(loop); } else ARX.wTimer=setInterval(()=>{ if(ARX.video&&arRewOn()){ arBannerWatch(ARX.video); arAirWatch(ARX.video); } },Math.round(1000/ARX.cfg.watchFps)); }
   ARX.boxTimer=setInterval(()=>{ if(ARX.video&&!ARX.boxBusy&&arRewMap(Date.now())&&!arBoxOk()) arBoxStep(ARX.video,false).catch(()=>{}); },AR_BOX_REW_MS); /* t547: 보상 맵에선 프레임(1/fps)과 별도로 0.2초 */
   ARX.logTimer=setInterval(()=>{ if(ARX.ocr&&ARX.video) arLogFrame(ARX.video); },Math.round(1000/Math.max(1,ARX.cfg.logFps)));
   ARX.pfTimer=setInterval(()=>{ try{ arPerfPaint(); }catch(e){} },1000); arBtnPaint(); arPanel(true); }
-function arDisconnect(){ try{ arMesoFlush(Date.now(),true); }catch(e){} clearInterval(ARX.nTimer); ARX.nTimer=0; clearInterval(ARX.pfTimer); clearInterval(ARX.logTimer); clearInterval(ARX.wTimer); clearInterval(ARX.boxTimer); ARX.bq=[]; (ARX.abuf||[]).forEach(e=>e.bmp&&e.bmp.close()); ARX.abuf=[]; ARX.alocs=[]; ARX.airT=0; ARX.bprev=null; ARX.logPrev=[]; clearInterval(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.tracks=[]; ARX.iprev=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; ARX.box=null; arBtnPaint(); arPanelPaint(); }
+function arDisconnect(){ ARX.rew=null; try{ arMesoFlush(Date.now(),true); }catch(e){} clearInterval(ARX.nTimer); ARX.nTimer=0; clearInterval(ARX.pfTimer); clearInterval(ARX.logTimer); clearInterval(ARX.wTimer); clearInterval(ARX.boxTimer); ARX.bq=[]; (ARX.abuf||[]).forEach(e=>e.bmp&&e.bmp.close()); ARX.abuf=[]; ARX.alocs=[]; ARX.airT=0; ARX.bprev=null; ARX.logPrev=[]; clearInterval(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.tracks=[]; ARX.iprev=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; ARX.box=null; arBtnPaint(); arPanelPaint(); }
 function arBtnPaint(){ const b=$('#tabs [data-tab="auto"]'); if(b) b.classList.toggle('arlive',!!ARX.stream); arPanelPaint(); } // b294: 헤더 버튼 대신 탭에 초록 점
 /* 패널: 상태 · 인식 결과 · 수동 선택 · 영역 맞추기(미리보기 드래그) · OCR 미리보기 */
 let arRegionSel='item';
