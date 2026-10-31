@@ -357,17 +357,20 @@ function arTrack(hits,sh,now){ now=now||Date.now(); const k1=sh/1080; ARX.tracks
 /* b296: 이름·미니맵 감시 전용 두 번째 워커 — 로그 OCR(초당 6번) 뒤에 줄 서지 않게 */
 function arOcrFLoad(){ if(ARX.ocrFP) return ARX.ocrFP; ARX.ocrFP=arOcrLoad().then(()=>window.Tesseract?Tesseract.createWorker('kor',1,{workerPath:new URL('ocr/worker.min.js',location.href).href,corePath:new URL('ocr/',location.href).href,langPath:new URL('ocr',location.href).href,gzip:false,workerBlobURL:false}):null)
   .then(w=>ARX.ocrF=w).catch(e=>{ ARX.ocrFP=null; }); return ARX.ocrFP; }
+/* t586: 영문 닉네임 전용 워커 — kor 모델은 'Drcancel' 을 '마08008' 처럼 읽어 영문 이름을 영영 못 잡음. 목록에 영문 이름이 있을 때만 띄움 (ocr/eng.traineddata, tessdata_fast) */
+function arOcrELoad(){ if(ARX.ocrEP) return ARX.ocrEP; ARX.ocrEP=arOcrLoad().then(()=>window.Tesseract?Tesseract.createWorker('eng',1,{workerPath:new URL('ocr/worker.min.js',location.href).href,corePath:new URL('ocr/',location.href).href,langPath:new URL('ocr',location.href).href,gzip:false,workerBlobURL:false}):null)
+  .then(w=>ARX.ocrE=w).catch(e=>{ ARX.ocrEP=null; }); return ARX.ocrEP; }
 function arOcrLoad(){ if(ARX.ocrP) return ARX.ocrP; ARX.ocrP=new Promise((res,rej)=>{ if(window.Tesseract) return res(); const s=document.createElement('script'); s.src='ocr/tesseract.min.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); })
   .then(()=>Tesseract.createWorker('kor',1,{workerPath:new URL('ocr/worker.min.js',location.href).href,corePath:new URL('ocr/',location.href).href,langPath:new URL('ocr',location.href).href,gzip:false,workerBlobURL:false}))
   .then(w=>ARX.ocr=w).catch(e=>{ ARX.ocrP=null; ARX.ocrErr=String(e); }); return ARX.ocrP; }
 function arCrop(src,sw,sh,r,scale=1){ const cv=document.createElement('canvas'); const x=Math.round(r.x*sw),y=Math.round(r.y*sh),w=Math.max(1,Math.round(r.w*sw)),h=Math.max(1,Math.round(r.h*sh));
   cv.width=w*scale; cv.height=h*scale; const g=cv.getContext('2d',{willReadFrequently:true}); g.imageSmoothingEnabled=scale>1; g.drawImage(src,x,y,w,h,0,0,w*scale,h*scale); return cv; }
-async function arOcr(cv,thr=150,fast){ await arOcrLoad(); if(fast) await arOcrFLoad(); const KW=fast&&ARX.ocrF?'ocrF':'ocr'; if(!ARX[KW]) return ''; const g=cv.getContext('2d',{willReadFrequently:true}), im=g.getImageData(0,0,cv.width,cv.height), d=im.data;
+async function arOcr(cv,thr=150,fast){ await arOcrLoad(); if(fast==='e') await arOcrELoad(); else if(fast) await arOcrFLoad(); const KW=fast==='e'?'ocrE':fast&&ARX.ocrF?'ocrF':'ocr'; if(!ARX[KW]) return ''; const g=cv.getContext('2d',{willReadFrequently:true}), im=g.getImageData(0,0,cv.width,cv.height), d=im.data;
   for(let i=0;i<d.length;i+=4){ const v=Math.max(d[i],d[i+1],d[i+2]); const o=v>thr?0:255; d[i]=d[i+1]=d[i+2]=o; } g.putImageData(im,0,0); // 밝은 글자 → 흰 바탕 검은 글자
   const pc=document.createElement('canvas'); pc.width=cv.width+24; pc.height=cv.height+24; const pg=pc.getContext('2d'); pg.fillStyle='#fff'; pg.fillRect(0,0,pc.width,pc.height); pg.drawImage(cv,12,12); // 흰 여백 (tesseract 가 가장자리 글자를 덜 놓침)
   const w=ARX[KW], T=+ARX.cfg.ocrTimeout||6000; let to; // b296: tesseract 가 응답 안 하면(멈춤) 끝없이 기다리지 않음 → 시간 초과 시 워커를 버리고 다음에 새로 띄움
   try{ const r=await Promise.race([w.recognize(pc),new Promise((_,rej)=>{ to=setTimeout(()=>rej(new Error('ocr timeout')),T); })]); return (r?.data?.text||'').trim(); }
-  catch(e){ if(String(e).includes('ocr timeout')&&ARX[KW]===w){ ARX.ocrHang=(ARX.ocrHang||0)+1; ARX[KW]=null; if(KW==='ocr') ARX.ocrP=null; else ARX.ocrFP=null; setTimeout(()=>{ try{ w.terminate?.(); }catch(_){} },50); } return ''; /* 멈춤은 빈 결과로 (다음에 새 워커) */ } finally{ clearTimeout(to); } }
+  catch(e){ if(String(e).includes('ocr timeout')&&ARX[KW]===w){ ARX.ocrHang=(ARX.ocrHang||0)+1; ARX[KW]=null; if(KW==='ocr') ARX.ocrP=null; else if(KW==='ocrE') ARX.ocrEP=null; else ARX.ocrFP=null; setTimeout(()=>{ try{ w.terminate?.(); }catch(_){} },50); } return ''; /* 멈춤은 빈 결과로 (다음에 새 워커) */ } finally{ clearTimeout(to); } }
 /* 한 프레임 처리 (src = video 또는 canvas) — 테스트도 이걸 바로 부름 */
 async function arLogFrame(src){ if(ARX.logBusy) return; ARX.logBusy=true; try{ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return;
     return arLogStep(await arOcr(arCrop(src,sw,sh,arR('log',src),arSc(sh,2,src)),170)); } finally{ ARX.logBusy=false; } }
@@ -552,7 +555,8 @@ function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, 
   const need=!ARX.nameOk||od>=3; if(!need||ARX.nameBusy) return; ARX.nameBusy=true; ARX.nOcrT=now; ARX.nOcrPrev=Uint8ClampedArray.from(d); ARX.nOcrHp=T&&T.hp||null;
   const tw=T&&T.hp&&T.hp.x0>0&&T.x1>0?Math.min(1,(T.x1+14)/384):1, r2=tw<1?Object.assign({},r,{w:r.w*tw}):r; /* t578: 글자 끝까지만 잘라 OCR (작을수록 빠름) */
   const cv=arCrop(src,sw,sh,r2,arSc(sh,[3,4,2][(ARX.nTry=(ARX.nTry||0)+1)%3],src)); /* 못 읽으면 다음 번엔 다른 배율 */
-  return arOcr(cv,150,1).then(arNameRes).catch(()=>{}).finally(()=>{ ARX.nameBusy=false; }); }
+  const eng=S.characters.some(c=>/^[A-Za-z0-9]{2,}$/.test(c.name))&&(!S.characters.some(c=>/[가-힣]/.test(c.name))||ARX.nTry%2===0); /* t586: 영문 이름이 있으면 번갈아 eng 모델 */
+  return arOcr(cv,150,eng?'e':1).then(t=>arNameRes(t,eng)).catch(()=>{}).finally(()=>{ ARX.nameBusy=false; }); }
 /* t578: 닉네임 이미지 대조 — 상태바 이름 영역을 UI 1배(384×28)로 줄이고 고역 통과(글자 획만). OCR 이 목록 이름과 정확히 같게 두 번 읽은 화면을
    그 캐릭터의 템플릿으로 저장(localStorage) → 다음부턴 매 틱 NCC 대조. 1등 ≥ .88 이고 2등보다 .08 이상 높을 때만 (템플릿 뒤 빈칸 8px 포함) 채택.
    (글꼴 렌더 템플릿은 실게임 프레임에서 정답 평균 .57, 다른 이름 최대 .76 이라 못 씀 — 실제 화면 템플릿은 정답 .98~1.00, 다른 이름 .20~.24) */
@@ -601,8 +605,30 @@ function arNameVote(){ const H=(ARX.nHist||[]).filter(Boolean), ok=[], no=[]; co
     if(!R.some(t=>t===X)&&!xs.some((x,i)=>x[0] in ASP)) good=false; /* 정확히 한 번은 읽혀야 (거센소리 이름은 투표로 충분) */
     if(good) ok.push(c.id); else if(bad) no.push(c.id); }
   return {cid:ok.length===1?ok[0]:'', no}; }
-function arNameRes(t){ ARX.nameText=t; let cid=arDetectChar(t); const n2=Date.now(); ARX.nRes=(ARX.nRes||0)+1; (ARX.nHist=ARX.nHist||[]).push(ARX.nameRead||''); if(ARX.nHist.length>10) ARX.nHist.shift();
-  if(!arLatChar(t)){ const v=arNameVote(); cid=v.cid; if(ARX.det.cid&&v.no.includes(ARX.det.cid)){ ARX.det.cid=''; ARX.nameOk=false; arLivePaint(); } }
+/* t586: 실플레이에서 캐릭터가 늘 '-' 였던 원인 — ① 실게임 OCR 은 이 글꼴의 ㅌ 을 대부분 ㄷ 으로, 이 를 미·니·비 로 읽어 '정확히 같음'·옛 음절 투표(≥3 같은 꼴)가 거의 안 맞음(측정 13%)
+   ② 밝은 배경 프레임은 트 → 드 가 거의 100% 라 옛 투표가 목록의 '드딕이' 를 골라 오인식 ③ kor 모델은 영문 이름을 못 읽음(Drcancel 0%).
+   새 규칙(음절마다): 첫소리 묶음(ㄷㅌㄹ / ㄱㅋ / ㅇㅁㄴㅂㅍ / ㅈㅊ) 같고 모음 같음 = 맞는 읽기(받침 무시, 모음 1자 틀림 허용) · 받침·첫소리 묶음까지 같은 '강한 읽기' ≥1.
+   최근 읽기 중 맞는 읽기 ≥3 이고 다른 목록 이름과 겹치면 없음. 거센소리(ㅌ 등) 자리는 거센 읽기 ≥1 필요(실측: ㄷ 화면이 ㅌ 으로 읽힌 적 0번) ·
+   예사소리 자리는 최근 20번 중 거센 읽기가 하나라도 있으면 없음(그 화면은 ㅌ 일 수 있음). */
+const AR_ICL={16:3,5:3,15:0,6:11,2:11,7:11,17:11,14:12}, AR_ASPI={16:1,15:1,17:1,14:1};
+function arSylM(t,X){ if(t.length!==X.length) return 0; let vm=0, strong=1; for(let i=0;i<X.length;i++){ const s=arSyl(t[i]), x=arSyl(X[i]); if(!s||!x) return 0; const ic=j=>AR_ICL[j]??j; if(ic(s[0])!==ic(x[0])) return 0; if(s[1]!==x[1]){ if(++vm>1) return 0; strong=0; } if(s[2]!==x[2]) strong=0; } return strong?2:1; }
+function arNameVote2(){ const A=(ARX.nHist||[]).filter(Boolean), H=A.slice(-10), ok=[], no=[];
+  for(const c of S.characters){ const X=c.name.replace(/[^가-힣]/g,''); if(X.length<2||/[A-Za-z0-9]/.test(c.name)) continue; const R=H.filter(t=>arSylM(t,X)), st=R.filter(t=>arSylM(t,X)===2).length;
+    if(R.length<3||!st){ if(H.length>=6&&!R.length) no.push(c.id); continue; }
+    let good=true; [...X].forEach((ch,i)=>{ const x=arSyl(ch); if(!(x[0] in AR_ICL)&&!Object.values(AR_ICL).includes(x[0])) return; const asp=t=>{ const s=arSyl(t[i]); return s&&AR_ASPI[s[0]]; };
+      if(AR_ASPI[x[0]]){ if(!R.some(asp)) good=false; } else if(x[0]===3||x[0]===0||x[0]===12||x[0]===7){ const M=A.slice(-20).filter(t=>arSylM(t,X)); if(M.filter(asp).length>=Math.max(1,M.length*.2)) good=false; /* 딕→틱 헛읽기(~8%)는 허용 */ } });
+    if(good&&[...X].some(ch=>{ const x=arSyl(ch); return x&&x[0]===3&&x[1]===18; })) good=false; /* t586: 실측 v06 — 진짜 '트' 화면을 18번 중 15번 '드', '트'는 0번 → '드' 글자가 든 이름은 OCR 로 정하지 않음 (오인식 0) */
+    if(good&&S.characters.some(d=>{ if(d===c) return false; const Y=d.name.replace(/[^가-힣]/g,''); if(Y.length!==X.length||!arSylM(Y,X)) return false; return [...X].some((ch,i)=>{ const x=arSyl(ch), y=arSyl(Y[i]); return !AR_ASPI[x[0]]&&AR_ASPI[y[0]]&&(AR_ICL[y[0]]??y[0])===x[0]; }); })) good=false; /* 실측: 밝은 배경에선 진짜 ㅌ 화면이 20번 연속 ㄷ 으로 읽힘 → 거센소리 짝(트딕이)이 목록에 있으면 예사소리 이름(드딕이)은 OCR 로 정하지 않음 */
+    if(good) ok.push(c.id); }
+  return {cid:ok.length===1?ok[0]:'', no}; }
+/* t586: 영문 — eng 모델 읽기에서 'Lv.NNN' 뒤 영문 토큰. 목록 이름과 대소문자 무시 '정확히' 같은 읽기 ≥2 이고 다른 영문 목록 이름은 0번일 때만 (Drcancel↔Drcance1↔Dreancel 처럼 l/1, c/e 헷갈리는 짝도 안전) */
+function arLatVote(){ const H=(ARX.eHist||[]).filter(Boolean).slice(-8), L=S.characters.filter(c=>/^[A-Za-z0-9]{2,}$/.test(c.name)); if(!L.length) return {cid:'',no:[]};
+  const key=x=>x.toLowerCase().replace(/^[d0]/,'o').replace(/rn/g,'m').replace(/[1|!iI]/g,'l').replace(/0/g,'o').replace(/e/g,'c'), cnt=L.map(c=>H.filter(t=>key(t)===key(c.name)).length), ok=L.filter((c,i)=>cnt[i]>=2&&cnt[i]*2>=H.length&&cnt.every((n,j)=>j===i||!n)&&!L.some(d=>d!==c&&key(d.name)===key(c.name))); /* t586: 비교는 혼동키로 (eng 가 첫 D 를 O 로 꾸준히 읽음). eng 모델도 Drcancel 을 Dreancel 로 꾸준히 읽음 → 헷갈리는 짝이 목록에 같이 있으면 정하지 않음 */
+  return {cid:ok.length===1?ok[0].id:'', no:H.length>=6?L.filter((c,i)=>!cnt[i]).map(c=>c.id):[]}; }
+function arNameRes(t,eng){ ARX.nameText=t; const n2=Date.now(); ARX.nRes=(ARX.nRes||0)+1; let cid='';
+  if(eng){ const toks=String(t||'').split(/\s+/).map(x=>x.replace(/[^A-Za-z0-9]/g,'').toLowerCase()).filter(x=>x.length>=3&&!/^l?v\d*$/.test(x)&&!/^\d+$/.test(x)); ARX.nameRead=''; (ARX.eHist=ARX.eHist||[]).push(toks.reduce((a,x)=>x.length>a.length?x:a,'')); if(ARX.eHist.length>8) ARX.eHist.shift(); }
+  else { arDetectChar(t); (ARX.nHist=ARX.nHist||[]).push(ARX.nameRead||''); if(ARX.nHist.length>20) ARX.nHist.shift(); }
+  { const v=arNameVote2(), e=arLatVote(); cid=v.cid&&e.cid&&v.cid!==e.cid?'':(v.cid||e.cid); const no=[...v.no,...e.no]; if(!cid&&ARX.det.cid&&no.includes(ARX.det.cid)){ ARX.det.cid=''; ARX.nameOk=false; arLivePaint(); } }
   if(cid){ ARX.nameOk=true; ARX.cidT=n2; ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='OCR'; try{ arNtLearn(cid); }catch(e){} if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=n2-(ARX.nChgT||n2); arLivePaint(); } return; }
   /* t574/t576: 목록과 정확히 같은 이름 → 그 캐릭터. 아니면 '다른 닉네임이 확실히 읽혔을 때만' '-' : ① 'Lv.NNN 이름' 꼴로 읽힘 ② 연속 두 번 비슷하게 읽힌 한글 이름이 지금 캐릭터 이름과 확실히 다름.
      검은 화면·잡음·한 번만 이상하게 읽힘 → 지금 캐릭터 유지 (근사 매칭으로 다른 캐릭터를 고르는 일은 없음) */
@@ -642,14 +668,26 @@ function arClrCanvas(src){ const sw=src.videoWidth||src.width, sh=src.videoHeigh
   const cv=ARX.clrCv||(ARX.clrCv=document.createElement('canvas')); cv.width=W; cv.height=H; const g=cv.getContext('2d',{willReadFrequently:true});
   g.drawImage(src,G.gx+(G.gw-W*s)/2,G.gy,W*s,H*s,0,0,W,H); return cv; }
 function arClrRead(src){ const cv=arClrCanvas(src); if(!cv) return null; return arClrParse(cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height).data,cv.width,cv.height); }
+/* t586: 보스 체력바 (화면 맨 위 가로 막대). 맨 위 60줄(1배)에서 '빨강 채움 + 어두운 빈칸'이 300px 이상 이어진 줄 → {frac:채움 비율} 또는 null(막대 없음). 실제 프레임 검증 전 — 보수적으로 막대가 확실할 때만 값 */
+function arBossHpRead(src){ if(typeof window!=='undefined'&&window.arBossHpMock) return window.arBossHpMock(); const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return null; const G=arGeom(sw,sh), s=G.s||1, W=Math.round(G.gw/s), H=60;
+  const cv=ARX.hpCv||(ARX.hpCv=document.createElement('canvas')); cv.width=W; cv.height=H; const g=cv.getContext('2d',{willReadFrequently:true}); g.drawImage(src,G.gx,G.gy,G.gw,H*s,0,0,W,H); const d=g.getImageData(0,0,W,H).data; let best=null;
+  for(let y=0;y<H;y++){ let st=-1,red=0,dark=0; for(let x=0;x<=W;x++){ const o=(y*W+x)*4, r=d[o],gg=d[o+1],b=d[o+2], R=x<W&&r>150&&gg<90&&b<120, D=x<W&&r<60&&gg<60&&b<70;
+      if(R||D){ if(st<0){ st=x; red=0; dark=0; } R?red++:dark++; } else if(st>=0){ const n=x-st; if(n>=300&&(!best||n>best.n)) best={n,frac:red/n}; st=-1; } } }
+  return best?{frac:best.frac}:null; }
+function arIsLastPhase(M){ if(!M||!M.kind||!M.kind.includes('b')) return false; const L=AR_BMAP.filter(([n,id,k])=>id===M.boss&&k.includes('b')).pop(); return !!L&&arNorm(L[0])===M.name; }
+/* 체력 0 후보: 마지막 페이즈 전투맵에서 막대가 비면(≤1%) 후보 시각. 다음 맵(다음 페이즈 전투맵)이나 막대 재등장(>5%)이면 취소 — 같은 맵에서 페이즈가 이어지는 보스(데미안·루시드 등) 대비 */
+function arHpTick(src,now){ const C=ARX.clr; if(!C||ARX.clrHold) return; let h=null; try{ h=arBossHpRead(src); }catch(e){} const M=ARX.mapSt;
+  if(C.hp0&&(!M||M.name!==C.hp0.map||(h&&h.frac>.05))){ arLog(`체력 0 후보 취소 (${h&&h.frac>.05?'체력바 다시 나타남':'맵 바뀜'})`); C.hp0=null; }
+  if(h&&h.frac<=.01&&!C.hp0&&C.hpSeen&&arIsLastPhase(M)){ C.hp0={t:now,map:M.name}; arLog('마지막 페이즈 체력 0 → 클리어 후보 (5:00 카운트다운·보상으로 확정)'); }
+  if(h&&h.frac>.05) C.hpSeen=1; }
 function arClrNew(now){ return ARX.clr={boss:'',diff:'',reads:[],mapT:0,practice:false,jump:0,up:0,lim:0,t0:now}; }
 function arClrTick(src,now){ if(!src||ARX.cfg.clrOff) return; if(now-(ARX.clrT||0)<1000) return; ARX.clrT=now;
-  const r=arClrRead(src); ARX.clrLast=r; if(!r) return; ARX.clrSeen=now; if(ARX.clrHold) return; /* 상자 뒤(5:00 리셋 타이머)는 맵 나갈 때까지 무시 */
-  const C=ARX.clr||arClrNew(now); if(C.jump) return; const last=C.reads[C.reads.length-1];
+  const r=arClrRead(src); ARX.clrLast=r; try{ arHpTick(src,now); }catch(e){} if(!r) return; ARX.clrSeen=now; if(ARX.clrHold) return; /* 상자 뒤(5:00 리셋 타이머)는 맵 나갈 때까지 무시 */
+  const C=ARX.clr||arClrNew(now); if(C.jump||C.hp0){ if(!C.cd&&r.sec<=300&&r.sec>=240&&(C.jump||now-C.hp0.t<60000)){ C.cd={t:now,at:now-(299-r.sec)*1000}; if(C.hp0) C.hp0.ok=1; } if(C.jump) return; } /* t586: 메보스 방식 — 리셋 뒤 5:00 카운트다운에서 역산 clearAt=판독-(299-초) */ const last=C.reads[C.reads.length-1];
   if(!C.lim){ const L=arClrLimFor(C.boss||ARX.det.boss,C.diff); if(L&&r.sec<=L){ C.lim=L; C.limEst=false; } else if(!last){ C.lim=Math.ceil((r.sec+1)/60)*60; C.limEst=true; } } const lim=C.lim; /* 표 값보다 큰 남은시간이 보이면 표가 틀림 → 첫 값 올림 */ let ok, up;
-  if(C.reads.length>=3){ const st=arMedian(C.reads.map(x=>x.t-(lim-x.rem)*1000)), ex=lim-(now-st)/1000; ok=Math.abs(r.sec-ex)<=3; up=r.sec>ex+10; } /* 잘못 읽은 값 하나는 버림 */
+  if(C.reads.length>=3){ const st=arMedian(C.reads.map(x=>x.t-(lim-x.rem)*1000)), ex=lim-(now-st)/1000; ok=Math.abs(r.sec-ex)<=3; up=r.sec>ex+3; /* t586: 작은 점프도 (2번 연속이면) 리셋 */ if(!ok&&r.sec<ex-3){ const d=C.dn; if(d&&Math.abs(r.sec-(d.sec-(now-d.t)/1000))<=2){ C.jump=now; C.upT=d.t; arLog(`남은시간이 갑자기 줄어듦 (${r.m}:${String(r.s).padStart(2,'0')}) → 클리어(5:00 리셋) 신호`); return; } C.dn={t:now,sec:r.sec}; return; } C.dn=null; } /* 잘못 읽은 값 하나는 버림 */
   else { ok=!last||r.sec<=last.rem; up=!!last&&r.sec>last.rem+10; }
-  if(ok){ C.up=0; C.upT=0; C.reads.push({t:now,rem:r.sec}); } else if(up&&!C.up) C.upT=now; /* t584: 처음 늘어난 읽기 시각 (클리어 순간 = 마지막 감소 읽기와 이 사이) */
+  if(ok){ C.up=0; C.upT=0; C.reads.push({t:now,rem:r.sec}); } else if(up&&!C.up){ C.upT=now; C.up=1; } /* t586: 예전엔 C.up 을 안 올려 두 번째 늘어난 읽기에서도 점프로 안 잡혔음 */ /* t584: 처음 늘어난 읽기 시각 (클리어 순간 = 마지막 감소 읽기와 이 사이) */
   else if(up&&++C.up>=2){ C.jump=now; C.upT=C.upT||now; arLog(`남은시간이 갑자기 늘어남 (${r.m}:${String(r.s).padStart(2,'0')}) → 클리어 신호, 이후 값 무시`); return; }
   if(!C.practice&&!ARX.clrPBusy&&now-(ARX.clrPT||0)>5000&&typeof arOcr==='function'&&ARX.ocr){ ARX.clrPT=now; ARX.clrPBusy=true; const cv=document.createElement('canvas'), s0=ARX.clrCv; cv.width=s0.width*2; cv.height=s0.height*2; cv.getContext('2d').drawImage(s0,0,0,cv.width,cv.height);
     arOcr(cv,150,1).then(t=>{ if(/PRACT[I1l]CE|MODE\s*PRA/i.test(t||'')&&ARX.clr===C){ C.practice=true; arLog('PRACTICE MODE — 클리어 시간 기록 안 함'); } }).catch(()=>{}).finally(()=>{ ARX.clrPBusy=false; }); } }
@@ -658,9 +696,11 @@ function arClrLeave(now){ if(ARX.clrSeen&&now-ARX.clrSeen<3000) return; /* 타�
 const arMedian=a=>{ const b=[...a].sort((x,y)=>x-y), n=b.length; return n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2; };
 function arClrFinish(boss,diff,now){ const C=ARX.clr; ARX.clr=null; ARX.clrHold=true; if(!C) return null; if(C.practice){ arLog('PRACTICE MODE 라 클리어 시간 기록 안 함'); return null; }
   if(arLive()&&!ARX.det.cid){ arLog('캐릭터 목록에 없는 캐릭터라 클리어 시간 기록 안 함'); return null; } /* t551 */
+  { const bt=typeof findBoss==='function'?findBoss(boss):null; if(!bt||bt.type!=='weekly'&&bt.type!=='monthly'){ arLog(`${bt?.name||boss}: 일간 보스는 클리어 시간 기록 안 함`); return null; } } /* t586: 사용자 결정 — 주간·월간만 (일간 보스는 목록에 없음 → findBoss 없음도 기록 안 함) */
   if(C.boss&&C.boss!==boss&&!C.reads.length) return null; diff=diff||C.diff||''; let start, est=false;
   let end=now, endSrc='상자'; if(C.reads.length){ const L0=arClrLimFor(boss,diff), lim=(L0&&C.reads.every(x=>x.rem<=L0)?L0:0)||C.lim||Math.ceil((C.reads[0].rem+1)/60)*60; start=arMedian(C.reads.map(x=>x.t-(lim-x.rem)*1000)); C.limEst=!(L0&&lim===L0)&&C.limEst!==false;
-    const la=C.reads[C.reads.length-1]; if(C.jump&&C.upT&&C.upT>=la.t) { end=(la.t+C.upT)/2; endSrc='타이머 리셋'; } else if(now-la.t<=15000){ end=la.t+500; endSrc='마지막 타이머'; } } /* t584: 끝 = 타이머가 갑자기 늘어난 순간(리셋) → 마지막 감소 읽기 → 상자 감지 순 */
+    const la=C.reads[C.reads.length-1]; if(C.hp0) { end=C.hp0.t; endSrc=C.hp0.ok?'체력 0+5:00':'체력 0+보상'; } else if(C.cd&&C.cd.at>=la.t-2000&&C.cd.at<=C.cd.t) { end=C.cd.at; endSrc='5:00 카운트다운'; } else if(C.jump&&C.upT&&C.upT>=la.t) { end=(la.t+C.upT)/2; endSrc='타이머 리셋'; } else if(lim>300+3&&C.reads.length>=3){ const cx=start+(lim-300)*1000; /* t586: 클리어하면 남은시간이 5:00 으로 리셋 — 원래 남은시간이 5:00±3초면 점프가 안 보임. 5:00 을 지난 뒤에도 끊김 없이 읽혔으면(그 뒤 클리어였다면 ±3초 넘는 점프가 보였어야 함) 클리어 = 5:00 지난 순간 (추정) */
+      if(la.t>cx+2000&&cx<now) { end=cx; endSrc='5:00 리셋(추정)'; est=true; } else if(C.rwT&&C.rwT>la.t){ end=C.rwT; endSrc='보상맵'; } else if(now-la.t<=15000){ end=la.t+500; endSrc='마지막 타이머'; } } else if(C.rwT&&C.rwT>la.t){ end=C.rwT; endSrc='보상맵'; est=true; } else if(now-la.t<=15000){ end=la.t+500; endSrc='마지막 타이머'; } if(endSrc==='상자') est=true; /* 끝을 하나도 못 잡음 → 추정 */ } /* t584: 끝 = 타이머가 갑자기 늘어난 순간(리셋) → 마지막 감소 읽기 → 상자 감지 순 */
   else if(C.mapT){ start=C.mapT; est=true; } else return null;
   const sec=Math.round((end-start)/1000); if(!(sec>0&&sec<4*3600)) return null; const b=findBoss(boss), id=b?.id||boss;
   if(!diff){ const c=S.characters?.find(x=>x.id===ARX.det.cid); diff=c?.bosses?.[id]?.diff||b?.diffs?.[0]||''; }
@@ -694,6 +734,7 @@ function arMapState(text,now){ const T=arDetectBMap(text); const RW=ARX.rew&&!AR
   if(T&&ARX.mapSt&&(ARX.mapSt.boss!==T.boss||ARX.mapSt.kind!==T.kind)){ const k=T.boss+'|'+T.kind, P=ARX.mapPend; if(!P||P.k!==k){ ARX.mapPend={k,n:1}; return T; } ARX.mapPend=null; } else ARX.mapPend=null; /* t584: 맵 종류(대기↔전투↔보상) 바뀜은 2번 연속 같게 읽혔을 때만 (한 번 잘못 읽어 진행 중↔대기 중 왕복 방지) */
   if(!T&&arSameMapFrag(text)) return null; /* t585: 지금 맵 이름의 조각(끝 잘림·태그 없음)은 '다른 맵'이 아님 → 상태 유지, 무관 카운트 안 올림 */
   if(!T){ if(arNorm(text).length>=2&&(ARX.mOffN=(ARX.mOffN||0)+1)>=2){ ARX.mapSt=null; if(ARX.det.boss||ARX.lock){ ARX.lock=null; ARX.box=null; ARX.mapDet=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; } ARX.mapOff=now; } return null; } ARX.mOffN=0; /* t556 (무관한 맵 2번 연속이면, 잡음 1번은 무시): 맵 이름을 실제로 읽었는데 보스와 무관 → 현재 보스 '-'. 검은 화면·못 읽음(글자 <2)은 직전 상태 유지 */ ARX.mapSt={...T,t:now};
+  if(T.kind.includes('r')&&ARX.clr&&!ARX.clr.rwT) ARX.clr.rwT=now; /* t586: 보상맵 진입 = 끝 폴백 */
   if(T.kind==='w'){ if(ARX.clr) arClrLeave(now); if(!ARX.lock&&ARX.box){ ARX.box=null; ARX.mapDet=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; } }
   else if(T.kind.includes('b')&&!T.kind.includes('r')) arClrMap(T,now); return T; }
 /* '현재 보스' 상태: rew=보상 인식 중(상자/고정), run=진행 중, wait=대기 중 */

@@ -39,7 +39,7 @@ try:
     got=pg.evaluate(RUN,[lst,[READS[v] for v in sorted(READS)]]); check('실게임 OCR 읽기 순서(목록에 실제 이름 없음) → 어떤 캐릭터도 안 뜸',not got,got)
     got=pg.evaluate(RUN,[['트딕이','팬더데이','터래플','Drcancel'],[READS[v] for v in sorted(READS)]]); check('실게임 OCR (실제 이름 있음) → 다른 캐릭터 안 뜸',set(got)<={'트딕이','Drcancel'},got)
     TD=json.load(open(os.path.join(ROOT,'tests','fixtures','b322_td.json')))  # t584: 실게임 트딕이 프레임(ft) + 같은 프레임에서 ㅌ 가운데 획만 지운 드딕이(fd) 실제 OCR
-    for L,k,exp in [(['드딕이','팬더데이'],'ft',set()),(['트딕이','팬더데이'],'fd',set()),(['트딕이','드딕이'],'ft',{'트딕이'}),(['트딕이','드딕이'],'fd',{'드딕이'})]:
+    for L,k,exp in [(['드딕이','팬더데이'],'ft',set()),(['트딕이','팬더데이'],'fd',set()),(['트딕이','드딕이'],'ft',{'트딕이'}),(['트딕이','드딕이'],'fd',set())]:  # t586: '드' 든 이름은 OCR 로 안 정함 (진짜 트 화면이 드로만 읽히는 영상 v06)
       got=pg.evaluate(RUN,[L,[q for v,q in sorted(TD.items()) if v.startswith(k)]]); check(f'실측 {k} 화면, 목록 {L} → {exp or "안 뜸"}',set(got)==exp,got)
     b.close()
 finally: srv.terminate()

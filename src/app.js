@@ -2279,7 +2279,7 @@ function bossRow(c,b){
         <div class="diffs">${b.diffs.map(d=>`<span class="diff ${d===diff?'sel':''}" data-setdiff="${slot}|${d}">${D[d]} · ${price(b,d)>0?meso(price(b,d)):'가격 미확인'}</span>`).join('')}</div></div>
     </div>`;
   }
-  const ck=S.clears?.[b.id+'|'+diff], clr=ck&&ck.sec>0?`<span class="clrtime${ck.est?' est':''}" title="최근 클리어 시간${ck.est?' (추정: 맵 이름 기준)':''}">${Math.floor(ck.sec/60)}분 ${ck.sec%60}초${ck.est?' (추정)':''}</span>`:''; /* t529 */
+  const ck=S.clears?.[b.id+'|'+diff], clr=ck&&ck.sec>0?`<span class="clrtime${ck.est?' est':''}" title="최근 클리어 시간${ck.est?` (추정: ${ck.end==='상자'||!ck.n?'끝/시작 시각을 타이머로 못 잡음':ck.end})`:''}">${Math.floor(ck.sec/60)}분 ${ck.sec%60}초${ck.est?' (추정)':''}</span>`:''; /* t529 */
   return `<div class="boss ${done?'done':''}">${clr}
     <div class="grow"><div class="bn">${bossPic(b,diff)}${esc(b.name)} ${diffImg(diff)}${done?clearImg():''}
       ${cr&&!cr.counted?'<span class="pill err">한도 초과</span>':''}</div>
