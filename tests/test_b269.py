@@ -48,7 +48,7 @@ try:
         check(f'[{th}] 검마 {md}/3 = {mp} {mc} · 라벨', mm and mm['pc']==mp and mm['xy']==f'이번 달 검마 진행도 {md}/3' and mc in mm['cls'] and mm['ing']==('완료' if md==3 else '진행중'), mm)
         check(f'[{th}] 검마 게이지 = 주간 게이지 바로 아래', r['order'])
         for g in (w,mm):
-            check(f'[{th}] (b271) 진행중/완료 = 주보 결정석 글씨체(Orbit) · 숫자와 높이(±25%)·아래 끝(±2px)', 'Orbit' in g['kfont'] and abs(g['kH']-g['dH'])<=g['dH']*.25 and abs(g['kB']-g['dB'])<=2, g)
+            check(f'[{th}] (b271) 진행중/완료 = 주보 결정석 글씨체(b314: 사이트 기본 Pretendard 스택) · 숫자와 높이(±25%)·아래 끝(±2px)', g['kfont'].startswith('Pretendard') and abs(g['kH']-g['dH'])<=g['dH']*.25 and abs(g['kB']-g['dB'])<=2, g)
         if md==3: check(f'[{th}] 검마 100% = 빛나는 빨강', 'drop-shadow' in mm['flt'] and mm['col'].startswith('rgb(2'), mm)
     if not NOCHK:
         cl=pg.evaluate("monthGaugeData.toString()"); check('검마 분류식', "pct>=66?'g-pink':pct>=33?'g-yel':'g-gray'" in cl and 'blackmage' in cl)

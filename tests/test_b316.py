@@ -1,5 +1,5 @@
 # b316(t571) 상단 탭 네온 박스 + b317(t572) 자동 기록 안내창 크게
-import os
+import os,re
 from playwright.sync_api import sync_playwright
 URL='file://'+os.path.abspath(os.path.join(os.path.dirname(__file__),'..','index.html'))
 with sync_playwright() as p:
@@ -25,4 +25,16 @@ with sync_playwright() as p:
       if h==520: assert g['sc'],g
       pg.keyboard.press('Escape')
     pg.close()
+  pg=b.new_page(viewport={'width':1200,'height':700}); pg.goto(URL); pg.wait_for_timeout(600)
+  for th in ['dark','light']:
+    pg.evaluate(f"document.documentElement.dataset.theme='{th}'")
+    for st in ['auto','boss']:
+      pg.evaluate(f"document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.tab=='{st}'))"); pg.wait_for_timeout(250)
+      r=pg.evaluate("[...document.querySelectorAll('#tabs button')].map(e=>{const c=getComputedStyle(e);return [e.dataset.tab,c.getPropertyValue('--nb1').trim(),c.color]})")
+      for tab,nb,col in r:
+        rr=[int(x) for x in nb.lstrip('#')[i:i+2] for i in []] if False else None
+        h=nb.lstrip('#'); R,G,B=int(h[0:2],16),int(h[2:4],16),int(h[4:6],16)
+        if tab=='auto': assert R>180 and G<90,(th,st,nb)
+        else: assert B>R,(th,tab,nb)
+        if tab=='auto' and st=='auto': assert tuple(map(int,re.findall(r'\d+',col)[:3]))[0]>=tuple(map(int,re.findall(r'\d+',col)[:3]))[2],(th,col)
   b.close(); print('OK b316')

@@ -2223,6 +2223,12 @@ html body nav.tabs button:focus-visible{outline:2px solid var(--nb1);outline-off
 .ar-guide{padding:18px 22px;font-size:1rem;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box}
 .ar-guide .ar-gh b{font-size:1.15rem}.ar-gimg{gap:12px;margin:10px 0 4px}.ar-gimg img{border-radius:8px}
 @media (max-width:700px){.ar-guide{padding:14px}.ar-gimg{grid-template-columns:1fr}}
+/* b318(t573): '보스 득템 자동 기록' 탭만 빨강 네온(테두리·빛·선택·hover 모두 빨강 계열). b316 규칙의 색 변수만 바꿈 */
+html body nav.tabs button[data-tab=auto]{--nb1:#ff4d5e;--nb2:#ff2a7a;--nbtx:#ffe3e6}
+[data-theme=light] body nav.tabs button[data-tab=auto]{--nb1:#e0203a;--nb2:#c4125f;--nbtx:#6e0a1a}
+[data-theme=light] body nav.tabs button[data-tab=auto].on{color:#8a0c20!important}
+[data-theme] body nav.tabs button[data-tab=auto].on,html body nav.tabs button[data-tab=auto].on{color:#ffe9ec!important}
+[data-theme=light] body nav.tabs button[data-tab=auto].on{color:#8a0c20!important}
 </style>
 </head>
 <body>
