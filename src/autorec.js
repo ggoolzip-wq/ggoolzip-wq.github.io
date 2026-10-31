@@ -780,3 +780,5 @@ function arFitBoss0(){const el=document.querySelector('#arPanel .ar-bline');if(!
   let f=parseFloat(getComputedStyle(el).fontSize)||22;const min=12.8;
   while(el.scrollWidth>el.clientWidth+1&&f>min){f-=0.5;el.style.fontSize=f+'px';}}
 window.addEventListener('resize',()=>{try{arFitBoss()}catch(e){}});
+// b321: 이 스크립트는 첫 화면을 그린 뒤 따로 실행됨 → 자동 기록 탭으로 시작했으면 여기서 다시 그림
+try{ if(typeof tab!=='undefined'&&tab==='auto') render(); }catch(e){ console.error('render@autorec',e); }

@@ -1804,7 +1804,7 @@ function render(){ paintThemeBtn(); tirDefs(); logoDigital(); document.body.data
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length&&tab!=='live'&&tab!=='auto'){ $('#view').innerHTML=emptyView(); fitPriceCard(); renderResetInfo(); return; } /* b161: 라이브 탭은 캐릭터·로그인 없어도 보임 */
-  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),auto:renderAuto,live:renderLive})[tab](); if(tab==='boss'){ fitPriceCard(); charEnter(); } if(tab==='loot') fitMiss(); renderResetInfo(); }
+  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),auto:()=>{ if(typeof renderAuto==='function') renderAuto(); },live:renderLive})[tab](); if(tab==='boss'){ fitPriceCard(); charEnter(); } if(tab==='loot') fitMiss(); renderResetInfo(); }
 /* b108: 🔄 옆 상태 글자 — 동기화 중 '새로고침 중입니다..'(회색), 끝나면 초록 '새로고침 완료! HH:mm'(KST, 계속 표시),
  * 일부 캐릭터·계정 오류면 주황 '일부 실패 HH:mm', 전체 실패면 빨강 '새로고침 실패 HH:mm' (오류 알림 toast 는 예전 그대로). 페이지 열 때 동기화도 같음 */
 let syncLbl=null; // {st:'run'|'ok'|'part'|'fail', at}

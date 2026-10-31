@@ -21,10 +21,11 @@ else:
 rd = lambda n: open(os.path.join(SRC, n), encoding='utf-8').read()
 js = lambda n: json.load(open(os.path.join(SRC, n), encoding='utf-8'))
 s = rd('app.js')
-if os.path.exists(os.path.join(SRC, 'autorec.js')): s += '\n' + rd('autorec.js')  # b283: 게임 화면 자동 기록
+# b321: 자동 기록(autorec.js + 보상 상자 아이콘 0.34MB)은 두 번째 <script> 로 문서 맨 끝에 → 앞 스크립트가 다 받아지면 첫 화면부터 그림(나머지 다운로드를 안 기다림)
+ar = rd('autorec.js') if os.path.exists(os.path.join(SRC, 'autorec.js')) else ''  # b283: 게임 화면 자동 기록
 s = s.replace('/*__BOSS_ICONS__*/{}', json.dumps(js('icons.json'), separators=(',', ':')))
 s = s.replace('/*__ITEM_ICONS__*/{}', json.dumps(js('itemicons.json'), separators=(',', ':')))
-if os.path.exists(os.path.join(SRC, 'boxicons.json')): s = s.replace('/*__BOX_ICONS__*/{}', json.dumps(js('boxicons.json'), separators=(',', ':')))  # b300 보상 상자
+if os.path.exists(os.path.join(SRC, 'boxicons.json')): ar = ar.replace('/*__BOX_ICONS__*/{}', json.dumps(js('boxicons.json'), separators=(',', ':')))  # b300 보상 상자
 if os.path.exists(os.path.join(SRC, 'worldicons.json')):  # 공식 월드 아이콘 (tools/build_worlds.py)
     s = s.replace('/*__WORLD_ICONS__*/{}', json.dumps(js('worldicons.json'), separators=(',', ':'), ensure_ascii=False))
 AUTO = os.path.join(os.path.dirname(os.path.abspath(SRC)), 'data', 'bosses_auto.json')  # b251
@@ -46,5 +47,5 @@ head = ('<!DOCTYPE html>\n<html lang="ko" data-theme="dark">\n<head>\n<meta char
         '<meta property="og:url" content="https://bossmaple.pages.dev/">\n<meta property="og:image" content="https://bossmaple.pages.dev/og.png">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
         '<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:title" content="메보기 - 메이플 보스 수익·결정석 기록 사이트">\n<meta name="twitter:description" content="메이플스토리 보스 수익 계산과 주간 보스 기록을 한 번에. 캐릭터별 주간 보스·검은 마법사 결정석 수익, 최신 결정석 가격표(패치 노트 자동 반영), 반지 상자·득템 기록과 주간 메소 그래프를 무료로 제공합니다.">\n<meta name="twitter:image" content="https://bossmaple.pages.dev/og.png">\n')
 body = rd('body.html').replace('__LOGO64__', LOGO['s64'])
-open(OUT, 'w', encoding='utf-8').write(head + css + '\n' + body + '\n<script>\n' + s + '</script>\n</body>\n</html>\n')
+open(OUT, 'w', encoding='utf-8').write(head + css + '\n' + body + '\n<script>\n' + s + '</script>\n' + ('<script>\n' + ar + '</script>\n' if ar else '') + '</body>\n</html>\n')
 print('built', OUT, os.path.getsize(OUT), 'bytes')

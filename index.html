@@ -4169,7 +4169,7 @@ function render(){ paintThemeBtn(); tirDefs(); logoDigital(); document.body.data
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length&&tab!=='live'&&tab!=='auto'){ $('#view').innerHTML=emptyView(); fitPriceCard(); renderResetInfo(); return; } /* b161: 라이브 탭은 캐릭터·로그인 없어도 보임 */
-  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),auto:renderAuto,live:renderLive})[tab](); if(tab==='boss'){ fitPriceCard(); charEnter(); } if(tab==='loot') fitMiss(); renderResetInfo(); }
+  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),auto:()=>{ if(typeof renderAuto==='function') renderAuto(); },live:renderLive})[tab](); if(tab==='boss'){ fitPriceCard(); charEnter(); } if(tab==='loot') fitMiss(); renderResetInfo(); }
 /* b108: 🔄 옆 상태 글자 — 동기화 중 '새로고침 중입니다..'(회색), 끝나면 초록 '새로고침 완료! HH:mm'(KST, 계속 표시),
  * 일부 캐릭터·계정 오류면 주황 '일부 실패 HH:mm', 전체 실패면 빨강 '새로고침 실패 HH:mm' (오류 알림 toast 는 예전 그대로). 페이지 열 때 동기화도 같음 */
 let syncLbl=null; // {st:'run'|'ok'|'part'|'fail', at}
@@ -6812,7 +6812,8 @@ setTimeout(async()=>{ if(SV_ON||!SYNC_TEST_URL||!/github\.io$/.test(location.hos
   try{ const r=await fetch(SYNC_TEST_URL+'/api/prices',{cache:'no-store'}); if(!r.ok) return; const j=await r.json(); if(j&&j.prices){ itemPricePut(j.prices); render(); } }catch(e){} },0);
 // b217: 모든 선언이 끝난 뒤 한 번 더 그림 (시작 렌더가 아직 없는 값 때문에 실패했어도 화면이 제대로 나오게)
 bootRender('end'); pageTop(); requestAnimationFrame(()=>pageTop()); // b223
-
+</script>
+<script>
 /* ===== b283: 게임 화면 연결 → 자동 기록 (뼈대) =====
  * 화면 공유(getDisplayMedia) 프레임을 브라우저 안에서만 분석 — 프레임은 어디에도 올리지 않음.
  *  · 아이템 = 드롭 표 아이템 아이콘(ITEM_ICONS) 템플릿 매칭 (바닥에 떨어진 아이콘 · 획득 알림 아이콘)
@@ -7595,6 +7596,8 @@ function arFitBoss0(){const el=document.querySelector('#arPanel .ar-bline');if(!
   let f=parseFloat(getComputedStyle(el).fontSize)||22;const min=12.8;
   while(el.scrollWidth>el.clientWidth+1&&f>min){f-=0.5;el.style.fontSize=f+'px';}}
 window.addEventListener('resize',()=>{try{arFitBoss()}catch(e){}});
+// b321: 이 스크립트는 첫 화면을 그린 뒤 따로 실행됨 → 자동 기록 탭으로 시작했으면 여기서 다시 그림
+try{ if(typeof tab!=='undefined'&&tab==='auto') render(); }catch(e){ console.error('render@autorec',e); }
 </script>
 </body>
 </html>

@@ -2533,3 +2533,12 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
   - 루시드 대기맵 '꿈의 도시 레헬른：악몽의 시계탑' 이 전투·보상 '레헬른：악몽의 시계탑' 과 이름 같음 → 지역명(AR_WREG)으로 구분.
   - 세렌 '왕궁 메인홀'·검마 '거인의 심장'은 대기·보상(세렌은 1페이즈도) 이름·지역 모두 같음 → 상자 보이기 전엔 대기 중, 상자 보이면 보상 인식 중 (세렌 1페이즈도 노랑으로 보임 — 이름만으로 구분 불가).
 - 테스트 tests/test_b312.py (18보스 대기맵·준비맵 전부).
+
+## b321 (2026-10-31 KST) 첫 화면 빨리 — 자동 기록 스크립트를 두 번째 <script> 로 분리
+- 원인: index.html 끝의 <script> 하나(app.js + autorec.js + 아이콘 base64)를 다 받아야 첫 렌더 → 느린 회선에서 하얀 화면이 김.
+- 수정(tools/build.py): app.js(+보스·아이템·월드 아이콘)를 첫 <script>, autorec.js(+보상 상자 아이콘 BOX_ICONS 0.34MB)를 문서 맨 끝 두 번째 <script> 로. 첫 스크립트가 받아지는 즉시 첫 화면을 그리고 나머지(약 0.48MB)는 그 뒤에 받아 실행.
+- app.js render 표: auto:renderAuto → typeof 가드(autorec 아직 없으면 건너뜀). autorec.js 끝에서 자동 기록 탭으로 시작했으면 다시 render().
+- 아이콘은 data URI 그대로(테스트들이 data:image 검사 + 테스트가 index.html 만 복사) → 외관·인식 결과 동일, 서버 호출 추가 없음, 파일 크기 거의 동일(1,636,182 → 1,636,491 B).
+- 측정(헤드리스 크롬, 10Mbps·40ms·CPU 4x, 로컬 비압축): #view 첫 콘텐츠 1.93s → 1.48s, LCP 2.76s → 2.42s, DCL 2.31s → 2.00s, FP ≈0.3s 동일. 스크립트 /workspace/perf/measure.py.
+- 더 줄이려면: 보스·아이템 아이콘을 별도 파일로 → 테스트 23개가 index.html 만 복사하므로 테스트·pages_dist 같이 고쳐야 함(미진행).
+- 테스트: run_par 전부 통과, b213(기존 실패)·b288(main 에서도 같은 실패 — 아이템 인식 ≤10% 항목, 다른 작업 진행 중) 제외.
