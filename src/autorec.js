@@ -680,9 +680,11 @@ function arHpTick(src,now){ const C=ARX.clr; if(!C||ARX.clrHold) return; let h=n
   if(C.hp0&&(!M||M.name!==C.hp0.map||(h&&h.frac>.05))){ arLog(`체력 0 후보 취소 (${h&&h.frac>.05?'체력바 다시 나타남':'맵 바뀜'})`); C.hp0=null; }
   if(h&&h.frac<=.01&&!C.hp0&&C.hpSeen&&arIsLastPhase(M)){ C.hp0={t:now,map:M.name}; arLog('마지막 페이즈 체력 0 → 클리어 후보 (5:00 카운트다운·보상으로 확정)'); }
   if(h&&h.frac>.05) C.hpSeen=1; }
+/* t587: 클리어 측정은 전투맵(진행 중)에서만 — 대기·준비맵에선 타이머·숫자를 읽어도 무시 */
+function arClrRun(){ const M=ARX.mapSt; return !!M&&!!M.kind&&M.kind.includes('b')&&!M.kind.includes('w')&&arBossState()==='run'; }
 function arClrNew(now){ return ARX.clr={boss:'',diff:'',reads:[],mapT:0,practice:false,jump:0,up:0,lim:0,t0:now}; }
 function arClrTick(src,now){ if(!src||ARX.cfg.clrOff) return; if(now-(ARX.clrT||0)<1000) return; ARX.clrT=now;
-  const r=arClrRead(src); ARX.clrLast=r; try{ arHpTick(src,now); }catch(e){} if(!r) return; ARX.clrSeen=now; if(ARX.clrHold) return; /* 상자 뒤(5:00 리셋 타이머)는 맵 나갈 때까지 무시 */
+  const r=arClrRead(src); ARX.clrLast=r; try{ arHpTick(src,now); }catch(e){} if(!r) return; ARX.clrSeen=now; if(ARX.clrHold) return; if(!ARX.clr&&!arClrRun()) return; if(ARX.clr&&ARX.mapSt&&ARX.mapSt.kind==='w') return; /* 상자 뒤(5:00 리셋 타이머)는 맵 나갈 때까지 무시 */
   const C=ARX.clr||arClrNew(now); if(C.jump||C.hp0){ if(!C.cd&&r.sec<=300&&r.sec>=240&&(C.jump||now-C.hp0.t<60000)){ C.cd={t:now,at:now-(299-r.sec)*1000}; if(C.hp0) C.hp0.ok=1; } if(C.jump) return; } /* t586: 메보스 방식 — 리셋 뒤 5:00 카운트다운에서 역산 clearAt=판독-(299-초) */ const last=C.reads[C.reads.length-1];
   if(!C.lim){ const L=arClrLimFor(C.boss||ARX.det.boss,C.diff); if(L&&r.sec<=L){ C.lim=L; C.limEst=false; } else if(!last){ C.lim=Math.ceil((r.sec+1)/60)*60; C.limEst=true; } } const lim=C.lim; /* 표 값보다 큰 남은시간이 보이면 표가 틀림 → 첫 값 올림 */ let ok, up;
   if(C.reads.length>=3){ const st=arMedian(C.reads.map(x=>x.t-(lim-x.rem)*1000)), ex=lim-(now-st)/1000; ok=Math.abs(r.sec-ex)<=3; up=r.sec>ex+3; /* t586: 작은 점프도 (2번 연속이면) 리셋 */ if(!ok&&r.sec<ex-3){ const d=C.dn; if(d&&Math.abs(r.sec-(d.sec-(now-d.t)/1000))<=2){ C.jump=now; C.upT=d.t; arLog(`남은시간이 갑자기 줄어듦 (${r.m}:${String(r.s).padStart(2,'0')}) → 클리어(5:00 리셋) 신호`); return; } C.dn={t:now,sec:r.sec}; return; } C.dn=null; } /* 잘못 읽은 값 하나는 버림 */
@@ -691,7 +693,7 @@ function arClrTick(src,now){ if(!src||ARX.cfg.clrOff) return; if(now-(ARX.clrT||
   else if(up&&++C.up>=2){ C.jump=now; C.upT=C.upT||now; arLog(`남은시간이 갑자기 늘어남 (${r.m}:${String(r.s).padStart(2,'0')}) → 클리어 신호, 이후 값 무시`); return; }
   if(!C.practice&&!ARX.clrPBusy&&now-(ARX.clrPT||0)>5000&&typeof arOcr==='function'&&ARX.ocr){ ARX.clrPT=now; ARX.clrPBusy=true; const cv=document.createElement('canvas'), s0=ARX.clrCv; cv.width=s0.width*2; cv.height=s0.height*2; cv.getContext('2d').drawImage(s0,0,0,cv.width,cv.height);
     arOcr(cv,150,1).then(t=>{ if(/PRACT[I1l]CE|MODE\s*PRA/i.test(t||'')&&ARX.clr===C){ C.practice=true; arLog('PRACTICE MODE — 클리어 시간 기록 안 함'); } }).catch(()=>{}).finally(()=>{ ARX.clrPBusy=false; }); } }
-function arClrMap(b,now){ if(!b||!b.boss||ARX.clrHold) return; const C=ARX.clr||arClrNew(now); if(!C.mapT) C.mapT=now; if(!C.boss) C.boss=b.boss; if(b.diff) C.diff=b.diff; }
+function arClrMap(b,now){ if(!b||!b.boss||ARX.clrHold||!b.kind||!b.kind.includes('b')||b.kind.includes('w')) return; const C=ARX.clr||arClrNew(now); if(!C.mapT) C.mapT=now; if(!C.boss) C.boss=b.boss; if(b.diff) C.diff=b.diff; }
 function arClrLeave(now){ if(ARX.clrSeen&&now-ARX.clrSeen<3000) return; /* 타이머가 아직 보이면 같은 보스 맵 */ if(ARX.clr&&!ARX.clrHold) arLog('보상 상자 없이 맵을 나감 — 클리어 시간 버림'); ARX.clr=null; ARX.clrHold=false; }
 const arMedian=a=>{ const b=[...a].sort((x,y)=>x-y), n=b.length; return n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2; };
 function arClrFinish(boss,diff,now){ const C=ARX.clr; ARX.clr=null; ARX.clrHold=true; if(!C) return null; if(C.practice){ arLog('PRACTICE MODE 라 클리어 시간 기록 안 함'); return null; }
@@ -733,7 +735,7 @@ function arMapState(text,now){ const T=arDetectBMap(text); const RW=ARX.rew&&!AR
   if(RW&&(!T||T.boss!==ARX.rew.boss||!T.kind.includes('r'))) return T&&T.boss===ARX.rew.boss?T:null;
   if(T&&ARX.mapSt&&(ARX.mapSt.boss!==T.boss||ARX.mapSt.kind!==T.kind)){ const k=T.boss+'|'+T.kind, P=ARX.mapPend; if(!P||P.k!==k){ ARX.mapPend={k,n:1}; return T; } ARX.mapPend=null; } else ARX.mapPend=null; /* t584: 맵 종류(대기↔전투↔보상) 바뀜은 2번 연속 같게 읽혔을 때만 (한 번 잘못 읽어 진행 중↔대기 중 왕복 방지) */
   if(!T&&arSameMapFrag(text)) return null; /* t585: 지금 맵 이름의 조각(끝 잘림·태그 없음)은 '다른 맵'이 아님 → 상태 유지, 무관 카운트 안 올림 */
-  if(!T){ if(arNorm(text).length>=2&&(ARX.mOffN=(ARX.mOffN||0)+1)>=2){ ARX.mapSt=null; if(ARX.det.boss||ARX.lock){ ARX.lock=null; ARX.box=null; ARX.mapDet=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; } ARX.mapOff=now; } return null; } ARX.mOffN=0; /* t556 (무관한 맵 2번 연속이면, 잡음 1번은 무시): 맵 이름을 실제로 읽었는데 보스와 무관 → 현재 보스 '-'. 검은 화면·못 읽음(글자 <2)은 직전 상태 유지 */ ARX.mapSt={...T,t:now};
+  if(!T){ if(arNorm(text).length>=2&&(ARX.mOffN=(ARX.mOffN||0)+1)>=2&&!(ARX.mapSt&&(ARX.mOffN<4||now-(ARX.mapSt.t||0)<4000||(ARX.clrSeen&&now-ARX.clrSeen<3000)))){ /* t587: 실플레이 영상(t601) — 같은 듄켈 맵에서 '-'↔진행 중 깜빡임: 보스 맵 상태는 무관 읽기 4번 연속+4초 넘게 못 읽음+타이머 안 보일 때만 해제 */ ARX.mapSt=null; if(ARX.det.boss||ARX.lock){ ARX.lock=null; ARX.box=null; ARX.mapDet=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; } ARX.mapOff=now; } return null; } ARX.mOffN=0; /* t556 (무관한 맵 2번 연속이면, 잡음 1번은 무시): 맵 이름을 실제로 읽었는데 보스와 무관 → 현재 보스 '-'. 검은 화면·못 읽음(글자 <2)은 직전 상태 유지 */ ARX.mapSt={...T,t:now};
   if(T.kind.includes('r')&&ARX.clr&&!ARX.clr.rwT) ARX.clr.rwT=now; /* t586: 보상맵 진입 = 끝 폴백 */
   if(T.kind==='w'){ if(ARX.clr) arClrLeave(now); if(!ARX.lock&&ARX.box){ ARX.box=null; ARX.mapDet=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; } }
   else if(T.kind.includes('b')&&!T.kind.includes('r')) arClrMap(T,now); return T; }
@@ -782,7 +784,7 @@ function arPanelBind(p){ {
 /* t565: 캐릭터·현재 보스·해상도 칸만 따로 그림 — 0.2초 감시(nTimer)마다 바뀌었으면 바로 (전엔 패널 전체 다시 그리기가 '포커스 있으면 건너뜀'+서명에 보스 상태 없음 → 버튼 눌러야 갱신) */
 /* t567: 자동 기록 탭에 방금 읽은 메소(저장은 1분 간격이어도 표시는 즉시)·클리어 시간(진행 중 경과 / 최근 기록) */
 function arMesoLine(){ const m=ARX.mesoLast; if(!m||!(m.inv>=0)||(ARX.det.cid&&m.cid!==ARX.det.cid)) return ''; return `<div class="ar-meso muted">보유 메소(인식): <b>${fmtMesoFull((+m.inv||0)+(+m.sto||0))}</b>${m.sto!=null?' · 인벤+창고':''}</div>`; }
-function arClrLine(){ const C=ARX.clr, now=Date.now(), mmss=t=>`${Math.floor(t/60)}분 ${String(t%60).padStart(2,'0')}초`; if(C&&!C.practice){ let st=null; if(C.reads?.length){ const lim=C.lim||Math.ceil((C.reads[0].rem+1)/60)*60; st=arMedian(C.reads.map(x=>x.t-(lim-x.rem)*1000)); } else if(C.mapT) st=C.mapT; if(st) return `<div class="ar-clr muted">클리어 시간: 진행 ${mmss(Math.max(0,Math.round((now-st)/1000)))}</div>`; }
+function arClrLine(){ const C=ARX.clr, now=Date.now(), mmss=t=>`${Math.floor(t/60)}분 ${String(t%60).padStart(2,'0')}초`; if(C&&!C.practice&&arClrRun()){ let st=null; if(C.reads?.length){ const lim=C.lim||Math.ceil((C.reads[0].rem+1)/60)*60; st=arMedian(C.reads.map(x=>x.t-(lim-x.rem)*1000)); } else if(C.mapT) st=C.mapT; if(st) return `<div class="ar-clr muted">클리어 시간: 진행 ${mmss(Math.max(0,Math.round((now-st)/1000)))}</div>`; }
   const b=ARX.det.boss||ARX.mapSt?.boss, d=ARX.det.boss?ARX.det.diff:ARX.mapSt?.diff; const k=b&&Object.keys(S.clears||{}).find(x=>x.startsWith(b+'|')&&(!d||x===b+'|'+d)), ck=k&&S.clears[k]; return ck&&ck.sec>0?`<div class="ar-clr muted">최근 클리어: ${mmss(ck.sec)}${ck.est?' (추정)':''}</div>`:''; }
 /* t567: 공통 실시간 갱신 — 칸마다 HTML 이 바뀌었을 때만 씀(포커스·스크롤·열림 유지). 패널 전체 그리기를 0.2초마다 돌려도 바뀐 칸만 DOM 변경 → 앞으로 추가되는 표시도 arPanelPaint 안에서 그리면 자동 실시간 */
 function arSetH(el,h){ if(!el) return false; if(el._arH===h) return false; const a=document.activeElement; if(a&&el.contains(a)&&el.closest('.ar-cset')) return false; const op=[...el.querySelectorAll('details')].map(d=>d.open); el.innerHTML=h; el._arH=h; el.querySelectorAll('details').forEach((d,i)=>{ if(op[i]) d.open=true; }); return true; }

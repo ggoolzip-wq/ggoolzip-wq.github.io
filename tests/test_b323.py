@@ -12,11 +12,11 @@ for f in ['index.html','prices.json']: shutil.copy(os.path.join(ROOT,f),site)
 for d in ['data']: shutil.copytree(os.path.join(ROOT,d),os.path.join(site,d))
 PORT=_tutil.free_port(); srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=site,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 SIM="""([boss,tc,boxD,stopAfter])=>{ const A=window.AR; A.clr=null; A.clrHold=false; A.clrT=0; A.det={cid:'x',boss,diff:'hard',src:''}; A.cfg.clrOff=false; A.ocr=null;
-  S.characters=[{id:'x',name:'x',bosses:{}}]; const t0=1e9; let rd=null; window.arClrRead=()=>rd; arClrMap({boss,diff:'hard'},t0);
+  S.characters=[{id:'x',name:'x',bosses:{}}]; const t0=1e9; let rd=null; window.arClrRead=()=>rd; A.mapSt={boss,kind:'b',name:'x',t:0}; arClrMap({boss,diff:'hard',kind:'b'},t0);
   for(let e=5;e<=tc+boxD;e++){ const rem=e<tc?1200-e:300-(e-tc); if(stopAfter!=null&&e>stopAfter){ rd=null; continue; } rd={sec:rem,m:Math.floor(rem/60),s:rem%60}; arClrTick({},t0+e*1000+37); }
   const c=arClrFinish(boss,'hard',t0+(tc+boxD)*1000+37); return c&&{sec:c.sec,end:c.end,est:c.est}; }"""
 HPSIM="""([boss,maps,hp,tc,boxD,stopAfter,rw])=>{ const A=window.AR; A.clr=null; A.clrHold=false; A.clrT=0; A.det={cid:'x',boss,diff:'hard',src:''}; A.cfg.clrOff=false; A.ocr=null;
-  S.characters=[{id:'x',name:'x',bosses:{}}]; const t0=1e9; let rd=null, h=null; window.arClrRead=()=>rd; window.arBossHpMock=()=>h; arClrMap({boss,diff:'hard'},t0);
+  S.characters=[{id:'x',name:'x',bosses:{}}]; const t0=1e9; let rd=null, h=null; window.arClrRead=()=>rd; window.arBossHpMock=()=>h; A.mapSt={boss,kind:'b',name:'x',t:0}; arClrMap({boss,diff:'hard',kind:'b'},t0);
   const mp=e=>{ let m=maps[0][1]; for(const [s,n] of maps) if(e>=s) m=n; return m; };
   for(let e=5;e<=tc+boxD;e++){ const nm=mp(e); A.mapSt={boss,kind:'b',name:arNorm(nm),t:0}; h=null; for(const [a,b,f] of hp) if(e>=a&&e<b) h={frac:f};
     const rem=e<tc?1200-e:300-(e-tc); rd=(stopAfter!=null&&e>stopAfter)?null:{sec:rem,m:Math.floor(rem/60),s:rem%60}; arClrTick({},t0+e*1000+37); }

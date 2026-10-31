@@ -57,7 +57,7 @@ try:
     check(f'보스 맵 시퀀스 {n}개 확인', n>=60, n)
     # (3) 클리어 시간
     r=pg.evaluate("""()=>{ """+RESET+""" const t0=Date.now()-600000; A.det.cid='x';
-      S.characters=[{id:'x',name:'x',bosses:{}}]; arClrMap({boss:'lotus',diff:'hard'},t0);
+      S.characters=[{id:'x',name:'x',bosses:{}}]; window.AR.mapSt={boss:'lotus',kind:'b',name:'x',t:0}; arClrMap({boss:'lotus',diff:'hard',kind:'b'},t0);
       const C=A.clr; const sh=[]; for(let i=0;i<300;i+=3) C.reads.push({t:t0+5000+i*1000,rem:1200-5-i}); // 입장 0초에 20:00 시작
       // 맵 흔들림(대기맵 1번)·타이머 2초 전 보임 → 버리지 않음
       A.clrSeen=t0+300000; arClrLeave(t0+301000); const kept=!!A.clr;

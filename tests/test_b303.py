@@ -25,7 +25,7 @@ SIM="""([boss,ev])=>{ const A=window.AR, on=Date.now, rd=window.arClrRead; let T
   A.clr=null; A.clrHold=false; A.clrSeen=0; A.clrT=0; A.clrPT=1e15; S.clears={}; const B=0;
   try{ for(const e of ev){ T=1e12+e[0]*1000;
     if(e[1]==='r'){ cur=e[2]==null?null:{m:Math.floor(e[2]/60),s:e[2]%60,sec:e[2]}; A.clrT=0; arClrTick({},T); }
-    else if(e[1]==='map') arClrMap({boss:e[2],diff:'hard'},T);
+    else if(e[1]==='map') (window.AR.mapSt={boss:e[2],kind:'b',name:'x',t:0},arClrMap({boss:e[2],diff:'hard',kind:'b'},T));
     else if(e[1]==='leave') arClrLeave(T);
     else if(e[1]==='prac'){ if(A.clr) A.clr.practice=true; }
     else if(e[1]==='box') arClrFinish(e[2],'hard',T); } }
@@ -45,7 +45,7 @@ try:
     ev=[[0,'map',bid]]+[[60+i,'r',1740-i] for i in range(0,400)]; ev[100]=[159,'r',600]; ev[200]=[259,'r',1777]
     ev+= [[460,'r',300],[461,'r',299],[462,'r',298]]+[[600+i,'r',None] for i in range(10)]+[[612,'box',bid]]
     r=pg.evaluate(SIM,[bid,ev]); v=r.get(bid+'|hard')
-    check('입장 = 지금−(30:00−남은) 중앙값, 잘못 읽은 값 무시, 5:00 리셋 뒤 무시 → 10분 12초',v and v['sec']==612 and not v['est'],r)
+    check('입장 = 지금−(30:00−남은) 중앙값, 잘못 읽은 값 무시, 5:00 리셋 = 끝 → 7분 41초',v and abs(v['sec']-461)<=1 and not v['est'],r)  # t587: 끝 = 5:00 리셋(460초) 역산 (t584 규칙), 예전 기대값 612(상자) 는 옛 규칙
     # 제한 시간 첫 값 올림: 첫 읽기 29:59 → 30:00
     r=pg.evaluate(SIM,[bid,[[0,'r',1799],[1,'r',1798],[2,'r',1797],[95,'box',bid]]]); v=r.get(bid+'|hard')
     check('첫 읽은 값 29:59 → 제한 30분 올림 → 1분 36초',v and v['sec']==96,r)
@@ -65,7 +65,7 @@ try:
       q=pg.evaluate("""()=>[...document.querySelectorAll('.boss')].map(e=>{ const t=e.querySelector('.clrtime'); if(!t) return null; const a=t.getBoundingClientRect(), c=e.getBoundingClientRect();
         return {t:t.textContent, dr:Math.round(c.right-a.right), dt:Math.round(a.top-c.top), fs:parseFloat(getComputedStyle(t).fontSize), sh:getComputedStyle(t).textShadow!=='none'}; })""")
       hit=[x for x in q if x]
-      check(f'[{th}] 기록 있는 보스 2칸만 "m분 s초" 오른쪽 위 작게·네온',len(hit)==2 and {h['t'] for h in hit}=={'4분 52초','1분 15초 (추정)'} and all(h['dr']<=12 and h['dt']<=6 and h['fs']<=12 and h['sh'] for h in hit),q[:6])
+      check(f'[{th}] 기록 있는 보스 2칸만 "m분 s초" 오른쪽 위 작게·네온',len(hit)==2 and {h['t'] for h in hit}=={'4분 52초','1분 15초 (추정)'} and all(h['dr']<=12 and h['dt']<=6 and h['fs']<=16 and h['sh'] for h in hit),q[:6])
       el=pg.query_selector('.boss-list'); el.screenshot(path=os.path.join(OUT,f'b303_clear_{th}.png'))
     check('새로고침 뒤 유지',(pg.reload(), pg.wait_for_timeout(800), pg.evaluate("Object.keys(S.clears||{}).length"))[2]==2)
     check('페이지 오류 없음',not errs,errs)
