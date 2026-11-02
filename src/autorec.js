@@ -482,6 +482,37 @@ function arBoxFind(G8,G4,T8,T4){ const r=arNcc(G8.d,G8.w,G8.h,T8,0,1e9,0,1e9).so
 async function arBoxScore(src,k){ const T8=await arBoxTpl(k,8), T4=await arBoxTpl(k,4); if(!T8||!T4) return 0; const G8=arBoxGrab(src,8), G4=arBoxGrab(src,4);
   let best=arBoxFind(G8,G4,T8,T4); if(best>=AR_BOX[k].thr||ARX.cfg.boxPart===false) return best;
   const P8=arBoxParts(T8), P4=arBoxParts(T4); for(let i=0;i<Math.min(P8.length,P4.length);i++) best=Math.max(best,arBoxFind(G8,G4,P8[i],P4[i])-AR_BOX_PART_PEN); return best; }
+/* b331 (t633): 상자 처치 시스템 메시지 '선택받은 <보스>의 보물상자를 처치하여 …' — n4 세렌처럼 상자가 캐릭터·소환수·데미지 숫자에 끝까지 가려져
+   그림 점수가 문턱 못 넘어도 인식. 보물상자 위 이름표는 실제 영상 25개 어디에도 없음 → 화면 위쪽 보라 시스템 메시지를 실제 프레임에서 자른 글자 템플릿으로 정확히 대조.
+   '선택받은'·'의 보물상자를 처치하여' 둘 다 + 그 사이 보스 이름(번들 템플릿 / 처음 보는 보스는 맵 보스로 받고 localStorage arBoxMsgTpl 에 자동 학습) 일치해야 함.
+   배경 최고 .64 (25개 영상), 실제 메시지 .83~1.0 → 문턱 .8 */
+const AR_BOXMSG=/*__BOX_MSG__*/{};
+const AR_BOXMSG_THR=.8, AR_BOXMSG_PRE=.75, AR_BOXMSG_NAME=.75, AR_BOXMSG_BAND={t:90,h:240,w:1400};
+function arBmLearned(){ try{ return JSON.parse(localStorage.getItem('arBoxMsgTpl')||'{}')||{}; }catch(e){ return {}; } }
+function arBmNames(){ return Object.assign({},AR_BOXMSG.names||{},arBmLearned()); }
+function arBmTpl(u,D){ const c=ARX.bmT||(ARX.bmT={}), id=D+'|'+u; if(c[id]) return c[id]; return c[id]=new Promise(res=>{ const im=new Image(); im.onload=()=>{ const w=Math.max(3,Math.round(im.width/D)), h=Math.max(3,Math.round(im.height/D)), cv=document.createElement('canvas'); cv.width=w; cv.height=h; const g=cv.getContext('2d',{willReadFrequently:true}); g.imageSmoothingQuality='high'; g.drawImage(im,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data, n=w*h, t=new Float32Array(n); let m=0; for(let i=0;i<n;i++){ t[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2]; m+=t[i]; } m/=n; let tt=0; for(let i=0;i<n;i++){ t[i]-=m; tt+=t[i]*t[i]; } res({w,h,n,t,tt}); }; im.onerror=()=>res(null); im.src=u; }); }
+function arBmGray(src,D){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, G=arGeom(sw,sh), s=G.s||1, B=AR_BOXMSG_BAND, w=Math.min(G.gw,B.w*s), h=Math.min(G.gh-B.t*s,B.h*s), x=G.gx+(G.gw-w)/2, y=G.gy+B.t*s;
+  const f=s/(AR_BOXMSG.s||1.40625), cw=Math.max(1,Math.round(w/f/D)), ch=Math.max(1,Math.round(h/f/D)) /* 템플릿은 1920 기본 비율(UI 1.40625배) 실제 화면에서 자름 */, cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; const g=cv.getContext('2d',{willReadFrequently:true}); g.imageSmoothingQuality='high'; g.drawImage(src,x,y,w,h,0,0,cw,ch);
+  const d=g.getImageData(0,0,cw,ch).data, a=new Float32Array(cw*ch); let pu=0; for(let i=0;i<cw*ch;i++){ const r=d[i*4],gg=d[i*4+1],b=d[i*4+2]; a[i]=.299*r+.587*gg+.114*b; if(b>200&&r>140&&r<235&&gg>90&&gg<190&&b-gg>50) pu++; } return {a,w:cw,h:ch,pu,x,y,f,D}; }
+function arBmNcc(I,T,x0,x1,y0,y1){ let best=-1,bx=0,by=0; for(let y=Math.max(0,y0);y<=Math.min(I.h-T.h,y1);y++) for(let x=Math.max(0,x0);x<=Math.min(I.w-T.w,x1);x++){ let s=0,q=0,st=0;
+    for(let j=0;j<T.h;j++){ const ro=(y+j)*I.w+x, to=j*T.w; for(let i=0;i<T.w;i++){ const v=I.a[ro+i]; s+=v; q+=v*v; st+=v*T.t[to+i]; } }
+    const vi=q-s*s/T.n, den=Math.sqrt(Math.max(0,vi)*T.tt), sc=den>1e-6?st/den:0; if(sc>best){ best=sc; bx=x; by=y; } } return {sc:best,x:bx,y:by}; }
+function arBmTop(I,T,k,min){ const out=[]; for(let y=0;y<=I.h-T.h;y++) for(let x=0;x<=I.w-T.w;x++){ const r=arBmNcc(I,T,x,x,y,y); if(r.sc>=min) out.push(r); } out.sort((a,b)=>b.sc-a.sc); const top=[]; for(const c of out){ if(top.length>=k) break; if(top.every(t=>Math.abs(t.x-c.x)>3||Math.abs(t.y-c.y)>2)) top.push(c); } return top; }
+async function arBoxMsgScan(src,mapBoss){ if(!AR_BOXMSG.phrase||!AR_BOXMSG.pre) return null; const I4=arBmGray(src,4); if(I4.pu<25) return null; /* 보라 글자 거의 없음 → 건너뜀 (대부분 프레임) */
+  const P4=await arBmTpl(AR_BOXMSG.phrase,4), P2=await arBmTpl(AR_BOXMSG.phrase,2), Q2=await arBmTpl(AR_BOXMSG.pre,2); if(!P4||!P2||!Q2) return null;
+  const top=arBmTop(I4,P4,4,.5); if(!top.length) return null; const I2=arBmGray(src,2), nm=arBmNames(); let bestM=0, learn=null; ARX.boxMsgDbg=[];
+  for(const c of top){ const ph=arBmNcc(I2,P2,2*c.x-3,2*c.x+3,2*c.y-3,2*c.y+3); bestM=Math.max(bestM,ph.sc); if(ph.sc<AR_BOXMSG_THR) continue; /* 메시지 여러 줄 — 빛 이펙트가 한 줄을 가려도 다른 줄로 */
+    const pr=arBmNcc(I2,Q2,ph.x-Q2.w-100,ph.x-Q2.w-8,ph.y-2,ph.y+2); ARX.boxMsgDbg.push([+ph.sc.toFixed(3),+pr.sc.toFixed(3),ph.x-pr.x-Q2.w]); const noPre=pr.sc<AR_BOXMSG_PRE; if(noPre&&ph.sc<.9) continue; /* b331: 빛이 '선택받은'을 가리면 문구 .9 + 이름 .85 로 대신 */ /* '선택받은' 이 같은 줄 왼쪽에 있어야 */
+    const xs=pr.x+Q2.w, xe=ph.x; let hit=null; const nThr=noPre?.85:AR_BOXMSG_NAME;
+    for(const [b,u] of Object.entries(nm)){ const T=await arBmTpl(u,2); if(!T||!noPre&&Math.abs(T.w-(xe-xs))>5) continue; const r=noPre?arBmNcc(I2,T,xe-T.w-6,xe-T.w+4,ph.y-2,ph.y+2):arBmNcc(I2,T,xs-3,xe-T.w+3,ph.y-2,ph.y+2); ARX.boxMsgDbg.push([b,+r.sc.toFixed(3)]); if(r.sc>=nThr&&(!hit||r.sc>hit.sc)) hit={boss:b,sc:r.sc}; }
+    if(hit){ ARX.boxMsgSc=+bestM.toFixed(3); return {boss:hit.boss,sc:Math.min(ph.sc,pr.sc,hit.sc),src:'템플릿'}; }
+    if(!learn&&!noPre&&mapBoss&&!nm[mapBoss]&&xe-xs>=6&&ph.sc>=.9&&pr.sc>=.85) /* 학습은 깨끗이 보일 때만 */ learn={ph,pr,xs,xe}; }
+  ARX.boxMsgSc=+bestM.toFixed(3); if(!learn) return null; /* 이 보스 템플릿이 있는데 안 맞음 = 다른 글자 → 거절 (정확히 일치만) */
+  const {ph,pr,xs,xe}=learn;
+  try{ const s=I2.f, cw=Math.round((xe-xs)*2), chh=Math.round(P2.h*2), cv=document.createElement('canvas'); cv.width=cw; cv.height=chh; cv.getContext('2d').drawImage(src,I2.x+xs*2*s,I2.y+ph.y*2*s,(xe-xs)*2*s,P2.h*2*s,0,0,cw,chh);
+    const L=arBmLearned(); L[mapBoss]=cv.toDataURL('image/png'); localStorage.setItem('arBoxMsgTpl',JSON.stringify(L)); arLog(`보물상자 메시지 보스 이름 템플릿 학습: ${mapBoss}`); }catch(e){}
+  return {boss:mapBoss,sc:Math.min(ph.sc,pr.sc),src:'학습'}; }
 const AR_BOX_REW_MS=100; /* t547 → t603: 0.1초, 보상 맵 게이팅 없이 상시 */
 /* t580: 맵 이름 칸이 바뀐 뒤 OCR 결과 — 같은 보스 보상 맵이면(배경·OCR 잡음) 계속, 다른 맵·이름 없음이면 끔 */
 function arRewCheck(T,src){ const R=ARX.rew; if(!R||!R.pend) return; if(T&&T.kind.includes('r')&&T.boss===R.boss){ try{ R.hash=arMapHash(src); }catch(e){} R.pend=0; R.n=0; return; }
@@ -493,6 +524,7 @@ async function arBoxStep(src,force){ if(!arBoxNeed()) return; if(arBoxOk()){ con
     if(B&&!ARX.lock&&ARX.mapDet&&ARX.mapDet.boss===B.boss&&(force||n-(ARX.boxScanT||0)>=1000/(ARX.cfg.boxFps||2))){ ARX.boxScanT=n; if(await arBoxScore(src,B.key)>=AR_BOX[B.key].thr) arLockTry(src,B.boss,n); } return; } const now=Date.now(), RM=arRewMap(now), RK=RM?Object.keys(AR_BOX).filter(k=>(AR_BOX[k].boss||k)===RM.boss):[]; if(!RM&&!force) return; /* t579: 보상 상자는 보상 맵이 감지됐을 때만 찾음 (다른 맵 0회 — 예전엔 1초마다 모든 상자를 돌아가며) */ /* t547: 보상 맵이면 그 보스 상자만 0.2초마다, 다른 맵은 1초마다 돌아가며 */
   if(!force&&now-(ARX.boxScanT||0)<(RK.length?AR_BOX_REW_MS:1000/(ARX.cfg.boxFps||1))-5) return; if(ARX.boxBusy) return; ARX.boxScanT=now; ARX.boxBusy=true; try{
   const K=RK.length?RK:Object.keys(AR_BOX), R=force||RK.length?1:Math.max(1,ARX.cfg.boxRounds||3), per=Math.ceil(K.length/R), st=(ARX.boxRR||0)%R; ARX.boxRR=st+1; // 한 번에 1/R 씩 돌아가며 (상자는 몇 초 이상 보임)
+  if(RK.length&&ARX.cfg.boxMsg!==false){ const M=await arBoxMsgScan(src,RM.boss); if(M&&M.boss===RM.boss){ ARX.boxLast=[RK[0],+M.sc.toFixed(3)]; arLog(`보물상자 처치 메시지 인식: ${M.boss} (${M.sc.toFixed(2)}, ${M.src})`); arBoxHit({k:RK[0],sc:M.sc},now,src); ARX.box.via='메시지'; return; } } /* b331 */
   let best=null; for(const k of K.slice(st*per,st*per+per)){ const sc=await arBoxScore(src,k); if(sc>=AR_BOX[k].thr&&(!best||sc-AR_BOX[k].thr>best.sc-AR_BOX[best.k].thr)) best={k,sc}; }
   ARX.boxLast=best?[best.k,+best.sc.toFixed(3)]:null; if(!best) return;
   arBoxHit(best,now,src); } finally{ ARX.boxBusy=false; } }

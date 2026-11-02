@@ -26,6 +26,7 @@ ar = rd('autorec.js') if os.path.exists(os.path.join(SRC, 'autorec.js')) else ''
 s = s.replace('/*__BOSS_ICONS__*/{}', json.dumps(js('icons.json'), separators=(',', ':')))
 s = s.replace('/*__ITEM_ICONS__*/{}', json.dumps(js('itemicons.json'), separators=(',', ':')))
 if os.path.exists(os.path.join(SRC, 'boxicons.json')): ar = ar.replace('/*__BOX_ICONS__*/{}', json.dumps(js('boxicons.json'), separators=(',', ':')))  # b300 보상 상자
+if os.path.exists(os.path.join(SRC, 'boxmsg.json')): ar = ar.replace('/*__BOX_MSG__*/{}', json.dumps(js('boxmsg.json'), separators=(',', ':')))  # b331 상자 처치 메시지 글자 템플릿
 if os.path.exists(os.path.join(SRC, 'worldicons.json')):  # 공식 월드 아이콘 (tools/build_worlds.py)
     s = s.replace('/*__WORLD_ICONS__*/{}', json.dumps(js('worldicons.json'), separators=(',', ':'), ensure_ascii=False))
 AUTO = os.path.join(os.path.dirname(os.path.abspath(SRC)), 'data', 'bosses_auto.json')  # b251
