@@ -2105,3 +2105,11 @@ html body nav.tabs button[data-tab=auto]{--nb1:#ff4d5e;--nb2:#ff2a7a;--nbtx:#ffe
 [data-theme=light] body nav.tabs button[data-tab=auto].on{color:#8a0c20!important}
 [data-theme] body nav.tabs button[data-tab=auto].on,html body nav.tabs button[data-tab=auto].on{color:#ffe9ec!important}
 [data-theme=light] body nav.tabs button[data-tab=auto].on{color:#8a0c20!important}
+
+/* b332 t636: 보상 맵 인식 PIP 버튼 (네온 초록) */
+.ar-cboss h2{display:flex;align-items:center}
+.ar-pipb{padding:2px 10px!important;font-size:.72rem!important;font-weight:800;letter-spacing:.06em;color:#bfffd6!important;background:rgba(20,40,30,.35)!important;border:1px solid #39ff7a!important;border-radius:8px!important;box-shadow:0 0 4px rgba(57,255,122,.6),0 0 12px rgba(24,240,96,.35),inset 0 0 6px rgba(57,255,122,.2);cursor:pointer;transition:box-shadow .15s,transform .15s}
+.ar-pipb:hover{box-shadow:0 0 6px rgba(57,255,122,.9),0 0 18px rgba(24,240,96,.55),inset 0 0 8px rgba(57,255,122,.3);transform:translateY(-1px)}
+[data-theme=light] .ar-pipb{color:#0a6b2e!important;background:#effff4!important;border-color:#0fbf50!important}
+.ar-pipmsg[hidden]{display:none!important}
+.ar-pipmsg{font-size:.75rem;color:#ffd42a;margin:-2px 0 6px}

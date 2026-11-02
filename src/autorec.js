@@ -984,15 +984,16 @@ function arPanelLive(p){ p=p||$('#arPanel'); if(!p||p.hidden||!p.querySelector('
   arSetH(q('.ar-cchar .ar-b'),(detC?`<div class="ar-who">${typeof avatar==='function'?avatar(detC):''}<div><div class="ar-big">${esc(detC.name)}</div><div class="muted">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${acc?.name?' · '+esc(acc.name):''}${detC.world?' · '+esc(detC.world):''}</div></div></div>`
     :`<div class="ar-big dim">${on&&!ARX.unkName?'인식 중…':'-'}</div>`)+arMesoLine());
   /* t603: '현재 보스' → '보상 맵 인식' — 대기/진행 상태 없음. 보상 상자로 보상 맵이 잡힌 동안만 초록 '보상 인식 중' + 보스, 아니면 '-' */
-  if(q('.ar-cboss .ar-b')) arSetH(q('.ar-cboss .ar-b'),((bst==='rew'?`<div class="ar-bst rew"><i class="ar-dot"></i>보상 인식 중</div>`:'')+(bst==='rew'&&detB?`<div class="ar-big ar-bline">${typeof bossIcon==='function'?bossIcon(detB):''}<span class="ar-bn">${esc(detB.name)}</span>${detD?' '+(typeof diffImg==='function'?diffImg(detD):esc(D[detD])):''}</div>`
-    :`<div class="ar-big dim">-</div>`))+arClrLine()); const bc=q('.ar-cboss .ar-b'); if(bc&&bc._arFit!==bc._arH){ bc._arFit=bc._arH; arFitBoss(); }
+  { const cb=arPipCard(p); if(cb) arPipBind(cb); }
+  if(arPipQ(p,'.ar-cboss .ar-b')) arSetH(arPipQ(p,'.ar-cboss .ar-b'),((bst==='rew'?`<div class="ar-bst rew"><i class="ar-dot"></i>보상 인식 중</div>`:'')+(bst==='rew'&&detB?`<div class="ar-big ar-bline">${typeof bossIcon==='function'?bossIcon(detB):''}<span class="ar-bn">${esc(detB.name)}</span>${detD?' '+(typeof diffImg==='function'?diffImg(detD):esc(D[detD])):''}</div>`
+    :`<div class="ar-big dim">-</div>`))+arClrLine()); const bc=arPipQ(p,'.ar-cboss .ar-b'); if(bc&&bc._arFit!==bc._arH){ bc._arFit=bc._arH; arFitBoss(); }
   q('.ar-roib').textContent=c.roi?'영역 숨기기':'영역 보기'; { const pl=q('.ar-prof'); if(pl){ const L=arProfLab(); pl.textContent=L?L:(ARX.stream?'해상도 확인 중…':''); pl.title=L?'화면 공유 영상에서 자동 감지한 해상도·UI 비율':''; } } 
   }
 function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c=ARX.cfg, t=arTarget(), on=arLive(), dn=k=>({log:'획득 로그',banner:'획득 배너',item:'바닥 아이콘',map:'맵 이름',name:'상태바 이름'})[k];
   const detC=S.characters.find(x=>x.id===ARX.det.cid), bst=arBossState(), detB=(ARX.det.boss&&findBoss(ARX.det.boss))||(bst&&bst!=='rew'&&ARX.mapSt&&findBoss(ARX.mapSt.boss)), detD=ARX.det.boss?ARX.det.diff:(ARX.mapSt?.diff||''), mapN=(AR_REWARD.find(m=>m[1]===ARX.det.boss)||[''])[0], acc=detC&&typeof accOf==='function'?accOf(detC):null;
   if(!p.querySelector('.ar-g')){ p.innerHTML=`<div class="ar-sbar"></div><div class="ar-g">
     <div class="card ar-c ar-cchar"><h2>캐릭터 정보</h2><div class="ar-b"></div></div>
-    <div class="card ar-c ar-cboss"><h2>보상 맵 인식</h2><div class="ar-b"></div></div>
+    <div class="card ar-c ar-cboss"><h2>보상 맵 인식 <span class="hspace"></span><button type="button" class="btn sm ar-pipb" title="작은 창으로 항상 맨 위에 띄우기 (크롬/엣지 116+)">PIP</button></h2><div class="ar-pipmsg" hidden></div><div class="ar-b"></div></div>
     <div class="card ar-c ar-clive"><h2>라이브 화면 <span class="hspace"></span><button type="button" class="btn sm ar-roib" data-ar="roi"></button><span class="ar-prof"></span></h2><div class="ar-vw"><video class="ar-vid" muted playsinline autoplay></video><canvas class="ar-prev" width="1280" height="720"></canvas><div class="ar-vnone">연결하면 게임 화면이 여기에 보여요</div></div><div class="ar-b ar-regs"></div></div>
     <div class="card ar-c ar-crec"><h2>현재까지 기록</h2><div class="ar-b"></div></div>
     <div class="card ar-c ar-cset" hidden><div class="ar-b"></div></div></div>`; }
@@ -1040,7 +1041,7 @@ window.arNameWatch=arNameWatch; window.arNameRes=arNameRes; window.arMesoFlush=a
 /* b297ui: 현재 보스 1줄 고정 — 넘치면 글씨 크기 자동 축소(최소 .8rem) */
 function arFitBoss(){requestAnimationFrame(arFitBoss0);arFitBoss0();}
 let arFitRO=null;
-function arFitBoss0(){const el=document.querySelector('#arPanel .ar-bline');if(!el)return;
+function arFitBoss0(){const el=document.querySelector('#arPanel .ar-bline')||(ARX.pip&&ARX.pip.card.querySelector('.ar-bline'));if(!el)return;
   if(!arFitRO&&window.ResizeObserver){arFitRO=new ResizeObserver(()=>arFitBoss0());}
   if(arFitRO&&el.parentElement&&!el.parentElement._ro){el.parentElement._ro=1;arFitRO.observe(el.parentElement);}
   if(!el.clientWidth)return;el.style.fontSize='';
@@ -1049,3 +1050,23 @@ function arFitBoss0(){const el=document.querySelector('#arPanel .ar-bline');if(!
 window.addEventListener('resize',()=>{try{arFitBoss()}catch(e){}});
 // b321: 이 스크립트는 첫 화면을 그린 뒤 따로 실행됨 → 자동 기록 탭으로 시작했으면 여기서 다시 그림
 try{ if(typeof tab!=='undefined'&&tab==='auto') render(); }catch(e){ console.error('render@autorec',e); }
+
+/* b332 t636: '보상 맵 인식' 칸 PIP — Document Picture-in-Picture(크롬/엣지 116+)로 칸 자체를 항상 맨 위 작은 창으로 옮김.
+   arPanelLive 가 arPipQ 로 옮겨진 칸을 계속 arSetH → 실시간(서버 호출 없음). 창 닫으면 자리표(.ar-pipph)로 되돌림. */
+function arPipCard(p){ return (ARX.pip&&ARX.pip.card)||(p||document).querySelector('.ar-cboss'); }
+function arPipQ(p,s){ return (ARX.pip&&ARX.pip.card.querySelector(s.replace('.ar-cboss ','')))||(p||document).querySelector(s); }
+function arPipBind(cb){ const b=cb.querySelector('.ar-pipb'); if(!b||b._pip) return; b._pip=1; b.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); ARX.pip?arPipClose():arPipOpen(cb); }); }
+function arPipOk(){ return !!(window.documentPictureInPicture&&typeof documentPictureInPicture.requestWindow==='function'); }
+async function arPipOpen(cb){ cb=cb||arPipCard(); if(!cb||ARX.pip) return false; const m=cb.querySelector('.ar-pipmsg');
+  if(!arPipOk()){ if(m){ m.hidden=false; m.textContent='PIP 창은 크롬/엣지 최신 버전(116 이상)이 필요해요'; clearTimeout(m._t); m._t=setTimeout(()=>{ m.hidden=true; },4000); } return false; }
+  let w; try{ w=await documentPictureInPicture.requestWindow({width:Math.max(280,Math.round(cb.offsetWidth||320)),height:Math.max(150,Math.round(cb.offsetHeight||170)+16)}); }catch(err){ if(m){ m.hidden=false; m.textContent='PIP 창을 열지 못했어요: '+(err&&err.message||err); } return false; }
+  if(m) m.hidden=true; arPipStyles(document,w.document); const ph=document.createElement('div'); ph.className='ar-pipph card ar-c ar-cboss-ph'; ph.style.cssText='grid-column:1;grid-row:2;display:flex;align-items:center;justify-content:center;opacity:.6;min-height:'+(cb.offsetHeight||120)+'px'; ph.innerHTML='<span class="muted">PIP 창에 표시 중 · <button type="button" class="btn sm ar-pipback">되돌리기</button></span>';
+  cb.replaceWith(ph); ph.querySelector('.ar-pipback').onclick=()=>arPipClose(); w.document.body.append(cb); cb.classList.add('ar-inpip');
+  const b=cb.querySelector('.ar-pipb'); if(b){ b.textContent='닫기'; b.title='PIP 창 닫고 페이지로 되돌리기'; }
+  ARX.pip={win:w,card:cb,ph}; w.addEventListener('pagehide',()=>arPipBack()); arFitBoss(); return true; }
+function arPipStyles(src,dst){ const d=dst.documentElement, s=src.documentElement; for(const a of s.attributes) if(a.name!=='style') d.setAttribute(a.name,a.value); d.style.cssText=s.style.cssText; for(const a of src.body.attributes) dst.body.setAttribute(a.name,a.value);
+  for(const ss of [...src.styleSheets]){ try{ const st=dst.createElement('style'); st.textContent=[...ss.cssRules].map(r=>r.cssText).join('\n'); dst.head.append(st); }catch(e){ if(ss.href){ const l=dst.createElement('link'); l.rel='stylesheet'; l.href=ss.href; dst.head.append(l); } } }
+  const st=dst.createElement('style'); st.textContent='html,body{margin:0;background:var(--bg,#0b0f1a);min-height:100%}body{padding:8px;box-sizing:border-box}.ar-inpip{margin:0!important;width:100%;box-sizing:border-box}'; dst.head.append(st); }
+function arPipBack(){ const P=ARX.pip; if(!P) return; ARX.pip=null; const cb=P.card; cb.classList.remove('ar-inpip'); const b=cb.querySelector('.ar-pipb'); if(b){ b.textContent='PIP'; b.title='작은 창으로 항상 맨 위에 띄우기 (크롬/엣지 116+)'; }
+  if(P.ph&&P.ph.isConnected) P.ph.replaceWith(cb); else { const g=document.querySelector('#arPanel .ar-g'); if(g) g.append(cb); } try{ arPanelLive(); }catch(e){} }
+function arPipClose(){ const P=ARX.pip; if(!P) return; try{ P.win.close(); }catch(e){} arPipBack(); }

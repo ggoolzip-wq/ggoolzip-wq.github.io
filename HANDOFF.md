@@ -2,6 +2,14 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b332 t636 — '보상 맵 인식' 칸 PIP 모드 (2026-11-03 KST)
+- '보상 맵 인식' 카드 제목 오른쪽에 네온 초록 'PIP' 버튼(.ar-pipb). 누르면 Document Picture-in-Picture(documentPictureInPicture.requestWindow, 크롬/엣지 116+)로 칸(.ar-cboss) 자체를 항상 맨 위 작은 창으로 옮김. 페이지엔 자리표(.ar-pipph 'PIP 창에 표시 중 · 되돌리기').
+- 스타일: 페이지 styleSheets 규칙을 PIP 문서 <style> 로 복사(실패하면 <link>), html/body 속성(data-theme 등) 복사 → 다크 테마·글씨체 그대로.
+- 실시간: arPanelLive 가 arPipQ() 로 옮겨진 칸을 계속 arSetH (서버 호출 없음). arFitBoss0 도 PIP 칸 사용.
+- 닫기: PIP 창 닫기/버튼 '닫기'/자리표 '되돌리기' → pagehide → arPipBack 이 칸을 제자리로.
+- 미지원 브라우저: 칸 안에 '크롬/엣지 최신 버전(116 이상)이 필요해요' 4초.
+- 테스트: tests/test_b332_pip.py (headless 는 iframe 으로 requestWindow 흉내). test_b326 제목 비교를 startswith 로. run_par: b213·b288·b239만 실패(기존 불안정).
+
 ## b330 t630b (2026-11-02)
 - 전투 맵에서 상자를 먼저 찾으면 래치(ARX.rwl)가 난이도 없이 잡혀 세렌 하드 v2의 백옥 반지 상자가 후보에서 빠지던 회귀 수정: arBossState에서 같은 보스 맵(mapSt)의 난이도로 diff0/det.diff/rew.diff 채움. v2 r_white .892 다시 잡힘. run_par: b213·b288만 실패(기존 불안정).
 

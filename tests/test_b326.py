@@ -21,7 +21,7 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1000},locale='ko-KR'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800); pg.evaluate(SETUP); pg.wait_for_timeout(300)
-    a=pg.evaluate(ST,None); check("카드 제목 '보상 맵 인식' · 평소 '-'", a['h2']=='보상 맵 인식' and a['html']=='-' and a['st']!='rew', a)
+    a=pg.evaluate(ST,None); check("카드 제목 '보상 맵 인식' · 평소 '-'", a['h2'].startswith('보상 맵 인식') and a['html']=='-' and a['st']!='rew', a)
     pg.evaluate("()=>{ const A=window.AR; A.det.boss='adversary'; A.det.diff=''; A.rew={boss:'adversary',diff:'',hash:null}; }")
     a=pg.evaluate(ST,None); check('보상 상자 → 보상 인식 중 + 보스 이름', a['st']=='rew' and '보상 인식 중' in a['html'] and pg.evaluate("findBoss('adversary').name") in a['html'], a)
     pg.evaluate("()=>{ const A=window.AR; A.rew=null; A.lock=null; A.box=null; A.det.boss=''; }")
