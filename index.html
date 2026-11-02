@@ -2290,6 +2290,15 @@ html body nav.tabs button[data-tab=auto]{--nb1:#ff4d5e;--nb2:#ff2a7a;--nbtx:#ffe
 @media (max-width:760px){.calc{min-height:76px;padding:4px}.calin{display:none}.calgrid,.calwk{gap:4px}.calsum{margin-left:0}}
 html body .calcard .calhd h2.calti{margin:0!important;padding:0!important;border:0!important;font-size:1.55rem!important;color:var(--n1)!important;text-shadow:0 0 10px var(--n1),0 0 22px color-mix(in srgb,var(--n1) 50%,transparent)!important;background:none!important;-webkit-text-fill-color:currentColor}
 [data-theme=light] html body .calcard .calhd h2.calti,html[data-theme=light] body .calcard .calhd h2.calti{color:#4b4fd6!important;text-shadow:0 0 8px rgba(110,120,255,.35)!important}
+
+/* b335: PIP 득템 목록 */
+.ar-piprec{margin-top:8px;padding:8px 10px!important}
+.ar-prh{display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:6px;color:#3dff7f;text-shadow:0 0 8px rgba(61,255,127,.5)}.ar-prh b{margin-left:auto}
+.ar-prl{list-style:none;margin:0;padding:0;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;scrollbar-width:thin}
+.ar-prl li{display:flex;align-items:center;gap:6px;font-size:.82rem;padding:3px 6px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(61,255,127,.18)}
+.ar-prt{font-variant-numeric:tabular-nums;opacity:.75;flex:none}.ar-prn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ar-prc{flex:none;opacity:.85;font-size:.76rem}
+.ar-pre{font-size:.8rem}
+[data-theme=light] .ar-prh{color:#1b8a45;text-shadow:none}[data-theme=light] .ar-prl li{background:#f4fff7;border-color:rgba(27,138,69,.25)}
 </style>
 </head>
 <body>
@@ -7466,7 +7475,7 @@ function arRecord(item,score,via='',n=1){ if(!ARX.det.boss) return; if(!arBoxOk(
   if(C.find(c=>c.b===b)?.info){ arLog(`획득 감지(정보 칩, 기록 안 함): ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via}]`); ARX.infoSeen=(ARX.infoSeen||[]).concat(key); arPanelPaint(); return; }
   if((+dropMap(t.c,b.type)[key]||0)>=1){ arLog(`이미 기록됨: ${ITEMS[item]?.n} · ${b.name}`); return; } // 다시 누르면 취소되는 수동 칩과 달리 건드리지 않음
   if(S.activeId!==t.c.id){ S.activeId=t.c.id; render(); }
-  changeDrop(key,+1); (ARX.runRec=ARX.runRec||[]).unshift({k:item,b:b.name,c:t.c.name,t:new Date().toTimeString().slice(0,5)}); ARX.runRec.length=Math.min(ARX.runRec.length,30); arLog(`자동 기록: ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via} ${(+score).toFixed(2)}]`); arToast(item,b,key,t.c.id); }
+  changeDrop(key,+1); (ARX.runRec=ARX.runRec||[]).unshift({k:item,b:b.name,c:t.c.name,t:new Date().toTimeString().slice(0,5)}); ARX.runRec.length=Math.min(ARX.runRec.length,30); arSessAdd(item,b.name,t.c.name); arLog(`자동 기록: ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via} ${(+score).toFixed(2)}]`); arToast(item,b,key,t.c.id); }
 /* b288: 색까지 봤는데도 닮은 두 아이콘 중 확실하지 않으면 자동 기록 안 하고 '직접 고르기' 칩 */
 function arPick(h,via){ if(!ARX.det?.boss){ if(!ARX.noBossT||Date.now()-ARX.noBossT>5000){ ARX.noBossT=Date.now(); arLog(`보스 확인 전이라 기록 안 함: ${ITEMS[h.k]?.n||h.k} [${via}]`); } return; } // b288: 보스 모를 땐 모든 보스 아이콘 후보 → UI·글자 오인식
   if(!h.amb||h.amb.length<2) return arRecord(h.k,h.score,via); const C=arCandidates(), am=h.amb.filter(k=>C.some(c=>c.k===k)); if(am.length===1) return arRecord(am[0],h.score,via+' 색');
@@ -7875,7 +7884,7 @@ function arMapGot(t,src){ { ARX.mapText=t; let MS=null; try{ MS=arMapState(t,Dat
     if(b){ ARX.mapOk=true; ARX.mOther=0; const ch=arMapHit(b,n2); if(ch){ ARX.mapMs=n2-(ARX.mChgT||n2); arLivePaint(); } }
     else if(arNorm(t).length>=2){ ARX.mapOk=++ARX.mOther>=2; if(ARX.mOther>=2){ ARX.mapDet=null; if(!ARX.mapSt) arClrLeave(Date.now()); /* t602: 맵 상태가 남아 있으면(잡음 읽기) 측정 유지 — 예전엔 전투 중 잡음 2번에 진행 시간이 0초로 되돌아감 */ if(ARX.det.boss){ ARX.box=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; arLivePaint(); } } /* t522: 보상 맵 나가면 상자도 해제 */ } } }
 /* b287: 연결된 영상 분석 시작 (테스트는 <video src=mp4> 로 바로 부름). 메인 스레드엔 64x16 배너 비교만 매 프레임 — 나머지는 바뀐 프레임만·예산 안에서·Worker */
-function arStart(v){ ARX.video=v; ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
+function arStart(v){ ARX.video=v; ARX.sessRec=[]; /* b335: 라이브 시작마다 PIP 득템 목록 새로 */ ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
   ARX.nprev=null; ARX.nameOk=false; clearInterval(ARX.nTimer); ARX.mprev=null; ARX.mOther=0; ARX.nTimer=setInterval(()=>{ if(ARX.video){ arNameWatch(ARX.video); arMapWatch(ARX.video); try{ arPendFlush(); }catch(e){} } },100); /* t603: 0.1초 */
   ARX.timer=setInterval(()=>{ if(!ARX.video) return; const n=Date.now(); if(arBossState()!=='rew'&&n-(ARX.frT||0)<1000/Math.max(.5,ARX.cfg.fps)-20) return; ARX.frT=n; arFrame(ARX.video); },100); /* t603: 보상 맵(보상 인식 중)이면 0.1초마다, 아니면 설정 fps */
   if(ARX.cfg.watchFps>0){ if(v.requestVideoFrameCallback){ const loop=(now,meta)=>{ if(ARX.video!==v) return; arPf().frames++; if(arRewOn()){ arBannerWatch(v,meta); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } v.requestVideoFrameCallback(loop); }; v.requestVideoFrameCallback(loop); } else ARX.wTimer=setInterval(()=>{ if(ARX.video&&arRewOn()){ arBannerWatch(ARX.video); arAirWatch(ARX.video); } },Math.round(1000/ARX.cfg.watchFps)); }
@@ -7913,7 +7922,7 @@ function arPanelLive(p){ p=p||$('#arPanel'); if(!p||p.hidden||!p.querySelector('
   /* t603: '현재 보스' → '보상 맵 인식' — 대기/진행 상태 없음. 보상 상자로 보상 맵이 잡힌 동안만 초록 '보상 인식 중' + 보스, 아니면 '-' */
   { const cb=arPipCard(p); if(cb) arPipBind(cb); }
   if(arPipQ(p,'.ar-cboss .ar-b')) arSetH(arPipQ(p,'.ar-cboss .ar-b'),((bst==='rew'?`<div class="ar-bst rew"><i class="ar-dot"></i>보상 인식 중</div>`:'')+(bst==='rew'&&detB?`<div class="ar-big ar-bline">${typeof bossIcon==='function'?bossIcon(detB):''}<span class="ar-bn">${esc(detB.name)}</span>${detD?' '+(typeof diffImg==='function'?diffImg(detD):esc(D[detD])):''}</div>`
-    :`<div class="ar-big dim">-</div>`))+arClrLine()); const bc=arPipQ(p,'.ar-cboss .ar-b'); if(bc&&bc._arFit!==bc._arH){ bc._arFit=bc._arH; arFitBoss(); }
+    :`<div class="ar-big dim">-</div>`))+arClrLine()); const bc=arPipQ(p,'.ar-cboss .ar-b'); if(bc&&bc._arFit!==bc._arH){ bc._arFit=bc._arH; arFitBoss(); } if(ARX.pip) arPipRec();
   q('.ar-roib').textContent=c.roi?'영역 숨기기':'영역 보기'; { const pl=q('.ar-prof'); if(pl){ const L=arProfLab(); pl.textContent=L?L:(ARX.stream?'해상도 확인 중…':''); pl.title=L?'화면 공유 영상에서 자동 감지한 해상도·UI 비율':''; } } 
   }
 function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c=ARX.cfg, t=arTarget(), on=arLive(), dn=k=>({log:'획득 로그',banner:'획득 배너',item:'바닥 아이콘',map:'맵 이름',name:'상태바 이름'})[k];
@@ -7963,7 +7972,7 @@ function arGuide(){ if(arLive()) return; let m=$('#arGuide'); if(!m){ m=document
 document.addEventListener('click',e=>{ if(e.target.closest('#tabs [data-tab="auto"]')||e.target.closest('#arPanel [data-ar="guide"]')){ if(!arLive()) setTimeout(arGuide,0); return; }
   const m=$('#arGuide'); if(m&&!m.hidden&&!m.contains(e.target)) m.hidden=true; });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const m=$('#arGuide'); if(m) m.hidden=true; } }); // b288: 위쪽 버튼 한 번에 화면 선택 창 (전엔 패널만 열고 패널의 버튼을 또 눌러야 했음)
-window.arNameWatch=arNameWatch; window.arNameRes=arNameRes; window.arMesoFlush=arMesoFlush; window.arTarget=arTarget; window.arClrFinish=arClrFinish; window.arMapWatch=arMapWatch; window.arGuide=arGuide; window.renderAuto=renderAuto; window.AR=ARX; window.arFrame=arFrame; window.arBannerWatch=arBannerWatch; window.arLogFrame=arLogFrame; window.arLogStep=arLogStep; window.arStart=arStart; window.arItemScan=arItemScan; window.arTrack=arTrack; window.arMatchCore=arMatchCore; window.arDetectBoss=arDetectBoss; window.arLogItem=arLogItem; window.arOcrLoad=arOcrLoad; arBtnPaint();
+window.arNameWatch=arNameWatch; window.arNameRes=arNameRes; window.arMesoFlush=arMesoFlush; window.arTarget=arTarget; window.arClrFinish=arClrFinish; window.arMapWatch=arMapWatch; window.arGuide=arGuide; window.renderAuto=renderAuto; window.AR=ARX; window.arSessAdd=arSessAdd; window.arPipRec=arPipRec; window.arDisconnect=arDisconnect; window.arFrame=arFrame; window.arBannerWatch=arBannerWatch; window.arLogFrame=arLogFrame; window.arLogStep=arLogStep; window.arStart=arStart; window.arItemScan=arItemScan; window.arTrack=arTrack; window.arMatchCore=arMatchCore; window.arDetectBoss=arDetectBoss; window.arLogItem=arLogItem; window.arOcrLoad=arOcrLoad; arBtnPaint();
 
 /* b297ui: 현재 보스 1줄 고정 — 넘치면 글씨 크기 자동 축소(최소 .8rem) */
 function arFitBoss(){requestAnimationFrame(arFitBoss0);arFitBoss0();}
@@ -7980,17 +7989,23 @@ try{ if(typeof tab!=='undefined'&&tab==='auto') render(); }catch(e){ console.err
 
 /* b332 t636: '보상 맵 인식' 칸 PIP — Document Picture-in-Picture(크롬/엣지 116+)로 칸 자체를 항상 맨 위 작은 창으로 옮김.
    arPanelLive 가 arPipQ 로 옮겨진 칸을 계속 arSetH → 실시간(서버 호출 없음). 창 닫으면 자리표(.ar-pipph)로 되돌림. */
+/* b335 t639: PIP 창 '보상 맵 인식' 칸 아래 = 이번 라이브 시작 뒤 자동 기록된 아이템 목록 (시각·아이콘·이름·캐릭터). ARX.sessRec(arStart 에서 비움, 최대 500)
+ * PIP 를 중간에 열어도 전체 목록. arRecord 마다 + arPanelLive 마다 arSetH(같으면 안 그림). 서버 호출 없음. */
+function arSessAdd(k,bn,cn){ (ARX.sessRec=ARX.sessRec||[]).unshift({k,b:bn,c:cn,t:new Date().toTimeString().slice(0,8)}); ARX.sessRec.length=Math.min(ARX.sessRec.length,500); arPipRec(); }
+function arPipRecH(){ const R=ARX.sessRec||[]; return `<div class="ar-prh"><span>이번 라이브 득템</span><b>${R.length}개</b></div>`+(R.length?`<ol class="ar-prl">${R.map(r=>`<li><span class="ar-prt">${esc(r.t)}</span>${ITEM_ICONS[r.k]?`<img src="${ITEM_ICONS[r.k]}" alt="" width="22" height="22">`:''}<span class="ar-prn">${esc(ITEMS[r.k]?.n||r.k)}</span><span class="ar-prc">${esc(r.c||'')}</span></li>`).join('')}</ol>`:`<div class="ar-pre muted">아직 기록된 아이템이 없어요</div>`); }
+function arPipRec(){ const P=ARX.pip; if(!P||!P.win||!P.win.document) return; const d=P.win.document; let el=d.querySelector('.ar-piprec');
+  if(!el){ el=d.createElement('div'); el.className='card ar-c ar-piprec'; P.card.after(el); } arSetH(el,arPipRecH()); }
 function arPipCard(p){ return (ARX.pip&&ARX.pip.card)||(p||document).querySelector('.ar-cboss'); }
 function arPipQ(p,s){ return (ARX.pip&&ARX.pip.card.querySelector(s.replace('.ar-cboss ','')))||(p||document).querySelector(s); }
 function arPipBind(cb){ const b=cb.querySelector('.ar-pipb'); if(!b||b._pip) return; b._pip=1; b.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); ARX.pip?arPipClose():arPipOpen(cb); }); }
 function arPipOk(){ return !!(window.documentPictureInPicture&&typeof documentPictureInPicture.requestWindow==='function'); }
 async function arPipOpen(cb){ cb=cb||arPipCard(); if(!cb||ARX.pip) return false; const m=cb.querySelector('.ar-pipmsg');
   if(!arPipOk()){ if(m){ m.hidden=false; m.textContent='PIP 창은 크롬/엣지 최신 버전(116 이상)이 필요해요'; clearTimeout(m._t); m._t=setTimeout(()=>{ m.hidden=true; },4000); } return false; }
-  let w; try{ w=await documentPictureInPicture.requestWindow({width:Math.max(280,Math.round(cb.offsetWidth||320)),height:Math.max(150,Math.round(cb.offsetHeight||170)+16)}); }catch(err){ if(m){ m.hidden=false; m.textContent='PIP 창을 열지 못했어요: '+(err&&err.message||err); } return false; }
+  let w; try{ w=await documentPictureInPicture.requestWindow({width:Math.max(280,Math.round(cb.offsetWidth||320)),height:Math.max(150,Math.round(cb.offsetHeight||170)+16)+230}); }catch(err){ if(m){ m.hidden=false; m.textContent='PIP 창을 열지 못했어요: '+(err&&err.message||err); } return false; }
   if(m) m.hidden=true; arPipStyles(document,w.document); const ph=document.createElement('div'); ph.className='ar-pipph card ar-c ar-cboss-ph'; ph.style.cssText='grid-column:1;grid-row:2;display:flex;align-items:center;justify-content:center;opacity:.6;min-height:'+(cb.offsetHeight||120)+'px'; ph.innerHTML='<span class="muted">PIP 창에 표시 중 · <button type="button" class="btn sm ar-pipback">되돌리기</button></span>';
   cb.replaceWith(ph); ph.querySelector('.ar-pipback').onclick=()=>arPipClose(); w.document.body.append(cb); cb.classList.add('ar-inpip');
   const b=cb.querySelector('.ar-pipb'); if(b){ b.textContent='닫기'; b.title='PIP 창 닫고 페이지로 되돌리기'; }
-  ARX.pip={win:w,card:cb,ph}; w.addEventListener('pagehide',()=>arPipBack()); arFitBoss(); return true; }
+  ARX.pip={win:w,card:cb,ph}; w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); arFitBoss(); return true; }
 function arPipStyles(src,dst){ const d=dst.documentElement, s=src.documentElement; for(const a of s.attributes) if(a.name!=='style') d.setAttribute(a.name,a.value); d.style.cssText=s.style.cssText; for(const a of src.body.attributes) dst.body.setAttribute(a.name,a.value);
   for(const ss of [...src.styleSheets]){ try{ const st=dst.createElement('style'); st.textContent=[...ss.cssRules].map(r=>r.cssText).join('\n'); dst.head.append(st); }catch(e){ if(ss.href){ const l=dst.createElement('link'); l.rel='stylesheet'; l.href=ss.href; dst.head.append(l); } } }
   const st=dst.createElement('style'); st.textContent='html,body{margin:0;background:var(--bg,#0b0f1a);min-height:100%}body{padding:8px;box-sizing:border-box}.ar-inpip{margin:0!important;width:100%;box-sizing:border-box}'; dst.head.append(st); }
