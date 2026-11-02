@@ -6894,9 +6894,10 @@ function arTagDiff(L,b){ const t=arNorm(L); if(!/[<>]/.test(L)) return ''; for(c
 /* t558: 대기맵 지역명이 전투·보상맵과 다른 보스 (루시드: '꿈의 도시 레헬른' vs '레헬른') */
 const AR_WREG={lucid:'꿈의도시레헬른'};
 const AR_WFULL={kalos:'카로테마천루'}; /* t585: 지역+대기맵 이름을 ':' 없이 붙인 꼴이 전투맵 이름과 같은 보스 */
+function arTail4(w,id){ const C=ARX.tail4||(ARX.tail4={}); if(C[w]!==undefined) return C[w]; const t=w.slice(-4); return C[w]=!AR_BMAP.some(([n2,i2])=>i2!==id&&arNorm(n2).endsWith(t)); }
 function arDetectBMap(text){ let best=null;
   for(const line of String(text||'').split('\n')){ const L=line.trim(); if(!L) continue; const nm0=arNorm(L.replace(/<[^<>]*>?\s*$/,'').split(/[:：]/).filter(x=>arNorm(x).length>=2).pop()||''), nm=nm0.replace(/[0-9]+$/,''); if(nm.length<2) continue; /* t579: 1366 에서 '<이지>'가 '4011:'로 읽혀 끝 ':' 때문에 이름이 비었음 */
-    for(const [n,id,k] of AR_BMAP){ const w=arNorm(n), tl=w.length>=5&&nm.length>w.length+2?nm.slice(-w.length):'', sJ=Math.max(arSimJ(nm,w),tl?arSimJ(tl,w):0), sc=nm===w?2:Math.max(arSim(nm,w)>=1&&nm.length<=w.length+3?1:0,sJ>=(w.length>=5?.8:.85)?sJ:0); if(!sc) continue; /* t602: 긴 이름은 자모 .8 (실영상 '끝에'→'글메'·'을메' 3자모 틀림) */ /* tl: 지역명+맵 이름이 ':' 없이 붙어 읽힘 → 끝부분만 비교 */
+    for(const [n,id,k] of AR_BMAP){ const w=arNorm(n), tl=w.length>=5&&nm.length>w.length+2?nm.slice(-w.length):'', sJ=Math.max(arSimJ(nm,w),tl?arSimJ(tl,w):0), sc0=nm===w?2:Math.max(arSim(nm,w)>=1&&nm.length<=w.length+3?1:0,sJ>=(w.length>=5?.8:.85)?sJ:0), sc=sc0||(w.length>=6&&/<[^<>]*>?\s*$/.test(L)&&nm.endsWith(w.slice(-4))&&arTail4(w,id)?.8:0); if(!sc) continue; /* t625: 듄켈 '끝에 가까운 곳 <하드>'가 '…멘 :메 가까운 곳 <하드>'로 읽혀('끝'→':') ':' 뒤 '메가까운곳'만 남음(자모 .73) → <난이도> 태그 줄에서 끝 4글자가 표에서 유일한 이름과 정확히 같으면 .8 */ /* t602: 긴 이름은 자모 .8 (실영상 '끝에'→'글메'·'을메' 3자모 틀림) */ /* tl: 지역명+맵 이름이 ':' 없이 붙어 읽힘 → 끝부분만 비교 */
       if(!best||sc>best.sc||(sc===best.sc&&w.length>best.w.length)) best={sc,w,id,k,L,reg:arNorm((L.split(/[:：]/).length>1?L.split(/[:：]/)[0]:''))}; } }
   if(!best) return null; const b=findBoss(best.id); if(!b) return null; let diff=arTagDiff(best.L,b);
   if(!/[:：]/.test(best.L)&&AR_WFULL[best.id]===arNorm(best.L.replace(/<[^<>]*>?\s*$/,''))) best={...best,k:'w'}; /* t585: 칼로스 대기 '카로테：마천루'가 ':' 빠져 '카로테마천루'(=전투맵 이름)로 읽힘 → 대기 */
@@ -6933,8 +6934,8 @@ function arLatChar(text){ const fx=x=>String(x||'').toLowerCase().replace(/[1|!]
 function arTarget(){ if(arLive()&&!ARX.det.cid) return null; /* t551: 화면 공유 중 인식된 캐릭터가 목록에 없으면(또는 아직 모르면) 기록 대상 없음 — 이전·수동 캐릭터로 넘어가지 않음 */
   const c=S.characters.find(x=>x.id===(ARX.det.cid||ARX.cfg.cid))||activeChar(); if(!c) return null;
   const bid=ARX.det.boss||ARX.cfg.boss; const b=bid?findBoss(bid):null; return {c,b,diff:b?((ARX.det.boss===b.id&&ARX.det.diff)||c.bosses?.[b.id]?.diff||b.diffs[0]):''}; }
-const AR_REWX=['ipc','ipcm','mc_b','mc_g','mc_s']; // t619: 보상 인식 중엔 드롭 표 + 결정석·큐브 전부
-function arCandidates(withE){ let o=arCandidates0(withE); if(!(withE&&ARX.rwl&&(o.length||arLive()))) return o; /* 공중 검사만 — 바닥은 혼자면 곧 자동 줍기, 같은 워커라 공중을 늦춤 */ o=o.filter(c=>!/^(emo_|dif_)/.test(c.k)); const b=o[0]?.b||null; for(const k of AR_REWX) if(ITEM_ICONS[k]&&!o.some(c=>c.k===k)) o.push({k,b,info:false,rew:true}); return o; }
+const AR_REWX=['ipc','ipcm','mc_b','mc_g','mc_s']; /* t625: 사용자 요청 '잡다한 아이템은 필요없고 드랍 테이블 아이템만' → 기본은 안 찾음(cfg.rewx=true 일 때만) */ // t619: 보상 인식 중엔 드롭 표 + 결정석·큐브 전부
+function arCandidates(withE){ let o=arCandidates0(withE); if(!(withE&&ARX.rwl&&(o.length||arLive()))) return o; /* 공중 검사만 — 바닥은 혼자면 곧 자동 줍기, 같은 워커라 공중을 늦춤 */ o=o.filter(c=>!/^(emo_|dif_)/.test(c.k)); const b=o[0]?.b||null; if(ARX.cfg.rewx===true) for(const k of AR_REWX) if(ITEM_ICONS[k]&&!o.some(c=>c.k===k)) o.push({k,b,info:false,rew:true}); return o; }
 function arCandidates0(withE){ const t=arTarget(); if(!t){ /* t613: 보상 인식 중인데 캐릭터 아직 모름 → 보스 드롭으로 찾기만 하고 기록은 보류(arRecord) */ if(!(arLive()&&ARX.rwl&&ARX.det.boss)) return []; const b=findBoss(ARX.det.boss); if(!b) return []; const out=[]; for(const d of (ARX.det.diff?[ARX.det.diff]:b.diffs)) for(const k of dropsFor(b,d)) if(ITEM_ICONS[k]&&!out.some(o=>o.k===k)) out.push({k,b,info:false}); return out; }
   const list=t.b?[[t.b,t.diff]]:BOSSES.filter(b=>t.c.bosses?.[b.id]?.enabled).flatMap(b=>t.c.bosses[b.id].diff?[[b,t.c.bosses[b.id].diff]]:b.diffs.map(d=>[b,d])); // b285: 난이도 안 정한 보스는 모든 난이도
   const out=[]; for(const [b,d] of list) for(const k of dropsFor(b,d)) if(ITEM_ICONS[k]) out.push({k,b,info:false}); // b288 사용자 규칙: 대시보드 드롭 표에서 수익 기록되는 것만 (앱솔·아케인 상자·에테르넬 조각 등 정보용은 아예 안 찾음)
@@ -7285,9 +7286,18 @@ function arNcc(I,W,H,T,x0,x1,y0,y1){ const out=[]; for(let y=Math.max(0,y0);y<=M
     const vi=q-(s0*s0+s1*s1+s2*s2)/T.n, den=Math.sqrt(Math.max(0,vi)*T.tt); out.push([den>1e-6?st/den:0,x,y]); } return out; }
 function arBoxGrab(src,D){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR('item',src), k=1080/arGH(src,sh)/D, cv=document.createElement('canvas'); cv.width=Math.round(r.w*sw*k); cv.height=Math.round(r.h*sh*k);
   const g=cv.getContext('2d',{willReadFrequently:true}); g.imageSmoothingQuality='high'; g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,cv.width,cv.height); return {d:g.getImageData(0,0,cv.width,cv.height).data,w:cv.width,h:cv.height}; }
-async function arBoxScore(src,k){ const T8=await arBoxTpl(k,8), T4=await arBoxTpl(k,4); if(!T8||!T4) return 0; const G8=arBoxGrab(src,8), G4=arBoxGrab(src,4);
-  const r=arNcc(G8.d,G8.w,G8.h,T8,0,1e9,0,1e9).sort((a,b)=>b[0]-a[0]), top=[]; for(const c of r){ if(c[0]<.4||top.length>=3) break; if(top.every(t=>Math.abs(t[1]-c[1])>2||Math.abs(t[2]-c[2])>2)) top.push(c); }
+/* t625: 상자 일부 템플릿(위·아래·왼·오른쪽 절반) — 진힐라(영상 v3)·듄켈(v4·v5) 보상 상자가 캐릭터·날개 이펙트·데미지 숫자에 반쯤 가려
+   전체 NCC .53~.72 로 문턱(.75) 미달, 가려지지 않은 절반은 .80~.87. 절반 점수는 AR_BOX_PART_PEN(.1) 빼서 전체와 같은 문턱으로 비교 */
+const AR_BOX_PART_PEN=.1;
+function arBoxPart(T,f){ const id=[]; for(let j=0;j<T.n;j++) if(f(T.ox[j],T.oy[j],T.w,T.h)) id.push(j); const n=id.length; if(n<20) return null; const m=[0,0,0]; for(const j of id) for(let c=0;c<3;c++) m[c]+=T.t[j*3+c]; for(let c=0;c<3;c++) m[c]/=n;
+  const t=new Float32Array(n*3); let tt=0; id.forEach((j,i)=>{ for(let c=0;c<3;c++){ const v=T.t[j*3+c]-m[c]; t[i*3+c]=v; tt+=v*v; } }); return {w:T.w,h:T.h,n,t,tt,ox:Int32Array.from(id.map(j=>T.ox[j])),oy:Int32Array.from(id.map(j=>T.oy[j]))}; }
+const AR_BOX_PARTS=[(x,y,w,h)=>y<h/2,(x,y,w,h)=>y>=h/2,(x,y,w,h)=>x<w/2,(x,y,w,h)=>x>=w/2];
+function arBoxParts(T){ return T.parts||(T.parts=AR_BOX_PARTS.map(f=>arBoxPart(T,f)).filter(Boolean)); }
+function arBoxFind(G8,G4,T8,T4){ const r=arNcc(G8.d,G8.w,G8.h,T8,0,1e9,0,1e9).sort((a,b)=>b[0]-a[0]), top=[]; for(const c of r){ if(c[0]<.4||top.length>=3) break; if(top.every(t=>Math.abs(t[1]-c[1])>2||Math.abs(t[2]-c[2])>2)) top.push(c); }
   let best=0; for(const [,x,y] of top) for(const c of arNcc(G4.d,G4.w,G4.h,T4,2*x-3,2*x+3,2*y-3,2*y+3)) best=Math.max(best,c[0]); return best; }
+async function arBoxScore(src,k){ const T8=await arBoxTpl(k,8), T4=await arBoxTpl(k,4); if(!T8||!T4) return 0; const G8=arBoxGrab(src,8), G4=arBoxGrab(src,4);
+  let best=arBoxFind(G8,G4,T8,T4); if(best>=AR_BOX[k].thr||ARX.cfg.boxPart===false) return best;
+  const P8=arBoxParts(T8), P4=arBoxParts(T4); for(let i=0;i<Math.min(P8.length,P4.length);i++) best=Math.max(best,arBoxFind(G8,G4,P8[i],P4[i])-AR_BOX_PART_PEN); return best; }
 const AR_BOX_REW_MS=100; /* t547 → t603: 0.1초, 보상 맵 게이팅 없이 상시 */
 /* t580: 맵 이름 칸이 바뀐 뒤 OCR 결과 — 같은 보스 보상 맵이면(배경·OCR 잡음) 계속, 다른 맵·이름 없음이면 끔 */
 function arRewCheck(T,src){ const R=ARX.rew; if(!R||!R.pend) return; if(T&&T.kind.includes('r')&&T.boss===R.boss){ try{ R.hash=arMapHash(src); }catch(e){} R.pend=0; R.n=0; return; }
@@ -7654,7 +7664,7 @@ function arSameMapFrag(text){ const M=ARX.mapSt; if(!M||!M.name) return false; c
 /* t538/t541: 표로 읽은 맵 상태 (보스 기록과 별개). 대기 맵 = 진행 중 클리어 시간 버림·(고정 아니면) 상자 해제, 전투 맵 진입 = 클리어 시간 시작 */
 function arMapState(text,now){ arRwlCheck(text); const T=arDetectBMap(text); const RW=ARX.rew&&!ARX.rew.pend; /* t584: 보상 래치 중이고 맵 이름 칸 그림이 그대로면 OCR 잡음 → 무시 */
   if(RW&&(!T||T.boss!==ARX.rew.boss||!T.kind.includes('r'))) return T&&T.boss===ARX.rew.boss?T:null;
-  if(T&&ARX.mapSt&&(ARX.mapSt.boss!==T.boss||ARX.mapSt.kind!==T.kind)){ const k=T.boss+'|'+T.kind, P=ARX.mapPend; if(!P||P.k!==k){ ARX.mapPend={k,n:1}; return T; } ARX.mapPend=null; } else ARX.mapPend=null; /* t584: 맵 종류(대기↔전투↔보상) 바뀜은 2번 연속 같게 읽혔을 때만 (한 번 잘못 읽어 진행 중↔대기 중 왕복 방지) */
+  if(T&&ARX.mapSt&&(ARX.mapSt.boss!==T.boss||ARX.mapSt.kind!==T.kind)&&!(ARX.mapSt.boss===T.boss&&T.kind==='r'&&T.sc>=1&&!ARX.mapSt.kind.includes('r'))){ /* t625: 같은 보스 전투→보상 맵(정확 일치)은 바로 — 대적자 상자가 13.6~14.5초에만 보였는데 2번째 읽기(15.9초)까지 기다려 놓침 */ const k=T.boss+'|'+T.kind, P=ARX.mapPend; if(!P||P.k!==k){ ARX.mapPend={k,n:1}; return T; } ARX.mapPend=null; } else ARX.mapPend=null; /* t584: 맵 종류(대기↔전투↔보상) 바뀜은 2번 연속 같게 읽혔을 때만 (한 번 잘못 읽어 진행 중↔대기 중 왕복 방지) */
   if(!T&&arSameMapFrag(text)) return null; /* t585: 지금 맵 이름의 조각(끝 잘림·태그 없음)은 '다른 맵'이 아님 → 상태 유지, 무관 카운트 안 올림 */
   if(!T){ if(arNorm(text).length>=2&&(ARX.mOffN=(ARX.mOffN||0)+1)>=2&&!(ARX.mapSt&&(ARX.mOffN<4||now-(ARX.mapSt.t||0)<4000||(ARX.clrSeen&&now-ARX.clrSeen<3000)))){ /* t587: 실플레이 영상(t601) — 같은 듄켈 맵에서 '-'↔진행 중 깜빡임: 보스 맵 상태는 무관 읽기 4번 연속+4초 넘게 못 읽음+타이머 안 보일 때만 해제 */ ARX.mapSt=null; if(ARX.det.boss||ARX.lock){ ARX.lock=null; ARX.box=null; ARX.mapDet=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; } ARX.mapOff=now; } return null; } ARX.mOffN=0; /* t556 (무관한 맵 2번 연속이면, 잡음 1번은 무시): 맵 이름을 실제로 읽었는데 보스와 무관 → 현재 보스 '-'. 검은 화면·못 읽음(글자 <2)은 직전 상태 유지 */ ARX.mapSt={...T,t:now};
   if(T.kind.includes('r')&&ARX.clr&&!ARX.clr.rwT) ARX.clr.rwT=now; /* t586: 보상맵 진입 = 끝 폴백 */
@@ -7664,7 +7674,7 @@ function arMapState(text,now){ arRwlCheck(text); const T=arDetectBMap(text); con
 /* t603: 보상 맵 래치 — 보상 상자로 처음 '보상 인식 중'이 되면 그 보상 맵 이름을 잡아 두고, 왼쪽 위 맵 이름이 '다른 맵 이름'으로 연속 2번 읽힐 때까지 유지.
    검은 화면·잘린/짧은 읽기·오독(자리→파리)은 유지 (보상 맵 이름 2글자 묶음의 30% 이상이 보이면 같은 맵) */
 function arBig(t){ const n=arNorm(t||'').replace(/[^가-힣A-Za-z0-9]/g,''), o=new Set(); for(let i=0;i+1<n.length;i++) o.add(n.slice(i,i+2)); return o; }
-function arRwlSim(t){ const L=ARX.rwl; if(!L) return 1; const b=arBig(t); let best=0; for(const nm of L.names){ const a=arBig(nm); let h=0; for(const x of a) if(b.has(x)) h++; best=Math.max(best,a.size?h/a.size:0); } return best; }
+function arRwlSim(t){ const L=ARX.rwl; if(!L) return 1; { let D=null; try{ D=arDetectBMap(t); }catch(e){} if(D&&D.boss===L.boss&&D.kind.includes('r')) return 1; } /* t625: 세렌 '세르니움 왕궁 메인홀'이 '르니움 황궁 메민홀'로 읽히면 두 글자 묶음 일치 .25 → 래치가 1~2초 만에 풀리고 보스 모름(후보 130개, 바닥 찾기 1.6초)으로 백옥 반지 상자 놓침. 맵 이름 인식(자모 유사도)으로 같은 보스 보상 맵이면 유지 */ const b=arBig(t); let best=0; for(const nm of L.names){ const a=arBig(nm); let h=0; for(const x of a) if(b.has(x)) h++; best=Math.max(best,a.size?h/a.size:0); } return best; }
 function arRwlCheck(t){ const L=ARX.rwl; if(!L) return; const n=arNorm(t||'').replace(/[^가-힣]/g,''); if(n.length<3){ return; } if(arRwlSim(t)>=.3){ L.diff=0; return; } if(++L.diff>=2){ ARX.rwl=null; ARX.recPend=[]; ARX.rew=null; ARX.lock=null; ARX.det.boss=''; ARX.det.diff=''; try{ arLivePaint(); }catch(e){} } }
 function arBossState(){ { const L=ARX.rwl; if(L){ if(ARX.det.boss&&ARX.det.boss!==L.boss&&ARX.rew&&ARX.rew.boss!==L.boss){ ARX.rwl=null; } else { if(!ARX.det.boss){ ARX.det.boss=L.boss; ARX.det.diff=L.diff0||ARX.det.diff; } if(!ARX.rew) ARX.rew={boss:L.boss,diff:L.diff0||'',hash:null}; if(!ARX.lock&&L.lock) ARX.lock=L.lock; return 'rew'; } } }
   const st=arBossState0(); if(st==='rew'&&ARX.det.boss&&!ARX.rwl&&ARX.cfg.rewLatch!==false) ARX.rwl={boss:ARX.det.boss,diff0:ARX.det.diff,names:AR_BMAP.filter(r=>r[1]===ARX.det.boss&&r[2].includes('r')).map(r=>r[0]),diff:0,t:Date.now(),lock:ARX.lock}; return st; }
