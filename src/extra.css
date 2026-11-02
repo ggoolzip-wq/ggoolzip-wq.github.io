@@ -2175,3 +2175,5 @@ html body .calcard .calhd h2.calti{margin:0!important;padding:0!important;border
 .ar-prt{font-variant-numeric:tabular-nums;opacity:.75;flex:none}.ar-prn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ar-prc{flex:none;opacity:.85;font-size:.76rem}
 .ar-pre{font-size:.8rem}
 [data-theme=light] .ar-prh{color:#1b8a45;text-shadow:none}[data-theme=light] .ar-prl li{background:#f4fff7;border-color:rgba(27,138,69,.25)}
+
+/* b336 */.calap{font-style:normal;font-size:.72em;opacity:.75;margin-right:2px;color:var(--n1)}[data-theme=light] .calap{color:#4b4fd6}
