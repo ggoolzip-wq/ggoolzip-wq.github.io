@@ -1783,7 +1783,7 @@ function toastHide(){ clearTimeout(toast._t); $('#toast')?.classList.remove('sho
 function toast(msg){} /* b112: 하단 알림 전부 없앰 */
 const safeImg = u => /^https:\/\/open\.api\.nexon\.com\//.test(u||'') ? u : '';
 const avatar = (c,cls='') => `<div class="avatar ${cls}">${safeImg(c.image)?`<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">`:esc((c.name||'?').slice(0,1))}</div>`;
-const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','auto','live']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
+const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','cal','auto','live']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
 let tab='boss', /* b166: 새로고침하면 항상 '이번 주 보스' (저장된 마지막 탭·해시 무시) */ bossFilter='weekly', editMode=false;
 
 const THEME_KEY='mapleBossTracker.theme'; // b179: 라이트/다크 선택 (이 브라우저, 기본 다크) — 사용자 요청으로 다크 전용 규칙 해제
@@ -1800,11 +1800,11 @@ function charEnter(){ const id=S.activeId, v=$('#view'); if(enterFor===id) retur
   /* b197: 칸 = 정보 카드의 각 줄·스탯 칸 + 드롭 표 툴바·보스 줄. 순번(--ei, 최대 14)으로 시차 */
   v.querySelectorAll('.bosslay>.grid>.card>:not(.stats):not(.boss-list),.bosslay>.grid .stats>.stat,.bosslay>.grid .boss-list>*').forEach((e,i)=>{ e.classList.add('cpop'); e.style.setProperty('--ei',Math.min(i,14)); });
   v.classList.remove('center'); void v.offsetWidth; v.classList.add('center'); clearTimeout(enterT); enterT=setTimeout(()=>v.classList.remove('center'),1000); }
-function render(){ paintThemeBtn(); tirDefs(); logoDigital(); document.body.dataset.curtab=tab; if(!TABS.includes(tab)) tab='boss'; syncTabs();
+function render(){ paintThemeBtn(); tirDefs(); logoDigital(); document.body.dataset.curtab=tab; try{ calTick(); }catch(e){} if(!TABS.includes(tab)) tab='boss'; syncTabs();
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length&&tab!=='live'&&tab!=='auto'){ $('#view').innerHTML=emptyView(); fitPriceCard(); renderResetInfo(); return; } /* b161: 라이브 탭은 캐릭터·로그인 없어도 보임 */
-  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),auto:()=>{ if(typeof renderAuto==='function') renderAuto(); },live:renderLive})[tab](); if(tab==='boss'){ fitPriceCard(); charEnter(); } if(tab==='loot') fitMiss(); renderResetInfo(); }
+  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),cal:renderCal,auto:()=>{ if(typeof renderAuto==='function') renderAuto(); },live:renderLive})[tab](); if(tab==='boss'){ fitPriceCard(); charEnter(); } if(tab==='loot') fitMiss(); renderResetInfo(); }
 /* b108: 🔄 옆 상태 글자 — 동기화 중 '새로고침 중입니다..'(회색), 끝나면 초록 '새로고침 완료! HH:mm'(KST, 계속 표시),
  * 일부 캐릭터·계정 오류면 주황 '일부 실패 HH:mm', 전체 실패면 빨강 '새로고침 실패 HH:mm' (오류 알림 toast 는 예전 그대로). 페이지 열 때 동기화도 같음 */
 let syncLbl=null; // {st:'run'|'ok'|'part'|'fail', at}
@@ -4445,5 +4445,51 @@ setInterval(()=>{ if(DEMO_ST&&demoAllowed()&&demoTabOk()&&demoSig()!==DEMO_SIG) 
 // 구글 드라이브 모드(github.io)는 공용 시세를 안 받음 → 예시를 보여 줄 때만 공용 시세(GET /api/prices, 로그인 없이)를 한 번 받아서 예시 판매값에 씀
 setTimeout(async()=>{ if(SV_ON||!SYNC_TEST_URL||!/github\.io$/.test(location.hostname)||!demoAllowed()||Object.keys(itemPrices()).length) return;
   try{ const r=await fetch(SYNC_TEST_URL+'/api/prices',{cache:'no-store'}); if(!r.ok) return; const j=await r.json(); if(j&&j.prices){ itemPricePut(j.prices); render(); } }catch(e){} },0);
+
+/* b334 t639: '분석 캘린더' 탭 — 날짜별 수익(억 메소)·획득 아이템. 날짜별 기록이 원래 없으므로 화면을 그릴 때마다 캐릭터별 이번 주/이번 달 값(결정석+판매, 아이템)을
+ * 이전 스냅샷과 비교해 늘어난(줄어든) 만큼을 오늘(KST) 칸에 더함. 이 브라우저 localStorage(CAL_KEY)에만 저장(서버 호출 없음). 주·달이 바뀌면 그 부분 기준 = 0.
+ * 처음 켠 순간은 기준만 잡음(빈 달력에서 시작). 표시는 지금 보이는(키 등록된) 캐릭터만(activeIds). */
+const CAL_KEY='mapleBossTracker.cal';
+let calMon=null, calSel=null;
+function calLoad(){ try{ const d=JSON.parse(localStorage.getItem(CAL_KEY)||'{}'); return d&&typeof d==='object'?d:{}; }catch(e){ return {}; } }
+function calSnapOf(c){ const r=charRevenue(c), w=charDrops(c,'weekly'), m=charDrops(c,'monthly');
+  const it=d=>{ const o={}; for(const [k,n] of Object.entries(d.items)){ const x=parseIK(k).it; if(ITEMS[x]&&+n>0) o[x]=(o[x]||0)+(+n); } return o; };
+  return {w:S.period.week, m:S.period.month, wm:(+r.meso||0)+revSum(w.revs), mm:(+r.monthMeso||0)+revSum(m.revs), wi:it(w), mi:it(m)}; }
+function calTick(){ if(typeof pend!=='undefined'&&pend) return; const D=calLoad(), before=JSON.stringify(D); D.snap=D.snap||{}; D.log=D.log||{};
+  const first=!D.init, day=dayId(Date.now());
+  for(const c of S.characters||[]){ let s; try{ s=calSnapOf(c); }catch(e){ continue; } const p=D.snap[c.id];
+    if(!first&&p){ const pw=p.w===s.w?p:{wm:0,wi:{}}, pm=p.m===s.m?p:{mm:0,mi:{}}; const dm=(s.wm-(+pw.wm||0))+(s.mm-(+pm.mm||0)), di={};
+      for(const [a,b] of [[s.wi,pw.wi||{}],[s.mi,pm.mi||{}]]) for(const k of new Set([...Object.keys(a),...Object.keys(b)])){ const d=(a[k]||0)-(b[k]||0); if(d) di[k]=(di[k]||0)+d; }
+      if(dm||Object.values(di).some(x=>x)){ const L=D.log[day]||(D.log[day]={}), e=L[c.id]||(L[c.id]={m:0,i:{}}); e.n=c.name; e.m=(+e.m||0)+dm;
+        for(const [k,d] of Object.entries(di)){ const v=(e.i[k]||0)+d; if(v>0) e.i[k]=v; else delete e.i[k]; } } }
+    D.snap[c.id]=s; }
+  D.init=1; const after=JSON.stringify(D); if(after!==before) try{ localStorage.setItem(CAL_KEY,after); }catch(e){} }
+function calDay(D,day,ids){ const L=(D.log||{})[day]||{}; let m=0; const it={}, by=[];
+  for(const [id,e] of Object.entries(L)){ if(!ids.has(id)) continue; const c=S.characters.find(x=>x.id===id); const mm=Math.max(0,+e.m||0); m+=mm; for(const [k,n] of Object.entries(e.i||{})) if(n>0) it[k]=(it[k]||0)+n;
+    if(mm||Object.keys(e.i||{}).length) by.push({id,name:c?c.name:e.n,m:mm,i:e.i||{}}); }
+  return {m,it,by:by.sort((a,b)=>b.m-a.m)}; }
+const calEok = m => { const e=m/1e8; return e>=1?(e>=100?Math.round(e).toLocaleString():e.toFixed(2).replace(/\.?0+$/,''))+'억':m>=1e4?Math.round(m/1e4).toLocaleString()+'만':Math.round(m)+''; };
+function renderCal(){ const v=$('#view'), D=calLoad(), ids=activeIds(), today=dayId(Date.now()); if(!calMon) calMon=monthId(Date.now());
+  const [Y,M]=calMon.split('-').map(Number), first=new Date(Date.UTC(Y,M-1,1)), nd=new Date(Date.UTC(Y,M,0)).getUTCDate(), lead=first.getUTCDay();
+  let tot=0; const itTot={}; const cells=[];
+  for(let i=0;i<lead;i++) cells.push('<div class="calc emp"></div>');
+  for(let d=1;d<=nd;d++){ const id=`${calMon}-${pad(d)}`, x=calDay(D,id,ids); tot+=x.m; for(const [k,n] of Object.entries(x.it)) itTot[k]=(itTot[k]||0)+n;
+    const ks=Object.entries(x.it).sort((a,b)=>b[1]-a[1]), wd=(lead+d-1)%7;
+    cells.push(`<button type="button" class="calc${id===today?' today':''}${id===calSel?' sel':''}${x.m||ks.length?' has':''}${wd===0?' sun':wd===6?' sat':''}" data-calday="${id}"><span class="cald">${d}</span>${x.m?`<span class="calm">${calEok(x.m)}</span>`:''}<span class="cali">${ks.slice(0,2).map(([k,n])=>`<span class="calit">${itemIcon(k)}<span class="calin">${esc(ITEMS[k].n)}</span>${n>1?`<b>x${n}</b>`:''}</span>`).join('')}${ks.length>2?`<span class="calmore">+${ks.length-2}개 더</span>`:''}</span></button>`); }
+  while(cells.length%7) cells.push('<div class="calc emp"></div>');
+  const icnt=Object.values(itTot).reduce((a,b)=>a+b,0);
+  let det='';
+  if(calSel&&calSel.startsWith(calMon)){ const x=calDay(D,calSel,ids), [,mm,dd]=calSel.split('-').map(Number), ks=Object.entries(x.it).sort((a,b)=>b[1]-a[1]);
+    det=`<div class="caldet" id="calDet"><div class="caldh"><b>${mm}월 ${dd}일</b><span class="caldt">합계 <b>${calEok(x.m)} 메소</b> · 아이템 ${ks.reduce((a,[,n])=>a+n,0)}개</span><button type="button" class="calx" data-calclose aria-label="닫기">✕</button></div>
+      ${ks.length?`<div class="caldl">${ks.map(([k,n])=>`<div class="caldi">${itemIcon(k)}<span>${esc(ITEMS[k].n)}</span><b>x${n}</b></div>`).join('')}</div>`:'<div class="muted calnone">이 날 기록된 아이템이 없어요</div>'}
+      ${x.by.length?`<div class="caldc">${x.by.map(b=>`<div class="caldcr"><span class="caldcn">${esc(b.name||'')}</span><span class="caldcm">${calEok(b.m)}</span><span class="caldci">${Object.entries(b.i).map(([k,n])=>`${itemIcon(k)}${n>1?`<b>x${n}</b>`:''}`).join('')}</span></div>`).join('')}</div>`:''}</div>`; }
+  v.innerHTML=`<div class="calwrap"><div class="card calcard"><div class="calhd"><button type="button" class="calnav" data-calmv="-1" aria-label="이전 달">‹</button><h2 class="calti">${Y}년 ${M}월</h2><button type="button" class="calnav" data-calmv="1" aria-label="다음 달">›</button>
+    <button type="button" class="calnav caltd" data-calmv="0">오늘</button><span class="calsum">이번 달 합계 <b>${calEok(tot)} 메소</b> · 아이템 <b>${icnt}개</b></span></div>
+    <div class="calwk">${['일','월','화','수','목','금','토'].map((w,i)=>`<span class="${i===0?'sun':i===6?'sat':''}">${w}</span>`).join('')}</div>
+    <div class="calgrid">${cells.join('')}</div>${det}<div class="muted calnote">이 브라우저에서 기록한 날짜 기준 · API 키를 지운 캐릭터는 빠져요</div></div></div>`;
+  const cl=$('#charList'); if(cl) v.querySelector('.calwrap').style.fontFamily=getComputedStyle(cl).fontFamily;
+  v.querySelectorAll('[data-calmv]').forEach(b=>b.onclick=()=>{ const k=+b.dataset.calmv; if(!k){ calMon=monthId(Date.now()); calSel=today; } else { const t=new Date(Date.UTC(Y,M-1+k,1)); calMon=`${t.getUTCFullYear()}-${pad(t.getUTCMonth()+1)}`; } renderCal(); });
+  v.querySelectorAll('[data-calday]').forEach(b=>b.onclick=()=>{ calSel=calSel===b.dataset.calday?null:b.dataset.calday; renderCal(); });
+  v.querySelectorAll('[data-calclose]').forEach(b=>b.onclick=()=>{ calSel=null; renderCal(); }); }
 // b217: 모든 선언이 끝난 뒤 한 번 더 그림 (시작 렌더가 아직 없는 값 때문에 실패했어도 화면이 제대로 나오게)
 bootRender('end'); pageTop(); requestAnimationFrame(()=>pageTop()); // b223

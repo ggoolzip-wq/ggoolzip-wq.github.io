@@ -2113,3 +2113,56 @@ html body nav.tabs button[data-tab=auto]{--nb1:#ff4d5e;--nb2:#ff2a7a;--nbtx:#ffe
 [data-theme=light] .ar-pipb{color:#0a6b2e!important;background:#effff4!important;border-color:#0fbf50!important}
 .ar-pipmsg[hidden]{display:none!important}
 .ar-pipmsg{font-size:.75rem;color:#ffd42a;margin:-2px 0 6px}
+
+/* b334: 분석 캘린더 — 네온 월간 달력 */
+.calwrap{max-width:1180px;margin:0 auto}
+.calcard{position:relative;padding:18px 18px 14px;border:1px solid color-mix(in srgb,var(--n1) 45%,transparent)!important;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 0 26px color-mix(in srgb,var(--n1) 22%,transparent)!important;overflow:hidden}
+.calhd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.calti{margin:0;min-width:150px;text-align:center;font-size:1.5rem;letter-spacing:.06em;color:var(--n1);text-shadow:0 0 10px var(--n1),0 0 22px color-mix(in srgb,var(--n1) 50%,transparent)}
+.calnav{font:inherit;cursor:pointer;min-width:38px;height:36px;padding:0 10px;border-radius:10px;border:1px solid color-mix(in srgb,var(--n1) 60%,transparent);background:rgba(10,14,22,.6);color:var(--n1);font-size:1.15rem;box-shadow:0 0 10px color-mix(in srgb,var(--n1) 25%,transparent);transition:.15s}
+.calnav:hover{box-shadow:0 0 16px var(--n1);transform:translateY(-1px)}
+.caltd{font-size:.9rem}
+.calsum{margin-left:auto;padding:8px 14px;border-radius:12px;border:1px solid rgba(255,215,120,.55);background:linear-gradient(180deg,rgba(255,200,90,.12),rgba(255,200,90,.03));color:#ffe3a3;box-shadow:0 0 14px rgba(255,190,80,.22)}
+.calsum b{color:#ffd56b;text-shadow:0 0 8px rgba(255,200,90,.6)}
+.calwk{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:6px;text-align:center;font-size:.85rem;opacity:.85}
+.calwk .sun,.calc.sun .cald{color:#ff7a9a}.calwk .sat,.calc.sat .cald{color:#7ab8ff}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.calc{font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:104px;padding:7px 8px;border-radius:12px;border:1px solid color-mix(in srgb,var(--n1) 22%,transparent);background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01)),rgba(14,17,24,.82);display:flex;flex-direction:column;gap:4px;overflow:hidden;transition:.15s;position:relative}
+.calc.emp{cursor:default;opacity:.25;background:transparent;border-style:dashed}
+.calc:not(.emp):hover{border-color:var(--n1);box-shadow:0 0 14px color-mix(in srgb,var(--n1) 45%,transparent);transform:translateY(-1px)}
+.calc.has{border-color:color-mix(in srgb,var(--n1) 50%,transparent);box-shadow:0 0 10px color-mix(in srgb,var(--n1) 18%,transparent) inset}
+.calc.today{border:2px solid #ff4fd8;box-shadow:0 0 14px rgba(255,79,216,.55),0 0 4px rgba(255,79,216,.8) inset}
+.calc.today .cald{background:#ff4fd8;color:#fff!important;border-radius:999px;padding:0 7px;box-shadow:0 0 10px #ff4fd8}
+.calc.sel{outline:2px solid var(--n1);outline-offset:1px}
+.cald{font-weight:700;font-size:.95rem;align-self:flex-start}
+.calm{font-weight:700;color:#ffd56b;text-shadow:0 0 8px rgba(255,200,90,.5);font-size:.95rem;font-variant-numeric:tabular-nums}
+.cali{display:flex;flex-direction:column;gap:2px;min-width:0}
+.calit{display:flex;align-items:center;gap:3px;font-size:.74rem;min-width:0;white-space:nowrap}
+.calit img,.calit .ifb{width:18px;height:18px;flex:none}
+.calin{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.calit b{color:var(--n1);font-size:.7rem}
+.calmore{font-size:.7rem;color:var(--n1);opacity:.85}
+.caldet{margin-top:14px;padding:14px;border-radius:14px;border:1px solid var(--n1);background:rgba(8,12,20,.75);box-shadow:0 0 22px color-mix(in srgb,var(--n1) 30%,transparent);animation:calIn .18s ease-out}
+@keyframes calIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.caldh{display:flex;align-items:center;gap:12px;margin-bottom:10px}.caldh>b{font-size:1.2rem;color:var(--n1);text-shadow:0 0 8px var(--n1)}
+.caldt b{color:#ffd56b}
+.calx{margin-left:auto;font:inherit;cursor:pointer;background:none;border:1px solid color-mix(in srgb,var(--n1) 50%,transparent);color:var(--n1);border-radius:8px;width:30px;height:30px}
+.caldl{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.caldi{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.caldi img,.caldi .ifb{width:28px;height:28px}.caldi b{margin-left:auto;color:var(--n1)}
+.caldc{margin-top:10px;display:flex;flex-direction:column;gap:4px}
+.caldcr{display:flex;align-items:center;gap:10px;font-size:.85rem;padding:3px 6px;border-top:1px solid rgba(255,255,255,.06)}
+.caldcn{min-width:110px;font-weight:700}.caldcm{min-width:70px;color:#ffd56b}.caldci{display:flex;align-items:center;gap:2px;flex-wrap:wrap}.caldci img,.caldci .ifb{width:20px;height:20px}
+.calnone{padding:6px 2px}.calnote{margin-top:10px;font-size:.75rem;text-align:right}
+[data-theme=light] .calc{background:linear-gradient(160deg,#fff,#f7f2ff)!important;border-color:rgba(120,110,220,.28)}
+[data-theme=light] .calc.has{border-color:rgba(90,110,240,.55);box-shadow:0 0 10px rgba(110,130,255,.18) inset}
+[data-theme=light] .calnav{background:#fff;color:#4b4fd6;border-color:rgba(90,100,230,.5)}
+[data-theme=light] .calti,[data-theme=light] .caldh>b{color:#4b4fd6;text-shadow:0 0 8px rgba(110,120,255,.35)}
+[data-theme=light] .calm,[data-theme=light] .caldt b,[data-theme=light] .caldcm,[data-theme=light] .calsum b{color:#b86e00;text-shadow:none}
+[data-theme=light] .calsum{color:#7a4b00;background:linear-gradient(180deg,#fff6df,#fff);border-color:rgba(220,160,40,.6)}
+[data-theme=light] .caldet{background:#fff}
+[data-theme=light] .caldi{background:#f6f4ff;border-color:rgba(110,110,220,.18)}
+[data-theme=light] .calit b,[data-theme=light] .calmore,[data-theme=light] .caldi b{color:#4b4fd6}
+@media (max-width:760px){.calc{min-height:76px;padding:4px}.calin{display:none}.calgrid,.calwk{gap:4px}.calsum{margin-left:0}}
+html body .calcard .calhd h2.calti{margin:0!important;padding:0!important;border:0!important;font-size:1.55rem!important;color:var(--n1)!important;text-shadow:0 0 10px var(--n1),0 0 22px color-mix(in srgb,var(--n1) 50%,transparent)!important;background:none!important;-webkit-text-fill-color:currentColor}
+[data-theme=light] html body .calcard .calhd h2.calti,html[data-theme=light] body .calcard .calhd h2.calti{color:#4b4fd6!important;text-shadow:0 0 8px rgba(110,120,255,.35)!important}
