@@ -27,9 +27,9 @@ try:
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800)
     pg.evaluate("ARX.cfg.boxGate=false")  # t522: 이 테스트는 아이템 인식만 봄 — 보상 상자 게이트는 test_b300
     # 1) 예전 방식: 3fps 로 받은 프레임(0128, 0138)만 → 배너 1프레임은 안 보임 (기록 없음이 맞음 — 놓치던 이유 재현)
-    pg.evaluate(SETUP)
+    pg.evaluate(SETUP); pg.evaluate("ARX.cfg.confirm=2")  # b333: 기본은 1번 확정 — 예전 방식 재현만 2
     for f in ['v01_0128.jpg','v01_0138.jpg']: pg.evaluate(LOAD,f); pg.evaluate("arFrame(window._cv,false)")
-    old=pg.evaluate("window.AR.log.filter(l=>l.includes('자동 기록'))")
+    old=pg.evaluate("window.AR.log.filter(l=>l.includes('자동 기록'))"); pg.evaluate("ARX.cfg.confirm=1")
     check('예전 방식(3fps·연속 2프레임)은 백옥 1프레임 배너를 못 봄', not old, old)
     # 2) 배너 순간 감시: 실제 원본 프레임 순서대로
     pg.evaluate(SETUP)

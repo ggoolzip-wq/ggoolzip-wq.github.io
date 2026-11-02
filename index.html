@@ -6866,7 +6866,7 @@ const AR_DEF={on:true, nameTpl:true, /* t603: 투표로 확정된 닉네임만 �
   margin:.04,     // 1등 아이콘이 2등보다 이만큼 높아야 인정
   ds:4,           // 대략 찾기 축소 배율
   thr:.84,        // 아이콘 일치 점수 (NCC, -1~1) 기준 — 실제 배너: 정답 .88 / 닮은 상자 .80 / 배너 없음 < .5
-  confirm:2,      // 연속 프레임 수
+  confirm:1,      // b333: 아이템 인식은 보상 맵에서만 → 1번 보이면 확정 (같은 아이템 중복은 추적(arTrack)·dedupSec 으로 막음)
   bannerThr:.7,   // b286: 배너 순간 감시(바뀐 프레임만) 기준 — 보상이 한꺼번에 오면 배너 하나가 1프레임(33ms)만 보임 (v01 백옥 .76)
   watchFps:30,    // b286: 배너 변화 감시 횟수/초 (작은 축소본 비교만, 바뀐 프레임만 아이콘 매칭)
   dedupSec:120,   // 같은 아이템 다시 기록 막는 시간
@@ -6883,6 +6883,7 @@ const ARX={logPrev:[], lastLog:0, logText:'', logBusy:false, counted:[], cfg:nul
 try{ ARX.cfg=Object.assign({},AR_DEF,JSON.parse(localStorage.getItem(AR_KEY)||'{}')); }catch(e){ ARX.cfg=Object.assign({},AR_DEF); }
 if(!ARX.cfg.v288){ ARX.cfg.v288=1; const b=ARX.cfg.banner; if(b&&b.y===.1&&b.h===.2) ARX.cfg.banner=Object.assign({},AR_DEF.banner); }
 /* b297ui: 영역은 항상 고정값 — 저장된 사용자 영역 무시 */
+if(!ARX.cfg.v333){ ARX.cfg.v333=1; ARX.cfg.confirm=1; } /* b333: 저장된 confirm:2 를 1로 */
 for(const k of ['log','banner','item','map','name','airBand']) ARX.cfg[k]=Object.assign({},AR_DEF[k]);
 if(!ARX.cfg.v285){ ARX.cfg.v285=1; const m=ARX.cfg.map; if(m&&m.h===.045&&!m.y) m.h=AR_DEF.map.h; if(ARX.cfg.logFps===4) ARX.cfg.logFps=AR_DEF.logFps; } // b285: 예전 기본값 저장된 경우만 새 기본값으로
 const arSave=()=>{ try{ localStorage.setItem(AR_KEY,JSON.stringify(ARX.cfg)); }catch(e){} };
@@ -7213,12 +7214,14 @@ async function arAirStep(){ { const B=ARX.abuf||[], pf=arPf();
 function arAirBatch(hits,now){ const M=ARX.airMax=ARX.airMax||{}, C={}; for(const h of hits) (C[h.k]=C[h.k]||[]).push(h);
   for(const k of Object.keys(M)) if(now-M[k].t>(ARX.cfg.airBatchMs||4000)) delete M[k];
   for(const [k,L] of Object.entries(C)){ const st=M[k]=M[k]||{n:0,seen:0,rec:0,s:0}; st.t=now; st.seen++; st.n=Math.max(st.n,L.length); st.s=Math.max(st.s,...L.map(h=>h.score));
-    if(st.seen>=(ARX.cfg.confirm||2)&&st.n>st.rec){ const d=st.n-st.rec; st.rec=st.n; if(ARX.cfg.on) for(let i=0;i<d;i++) arPick(Object.assign({},L[0],{score:st.s}),'공중'); } } }
+    if(st.seen>=arNeed()&&st.n>st.rec){ const d=st.n-st.rec; st.rec=st.n; if(ARX.cfg.on) for(let i=0;i<d;i++) arPick(Object.assign({},L[0],{score:st.s}),'공중'); } } }
+/* b333: 1번 확정은 지금 왼쪽 위 맵 이름이 보상 맵으로 읽힐 때만 — 맵 이동 중(이름 빈 칸, v9 대기맵 넘어가며 데미안 눈 오탐 .739)엔 예전처럼 2번 */
+function arNeed(){ const c=ARX.cfg.confirm||1; if(c>=2) return c; const M=ARX.mapSt; return (M&&/r/.test(M.kind||'')&&(ARX.mapText||'').trim())?c:2; }
 /* 추적: 같은 아이템이 비슷한 자리(바닥 80px·공중 250px, 1080p 기준)에 2.5초 안에 다시 보이면 같은 것 → confirm 번 보이면 1번 기록 */
 function arTrack(hits,sh,now){ now=now||Date.now(); const k1=sh/1080; ARX.tracks=(ARX.tracks||[]).filter(t=>now-t.t<5000); const rec=[];
   for(const h of hits){ const R=(h.air?250:80)*k1; let t=ARX.tracks.find(t=>t.k===h.k&&now-t.t<2500&&Math.hypot(t.x-h.x,t.y-h.y)<R);
     if(!t){ t={k:h.k,x:h.x,y:h.y,t:now,n:0,done:false,air:!!h.air}; ARX.tracks.push(t); } t.x=h.x; t.y=h.y; t.t=now; t.n++; t.s=Math.max(t.s||0,h.score);
-    if(!t.done&&t.n>=ARX.cfg.confirm){ t.done=true; rec.push(t); if(ARX.cfg.on) arPick(Object.assign({},h,{score:t.s}),h.air?'공중':'바닥'); } }
+    if(!t.done&&t.n>=arNeed()){ t.done=true; rec.push(t); if(ARX.cfg.on) arPick(Object.assign({},h,{score:t.s}),h.air?'공중':'바닥'); } }
   return rec; }
 /* OCR (연결할 때만 ./ocr/ 에서 불러옴, 다른 곳으로 보내지 않음) */
 /* b296: 이름·미니맵 감시 전용 두 번째 워커 — 로그 OCR(초당 6번) 뒤에 줄 서지 않게 */
@@ -7254,7 +7257,7 @@ async function arFrame2(src,force){ if(ARX.busy) return; ARX.busy=true; try{ con
     if(!(ARX.stream&&ARX.cfg.watchFps>0)){ // 배너는 연결 중엔 배너 순간 감시(매 프레임)가 맡음 — 여기선 테스트·감시 없음일 때만
       const cv=arCrop(src,sw,sh,arR('banner',src),1), img=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height);
       const hs=await arFindIcons(img,arIconPx(sh,'banner')); ARX.scores.banner=ARX.lastScore; for(const h of hs){ h.reg='banner'; found.push(h); ARX.found.push([h.k,'banner',+h.score.toFixed(3)]); } }
-    for(const h of found){ seen.add(h.k); ARX.hits[h.k]=(ARX.hits[h.k]||0)+1; if(ARX.hits[h.k]>=ARX.cfg.confirm&&ARX.cfg.on) arPick(h,'배너'); }
+    for(const h of found){ seen.add(h.k); ARX.hits[h.k]=(ARX.hits[h.k]||0)+1; if(ARX.hits[h.k]>=arNeed()&&ARX.cfg.on) arPick(h,'배너'); }
     for(const k of Object.keys(ARX.hits)) if(!seen.has(k)) delete ARX.hits[k];
     if(force!=='noitem'){ await arBoxStep(src,force); if(arBoxOk()) await arItemStep(src,sh); } /* b300: 상자 보이기 전엔 아이템 안 찾음 */
     arLivePaint(); } finally{ ARX.busy=false; } }

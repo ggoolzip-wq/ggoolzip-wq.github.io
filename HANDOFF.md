@@ -2,6 +2,12 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b333 t638 — 보상 맵에서는 아이템 1번만 맞아도 기록 (2026-11-03 KST)
+- AR_DEF.confirm 2→1, 저장값 1회 이주(cfg.v333). 이후 사용자가 바꾼 값은 유지.
+- arNeed(): confirm<2 여도 mapSt.kind 에 'r'(보상 맵) 이고 맵 이름 OCR(ARX.mapText)이 비어있지 않을 때만 1회, 아니면 2회 (맵 이동 중 오탐 방지 — v9 40.5s eye 오탐 사례). arAirBatch/arTrack/배너 3곳 사용. 위치 중복제거·드롭표 필터는 그대로.
+- 1x 25개 영상: n4 mitra@랫파티 x1, v2_2020 r_white@킬더머신 x1 새로 잡힘(둘 다 정답), 나머지 m4 와 동일. 중복·오탐 0. 결과 /workspace/t625/h/*_b333c.json.
+- 테스트: tests/test_b333_confirm1.py, test_b286 구방식 구간은 confirm=2 로. run_par: b213·b288·b239만 실패(기존 불안정).
+
 ## b332 t636 — '보상 맵 인식' 칸 PIP 모드 (2026-11-03 KST)
 - '보상 맵 인식' 카드 제목 오른쪽에 네온 초록 'PIP' 버튼(.ar-pipb). 누르면 Document Picture-in-Picture(documentPictureInPicture.requestWindow, 크롬/엣지 116+)로 칸(.ar-cboss) 자체를 항상 맨 위 작은 창으로 옮김. 페이지엔 자리표(.ar-pipph 'PIP 창에 표시 중 · 되돌리기').
 - 스타일: 페이지 styleSheets 규칙을 PIP 문서 <style> 로 복사(실패하면 <link>), html/body 속성(data-theme 등) 복사 → 다크 테마·글씨체 그대로.
