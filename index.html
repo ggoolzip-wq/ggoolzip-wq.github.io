@@ -7703,7 +7703,8 @@ function arMesoWLoad(){ if(ARX.ocrMP) return ARX.ocrMP; ARX.ocrMP=arOcrLoad().th
 async function arMesoOcr(cv,thr){ await arMesoWLoad(); if(!ARX.ocrM) return arOcr(cv,thr,1); const k=ARX.ocrF; ARX.ocrF=ARX.ocrM; try{ return await arOcr(cv,thr,1); } finally{ ARX.ocrF=k; } }
 async function arMesoNow(src){ const cid0=ARX.det.cid; if(!cid0) return {why:'nocid'}; if(!ARX.mtpl) await arMesoTpl(); arMesoLocate(src); const stoOpen=arMesoPanel(src,'sto')&&arMesoPanel(src,'stoInv'), invOpen=!stoOpen&&arMesoPanel(src,'inv'); if(!stoOpen&&!invOpen) return {why:'closed'};
   const a=await arMesoRead(src,stoOpen?'stoInv':'inv'), b=stoOpen?await arMesoRead(src,'sto'):null; if(a.v==null) return {why:'ocr',t:a.t};
-  const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, nt=await arOcr(arCrop(src,sw,sh,arR('name',src),arSc(sh,3,src)),150,1), cid1=(ARX.nameOf||arDetectChar)(nt); /* nameOf: 테스트용 */
+  /* b351 (t657): 예전엔 이름 칸 전체(밝은 돌 배경 포함)를 다시 OCR 해 arDetectChar 와 같아야 저장 → 홀드유웨이컵 실화면은 '.280 900 아오 오우' 로 읽혀 영원히 why:'name'. 이제 고정된 캐릭터(det.cid/nLock)가 읽는 동안 그대로면 저장. nameOf: 테스트용 */
+  const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, cid1=ARX.nameOf?ARX.nameOf(await arOcr(arCrop(src,sw,sh,arR('name',src),arSc(sh,3,src)),150,1)):ARX.det.cid;
   if(cid1!==cid0||ARX.det.cid!==cid0) return {why:'name',cid0,cid1}; // 메소 읽는 동안 캐릭터가 바뀌었으면 버림
   const res={cid:cid0,inv:a.v,sto:b&&b.v!=null?b.v:null,src:stoOpen?'storage':'inventory'};
   /* t554/t555: 단일 판독 즉시 확정 — 판독 신뢰도(배율 3·4 가 전 자리 일치)만 봄. 직전값 대비 급증 상한은 안 둠(결정석 판매로 한 번에 50억+ 가능).
@@ -7715,12 +7716,12 @@ async function arMesoNow(src){ const cid0=ARX.det.cid; if(!cid0) return {why:'no
 function arMesoSave(cid,inv,sto,now){ ARX.mesoPend={cid,inv,sto}; arMesoFlush(now); }
 function arMesoFlush(now,force){ const q=ARX.mesoPend; if(!q) return; if(!force&&ARX.mesoSaveT&&now-ARX.mesoSaveT<(+ARX.cfg.mesoSaveMs||60000)) return; ARX.mesoPend=null;
   if(typeof saveMeso==='function'&&saveMeso(q.cid,q.inv,q.sto)){ ARX.mesoSaveT=now; arLog(`보유 메소 저장: ${(S.characters.find(c=>c.id===q.cid)||{}).name||''} ${fmtMesoFull(q.inv)}${q.sto!=null?` · 창고 ${fmtMesoFull(q.sto)}`:''}`); } }
-function arMesoTick(src,now){ arMesoFlush(now); if(ARX.mesoBusy||now-(ARX.mesoT||0)<(+ARX.cfg.mesoEvery||1000)) return; ARX.mesoT=now; ARX.mesoBusy=true; arMesoNow(src).then(r=>{ ARX.mesoLast=r; }).catch(()=>{}).finally(()=>{ ARX.mesoBusy=false; }); }
+function arMesoTick(src,now){ arMesoFlush(now); if(ARX.mesoBusy||now-(ARX.mesoT||0)<(+ARX.cfg.mesoEvery||1000)) return; ARX.mesoT=now; ARX.mesoBusy=true; arMesoNow(src).then(r=>{ ARX.mesoLast=r; if(r&&r.inv>=0) ARX.mesoSeen={cid:r.cid,inv:r.inv,sto:r.sto,at:Date.now()}; /* b351: PIP 보유 메소 칸 */ }).catch(()=>{}).finally(()=>{ ARX.mesoBusy=false; }); }
 function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return; const r=arR('name',src), now=Date.now(); if(!ARX.bbT||now-ARX.bbT>3000){ ARX.bbT=now; const b=arBBox(src); const k=b?[b.x,b.y,b.w,b.h].map(v=>Math.round(v/16)).join(','):''; if(k!==ARX.bbKey){ ARX.bbox=b; ARX.bbKey=k; ARX.profT=0; } }
   if(!ARX.profBusy&&(!ARX.profT||now-ARX.profT>(ARX.prof?15000:3000))){ ARX.profT=now; ARX.profBusy=true; const was=ARX.prof?.lab; arProfDetect(src).then(P=>{ ARX.profBusy=false; if(P&&P.lab!==was){ arLog(`해상도 프로필: ${P.lab} (UI 배율 ${P.s}, 일치 ${P.score})`); try{ arPanel(); }catch(e){} } }).catch(()=>{ ARX.profBusy=false; }); }
   const sm=ARX.nsm||(ARX.nsm=document.createElement('canvas')); sm.width=96; sm.height=12; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,96,12);
   const d=g.getImageData(0,0,96,12).data, p=ARX.nprev; let diff=0; if(p) for(let i=0;i<d.length;i+=4) diff+=Math.abs(d[i]-p[i])+Math.abs(d[i+1]-p[i+1])+Math.abs(d[i+2]-p[i+2]);
-  const changed=!p||diff/(96*12*3)>=3; ARX.nprev=Uint8ClampedArray.from(d); if(changed){ ARX.nChgT=now; ARX.nameOk=false; }
+  try{ arBlackTick(src,now); }catch(e){} const changed=!p||diff/(96*12*3)>=3; ARX.nprev=Uint8ClampedArray.from(d); if(changed){ ARX.nChgT=now; ARX.nameOk=false; }
   /* t578: 0.2초 틱마다 항상 확인 (확인 뒤 3초로 늦추던 것 폐기). ① 학습한 실제 화면 닉네임 이미지와 바로 대조(~1ms) ② 대조로 못 정하면 OCR —
      단 마지막 OCR 때와 픽셀이 같고 그 결과로 이미 정해졌으면 OCR 생략(워커 밀림 방지) */
   let T=null; try{ T=arNameSylTick(src,sw,sh,r,now)||arNameTplTick(src,sw,sh,r,now); }catch(e){}
@@ -7781,7 +7782,7 @@ function arSylScore(H,name,C){ const L=arSylLoad(), ch=[...name]; if(!ch.length|
 function arNameSylTick(src,sw,sh,r,now){ if(ARX.cfg.nameSyl===false) return null; const t0=performance.now(), H=arNameHp(src,sw,sh,r,2); ARX.lastHp2=H; if(H.E<40||H.x0<0) return null; const C={}, sc=[], ok=[];
   for(const c of S.characters){ const q=arSylScore(H,c.name,C); if(!q) continue; sc.push([c.id,+q.mn.toFixed(3),+q.mg.toFixed(3),+q.tail.toFixed(2)]); if(q.mn>=.85&&q.mg>=.04&&q.tail<=.25) ok.push(c.id); }
   ARX.nSylSc=sc.sort((a,b)=>b[1]-a[1]).slice(0,3); ARX.nSylMs=performance.now()-t0; if(ok.length!==1) return null; const cid=ok[0]; ARX.nameOk=true; ARX.cidT=now; ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='음절';
-  if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=now-(ARX.nChgT||now); arLivePaint(); } return {cid,hp:null,x1:-1}; }
+  arCidPut(cid,now,'음절'); return {cid,hp:null,x1:-1}; }
 /* t622: OCR 정확 일치로 확정된 이름 → 그 화면(k=2 고역)에서 음절 칸을 잘라 음절 템플릿에 추가(localStorage 'arSyl', 서버 호출 없음).
    깨끗하게 잘릴 때만: ① 이름 전부 한글 ② x0 있음, 잉크 끝(x1)이 글자 수×칸 간격과 맞음 ③ 칸마다 잉크 있고 마지막 칸 뒤는 빔 ④ 이미 아는 음절 칸은 기존 템플릿 NCC ≥ .85(정렬 확인)
    ⑤ 새 음절이 다른 아는 음절과 NCC ≥ .9 로 닮으면 그 음절은 저장 안 함(스/소 구분 유지) ⑥ 같은 이름 OCR 확정 2번, 두 번의 잘라낸 칸이 서로 NCC ≥ .9 일 때만 저장. 인식 판정 조건(.85/.04/꼬리/유일)은 그대로 */
@@ -7802,7 +7803,7 @@ function arSylLearn(cid){ if(ARX.cfg.nameSyl===false) return; const H=ARX.nOcrHp
 function arNameTplTick(src,sw,sh,r,now){ if(ARX.cfg.nameTpl!==true) return null; /* t583: 오인식 0 조건 — 실게임 측정에서 OCR 오독(트딕이→드딕이)을 학습해 오인식을 늘려 기본 끔 */ const H=arNameHp(src,sw,sh,r); ARX.nTplT=now; if(H.E<40) return {blank:true,hp:H,x1:H.x1}; const L=arNtLoad(), sc=[];
   for(const c of S.characters){ const T=L[c.name]; if(!T) continue; const m=arNcc1(H.d,T,40,150); sc.push([m.sc,c.id]); }
   sc.sort((a,b)=>b[0]-a[0]); ARX.nTplSc=sc.slice(0,3).map(x=>[x[1],+x[0].toFixed(3)]); const ok=sc.length&&sc[0][0]>=.88&&(sc.length<2||sc[0][0]-sc[1][0]>=.08);
-  if(ok){ const cid=sc[0][1]; ARX.nameOk=true; ARX.cidT=now; ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='이미지'; if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=now-(ARX.nChgT||now); arLivePaint(); } return {cid,hp:H,x1:H.x1}; }
+  if(ok){ const cid=sc[0][1]; ARX.nameOk=true; ARX.cidT=now; ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='이미지'; arCidPut(cid,now,'이미지'); return {cid,hp:H,x1:H.x1}; }
   return {hp:H,x1:H.x1}; }
 function arNtLearn(cid){ if(ARX.cfg.nameTpl!==true) return; const H=ARX.nOcrHp, c=S.characters.find(x=>x.id===cid); if(!H||!c) return; const T=arNtMake(H); if(!T) return; const L=arNtLoad(); if(L[c.name]) return;
   for(const [k,o] of Object.entries(L)) if(k!==c.name&&S.characters.some(x=>x.name===k)&&arNcc1(H.d,o,40,150).sc>=.8) return; /* 다른 캐릭터 템플릿과 닮았으면 저장 안 함 */
@@ -7838,13 +7839,13 @@ function arNameVote(){ const H=(ARX.nHist||[]).filter(Boolean), ok=[], no=[]; co
    최근 읽기 중 맞는 읽기 ≥3 이고 다른 목록 이름과 겹치면 없음. 거센소리(ㅌ 등) 자리는 거센 읽기 ≥1 필요(실측: ㄷ 화면이 ㅌ 으로 읽힌 적 0번) ·
    예사소리 자리는 최근 20번 중 거센 읽기가 하나라도 있으면 없음(그 화면은 ㅌ 일 수 있음). */
 const AR_ICL={16:3,5:3,15:0,6:11,2:11,7:11,17:11,18:11,14:12} /* b348: ㅎ(18)도 ㅇ 묶음 — 실화면 '홀' 을 올·몰 로 읽음 */, AR_ASPI={16:1,15:1,17:1,14:1};
-function arSylM(t,X){ if(t.length!==X.length) return 0; let vm=0, strong=1; for(let i=0;i<X.length;i++){ const s=arSyl(t[i]), x=arSyl(X[i]); if(!s||!x) return 0; const ic=j=>AR_ICL[j]??j; if(ic(s[0])!==ic(x[0])) return 0; if(s[1]!==x[1]){ if(++vm>1) return 0; strong=0; } if(s[2]!==x[2]) strong=0; } return strong?2:1; }
+function arSylM(t,X){ if(t.length!==X.length) return 0; let vm=0, im=0, strong=1; for(let i=0;i<X.length;i++){ const s=arSyl(t[i]), x=arSyl(X[i]); if(!s||!x) return 0; const ic=j=>AR_ICL[j]??j; if(ic(s[0])!==ic(x[0])){ if(X.length<5||++im>1) return 0; } /* b351: 5글자 이상 이름은 첫소리 1자 틀림 허용(홀드유웨이컵: 밝은 돌 배경 위 '홀'을 돌·들로 읽음) */ if(s[1]!==x[1]){ if(++vm>1) return 0; strong=0; } if(s[2]!==x[2]) strong=0; } return strong?2:1; }
 function arNameVote2(){ const A=(ARX.nHist||[]).filter(Boolean), H=A.slice(-10), ok=[], no=[];
   for(const c of S.characters){ const X=c.name.replace(/[^가-힣]/g,''); if(X.length<2||/[A-Za-z0-9]/.test(c.name)) continue; const R=H.filter(t=>arSylM(t,X)), st=R.filter(t=>arSylM(t,X)===2).length;
     if(R.length<3||!st){ if(H.length>=6&&!R.length) no.push(c.id); continue; }
     let good=true; [...X].forEach((ch,i)=>{ const x=arSyl(ch); if(!(x[0] in AR_ICL)&&!Object.values(AR_ICL).includes(x[0])) return; const asp=t=>{ const s=arSyl(t[i]); return s&&AR_ASPI[s[0]]; };
       if(AR_ASPI[x[0]]){ if(!R.some(asp)) good=false; } else if(x[0]===3||x[0]===0||x[0]===12||x[0]===7){ const M=A.slice(-20).filter(t=>arSylM(t,X)); if(M.filter(asp).length>=Math.max(1,M.length*(x[0]===0?.8:.2))) good=false; /* t602: 실영상 '겟로스트로바' — 화면 겟 을 켓 으로 ~50% 읽음(ㄱ→ㅋ 헛읽기는 흔함, ㄷ→ㅌ 은 0번) → ㄱ 자리는 거센 읽기 80% 이상일 때만 미정 */ /* 딕→틱 헛읽기(~8%)는 허용 */ } });
-    if(good&&[...X].some(ch=>{ const x=arSyl(ch); return x&&x[0]===3&&x[1]===18; })) good=false; /* t586: 실측 v06 — 진짜 '트' 화면을 18번 중 15번 '드', '트'는 0번 → '드' 글자가 든 이름은 OCR 로 정하지 않음 (오인식 0) */
+    if(good&&X.length<=3&&[...X].some(ch=>{ const x=arSyl(ch); return x&&x[0]===3&&x[1]===18; })) good=false; /* b351: 4글자 이상 이름은 '트' 짝 이름이 목록 밖에 있을 일이 사실상 없어 허용(홀드유웨이컵 실화면 = 들드유웨미컵·돌드유웨미컵 읽기로 확정). 짝 이름이 목록에 있으면 아래 규칙이 막음 */ /* t586: 실측 v06 — 진짜 '트' 화면을 18번 중 15번 '드', '트'는 0번 → '드' 글자가 든 이름은 OCR 로 정하지 않음 (오인식 0) */
     if(good&&S.characters.some(d=>{ if(d===c) return false; const Y=d.name.replace(/[^가-힣]/g,''); if(Y.length!==X.length||!arSylM(Y,X)) return false; return [...X].some((ch,i)=>{ const x=arSyl(ch), y=arSyl(Y[i]); return !AR_ASPI[x[0]]&&AR_ASPI[y[0]]&&(AR_ICL[y[0]]??y[0])===x[0]; }); })) good=false; /* 실측: 밝은 배경에선 진짜 ㅌ 화면이 20번 연속 ㄷ 으로 읽힘 → 거센소리 짝(트딕이)이 목록에 있으면 예사소리 이름(드딕이)은 OCR 로 정하지 않음 */
     if(good) ok.push(c.id); }
   return {cid:ok.length===1?ok[0]:'', no}; }
@@ -7855,17 +7856,30 @@ function arLatVote(){ const H=(ARX.eHist||[]).filter(Boolean).slice(-8), L=S.cha
 /* t603: 실영상(겟로스트로바) — 밝은 배경·이펙트에서 OCR 이 연속으로 엉뚱하게 읽어 확정된 캐릭터를 지움(B 영상 46%) → 확정 때의 이름 칸 그림(96x12)과 지금 그림이 같으면 같은 캐릭터로 유지.
    진짜로 캐릭터가 바뀌면 이름 칸 글자 픽셀이 달라짐(다른 이름) → 그때만 OCR 판정대로 비움. 새 캐릭터로 정하는 건 여전히 OCR 투표만 (오인식 0 유지) */
 function arNameSame(){ const a=ARX.cidImg, b=ARX.nprev; if(!a||!b||a.length!==b.length) return false; let x=0,n=0; for(let i=0;i<a.length;i+=4){ const da=(a[i]+a[i+1]+a[i+2])/3, db=(b[i]+b[i+1]+b[i+2])/3; if(da>140||db>140){ n++; if(Math.abs(da-db)>60) x++; } } return n>=20&&x/n<.25; }
+/* b351 (t657): 로그인 세션 동안 캐릭터 고정 — 한 번 인식되면(음절·OCR·이미지·직접) ARX.nLock 에 묶고, 순간적인 OCR 실패·이펙트·UI 숨김으로는 절대 안 풀림.
+   ① 다른 '목록' 캐릭터가 3번 이상, 2초 넘게 이어서 확정될 때만 바꿈(arCidPut)
+   ② '-' 로 비우는 건 강한 증거만(arCidDrop): 고정 뒤 검은 화면(로그아웃·캐릭터 선택·채널 이동 로딩)이 1.5초 이상 있었고, 그 뒤 다른 이름이 4번·3초 넘게 확실히 읽힘.
+      검은 화면 뒤 같은 이름(음절/OCR)이 다시 맞으면 증거 초기화. 메소 저장도 이 고정 캐릭터 기준(arMesoNow). */
+function arCidPut(cid,now,src){ const L=ARX.nLock; ARX.nDrop=null;
+  if(!ARX.det.cid||!L||L.cid===cid||!S.characters.some(c=>c.id===L.cid)){ if(L&&L.cid===cid){ L.seen=now; ARX.nSw=null; } if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=now-(ARX.nChgT||now); ARX.nLock={cid,t:now,seen:now,src}; ARX.nSw=null; arLivePaint(); } else if(!L||L.cid!==cid) ARX.nLock={cid,t:now,seen:now,src}; return true; }
+  const w=ARX.nSw; if(!w||w.cid!==cid) ARX.nSw={cid,n:1,t0:now}; else { w.n++; if(w.n>=3&&now-w.t0>=2000){ ARX.det.cid=cid; ARX.nLock={cid,t:now,seen:now,src}; ARX.nSw=null; ARX.nameMs=now-w.t0; arLog(`캐릭터 바뀜(${src} ${w.n}번 확인)`); arLivePaint(); return true; } }
+  ARX.cidT=L.seen; return false; }
+function arCidDrop(now,why){ if(!ARX.det.cid) return; const L=ARX.nLock; if(!L){ ARX.det.cid=''; ARX.nameOk=false; arLivePaint(); return; }
+  const blk=ARX.blackEnd&&ARX.blackEnd>(L.seen||0)&&ARX.blackLen>=1500; if(!blk){ ARX.nDrop=null; return; }
+  const d=ARX.nDrop; if(!d) { ARX.nDrop={n:1,t0:now,why}; return; } d.n++; if(d.n>=4&&now-d.t0>=3000){ arLog(`캐릭터 해제: 검은 화면 ${(ARX.blackLen/1000).toFixed(1)}초 뒤 다른 이름 ${d.n}번`); ARX.det.cid=''; ARX.nLock=null; ARX.nDrop=null; ARX.nameOk=false; arLivePaint(); } }
+function arBlackTick(src,now){ const c=ARX.bkc||(ARX.bkc=document.createElement('canvas')); c.width=32; c.height=18; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,0,0,32,18); const d=g.getImageData(0,0,32,18).data; let s=0; for(let i=0;i<d.length;i+=4) s+=d[i]+d[i+1]+d[i+2]; const dark=s/(32*18*3)<14;
+  if(dark){ if(!ARX.blackT0) ARX.blackT0=now; } else if(ARX.blackT0){ const len=now-ARX.blackT0; ARX.blackT0=0; if(len>=1500){ ARX.blackEnd=now; ARX.blackLen=len; } } }
 function arNameRes(t,eng){ ARX.nameText=t; const n2=Date.now(); ARX.nRes=(ARX.nRes||0)+1; let cid='';
   if(eng){ const toks=String(t||'').split(/\s+/).map(x=>x.replace(/[^A-Za-z0-9]/g,'').toLowerCase()).filter(x=>x.length>=3&&!/^l?v\d*$/.test(x)&&!/^\d+$/.test(x)); ARX.nameRead=''; (ARX.eHist=ARX.eHist||[]).push(toks.reduce((a,x)=>x.length>a.length?x:a,'')); if(ARX.eHist.length>8) ARX.eHist.shift(); }
   else { arDetectChar(t); (ARX.nHist=ARX.nHist||[]).push(ARX.nameRead||''); if(ARX.nHist.length>20) ARX.nHist.shift(); }
-  { const v=arNameVote2(), e=arLatVote(); cid=v.cid&&e.cid&&v.cid!==e.cid?'':(v.cid||e.cid); const no=[...v.no,...e.no]; if(!cid&&ARX.det.cid&&no.includes(ARX.det.cid)&&!arNameSame()){ ARX.det.cid=''; ARX.nameOk=false; arLivePaint(); } }
-  if(cid){ ARX.cidImg=ARX.nprev?Uint8ClampedArray.from(ARX.nprev):null; ARX.nameOk=true; ARX.cidT=n2; ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='OCR'; try{ arNtLearn(cid); }catch(e){} try{ arSylLearn(cid); }catch(e){} if(cid!==ARX.det.cid){ ARX.det.cid=cid; ARX.nameMs=n2-(ARX.nChgT||n2); arLivePaint(); } return; }
+  { const v=arNameVote2(), e=arLatVote(); cid=v.cid&&e.cid&&v.cid!==e.cid?'':(v.cid||e.cid); const no=[...v.no,...e.no]; if(!cid&&ARX.det.cid&&no.includes(ARX.det.cid)&&!arNameSame()) arCidDrop(n2,'vote'); }
+  if(cid){ ARX.cidImg=ARX.nprev?Uint8ClampedArray.from(ARX.nprev):null; ARX.nameOk=true; ARX.cidT=n2; ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='OCR'; try{ arNtLearn(cid); }catch(e){} try{ arSylLearn(cid); }catch(e){} arCidPut(cid,n2,'OCR'); return; }
   /* t574/t576: 목록과 정확히 같은 이름 → 그 캐릭터. 아니면 '다른 닉네임이 확실히 읽혔을 때만' '-' : ① 'Lv.NNN 이름' 꼴로 읽힘 ② 연속 두 번 비슷하게 읽힌 한글 이름이 지금 캐릭터 이름과 확실히 다름.
      검은 화면·잡음·한 번만 이상하게 읽힘 → 지금 캐릭터 유지 (근사 매칭으로 다른 캐릭터를 고르는 일은 없음) */
   const tok=ARX.nameRead||'', cur=S.characters.find(x=>x.id===ARX.det.cid), curH=cur?cur.name.replace(/[^가-힣]/g,''):'';
   const differs=tok.length>=2&&(!curH||arSimJ(tok,curH)<.5)&&!(curH&&tok.includes(curH)), hist=(ARX.nOther||[]).slice(-5); ARX.nOther=[...hist,differs?tok:null];
   const sure=differs&&(arUnkName(t)||hist.some(h=>h&&arSimJ(tok,h)>=.6)); /* 최근 6번(약 1.2초) 중 2번 비슷하게 읽힘 — 배율 3·4·2 를 돌아가며 읽어서 연속이 아닐 수 있음 */
-  if(sure&&(ARX.nChgT||0)>(ARX.cidT||0)&&!arNameSame()){ if(ARX.det.cid){ ARX.det.cid=''; arLivePaint(); } ARX.unkName=1; } }
+  if(sure&&(ARX.nChgT||0)>(ARX.cidT||0)&&!arNameSame()){ if(ARX.det.cid) arCidDrop(n2,'other'); if(!ARX.det.cid) ARX.unkName=1; } }
 /* b296: 미니맵 제목 감시 — 0.2초마다 작게 떠서 바뀌면 바로 OCR (예전: 3초마다 + 바닥 찾기 끝난 뒤라 보스 바뀌는 데 3~10초).
    보상 맵이면 보스 바로 바꿈. 다른 맵 제목이 2번 연속 읽히면(맵 옮김) 이전 보스를 비움 → 다음 보상 맵에서 새 보스. */
 /* t522: 맵 이름 인식 결과 반영 — 상자 게이트가 켜져 있으면 보스는 안 바꾸고 난이도 보조(mapDet)만, 다른 보스 보상 맵이면 상자 해제. 바뀌었으면 true */
@@ -8047,7 +8061,7 @@ function arStart(v){ ARX.video=v; ARX.sessRec=[]; /* b335: 라이브 시작마�
   ARX.boxTimer=setInterval(()=>{ if(ARX.video&&!ARX.boxBusy&&(ARX.cfg.boxAlways!==false||arRewMap(Date.now()))&&!arBoxOk()) arBoxStep(ARX.video,false).catch(()=>{}); },AR_BOX_REW_MS); /* t547: 보상 맵에선 프레임(1/fps)과 별도로 0.2초 */
   ARX.logTimer=setInterval(()=>{ if(ARX.ocr&&ARX.video) arLogFrame(ARX.video); },Math.round(1000/Math.max(1,ARX.cfg.logFps)));
   ARX.pfTimer=setInterval(()=>{ try{ arPerfPaint(); }catch(e){} },1000); arBtnPaint(); arPanel(true); }
-function arDisconnect(){ ARX.rew=null; ARX.rwl=null; ARX.recPend=[]; try{ arMesoFlush(Date.now(),true); }catch(e){} clearInterval(ARX.nTimer); ARX.nTimer=0; clearInterval(ARX.pfTimer); clearInterval(ARX.logTimer); clearInterval(ARX.wTimer); clearInterval(ARX.boxTimer); ARX.bq=[]; (ARX.abuf||[]).forEach(e=>e.bmp&&e.bmp.close()); ARX.abuf=[]; ARX.alocs=[]; ARX.airT=0; ARX.bprev=null; ARX.logPrev=[]; clearInterval(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.tracks=[]; ARX.iprev=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; ARX.box=null; arBtnPaint(); arPanelPaint(); }
+function arDisconnect(){ ARX.rew=null; ARX.rwl=null; ARX.recPend=[]; try{ arMesoFlush(Date.now(),true); }catch(e){} clearInterval(ARX.nTimer); ARX.nTimer=0; ARX.nLock=null; ARX.nSw=null; ARX.nDrop=null; /* b351: 연결 끊김 = 세션 끝 */ clearInterval(ARX.pfTimer); clearInterval(ARX.logTimer); clearInterval(ARX.wTimer); clearInterval(ARX.boxTimer); ARX.bq=[]; (ARX.abuf||[]).forEach(e=>e.bmp&&e.bmp.close()); ARX.abuf=[]; ARX.alocs=[]; ARX.airT=0; ARX.bprev=null; ARX.logPrev=[]; clearInterval(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.tracks=[]; ARX.iprev=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; ARX.box=null; arBtnPaint(); arPanelPaint(); }
 function arBtnPaint(){ const b=$('#tabs [data-tab="auto"]'); if(b) b.classList.toggle('arlive',!!ARX.stream); arPanelPaint(); } // b294: 헤더 버튼 대신 탭에 초록 점
 /* 패널: 상태 · 인식 결과 · 수동 선택 · 영역 맞추기(미리보기 드래그) · OCR 미리보기 */
 let arRegionSel='item';
@@ -8065,6 +8079,10 @@ function arPanelBind(p){ {
   }
 /* t565: 캐릭터·현재 보스·해상도 칸만 따로 그림 — 0.2초 감시(nTimer)마다 바뀌었으면 바로 (전엔 패널 전체 다시 그리기가 '포커스 있으면 건너뜀'+서명에 보스 상태 없음 → 버튼 눌러야 갱신) */
 /* t567: 자동 기록 탭에 방금 읽은 메소(저장은 1분 간격이어도 표시는 즉시)·클리어 시간(진행 중 경과 / 최근 기록) */
+/* b351 (t657): PIP 보유 메소 칸 — 머리줄 '보유 메소 (MM/DD HH:MM)' = 마지막으로 인식한 시각, 아래 줄 금액(인벤+창고). 이번 연결에서 읽은 값(mesoSeen) 우선, 없으면 저장된 값(mesoOf), 없으면 '-' */
+function arPipMesoHtml(c){ let v=null, at=0; const m=ARX.mesoSeen; if(c&&m&&m.cid===c.id){ v=(+m.inv||0)+(+m.sto||0); at=m.at; } else if(c&&typeof mesoOf==='function'){ const o=mesoOf(c); if(o&&o.inv>=0){ v=(+o.inv||0)+(+o.sto||0); at=o.at||0; } }
+  const p2=n=>String(n).padStart(2,'0'), d=at?new Date(at):null, ts=d?` (${p2(d.getMonth()+1)}/${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())})`:'';
+  return `<div class="ar-pmh muted">보유 메소${ts}</div><div class="ar-pmv">${v!=null?esc(fmtMesoFull(v).replace(/메소$/,'')):'-'}</div>`; }
 function arMesoLine(){ const m=ARX.mesoLast; if(!m||!(m.inv>=0)||(ARX.det.cid&&m.cid!==ARX.det.cid)) return ''; return `<div class="ar-meso muted">보유 메소(인식): <b>${fmtMesoFull((+m.inv||0)+(+m.sto||0))}</b>${m.sto!=null?' · 인벤+창고':''}</div>`; }
 function arClrLine(){ return ''; } /* t603: 자동 기록 탭 '클리어 시간' 줄 제거 */
 function arClrLineOld(){ const C=ARX.clr, now=Date.now(), mmss=t=>`${Math.floor(t/60)}분 ${String(t%60).padStart(2,'0')}초`; if(C&&!C.practice&&arClrRun()){ let st=null; if(C.reads?.length){ const lim=C.lim||Math.ceil((C.reads[0].rem+1)/60)*60; st=arMedian(C.reads.map(x=>x.t-(lim-x.rem)*1000)); } else if(C.mapT) st=C.mapT; if(st) return `<div class="ar-clr muted">클리어 시간: 진행 ${mmss(Math.max(0,Math.round((now-st)/1000)))}</div>`; }
@@ -8076,7 +8094,8 @@ function arPanelLive(p){ p=p||$('#arPanel'); if(!p||p.hidden||!p.querySelector('
   arSetH(q('.ar-cchar .ar-b'),(detC?`<div class="ar-who">${typeof avatar==='function'?avatar(detC):''}<div><div class="ar-big">${esc(detC.name)}</div><div class="muted">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${acc?.name?' · '+esc(acc.name):''}${detC.world?' · '+esc(detC.world):''}</div></div></div>`
     :`<div class="ar-big dim">${on&&!ARX.unkName?'인식 중…':'-'}</div>`+arTeachHtml(on))+arMesoLine());
   /* b349: PIP 창 맨 위 현재 캐릭터 한 줄 (대시보드와 같은 내용, 0.2초마다 바뀐 것만) */
-  if(ARX.pip){ const pc=ARX.pip.win.document.querySelector('.ar-pipchar'); if(pc) arSetH(pc,detC?`${typeof avatar==='function'?avatar(detC):''}<b class="ar-pcn">${esc(detC.name)}</b><span class="muted ar-pcm">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${detC.world?' · '+esc(detC.world):''}</span>`:`<span class="muted">${on&&!ARX.unkName?'인식 중…':'미인식'}</span>`); }
+  if(ARX.pip){ const pd=ARX.pip.win.document, pc=pd.querySelector('.ar-pipchar'); if(pc) arSetH(pc,detC?`${typeof avatar==='function'?avatar(detC):''}<b class="ar-pcn">${esc(detC.name)}</b><span class="muted ar-pcm">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${detC.world?' · '+esc(detC.world):''}</span>`:`<span class="muted">${on&&!ARX.unkName?'인식 중…':'미인식'}</span>${arTeachHtml(on)}` /* b351: PIP 에도 [이 캐릭터예요] (보상 맵에서 끊겨도 바로) */);
+    arSetH(pd.querySelector('.ar-pipmeso'),arPipMesoHtml(detC)); }
   /* t603: '현재 보스' → '보상 맵 인식' — 대기/진행 상태 없음. 보상 상자로 보상 맵이 잡힌 동안만 초록 '보상 인식 중' + 보스, 아니면 '-' */
   { const cb=arPipCard(p); if(cb) arPipBind(cb); }
   if(arPipQ(p,'.ar-cboss .ar-b')) arSetH(arPipQ(p,'.ar-cboss .ar-b'),((bst==='rew'?`<div class="ar-bst rew"><i class="ar-dot"></i>보상 인식 중</div>`:'')+(bst==='rew'&&detB?`<div class="ar-big ar-bline">${typeof bossIcon==='function'?bossIcon(detB):''}<span class="ar-bn">${esc(detB.name)}</span>${detD?' '+(typeof diffImg==='function'?diffImg(detD):esc(D[detD])):''}</div>`
@@ -8122,10 +8141,11 @@ function arPerfPaint(){ const f=ARX.pf; const el=$('#arPanel .ar-perf'); if(el) 
    음절 템플릿도 영영 안 생기던 문제. 연결 중·미인식이면 '캐릭터 정보' 칸에 [캐릭터 고르기][이 캐릭터예요] → 사용자가 정한 캐릭터로 바로 설정 +
    지금 화면(0.1초 간격 두 장)에서 음절 템플릿 학습(arSylLearn, 깨끗하게 잘릴 때만 저장) → 다음부터 음절 대조로 0.1초 안에 자동 인식. */
 function arTeachHtml(on){ if(!on||ARX.det.cid||!S.characters.length) return ''; return `<div class="ar-teach"><select class="ar-tsel" aria-label="지금 캐릭터">${S.characters.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select><button type="button" class="btn sm ar-tbtn">이 캐릭터예요</button></div>`; }
-async function arNameTeach(cid){ const c=S.characters.find(x=>x.id===cid); if(!c) return false; ARX.det.cid=cid; ARX.nameOk=true; ARX.cidT=Date.now(); ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='직접'; ARX.cidImg=ARX.nprev?Uint8ClampedArray.from(ARX.nprev):null; ARX.teachT=Date.now();
+async function arNameTeach(cid){ const c=S.characters.find(x=>x.id===cid); if(!c) return false; ARX.det.cid=cid; ARX.nameOk=true; ARX.cidT=Date.now(); ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='직접'; ARX.nLock={cid,t:Date.now(),seen:Date.now(),src:'직접'}; ARX.nSw=null; ARX.nDrop=null; ARX.cidImg=ARX.nprev?Uint8ClampedArray.from(ARX.nprev):null; ARX.teachT=Date.now();
   const v=ARX.video||ARX.testSrc; for(let i=0;i<2;i++){ try{ if(v){ const sw=v.videoWidth||v.width, sh=v.videoHeight||v.height; ARX.nOcrHp2=arNameHp(v,sw,sh,arR('name',v),2); arSylLearn(cid); } }catch(e){} if(!i) await new Promise(r=>setTimeout(r,120)); }
   arLog(`캐릭터 직접 설정: ${c.name}`); try{ arLivePaint(); }catch(e){} return true; }
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.ar-tbtn'); if(!b) return; const sel=b.parentNode.querySelector('.ar-tsel'); if(sel) arNameTeach(sel.value); });
+function arTeachClick(e){ const b=e.target.closest&&e.target.closest('.ar-tbtn'); if(!b) return; const sel=b.parentNode.querySelector('.ar-tsel'); if(sel) arNameTeach(sel.value); }
+document.addEventListener('click',arTeachClick);
 window.arNameTeach=arNameTeach;
 function arLivePaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; arPanelPaint(); } /* t567: 0.2초마다 탭 전체를 그리되 바뀐 칸만 DOM 변경(arSetH) — 서버 호출 없음 */
 /* b294: '보스 득템 자동 기록' 탭 → (연결 안 됐으면) 탭 바로 아래 안내 창 → '확인' 클릭 안에서 바로 getDisplayMedia (사용자 동작). 닫으면 연결 안 함. 이미 연결됐으면 다시 묻지 않음 */
@@ -8205,11 +8225,11 @@ async function arPipOpen(cb){ cb=cb||arPipCard(); if(!cb||ARX.pip) return false;
   const W0=320, H0=AR_PIP_H; /* b341: 처음 크기 = 최소 크기. b347: 촘촘한 PIP 전용 배치(.arpipw) — 상태 칸 + 아래 한 칸(득템 목록 ↔ 수익/고르기 칸이 자리 바꿔 씀) */
   let w; try{ w=await documentPictureInPicture.requestWindow({width:W0,height:H0}); }catch(err){ if(m){ m.hidden=false; m.textContent='PIP 창을 열지 못했어요: '+(err&&err.message||err); } return false; }
   if(m) m.hidden=true; arPipStyles(document,w.document); const ph=document.createElement('div'); ph.className='ar-pipph card ar-c ar-cboss-ph'; ph.style.cssText='grid-column:1;grid-row:2;display:flex;align-items:center;justify-content:center;opacity:.6;min-height:'+(cb.offsetHeight||120)+'px'; ph.innerHTML='<span class="muted">PIP 창에 표시 중 · <button type="button" class="btn sm ar-pipback">되돌리기</button></span>';
-  cb.replaceWith(ph); ph.querySelector('.ar-pipback').onclick=()=>arPipClose(); const pc=w.document.createElement('div'); pc.className='ar-pipchar'; w.document.body.append(pc,cb); cb.classList.add('ar-inpip');
+  cb.replaceWith(ph); ph.querySelector('.ar-pipback').onclick=()=>arPipClose(); const pc=w.document.createElement('div'); pc.className='ar-pipchar'; const pm=w.document.createElement('div'); pm.className='ar-pipmeso'; w.document.body.append(pc,pm,cb); w.document.addEventListener('click',arTeachClick); /* b351: PIP 문서에도 [이 캐릭터예요] 클릭 */ cb.classList.add('ar-inpip');
   const b=cb.querySelector('.ar-pipb'); if(b){ b.textContent='닫기'; b.title='PIP 창 닫고 페이지로 되돌리기'; }
   ARX.pip={win:w,card:cb,ph,minW:W0,minH:H0}; arPipMinCss(w.document,W0,H0); w.addEventListener('resize',()=>arPipMin(w,W0,H0)); w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); try{ arPanelLive(); }catch(e){} arFitBoss(); arPipAskHide(); arPipPlace(w,W0,H0); return true; }
 /* b341: Document PiP 는 최소 크기를 못 정함 → resize 때 더 작아지면 처음 크기로 resizeTo (안 되는 환경이면 CSS 최소 크기 = 줄지 않고 스크롤) */
-const AR_PIP_H=318; /* b347: 630 → 286 (2인 수익 칸까지 스크롤 없이). b349: +32 맨 위 캐릭터 줄(.ar-pipchar 28px + 간격 4) */
+const AR_PIP_H=368; /* b351: +10 캐릭터 줄 28→38(얼굴 보이는 34px 아바타) +40 보유 메소 칸(36+4) */ const AR_PIP_H_OLD=318; /* b347: 630 → 286 (2인 수익 칸까지 스크롤 없이). b349: +32 맨 위 캐릭터 줄(.ar-pipchar 28px + 간격 4) */
 function arPipMinCss(d,W,H){ const st=d.createElement('style'); st.className='ar-pipmin'; st.textContent=`html,body{min-width:${W}px;min-height:${H}px}`; d.head.append(st); }
 function arPipMin(w,W,H){ const iw=w.innerWidth, ih=w.innerHeight; if(iw>=W-1&&ih>=H-1) return; const dw=Math.max(0,(w.outerWidth||iw)-iw), dh=Math.max(0,(w.outerHeight||ih)-ih); try{ w.resizeTo(Math.max(iw,W)+dw,Math.max(ih,H)+dh); }catch(e){} }
 function arPipStyles(src,dst){ const d=dst.documentElement, s=src.documentElement; for(const a of s.attributes) if(a.name!=='style') d.setAttribute(a.name,a.value); d.style.cssText=s.style.cssText; for(const a of src.body.attributes) dst.body.setAttribute(a.name,a.value);

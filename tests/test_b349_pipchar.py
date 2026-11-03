@@ -32,7 +32,7 @@ try:
     pg.evaluate("()=>{ arStart(document.createElement('video')); }"); pg.evaluate(REW,'lucid'); pg.evaluate(STUB)
     pg.evaluate(FAKE); pg.evaluate("()=>{ window.__mv=null; }"); pg.locator('#arPanel .ar-cboss .ar-pipb').click(); pg.wait_for_timeout(500)
     PC="()=>{ const d=document.getElementById('fakePip').contentDocument, e=d.querySelector('.ar-pipchar'), c=d.querySelector('.ar-cboss'); if(!e) return null; const r=e.getBoundingClientRect(); return {t:e.textContent,h:r.height,b:r.bottom,cb:c.getBoundingClientRect().top,img:!!e.querySelector('img,.avatar,[class*=av]')}; }"
-    m=pg.evaluate("()=>[window.AR.pip.minW,window.AR.pip.minH]"); check('PIP 크기 320×318 (b347 286 + 캐릭터 줄 32)',m==[320,318],m)
+    m=pg.evaluate("()=>[window.AR.pip.minW,window.AR.pip.minH]"); check('PIP 크기 320×368 (b350: 캐릭터 줄 38 + 보유 메소 칸 40)',m==[320,368],m)
     pg.evaluate("()=>{ ARX.det.cid=''; arLivePaint(); }"); pg.wait_for_timeout(300); r=pg.evaluate(PC); print(r)
     check('캐릭터 줄이 보상 맵 인식 칸 위',r and r['b']<=r['cb']+1 and r['h']>=20,r)
     check('미인식 표시',r and '미인식' in r['t'],r)

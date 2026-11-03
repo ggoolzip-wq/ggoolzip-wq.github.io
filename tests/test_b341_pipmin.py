@@ -29,7 +29,7 @@ try:
     sz=lambda: pg.evaluate("()=>{ const f=document.getElementById('fakePip'); const w=f.contentWindow; return [w.innerWidth,w.innerHeight]; }")
     m=pg.evaluate("()=>[window.AR.pip.minW,window.AR.pip.minH]"); s0=sz()
     check('처음 크기 = 최소 크기',s0==m,(s0,m))
-    check('처음 크기 = b349 짧은 창+캐릭터 줄(320×318)',m==[320,318],m)
+    check('처음 크기 = b349 짧은 창+캐릭터 줄(b350 320×368)',m==[320,368],m)
     pg.evaluate("()=>{ const f=document.getElementById('fakePip'); f.style.width='200px'; f.style.height='150px'; }"); pg.wait_for_timeout(300)
     s1=sz(); check('더 작게 줄이면 최소 크기로 되돌아감',s1[0]>=m[0] and s1[1]>=m[1] and pg.evaluate('window.__rz')>=1,(s1,m))
     pg.evaluate("()=>{ const f=document.getElementById('fakePip'); f.style.width='%dpx'; f.style.height='%dpx'; }"%(m[0]+120,m[1]+80)); pg.wait_for_timeout(300)

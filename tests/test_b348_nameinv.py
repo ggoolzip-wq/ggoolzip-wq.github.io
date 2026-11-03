@@ -29,7 +29,7 @@ try:
     check('인벤 창을 옮겨도 화면 전체에서 찾음 (x≈1467,y≈789)',r['inv'] and abs(r['inv']['x']*1920-1467)<12 and abs(r['inv']['y']*1080-789)<12,r)
     check('옮긴 창 메소도 같음',r['v']==337174797,r)
     check('ㅎ↔ㅇ 묶음: 올드유웨이컵 읽기 = 홀드유웨이컵 꼴',pg.evaluate("()=>arSylM('올드유웨이컵','홀드유웨이컵')===2&&arSylM('몰드유웨미컵','홀드유웨이컵')>0"))
-    check('드 이름은 여전히 OCR 투표로 안 정함(오인식 0 규칙 유지)',pg.evaluate("()=>{ ARX.nHist=Array(8).fill('홀드유웨이컵'); return arNameVote2().cid===''; }"))
+    check('b351: 드 규칙은 3글자 이하만 — 짧은 드 이름은 여전히 OCR 투표로 안 정함',pg.evaluate("()=>{ S.characters.push({...S.characters[0],id:'cx',name:'드림'}); ARX.nHist=Array(8).fill('드림'); const r=arNameVote2().cid===''; S.characters.pop(); return r; }"))
     # 연결 흉내 + 실화면 → 미인식이면 직접 알려주기 버튼
     pg.evaluate("""async src=>{ const im=new Image(); im.src=src; await im.decode(); const c=document.createElement('canvas'); c.width=1920; c.height=1080; c.getContext('2d').drawImage(im,0,0); ARX.stream=c.captureStream(1); ARX.video=document.createElement('video'); ARX.testSrc=im; ARX.det.cid=''; ARX.unkName=0; arLivePaint(); }""",u('live_inv.jpg')); pg.wait_for_timeout(300)
     check('미인식: 캐릭터 칸에 [이 캐릭터예요] 버튼',pg.locator('#arPanel .ar-cchar .ar-tbtn').count()==1)

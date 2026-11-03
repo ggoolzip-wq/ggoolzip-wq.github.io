@@ -2,6 +2,14 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b351 (t657) 메소 저장 안 됨(데미안 실화면) + 캐릭터 세션 잠금 + PIP 얼굴 아바타·[이 캐릭터예요]·보유 메소 칸
+- 메소 원인: arMesoNow 가 저장 전 이름 칸 전체(밝은 돌 배경 포함)를 다시 OCR('.280 900 아오 오우') → cid1='' → why:'name' 으로 버림. 메소 값(20억 1357만 4797)은 맞게 읽고 있었음. 고침: 이름 다시 읽기 대신 잠긴 캐릭터(ARX.det.cid) 사용.
+- 이름: 홀드유웨이컵 이 '돌드유웨미컵/들드…' 로 읽힘(ㅎ→ㄷ). arSylM: 5글자 이상은 초성 하나 틀림 허용(strong 유지). arNameVote2 의 '드' 막기(t586)는 3글자 이하 이름만(트딕이/드딕이 혼동 보호 그대로).
+- 캐릭터 잠금: arCidPut/arCidDrop/arBlackTick, ARX.nLock{cid,t,seen,src}. 다른 등록 캐릭터로 바꾸기 = 3번 이상·2초 이상 연속 확인. 풀기(미인식) = 잠금 뒤 1.5초 이상 검은(로딩) 화면이 끝난 뒤 다른 이름 4번·3초 이상. 그 밖의 한때 읽기 실패·다른 이름은 무시. arNameTeach·arDisconnect 가 잠금 설정/초기화.
+- PIP: 캐릭터 줄 28→38px, 아바타 34px, 캐릭터 이미지(300×300) 축소 없이 object-position 50% 52%(얼굴; 예전 24px+60% = 몸통). 미인식+연결 중이면 줄 안에 작은 고르기+[이 캐릭터예요](PIP 문서에도 arTeachClick 리스너). 캐릭터 줄과 '보상 맵 인식' 사이 .ar-pipmeso: 머리줄 '보유 메소 (MM/DD HH:MM)'(마지막 인식 시각, 브라우저 시간대) + 금액('20억 1357만 4797', 메소 글자 뺌), 없으면 '-'. 값 = 이번 연결에서 읽은 ARX.mesoSeen(cid 같을 때) → 없으면 저장된 mesoOf(c). AR_PIP_H 318 → 368(+10 줄, +40 칸).
+- 참고: 같은 작업 폴더를 쓰던 다른 작업자의 b350(탭 글꼴) 커밋 cc3ebd7 에 이 PIP CSS(extra.css .ar-pipchar/.ar-pipmeso)가 먼저 섞여 들어감 — JS 는 이 b351.
+- 테스트: test_b351_mesoname(새, fixtures/b351/live_meso_stone.jpg), test_b351_pipmeso(새, fixtures/b351/look.png, pip_meso.png/pip_teach.png), b341/b346(320×368, 모니터 y=336)/b349 갱신, b348 드 규칙 체크를 3글자 이름으로.
+
 ## b350 (t657) 위 탭 전부 Paperlogy 글꼴
 - extra.css 끝: `html body nav.tabs button{font-family:'Paperlogy',…}` — 캘린더 탭(b340)과 같은 글꼴. 색·네온(캘린더 노랑, 자동 기록 빨강, 나머지 시안)은 그대로.
 - 크기 측정(1600px, 15px): 글자 높이 18px·버튼 높이 30px 동일, 폭은 +1~2px(Paperlogy 가 Pretendard 보다 약간 넓음) → 글씨가 줄지 않아 네모 크기는 그대로 둠.
