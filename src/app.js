@@ -402,6 +402,8 @@ const fmtEokP=m=>{ const e=m/1e8; return (e>=100?e.toFixed(1):e>=1?e.toFixed(3):
 /* b249: 결과 글자 = '기록 금액 :'(노랑) + 금액(초록) */
 const ramHtml=m=>m>0?`<span class="rlab">기록 금액 :</span> <b class="rval">${meso(m)}</b>`:'';
 const revMap = (c,type) => type==='monthly' ? (c.mdrev||(c.mdrev={})) : (c.drev||(c.drev={}));
+/* b342: askRev [기록하기] 저장 그대로 (PIP 빠른 수익 기록도 같이 씀) — v = 판매가(억 메소) */
+function revWrite(c,b,key,ik,v,div,fs){ const cc=S.characters.find(x=>x.id===c.id)||c; const ds=div>1?fs.d:0; revMap(cc,b.type)[key]={m:Math.round(revNet(v*1e8,div,fs.s,ds)),a:Math.round(v*1e4)/1e4,p:div,i:ik,fs:fs.s,fd:ds}; revFeeSet(fs); save(); render(); }
 function askRev(c,b,key,ik,cel){
   const pty=curParty(c,b.id), md=modeMap(c,b.type)[key]||'', div=pty>1&&md!=='w'&&md!=='n'?pty:1; // 분배(예전 기록 포함) = ÷인원, 1인·블빵승리 = 전부
   document.querySelector('#revModal')?.remove();
@@ -414,7 +416,7 @@ function askRev(c,b,key,ik,cel){
   document.body.appendChild(el);
   let closed=false; const fin=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true); if(cel) cel(); };
   const ok=()=>{ const v=parseFloat(String($('#rvAmt').value).replace(',','.')); if(!(v>0)||v>100000){ $('#rvErr').textContent='금액을 입력해주세요.'; markEmpty($('#rvAmt')); $('#rvAmt').focus(); return; }
-    const cc=S.characters.find(x=>x.id===c.id)||c; const ds=div>1?fs.d:0; revMap(cc,b.type)[key]={m:Math.round(revNet(v*1e8,div,fs.s,ds)),a:Math.round(v*1e4)/1e4,p:div,i:ik,fs:fs.s,fd:ds}; revFeeSet(fs); save(); render(); fin(); };
+    revWrite(c,b,key,ik,v,div,fs); fin(); };
   // b109: 오른쪽 [기록하기](주황) = 금액 기록 / [기록 없이 저장](예전 '아니오') = 획득은 남기고 수익 기록 없이 축하 / [취소](예전 '취소하기') = 아래 undo
   // zosu-ui: [취소하기] = 이 창을 띄운 아이템 선택 자체를 되돌림(획득·블빵/분배·반지/칠흑 결과·수익 기록 삭제, 축하 없음) — changeDrop 의 취소와 같은 정리
   const undo=()=>{ if(closed) return; closed=true; el.remove(); document.removeEventListener('keydown',kd,true);

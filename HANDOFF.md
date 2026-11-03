@@ -2,6 +2,12 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b342 (t646) PIP 빠른 수익 기록 칸
+- arRecord: PIP 열려 있고 반지·칠흑 상자가 아니면 changeDrop(모달) 대신 arSaleTake — pendStart, dropMap[key]=1, 2인 이상이면 modeMap[key]='s'(자동 분배), save/render, ARX.saleQ 에 줄 세움.
+- .ar-pipsale(득템 목록 아래): 아이콘·이름·보스, 최저가(admPriceOf 미리 채움, 수정 가능), 수수료 버튼(1인=판매, 2인+=판매+분배 — askRev 와 같음), [기록하기]/[기록하지 않기]. 맨 앞 아이템이 바뀔 때만 다시 그림(입력 포커스 유지).
+- [기록하기] = app.js revWrite (askRev ok() 를 빼낸 함수, 저장 형식 동일) / [기록하지 않기] = 득템만 저장('기록 없이 저장'). 득템이 취소되면 줄에서 건너뜀. 새 엔드포인트 없음.
+- 테스트 tests/test_b342_pipsale.py (1인·2인·줄 세우기). 스크린샷 pip_record.png.
+
 ## b341 (t646) PIP 창 처음 크기 = 최소 크기
 - arPipOpen: W0=max(320,카드 폭), H0=카드 높이+16+230(득템 목록)+AR_PIP_SALE_H(250, b342 수익 기록 칸) 로 requestWindow.
 - Document PiP 는 최소 크기 옵션이 없음 → arPipMin: resize 때 W0/H0 보다 작으면 w.resizeTo 로 되돌림(try). arPipMinCss: html/body min-width/min-height(되돌리기 안 되는 환경 = 스크롤). 키우기는 자유.

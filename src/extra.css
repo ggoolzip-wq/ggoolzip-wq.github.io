@@ -2212,3 +2212,12 @@ button.calsum:hover,button.calsum.on{box-shadow:0 0 14px rgba(255,210,60,.8),0 0
 @font-face{font-family:'Paperlogy';src:url(fonts/Paperlogy-7Bold.woff2) format('woff2');font-weight:700 900;font-style:normal;font-display:swap}
 .calwrap,html body nav.tabs button[data-tab=cal]{font-family:'Paperlogy','Pretendard',system-ui,sans-serif!important}
 .calwrap :where(button,input,select){font-family:inherit}
+
+/* b342: PIP 빠른 수익 기록 칸 */
+.ar-pipsale{margin-top:8px;padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.ar-psh{display:flex;justify-content:space-between;color:#ffe14d;font-weight:700}
+.ar-psi{display:flex;align-items:center;gap:8px}.ar-psi .rvico img{width:28px;height:28px}.ar-psb{margin-left:auto;font-size:12px}
+.ar-psin{display:flex;align-items:center;gap:6px}.ar-psin input{flex:1;min-width:0}
+.ar-pipsale .rvfee{display:flex;flex-direction:column;gap:4px}
+.ar-psbtn{display:flex;gap:8px}.ar-psbtn .btn{flex:1}
+.ar-pserr:empty,.ar-psram:empty{display:none}
