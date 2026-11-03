@@ -2,6 +2,14 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b347 (t651) PIP 위치 안내 없앰 + 창 높이 최소화 (630 → 286)
+- 위치 안내(.ar-piphint '메이플 창 오른쪽 가운데로 끌어 두세요 x≈…' + [확인]) 와 arPipHint 삭제. arPipPlace 의 moveTo 시도·ARX.pipPos 계산은 그대로(막혀도 아무 표시 없음). 자동 열기·만료 시 [PIP 창 열기] 한 번 클릭 안내(#arPipAsk)·기존 PIP 버튼 그대로.
+- 크기: 처음 크기 = 최소 크기 = 320×286 (AR_PIP_H, 예전 카드높이+230+250 ≈ 630). 크게는 자유, 작게는 arPipMin 이 되돌림(b341 그대로).
+- 배치(extra.css body.arpipw, arPipStyles 가 PIP body 에 붙임 — 페이지 쪽 모양은 안 바뀜): body = 100vh 세로 flex, 상태 칸(보상 맵 인식) 촘촘하게 flex:none, 아래 한 칸이 남은 높이를 씀. 득템 목록(.ar-prl)은 그 칸 안에서 스크롤(줄 높이 ~20px).
+- 수익 기록/반지·칠흑 고르기 칸(.ar-pipsale)이 떠 있는 동안 body.ps-on → 득템 목록 칸 숨기고 그 자리 사용(arPipSale 에서 토글, DOM 순서는 그대로 piprec 뒤). 넘치면 그 칸만 스크롤(칠흑 상자 고르기·2인 수익 칸 = 286 에서 딱 맞음).
+- 글꼴·여백·아이콘(득템 16px, 수익 22px, 고르기 20px)·수수료 버튼 작게.
+- 테스트: test_b347_pipshort(새, pip_idle.png·pip_sale.png), b346(320×286, 안내 없음, 모니터 y=377), b341(320×286) 갱신. 스크린샷 /workspace/t651/.
+
 ## b346 (t650) PIP 기본으로 열기 + 메이플 창 오른쪽 가운데 위치
 - arConnect: 화면 공유 성공 → arStart 뒤 arPipAuto(). navigator.userActivation.isActive(확인 클릭의 사용자 동작이 공유 창 고르는 동안 남아 있음)면 바로 arPipOpen. 만료(공유 창에서 5초 넘게 고름)·실패면 #arPipAsk(오른쪽 가운데 초록 네온 안내, [PIP 창 열기] 한 번 클릭) — PIP 열리면 숨김. 기존 PIP 버튼 그대로.
 - arPipTarget(W,H): track.getSettings() width/height ÷ devicePixelRatio = 메이플 창 CSS 크기(화면보다 크면 자름). displaySurface='monitor'(또는 화면 크기와 같음) = screen.availLeft/Top 부터, 'window' = 창 위치를 알 수 없어 화면 가운데에 있다고 가정(window.screenX/Y 는 브라우저 창이라 안 씀). x=왼쪽+폭-PIP폭, y=위+(높이-PIP높이)/2, 화면 안으로 자름. ARX.pipPos 에 저장.

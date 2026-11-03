@@ -32,11 +32,11 @@ try:
     m=pg.evaluate("()=>[window.AR.pip.minW,window.AR.pip.minH]"); T=pg.evaluate("()=>window.AR.pipPos"); mv=pg.evaluate("()=>window.__mv")
     # 1366x768 창 공유(dpr 1), 화면 1920x1040 가운데 가정 → 창 x 277..1643, y 136..904
     ex=277+1366-m[0]; ey=round(136+(768-m[1])/2)
-    check('최소 크기 유지(≥320×630 근처)',m[0]>=320 and m[1]>=600,m)
+    check('최소 크기 = b347 짧은 창(320×286)',m==[320,286],m)
     check('목표 = 메이플 창 오른쪽 가운데',T['gw']==1366 and T['gh']==768 and abs(T['x']-ex)<=1 and abs(T['y']-max(0,ey))<=1,(T,ex,ey))
     check('moveTo 시도함',mv==[T['x'],T['y']],mv)
     pg.wait_for_timeout(300)
-    check('moveTo 막힘 → PIP 안 위치 안내',pg.evaluate("()=>!!document.getElementById('fakePip').contentDocument.querySelector('.ar-piphint')"))
+    check('moveTo 막혀도 위치 안내 없음(b347)',pg.evaluate("()=>!document.getElementById('fakePip').contentDocument.querySelector('.ar-piphint')"))
     f=pg.locator('#fakePip').bounding_box(); pg.screenshot(path=os.path.join(OUT,'pip_auto.png'),clip={'x':f['x']-10,'y':0,'width':f['width']+20,'height':f['y']+f['height']+10})
     pg.evaluate("()=>arPipClose()"); pg.wait_for_timeout(200)
     pg.locator('#arPanel .ar-cboss .ar-pipb').click(); pg.wait_for_timeout(400)
@@ -49,8 +49,8 @@ try:
     pg.locator('#arPipAsk [data-pa="ok"]').click(); pg.wait_for_timeout(500)
     check('안내 클릭 → PIP 열리고 안내 사라짐',pg.evaluate("()=>!!window.AR.pip&&document.getElementById('arPipAsk').hidden"))
     # 모니터 공유 1920x1080 @ dpr 1 → x = 1920-W, 가운데
-    T2=pg.evaluate("()=>{ window.AR.stream.getVideoTracks()[0].getSettings=()=>({width:1920,height:1080,displaySurface:'monitor'}); return arPipTarget(320,630); }")
-    check('모니터 공유: 화면 오른쪽 가운데',T2['x']==1600 and T2['y']==205,T2)
+    T2=pg.evaluate("()=>{ window.AR.stream.getVideoTracks()[0].getSettings=()=>({width:1920,height:1080,displaySurface:'monitor'}); return arPipTarget(320,286); }")
+    check('모니터 공유: 화면 오른쪽 가운데',T2['x']==1600 and T2['y']==377,T2)
     pg.evaluate("()=>arDisconnect()"); b.close()
 finally:
   srv.terminate()

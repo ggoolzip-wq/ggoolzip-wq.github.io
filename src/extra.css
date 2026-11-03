@@ -2243,3 +2243,30 @@ html body .calmr{grid-template-columns:24px minmax(0,30%) 78px minmax(0,20%) min
 [data-theme=light] .ar-pipask{background:#f3fff7;color:#0a3a1c;border-color:#0fbf50}
 [data-theme=light] .ar-pipask b{color:#0a6b2e}
 @keyframes arPipPulse{50%{box-shadow:0 0 12px rgba(57,255,122,1),0 0 40px rgba(24,240,96,.6)}}
+
+/* b347: PIP 창 짧게 — 위치 안내 없앰, PIP 안(.arpipw)만 촘촘하게. 창 높이 = 상태 칸 + 아래 한 칸(득템 목록 ↔ 수익 기록/고르기, 넘치면 그 칸만 스크롤) */
+body.arpipw{padding:4px!important;height:100vh;display:flex;flex-direction:column;gap:4px;overflow:hidden;font-size:13px}
+.arpipw .ar-inpip{flex:none;padding:5px 9px 6px!important;border-radius:10px}
+.arpipw .ar-inpip h2{font-size:.82rem;margin:0 0 1px;line-height:1.2}
+.arpipw .ar-inpip h2 .ar-pipb{padding:1px 8px;font-size:.7rem;min-height:0}
+.arpipw .ar-inpip .ar-b{min-height:0}
+.arpipw .ar-inpip .ar-bst{font-size:.72rem;margin:0}
+.arpipw .ar-inpip .ar-big{font-size:1.05rem;line-height:1.2;margin:1px 0 0;gap:5px}
+.arpipw .ar-inpip .ar-big img{max-height:24px;width:auto}
+.arpipw .ar-piprec,.arpipw .ar-pipsale{margin:0!important;flex:1 1 auto;min-height:0;padding:5px 8px!important;border-radius:10px}
+.arpipw .ar-piprec{display:flex;flex-direction:column}
+.arpipw.ps-on .ar-piprec{display:none}
+.arpipw .ar-prh{font-size:.78rem;margin-bottom:3px}
+.arpipw .ar-prl{max-height:none;flex:1 1 0;min-height:0;gap:2px}
+.arpipw .ar-prl li{font-size:.72rem;padding:1px 5px;gap:4px;border-radius:6px}.arpipw .ar-prl li img{width:16px;height:16px}
+.arpipw .ar-prc{font-size:.68rem}.arpipw .ar-pre{font-size:.72rem}
+.arpipw .ar-pipsale{overflow-y:auto;gap:4px;font-size:.78rem;scrollbar-width:thin}
+.arpipw .ar-psh{font-size:.8rem}
+.arpipw .ar-psi{gap:6px}.arpipw .ar-psi .rvico img{width:22px;height:22px}.arpipw .ar-psb{font-size:11px}
+.arpipw .ar-psin input{padding:3px 8px;font-size:.88rem;border-radius:7px}
+.arpipw .ar-pipsale .rvfee{gap:2px}
+.arpipw .rvfrow{font-size:.72rem;gap:4px;justify-content:flex-start}.arpipw .rvfbtn{padding:1px 6px;min-width:34px;font-size:.7rem;border-radius:6px}
+.arpipw .ar-psbtn{gap:6px}.arpipw .ar-psbtn .btn{padding:4px 0;font-size:.78rem;min-height:0}
+.arpipw .ram{font-size:.66rem}
+.arpipw .ar-pkg{gap:3px}
+.arpipw .ar-pko{padding:2px 4px;gap:4px;font-size:10.5px;border-radius:7px}.arpipw .ar-pko img{width:20px;height:20px}.arpipw .ar-pko .ricx{width:20px;font-size:14px}
