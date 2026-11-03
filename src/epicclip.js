@@ -50,7 +50,7 @@ function ecCtx(now){ if(typeof ARX==='undefined'||!ARX.det||!ARX.det.boss) retur
   return rew?{boss:ARX.det.boss,diff:ARX.det.diff||(ARX.mapSt&&ARX.mapSt.diff)||''}:null; } /* 보스 보상 맵(보상 인식 중)에서만 — 전투 중 흰 섬광 오감지 방지 */
 function ecGrid(px,W,H){ const gr=new Float32Array(576), n=new Float32Array(576); for(let y=0;y<H;y++){ const cy=Math.min(17,(y*18/H)|0); for(let x=0;x<W;x++){ const k=(y*W+x)*4, c=cy*32+Math.min(31,(x*32/W)|0); gr[c]+=px[k]*.3+px[k+1]*.59+px[k+2]*.11; n[c]++; } }
   for(let i=0;i<576;i++) gr[i]/=n[i]||1; return gr; }
-function ecTick(){ const v=typeof ARX!=='undefined'&&(ARX.video||ARX.testSrc); if(!v||!(v.videoWidth||v.width)){ if(EC.buf.length){ EC.buf=[]; EC.h=[]; EC.log=[]; EC.ph=[]; EC.pl=[]; } return; }
+function ecTick(){ const v=typeof ARX!=='undefined'&&(ARX.video?(typeof arSrc==='function'?arSrc():ARX.video):ARX.testSrc); /* b366 */ if(!v||!(v.videoWidth||v.width)){ if(EC.buf.length){ EC.buf=[]; EC.h=[]; EC.log=[]; EC.ph=[]; EC.pl=[]; } return; }
   const C=EC.cfg, vw=v.videoWidth||v.width, vh=v.videoHeight||v.height, now=Date.now(), vt=+(v.currentTime||0);
   const H=Math.min(C.H,vh), W=Math.round(H*vw/vh); if(!EC.cv){ EC.cv=document.createElement('canvas'); EC.sm=document.createElement('canvas'); EC.sm.width=32; EC.sm.height=18; }
   const cv=EC.cv; if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
