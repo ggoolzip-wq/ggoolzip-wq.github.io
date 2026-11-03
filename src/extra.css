@@ -2177,3 +2177,8 @@ html body .calcard .calhd h2.calti{margin:0!important;padding:0!important;border
 [data-theme=light] .ar-prh{color:#1b8a45;text-shadow:none}[data-theme=light] .ar-prl li{background:#f4fff7;border-color:rgba(27,138,69,.25)}
 
 /* b336 */.calap{font-style:normal;font-size:.72em;opacity:.75;margin-right:2px;color:var(--n1)}[data-theme=light] .calap{color:#4b4fd6}
+/* b337(t642): '캘린더' 탭만 노랑 네온(자동 기록 빨강과 같은 방식, 색 변수만) */
+html body nav.tabs button[data-tab=cal]{--nb1:#ffd23c;--nb2:#ffab1f;--nbtx:#fff6d6}
+[data-theme] body nav.tabs button[data-tab=cal].on,html body nav.tabs button[data-tab=cal].on{color:#fff4cc!important}
+[data-theme=light] body nav.tabs button[data-tab=cal]{--nb1:#e0a800;--nb2:#d47f00;--nbtx:#5c3e00}
+[data-theme=light] body nav.tabs button[data-tab=cal].on{color:#6b4600!important}

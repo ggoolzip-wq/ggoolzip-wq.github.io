@@ -1,4 +1,4 @@
-# test_b334 (t639): '분석 캘린더' 탭 — 득템 분석 오른쪽, 오늘 칸에 늘어난 수익·아이템, +N개 더, 달 이동, 날짜 상세, 키 지운 캐릭터 제외. MBT_SHOTDIR 에 calendar.png / calendar_detail.png
+# test_b334 (t639): '캘린더' 탭 — 득템 분석 오른쪽, 오늘 칸에 늘어난 수익·아이템, +N개 더, 달 이동, 날짜 상세, 키 지운 캐릭터 제외. MBT_SHOTDIR 에 calendar.png / calendar_detail.png
 import os, sys, tempfile, shutil, subprocess
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _tutil
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); OUT=os.environ.get('MBT_SHOTDIR') or os.path.join(ROOT,'tests','out'); os.makedirs(OUT,exist_ok=True)
@@ -22,7 +22,7 @@ try:
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800)
     tabs=pg.evaluate("()=>[...document.querySelectorAll('#tabs button')].map(b=>b.dataset.tab)")
-    check('분석 캘린더 탭 = 득템 분석 바로 오른쪽',tabs[tabs.index('loot')+1]=='cal' and pg.locator('#tabs [data-tab=cal]').inner_text()=='분석 캘린더',tabs)
+    check('분석 캘린더 탭 = 득템 분석 바로 오른쪽',tabs[tabs.index('loot')+1]=='cal' and pg.locator('#tabs [data-tab=cal]').inner_text()=='캘린더',tabs)
     pg.evaluate(SETUP); pg.wait_for_timeout(200)
     pg.locator('#tabs [data-tab=cal]').click(); pg.wait_for_timeout(300)
     today=pg.evaluate("dayId(Date.now())")
