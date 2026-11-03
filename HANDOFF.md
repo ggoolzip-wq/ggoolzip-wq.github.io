@@ -2,6 +2,14 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b359 (t672) 다른 탭(캘린더 등)에 있어도 보스 득템 자동 인식·PIP 갱신
+
+- 증상: PIP 를 띄워도 '보스 득템 자동 기록' 탭을 떠나면 인식이 멈춘 것처럼 보임.
+- 원인: ① PIP 내용(캐릭터 줄·보상 맵·보유 메소·이번 라이브 득템 목록)은 arPanelLive 에서만 그렸는데 첫 줄이 `#arPanel` 없으면 return → 다른 탭이면 PIP 가 그대로 멈춤(인식·기록 자체는 돌고 있었음). 0.2초 uiTimer→arLivePaint 도 #arPanel 없으면 return. ② 배너·공중 감시는 requestVideoFrameCallback 에만 묶여 있어 브라우저 탭이 뒤로 가면 1회/초(측정 21→1/s). ③ setInterval 시계는 크롬 숨은 탭에서 1초 1번(오래되면 1분 1번)으로 묶임. ④ 숨은 video 가 left:-9999px·opacity 0 → 그리기 생략 대상.
+- 고침(autorec.js, arStart/arDisconnect·arPanelLive 머리·숨은 video 한 줄만): arTick/arUntick = Worker 안 setInterval→postMessage 시계(숨은 탭에서도 안 묶임, Worker 못 만들면 setInterval). 이름·맵·프레임·상자·로그·성능·PIP 갱신(uiTick 0.2초) 모두 arTick. rVFC 는 그대로 쓰되 0.25초 넘게 안 오면 Worker 시계(watchFps)로 배너·공중·아이템 감시 대신. arPipLive() = #arPanel 없어도 PIP 만 갱신(arPanelLive(div,pipOnly)). 숨은 video = 화면 안 left:0 2px opacity .01 z-index -1, data-arsrc.
+- 측정(/workspace/t672 probe.py, 헤드 크롬+xvfb, 백그라운드 억제 플래그 끔): 이름·맵 10/s·상자 12.5/s 는 대시보드/캘린더/뒤 탭 모두 유지. 배너·공중 감시 뒤 탭 1/s → 24/s. PIP 캐릭터 줄: 캘린더 탭에서 전 '인식 중…'(멈춤) → 후 '트딕이 Lv.285'. 그림 tick_rates.png, pip_compare.png.
+- 테스트: tests/test_b359_bgtab.py (Worker 시계·video 화면 안·캘린더 탭 루프 속도·캘린더 탭 득템 → PIP 목록 1개·닉네임 유지·rVFC 멈춤 시 대신 감시·끊으면 시계 정리).
+
 ## b358 (t659) 미트라의 분노 상자 등 공중에서 도는 아이템 인식 — 결정·큐브 외 키 공중 검사 경량화 + 각도 정밀 보정
 
 - 원인: 결정·큐브(REWX) 외 키(미트라 상자·백옥·안대…)의 공중 전체 검사가 10도×36방향×크기 2개라 느린 PC에서 1회 1.5~2.6초 → 0.83초 회전 중 검사 2번. 또 대략 찾기 상위 8개만 정밀 확인해서 빛무리·옆 아이템에 밀려 진짜 상자가 탈락 → 회전 26프레임 중 4프레임만 .73 통과. 바닥 검사는 0도뿐이라 착지 후(10.78s)에야 인식.
@@ -9,6 +17,7 @@
 - 측정(t659, 30fps 26프레임, 정답 추적 기준): 4/26 → 11/26 프레임, 오검출 0, 스캔 293 → 131ms(ko 부분). 기준 영상 21개+미트라 1.5fps 전체 프레임(tools feval): 인식 1 → 3 (미트라 회전 추가), 오검출 0 → 0, 백옥 v2 유지, 데미안 안대 오탐 0.
 - 테스트: tests/test_b358_koair.py (+fixtures/b358: 회전 프레임 3장·착지 후 1장, 예전 설정은 놓침 확인).
 - 남은 것: 공중 밴드(y≤.72) 아래로 떨어지는 마지막 ~0.15초는 여전히 공중 검사 밖. 과부하 상태라 실시간 harness 첫 인식 시간 비교는 못 함.
+
 ## b357 (t660) 득템 축하 연출(에픽빔+불꽃·꽃가루) 끊김 없애기
 
 - 측정: CDP 트레이스 + rAF 프레임 로거(1600x900, headless=new, CPU 1x/4x, 5회). 도구·결과·그래프 /workspace/t660 (prof.py, trace.py, chart.py, before/after/compare.png, anim.png).
