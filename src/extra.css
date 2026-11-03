@@ -2233,3 +2233,13 @@ nav.tabs button[data-tab=cal] .calico{display:inline-block;vertical-align:-3px;m
 html body .calmr{grid-template-columns:24px minmax(0,30%) 78px minmax(0,20%) minmax(0,15%) minmax(0,1fr)!important}
 .calmr>.calmrt{font-variant-numeric:tabular-nums;opacity:.85;font-size:.8rem;white-space:nowrap}
 .calml-day{margin-top:10px}
+
+/* b346: 화면 공유 뒤 PIP 한 번 클릭 안내 (사용자 동작이 만료됐을 때) */
+.ar-pipask[hidden]{display:none!important}
+.ar-pipask{position:fixed;right:24px;top:50%;transform:translateY(-50%);z-index:10050;width:300px;display:flex;flex-direction:column;gap:10px;padding:16px 18px;border-radius:14px;background:rgba(10,20,14,.96);color:#e8fff0;border:2px solid #39ff7a;box-shadow:0 0 8px rgba(57,255,122,.8),0 0 28px rgba(24,240,96,.45);font-size:.9rem;animation:arPipPulse 1.6s ease-in-out infinite}
+.ar-pipask b{font-size:1.05rem;color:#bfffd6}
+.ar-pipask .btn.primary{font-size:1rem;padding:10px 0}
+.ar-pipask .ar-x{position:absolute;right:8px;top:6px}
+[data-theme=light] .ar-pipask{background:#f3fff7;color:#0a3a1c;border-color:#0fbf50}
+[data-theme=light] .ar-pipask b{color:#0a6b2e}
+@keyframes arPipPulse{50%{box-shadow:0 0 12px rgba(57,255,122,1),0 0 40px rgba(24,240,96,.6)}}

@@ -567,7 +567,7 @@ async function arConnect(){ if(arLive()) return arPanel(true); if(ARX.stream||AR
     if(e&&(e.name==='OverconstrainedError'||e.name==='TypeError')){ try{ ARX.stream=await md.getDisplayMedia({video:true,audio:false}); }catch(e2){ e=e2; } }
     if(!ARX.stream){ ARX.connErr=e?.name==='NotAllowedError'?'화면 공유가 취소됐거나 브라우저·윈도우 설정에서 막혀 있어요. (다시 눌러 주세요)':`화면 공유 실패: ${e?.name||''} ${e?.message||e}`; console.warn('[화면 공유]',e); arPanel(true); return; } }
   try{ const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.style.cssText='position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none'; document.body.appendChild(v); v.srcObject=ARX.stream; v.play().catch(()=>{});
-    ARX.stream.getVideoTracks()[0]?.addEventListener('ended',arDisconnect); arStart(v); }
+    ARX.stream.getVideoTracks()[0]?.addEventListener('ended',arDisconnect); arStart(v); try{ arPipAuto(); }catch(e){} }
   catch(e){ console.warn('[분석 시작 실패 → 메인 스레드로]',e); try{ ARX.wkOff=String(e); try{ ARX.wk?.terminate(); }catch(_){ } ARX.wk=null; arStart(ARX.video||document.querySelector('video[style*="-9999px"]')); }catch(e2){ ARX.connErr='분석 시작 실패: '+(e2?.message||e2); try{ arDisconnect(); }catch(_){ } arPanel(true); } } }
 /* b294: 상태바 이름 빠른 감시 — 0.2초마다 이름 영역 축소본(96x12)만 비교, 바뀌었거나(캐릭터 접속·변경) 아직 못 읽었으면 바로 OCR 1번.
    예전: 맵+이름 OCR 을 3초(ocrEvery)마다 한 번, 보스·아이템 처리 뒤에 → 접속 후 이름 인식까지 7~9초 */
@@ -1107,7 +1107,7 @@ async function arPipOpen(cb){ cb=cb||arPipCard(); if(!cb||ARX.pip) return false;
   if(m) m.hidden=true; arPipStyles(document,w.document); const ph=document.createElement('div'); ph.className='ar-pipph card ar-c ar-cboss-ph'; ph.style.cssText='grid-column:1;grid-row:2;display:flex;align-items:center;justify-content:center;opacity:.6;min-height:'+(cb.offsetHeight||120)+'px'; ph.innerHTML='<span class="muted">PIP 창에 표시 중 · <button type="button" class="btn sm ar-pipback">되돌리기</button></span>';
   cb.replaceWith(ph); ph.querySelector('.ar-pipback').onclick=()=>arPipClose(); w.document.body.append(cb); cb.classList.add('ar-inpip');
   const b=cb.querySelector('.ar-pipb'); if(b){ b.textContent='닫기'; b.title='PIP 창 닫고 페이지로 되돌리기'; }
-  ARX.pip={win:w,card:cb,ph,minW:W0,minH:H0}; arPipMinCss(w.document,W0,H0); w.addEventListener('resize',()=>arPipMin(w,W0,H0)); w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); arFitBoss(); return true; }
+  ARX.pip={win:w,card:cb,ph,minW:W0,minH:H0}; arPipMinCss(w.document,W0,H0); w.addEventListener('resize',()=>arPipMin(w,W0,H0)); w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); arFitBoss(); arPipAskHide(); arPipPlace(w,W0,H0); return true; }
 /* b341: Document PiP 는 최소 크기를 못 정함 → resize 때 더 작아지면 처음 크기로 resizeTo (안 되는 환경이면 CSS 최소 크기 = 줄지 않고 스크롤) */
 const AR_PIP_SALE_H=250;
 function arPipMinCss(d,W,H){ const st=d.createElement('style'); st.className='ar-pipmin'; st.textContent=`html,body{min-width:${W}px;min-height:${H}px}`; d.head.append(st); }
@@ -1118,3 +1118,32 @@ function arPipStyles(src,dst){ const d=dst.documentElement, s=src.documentElemen
 function arPipBack(){ const P=ARX.pip; if(!P) return; ARX.pip=null; const cb=P.card; cb.classList.remove('ar-inpip'); const b=cb.querySelector('.ar-pipb'); if(b){ b.textContent='PIP'; b.title='작은 창으로 항상 맨 위에 띄우기 (크롬/엣지 116+)'; }
   if(P.ph&&P.ph.isConnected) P.ph.replaceWith(cb); else { const g=document.querySelector('#arPanel .ar-g'); if(g) g.append(cb); } try{ arPanelLive(); }catch(e){} }
 function arPipClose(){ const P=ARX.pip; if(!P) return; try{ P.win.close(); }catch(e){} arPipBack(); }
+
+/* b346: 화면 공유 시작하면 PIP 기본으로 열기 + 메이플 창 오른쪽 가운데 위치.
+ * 1) 공유 고르는 동안 클릭의 사용자 동작(약 5초)이 남아 있으면 바로 requestWindow, 없으면(공유 창에서 오래 고름) 눈에 띄는 한 번 클릭 안내(#arPipAsk).
+ * 2) 위치: 공유 해상도(track settings width/height, 실제 픽셀) ÷ devicePixelRatio = 메이플 창 CSS 크기. 모니터 공유 = 그 화면(screen.availLeft/Top) 왼쪽 위부터,
+ *    창 공유 = 창 위치를 알 수 없어 화면 가운데에 있다고 가정. 목표 x = 왼쪽+폭-PIP폭, y = 위+(높이-PIP높이)/2 (화면 안으로 자름).
+ * 3) 크롬은 Document PiP 의 moveTo/moveBy 를 막아 둠(스펙 3.2.1, 위치 옵션 없음). 그래도 moveTo 시도 → 안 움직이면 PIP 안에 '여기로 끌어 두세요' 안내 한 번.
+ *    preferInitialWindowPlacement 를 안 쓰므로 크롬이 사용자가 끌어 둔 마지막 위치·크기를 다음에 다시 씀. */
+function arPipTarget(W,H){ const t=ARX.stream?.getVideoTracks?.()[0], st=(t&&t.getSettings&&t.getSettings())||{}, dpr=window.devicePixelRatio||1, sc=window.screen||{};
+  const aL=+sc.availLeft||0, aT=+sc.availTop||0, aW=+sc.availWidth||innerWidth, aH=+sc.availHeight||innerHeight;
+  let gw=(+st.width||ARX.video?.videoWidth||aW*dpr)/dpr, gh=(+st.height||ARX.video?.videoHeight||aH*dpr)/dpr; gw=Math.min(gw,aW); gh=Math.min(gh,aH);
+  const mon=st.displaySurface==='monitor'||(Math.abs(gw-aW)<2&&gh>=aH-2), gx=mon?aL:aL+(aW-gw)/2, gy=mon?aT:aT+(aH-gh)/2;
+  const x=Math.round(Math.max(aL,Math.min(aL+aW-W,gx+gw-W))), y=Math.round(Math.max(aT,Math.min(aT+aH-H,gy+(gh-H)/2)));
+  return {x,y,gx:Math.round(gx),gy:Math.round(gy),gw:Math.round(gw),gh:Math.round(gh),surf:st.displaySurface||(mon?'monitor':'window')}; }
+function arPipPlace(w,W,H){ const ow=Math.max(W,w.outerWidth||W), oh=Math.max(H,w.outerHeight||H), T=arPipTarget(ow,oh); 
+  try{ w.moveTo(T.x,T.y); }catch(e){} ARX.pipPos=T;
+  setTimeout(()=>{ if(ARX.pip?.win!==w) return; const ok=Math.abs((w.screenX||0)-T.x)<4&&Math.abs((w.screenY||0)-T.y)<4; T.moved=ok; if(!ok) arPipHint(w,T); },120); return T; }
+function arPipHint(w,T){ let k='arPipHint1'; try{ if(localStorage.getItem(k)) return; }catch(e){} const d=w.document, h=d.createElement('div'); h.className='ar-piphint';
+  h.innerHTML=`<span>이 창을 메이플 창 <b>오른쪽 가운데</b>로 끌어 두세요 (화면 x≈${T.x}, y≈${T.y}). 크롬은 사이트가 PIP 위치를 못 정해요 — 한 번 옮기면 다음부터 그 자리에 열려요.</span><button type="button" class="btn sm" style="white-space:nowrap;flex:none">확인</button>`;
+  h.style.cssText='font-size:.72rem;line-height:1.35;color:#ffd42a;border:1px solid #ffd42a;border-radius:8px;padding:6px 8px;margin:0 0 6px;display:flex;gap:6px;align-items:center';
+  h.querySelector('button').onclick=()=>{ h.remove(); try{ localStorage.setItem(k,'1'); }catch(e){} }; d.body.prepend(h); }
+function arPipAskHide(){ const a=document.getElementById('arPipAsk'); if(a) a.hidden=true; }
+function arPipAsk(){ let a=document.getElementById('arPipAsk'); if(!a){ a=document.createElement('div'); a.id='arPipAsk'; a.className='ar-pipask'; a.setAttribute('role','dialog');
+    a.innerHTML='<b>PIP 창 띄우기</b><span>게임 위에 항상 떠 있는 작은 창으로 득템·수익을 기록해요.</span><button type="button" class="btn primary" data-pa="ok">PIP 창 열기</button><button type="button" class="ar-x" data-pa="x" aria-label="닫기">✕</button>';
+    a.addEventListener('click',e=>{ if(e.target.closest('[data-pa="ok"]')){ arPipOpen(arPipCard()).then(ok=>{ if(ok) a.hidden=true; }); } else if(e.target.closest('[data-pa="x"]')) a.hidden=true; }); document.body.appendChild(a); }
+  a.hidden=false; return a; }
+async function arPipAuto(){ if(ARX.pip||!arPipOk()) return 'skip'; const cb=arPipCard(); const act=navigator.userActivation; ARX.pipAuto=act?(act.isActive?'gesture':'expired'):'unknown';
+  if(cb&&(!act||act.isActive)){ if(await arPipOpen(cb)) return 'open'; }
+  arPipAsk(); return 'ask'; }
+window.arPipAuto=arPipAuto; window.arPipTarget=arPipTarget; window.arPipOpen=arPipOpen;

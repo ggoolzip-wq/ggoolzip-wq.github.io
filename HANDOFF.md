@@ -2,6 +2,13 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b346 (t650) PIP 기본으로 열기 + 메이플 창 오른쪽 가운데 위치
+- arConnect: 화면 공유 성공 → arStart 뒤 arPipAuto(). navigator.userActivation.isActive(확인 클릭의 사용자 동작이 공유 창 고르는 동안 남아 있음)면 바로 arPipOpen. 만료(공유 창에서 5초 넘게 고름)·실패면 #arPipAsk(오른쪽 가운데 초록 네온 안내, [PIP 창 열기] 한 번 클릭) — PIP 열리면 숨김. 기존 PIP 버튼 그대로.
+- arPipTarget(W,H): track.getSettings() width/height ÷ devicePixelRatio = 메이플 창 CSS 크기(화면보다 크면 자름). displaySurface='monitor'(또는 화면 크기와 같음) = screen.availLeft/Top 부터, 'window' = 창 위치를 알 수 없어 화면 가운데에 있다고 가정(window.screenX/Y 는 브라우저 창이라 안 씀). x=왼쪽+폭-PIP폭, y=위+(높이-PIP높이)/2, 화면 안으로 자름. ARX.pipPos 에 저장.
+- arPipPlace: 열린 뒤 w.moveTo(x,y) 시도 → 120ms 뒤 screenX/Y 가 안 맞으면 PIP 맨 위 안내(.ar-piphint, '오른쪽 가운데로 끌어 두세요 x≈,y≈', [확인] = localStorage arPipHint1 로 다시 안 보임).
+- **브라우저 한계**: Document PiP 스펙 3.2.1 + 크롬 = moveTo/moveBy 막음, requestWindow 에 x/y 옵션 없음(WICG issue #34). 그래서 사이트가 위치를 정할 수 없음. preferInitialWindowPlacement 를 안 쓰므로 크롬이 사용자가 마지막에 끌어 둔 위치·크기를 다음에 다시 씀 = 한 번 옮기면 그 자리. 크기·최소 크기(b341 320×630 정도)는 그대로, 끌기 자유.
+- 테스트 tests/test_b346_pipauto.py (가짜 PiP iframe·userActivation·getDisplayMedia 1366×768 창/1920×1080 모니터). 스크린샷 /workspace/t650/pip_auto.png, pip_ask.png.
+
 ## b345 (t649) 캘린더 v3: 탭 아이콘·이번 달 기본 선택·목록 날짜/시간
 - body.html: 캘린더 탭 버튼 앞 인라인 SVG(.calico, 노랑 네온 drop-shadow).
 - app.js: 캘린더 탭 진입 시 calMon=null·calDef=0 → renderCal 이 calSel='M:'+calMon 로 '이번 달 합계' 기본 눌림.
