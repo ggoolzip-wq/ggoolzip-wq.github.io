@@ -8366,7 +8366,7 @@ function ecOnRec(k,bn,cn){ const now=Date.now(), b=(typeof BOSSES!=='undefined'?
 const ECC={st:'',busy:false,again:false,last:0,tok:'',pull:0};
 const EC_MAXUP=2*1024*1024;
 const ecApi=()=>{ try{ return typeof SV_ON!=='undefined'&&SV_ON&&typeof svTok==='function'&&svTok()?SV_ON:''; }catch(e){ return ''; } };
-function ecCloudTxt(){ return {ok:'☁ 서버에 저장 — 같은 넥슨 키로 로그인하면 다른 PC 에서도 보여요',off:'💾 이 PC 에만 저장 (서버 클립 저장소 준비 중)',nolog:'💾 이 PC 에만 저장 — 로그인하면 서버에도 올려요',net:'💾 오프라인 — 다시 연결되면 올려요'}[ECC.st]||'💾 이 PC 에 저장'; }
+function ecCloudTxt(){ return {ok:'',off:'💾 이 PC 에만 저장 (서버 클립 저장소 준비 중)',nolog:'💾 이 PC 에만 저장 — 로그인하면 서버에도 올려요',net:'💾 오프라인 — 다시 연결되면 올려요'}[ECC.st] ?? '💾 이 PC 에 저장'; } /* b356: 서버 저장(ok) 안내 문구 없앰 — 카드 ☁ 배지만 */
 function ecBadge(m){ return m.remote&&!m.poster?'':(m.up===1?'<span class="ecup on" title="서버에 저장됨">☁</span>':m.up===-1?'<span class="ecup bad" title="너무 커서 이 PC 에만">💾</span>':'<span class="ecup" title="서버에 올릴 예정">⏳</span>'); }
 async function ecPack(F){ const bufs=await Promise.all(F.f.map(b=>b.arrayBuffer())), hd=new TextEncoder().encode(JSON.stringify({ts:F.ts,vt:F.vt,sz:bufs.map(b=>b.byteLength)})), h=new Uint8Array(8);
   h.set([69,67,66,49]); new DataView(h.buffer).setUint32(4,hd.length,true); return new Blob([h,hd,...bufs],{type:'application/octet-stream'}); }
@@ -8414,7 +8414,7 @@ async function renderEpic(){ const v=$('#view'); if(!v) return; let L=[]; ecSync
   if(typeof tab!=='undefined'&&tab!=='epic') return;
   const P=EC.cfg.per, np=Math.max(1,Math.ceil(L.length/P)); EC.page=Math.min(Math.max(0,EC.page),np-1); const pg=L.slice(EC.page*P,EC.page*P+P);
   const live=typeof arLive==='function'&&arLive();
-  v.innerHTML=`<div class="card ecwrap"><div class="echd"><h2><img class="ecico" src="${EC_ICON}" alt="">에픽빔 기록지</h2><span class="ecsub">보상 맵에서 에픽빔이 뜨면 처음 보인 순간 1초 전부터 4초를 저장해요 · ${L.length}개</span><span class="eccloud ${ECC.st}">${ecCloudTxt()}</span><span class="ecst ${live?'on':''}">${live?'● 화면 공유 감시 중':'○ 자동 기록 탭에서 화면 공유를 연결하면 감시해요'}</span></div>
+  v.innerHTML=`<div class="card ecwrap"><div class="echd"><h2><img class="ecico" src="${EC_ICON}" alt="">에픽빔 기록지</h2><span class="ecsub">보상 맵에서 에픽빔이 뜨면 처음 보인 순간 1초 전부터 4초를 저장해요 · ${L.length}개</span>${ecCloudTxt()?`<span class="eccloud ${ECC.st}">${ecCloudTxt()}</span>`:''}<span class="ecst ${live?'on':''}">${live?'● 화면 공유 감시 중':'○ 자동 기록 탭에서 화면 공유를 연결하면 감시해요'}</span></div>
   ${L.length?`<div class="ecgrid">${pg.map(ecCard).join('')}</div>`:'<div class="ecempty">아직 저장된 에픽빔 영상이 없어요.</div>'}
   ${np>1?`<div class="ecpg">${Array.from({length:np},(_,i)=>`<button type="button" class="ecpb${i===EC.page?' on':''}" data-ecpg="${i}">${i+1}</button>`).join('')}</div>`:''}</div>`;
   ecPosters(pg.filter(m=>!m.poster&&m.remote)); }

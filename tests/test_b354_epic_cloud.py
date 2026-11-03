@@ -21,7 +21,7 @@ NP, WP = _tutil.free_port(), _tutil.free_port()
 K=lambda x:f'live_KEY_{x}_0123456789abcdef'
 MN.start(NP); MN.KEYS[K('EA')]=['acc-b354c-A']; MN.KEYS[K('EA2')]=['acc-b354c-A']
 cfg=os.path.join(cf_dev.SERVER,'.wrangler-b354c-%d.toml'%os.getpid())
-open(cfg,'w').write(open(os.path.join(cf_dev.SERVER,'wrangler.toml')).read().replace('[vars]','[[r2_buckets]]\nbinding = "EPIC"\nbucket_name = "bossmaple-epic"\n\n[vars]',1))
+open(cfg,'w').write(open(os.path.join(cf_dev.SERVER,'wrangler.toml')).read().replace('\n[[r2_buckets]]\nbinding = "EPIC"\nbucket_name = "bossmaple-epic"\n','\n').replace('[vars]','[[r2_buckets]]\nbinding = "EPIC"\nbucket_name = "bossmaple-epic"\n\n[vars]',1))
 API=f'http://127.0.0.1:{WP}'
 SETUP="""()=>{ const all={}; for(const b of BOSSES) all[b.id]={enabled:true,party:1,diff:b.diffs.includes('hard')?'hard':b.diffs[0]}; const mk=(id,n)=>({id,name:n,level:285,job:'',world:'스카니아',ocid:'',accId:'',image:'',bosses:JSON.parse(JSON.stringify(all)),weekly:{},monthly:{},mdate:{},auto:{},drops:{},sync:{}});
   S.characters=[mk('c0','트딕이')]; S.activeId='c0'; save(); render(); }"""
@@ -74,7 +74,7 @@ try:
     A.evaluate("ECC.last=0; ecSync()"); until(A,"()=>ecList().then(L=>!ECC.busy&&L.every(x=>x.up===1))",None,30)
     check('13개 모두 서버에',dev.sql('SELECT COUNT(*) n FROM epic_clips')[0]['n']==13)
     A.locator('#tabs [data-tab=epic]').click(); A.wait_for_timeout(800)
-    check('PC A: ☁ 서버 저장 표시',A.locator('.eccloud.ok').count()==1 and A.locator('.ecup.on').count()==12,A.evaluate("document.querySelector('.eccloud')?.textContent"))
+    check('PC A: 서버 저장 문구 없음(b356)·카드 ☁ 배지',A.locator('.eccloud').count()==0 and A.evaluate("!document.querySelector('#view').textContent.includes('다른 PC 에서도')") and A.locator('.ecup.on').count()==12,A.evaluate("document.querySelector('.eccloud')?.textContent"))
     A.screenshot(path=os.path.join(OUT,'epic_cloud_A.png'))
     # PC B: 같은 넥슨 계정 다른 키, 빈 IndexedDB
     ctxB,B=newpc(b); B.evaluate(SETUP)

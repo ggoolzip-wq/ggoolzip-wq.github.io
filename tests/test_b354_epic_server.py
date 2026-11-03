@@ -27,7 +27,9 @@ for x in ['P','Q']: MN.KEYS[K(x)]=[f'acc-b354-{x}']
 MN.KEYS[K('P2')]=['acc-b354-P']   # 같은 넥슨 계정의 다른 키 (다른 PC)
 cfg=os.path.join(cf_dev.SERVER,'.wrangler-b354-%d.toml'%os.getpid())
 t=open(os.path.join(cf_dev.SERVER,'wrangler.toml')).read()
-open(cfg,'w').write(t.replace('[vars]','[[r2_buckets]]\nbinding = "EPIC"\nbucket_name = "bossmaple-epic"\n\n[vars]',1))
+R2B='\n[[r2_buckets]]\nbinding = "EPIC"\nbucket_name = "bossmaple-epic"\n'
+cfg0=cfg.replace('.toml','-nor2.toml'); open(cfg0,'w').write(t.replace(R2B,'\n'))
+open(cfg,'w').write(t.replace('\n[[r2_buckets]]\nbinding = "EPIC"\nbucket_name = "bossmaple-epic"\n','\n').replace('[vars]','[[r2_buckets]]\nbinding = "EPIC"\nbucket_name = "bossmaple-epic"\n\n[vars]',1))
 def meta(i,**k): return urllib.parse.quote(json.dumps({'id':i,'t0':int(i[2:]),'boss':'검은 마법사','diff':'익스트림','item':'창세의 뱃지','cid':'c1','cname':'단풍용사','n':40,'w':426,'h':240,**k},ensure_ascii=False))
 dev=None; dev2=None
 try:
@@ -76,13 +78,13 @@ try:
     s,b=req('OPTIONS','/api/epic/clip?id=ec1',hdr={'Access-Control-Request-Method':'PUT','Access-Control-Request-Headers':'x-epic-meta'},want_raw=True)
     check('CORS 사전요청이 X-Epic-Meta 허용', s==204)
     dev.stop()
-    # R2 바인딩 없음(지금 운영 상태) → 503 r2_off
-    PORT[0]=WP2; dev2=cf_dev.Dev(WP2,NP)
+    # R2 바인딩 뺀 설정(b355 부터 운영은 켜짐) → 503 r2_off
+    PORT[0]=WP2; dev2=cf_dev.Dev(WP2,NP,args=('-c',cfg0))
     s,a=req('POST','/api/login',{'key':K('Q')}); s,b=req('GET','/api/epic/clips',tok=a.get('token'))
     check('R2 없으면 503 r2_off', s==503 and b.get('error')=='r2_off', (s,b))
 finally:
     for d in (dev,dev2):
         if d: d.stop()
-    try: os.remove(cfg)
+    try: os.remove(cfg); os.remove(cfg0)
     except Exception: pass
 print('FAILS:',fails); sys.exit(1 if fails else 0)

@@ -2,6 +2,11 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b356 (t670) 에픽빔 탭 '☁ 서버에 저장 — 같은 넥슨 키로…' 문구 삭제
+- src/epicclip.js ecCloudTxt: ok 상태는 빈 문구 → 머리말에 .eccloud 안 그림(오프라인·로그인 전·R2 꺼짐 안내는 그대로). 카드별 ☁/⏳/💾 배지는 유지.
+- tests/test_b354_epic_cloud.py: ok 상태에서 .eccloud 없음·문구 없음 확인. test_b354_epic_server/cloud: wrangler.toml 에 R2 바인딩이 켜진 뒤(b355)에도 임시 설정이 중복 안 되게, 503 확인은 바인딩 뺀 설정으로.
+- 실영상 확인(t670, 세렌 보상 맵 미트라의 분노 빔 ≈10.76초): 보상 맵 판정(seren/rew)은 9.1초부터 정상이나 에픽빔 점수 최대 ≈0.41 (기준 .66) → 감지 안 됨. 실제 빔은 아이템 떨어진 자리의 세로 기둥(화면 일부)이고 템플릿은 화면 전체 효과 가정 + 직전 1초 노란 스킬 이펙트가 배경 최솟값을 흐림. 감지기 조정은 따로 작업 필요(/workspace/t670/why).
+
 ## b355 (t669) 에픽빔 R2 실제 연결 · 워커 배포
 - R2 활성화 확인(wrangler r2 bucket list) → 버킷 bossmaple-epic 생성 → server/wrangler.toml [[r2_buckets]] EPIC 바인딩 주석 해제.
 - 원격 D1(ggoolzip-sync): schema.sql 의 epic_clips CREATE TABLE/INDEX IF NOT EXISTS 3줄만 적용(데이터 삭제 없음).
