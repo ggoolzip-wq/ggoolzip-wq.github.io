@@ -2,6 +2,14 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b361 (t671) 에픽빔: 캐릭터 위치에서 터지는 빔 감지(위치 이동 NCC) + 보상 맵 늦은 인식 대기
+- 원인(01M6E78KBP32FWS1TJ7Y1BH70F.mp4, 빔 ≈8.9초 '선택받은…' 공지와 동시): 빔이 화면 중앙이 아니라 캐릭터(왼쪽) 위치에서 터져 고정 위치 GIF NCC 최고 0.48(<0.66). 또 drawImage 32x18 축소가 표본 추출이라 점수가 흔들림. 10.76초 세로 기둥은 미트라 상자(빔 아님).
+- src/epicclip.js: `ecGrid` 로 32x18 칸 평균(area) 그레이; `ecNccShift` 템플릿을 x±10·y±4 칸 옮겨 겹친 부분 NCC(EC.last.ss); 연속 2프레임(0.6초 안) 모두 ≥`sTh`(.77) → hit(kind 'shift'), 시작 시각은 ss≥.5 로 올라가기 시작한 프레임. 기존 고정 NCC 규칙 그대로.
+- 게이트 대기: hit 를 `EC.pend` 로 최대 `pendMs`(2초) 들고 있다가 보상 맵(ecCtx) 인식되면 그 hit 시각으로 클립(버퍼도 pend 기준 보존).
+- 국소 세로 기둥 감지 `ecPillar`(미트라형, 폭≤5·높이≥88%·3프레임) 도 넣었으나 그건 상자 연출이라 `EC.cfg.pil=false`(기본 꺼짐).
+- 검증: 레퍼런스 48개 numpy 프로토타입(/workspace/t671/ncc3.py) — 오감지 0/47(게이트 없이), 대상 영상 8.9초 감지. 사이트 파이프라인(h670.py, b360 위): vt0 9.00초, 클립 8.05~11.97초 33프레임(-946~+2972ms). 게이트는 이 영상에선 막지 않았음(빔 고점 9.06~9.25초에 이미 보상 맵) — 다만 늦게 잡히는 경우 대비 pend.
+- 주의: 헤드리스에서 autorec arNcc/arBoxFind 가 메인 스레드를 수 초씩 잡아(20초 중 ~5초) ecTick 이 드문드문(≈130회/20초) → 빔 구간을 놓치는 실행이 있음(10회 중 몇 번). 규칙을 2프레임으로 둔 이유. 근본 해결은 autorec 쪽 작업 분할/워커 이동(이 작업에선 autorec.js 안 건드림).
+- 테스트: tests/test_b361_epic_shift.py (shift NCC, 규칙, 기둥 합성 양/음성), run_all.sh 등록.
 ## b360 (t672) 보스 득템 자동 기록의 [저장/기록] = 바로 확정 (두 번 저장 없앰)
 
 - 원인(두 번째 저장이 필요했던 곳): app.js `pendStart()` 가 보스 목록 편집용 '저장 대기' 스냅샷 `pend` 를 만들고, `save()` 첫 줄이 `pend` 가 있으면(스냅샷과 다르면) localStorage 에 쓰지 않고 return. 자동 기록도 같은 경로를 탐 — autorec.js `arRecord`→`changeDrop`(메인), `arSaleTake`(PIP 수익 칸), `arSalePick`→`ringApply`/`chaosApply`(반지·칠흑 고르기) 가 모두 `pendStart()`. 그래서 [기록하기]를 눌러도 화면만 바뀌고, 캐릭터 정보창(보스 목록) [저장](`pendSave`: pend=null→save→svPushBg)을 한 번 더 눌러야 저장·서버·합계(COMMITTED=pend.base 기준)·달력·에픽에 반영. 탭을 옮기면 `pendGuard` 가 '변경사항을 저장하시겠습니까?' 를 물음.
