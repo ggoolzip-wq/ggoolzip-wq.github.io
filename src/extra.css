@@ -2182,3 +2182,12 @@ html body nav.tabs button[data-tab=cal]{--nb1:#ffd23c;--nb2:#ffab1f;--nbtx:#fff6
 [data-theme] body nav.tabs button[data-tab=cal].on,html body nav.tabs button[data-tab=cal].on{color:#fff4cc!important}
 [data-theme=light] body nav.tabs button[data-tab=cal]{--nb1:#e0a800;--nb2:#d47f00;--nbtx:#5c3e00}
 [data-theme=light] body nav.tabs button[data-tab=cal].on{color:#6b4600!important}
+/* b338(t643): '이번 달 합계' = 노랑 네온 버튼 → 아래 상세 칸에 이 달 전체(날짜별 묶음) */
+button.calsum{cursor:pointer;font:inherit;border:1.5px solid #ffd23c!important;box-shadow:0 0 8px rgba(255,210,60,.45),inset 0 0 8px rgba(255,210,60,.12);transition:box-shadow .2s,transform .15s}
+button.calsum:hover,button.calsum.on{box-shadow:0 0 14px rgba(255,210,60,.8),0 0 30px rgba(255,171,31,.4),inset 0 0 12px rgba(255,210,60,.25);transform:translateY(-1px)}
+[data-theme=light] button.calsum{border-color:#e0a800!important;box-shadow:0 1px 6px rgba(224,168,0,.35)}
+.calml{margin-top:12px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.calmgh{display:flex;justify-content:space-between;cursor:pointer;padding:4px 6px;border-bottom:1px solid rgba(255,210,60,.3);color:#ffd23c}
+[data-theme=light] .calmgh{color:#8a5a00}
+.calmr{display:grid;grid-template-columns:22px minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:3px 6px;font-size:.88rem}
+.calmri{display:flex;align-items:center}.calmr img{width:20px;height:20px}.calmrb,.calmrc{opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.calmrm{text-align:right;font-weight:700}

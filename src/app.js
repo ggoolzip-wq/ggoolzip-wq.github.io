@@ -4471,29 +4471,34 @@ function calTick(){ if(typeof pend!=='undefined'&&pend) return; const D=calLoad(
 function calRecs(D){ const ids=activeIds(), out=[], pin=D.pin||{}, logDays=Object.keys(D.log||{}).sort();
   const hint=(id,k,lo,hi)=>{ for(const d of logDays) if(d>=lo&&d<=hi&&(((D.log[d]||{})[id]||{}).i||{})[k]>0) return d; return null; };
   const slotOf=t=>{ const n=(/^(.+?)\(/.exec(t||'')||[])[1]; return (BOSSES.find(b=>b.name===n)||{}).id||''; };
-  const add=(day,p,m,k,n,ap)=>{ if(day) out.push({day,id:p.id,name:p.name,m:+m||0,k,n:+n||0,ap:!!ap}); };
+  const add=(day,p,m,k,n,ap,bs)=>{ if(day) out.push({day,id:p.id,name:p.name,m:+m||0,k,n:+n||0,ap:!!ap,bs:bs||''}); };
   const items=(p,dOf,lo,hi,fb)=>{ for(const [ik,n] of Object.entries(p.items||{})){ const {slot,it}=parseIK(ik); if(!ITEMS[it]||!(+n>0)) continue; const rv=(p.revs||{})[ik], m=rv&&+rv.m>0?+rv.m:0;
-      let d=dOf(slot), ap=false; if(!d){ d=hint(p.id,it,lo,hi); if(!d){ d=fb(slot); ap=true; } } add(d,p,m,it,n,ap); } };
+      let d=dOf(slot), ap=false; if(!d){ d=hint(p.id,it,lo,hi); if(!d){ d=fb(slot); ap=true; } } add(d,p,m,it,n,ap,(BOSSES.find(b=>b.id===slot)||{}).name); } };
   const wend=w=>dayId(Date.parse(w+'T00:00:00+09:00')+6*864e5);
   const weeks=[...(S.history||[]).map(h=>[h,false]),[weekSummary(S.period.week),true]];
   for(const [h,cur] of weeks){ const w=h.week; if(!w) continue;
     for(const p of h.perChar||[]){ if(!ids.has(p.id)) continue; const c=S.characters.find(x=>x.id===p.id), at=Object.assign({},(pin[w]||{})[p.id]||{},cur&&c?c.wat||{}:{});
       const dOf=sl=>at[sl]?dayId(at[sl]):null;
-      (p.bosses||[]).forEach((t,i)=>{ const v=+(p.bvals||[])[i]||0; if(v>0){ const d=dOf(slotOf(t)); add(d||w,p,v,null,0,!d); } });
+      (p.bosses||[]).forEach((t,i)=>{ const v=+(p.bvals||[])[i]||0; if(v>0){ const d=dOf(slotOf(t)); add(d||w,p,v,null,0,!d,t); } });
       items(p,dOf,w,wend(w),()=>w); } }
   const months=[...(S.monthHistory||[]).map(h=>[h,false]),[monthSummary(S.period.month),true]];
   for(const [h,cur] of months){ const mo=h.month; if(!mo) continue;
     for(const p of h.perChar||[]){ if(!ids.has(p.id)) continue; const ds={}, ws={};
       (p.bosses||[]).forEach((t,i)=>{ const sl=slotOf(t); ds[sl]=(p.mdates||[])[i]||''; ws[sl]=(p.mweeks||[])[i]||''; const v=+(p.bvals||[])[i]||0;
-        if(v>0) add(ds[sl]||ws[sl]||mo+'-01',p,v,null,0,!ds[sl]); });
+        if(v>0) add(ds[sl]||ws[sl]||mo+'-01',p,v,null,0,!ds[sl],t); });
       items(p,sl=>ds[sl]||null,mo+'-01',mo+'-31',sl=>ws[sl]||mo+'-01'); } }
   return out; }
 function calDay(R,day){ let m=0, ap=false; const it={}, ia={}, by={};
-  for(const r of R){ if(r.day!==day) continue; m+=r.m; if(r.ap&&r.m) ap=true; const b=by[r.id]||(by[r.id]={id:r.id,name:r.name,m:0,i:{},ap:false}); b.m+=r.m; if(r.ap&&r.m) b.ap=true;
+  for(const r of R){ if(typeof day==='function'?!day(r.day):r.day!==day) continue; m+=r.m; if(r.ap&&r.m) ap=true; const b=by[r.id]||(by[r.id]={id:r.id,name:r.name,m:0,i:{},ap:false}); b.m+=r.m; if(r.ap&&r.m) b.ap=true;
     if(r.k){ it[r.k]=(it[r.k]||0)+r.n; b.i[r.k]=(b.i[r.k]||0)+r.n; if(r.ap) ia[r.k]=1; } }
   const c=S.characters; Object.values(by).forEach(b=>{ const x=c.find(y=>y.id===b.id); if(x) b.name=x.name; });
   return {m,ap,it,ia,by:Object.values(by).sort((a,b)=>b.m-a.m)}; }
 const calEok = m => { const e=m/1e8; return e>=1?(e>=100?Math.round(e).toLocaleString():e.toFixed(2).replace(/\.?0+$/,''))+'억':m>=1e4?Math.round(m/1e4).toLocaleString()+'만':Math.round(m)+''; };
+function calMonList(R){ const rs=R.filter(r=>r.day.startsWith(calMon)&&(r.m||r.k)).sort((a,b)=>a.day<b.day?-1:a.day>b.day?1:b.m-a.m), g={};
+  for(const r of rs) (g[r.day]=g[r.day]||[]).push(r); const ap='<i class="calap" title="대략(정확한 날짜 없음)">≈</i>', cn=id=>((S.characters.find(c=>c.id===id)||{}).name);
+  const days=Object.keys(g); if(!days.length) return '';
+  return `<div class="calml">${days.map(d=>{ const [,mm,dd]=d.split('-').map(Number), t=g[d].reduce((a,r)=>a+r.m,0);
+    return `<div class="calmg"><div class="calmgh" data-calgo="${d}"><b>${mm}월 ${dd}일</b><span>${g[d].some(r=>r.ap)?ap:''}${calEok(t)} 메소</span></div>${g[d].map(r=>`<div class="calmr"><span class="calmri">${r.k?itemIcon(r.k):''}</span><span class="calmrn">${r.k?`${esc(ITEMS[r.k].n)}${r.n>1?` x${r.n}`:''}`:'결정석'}</span><span class="calmrb">${esc(r.bs||'')}</span><span class="calmrc">${esc(cn(r.id)||r.name||'')}</span><span class="calmrm">${r.m?(r.ap?ap:'')+calEok(r.m):(r.ap?ap:'')}</span></div>`).join('')}</div>`; }).join('')}</div>`; }
 function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId(Date.now()); if(!calMon) calMon=monthId(Date.now());
   const [Y,M]=calMon.split('-').map(Number), first=new Date(Date.UTC(Y,M-1,1)), nd=new Date(Date.UTC(Y,M,0)).getUTCDate(), lead=first.getUTCDay();
   let tot=0; const itTot={}; const cells=[];
@@ -4503,18 +4508,20 @@ function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId
     cells.push(`<button type="button" class="calc${id===today?' today':''}${id===calSel?' sel':''}${x.m||ks.length?' has':''}${wd===0?' sun':wd===6?' sat':''}" data-calday="${id}"><span class="cald">${d}</span>${x.m?`<span class="calm">${x.ap?'<i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}${calEok(x.m)}</span>`:''}<span class="cali">${ks.slice(0,2).map(([k,n])=>`<span class="calit">${x.ia[k]?'<i class="calap">≈</i>':''}${itemIcon(k)}<span class="calin">${esc(ITEMS[k].n)}</span>${n>1?`<b>x${n}</b>`:''}</span>`).join('')}${ks.length>2?`<span class="calmore">+${ks.length-2}개 더</span>`:''}</span></button>`); }
   while(cells.length%7) cells.push('<div class="calc emp"></div>');
   const icnt=Object.values(itTot).reduce((a,b)=>a+b,0);
-  let det='';
-  if(calSel&&calSel.startsWith(calMon)){ const x=calDay(R,calSel), [,mm,dd]=calSel.split('-').map(Number), ks=Object.entries(x.it).sort((a,b)=>b[1]-a[1]);
-    det=`<div class="caldet" id="calDet"><div class="caldh"><b>${mm}월 ${dd}일</b><span class="caldt">합계 <b>${x.ap?'<i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}${calEok(x.m)} 메소</b> · 아이템 ${ks.reduce((a,[,n])=>a+n,0)}개</span><button type="button" class="calx" data-calclose aria-label="닫기">✕</button></div>
-      ${ks.length?`<div class="caldl">${ks.map(([k,n])=>`<div class="caldi">${itemIcon(k)}<span>${esc(ITEMS[k].n)}${x.ia[k]?' <i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}</span><b>x${n}</b></div>`).join('')}</div>`:'<div class="muted calnone">이 날 기록된 아이템이 없어요</div>'}
-      ${x.by.length?`<div class="caldc">${x.by.map(b=>`<div class="caldcr"><span class="caldcn">${esc(b.name||'')}</span><span class="caldcm">${b.ap?'<i class="calap">≈</i>':''}${calEok(b.m)}</span><span class="caldci">${Object.entries(b.i).map(([k,n])=>`${itemIcon(k)}${n>1?`<b>x${n}</b>`:''}`).join('')}</span></div>`).join('')}</div>`:''}</div>`; }
+  let det=''; const isM=calSel==='M:'+calMon;
+  if(isM||calSel&&calSel.startsWith(calMon)){ const x=calDay(R,isM?d=>d.startsWith(calMon):calSel), [,mm,dd]=(isM?calMon+'-0':calSel).split('-').map(Number), ks=Object.entries(x.it).sort((a,b)=>b[1]-a[1]);
+    det=`<div class="caldet" id="calDet"><div class="caldh"><b>${isM?`${mm}월 전체`:`${mm}월 ${dd}일`}</b><span class="caldt">합계 <b>${x.ap?'<i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}${calEok(x.m)} 메소</b> · 아이템 ${ks.reduce((a,[,n])=>a+n,0)}개</span><button type="button" class="calx" data-calclose aria-label="닫기">✕</button></div>
+      ${ks.length?`<div class="caldl">${ks.map(([k,n])=>`<div class="caldi">${itemIcon(k)}<span>${esc(ITEMS[k].n)}${x.ia[k]?' <i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}</span><b>x${n}</b></div>`).join('')}</div>`:`<div class="muted calnone">${isM?'이 달':'이 날'} 기록된 아이템이 없어요</div>`}
+      ${x.by.length?`<div class="caldc">${x.by.map(b=>`<div class="caldcr"><span class="caldcn">${esc(b.name||'')}</span><span class="caldcm">${b.ap?'<i class="calap">≈</i>':''}${calEok(b.m)}</span><span class="caldci">${Object.entries(b.i).map(([k,n])=>`${itemIcon(k)}${n>1?`<b>x${n}</b>`:''}`).join('')}</span></div>`).join('')}</div>`:''}${isM?calMonList(R):''}</div>`; }
   v.innerHTML=`<div class="calwrap"><div class="card calcard"><div class="calhd"><button type="button" class="calnav" data-calmv="-1" aria-label="이전 달">‹</button><h2 class="calti">${Y}년 ${M}월</h2><button type="button" class="calnav" data-calmv="1" aria-label="다음 달">›</button>
-    <button type="button" class="calnav caltd" data-calmv="0">오늘</button><span class="calsum">이번 달 합계 <b>${calEok(tot)} 메소</b> · 아이템 <b>${icnt}개</b></span></div>
+    <button type="button" class="calnav caltd" data-calmv="0">오늘</button><button type="button" class="calsum${isM?' on':''}" data-calmonth aria-pressed="${isM}" title="이 달 기록 전체 보기">이번 달 합계 <b>${calEok(tot)} 메소</b> · 아이템 <b>${icnt}개</b></button></div>
     <div class="calwk">${['일','월','화','수','목','금','토'].map((w,i)=>`<span class="${i===0?'sun':i===6?'sat':''}">${w}</span>`).join('')}</div>
     <div class="calgrid">${cells.join('')}</div>${det}<div class="muted calnote">≈ = 정확한 날짜가 없어 그 주 목요일(리셋일)·처치일 등으로 어림 · API 키를 지운 캐릭터는 빠져요</div></div></div>`;
   const cl=$('#charList'); if(cl) v.querySelector('.calwrap').style.fontFamily=getComputedStyle(cl).fontFamily;
   v.querySelectorAll('[data-calmv]').forEach(b=>b.onclick=()=>{ const k=+b.dataset.calmv; if(!k){ calMon=monthId(Date.now()); calSel=today; } else { const t=new Date(Date.UTC(Y,M-1+k,1)); calMon=`${t.getUTCFullYear()}-${pad(t.getUTCMonth()+1)}`; } renderCal(); });
+  v.querySelectorAll('[data-calgo]').forEach(b=>b.onclick=()=>{ calSel=b.dataset.calgo; renderCal(); });
   v.querySelectorAll('[data-calday]').forEach(b=>b.onclick=()=>{ calSel=calSel===b.dataset.calday?null:b.dataset.calday; renderCal(); });
+  v.querySelectorAll('[data-calmonth]').forEach(b=>b.onclick=()=>{ calSel=isM?null:'M:'+calMon; renderCal(); });
   v.querySelectorAll('[data-calclose]').forEach(b=>b.onclick=()=>{ calSel=null; renderCal(); }); }
 // b217: 모든 선언이 끝난 뒤 한 번 더 그림 (시작 렌더가 아직 없는 값 때문에 실패했어도 화면이 제대로 나오게)
 bootRender('end'); pageTop(); requestAnimationFrame(()=>pageTop()); // b223
