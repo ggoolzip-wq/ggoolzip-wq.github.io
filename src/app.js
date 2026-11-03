@@ -781,7 +781,9 @@ function pendSig(x){ const d=JSON.parse(JSON.stringify(x)); (d.characters||[]).f
   for(const m of [c.drops,c.mdrops]) for(const k of Object.keys(m)) if(!(+m[k]>0)) delete m[k];
   for(const m of [c.dropOut,c.mdropOut,c.chaosOut,c.mchaosOut]) for(const k of Object.keys(m||{})) if(!Array.isArray(m[k])||!m[k].length) delete m[k];
   for(const f of ['dmode','mdmode']) if(c[f]){ for(const k of Object.keys(c[f])) if(!(+(c[f==='dmode'?'drops':'mdrops']||{})[k]>0)) delete c[f][k]; if(!Object.keys(c[f]).length) delete c[f]; } }); return contentSig(d); }
-function pendStart(){ if(!pend){ pend={base:JSON.parse(JSON.stringify(S))}; } }
+let REC_AUTO=0; // b360 t672: 보스 득템 자동 기록(메인·PIP·반지/칠흑 고르기)에서 시작한 변경 = 저장 대기 없이 바로 확정
+function pendStart(){ if(!pend){ pend={base:JSON.parse(JSON.stringify(S))}; } if(REC_AUTO) pend.auto=true; }
+function recAuto(fn){ REC_AUTO++; try{ return fn(); } finally{ REC_AUTO--; } }
 const COMMITTED=fn=>{ if(!pend) return fn(); const live=S; pend.base.activeId=live.activeId; S=pend.base; try{ return fn(); } finally{ S=live; } };
 const cRev=c=>COMMITTED(()=>charRevenue(S.characters.find(x=>x.id===c.id)||c));
 function pendCancel(quiet){ if(!pend) return; const keepId=S.activeId; S=pend.base; S.activeId=keepId; pend=null; save(); render(); if(!quiet) toast('변경사항을 취소했습니다'); }
@@ -798,12 +800,14 @@ function pendGuard(go){ if(!pend) return go(); const c=activeChar();
   svAsk('지금까지의 변경사항을 저장하시겠습니까?',[['yes','예'],['no','아니오']],c?`<div class="pgav">${avatar(c,'pgavi')}<div class="pgname">${esc(c.name||'')}</div></div>`:'').then(async k=>{ if(k==='yes'){ await pendSave(); go(); } else if(k==='no'){ pendCancel(true); go(); } }); }
 function pendAsk(){ svAsk('변경사항을 취소하시겠습니까?',[['yes','예'],['no','아니오']]).then(k=>{ if(k==='yes') pendCancel(); }); }
 function save(){
+  let autoPush=false; if(pend&&pend.auto&&pendSig(S)!==pendSig(pend.base)){ pend=null; autoPush=true; } // b360: 자동 기록 [저장/기록] = 캐릭터 정보창 [저장]과 같은 확정 (상태·서버·합계·달력·에픽)
   if(pend){ if(pendSig(S)===pendSig(pend.base)) pend=null; else return; } // 대기 중: 저장소에 쓰지 않음. 되돌려서 스냅샷과 같아지면 대기 해제(버튼 비활성)
   const sig=contentSig(S), changed=sig!==lastSig;
   if(changed){ S.updatedAt=Date.now(); lastSig=sig; }
   lastBody=bodyOf();
   localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(S));
   if(changed) gdChanged();
+  if(autoPush&&typeof svPushBg==='function') svPushBg();
   if(typeof svKeysSoon==='function') svKeysSoon(); // b62: 서버 모드 — 키(부계정·예비)만 바뀐 것도 바로 금고에 (키는 내용 비교에서 빠져 있어 [저장]이 안 생김)
 }
 const price = (b,diff) => { const k=priceKey(b,diff); return (k in S.settings.prices)?S.settings.prices[k]:(PRICE_CONFIG[k]||0); };

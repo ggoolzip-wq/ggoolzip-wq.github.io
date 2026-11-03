@@ -2,6 +2,13 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b360 (t672) 보스 득템 자동 기록의 [저장/기록] = 바로 확정 (두 번 저장 없앰)
+
+- 원인(두 번째 저장이 필요했던 곳): app.js `pendStart()` 가 보스 목록 편집용 '저장 대기' 스냅샷 `pend` 를 만들고, `save()` 첫 줄이 `pend` 가 있으면(스냅샷과 다르면) localStorage 에 쓰지 않고 return. 자동 기록도 같은 경로를 탐 — autorec.js `arRecord`→`changeDrop`(메인), `arSaleTake`(PIP 수익 칸), `arSalePick`→`ringApply`/`chaosApply`(반지·칠흑 고르기) 가 모두 `pendStart()`. 그래서 [기록하기]를 눌러도 화면만 바뀌고, 캐릭터 정보창(보스 목록) [저장](`pendSave`: pend=null→save→svPushBg)을 한 번 더 눌러야 저장·서버·합계(COMMITTED=pend.base 기준)·달력·에픽에 반영. 탭을 옮기면 `pendGuard` 가 '변경사항을 저장하시겠습니까?' 를 물음.
+- 고침: `REC_AUTO` + `recAuto(fn)` — 자동 기록 경로(arRecord 의 changeDrop/arSaleTake, arSaleTake, arSalePick, arSaleDo 의 revWrite)를 감싸서 그 안에서 만든 `pend` 에 `auto:true`. `save()` 는 `pend.auto` 이고 실제로 바뀌었으면 `pend=null` 로 확정해 바로 localStorage + `svPushBg()`(= pendSave 와 같은 서버 저장). 고르기 창(반지·블빵·수익 모달)은 결과를 고른 뒤 save 할 때 확정, 고르기 전 취소는 예전처럼 아무것도 안 남김.
+- 그대로: 손으로 누르는 보스 목록 칩·파티 인원 등은 예전처럼 [저장]/[취소] 대기. 단, 손으로 바꾼 저장 대기가 있는 중에 자동 기록이 확정되면 그 대기분도 같이 저장됨(스냅샷 하나라서).
+- 테스트: tests/test_b360_recnow.py (메인 자동 기록·PIP 수익·PIP 반지·PIP 칠흑 = pend 없음·localStorage 반영·svPushBg 호출, 손 칩 = 대기 유지, 고르기 전 건너뛰기 = 대기 안 남음). 예전 코드에서는 4개 FAIL 확인.
+
 ## b359 (t672) 다른 탭(캘린더 등)에 있어도 보스 득템 자동 인식·PIP 갱신
 
 - 증상: PIP 를 띄워도 '보스 득템 자동 기록' 탭을 떠나면 인식이 멈춘 것처럼 보임.

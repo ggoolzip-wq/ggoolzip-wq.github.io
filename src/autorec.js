@@ -546,7 +546,7 @@ function arRecord(item,score,via='',n=1){ if(!ARX.det.boss) return; if(!arBoxOk(
   if(C.find(c=>c.b===b)?.info){ arLog(`획득 감지(정보 칩, 기록 안 함): ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via}]`); ARX.infoSeen=(ARX.infoSeen||[]).concat(key); arPanelPaint(); return; }
   if((+dropMap(t.c,b.type)[key]||0)>=1){ arLog(`이미 기록됨: ${ITEMS[item]?.n} · ${b.name}`); return; } // 다시 누르면 취소되는 수동 칩과 달리 건드리지 않음
   if(S.activeId!==t.c.id){ S.activeId=t.c.id; render(); }
-  if(!arSaleTake(t.c,b,key,item)) changeDrop(key,+1); (ARX.runRec=ARX.runRec||[]).unshift({k:item,b:b.name,c:t.c.name,t:new Date().toTimeString().slice(0,5)}); ARX.runRec.length=Math.min(ARX.runRec.length,30); arSessAdd(item,b.name,t.c.name); arLog(`자동 기록: ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via} ${(+score).toFixed(2)}]`); arToast(item,b,key,t.c.id); }
+  recAuto(()=>{ if(!arSaleTake(t.c,b,key,item)) changeDrop(key,+1); }); (ARX.runRec=ARX.runRec||[]).unshift({k:item,b:b.name,c:t.c.name,t:new Date().toTimeString().slice(0,5)}); ARX.runRec.length=Math.min(ARX.runRec.length,30); arSessAdd(item,b.name,t.c.name); arLog(`자동 기록: ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via} ${(+score).toFixed(2)}]`); arToast(item,b,key,t.c.id); }
 /* b288: 색까지 봤는데도 닮은 두 아이콘 중 확실하지 않으면 자동 기록 안 하고 '직접 고르기' 칩 */
 function arPick(h,via){ if(!ARX.det?.boss){ if(!ARX.noBossT||Date.now()-ARX.noBossT>5000){ ARX.noBossT=Date.now(); arLog(`보스 확인 전이라 기록 안 함: ${ITEMS[h.k]?.n||h.k} [${via}]`); } return; } // b288: 보스 모를 땐 모든 보스 아이콘 후보 → UI·글자 오인식
   if(!h.amb||h.amb.length<2) return arRecord(h.k,h.score,via); const C=arCandidates(), am=h.amb.filter(k=>C.some(c=>c.k===k)); if(am.length===1) return arRecord(am[0],h.score,via+' 색');
@@ -1107,7 +1107,8 @@ function arPipRecH(){ const R=ARX.sessRec||[]; return `<div class="ar-prh"><span
 function arPipRec(){ const P=ARX.pip; if(!P||!P.win||!P.win.document) return; const d=P.win.document; let el=d.querySelector('.ar-piprec');
   if(!el){ el=d.createElement('div'); el.className='card ar-c ar-piprec'; P.card.after(el); } arSetH(el,arPipRecH()); arPipSale(); }
 /* b342: PIP 열려 있으면 득템 시 모달 대신 PIP 아래 칸에서 수익 기록 (반지·칠흑 상자는 고르는 창이 필요해서 원래대로) — 여러 개면 줄 세워 하나씩 */
-function arSaleTake(c,b,key,ik){ if(!ARX.pip||!ARX.pip.win) return false; const m=dropMap(c,b.type); if((+m[key]||0)>=1) return false;
+function arSaleTake(c,b,key,ik){ return recAuto(()=>arSaleTake0(c,b,key,ik)); } // b360: 자동 기록 = 바로 확정
+function arSaleTake0(c,b,key,ik){ if(!ARX.pip||!ARX.pip.win) return false; const m=dropMap(c,b.type); if((+m[key]||0)>=1) return false;
   if(isRing(ik)||ik==='chaosbox'){ pendStart(); (ARX.saleQ=ARX.saleQ||[]).push({cid:c.id,bid:b.id,key,ik,pick:ik==='chaosbox'?'cb':'ring',u:key+'@'+Date.now()}); arPipSale(); return true; } // b344: 무엇이 나왔는지 PIP 에서 고른 뒤 기록
   pendStart(); m[key]=1; const pty=curParty(c,b.id); if(pty>1) modeMap(c,b.type)[key]='s'; save(); render(); // 2인 이상 = 자동 분배
   (ARX.saleQ=ARX.saleQ||[]).push({cid:c.id,bid:b.id,key,ik,u:key+'@'+Date.now()}); arPipSale(); return true; }
@@ -1128,7 +1129,8 @@ function arPipSale(){ const P=ARX.pip; if(!P||!P.win||!P.win.document) return; c
 function arPipPickH(q,x){ const n=ARX.saleQ.length, hd=`<div class="ar-psh"><span>${q.pick==='cb'?'어떤 장신구를 획득하셨나요?':'상자에서 무엇이 나왔나요?'}</span>${n>1?`<b>대기 ${n}개</b>`:''}</div><div class="ar-psi"><span class="rvico">${itemIcon(q.ik)}</span><b class="ar-psn">${esc(ITEMS[q.ik]?.n||q.ik)}</b><span class="muted ar-psb">${esc(x.b.name)}${curParty(x.c,x.b.id)>1?` · ${curParty(x.c,x.b.id)}인 분배`:''}</span></div>`;
   const opts=q.pick==='cb'?CHAOS_PICK.map(k=>[k,itemIcon(k),ITEMS[k].n]):[['r4',outIcon('r4'),'리스트레인트 링 4레벨'],['c4',outIcon('c4'),'컨티뉴어스 링 4레벨']].concat(q.ik==='r_life'?[['gl',outIcon('gl'),'생명의 연마석']]:[]).concat([['x','<span class="ricx">✕</span>',q.ik==='r_life'?'셋 다 못 먹었어요':'둘 다 못 먹었어요']]);
   return hd+`<div class="ar-pkg ar-pk-${q.pick}">${opts.map(([k,ic,nm])=>`<button type="button" class="ar-pko" data-pk="${k}">${ic}<span>${esc(nm)}</span></button>`).join('')}</div><div class="ar-psbtn"><button type="button" class="btn ghost" data-ps="skip">기록하지 않기</button></div>`; }
-function arSalePick(q,k){ const x=arSaleCtx(q); if(!x) return; let ik;
+function arSalePick(q,k){ return recAuto(()=>arSalePick0(q,k)); } // b360
+function arSalePick0(q,k){ const x=arSaleCtx(q); if(!x) return; let ik;
   if(q.pick==='ring'){ if(!(k in OUT_LABEL)) return; ik=ringApply(x.c,x.b,q.key,k); } // = chooseRing
   else { if(!CHAOS_PICK.includes(k)) return; pendStart(); chaosApply(x.c,x.b,q.key,k); if(curParty(x.c,x.b.id)>1) modeMap(x.c,x.b.type)[q.key]='s'; save(); render(); ik='cb:'+k; } // = openChaos (2인 이상 = 자동 분배)
   if(!ik){ ARX.saleQ.shift(); return arPipSale(); } // 꽝 = 수익 없음
@@ -1138,7 +1140,7 @@ function arSalePrev(el){ const q=ARX.saleQ?.[0], x=q&&arSaleCtx(q), r=el.querySe
 function arSaleClick(e){ const el=e.currentTarget, f=e.target.closest('[data-fee]'); if(f){ el._fs[f.dataset.fee]=+f.dataset.v; el.querySelectorAll(`[data-fee="${f.dataset.fee}"]`).forEach(b=>{ const on=b===f; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); arSalePrev(el); return; } const pk=e.target.closest('[data-pk]'); if(pk&&ARX.saleQ?.[0]?.pick) return arSalePick(ARX.saleQ[0],pk.dataset.pk); const t=e.target.closest('[data-ps]'); if(t) arSaleDo(el,t.dataset.ps); }
 function arSaleDo(el,act){ const q=ARX.saleQ?.[0], x=q&&arSaleCtx(q); if(!x){ ARX.saleQ?.shift(); return arPipSale(); }
   if(act==='skip'||q.pick){ ARX.saleQ.shift(); if(pend&&pendSig(S)===pendSig(pend.base)){ pend=null; render(); } return arPipSale(); } // b344: 고르기 전 [기록하지 않기] = 모달 닫기와 같음 (아무것도 기록 안 함)
-  if(act==='ok'){ const v=arSaleV(el); if(!(v>0)||v>100000){ el.querySelector('.ar-pserr').textContent='금액을 입력해주세요.'; el.querySelector('.ar-psamt').focus(); return; } revWrite(x.c,x.b,q.key,q.ik,v,x.div,el._fs); } // = askRev [기록하기]
+  if(act==='ok'){ const v=arSaleV(el); if(!(v>0)||v>100000){ el.querySelector('.ar-pserr').textContent='금액을 입력해주세요.'; el.querySelector('.ar-psamt').focus(); return; } recAuto(()=>revWrite(x.c,x.b,q.key,q.ik,v,x.div,el._fs)); } // = askRev [기록하기]
   ARX.saleQ.shift(); arPipSale(); } // [기록하지 않기] = 득템만 저장 (askRev '기록 없이 저장')
 function arPipCard(p){ return (ARX.pip&&ARX.pip.card)||(p||document).querySelector('.ar-cboss'); }
 function arPipQ(p,s){ return (ARX.pip&&ARX.pip.card.querySelector(s.replace('.ar-cboss ','')))||(p||document).querySelector(s); }
