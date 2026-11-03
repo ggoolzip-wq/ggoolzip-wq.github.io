@@ -2,6 +2,13 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b345 (t649) 캘린더 v3: 탭 아이콘·이번 달 기본 선택·목록 날짜/시간
+- body.html: 캘린더 탭 버튼 앞 인라인 SVG(.calico, 노랑 네온 drop-shadow).
+- app.js: 캘린더 탭 진입 시 calMon=null·calDef=0 → renderCal 이 calSel='M:'+calMon 로 '이번 달 합계' 기본 눌림.
+- calRecs 에 ts(처치 시각 at[slot]) 추가. calWhen/calRows: 아래 목록(달 상세·날짜 상세 .calml-day)에 '날짜' 열, 정확='M/D HH:MM', 추정='≈M/D'(시간 없음), 날짜만 있으면 'M/D'.
+- extra.css: .calmr 6열 그리드(정렬 유지), .calmrt tabular-nums.
+- 테스트: test_b345_calv3(새, cal_v3.png). b338 6열·day 목록 반영, b334 글꼴 체크를 Paperlogy(b340) 기준으로 갱신.
+
 ## b344 (t648) PIP 에서 반지 상자·칠흑 장신구 상자 고르기
 - arSaleTake: PIP 열려 있으면 반지 상자·chaosbox 도 줄에 넣음(pick:'ring'|'cb', 고르기 전엔 저장 안 함). PIP 닫혀 있으면 원래 openRing/openChaos 창.
 - arPipPickH: 반지 = 페이지 반지 창과 같은 선택지(리4·컨4·생명의 연마석(r_life 만)·꽝), 칠흑 = CHAOS_PICK 아이콘 목록. 2열 격자(PIP 최소 폭 320 에 맞춤).

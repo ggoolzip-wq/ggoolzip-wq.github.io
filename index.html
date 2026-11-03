@@ -2351,6 +2351,12 @@ button.calsum:hover,button.calsum.on{box-shadow:0 0 14px rgba(255,210,60,.8),0 0
 .ar-pko{display:flex;align-items:center;gap:6px;padding:6px 7px;border-radius:9px;border:1px solid #ffffff26;background:#ffffff0d;color:inherit;font:inherit;font-size:12px;line-height:1.25;text-align:left;cursor:pointer;min-width:0}
 .ar-pko:hover{border-color:#ffe14d;background:#ffe14d1a}.ar-pko img{width:28px;height:28px;flex:none}.ar-pko span{min-width:0;overflow-wrap:anywhere}
 .ar-pko .ricx{width:28px;text-align:center;font-size:18px;color:#ff6b6b;flex:none}
+
+/* b345: 캘린더 탭 아이콘 + 아래 목록 날짜 열 */
+nav.tabs button[data-tab=cal] .calico{display:inline-block;vertical-align:-3px;margin-right:5px;filter:drop-shadow(0 0 3px #ffe14d) drop-shadow(0 0 6px #ffd60080);color:#ffe14d}
+html body .calmr{grid-template-columns:24px minmax(0,30%) 78px minmax(0,20%) minmax(0,15%) minmax(0,1fr)!important}
+.calmr>.calmrt{font-variant-numeric:tabular-nums;opacity:.85;font-size:.8rem;white-space:nowrap}
+.calml-day{margin-top:10px}
 </style>
 </head>
 <body>
@@ -2377,7 +2383,7 @@ button.calsum:hover,button.calsum.on{box-shadow:0 0 14px rgba(255,210,60,.8),0 0
     <button data-tab="boss" class="on">이번 주 보스</button>
     <button data-tab="total">수익 분석</button>
     <button data-tab="loot">득템 분석</button>
-    <button data-tab="cal">캘린더</button>
+    <button data-tab="cal"><svg class="calico" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 14h2M14 14h2M8 17.5h2"/></svg>캘린더</button>
     <span class="tabsep" aria-hidden="true"></span>
     <button data-tab="auto">보스 득템 자동 기록</button><!-- b294: 길드 현황 탭 자리 · 예전 🎮 게임 화면 연결 버튼 대신 -->
     <span class="tabsep" aria-hidden="true"></span>
@@ -6361,7 +6367,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-cpage],[data-tab],[data-move],[data-wmove],[data-id],[data-edit],[data-filter],[data-check],[data-toggle],[data-setdiff],[data-delhist],[data-acctest],[data-accdel],button[id]');
   if(!t) return;
   const c=activeChar();
-  if(t.dataset.tab){ const go=()=>{ if(tab!==t.dataset.tab){ TIR_LAST.clear(); TSV_SEEN.clear(); } /* b173: 탭 복귀 시 디지털 숫자 다시 카운팅 */ const sw=tab!==t.dataset.tab; tab=t.dataset.tab; try{ localStorage.setItem(TAB_KEY,tab); }catch(e){} syncTabs(); render(); if(sw) tabTop(); tabTick(); };
+  if(t.dataset.tab){ const go=()=>{ if(tab!==t.dataset.tab){ TIR_LAST.clear(); TSV_SEEN.clear(); } /* b173: 탭 복귀 시 디지털 숫자 다시 카운팅 */ const sw=tab!==t.dataset.tab; tab=t.dataset.tab; if(sw&&tab==='cal'){ calMon=null; calDef=0; } /* b345: 캘린더 탭 열 때 = 이번 달 합계 눌린 상태 */ try{ localStorage.setItem(TAB_KEY,tab); }catch(e){} syncTabs(); render(); if(sw) tabTop(); tabTick(); };
     // 저장 안 한 변경이 있으면 탭 이동 전에 묻기: 예 = 저장 후 이동 / 아니오 = 스냅샷으로 되돌리고 이동 / 닫기 = 머무름
     if(pend&&t.dataset.tab!==tab){ pendGuard(go); return; }
     go(); return; }
@@ -6944,7 +6950,7 @@ setTimeout(async()=>{ if(SV_ON||!SYNC_TEST_URL||!/github\.io$/.test(location.hos
  * 이전 스냅샷과 비교해 늘어난(줄어든) 만큼을 오늘(KST) 칸에 더함. 이 브라우저 localStorage(CAL_KEY)에만 저장(서버 호출 없음). 주·달이 바뀌면 그 부분 기준 = 0.
  * 처음 켠 순간은 기준만 잡음(빈 달력에서 시작). 표시는 지금 보이는(키 등록된) 캐릭터만(activeIds). */
 const CAL_KEY='mapleBossTracker.cal';
-let calMon=null, calSel=null;
+let calMon=null, calSel=null, calDef=0;
 function calLoad(){ try{ const d=JSON.parse(localStorage.getItem(CAL_KEY)||'{}'); return d&&typeof d==='object'?d:{}; }catch(e){ return {}; } }
 function calSnapOf(c){ const r=charRevenue(c), w=charDrops(c,'weekly'), m=charDrops(c,'monthly');
   const it=d=>{ const o={}; for(const [k,n] of Object.entries(d.items)){ const x=parseIK(k).it; if(ITEMS[x]&&+n>0) o[x]=(o[x]||0)+(+n); } return o; };
@@ -6965,16 +6971,16 @@ function calTick(){ if(typeof pend!=='undefined'&&pend) return; const D=calLoad(
 function calRecs(D){ const ids=activeIds(), out=[], pin=D.pin||{}, logDays=Object.keys(D.log||{}).sort();
   const hint=(id,k,lo,hi)=>{ for(const d of logDays) if(d>=lo&&d<=hi&&(((D.log[d]||{})[id]||{}).i||{})[k]>0) return d; return null; };
   const slotOf=t=>{ const n=(/^(.+?)\(/.exec(t||'')||[])[1]; return (BOSSES.find(b=>b.name===n)||{}).id||''; };
-  const add=(day,p,m,k,n,ap,bs)=>{ if(day) out.push({day,id:p.id,name:p.name,m:+m||0,k,n:+n||0,ap:!!ap,bs:bs||''}); };
-  const items=(p,dOf,lo,hi,fb)=>{ for(const [ik,n] of Object.entries(p.items||{})){ const {slot,it}=parseIK(ik); if(!ITEMS[it]||!(+n>0)) continue; const rv=(p.revs||{})[ik], m=rv&&+rv.m>0?+rv.m:0;
-      let d=dOf(slot), ap=false; if(!d){ d=hint(p.id,it,lo,hi); if(!d){ d=fb(slot); ap=true; } } add(d,p,m,it,n,ap,(BOSSES.find(b=>b.id===slot)||{}).name); } };
+  const add=(day,p,m,k,n,ap,bs,ts)=>{ if(day) out.push({day,id:p.id,name:p.name,m:+m||0,k,n:+n||0,ap:!!ap,bs:bs||'',ts:!ap&&+ts>0?+ts:0}); }; // b345: ts = 처치 시각(있을 때만)
+  const items=(p,dOf,lo,hi,fb,tOf)=>{ for(const [ik,n] of Object.entries(p.items||{})){ const {slot,it}=parseIK(ik); if(!ITEMS[it]||!(+n>0)) continue; const rv=(p.revs||{})[ik], m=rv&&+rv.m>0?+rv.m:0;
+      let d=dOf(slot), ap=false, ts=d&&tOf?tOf(slot):0; if(!d){ d=hint(p.id,it,lo,hi); if(!d){ d=fb(slot); ap=true; } } add(d,p,m,it,n,ap,(BOSSES.find(b=>b.id===slot)||{}).name,ts); } };
   const wend=w=>dayId(Date.parse(w+'T00:00:00+09:00')+6*864e5);
   const weeks=[...(S.history||[]).map(h=>[h,false]),[weekSummary(S.period.week),true]];
   for(const [h,cur] of weeks){ const w=h.week; if(!w) continue;
     for(const p of h.perChar||[]){ if(!ids.has(p.id)) continue; const c=S.characters.find(x=>x.id===p.id), at=Object.assign({},(pin[w]||{})[p.id]||{},cur&&c?c.wat||{}:{});
       const dOf=sl=>at[sl]?dayId(at[sl]):null;
-      (p.bosses||[]).forEach((t,i)=>{ const v=+(p.bvals||[])[i]||0; if(v>0){ const d=dOf(slotOf(t)); add(d||w,p,v,null,0,!d,t); } });
-      items(p,dOf,w,wend(w),()=>w); } }
+      (p.bosses||[]).forEach((t,i)=>{ const v=+(p.bvals||[])[i]||0; if(v>0){ const d=dOf(slotOf(t)); add(d||w,p,v,null,0,!d,t,at[slotOf(t)]); } });
+      items(p,dOf,w,wend(w),()=>w,sl=>at[sl]); } }
   const months=[...(S.monthHistory||[]).map(h=>[h,false]),[monthSummary(S.period.month),true]];
   for(const [h,cur] of months){ const mo=h.month; if(!mo) continue;
     for(const p of h.perChar||[]){ if(!ids.has(p.id)) continue; const ds={}, ws={};
@@ -6988,16 +6994,21 @@ function calDay(R,day){ let m=0, ap=false; const it={}, ia={}, by={};
   const c=S.characters; Object.values(by).forEach(b=>{ const x=c.find(y=>y.id===b.id); if(x) b.name=x.name; });
   return {m,ap,it,ia,by:Object.values(by).sort((a,b)=>b.m-a.m)}; }
 const calEok = m => { const e=m/1e8; return e>=1?(e>=100?Math.round(e).toLocaleString():e.toFixed(2).replace(/\.?0+$/,''))+'억':m>=1e4?Math.round(m/1e4).toLocaleString()+'만':Math.round(m)+''; };
+/* b345: 아래 목록 한 줄 = 아이콘 · 아이템/결정석 · 날짜 시각('10/8 21:34', 어림이면 '≈10/8') · 보스 · 캐릭터 · 금액 */
+const CAL_AP='<i class="calap" title="대략(정확한 날짜 없음)">≈</i>';
+const calWhen = r => { const [,mm,dd]=r.day.split('-').map(Number); if(r.ap) return CAL_AP+`${mm}/${dd}`; if(!r.ts) return `${mm}/${dd}`; const k=new Date(r.ts+9*36e5); return `${mm}/${dd} ${pad(k.getUTCHours())}:${pad(k.getUTCMinutes())}`; };
+function calRows(rs){ const cn=id=>((S.characters.find(c=>c.id===id)||{}).name); return rs.map(r=>`<div class="calmr"><span class="calmri">${r.k?itemIcon(r.k):''}</span><span class="calmrn">${r.k?`${esc(ITEMS[r.k].n)}${r.n>1?` x${r.n}`:''}`:'결정석'}</span><span class="calmrt">${calWhen(r)}</span><span class="calmrb">${esc(r.bs||'')}</span><span class="calmrc">${esc(cn(r.id)||r.name||'')}</span><span class="calmrm">${r.m?(r.ap?CAL_AP:'')+calEok(r.m):(r.ap?CAL_AP:'')}</span></div>`).join(''); }
+const calRowHd='<div class="calmr calmrh"><span></span><span>아이템</span><span>날짜</span><span>보스</span><span>캐릭터</span><span>금액</span></div>';
 let calMD=null; // b339: 이 달 전체에서 고른 날짜 칩
 function calMonList(R){ const rs=R.filter(r=>r.day.startsWith(calMon)&&(r.m||r.k)).sort((a,b)=>a.day<b.day?-1:a.day>b.day?1:b.m-a.m), g={};
   for(const r of rs) (g[r.day]=g[r.day]||[]).push(r); const ap='<i class="calap" title="대략(정확한 날짜 없음)">≈</i>', cn=id=>((S.characters.find(c=>c.id===id)||{}).name);
   const days=Object.keys(g); if(!days.length) return ''; if(!g[calMD]) calMD=days[days.length-1];
   const chips=days.map(d=>{ const [,mm,dd]=d.split('-').map(Number), t=g[d].reduce((a,r)=>a+r.m,0);
     return `<button type="button" class="calchip${d===calMD?' on':''}" data-calmd="${d}" aria-pressed="${d===calMD}">${mm}/${dd} <b>${g[d].some(r=>r.ap&&r.m)?ap:''}${calEok(t)}</b></button>`; }).join('');
-  const rows=g[calMD].map(r=>`<div class="calmr"><span class="calmri">${r.k?itemIcon(r.k):''}</span><span class="calmrn">${r.k?`${esc(ITEMS[r.k].n)}${r.n>1?` x${r.n}`:''}`:'결정석'}</span><span class="calmrb">${esc(r.bs||'')}</span><span class="calmrc">${esc(cn(r.id)||r.name||'')}</span><span class="calmrm">${r.m?(r.ap?ap:'')+calEok(r.m):(r.ap?ap:'')}</span></div>`).join('');
+  const rows=calRows(g[calMD]);
   const [,mm,dd]=calMD.split('-').map(Number);
-  return `<div class="calchips">${chips}</div><div class="calml" id="calML"><div class="calmgh" data-calgo="${calMD}"><b>${mm}월 ${dd}일</b><span>그 날 상세 보기 ›</span></div><div class="calmr calmrh"><span></span><span>아이템</span><span>보스</span><span>캐릭터</span><span>금액</span></div>${rows}</div>`; }
-function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId(Date.now()); if(!calMon) calMon=monthId(Date.now());
+  return `<div class="calchips">${chips}</div><div class="calml" id="calML"><div class="calmgh" data-calgo="${calMD}"><b>${mm}월 ${dd}일</b><span>그 날 상세 보기 ›</span></div><div class="calmr calmrh"><span></span><span>아이템</span><span>날짜</span><span>보스</span><span>캐릭터</span><span>금액</span></div>${rows}</div>`; }
+function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId(Date.now()); if(!calMon) calMon=monthId(Date.now()); if(!calDef){ calDef=1; calSel='M:'+calMon; }
   const [Y,M]=calMon.split('-').map(Number), first=new Date(Date.UTC(Y,M-1,1)), nd=new Date(Date.UTC(Y,M,0)).getUTCDate(), lead=first.getUTCDay();
   let tot=0; const itTot={}; const cells=[];
   for(let i=0;i<lead;i++) cells.push('<div class="calc emp"></div>');
@@ -7010,7 +7021,7 @@ function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId
   if(isM||calSel&&calSel.startsWith(calMon)){ const x=calDay(R,isM?d=>d.startsWith(calMon):calSel), [,mm,dd]=(isM?calMon+'-0':calSel).split('-').map(Number), ks=Object.entries(x.it).sort((a,b)=>b[1]-a[1]);
     det=`<div class="caldet" id="calDet"><div class="caldh"><b>${isM?`${mm}월 전체`:`${mm}월 ${dd}일`}</b><span class="caldt">합계 <b>${x.ap?'<i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}${calEok(x.m)} 메소</b> · 아이템 ${ks.reduce((a,[,n])=>a+n,0)}개</span><button type="button" class="calx" data-calclose aria-label="닫기">✕</button></div>
       ${ks.length?`<div class="caldl">${ks.map(([k,n])=>`<div class="caldi">${itemIcon(k)}<span>${esc(ITEMS[k].n)}${x.ia[k]?' <i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}</span><b>x${n}</b></div>`).join('')}</div>`:`<div class="muted calnone">${isM?'이 달':'이 날'} 기록된 아이템이 없어요</div>`}
-      ${x.by.length?`<div class="caldc">${x.by.map(b=>`<div class="caldcr"><span class="caldcn">${esc(b.name||'')}</span><span class="caldcm">${b.ap?'<i class="calap">≈</i>':''}${calEok(b.m)}</span><span class="caldci">${Object.entries(b.i).map(([k,n])=>`${itemIcon(k)}${n>1?`<b>x${n}</b>`:''}`).join('')}</span></div>`).join('')}</div>`:''}${isM?calMonList(R):''}</div>`; }
+      ${x.by.length?`<div class="caldc">${x.by.map(b=>`<div class="caldcr"><span class="caldcn">${esc(b.name||'')}</span><span class="caldcm">${b.ap?'<i class="calap">≈</i>':''}${calEok(b.m)}</span><span class="caldci">${Object.entries(b.i).map(([k,n])=>`${itemIcon(k)}${n>1?`<b>x${n}</b>`:''}`).join('')}</span></div>`).join('')}</div>`:''}${isM?calMonList(R):(dr=>dr.length?`<div class="calml calml-day">${calRowHd}${calRows(dr)}</div>`:'')(R.filter(r=>r.day===calSel&&(r.m||r.k)).sort((a,b)=>(a.ts||0)-(b.ts||0)||b.m-a.m))}</div>`; }
   v.innerHTML=`<div class="calwrap"><div class="card calcard"><div class="calhd"><button type="button" class="calnav" data-calmv="-1" aria-label="이전 달">‹</button><h2 class="calti">${Y}년 ${M}월</h2><button type="button" class="calnav" data-calmv="1" aria-label="다음 달">›</button>
     <button type="button" class="calnav caltd" data-calmv="0">오늘</button><button type="button" class="calsum${isM?' on':''}" data-calmonth aria-pressed="${isM}" title="이 달 기록 전체 보기">이번 달 합계 <b>${calEok(tot)} 메소</b> · 아이템 <b>${icnt}개</b></button></div>
     <div class="calwk">${['일','월','화','수','목','금','토'].map((w,i)=>`<span class="${i===0?'sun':i===6?'sat':''}">${w}</span>`).join('')}</div>

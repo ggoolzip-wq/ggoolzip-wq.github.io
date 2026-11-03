@@ -35,7 +35,7 @@ try:
     check('키 지운 캐릭터 제외(99억·커포 없음)','99' not in pg.locator('.calsum').inner_text() and 'cfe' not in pg.evaluate("JSON.stringify(calDay(calRecs(calLoad()),dayId(Date.now())).it)"),pg.locator('.calsum').inner_text())
     check('헤더 이번 달 합계',('12억' in pg.locator('.calsum').inner_text()) and '5개' in pg.locator('.calsum').inner_text(),pg.locator('.calsum').inner_text())
     f1=pg.evaluate("getComputedStyle(document.querySelector('#charList')).fontFamily"); f2=pg.evaluate("getComputedStyle(document.querySelector('.calwrap')).fontFamily")
-    check('글꼴 = 캐릭터 목록과 같음',f1==f2,(f1,f2))
+    check('글꼴 = 캘린더 전용 Paperlogy(b340~)','Paperlogy' in f2,(f1,f2))
     pg.locator('#view').screenshot(path=os.path.join(OUT,'calendar.png'))
     cell.click(); pg.wait_for_timeout(300); d=pg.locator('#calDet').inner_text()
     check('날짜 클릭 → 상세(아이템 목록·합계)',('12억' in d) and pg.locator('#calDet .caldi').count()==4 and 'x2' in d and '트딕이' in d and '지운캐' not in d,d)
