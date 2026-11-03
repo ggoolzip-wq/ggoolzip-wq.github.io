@@ -540,29 +540,28 @@ function iconBurst(src){
 const CG_EMOJI=[['😚','1f61a'],['😙','1f619'],['😊','1f60a'],['😘','1f618'],['🥳','1f973']];
 const cgEmoji = () => { const [ch,cp]=CG_EMOJI[Math.random()*CG_EMOJI.length|0]; return `<img class="cg-emo" src="${ITEM_ICONS['emo_'+cp]}" alt="${ch}" data-emo="${ch}" draggable="false">`; };
 /* b246: 에픽 빛줄기 = 4x4 스프라이트(1152x689 프레임 16장, ESPCN x2 업스케일+언샤프) 를 캔버스에 69ms 마다 — 창이 열릴 때마다 0번 프레임부터(animated WebP 는 캐시되면 중간부터 재생됨). 페이지 로드 때 미리 받아 디코드 */
-const BEAM={src:'epicbeam_sprite.webp',w:1152,h:689,cols:4,n:16,ms:69,cw:576,ch:344};
-const beamImg=new Image(); beamImg.src=BEAM.src; beamImg.decode?.().catch(()=>{});
+const BEAM={src:'epicbeam_s720.webp',w:720,h:430,cols:4,n:16,ms:69,cw:576,ch:344,pre:1}; /* b366: 4608x2756(디코딩 50.8MB) → 2880x1720(19.8MB)·마스크 미리 구움. 화면 576x344 기준 1.25배 */
+const beamImg=new Image(); /* b366: 페이지 로드 때 미리 디코딩하지 않음(50MB 상주 제거) — file:// 폴백에서만 씀 */
+function beamImgLoad(){ if(!beamImg.src) beamImg.src=BEAM.src; return beamImg; }
 /* b357: 끊김 원인 = 첫 drawImage 때 4608x2756 스프라이트(약 50MB) 를 메인 스레드에서 다시 디코드(4x 스로틀 ~1초) + CSS mask-image 를 매 프레임 다시 그림.
    → 페이지가 한가할 때 fetch→createImageBitmap(디코드는 다른 스레드) 로 16장을 화면 크기(576x344×dpr)로 줄이고 둥근 마스크(radial 70%→100%)를 미리 구워 둠. 재생은 작은 비트맵 한 장 drawImage. */
 const beamBake={fr:null,busy:false,dpr:0};
 function beamPrep(){ const dpr=Math.min(2,devicePixelRatio||1); if(beamBake.busy||(beamBake.fr&&beamBake.dpr===dpr)||typeof createImageBitmap!=='function') return; beamBake.busy=true;
-  const W=Math.round(BEAM.cw*dpr), H=Math.round(BEAM.ch*dpr);
-  (/^https?:$/.test(location.protocol)?fetch(BEAM.src).then(r=>r.blob()).then(bl=>createImageBitmap(bl)):beamImg.decode().then(()=>createImageBitmap(beamImg))).then(async full=>{ /* file:// 는 fetch 불가 → 이미 받은 이미지에서 */ const fr=[];
+  const W=Math.min(BEAM.w,Math.round(BEAM.cw*dpr)), H=Math.min(BEAM.h,Math.round(BEAM.ch*dpr)); /* b366: 원본(1.25배)보다 크게 굽지 않음 */
+  (/^https?:$/.test(location.protocol)?fetch(BEAM.src).then(r=>r.blob()).then(bl=>createImageBitmap(bl)):beamImgLoad().decode().then(()=>createImageBitmap(beamImg))).then(async full=>{ /* file:// 는 fetch 불가 → 이미 받은 이미지에서 */ const fr=[];
     for(let f=0;f<BEAM.n;f++){ const bm=await createImageBitmap(full,(f%BEAM.cols)*BEAM.w,(f/BEAM.cols|0)*BEAM.h,BEAM.w,BEAM.h,{resizeWidth:W,resizeHeight:H,resizeQuality:'high'});
-      const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d'); g.drawImage(bm,0,0); bm.close?.();
-      g.globalCompositeOperation='destination-in'; g.setTransform(W/2,0,0,H/2,W/2,H/2); const rg=g.createRadialGradient(0,0,0,0,0,1); rg.addColorStop(0,'#000'); rg.addColorStop(.7,'#000'); rg.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=rg; g.fillRect(-1,-1,2,2);
-      fr.push(await createImageBitmap(c)); await new Promise(r=>(window.requestIdleCallback||setTimeout)(r,{timeout:200})); }
+      fr.push(bm); /* b366: 마스크는 에셋에 구워 둠 → 캔버스 왕복 없음 */ await new Promise(r=>(window.requestIdleCallback||setTimeout)(r,{timeout:200})); }
     full.close?.(); beamBake.fr=fr; beamBake.dpr=dpr; }).catch(()=>{}).finally(()=>{ beamBake.busy=false; }); }
 (window.requestIdleCallback||setTimeout)(beamPrep,{timeout:3000});
 function beamDraw(cv,f){ const g=cv.getContext('2d'); const fr=beamBake.fr;
   if(fr){ if(cv.width!==fr[0].width){ cv.width=fr[0].width; cv.height=fr[0].height; cv.classList.add('baked'); } g.clearRect(0,0,cv.width,cv.height); g.drawImage(fr[f],0,0); }
-  else { g.clearRect(0,0,cv.width,cv.height); if(beamImg.complete&&beamImg.naturalWidth) g.drawImage(beamImg,(f%BEAM.cols)*BEAM.w,(f/BEAM.cols|0)*BEAM.h,BEAM.w,BEAM.h,0,0,BEAM.w,BEAM.h); }
+  else { g.clearRect(0,0,cv.width,cv.height); beamImgLoad(); if(beamImg.complete&&beamImg.naturalWidth) g.drawImage(beamImg,(f%BEAM.cols)*BEAM.w,(f/BEAM.cols|0)*BEAM.h,BEAM.w,BEAM.h,0,0,BEAM.w,BEAM.h); }
   celebrate.beamFrame=f; }
 function beamPlay(cv){ if(!cv) return; const id=(beamPlay._id=(beamPlay._id||0)+1);
   if(matchMedia('(prefers-reduced-motion: reduce)').matches){ celebrate.beamFrame=-1; return; }
   let t0=0; beamDraw(cv,0); let last=0; // b357: 시간은 첫 화면 프레임부터(직전 저장·다시 그리기로 늦은 첫 프레임에 건너뛰지 않게)
   const tick=now=>{ if(id!==beamPlay._id||!celebrate.running||!cv.isConnected) return; if(!t0) t0=now; const f=Math.max(0,Math.floor((now-t0)/BEAM.ms))%BEAM.n; if(f!==last){ last=f; beamDraw(cv,f); } requestAnimationFrame(tick); };
-  if(!beamBake.fr&&!beamImg.complete) beamImg.addEventListener('load',()=>{ if(id===beamPlay._id) beamDraw(cv,last); },{once:true});
+  if(!beamBake.fr&&!beamImgLoad().complete) beamImg.addEventListener('load',()=>{ if(id===beamPlay._id) beamDraw(cv,last); },{once:true});
   requestAnimationFrame(tick); }
 /* b357: 불꽃·꽃가루 = 색·크기별로 미리 그린 작은 스프라이트를 drawImage (arc/save/restore 없음), 다 탄 입자는 배열에서 뺌, 캔버스 크기는 바뀔 때만 다시 잡음 */
 const CG_COL=['#ff5a5f','#ffb400','#4ecdc4','#a66cff','#ffe66d','#ff8fab','#7bdff2','#9be84a'];
@@ -571,9 +570,13 @@ const cgDot={}; const cgDotOf=(col,dpr)=>{ const k=col+dpr; if(cgDot[k]) return 
 function cgAmb(on){ if(!on){ (cgAmb.p||[]).forEach(a=>{ try{ a.play(); }catch(e){} }); cgAmb.p=[]; return; }
   if(cgAmb.p&&cgAmb.p.length) return; const box=$('#congrats'); cgAmb.p=document.getAnimations().filter(a=>{ const t=a.effect?.target, tm=a.effect?.getTiming?.(); return a.playState==='running'&&tm&&tm.iterations===Infinity&&t&&!box.contains(t)&&!t.closest?.('#iconBurst'); });
   cgAmb.p.forEach(a=>a.pause()); }
+/* b366: 연출 품질 자동 낮춤 — 첫 프레임들이 33ms 넘게 걸리면 즉시 한 단계 내림(입자 수·캔버스 해상도·꽃가루), 다음 연출부터 그 단계로 시작. 3번 연속 매끄러우면 한 단계 올림 */
+const CGQ={lv:Math.max(0,Math.min(3,+(localStorage.getItem('cgq')||0)||0)),hist:[],ok:0,
+  L:[{sc:2,n:70,nc:90,nb:6},{sc:1,n:45,nc:60,nb:6},{sc:.75,n:30,nc:30,nb:4},{sc:.5,n:16,nc:0,nb:3}],
+  set(v){ this.lv=Math.max(0,Math.min(3,v)); try{ localStorage.setItem('cgq',this.lv); }catch(e){} } };
 function celebrate(o,item,boss){
   const cv=$('#fx'), msg=$('#congrats');
-  msg.innerHTML=`<div class="cg-in"><span class="cg-ico"><canvas class="cg-beam" width="1152" height="689" aria-hidden="true"></canvas>${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}</span><div class="cg-big">${boss?`<span class="cg-boss">${bossIcon(boss)}</span>`:''}<span class="cg-t">축하드립니다!</span></div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득</div></div>`;
+  msg.innerHTML=`<div class="cg-in"><span class="cg-ico"><canvas class="cg-beam baked" width="720" height="430" aria-hidden="true"></canvas>${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}</span><div class="cg-big">${boss?`<span class="cg-boss">${bossIcon(boss)}</span>`:''}<span class="cg-t">축하드립니다!</span></div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득</div></div>`;
   celebrate.running=true; const run=(celebrate._run=(celebrate._run||0)+1);
   beamPlay(msg.querySelector('.cg-beam'));
   document.body.classList.add('cg-on'); cgAmb(true); // b357: 뒤 페이지 반짝임 애니메이션 멈춤 + 카드 backdrop 블러 끔(매 프레임 블러 다시 계산 방지)
@@ -586,20 +589,24 @@ function celebrate(o,item,boss){
   const go=()=>{ if(run!==celebrate._run||!celebrate.running) return; document.querySelector('#iconBurst')?.classList.remove('hold'); msg.classList.add('show'); msg.classList.remove('prep'); if(!matchMedia('(prefers-reduced-motion: reduce)').matches) fx(); };
   requestAnimationFrame(()=>requestAnimationFrame(go));
   function fx(){
-  const dpr=Math.min(2,devicePixelRatio||1), W=innerWidth, H=innerHeight; if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); } const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+  let Q=CGQ.L[CGQ.lv]; const fr=[]; CGQ.hist.push(fr); if(CGQ.hist.length>5) CGQ.hist.shift();
+  let dpr=Math.min(Q.sc,devicePixelRatio||1); const W=innerWidth, H=innerHeight; if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); } const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
   const P=[], COL=CG_COL, rnd=Math.random;
-  const burst=(x,y)=>{ const n=70, col=COL[rnd()*COL.length|0]; for(let i=0;i<n;i++){ const a=Math.PI*2*i/n, v=2+rnd()*4; P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,dec:.012+rnd()*.012,r:2+rnd()*1.5,col:rnd()<.3?COL[rnd()*COL.length|0]:col,k:'s'}); }};
-  for(let i=0;i<90;i++) P.push({x:rnd()*W,y:-20-rnd()*H*.5,vx:(rnd()-.5)*2,vy:2+rnd()*3,life:1,dec:.004,r:4+rnd()*4,col:COL[i%COL.length],k:'c',rot:rnd()*6,vr:(rnd()-.5)*.3});
+  const burst=(x,y)=>{ const n=Q.n; if(!n) return; const col=COL[rnd()*COL.length|0]; for(let i=0;i<n;i++){ const a=Math.PI*2*i/n, v=2+rnd()*4; P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,dec:.012+rnd()*.012,r:2+rnd()*1.5,col:rnd()<.3?COL[rnd()*COL.length|0]:col,k:'s'}); }};
+  for(let i=0;i<Q.nc;i++) P.push({x:rnd()*W,y:-20-rnd()*H*.5,vx:(rnd()-.5)*2,vy:2+rnd()*3,life:1,dec:.004,r:4+rnd()*4,col:COL[i%COL.length],k:'c',rot:rnd()*6,vr:(rnd()-.5)*.3});
   let t0=0, nb=0, lt=0; celebrate.fxN=0;
-  const step=now=>{ if(!celebrate.running) return; if(!t0) t0=lt=now; const t=now-t0; const k=Math.min(3,Math.max(.5,(now-lt)/16.67)); lt=now; // 프레임이 늦어도 같은 속도(60fps 기준)
-    while(nb<6 && t>nb*320){ burst(W*(.18+rnd()*.64), H*(.15+rnd()*.35)); nb++; }
+  const step=now=>{ if(!celebrate.running) return; if(!t0) t0=lt=now; const t=now-t0, dt=now-lt; const k=Math.min(3,Math.max(.5,dt/16.67)); lt=now; if(t) fr.push(Math.round(dt));
+    if(fr.length<=12&&fr.filter(x=>x>33).length>=2&&CGQ.lv<3){ CGQ.set(CGQ.lv+1); CGQ.ok=0; Q=CGQ.L[CGQ.lv]; fr.push(-CGQ.lv); /* 연출 도중 한 단계 내림: 입자 절반 버리고 해상도 낮춤 */
+      for(let i=P.length-1;i>0;i-=2) P.splice(i,1); if(!Q.n) P.length=0; const d2=Math.min(Q.sc,devicePixelRatio||1); if(d2!==dpr){ dpr=d2; cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); } } // 프레임이 늦어도 같은 속도(60fps 기준)
+    while(nb<Q.nb && t>nb*320){ burst(W*(.18+rnd()*.64), H*(.15+rnd()*.35)); nb++; }
     g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,cv.width,cv.height);
     let j=0;
     for(let i=0;i<P.length;i++){ const q=P[i]; q.x+=q.vx*k; q.y+=q.vy*k; q.life-=q.dec*k; if(q.life<=0||q.y>H+40) continue; P[j++]=q;
       if(q.k==='s'){ const f=Math.pow(.985,k); q.vx*=f; q.vy=q.vy*f+.06*k; const d=cgDotOf(q.col,dpr), s=q.r/d.R*d.c.width/dpr; g.globalAlpha=q.life; g.setTransform(dpr,0,0,dpr,0,0); g.drawImage(d.c,q.x-s/2,q.y-s/2,s,s); }
       else { q.vy+=.02*k; q.rot+=q.vr*k; g.globalAlpha=Math.min(1,q.life*1.5); const c=Math.cos(q.rot)*dpr, sn=Math.sin(q.rot)*dpr; g.setTransform(c,sn,-sn,c,q.x*dpr,q.y*dpr); g.fillStyle=q.col; g.fillRect(-q.r/2,-q.r/4,q.r,q.r/2); } }
     P.length=j; celebrate.fxN=Math.max(celebrate.fxN,j);
-    g.globalAlpha=1; if(t<2600&&j) requestAnimationFrame(step); };
+    g.globalAlpha=1; if(t<2600&&(j||nb<Q.nb)) requestAnimationFrame(step); else cgDone(); };
+  const cgDone=()=>{ const v=fr.filter(x=>x>0).sort((a,b)=>a-b); const p95=v[Math.floor(v.length*.95)]||0; if(fr.some(x=>x<0)) return; if(p95&&p95<=20){ if(++CGQ.ok>=3&&CGQ.lv>0){ CGQ.set(CGQ.lv-1); CGQ.ok=0; } } else if(p95>33&&CGQ.lv<3){ CGQ.set(CGQ.lv+1); CGQ.ok=0; } else CGQ.ok=0; };
   requestAnimationFrame(step);
   }
 }

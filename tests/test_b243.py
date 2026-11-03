@@ -30,14 +30,14 @@ try:
           check(f'beam centered x {vw}', abs(g['bx']-g['ix'])<3, g)
           check(f'beam source at icon y {vw}', abs(g['by']-g['iy'])<6, g)
           check(f'icon above beam {vw}', g['iz']>g['bz'], g)
-          check(f'beam is canvas sprite (2x res) {vw}', g['bg']=='CANVAS epicbeam_sprite.webp' and (g['cw']==1152 or (g['baked'] and g['cw']==576)), (g['bg'],g['cw']))  # b357: 미리 구운 576x344(dpr1) 프레임
+          check(f'beam is canvas sprite (2x res) {vw}', g['bg'] in('CANVAS epicbeam_sprite.webp','CANVAS epicbeam_s720.webp') and (g['cw'] in(1152,720) or (g['baked'] and g['cw']==576)), (g['bg'],g['cw']))  # b357: 미리 구운 576x344(dpr1) 프레임
           W=576 if vw>480 else 460
           check(f'beam 2x size {vw}', abs(g['w']-W)<2 and abs(g['h']-W*344/576)<3, (g['w'],g['h']))
           check(f'beam feathered mask {vw}', 'radial-gradient' in g['mask'] or (g['baked'] and pg.evaluate('beamBake.fr.length')==16), g['mask'])  # b357: 마스크는 프레임에 구워 둠
-          raw=open(os.path.join(os.path.dirname(__file__),'..','epicbeam_sprite.webp'),'rb').read()
-          m=pg.evaluate("()=>({...BEAM, nw:beamImg.naturalWidth, nh:beamImg.naturalHeight})")
-          check(f'beam 16 frames x 69ms sprite {vw}', m['n']==16 and m['ms']==69 and m['nw']==1152*4 and m['nh']==689*4, m)
-          check(f'beam asset < 4MB {vw}', len(raw)<4000000, len(raw))
+          raw=open(os.path.join(os.path.dirname(__file__),'..','epicbeam_s720.webp'),'rb').read()
+          m=pg.evaluate("()=>new Promise(r=>{ const i=new Image(); i.onload=()=>r({...BEAM, nw:i.naturalWidth, nh:i.naturalHeight}); i.src=BEAM.src; })")
+          check(f'beam 16 frames x 69ms sprite {vw}', m['n']==16 and m['ms']==69 and m['nw']==720*4 and m['nh']==430*4, m)
+          check(f'beam asset < 4MB {vw}', len(raw)<1600000, len(raw))
           check(f'no overflow {vw}', not g['ov'])
       if CHECK:
         # b246: 창이 열리는 순간 항상 0번 프레임부터 (두 번째 열 때도)
