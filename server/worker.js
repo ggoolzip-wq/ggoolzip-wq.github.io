@@ -35,6 +35,10 @@
  *   PUT    /api/state         {baseRev, updatedAt, data} (인증) → {rev, savedAt} | 409 {rev, updatedAt, savedAt, data}
  *   DELETE /api/account                            (인증) 내 데이터·세션·계정 연결 전부 삭제
  *   GET    /api/health
+ *   b354 에픽빔 클립 (R2 = env.EPIC, 없으면 503 r2_off · 메타 = D1 epic_clips · 자동 삭제 없음):
+ *   POST   /api/epic/clip?id=ec…  본문 = 클립 묶음(≤2MB, octet-stream), 헤더 X-Epic-Meta = encodeURIComponent(JSON 메타) (인증)
+ *   GET    /api/epic/clips?page=0&per=12  (인증) → {total, page, per, items:[메타]}  (같은 넥슨 계정(acct_hash) 기준 — 다른 PC 에서 같은 키로 로그인하면 보임)
+ *   GET    /api/epic/clip/<id>            (인증) → 클립 묶음 바이너리
  *   GET    /api/seen  · PUT /api/seen {ids:[...]}   (인증, b62) 소식 카드 읽음 표시 — 서버가 합집합으로 보관 (기기 간 동기화)
  *
  * b62 (2026-10-12):
@@ -96,7 +100,7 @@ function corsHeaders(env, req) {
   if (o) Object.assign(h, {
     'Access-Control-Allow-Origin': o,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Epic-Meta',
     'Access-Control-Max-Age': '86400',
     'Access-Control-Expose-Headers': 'Retry-After',
   });
@@ -137,6 +141,7 @@ let schemaOk = false;
 async function ensureSchema(env) {
   if (schemaOk) return;
   await env.DB.batch([
+    env.DB.prepare(EPIC_DDL), env.DB.prepare('CREATE INDEX IF NOT EXISTS epic_acct ON epic_clips(acct_hash, t0)'), env.DB.prepare('CREATE INDEX IF NOT EXISTS epic_user ON epic_clips(user_id, t0)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS keyvault2 (user_id TEXT PRIMARY KEY, owner_hash TEXT NOT NULL, iv TEXT NOT NULL, ct TEXT NOT NULL, updated_at INTEGER NOT NULL)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS keyreg (key_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, kind TEXT NOT NULL, updated_at INTEGER NOT NULL)'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS keyreg_user ON keyreg(user_id)'),
@@ -275,6 +280,11 @@ let adminCache = null;
 const adminId = env => env.ADMIN_USER || adminCache || '';
 async function loadAdmin(env) { if (env.ADMIN_USER) return; const r = await env.DB.prepare("SELECT v FROM meta WHERE k='admin_user'").first(); adminCache = r ? r.v : null; }
 // b78: user_id 로 사용자에 묶인 표 전부 (계정 삭제·강퇴 공통)
+// b354: epic_clips 는 일부러 USER_TABLES 에 없음 — 30일 미동기화 삭제(syncGoneCron)·강퇴·계정 삭제에도 클립은 지우지 않음(사용자 요청 "영상 자동으로 지우지 마").
+//   클립은 user_id 와 acct_hash(넥슨 계정 해시 = 로그인과 같은 기준) 둘 다 저장 → 같은 넥슨 키로 다시 가입·로그인하면(user_id 가 새로 생겨도) acct_hash 로 그대로 보임.
+const EPIC_DDL = 'CREATE TABLE IF NOT EXISTS epic_clips (id TEXT NOT NULL, user_id TEXT NOT NULL, acct_hash TEXT NOT NULL, t0 INTEGER NOT NULL, boss TEXT, diff TEXT, item TEXT, cid TEXT, cname TEXT, meta TEXT NOT NULL, r2key TEXT NOT NULL, size INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (acct_hash, id))';
+const EPIC_MAX = 2 * 1024 * 1024, EPIC_PER_MAX = 48;
+const EPIC_UP_LIMIT = { n: 300, windowMs: 86400e3 }, EPIC_MIN_LIMIT = { n: 30, windowMs: 60e3 }; // 사용자당 하루 300개 · 1분 30개
 const USER_TABLES = ['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen', 'approval', 'cp'];
 /* b132: 가입 승인 스위치 — wrangler.toml [vars] APPROVAL_REQUIRED = "0" 이면 승인 끔(누구나 넥슨 키로 바로 사용), "1"(또는 없음)이면 승인 켬(b68 흐름).
  *  끔: 새 가입에 approval(pending) 행을 만들지 않고, 이미 대기(pending)인 사용자도 바로 로그인·세션 사용 가능. approval 행은 지우거나 바꾸지 않음 →
@@ -879,6 +889,46 @@ async function route(req, env) {
       await env.DB.batch([env.DB.prepare('INSERT INTO approval (user_id,status,requested_at,decided_at) VALUES (?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET status=excluded.status, decided_at=excluded.decided_at').bind(uid, to, u.requested_at || now, now)]
         .concat(to === 'ok' ? [] : [env.DB.prepare('DELETE FROM sessions WHERE user_id=?').bind(uid)])); // 거절·차단 = 바로 로그아웃 (데이터는 지우지 않음)
       return json(200, { ok: true, user: uid, status: to });
+    }
+    throw new HttpError(404, 'not_found', '없는 주소');
+  }
+  if (p.startsWith('/api/epic/')) { // b354
+    if (!env.EPIC) throw new HttpError(503, 'r2_off', '클립 저장소(R2)가 아직 켜지지 않았습니다 — 이 PC 에만 저장돼요');
+    const accts = await acctList(env, me.userId); if (!accts.length) throw new HttpError(403, 'no_account', '넥슨 계정 연결이 없습니다');
+    const qs = accts.map(() => '?').join(','), owner = `(user_id=? OR acct_hash IN (${qs}))`;
+    if (p === '/api/epic/clip' && M === 'POST') { // POST = 상태 저장(PUT) 쓰기 제한과 따로 셈
+      const id = String(url.searchParams.get('id') || '');
+      if (!/^ec\d{10,16}$/.test(id)) throw new HttpError(400, 'bad_id', '잘못된 클립 id');
+      const len = +req.headers.get('Content-Length') || 0;
+      if (len > EPIC_MAX) throw new HttpError(413, 'too_large', '클립이 너무 큽니다 (최대 2MB)');
+      let m; try { m = JSON.parse(decodeURIComponent(req.headers.get('X-Epic-Meta') || '')); } catch (e) { throw new HttpError(400, 'bad_meta', '메타 형식 오류'); }
+      if (!m || typeof m !== 'object' || JSON.stringify(m).length > 8192) throw new HttpError(400, 'bad_meta', '메타 형식 오류');
+      const ex = await env.DB.prepare(`SELECT size FROM epic_clips WHERE id=? AND ${owner}`).bind(id, me.userId, ...accts).first();
+      if (ex) { await req.arrayBuffer().catch(() => {}); return json(200, { ok: true, id, dup: true }); }
+      await limit(env, 'epicm:' + me.userId, EPIC_MIN_LIMIT, '클립 업로드가 너무 잦습니다 — 잠시 뒤 다시 시도'); await limit(env, 'epicup:' + me.userId, EPIC_UP_LIMIT, '오늘 올릴 수 있는 클립 수를 넘었습니다');
+      const buf = await req.arrayBuffer();
+      if (buf.byteLength > EPIC_MAX) throw new HttpError(413, 'too_large', '클립이 너무 큽니다 (최대 2MB)');
+      if (buf.byteLength < 8) throw new HttpError(400, 'empty', '빈 클립');
+      const ah = accts[0], key = `clips/${ah.slice(0, 16)}/${id}.ecb`, now = Date.now(), t0 = Math.round(+m.t0) || +id.slice(2);
+      const str = (v, n) => v == null ? null : String(v).slice(0, n);
+      await env.EPIC.put(key, buf, { httpMetadata: { contentType: 'application/octet-stream' } });
+      const meta = { ...m, id, size: buf.byteLength }; delete meta.poster; delete meta.up;
+      await env.DB.prepare('INSERT OR IGNORE INTO epic_clips (id,user_id,acct_hash,t0,boss,diff,item,cid,cname,meta,r2key,size,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
+        .bind(id, me.userId, ah, t0, str(m.boss, 40), str(m.diff, 20), str(m.item, 80), str(m.cid, 60), str(m.cname, 40), JSON.stringify(meta), key, buf.byteLength, now).run();
+      return json(200, { ok: true, id, size: buf.byteLength });
+    }
+    if (p === '/api/epic/clips' && M === 'GET') {
+      const per = Math.max(1, Math.min(EPIC_PER_MAX, Math.round(+url.searchParams.get('per') || 12))), page = Math.max(0, Math.round(+url.searchParams.get('page') || 0));
+      const tot = await env.DB.prepare(`SELECT COUNT(DISTINCT id) n FROM epic_clips WHERE ${owner}`).bind(me.userId, ...accts).first();
+      const rows = (await env.DB.prepare(`SELECT id, meta, size, MIN(created_at) created_at FROM epic_clips WHERE ${owner} GROUP BY id ORDER BY t0 DESC, id DESC LIMIT ? OFFSET ?`).bind(me.userId, ...accts, per, page * per).all()).results || [];
+      return json(200, { total: tot ? tot.n : 0, page, per, items: rows.map(r => ({ ...JSON.parse(r.meta), id: r.id, size: r.size, upAt: r.created_at })) });
+    }
+    const mm = /^\/api\/epic\/clip\/(ec\d{10,16})$/.exec(p);
+    if (mm && M === 'GET') {
+      const r = await env.DB.prepare(`SELECT r2key FROM epic_clips WHERE id=? AND ${owner} LIMIT 1`).bind(mm[1], me.userId, ...accts).first();
+      if (!r) throw new HttpError(404, 'no_clip', '없는 클립');
+      const o = await env.EPIC.get(r.r2key); if (!o) throw new HttpError(404, 'no_blob', '클립 파일이 없습니다');
+      return new Response(o.body, { status: 200, headers: { 'Content-Type': 'application/octet-stream', 'Cache-Control': 'private, max-age=31536000, immutable' } });
     }
     throw new HttpError(404, 'not_found', '없는 주소');
   }

@@ -86,3 +86,8 @@ CREATE TABLE IF NOT EXISTS acct_role (acct_hash TEXT PRIMARY KEY, user_id TEXT N
 CREATE INDEX IF NOT EXISTS acct_role_user ON acct_role(user_id);
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS seen (user_id TEXT PRIMARY KEY, ids TEXT NOT NULL, updated_at INTEGER NOT NULL);
+
+-- b354: 에픽빔 클립 메타 (영상 묶음은 R2 버킷 bossmaple-epic, 바인딩 EPIC). 자동 삭제 없음 — USER_TABLES 에 넣지 않음.
+CREATE TABLE IF NOT EXISTS epic_clips (id TEXT NOT NULL, user_id TEXT NOT NULL, acct_hash TEXT NOT NULL, t0 INTEGER NOT NULL, boss TEXT, diff TEXT, item TEXT, cid TEXT, cname TEXT, meta TEXT NOT NULL, r2key TEXT NOT NULL, size INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (acct_hash, id));
+CREATE INDEX IF NOT EXISTS epic_acct ON epic_clips(acct_hash, t0);
+CREATE INDEX IF NOT EXISTS epic_user ON epic_clips(user_id, t0);

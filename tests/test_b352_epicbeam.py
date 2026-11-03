@@ -1,4 +1,4 @@
-# test_b352 (t657): 에픽빔 기록지 — 합성 영상(게임 화면 + 사용자 GIF 에픽빔, 6.0초)으로 감지·-3~+7초 클립·IndexedDB·자동 기록 연결, 흰 섬광 오감지 없음, 4x3 그리드·페이지·모달.
+# test_b352 (t657): 에픽빔 기록지 — 합성 영상(게임 화면 + 사용자 GIF 에픽빔, 6.0초)으로 감지·-1~+3초 클립(b354)·IndexedDB·자동 기록 연결, 흰 섬광 오감지 없음, 4x3 그리드·페이지·모달.
 # 스크린샷: MBT_SHOTDIR(기본 tests/out) 에 tabs.png, epic_grid.png, epic_modal.png
 import os, sys, tempfile, shutil, subprocess, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _tutil
@@ -49,9 +49,10 @@ try:
     if L:
       m=L[0]; print('meta',{k:m[k] for k in ('vt0','vts','n','start','end','sc','item','cid','boss','diff','bytes')})
       check('첫 감지 프레임 = 에픽빔 시작(6.0초) 직후',6.0<=m['vt0']<=6.6,m['vt0'])
-      check('클립 시작 = 첫 감지 -3초',abs(m['vts'][0]-(m['vt0']-3))<=0.25 and -3000<=m['start']<=-2850,(m['vts'],m['start']))
-      check('클립 끝 = +7초(총 10초)',abs(m['vts'][1]-(m['vt0']+7))<=0.3 and 6700<=m['end']<7000,(m['vts'],m['end']))
-      check('약 10fps 프레임',85<=m['n']<=101,m['n'])
+      check('클립 시작 = 첫 감지 -1초 (b354)',abs(m['vts'][0]-(m['vt0']-1))<=0.25 and -1000<=m['start']<=-850,(m['vts'],m['start']))
+      check('클립 끝 = +3초(총 4초, b354)',abs(m['vts'][1]-(m['vt0']+3))<=0.3 and 2700<=m['end']<3000,(m['vts'],m['end']))
+      check('약 10fps 프레임',33<=m['n']<=41,m['n'])
+      check('서버 로그인 없음 → 올릴 예정(up:0)·이 PC 저장',m.get('up')==0 and pg.evaluate("ECC.st")=='nolog',(m.get('up'),pg.evaluate("ECC.st")))
       check('자동 기록 아이템 연결(보스·난이도·아이템·캐릭터)',m['item']==item and m['boss']=='lucid' and m['diff']=='hard' and m['cid']=='c0',m)
       fr=pg.evaluate("ecFrames(ecList.length?'':'').then?0:0")
       ff=pg.evaluate("async(id)=>{ const F=await ecFrames(id); return [F.f.length, F.f.every(b=>b instanceof Blob&&b.type==='image/jpeg')] }",m['id'])

@@ -2319,3 +2319,10 @@ nav.tabs button .ecico{display:inline-block;width:16px;height:16px;vertical-alig
 .ectime{margin-left:auto;font-variant-numeric:tabular-nums;color:#ffcf8a}
 .ecx{position:absolute;top:8px;right:8px;z-index:1;cursor:pointer;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font-size:16px}
 [data-theme=light] .eccard{background:#fffaf4;border-color:rgba(224,112,0,.5)}[data-theme=light] .ectl{color:#3a2a4a}[data-theme=light] .ecl1{color:#a05000}[data-theme=light] .echd h2{color:#a05000;text-shadow:none}
+/* b354: 에픽빔 서버 저장 표시 */
+.eccloud{font-size:.78rem;padding:2px 8px;border-radius:8px;background:rgba(255,255,255,.06);color:#aab}
+.eccloud.ok{color:#8fd3ff;background:rgba(80,160,255,.12)}
+.eccloud.off,.eccloud.net{color:#ffcf8a}
+.ecup{position:absolute;left:6px;bottom:5px;font-size:.72rem;padding:1px 5px;border-radius:6px;background:rgba(0,0,0,.65)}
+.ecup.on{color:#8fd3ff}
+.ecload{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#99a}

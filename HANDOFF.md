@@ -2,6 +2,14 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b354 (t664) 에픽빔 클립 -1초~+3초 · R2 클라우드 저장(계정 연동)
+- 클립 창 pre 1000 / post 3000ms (src/epicclip.js cfg).
+- 서버(server/worker.js): POST /api/epic/clip?id= (인증, ≤2MB, X-Epic-Meta, 30/분·300/일, 중복 dup), GET /api/epic/clips?page&per(기본 12), GET /api/epic/clip/<id>. 메타 D1 epic_clips(acct_hash 기준 — 같은 넥슨 계정 다른 키/PC 에서도 보임), blob R2 clips/<ah16>/<id>.ecb (ECB1 묶음). PUT 한도 안 쓰려고 POST.
+- 자동 삭제 없음: epic_clips 는 USER_TABLES 밖 → syncGoneCron·kick·DELETE /api/account 후에도 남고 재로그인 시 다시 보임.
+- 클라이언트: IndexedDB 는 캐시/오프라인 저장, up:0 대기 클립을 로그인·online·5분마다 업로드, 서버 목록을 받아 remote 메타 캐시, 영상은 열 때 받아 캐시. 상태 ECC.st ok/off/nolog/net, 카드 배지 ☁/⏳/💾.
+- R2 막힘: 계정에서 R2 미활성(code 10042). 사용자: Cloudflare 대시보드 → R2 활성화 → `npx wrangler r2 bucket create bossmaple-epic` → server/wrangler.toml 의 [[r2_buckets]] 주석 해제 → `cd server && npx wrangler deploy`. 그전까지 /api/epic/* 는 503 r2_off, 클라이언트는 이 PC 에만 저장. 워커 배포 안 함.
+- 테스트: tests/test_b354_epic_server.py (로컬 R2 임시 설정), tests/test_b354_epic_cloud.py (PC A/B·오프라인·R2 꺼짐), test_b352 기대값 갱신. 스크린샷 /workspace/t664/.
+
 ## b353 (t657) 데미안 '마력이 깃든 안대'(eye) 공중 오탐 — eye 공중 기준 .8
 
 - 원인: 데미안 붉은 불꽃(검은 날개) 이펙트가 eye 공중 템플릿과 .737~.762 (sad 16~23) 로 맞음 → 공중 기준 .73 통과 → 기록. 데미안 영상 80.8~81.7s, 예전 v9 40.5s .739, fp_…NQ5NW .759 도 같은 오탐. 기준 영상 25개에 진짜 공중 eye 는 없음(바닥 eye 는 itemLog 경로라 영향 없음).

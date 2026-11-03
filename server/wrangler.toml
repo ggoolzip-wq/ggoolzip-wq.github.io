@@ -15,6 +15,14 @@ binding = "DB"
 database_name = "ggoolzip-sync"
 database_id = "0c815aec-cfbc-4205-af28-d7dddb3d5074"   # 2026-10-10 생성 (region WNAM)
 
+# b354: 에픽빔 클립 저장소 (R2). 2026-11-03 현재 계정에 R2 가 꺼져 있어(code 10042) 주석 처리 — 켜는 법:
+#   1) Cloudflare 대시보드 → R2 → 'R2 활성화'(무료 플랜, 결제수단 등록 필요할 수 있음)
+#   2) npx wrangler r2 bucket create bossmaple-epic
+#   3) 아래 3줄 주석 해제 → npx wrangler deploy   (바인딩이 없으면 /api/epic/* 는 503 r2_off, 사이트는 이 PC 저장만 씀)
+# [[r2_buckets]]
+# binding = "EPIC"
+# bucket_name = "bossmaple-epic"
+
 [vars]
 ALLOWED_ORIGINS = "https://ggoolzip-wq.github.io,https://bossmaple.pages.dev"
 ALLOW_LOCALHOST = "1"          # http://localhost:* / http://127.0.0.1:* 허용 (테스트용)
