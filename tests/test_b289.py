@@ -32,8 +32,8 @@ try:
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800); pg.evaluate(SETUP)
     for n,bo,di in [('v01_0366','adversary','normal'),('v07_0206','bellona','easy'),('v11_0431','kaling','easy')]:
       h=pg.evaluate("([u,b,d])=>_scan(u,b,d)",[u(n),bo,di]); check(f'공중 백옥 {n}',len(h)>=1 and all(x[0]=='r_white' for x in h) and 150<=h[0][3]<=600,h)
-    st=pg.evaluate("ARX.cfg.airStep"); pg.evaluate("ARX.cfg.airStep=45")
-    h=pg.evaluate("([u])=>_scan(u,'kaling','easy')",[u('v11_0431')]); check('45° 회전이면 놓침 (b288 원인)',len(h)==0,h); pg.evaluate(f"ARX.cfg.airStep={st}")
+    st=pg.evaluate("ARX.cfg.airStep"); kst=pg.evaluate("[ARX.cfg.airKoStep,ARX.cfg.airKoRef]"); pg.evaluate("ARX.cfg.airStep=45; ARX.cfg.airKoStep=45; ARX.cfg.airKoRef=0")  # b358: 결정·큐브 외 키는 airKoStep/airKoRef
+    h=pg.evaluate("([u])=>_scan(u,'kaling','easy')",[u('v11_0431')]); check('45° 회전이면 놓침 (b288 원인)',len(h)==0,h); pg.evaluate(f"ARX.cfg.airStep={st}; ARX.cfg.airKoStep={kst[0]}; ARX.cfg.airKoRef={kst[1]}")
     for n in ['v02_0187','v12_0146']:
       for bo,di in [('kaling','easy'),('jinhilla','hard')]:
         h=pg.evaluate("([u,b,d])=>_scan(u,b,d)",[u(n),bo,di]); check(f'상자 없음 {n} {bo} → 0',len(h)==0,h)
