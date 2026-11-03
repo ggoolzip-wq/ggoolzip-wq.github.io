@@ -125,10 +125,10 @@ const EC_URL=new Map();
 const ecUrl=(id,b)=>{ if(!EC_URL.has(id)) EC_URL.set(id,URL.createObjectURL(b)); return EC_URL.get(id); };
 function ecCard(m,i){ const b=BOSSES.find(x=>x.id===m.boss), c=(S.characters||[]).find(x=>x.id===m.cid), it=m.item&&ITEMS[m.item];
   return `<button class="eccard" data-ecopen="${esc(m.id)}" type="button"><div class="ecthumb">${m.poster?`<img src="${ecUrl(m.id,m.poster)}" alt="">`:'<span class="ecload">불러오는 중…</span>'}<span class="ecplay">▶</span><span class="ecdur">${Math.max(1,Math.round(((m.end||0)-(m.start||0)+100)/1000))}s</span>${ecBadge(m)}</div>
-  <div class="ectl"><div class="ecl1">${esc(ecWhen(m.t0))}</div>
-  <div class="ecl2">${b?bossIcon(b):''}<span>${esc(b?b.name:m.boss)}${m.diff?` (${esc(EC_DIFF[m.diff]||m.diff)})`:''}</span></div>
-  <div class="ecl3">${it?itemIcon(m.item):'<span class="ecq">?</span>'}<span>${it?esc(it.n):'아이템 확인 전'}</span></div>
-  <div class="ecl4">${c?avatar(c,'ecav'):'<span class="ecq">?</span>'}<span>${esc(c?c.name:(m.cname||'캐릭터 미확인'))}</span></div></div></button>`; }
+  <div class="ectl"><div class="ecl1"><span>${esc(ecWhen(m.t0))}</span></div>
+  <div class="ecl2"><i class="ecic">${b?bossIcon(b):'<span class="ecq">?</span>'}</i><span>${esc(b?b.name:m.boss)}${m.diff?` (${esc(EC_DIFF[m.diff]||m.diff)})`:''}</span></div>
+  <div class="ecl3"><i class="ecic">${it?itemIcon(m.item):'<span class="ecq">?</span>'}</i><span>${it?esc(it.n):'아이템 확인 전'}</span></div>
+  <div class="ecl4"><i class="ecic">${c?avatar(c,'ecav'):'<span class="ecq">?</span>'}</i><span>${esc(c?c.name:(m.cname||'캐릭터 미확인'))}</span></div></div></button>`; }
 async function renderEpic(){ const v=$('#view'); if(!v) return; let L=[]; ecSyncSoon(); try{ L=await ecList(); }catch(e){ v.innerHTML='<div class="card ecwrap"><p>이 브라우저는 IndexedDB 를 쓸 수 없어 에픽빔 클립을 저장할 수 없어요.</p></div>'; return; }
   if(typeof tab!=='undefined'&&tab!=='epic') return;
   const P=EC.cfg.per, np=Math.max(1,Math.ceil(L.length/P)); EC.page=Math.min(Math.max(0,EC.page),np-1); const pg=L.slice(EC.page*P,EC.page*P+P);

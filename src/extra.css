@@ -2035,20 +2035,20 @@ header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 /* t523: 고급 네온 버튼 — 안내창 '확인' · '영역 숨기기/보기' · 캐릭터 '추가' (b297ui 네온과 같은 색: 시안 → 보라) */
 :root{--nb1:#5ee7ff;--nb2:#b48cff;--nbbg:rgba(12,16,30,.78);--nbtx:#eaf6ff}
 [data-theme=light]{--nb1:#0aa6d6;--nb2:#7b53e6;--nbbg:rgba(255,255,255,.9);--nbtx:#1a2236}
-#arGuide .ar-gf .btn[data-arg="ok"],#arPanel .btn.ar-roib,#addCharBtn,#importAccBtn{position:relative;isolation:isolate;color:var(--nbtx)!important;font-weight:700;letter-spacing:.04em;
+#arGuide .ar-gf .btn[data-arg="ok"],#addCharBtn,#importAccBtn{position:relative;isolation:isolate;color:var(--nbtx)!important;font-weight:700;letter-spacing:.04em;
   background:linear-gradient(var(--nbbg),var(--nbbg)) padding-box,linear-gradient(135deg,var(--nb1),var(--nb2)) border-box!important;border:1.5px solid transparent!important;border-radius:999px;
   box-shadow:0 0 10px color-mix(in srgb,var(--nb1) 38%,transparent),0 0 22px color-mix(in srgb,var(--nb2) 22%,transparent),inset 0 0 10px color-mix(in srgb,var(--nb1) 14%,transparent)!important;
   text-shadow:0 0 8px color-mix(in srgb,var(--nb1) 55%,transparent);transition:box-shadow .2s,transform .15s,filter .2s}
-[data-theme=light] #arGuide .ar-gf .btn[data-arg="ok"],[data-theme=light] #arPanel .btn.ar-roib,[data-theme=light] #addCharBtn,[data-theme=light] #importAccBtn{
+[data-theme=light] #arGuide .ar-gf .btn[data-arg="ok"],[data-theme=light] #addCharBtn,[data-theme=light] #importAccBtn{
   box-shadow:0 2px 10px rgba(40,60,120,.12),0 0 12px color-mix(in srgb,var(--nb1) 26%,transparent),inset 0 1px 0 rgba(255,255,255,.9)!important;text-shadow:none}
-#arGuide .ar-gf .btn[data-arg="ok"]:hover,#arPanel .btn.ar-roib:hover,#addCharBtn:hover,#importAccBtn:hover{transform:translateY(-1px);filter:brightness(1.08);
+#arGuide .ar-gf .btn[data-arg="ok"]:hover:hover,#addCharBtn:hover,#importAccBtn:hover{transform:translateY(-1px);filter:brightness(1.08);
   box-shadow:0 0 14px color-mix(in srgb,var(--nb1) 60%,transparent),0 0 34px color-mix(in srgb,var(--nb2) 35%,transparent),inset 0 0 12px color-mix(in srgb,var(--nb1) 22%,transparent)!important}
-#arGuide .ar-gf .btn[data-arg="ok"]:active,#arPanel .btn.ar-roib:active,#addCharBtn:active,#importAccBtn:active{transform:translateY(0) scale(.98)}
-#arGuide .ar-gf .btn[data-arg="ok"]:focus-visible,#arPanel .btn.ar-roib:focus-visible,#addCharBtn:focus-visible,#importAccBtn:focus-visible{outline:2px solid var(--nb1);outline-offset:3px}
+#arGuide .ar-gf .btn[data-arg="ok"]:active:active,#addCharBtn:active,#importAccBtn:active{transform:translateY(0) scale(.98)}
+#arGuide .ar-gf .btn[data-arg="ok"]:focus-visible:focus-visible,#addCharBtn:focus-visible,#importAccBtn:focus-visible{outline:2px solid var(--nb1);outline-offset:3px}
 #arGuide .ar-gf .btn[data-arg="ok"]{min-width:120px;padding:8px 26px}
 #view .card.empty #importAccBtn::after,#view .dmkey #importAccBtn::after{box-shadow:0 0 8px 1px color-mix(in srgb,var(--nb1) 60%,transparent),0 0 26px 4px color-mix(in srgb,var(--nb2) 30%,transparent)}
 #arPanel .ar-prof{margin-left:8px;font-size:.74rem;font-weight:600;letter-spacing:.02em;color:var(--gtxt);opacity:.85;white-space:nowrap}
-@media (prefers-reduced-motion:reduce){#arGuide .ar-gf .btn[data-arg="ok"],#arPanel .btn.ar-roib,#addCharBtn,#importAccBtn{transition:none}}
+@media (prefers-reduced-motion:reduce){#arGuide .ar-gf .btn[data-arg="ok"],#addCharBtn,#importAccBtn{transition:none}}
 
 /* t520u: 최근 보유 메소 — '이번달 검마' 칸 바로 위 (3열 중 셋째 칸에 맞춤) */
 .mesorow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 4px}
@@ -2300,13 +2300,18 @@ nav.tabs button .ecico{display:inline-block;width:16px;height:16px;vertical-alig
 .ecthumb{position:relative;aspect-ratio:16/9;background:#000}.ecthumb img{width:100%;height:100%;object-fit:cover;display:block}
 .ecplay{position:absolute;inset:0;margin:auto;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.55);color:#fff;font-size:15px;box-shadow:0 0 10px rgba(255,154,60,.7)}
 .ecdur{position:absolute;right:6px;bottom:5px;font-size:.7rem;padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.65);color:#ffd8a8}
-.ectl{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;font-size:.84rem;color:#f1e6ff}
-.ectl>div{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}.ectl>div>span:last-child{overflow:hidden;text-overflow:ellipsis}
+.ectl{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;font-size:.84rem;color:#f1e6ff;min-width:0}
+.ectl>div{display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:8px;align-items:center;min-height:24px;min-width:0;white-space:nowrap;line-height:1.25}
+.ectl>div>span:last-child{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ectl>.ecl1{grid-template-columns:minmax(0,1fr);min-height:18px}
 .ecl1{font-variant-numeric:tabular-nums;color:#ffcf8a;font-size:.8rem}
-.ectl img,.ectl .bicon{width:22px!important;height:22px!important;flex:none;border-radius:4px}
-.ectl .avatar.ecav{width:24px;height:24px;flex:none;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:.7rem;background:rgba(255,255,255,.08)}
-.ectl .avatar.ecav img{width:48px!important;height:48px!important;object-fit:cover;object-position:50% 30%;border-radius:0}
-.ecq{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:4px;background:rgba(255,255,255,.08);opacity:.6}
+.ectl .ecic{width:24px;height:24px;display:grid;place-items:center;overflow:hidden;font-style:normal;flex:none}
+.ectl .ecic>*{max-width:24px;max-height:24px}
+.ectl .ecic img,.ectl .ecic .bicon{width:22px!important;height:22px!important;object-fit:contain;flex:none;border-radius:4px;margin:0!important;vertical-align:middle}
+.ectl .ecic .hongico{position:relative;width:22px;height:22px;display:block;gap:0}.ectl .ecic .hongico>:first-child{width:22px!important;height:22px!important}.ectl .ecic .hongico>:last-child{position:absolute;right:-1px;bottom:-1px;width:11px!important;height:11px!important}
+.ectl .avatar.ecav{width:24px;height:24px;flex:none;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:.7rem;background:rgba(255,255,255,.08);margin:0}
+.ectl .avatar.ecav img{width:48px!important;height:48px!important;max-width:none;max-height:none;object-fit:cover;object-position:50% 30%;border-radius:0}
+.ecq{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:4px;background:rgba(255,255,255,.08);opacity:.6;font-style:normal}
 .ecempty{padding:40px;text-align:center;opacity:.6}
 .ecpg{display:flex;justify-content:center;gap:6px;margin-top:16px}
 .ecpb{cursor:pointer;font:inherit;min-width:34px;padding:5px 10px;border-radius:8px;border:1.5px solid rgba(255,154,60,.5);background:transparent;color:#ffd8a8}
@@ -2315,7 +2320,7 @@ nav.tabs button .ecico{display:inline-block;width:16px;height:16px;vertical-alig
 .ecbox{position:relative;width:min(92vw,1100px);border-radius:14px;overflow:hidden;background:#0d0a14;border:1.5px solid #ff9a3c;box-shadow:0 0 24px rgba(255,154,60,.6),0 0 60px rgba(180,107,255,.35)}
 .ecbox canvas{display:block;width:100%;height:auto;background:#000}
 .ecbar{height:4px;background:rgba(255,255,255,.1)}.ecbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff9a3c,#b46bff)}
-.ecmeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:10px 14px;color:#f1e6ff}.ecmeta .ectl{flex-direction:row;flex-wrap:wrap;gap:6px 18px;padding:0}
+.ecmeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:10px 14px;color:#f1e6ff}.ecmeta .ectl>div{display:flex;gap:6px}.ecmeta .ectl{flex-direction:row;flex-wrap:wrap;gap:6px 18px;padding:0}
 .ectime{margin-left:auto;font-variant-numeric:tabular-nums;color:#ffcf8a}
 .ecx{position:absolute;top:8px;right:8px;z-index:1;cursor:pointer;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font-size:16px}
 [data-theme=light] .eccard{background:#fffaf4;border-color:rgba(224,112,0,.5)}[data-theme=light] .ectl{color:#3a2a4a}[data-theme=light] .ecl1{color:#a05000}[data-theme=light] .echd h2{color:#a05000;text-shadow:none}

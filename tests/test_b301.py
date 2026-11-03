@@ -49,10 +49,10 @@ try:
       okb=pg.evaluate("""()=>{ const b=document.querySelector('#arGuide [data-arg="ok"]'); if(!b) return null; const cs=getComputedStyle(b); return {bg:cs.backgroundImage,sh:cs.boxShadow,r:cs.borderRadius}; }""")
       check(f'{th}: 안내창 확인 버튼 네온(그라디언트 테두리·빛)',bool(okb) and 'gradient' in okb['bg'] and okb['sh']!='none' and okb['r'].startswith('999'),okb)
       pg.evaluate("document.querySelector('#arGuide').hidden=true; const cv=document.createElement('canvas'); cv.width=1920; cv.height=1080; window.AR.testSrc=cv; window.AR.stream={getTracks:()=>[]}; window.AR.prof={id:'1920o',lab:'1920 x 1080(최적 비율)',s:1,gw:1920,gh:1080}; arPanel(true); arPanelPaint();")
-      r=pg.evaluate("""()=>{ const b=document.querySelector('#arPanel .ar-roib'), l=document.querySelector('#arPanel .ar-prof'), a=document.querySelector('#addCharBtn');
-        return {lab:l&&l.textContent, next:!!(b&&b.nextElementSibling===l), roiBg:b&&getComputedStyle(b).backgroundImage, addBg:a&&getComputedStyle(a).backgroundImage}; }""")
-      check(f'{th}: 영역 숨기기 옆 라벨',r['lab']=='1920 x 1080(최적 비율)' and r['next'],r)
-      check(f'{th}: 영역 버튼·캐릭터 추가 버튼 네온',r['roiBg'] and 'gradient' in r['roiBg'] and r['addBg'] and 'gradient' in r['addBg'],r)
+      r=pg.evaluate("""()=>{ const l=document.querySelector('#arPanel .ar-prof'), a=document.querySelector('#addCharBtn');
+        return {lab:l&&l.textContent, noroi:!document.querySelector('#arPanel .ar-roib'), addBg:a&&getComputedStyle(a).backgroundImage}; }""")
+      check(f'{th}: 해상도 라벨, 영역 버튼 없음(b363)',r['lab']=='1920 x 1080(최적 비율)' and r['noroi'],r)
+      check(f'{th}: 캐릭터 추가 버튼 네온',r['addBg'] and 'gradient' in r['addBg'],r)
       pg.evaluate("window.AR.stream=null; window.AR.testSrc=null; window.AR.prof=null")
     b.close()
 finally:

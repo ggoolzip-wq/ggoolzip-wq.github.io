@@ -2159,20 +2159,20 @@ header .hbtn.arbtn.on{border-color:#5fd38a;color:#bff5d0}
 /* t523: 고급 네온 버튼 — 안내창 '확인' · '영역 숨기기/보기' · 캐릭터 '추가' (b297ui 네온과 같은 색: 시안 → 보라) */
 :root{--nb1:#5ee7ff;--nb2:#b48cff;--nbbg:rgba(12,16,30,.78);--nbtx:#eaf6ff}
 [data-theme=light]{--nb1:#0aa6d6;--nb2:#7b53e6;--nbbg:rgba(255,255,255,.9);--nbtx:#1a2236}
-#arGuide .ar-gf .btn[data-arg="ok"],#arPanel .btn.ar-roib,#addCharBtn,#importAccBtn{position:relative;isolation:isolate;color:var(--nbtx)!important;font-weight:700;letter-spacing:.04em;
+#arGuide .ar-gf .btn[data-arg="ok"],#addCharBtn,#importAccBtn{position:relative;isolation:isolate;color:var(--nbtx)!important;font-weight:700;letter-spacing:.04em;
   background:linear-gradient(var(--nbbg),var(--nbbg)) padding-box,linear-gradient(135deg,var(--nb1),var(--nb2)) border-box!important;border:1.5px solid transparent!important;border-radius:999px;
   box-shadow:0 0 10px color-mix(in srgb,var(--nb1) 38%,transparent),0 0 22px color-mix(in srgb,var(--nb2) 22%,transparent),inset 0 0 10px color-mix(in srgb,var(--nb1) 14%,transparent)!important;
   text-shadow:0 0 8px color-mix(in srgb,var(--nb1) 55%,transparent);transition:box-shadow .2s,transform .15s,filter .2s}
-[data-theme=light] #arGuide .ar-gf .btn[data-arg="ok"],[data-theme=light] #arPanel .btn.ar-roib,[data-theme=light] #addCharBtn,[data-theme=light] #importAccBtn{
+[data-theme=light] #arGuide .ar-gf .btn[data-arg="ok"],[data-theme=light] #addCharBtn,[data-theme=light] #importAccBtn{
   box-shadow:0 2px 10px rgba(40,60,120,.12),0 0 12px color-mix(in srgb,var(--nb1) 26%,transparent),inset 0 1px 0 rgba(255,255,255,.9)!important;text-shadow:none}
-#arGuide .ar-gf .btn[data-arg="ok"]:hover,#arPanel .btn.ar-roib:hover,#addCharBtn:hover,#importAccBtn:hover{transform:translateY(-1px);filter:brightness(1.08);
+#arGuide .ar-gf .btn[data-arg="ok"]:hover:hover,#addCharBtn:hover,#importAccBtn:hover{transform:translateY(-1px);filter:brightness(1.08);
   box-shadow:0 0 14px color-mix(in srgb,var(--nb1) 60%,transparent),0 0 34px color-mix(in srgb,var(--nb2) 35%,transparent),inset 0 0 12px color-mix(in srgb,var(--nb1) 22%,transparent)!important}
-#arGuide .ar-gf .btn[data-arg="ok"]:active,#arPanel .btn.ar-roib:active,#addCharBtn:active,#importAccBtn:active{transform:translateY(0) scale(.98)}
-#arGuide .ar-gf .btn[data-arg="ok"]:focus-visible,#arPanel .btn.ar-roib:focus-visible,#addCharBtn:focus-visible,#importAccBtn:focus-visible{outline:2px solid var(--nb1);outline-offset:3px}
+#arGuide .ar-gf .btn[data-arg="ok"]:active:active,#addCharBtn:active,#importAccBtn:active{transform:translateY(0) scale(.98)}
+#arGuide .ar-gf .btn[data-arg="ok"]:focus-visible:focus-visible,#addCharBtn:focus-visible,#importAccBtn:focus-visible{outline:2px solid var(--nb1);outline-offset:3px}
 #arGuide .ar-gf .btn[data-arg="ok"]{min-width:120px;padding:8px 26px}
 #view .card.empty #importAccBtn::after,#view .dmkey #importAccBtn::after{box-shadow:0 0 8px 1px color-mix(in srgb,var(--nb1) 60%,transparent),0 0 26px 4px color-mix(in srgb,var(--nb2) 30%,transparent)}
 #arPanel .ar-prof{margin-left:8px;font-size:.74rem;font-weight:600;letter-spacing:.02em;color:var(--gtxt);opacity:.85;white-space:nowrap}
-@media (prefers-reduced-motion:reduce){#arGuide .ar-gf .btn[data-arg="ok"],#arPanel .btn.ar-roib,#addCharBtn,#importAccBtn{transition:none}}
+@media (prefers-reduced-motion:reduce){#arGuide .ar-gf .btn[data-arg="ok"],#addCharBtn,#importAccBtn{transition:none}}
 
 /* t520u: 최근 보유 메소 — '이번달 검마' 칸 바로 위 (3열 중 셋째 칸에 맞춤) */
 .mesorow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 4px}
@@ -2424,13 +2424,18 @@ nav.tabs button .ecico{display:inline-block;width:16px;height:16px;vertical-alig
 .ecthumb{position:relative;aspect-ratio:16/9;background:#000}.ecthumb img{width:100%;height:100%;object-fit:cover;display:block}
 .ecplay{position:absolute;inset:0;margin:auto;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.55);color:#fff;font-size:15px;box-shadow:0 0 10px rgba(255,154,60,.7)}
 .ecdur{position:absolute;right:6px;bottom:5px;font-size:.7rem;padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.65);color:#ffd8a8}
-.ectl{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;font-size:.84rem;color:#f1e6ff}
-.ectl>div{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}.ectl>div>span:last-child{overflow:hidden;text-overflow:ellipsis}
+.ectl{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;font-size:.84rem;color:#f1e6ff;min-width:0}
+.ectl>div{display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:8px;align-items:center;min-height:24px;min-width:0;white-space:nowrap;line-height:1.25}
+.ectl>div>span:last-child{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ectl>.ecl1{grid-template-columns:minmax(0,1fr);min-height:18px}
 .ecl1{font-variant-numeric:tabular-nums;color:#ffcf8a;font-size:.8rem}
-.ectl img,.ectl .bicon{width:22px!important;height:22px!important;flex:none;border-radius:4px}
-.ectl .avatar.ecav{width:24px;height:24px;flex:none;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:.7rem;background:rgba(255,255,255,.08)}
-.ectl .avatar.ecav img{width:48px!important;height:48px!important;object-fit:cover;object-position:50% 30%;border-radius:0}
-.ecq{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:4px;background:rgba(255,255,255,.08);opacity:.6}
+.ectl .ecic{width:24px;height:24px;display:grid;place-items:center;overflow:hidden;font-style:normal;flex:none}
+.ectl .ecic>*{max-width:24px;max-height:24px}
+.ectl .ecic img,.ectl .ecic .bicon{width:22px!important;height:22px!important;object-fit:contain;flex:none;border-radius:4px;margin:0!important;vertical-align:middle}
+.ectl .ecic .hongico{position:relative;width:22px;height:22px;display:block;gap:0}.ectl .ecic .hongico>:first-child{width:22px!important;height:22px!important}.ectl .ecic .hongico>:last-child{position:absolute;right:-1px;bottom:-1px;width:11px!important;height:11px!important}
+.ectl .avatar.ecav{width:24px;height:24px;flex:none;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:.7rem;background:rgba(255,255,255,.08);margin:0}
+.ectl .avatar.ecav img{width:48px!important;height:48px!important;max-width:none;max-height:none;object-fit:cover;object-position:50% 30%;border-radius:0}
+.ecq{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:4px;background:rgba(255,255,255,.08);opacity:.6;font-style:normal}
 .ecempty{padding:40px;text-align:center;opacity:.6}
 .ecpg{display:flex;justify-content:center;gap:6px;margin-top:16px}
 .ecpb{cursor:pointer;font:inherit;min-width:34px;padding:5px 10px;border-radius:8px;border:1.5px solid rgba(255,154,60,.5);background:transparent;color:#ffd8a8}
@@ -2439,7 +2444,7 @@ nav.tabs button .ecico{display:inline-block;width:16px;height:16px;vertical-alig
 .ecbox{position:relative;width:min(92vw,1100px);border-radius:14px;overflow:hidden;background:#0d0a14;border:1.5px solid #ff9a3c;box-shadow:0 0 24px rgba(255,154,60,.6),0 0 60px rgba(180,107,255,.35)}
 .ecbox canvas{display:block;width:100%;height:auto;background:#000}
 .ecbar{height:4px;background:rgba(255,255,255,.1)}.ecbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff9a3c,#b46bff)}
-.ecmeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:10px 14px;color:#f1e6ff}.ecmeta .ectl{flex-direction:row;flex-wrap:wrap;gap:6px 18px;padding:0}
+.ecmeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:10px 14px;color:#f1e6ff}.ecmeta .ectl>div{display:flex;gap:6px}.ecmeta .ectl{flex-direction:row;flex-wrap:wrap;gap:6px 18px;padding:0}
 .ectime{margin-left:auto;font-variant-numeric:tabular-nums;color:#ffcf8a}
 .ecx{position:absolute;top:8px;right:8px;z-index:1;cursor:pointer;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font-size:16px}
 [data-theme=light] .eccard{background:#fffaf4;border-color:rgba(224,112,0,.5)}[data-theme=light] .ectl{color:#3a2a4a}[data-theme=light] .ecl1{color:#a05000}[data-theme=light] .echd h2{color:#a05000;text-shadow:none}
@@ -8170,7 +8175,7 @@ function renderAuto(){ const v=$('#view'); v.innerHTML='<div id="arPanel" class=
 function arPanel(open){ if(open&&typeof tab!=='undefined'&&tab!=='auto'&&typeof render==='function'){ tab='auto'; render(); return; } arPanelPaint(); }
 function arPanelBind(p){ {
     p.addEventListener('click',e=>{ const a=e.target.closest('[data-ar]')?.dataset.ar; if(!a) return;
-      if(a==='guide') return; if(a==='roi'){ ARX.cfg.roi=!ARX.cfg.roi; arSave(); } else if(a==='stop') arDisconnect(); else if(a==='connect') arConnect(); else if(a.startsWith('pick:')){ const [,i,k]=a.split(':'), A=(ARX.amb||[])[+i]; if(A){ ARX.amb.splice(+i,1); arRecord(k,A.score,A.via+' 직접 고름'); arPanelPaint(); } }
+      if(a==='guide') return; if(a==='stop') arDisconnect(); else if(a==='connect') arConnect(); else if(a.startsWith('pick:')){ const [,i,k]=a.split(':'), A=(ARX.amb||[])[+i]; if(A){ ARX.amb.splice(+i,1); arRecord(k,A.score,A.via+' 직접 고름'); arPanelPaint(); } }
       else if(a==='bindmap'){ const t=arNorm(ARX.mapText), bid=ARX.cfg.boss; if(t&&bid){ ARX.cfg.mapAlias[t]={boss:bid,diff:''}; arSave(); arLog(`맵 등록: ${ARX.mapText} → ${findBoss(bid)?.name}`); } }
       else if(a==='reset'){ const keep=ARX.cfg.mapAlias; ARX.cfg=Object.assign({},AR_DEF,{mapAlias:keep}); arSave(); }
       arPanelPaint(); });
@@ -8202,14 +8207,14 @@ function arPanelLive(p,pipOnly){ p=p||$('#arPanel'); if(!p||(!pipOnly&&(p.hidden
   { const cb=arPipCard(p); if(cb) arPipBind(cb); }
   if(arPipQ(p,'.ar-cboss .ar-b')) arSetH(arPipQ(p,'.ar-cboss .ar-b'),((bst==='rew'?`<div class="ar-bst rew"><i class="ar-dot"></i>보상 인식 중</div>`:'')+(bst==='rew'&&detB?`<div class="ar-big ar-bline">${typeof bossIcon==='function'?bossIcon(detB):''}<span class="ar-bn">${esc(detB.name)}</span>${detD?' '+(typeof diffImg==='function'?diffImg(detD):esc(D[detD])):''}</div>`
     :`<div class="ar-big dim">-</div>`))+arClrLine()); const bc=arPipQ(p,'.ar-cboss .ar-b'); if(bc&&bc._arFit!==bc._arH){ bc._arFit=bc._arH; arFitBoss(); } if(ARX.pip) arPipRec();
-  if(pipOnly) return; q('.ar-roib').textContent=c.roi?'영역 숨기기':'영역 보기'; { const pl=q('.ar-prof'); if(pl){ const L=arProfLab(); pl.textContent=L?L:(ARX.stream?'해상도 확인 중…':''); pl.title=L?'화면 공유 영상에서 자동 감지한 해상도·UI 비율':''; } } 
+  if(pipOnly) return; { const pl=q('.ar-prof'); if(pl){ const L=arProfLab(); pl.textContent=L?L:(ARX.stream?'해상도 확인 중…':''); pl.title=L?'화면 공유 영상에서 자동 감지한 해상도·UI 비율':''; } } 
   }
 function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c=ARX.cfg, t=arTarget(), on=arLive(), dn=k=>({log:'획득 로그',banner:'획득 배너',item:'바닥 아이콘',map:'맵 이름',name:'상태바 이름'})[k];
   const detC=S.characters.find(x=>x.id===ARX.det.cid), bst=arBossState(), detB=(ARX.det.boss&&findBoss(ARX.det.boss))||(bst&&bst!=='rew'&&ARX.mapSt&&findBoss(ARX.mapSt.boss)), detD=ARX.det.boss?ARX.det.diff:(ARX.mapSt?.diff||''), mapN=(AR_REWARD.find(m=>m[1]===ARX.det.boss)||[''])[0], acc=detC&&typeof accOf==='function'?accOf(detC):null;
   if(!p.querySelector('.ar-g')){ p.innerHTML=`<div class="ar-sbar"></div><div class="ar-g">
     <div class="card ar-c ar-cchar"><h2>캐릭터 정보</h2><div class="ar-b"></div></div>
     <div class="card ar-c ar-cboss"><h2>보상 맵 인식 <span class="hspace"></span><button type="button" class="btn sm ar-pipb" title="작은 창으로 항상 맨 위에 띄우기 (크롬/엣지 116+)">PIP</button></h2><div class="ar-pipmsg" hidden></div><div class="ar-b"></div></div>
-    <div class="card ar-c ar-clive"><h2>라이브 화면 <span class="hspace"></span><button type="button" class="btn sm ar-roib" data-ar="roi"></button><span class="ar-prof"></span></h2><div class="ar-vw"><video class="ar-vid" muted playsinline autoplay></video><canvas class="ar-prev" width="1280" height="720"></canvas><div class="ar-vnone">연결하면 게임 화면이 여기에 보여요</div></div><div class="ar-b ar-regs"></div></div>
+    <div class="card ar-c ar-clive"><h2>라이브 화면 <span class="hspace"></span><span class="ar-prof"></span></h2><div class="ar-vw"><video class="ar-vid" muted playsinline autoplay></video><canvas class="ar-prev" width="1280" height="720"></canvas><div class="ar-vnone">연결하면 게임 화면이 여기에 보여요</div></div><div class="ar-b ar-regs"></div></div>
     <div class="card ar-c ar-crec"><h2>현재까지 기록</h2><div class="ar-b"></div></div>
     <div class="card ar-c ar-cset" hidden><div class="ar-b"></div></div></div>`; }
   const q=s=>p.querySelector(s), vid=q('.ar-vid'); if(vid){ const ss=on?ARX.stream:null; if(vid.srcObject!==ss){ vid.srcObject=ss; if(ss) vid.play().catch(()=>{}); } q('.ar-vw').classList.toggle('on',!!ss||!!ARX.testSrc); }
@@ -8230,10 +8235,7 @@ function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c
     ${ARX.ocrErr?'<p class="ar-err">글자 읽기(OCR) 불러오기 실패</p>':''}`);
   arPrev(); }
 function arPrev(){ const cv=$('#arPanel .ar-prev'); if(!cv) return; const g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height); const src=ARX.stream?null:ARX.testSrc;
-  if(src&&(src.videoWidth||src.width)) g.drawImage(src,0,0,cv.width,cv.height); if(!ARX.cfg.roi) return;
-  const fs=Math.max(11,Math.round(cv.width/48)); g.font=`700 ${fs}px system-ui,sans-serif`; g.textBaseline='bottom';
-  for(const [k,col,lb] of [['item','#ffb347','아이템 인식 영역'],['banner','#ffe066','획득 배너'],['log','#ff6bd0','획득 로그'],['map','#5ec8ff','미니맵 맵 이름'],['name','#7dff9a','닉네임'],['inv','#c0ff40','인벤토리 메소'],['sto','#40e0ff','창고 메소'],['stoInv','#40e0ff','창고 옆 인벤 메소']]){ const r=arR(k,ARX.video||ARX.testSrc); if(!r) continue; const x=r.x*cv.width, y=r.y*cv.height, w=r.w*cv.width, h=r.h*cv.height; g.strokeStyle=col; g.lineWidth=2; g.strokeRect(x,y,w,h);
-    const tw=g.measureText(lb).width+10, ly=y-fs-6<0?y+fs+6:y, lx=Math.min(Math.max(0,x),cv.width-tw); g.fillStyle='rgba(8,10,20,.82)'; g.fillRect(lx,ly-fs-6,tw,fs+6); g.fillStyle=col; g.fillText(lb,lx+5,ly-2); } }
+  if(src&&(src.videoWidth||src.width)) g.drawImage(src,0,0,cv.width,cv.height); } /* b363: '영역 보기' 겹쳐 그리기 제거 (인식 영역 arR 은 그대로) */
 /* b287: 분석 상태 — 분석 fps(배너 감시) · 놓친 프레임(영상 프레임 중 감시 못 한 것) · 바닥 찾기 횟수·건너뜀 · 1회 시간 */
 function arPerfText(){ const f=ARX.pf; if(!f||!ARX.video) return '분석 fps - · 놓친 프레임 -'; const s=Math.max(.001,(performance.now()-f.t0)/1000), L=f.last||{watched:0,missed:0,t:f.t0}, ds=Math.max(.001,(performance.now()-L.t)/1000);
   const fps=(f.watched-L.watched)/ds; return `분석 fps <b>${fps.toFixed(0)}</b> · 놓친 프레임 <b>${f.missed}</b>${f.watched?` (${(100*f.missed/(f.watched+f.missed)).toFixed(1)}%)`:''} · 배너 매칭 ${f.banners}회${f.banners?` (${(f.bannerMs/f.banners).toFixed(0)}ms)`:''} · 바닥/공중 ${f.items}회${ARX.itemMs?` (${ARX.itemMs.toFixed(0)}ms)`:''}${f.iskip?` · 건너뜀 ${f.iskip}`:''} · 공중 ${f.air||0}회${f.air?` (${((f.airMs||0)/f.air).toFixed(0)}ms)`:''}${f.airDrop?` · 버린 프레임 ${f.airDrop}`:''}${ARX.airHot?' · <b>full-rate</b>':''}${ARX.wk?'':' · Worker 없음'}`; }
@@ -8495,10 +8497,10 @@ const EC_URL=new Map();
 const ecUrl=(id,b)=>{ if(!EC_URL.has(id)) EC_URL.set(id,URL.createObjectURL(b)); return EC_URL.get(id); };
 function ecCard(m,i){ const b=BOSSES.find(x=>x.id===m.boss), c=(S.characters||[]).find(x=>x.id===m.cid), it=m.item&&ITEMS[m.item];
   return `<button class="eccard" data-ecopen="${esc(m.id)}" type="button"><div class="ecthumb">${m.poster?`<img src="${ecUrl(m.id,m.poster)}" alt="">`:'<span class="ecload">불러오는 중…</span>'}<span class="ecplay">▶</span><span class="ecdur">${Math.max(1,Math.round(((m.end||0)-(m.start||0)+100)/1000))}s</span>${ecBadge(m)}</div>
-  <div class="ectl"><div class="ecl1">${esc(ecWhen(m.t0))}</div>
-  <div class="ecl2">${b?bossIcon(b):''}<span>${esc(b?b.name:m.boss)}${m.diff?` (${esc(EC_DIFF[m.diff]||m.diff)})`:''}</span></div>
-  <div class="ecl3">${it?itemIcon(m.item):'<span class="ecq">?</span>'}<span>${it?esc(it.n):'아이템 확인 전'}</span></div>
-  <div class="ecl4">${c?avatar(c,'ecav'):'<span class="ecq">?</span>'}<span>${esc(c?c.name:(m.cname||'캐릭터 미확인'))}</span></div></div></button>`; }
+  <div class="ectl"><div class="ecl1"><span>${esc(ecWhen(m.t0))}</span></div>
+  <div class="ecl2"><i class="ecic">${b?bossIcon(b):'<span class="ecq">?</span>'}</i><span>${esc(b?b.name:m.boss)}${m.diff?` (${esc(EC_DIFF[m.diff]||m.diff)})`:''}</span></div>
+  <div class="ecl3"><i class="ecic">${it?itemIcon(m.item):'<span class="ecq">?</span>'}</i><span>${it?esc(it.n):'아이템 확인 전'}</span></div>
+  <div class="ecl4"><i class="ecic">${c?avatar(c,'ecav'):'<span class="ecq">?</span>'}</i><span>${esc(c?c.name:(m.cname||'캐릭터 미확인'))}</span></div></div></button>`; }
 async function renderEpic(){ const v=$('#view'); if(!v) return; let L=[]; ecSyncSoon(); try{ L=await ecList(); }catch(e){ v.innerHTML='<div class="card ecwrap"><p>이 브라우저는 IndexedDB 를 쓸 수 없어 에픽빔 클립을 저장할 수 없어요.</p></div>'; return; }
   if(typeof tab!=='undefined'&&tab!=='epic') return;
   const P=EC.cfg.per, np=Math.max(1,Math.ceil(L.length/P)); EC.page=Math.min(Math.max(0,EC.page),np-1); const pg=L.slice(EC.page*P,EC.page*P+P);

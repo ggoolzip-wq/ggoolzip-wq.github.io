@@ -992,7 +992,7 @@ function renderAuto(){ const v=$('#view'); v.innerHTML='<div id="arPanel" class=
 function arPanel(open){ if(open&&typeof tab!=='undefined'&&tab!=='auto'&&typeof render==='function'){ tab='auto'; render(); return; } arPanelPaint(); }
 function arPanelBind(p){ {
     p.addEventListener('click',e=>{ const a=e.target.closest('[data-ar]')?.dataset.ar; if(!a) return;
-      if(a==='guide') return; if(a==='roi'){ ARX.cfg.roi=!ARX.cfg.roi; arSave(); } else if(a==='stop') arDisconnect(); else if(a==='connect') arConnect(); else if(a.startsWith('pick:')){ const [,i,k]=a.split(':'), A=(ARX.amb||[])[+i]; if(A){ ARX.amb.splice(+i,1); arRecord(k,A.score,A.via+' 직접 고름'); arPanelPaint(); } }
+      if(a==='guide') return; if(a==='stop') arDisconnect(); else if(a==='connect') arConnect(); else if(a.startsWith('pick:')){ const [,i,k]=a.split(':'), A=(ARX.amb||[])[+i]; if(A){ ARX.amb.splice(+i,1); arRecord(k,A.score,A.via+' 직접 고름'); arPanelPaint(); } }
       else if(a==='bindmap'){ const t=arNorm(ARX.mapText), bid=ARX.cfg.boss; if(t&&bid){ ARX.cfg.mapAlias[t]={boss:bid,diff:''}; arSave(); arLog(`맵 등록: ${ARX.mapText} → ${findBoss(bid)?.name}`); } }
       else if(a==='reset'){ const keep=ARX.cfg.mapAlias; ARX.cfg=Object.assign({},AR_DEF,{mapAlias:keep}); arSave(); }
       arPanelPaint(); });
@@ -1024,14 +1024,14 @@ function arPanelLive(p,pipOnly){ p=p||$('#arPanel'); if(!p||(!pipOnly&&(p.hidden
   { const cb=arPipCard(p); if(cb) arPipBind(cb); }
   if(arPipQ(p,'.ar-cboss .ar-b')) arSetH(arPipQ(p,'.ar-cboss .ar-b'),((bst==='rew'?`<div class="ar-bst rew"><i class="ar-dot"></i>보상 인식 중</div>`:'')+(bst==='rew'&&detB?`<div class="ar-big ar-bline">${typeof bossIcon==='function'?bossIcon(detB):''}<span class="ar-bn">${esc(detB.name)}</span>${detD?' '+(typeof diffImg==='function'?diffImg(detD):esc(D[detD])):''}</div>`
     :`<div class="ar-big dim">-</div>`))+arClrLine()); const bc=arPipQ(p,'.ar-cboss .ar-b'); if(bc&&bc._arFit!==bc._arH){ bc._arFit=bc._arH; arFitBoss(); } if(ARX.pip) arPipRec();
-  if(pipOnly) return; q('.ar-roib').textContent=c.roi?'영역 숨기기':'영역 보기'; { const pl=q('.ar-prof'); if(pl){ const L=arProfLab(); pl.textContent=L?L:(ARX.stream?'해상도 확인 중…':''); pl.title=L?'화면 공유 영상에서 자동 감지한 해상도·UI 비율':''; } } 
+  if(pipOnly) return; { const pl=q('.ar-prof'); if(pl){ const L=arProfLab(); pl.textContent=L?L:(ARX.stream?'해상도 확인 중…':''); pl.title=L?'화면 공유 영상에서 자동 감지한 해상도·UI 비율':''; } } 
   }
 function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c=ARX.cfg, t=arTarget(), on=arLive(), dn=k=>({log:'획득 로그',banner:'획득 배너',item:'바닥 아이콘',map:'맵 이름',name:'상태바 이름'})[k];
   const detC=S.characters.find(x=>x.id===ARX.det.cid), bst=arBossState(), detB=(ARX.det.boss&&findBoss(ARX.det.boss))||(bst&&bst!=='rew'&&ARX.mapSt&&findBoss(ARX.mapSt.boss)), detD=ARX.det.boss?ARX.det.diff:(ARX.mapSt?.diff||''), mapN=(AR_REWARD.find(m=>m[1]===ARX.det.boss)||[''])[0], acc=detC&&typeof accOf==='function'?accOf(detC):null;
   if(!p.querySelector('.ar-g')){ p.innerHTML=`<div class="ar-sbar"></div><div class="ar-g">
     <div class="card ar-c ar-cchar"><h2>캐릭터 정보</h2><div class="ar-b"></div></div>
     <div class="card ar-c ar-cboss"><h2>보상 맵 인식 <span class="hspace"></span><button type="button" class="btn sm ar-pipb" title="작은 창으로 항상 맨 위에 띄우기 (크롬/엣지 116+)">PIP</button></h2><div class="ar-pipmsg" hidden></div><div class="ar-b"></div></div>
-    <div class="card ar-c ar-clive"><h2>라이브 화면 <span class="hspace"></span><button type="button" class="btn sm ar-roib" data-ar="roi"></button><span class="ar-prof"></span></h2><div class="ar-vw"><video class="ar-vid" muted playsinline autoplay></video><canvas class="ar-prev" width="1280" height="720"></canvas><div class="ar-vnone">연결하면 게임 화면이 여기에 보여요</div></div><div class="ar-b ar-regs"></div></div>
+    <div class="card ar-c ar-clive"><h2>라이브 화면 <span class="hspace"></span><span class="ar-prof"></span></h2><div class="ar-vw"><video class="ar-vid" muted playsinline autoplay></video><canvas class="ar-prev" width="1280" height="720"></canvas><div class="ar-vnone">연결하면 게임 화면이 여기에 보여요</div></div><div class="ar-b ar-regs"></div></div>
     <div class="card ar-c ar-crec"><h2>현재까지 기록</h2><div class="ar-b"></div></div>
     <div class="card ar-c ar-cset" hidden><div class="ar-b"></div></div></div>`; }
   const q=s=>p.querySelector(s), vid=q('.ar-vid'); if(vid){ const ss=on?ARX.stream:null; if(vid.srcObject!==ss){ vid.srcObject=ss; if(ss) vid.play().catch(()=>{}); } q('.ar-vw').classList.toggle('on',!!ss||!!ARX.testSrc); }
@@ -1052,10 +1052,7 @@ function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c
     ${ARX.ocrErr?'<p class="ar-err">글자 읽기(OCR) 불러오기 실패</p>':''}`);
   arPrev(); }
 function arPrev(){ const cv=$('#arPanel .ar-prev'); if(!cv) return; const g=cv.getContext('2d'); g.clearRect(0,0,cv.width,cv.height); const src=ARX.stream?null:ARX.testSrc;
-  if(src&&(src.videoWidth||src.width)) g.drawImage(src,0,0,cv.width,cv.height); if(!ARX.cfg.roi) return;
-  const fs=Math.max(11,Math.round(cv.width/48)); g.font=`700 ${fs}px system-ui,sans-serif`; g.textBaseline='bottom';
-  for(const [k,col,lb] of [['item','#ffb347','아이템 인식 영역'],['banner','#ffe066','획득 배너'],['log','#ff6bd0','획득 로그'],['map','#5ec8ff','미니맵 맵 이름'],['name','#7dff9a','닉네임'],['inv','#c0ff40','인벤토리 메소'],['sto','#40e0ff','창고 메소'],['stoInv','#40e0ff','창고 옆 인벤 메소']]){ const r=arR(k,ARX.video||ARX.testSrc); if(!r) continue; const x=r.x*cv.width, y=r.y*cv.height, w=r.w*cv.width, h=r.h*cv.height; g.strokeStyle=col; g.lineWidth=2; g.strokeRect(x,y,w,h);
-    const tw=g.measureText(lb).width+10, ly=y-fs-6<0?y+fs+6:y, lx=Math.min(Math.max(0,x),cv.width-tw); g.fillStyle='rgba(8,10,20,.82)'; g.fillRect(lx,ly-fs-6,tw,fs+6); g.fillStyle=col; g.fillText(lb,lx+5,ly-2); } }
+  if(src&&(src.videoWidth||src.width)) g.drawImage(src,0,0,cv.width,cv.height); } /* b363: '영역 보기' 겹쳐 그리기 제거 (인식 영역 arR 은 그대로) */
 /* b287: 분석 상태 — 분석 fps(배너 감시) · 놓친 프레임(영상 프레임 중 감시 못 한 것) · 바닥 찾기 횟수·건너뜀 · 1회 시간 */
 function arPerfText(){ const f=ARX.pf; if(!f||!ARX.video) return '분석 fps - · 놓친 프레임 -'; const s=Math.max(.001,(performance.now()-f.t0)/1000), L=f.last||{watched:0,missed:0,t:f.t0}, ds=Math.max(.001,(performance.now()-L.t)/1000);
   const fps=(f.watched-L.watched)/ds; return `분석 fps <b>${fps.toFixed(0)}</b> · 놓친 프레임 <b>${f.missed}</b>${f.watched?` (${(100*f.missed/(f.watched+f.missed)).toFixed(1)}%)`:''} · 배너 매칭 ${f.banners}회${f.banners?` (${(f.bannerMs/f.banners).toFixed(0)}ms)`:''} · 바닥/공중 ${f.items}회${ARX.itemMs?` (${ARX.itemMs.toFixed(0)}ms)`:''}${f.iskip?` · 건너뜀 ${f.iskip}`:''} · 공중 ${f.air||0}회${f.air?` (${((f.airMs||0)/f.air).toFixed(0)}ms)`:''}${f.airDrop?` · 버린 프레임 ${f.airDrop}`:''}${ARX.airHot?' · <b>full-rate</b>':''}${ARX.wk?'':' · Worker 없음'}`; }

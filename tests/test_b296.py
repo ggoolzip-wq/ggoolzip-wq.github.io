@@ -69,14 +69,8 @@ try:
     pg.screenshot(path=os.path.join(OUT,'b296_panel_light.png'))
     # b297ui: 고정 영역 · 드래그 UI 없음 · 영역 보기 라벨
     pg.evaluate("()=>{ document.documentElement.dataset.theme='dark'; localStorage.setItem('mbt_autorec',JSON.stringify({log:{x:.1,y:.1,w:.1,h:.1}})); }")
-    r=pg.evaluate("""()=>{ const T=document.querySelector('#arPanel').innerText; const btn=document.querySelector('#arPanel .ar-roib'); const before=btn.textContent; btn.click();
-      return {before, after:document.querySelector('#arPanel .ar-roib').textContent, drag:/드래그/.test(document.querySelector('#arPanel').innerText), regs:!!document.querySelector('#arPanel .ar-regs button'), log:JSON.stringify(window.AR.cfg.log)} }""")
-    check("'영역 보기' → '영역 숨기기' 그대로, '영역: … 화면에서 드래그' UI 없음", r['before']=='영역 보기' and r['after']=='영역 숨기기' and not r['drag'] and not r['regs'], r)
-    pg.wait_for_timeout(300)
-    pg.screenshot(path=os.path.join(OUT,'b297_roi_dark.png'))
-    pg.evaluate("()=>{ document.documentElement.dataset.theme='light'; }"); pg.wait_for_timeout(300)
-    pg.screenshot(path=os.path.join(OUT,'b297_roi_light.png'))
-    pg.evaluate("()=>document.querySelector('#arPanel .ar-roib').click()")
+    r=pg.evaluate("()=>({btn:!!document.querySelector('#arPanel .ar-roib,#arPanel [data-ar=roi]'), txt:/영역 (보기|숨기기)/.test(document.querySelector('#arPanel').innerText), drag:/드래그/.test(document.querySelector('#arPanel').innerText), regs:!!document.querySelector('#arPanel .ar-regs button')})")
+    check("b363: '영역 보기' 버튼 없음, 드래그 UI 없음", not r['btn'] and not r['txt'] and not r['drag'] and not r['regs'], r)
     b.close()
 finally:
     srv.terminate()
