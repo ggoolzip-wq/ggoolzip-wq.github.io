@@ -2,6 +2,18 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b366 (t674) 라이브 인식 중 사이트 전체 끊김·에픽빔 놓침 + 득템 축하 연출 끊김 (2차)
+
+- 원인 ① 라이브: 0.1초 타이머들(이름·맵·프레임·상자·로그·에픽빔)이 매번 메인 스레드에서 `drawImage(video)` (1080p 1회 15~40ms) → 라이브 켜면 메인 스레드 98% 바쁨. ② 보상 맵 상자 NCC(arBoxFind/arNcc)가 메인에서 1회 50~110ms, 20초 중 ~5초 막아 에픽빔 감시(ecTick)가 1~2초씩 건너뜀 → 빔 놓침(01M6E78K: b361 0/5).
+- 고침 ① src/arsnap.js(새): `arSrc()` — 라이브 트랙 복제 → MediaStreamTrackProcessor → Worker 의 OffscreenCanvas → 0.1초마다 ImageBitmap(transfer). 분석 함수는 이 비트맵에서 자름. 0.6초 넘게 안 오면·MSTP 없으면·`ARX.cfg.snap===false` 면 video 그대로. 지난 비트맵은 close 안 함(상자·해상도 판정이 await 사이에 같은 화면을 계속 그림 — 닫으면 조용히 실패, GC 회수·힙 안정 확인). arDisconnect 에서 arSnapStop. b359 arTick 타이머 안에서 arSrc() 사용.
+- 고침 ② autorec.js `arBoxW()`: arNcc+arBoxFind 함수 문자열 그대로 Worker 로(템플릿은 키별 1회 전송, 화면은 transfer) → 점수 동일. Worker 실패·`ARX.cfg.boxWorker===false` 면 arBoxScoreSync(예전 메인).
+- 고침 ③ 축하: 에픽빔 시트 epicbeam_s720.webp(2880x1720, 1.39MB, radial 마스크 미리 구움; 예전 3.33MB·디코드 50.8MB → 19.8MB) + 페이지 로드 때 미리 디코드 안 함(beamImgLoad 지연). 굽기 크기 min(720,576·dpr). CGQ 자동 품질 4단계(localStorage 'cgq'): 첫 12프레임 중 33ms 초과 2번이면 그 자리에서 한 단계 낮춤(입자 반·해상도↓), 끝나고 p95>33 낮춤, 3번 연속 p95≤20 올림.
+- 측정(/workspace/t674): 라이브 켬 busy 98.4%→15.8%(끔 4.5→2.5%), 프레임 p95 2920→117ms. 축하(6x CPU, 라이브+PIP, 1920x1080) DPR1 프레임 14→162 · p95 947→117 · 최장 1033→367ms (DPR1.25/1.5 도 비슷). 품질 PSNR(예전 에셋 대비) 최소 46.3/46.5/39.3dB. 01M6E78K 빔 클립 저장 main 0/5 → 10/10 (36~40프레임, vt0 8.93~9.06). 그래프 compare.png·quality.png·live_compare.png·epic_reliab.png.
+- 테스트: tests/test_b366_livesnap.py (에셋 크기·배포 목록·지연 로드·구운 576x344·Worker 비트맵·0.1초 타이머 drawImage(video) 0·끊으면 트랙 정지·MSTP 없으면 video·상자 NCC Worker=메인 점수·느린 첫 프레임 → 품질 자동 낮춤), test_b243 갱신.
+- 남은 것: 측정 박스가 과부하라 절대값은 들쭉날쭉(같은 조건 A/B 만 비교).
+>>>>>>> b366: HANDOFF
+
+
 ## b365 (t680) 캘린더 월 전체 머리: 결정석 / 아이템 N개 금액 / 합계 3줄
 - src/app.js calMonBrk(rs): '○월 전체' 제목 옆에 `[ipc] 결정석 <calEok>` · `아이템 N개 <금액>` · `합계 <결정석+아이템>` 세 줄(어림 섞이면 ≈). 월 전체에서는 예전 '합계 … 메소 · 아이템 N개' 한 줄 대신 표시(날짜 상세는 b364 그대로). calRecs 의 activeIds 로 API 키 지운 캐릭터 제외.
 - src/extra.css .calmb (아이콘 칸 18px · 라벨 · 오른쪽 정렬 금액 grid, 합계 위 구분선, 다크/라이트).
