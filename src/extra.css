@@ -2347,3 +2347,11 @@ body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPa
 .calmgh>b+.calcry{margin-left:10px;margin-right:auto}
 .calcry img,.calcry svg{width:18px;height:18px;object-fit:contain;flex:none}.calcry b{font-weight:700;color:#ffd77a}
 [data-theme=light] .calcry{color:#2a5a80}[data-theme=light] .calcry b{color:#a05000}
+
+/* b365: 월 전체 머리 내역 */
+.calmb{display:flex;flex-direction:column;gap:2px;font-size:.92rem;color:#bfe6ff;line-height:1.35}
+.calmb>span{display:grid;grid-template-columns:18px 76px minmax(64px,auto);column-gap:6px;align-items:center;min-height:20px;white-space:nowrap}
+.calmb>span>i{width:18px;height:18px}
+.calmb img,.calmb svg{width:18px;height:18px;object-fit:contain}.calmb b{font-weight:700;color:#ffd77a;text-align:right;font-variant-numeric:tabular-nums}
+.calmb-t{border-top:1px solid rgba(255,215,122,.3);padding-top:2px}.calmb-t b{color:#ffcf4a}
+[data-theme=light] .calmb{color:#2a5a80}[data-theme=light] .calmb b{color:#a05000}[data-theme=light] .calmb-t{border-color:rgba(160,80,0,.3)}[data-theme=light] .calmb-t b{color:#8a3c00}
