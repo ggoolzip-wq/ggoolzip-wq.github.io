@@ -2273,6 +2273,13 @@ body.arpipw{padding:4px!important;height:100vh;display:flex;flex-direction:colum
 /* b348: 닉네임 직접 알려주기 */
 .ar-teach{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}.ar-teach select{max-width:160px;padding:2px 4px;font:inherit;font-size:12px}
 /* b349: PIP 맨 위 현재 캐릭터 한 줄 */
-.arpipw .ar-pipchar{flex:none;height:28px;display:flex;align-items:center;gap:6px;padding:0 8px;border-radius:10px;background:var(--card,rgba(255,255,255,.05));font-size:.8rem;overflow:hidden;white-space:nowrap}
-.arpipw .ar-pipchar img,.arpipw .ar-pipchar .avatar,.arpipw .ar-pipchar>:first-child:not(b):not(span){width:24px!important;height:24px!important;min-width:24px;font-size:11px;border-radius:6px;flex:none}
+.arpipw .ar-pipchar{flex:none;height:38px;display:flex;align-items:center;gap:6px;padding:0 8px;border-radius:10px;background:var(--card,rgba(255,255,255,.05));font-size:.8rem;overflow:hidden;white-space:nowrap}
+.arpipw .ar-pipchar .avatar,.arpipw .ar-pipchar>:first-child:not(b):not(span):not(.ar-teach){width:34px!important;height:34px!important;min-width:34px;font-size:12px;border-radius:8px;flex:none}
+/* b350: 캐릭터 이미지(300×300, 몸 y≈130~200)를 줄이지 않고 얼굴(y≈138~172) 부분만 — 예전 24px 칸 + 60% 위치는 몸통만 보였음 */
+.arpipw .ar-pipchar .avatar img{width:34px!important;height:34px!important;object-fit:none;object-position:50% 52%}
+.arpipw .ar-pipchar .ar-teach{display:flex;gap:4px;margin-left:auto;align-items:center}.arpipw .ar-pipchar .ar-tsel{max-width:118px;font-size:.72rem;padding:1px 2px;height:24px}.arpipw .ar-pipchar .ar-tbtn{font-size:.72rem;padding:2px 6px;height:24px;white-space:nowrap}
+.arpipw .ar-pipmeso{flex:none;height:36px;padding:2px 8px;border-radius:10px;background:var(--card,rgba(255,255,255,.05));display:flex;flex-direction:column;justify-content:center;overflow:hidden;white-space:nowrap}
+.arpipw .ar-pipmeso .ar-pmh{font-size:.68rem;line-height:1.2}.arpipw .ar-pipmeso .ar-pmv{font-size:.86rem;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
 .arpipw .ar-pcn{font-size:.85rem}.arpipw .ar-pcm{font-size:.7rem;overflow:hidden;text-overflow:ellipsis}
+/* b350(t657): 위 탭 전부 Paperlogy (캘린더 탭과 같은 글꼴). 색·네온(캘린더 노랑, 자동 기록 빨강)은 그대로 */
+html body nav.tabs button{font-family:'Paperlogy','Pretendard',system-ui,sans-serif!important}

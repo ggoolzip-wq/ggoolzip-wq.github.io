@@ -2,6 +2,11 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b350 (t657) 위 탭 전부 Paperlogy 글꼴
+- extra.css 끝: `html body nav.tabs button{font-family:'Paperlogy',…}` — 캘린더 탭(b340)과 같은 글꼴. 색·네온(캘린더 노랑, 자동 기록 빨강, 나머지 시안)은 그대로.
+- 크기 측정(1600px, 15px): 글자 높이 18px·버튼 높이 30px 동일, 폭은 +1~2px(Paperlogy 가 Pretendard 보다 약간 넓음) → 글씨가 줄지 않아 네모 크기는 그대로 둠.
+- 테스트: test_b340_calfont 갱신(모든 탭 Paperlogy, 탭 높이 ≤30).
+
 ## b349 (t655) PIP 맨 위 현재 캐릭터 한 줄
 - arPipOpen 이 PIP body 에 .ar-pipchar 를 '보상 맵 인식' 칸(cb) 위에 붙임. arPanelLive(0.2초 그리기)가 ARX.pip 있으면 arSetH 로 갱신: 아바타(avatar) · 이름 · Lv/직업 · 월드(대시보드 캐릭터 칸과 같은 값), 없으면 '인식 중…'(연결·이름 칸 있음) / '미인식'. 열 때 한 번 바로 그림.
 - AR_PIP_H 286 → 318 (+32 = 줄 28px + 간격 4). 스크롤 없음(평소·2인 수익 칸). CSS extra.css '.arpipw .ar-pipchar'.
