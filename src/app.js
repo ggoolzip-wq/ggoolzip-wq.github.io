@@ -1789,7 +1789,7 @@ function toastHide(){ clearTimeout(toast._t); $('#toast')?.classList.remove('sho
 function toast(msg){} /* b112: 하단 알림 전부 없앰 */
 const safeImg = u => /^https:\/\/open\.api\.nexon\.com\//.test(u||'') ? u : '';
 const avatar = (c,cls='') => `<div class="avatar ${cls}">${safeImg(c.image)?`<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">`:esc((c.name||'?').slice(0,1))}</div>`;
-const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','cal','auto','live']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
+const TAB_KEY='mapleBossTracker.tab', TABS=['boss','total','loot','cal','epic','auto','live']; // 새로고침 후 마지막 탭 복원 (이 브라우저)
 let tab='boss', /* b166: 새로고침하면 항상 '이번 주 보스' (저장된 마지막 탭·해시 무시) */ bossFilter='weekly', editMode=false;
 
 const THEME_KEY='mapleBossTracker.theme'; // b179: 라이트/다크 선택 (이 브라우저, 기본 다크) — 사용자 요청으로 다크 전용 규칙 해제
@@ -1810,7 +1810,7 @@ function render(){ paintThemeBtn(); tirDefs(); logoDigital(); document.body.data
   renderChars(); renderHeaderSync(); if($('#importModal').classList.contains('show')) renderAccList();
   /* b87 규칙 10: 보이는 캐릭터가 없으면(API 키 미등록) 모든 탭 = 보스 현황과 같은 빈 화면(emptyView). 새 탭도 이 분기를 거침 */
   if(!vchars().length&&tab!=='live'&&tab!=='auto'){ $('#view').innerHTML=emptyView(); fitPriceCard(); renderResetInfo(); return; } /* b161: 라이브 탭은 캐릭터·로그인 없어도 보임 */
-  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),cal:renderCal,auto:()=>{ if(typeof renderAuto==='function') renderAuto(); },live:renderLive})[tab](); if(tab==='boss'){ fitPriceCard(); charEnter(); } if(tab==='loot') fitMiss(); renderResetInfo(); }
+  ({boss:renderBoss,total:()=>COMMITTED(renderTotal),loot:()=>COMMITTED(renderLoot),cal:renderCal,epic:()=>{ if(typeof renderEpic==='function') renderEpic(); },auto:()=>{ if(typeof renderAuto==='function') renderAuto(); },live:renderLive})[tab](); if(tab==='boss'){ fitPriceCard(); charEnter(); } if(tab==='loot') fitMiss(); renderResetInfo(); }
 /* b108: 🔄 옆 상태 글자 — 동기화 중 '새로고침 중입니다..'(회색), 끝나면 초록 '새로고침 완료! HH:mm'(KST, 계속 표시),
  * 일부 캐릭터·계정 오류면 주황 '일부 실패 HH:mm', 전체 실패면 빨강 '새로고침 실패 HH:mm' (오류 알림 toast 는 예전 그대로). 페이지 열 때 동기화도 같음 */
 let syncLbl=null; // {st:'run'|'ok'|'part'|'fail', at}

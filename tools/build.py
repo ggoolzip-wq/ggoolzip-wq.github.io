@@ -23,6 +23,7 @@ js = lambda n: json.load(open(os.path.join(SRC, n), encoding='utf-8'))
 s = rd('app.js')
 # b321: 자동 기록(autorec.js + 보상 상자 아이콘 0.34MB)은 두 번째 <script> 로 문서 맨 끝에 → 앞 스크립트가 다 받아지면 첫 화면부터 그림(나머지 다운로드를 안 기다림)
 ar = rd('autorec.js') if os.path.exists(os.path.join(SRC, 'autorec.js')) else ''  # b283: 게임 화면 자동 기록
+if ar and os.path.exists(os.path.join(SRC, 'epicclip.js')): ar += '\n' + rd('epicclip.js')  # b352: 에픽빔 기록지 (autorec 뒤, 같은 두 번째 <script>)
 s = s.replace('/*__BOSS_ICONS__*/{}', json.dumps(js('icons.json'), separators=(',', ':')))
 s = s.replace('/*__ITEM_ICONS__*/{}', json.dumps(js('itemicons.json'), separators=(',', ':')))
 if os.path.exists(os.path.join(SRC, 'boxicons.json')): ar = ar.replace('/*__BOX_ICONS__*/{}', json.dumps(js('boxicons.json'), separators=(',', ':')))  # b300 보상 상자

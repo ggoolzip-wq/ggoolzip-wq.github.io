@@ -2283,3 +2283,39 @@ body.arpipw{padding:4px!important;height:100vh;display:flex;flex-direction:colum
 .arpipw .ar-pcn{font-size:.85rem}.arpipw .ar-pcm{font-size:.7rem;overflow:hidden;text-overflow:ellipsis}
 /* b350(t657): 위 탭 전부 Paperlogy (캘린더 탭과 같은 글꼴). 색·네온(캘린더 노랑, 자동 기록 빨강)은 그대로 */
 html body nav.tabs button{font-family:'Paperlogy','Pretendard',system-ui,sans-serif!important}
+/* b352(t657): 에픽빔 기록지 탭 — 주황·보라 네온(에픽빔 색), 4열×3행 카드, 가운데 모달 */
+html body nav.tabs button[data-tab=epic]{--nb1:#ff9a3c;--nb2:#b46bff;--nbtx:#ffe9d6}
+[data-theme] body nav.tabs button[data-tab=epic].on,html body nav.tabs button[data-tab=epic].on{color:#fff1e2!important}
+[data-theme=light] body nav.tabs button[data-tab=epic]{--nb1:#e07000;--nb2:#8a3fd6;--nbtx:#5a2a00}
+nav.tabs button .ecico{display:inline-block;width:16px;height:16px;vertical-align:-3px;margin-right:5px;border-radius:50%;filter:drop-shadow(0 0 3px rgba(255,170,80,.9)) drop-shadow(0 0 6px rgba(180,107,255,.5))}
+.ecwrap{font-family:'Paperlogy','Pretendard',system-ui,sans-serif}
+.echd{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-bottom:12px}
+.echd h2{margin:0;font-size:1.2rem;display:flex;align-items:center;gap:8px;color:#ffd8a8;text-shadow:0 0 10px rgba(255,154,60,.6)}
+.echd .ecico{width:24px;height:24px;border-radius:50%;box-shadow:0 0 10px rgba(255,170,80,.7)}
+.ecsub{font-size:.82rem;opacity:.7}.ecst{font-size:.8rem;margin-left:auto;opacity:.75}.ecst.on{color:#7dff9a;opacity:1}
+.ecgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:900px){.ecgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.eccard{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;border-radius:12px;overflow:hidden;background:rgba(20,16,28,.85);border:1.5px solid rgba(255,154,60,.45);box-shadow:0 0 8px rgba(255,154,60,.25),inset 0 0 10px rgba(180,107,255,.08);transition:box-shadow .2s,transform .15s}
+.eccard:hover,.eccard:focus-visible{transform:translateY(-2px);box-shadow:0 0 14px rgba(255,154,60,.7),0 0 28px rgba(180,107,255,.35)}
+.ecthumb{position:relative;aspect-ratio:16/9;background:#000}.ecthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ecplay{position:absolute;inset:0;margin:auto;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.55);color:#fff;font-size:15px;box-shadow:0 0 10px rgba(255,154,60,.7)}
+.ecdur{position:absolute;right:6px;bottom:5px;font-size:.7rem;padding:1px 6px;border-radius:6px;background:rgba(0,0,0,.65);color:#ffd8a8}
+.ectl{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;font-size:.84rem;color:#f1e6ff}
+.ectl>div{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}.ectl>div>span:last-child{overflow:hidden;text-overflow:ellipsis}
+.ecl1{font-variant-numeric:tabular-nums;color:#ffcf8a;font-size:.8rem}
+.ectl img,.ectl .bicon{width:22px!important;height:22px!important;flex:none;border-radius:4px}
+.ectl .avatar.ecav{width:24px;height:24px;flex:none;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:.7rem;background:rgba(255,255,255,.08)}
+.ectl .avatar.ecav img{width:48px!important;height:48px!important;object-fit:cover;object-position:50% 30%;border-radius:0}
+.ecq{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:4px;background:rgba(255,255,255,.08);opacity:.6}
+.ecempty{padding:40px;text-align:center;opacity:.6}
+.ecpg{display:flex;justify-content:center;gap:6px;margin-top:16px}
+.ecpb{cursor:pointer;font:inherit;min-width:34px;padding:5px 10px;border-radius:8px;border:1.5px solid rgba(255,154,60,.5);background:transparent;color:#ffd8a8}
+.ecpb.on{background:rgba(255,154,60,.2);border-color:#ff9a3c;color:#fff;box-shadow:0 0 12px rgba(255,154,60,.6)}
+.ecmodal{position:fixed;inset:0;z-index:9999;background:rgba(5,3,10,.82);display:grid;place-items:center;backdrop-filter:blur(3px)}
+.ecbox{position:relative;width:min(92vw,1100px);border-radius:14px;overflow:hidden;background:#0d0a14;border:1.5px solid #ff9a3c;box-shadow:0 0 24px rgba(255,154,60,.6),0 0 60px rgba(180,107,255,.35)}
+.ecbox canvas{display:block;width:100%;height:auto;background:#000}
+.ecbar{height:4px;background:rgba(255,255,255,.1)}.ecbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff9a3c,#b46bff)}
+.ecmeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:10px 14px;color:#f1e6ff}.ecmeta .ectl{flex-direction:row;flex-wrap:wrap;gap:6px 18px;padding:0}
+.ectime{margin-left:auto;font-variant-numeric:tabular-nums;color:#ffcf8a}
+.ecx{position:absolute;top:8px;right:8px;z-index:1;cursor:pointer;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font-size:16px}
+[data-theme=light] .eccard{background:#fffaf4;border-color:rgba(224,112,0,.5)}[data-theme=light] .ectl{color:#3a2a4a}[data-theme=light] .ecl1{color:#a05000}[data-theme=light] .echd h2{color:#a05000;text-shadow:none}

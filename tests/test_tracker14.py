@@ -50,7 +50,7 @@ try:
     today=pg.evaluate('dayId()'); yday=pg.evaluate('dayId(Date.now()-864e5)')
     # 1) 탭 바: 총 수익 → ㅡ 구분선 → 길드 현황 (b119: 일퀘 현황 삭제)
     tabs=pg.eval_on_selector_all('#tabs > *',"e=>e.map(x=>x.tagName==='SPAN'?'|'+x.className:x.textContent.trim())")
-    check('tab order with divider', tabs==['이번 주 보스','수익 분석','득템 분석','캘린더','|tabsep','보스 득템 자동 기록','|tabsep','신창섭 라이브LIVE'], tabs)
+    check('tab order with divider', tabs==['이번 주 보스','수익 분석','득템 분석','캘린더','에픽빔 기록지','|tabsep','보스 득템 자동 기록','|tabsep','신창섭 라이브LIVE'], tabs)
     sep=pg.evaluate("(()=>{const r=document.querySelector('#tabs .tabsep').getBoundingClientRect(),t=document.querySelector('[data-tab=total]').getBoundingClientRect();return {w:r.width,h:r.height,mid:Math.abs((r.top+r.bottom)/2-(t.top+t.bottom)/2)}})()")
     check('divider is a short horizontal line, vertically centered', 8<=sep['w']<=20 and 1<=sep['h']<=3 and sep['mid']<6, sep)
     check('no API calls before opening tabs', not sched_calls() and not guild_calls(), CALLS)
@@ -65,6 +65,7 @@ try:
     # 7) 모바일 375 / 320
     for w in (375,320):
         pg.set_viewport_size({'width':w,'height':800})
+        pg.evaluate("document.getElementById('arGuide')?.remove()")  # b352: 탭 한 줄 늘어 320px 에선 연결 안내 창이 탭 버튼을 덮음
         pg.click('[data-tab=auto]'); pg.wait_for_timeout(400)
         check(f'{w}px auto: no horizontal overflow', pg.evaluate(NOOVF), pg.evaluate(OVFD))
         if w==375: shot(pg,'tab_auto_mobile.png',full_page=True)
