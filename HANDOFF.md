@@ -2,6 +2,9 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b343 (2026-11-03 KST) — Paperlogy 글꼴 배포 누락 수정
+- b340의 fonts/*.woff2 가 tools/pages_dist.sh 배포 목록에 없어 사이트에서 404(HTML) → 캘린더가 대체 글꼴로 보였음. fonts/ 폴더를 _site 에 복사하도록 추가.
+
 ## b342 (t646) PIP 빠른 수익 기록 칸
 - arRecord: PIP 열려 있고 반지·칠흑 상자가 아니면 changeDrop(모달) 대신 arSaleTake — pendStart, dropMap[key]=1, 2인 이상이면 modeMap[key]='s'(자동 분배), save/render, ARX.saleQ 에 줄 세움.
 - .ar-pipsale(득템 목록 아래): 아이콘·이름·보스, 최저가(admPriceOf 미리 채움, 수정 가능), 수수료 버튼(1인=판매, 2인+=판매+분배 — askRev 와 같음), [기록하기]/[기록하지 않기]. 맨 앞 아이템이 바뀔 때만 다시 그림(입력 포커스 유지).
