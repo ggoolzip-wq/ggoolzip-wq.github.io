@@ -2,6 +2,13 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b355 (t669) 에픽빔 R2 실제 연결 · 워커 배포
+- R2 활성화 확인(wrangler r2 bucket list) → 버킷 bossmaple-epic 생성 → server/wrangler.toml [[r2_buckets]] EPIC 바인딩 주석 해제.
+- 원격 D1(ggoolzip-sync): schema.sql 의 epic_clips CREATE TABLE/INDEX IF NOT EXISTS 3줄만 적용(데이터 삭제 없음).
+- `cd server && npx wrangler deploy` (Version b5a2a524-53da-4530-837b-ce639537cc30, env.EPIC 바인딩 확인).
+- 실서버 확인: 인증 없음/잘못된 토큰 401, 업로드 200, 2MB 초과 413, 목록(per 12) 1개, 받기 바이트 일치, 없는/남의 id 404, 사이트 에픽빔 탭 '☁ 서버에 저장'(스크린샷 /workspace/t664/epic_cloud_live.png). 다른 넥슨 계정 차단은 실키가 하나라 로컬 테스트(test_b354_epic_server)로만 확인.
+- 테스트 클립(e2e-test) R2 객체·D1 행 직접 삭제, 테스트 세션 로그아웃. epic_clips 0행.
+
 ## b354 (t664) 에픽빔 클립 -1초~+3초 · R2 클라우드 저장(계정 연동)
 - 클립 창 pre 1000 / post 3000ms (src/epicclip.js cfg).
 - 서버(server/worker.js): POST /api/epic/clip?id= (인증, ≤2MB, X-Epic-Meta, 30/분·300/일, 중복 dup), GET /api/epic/clips?page&per(기본 12), GET /api/epic/clip/<id>. 메타 D1 epic_clips(acct_hash 기준 — 같은 넥슨 계정 다른 키/PC 에서도 보임), blob R2 clips/<ah16>/<id>.ecb (ECB1 묶음). PUT 한도 안 쓰려고 POST.
