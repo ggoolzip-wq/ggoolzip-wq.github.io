@@ -2191,3 +2191,18 @@ button.calsum:hover,button.calsum.on{box-shadow:0 0 14px rgba(255,210,60,.8),0 0
 [data-theme=light] .calmgh{color:#8a5a00}
 .calmr{display:grid;grid-template-columns:22px minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:3px 6px;font-size:.88rem}
 .calmri{display:flex;align-items:center}.calmr img{width:20px;height:20px}.calmrb,.calmrc{opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.calmrm{text-align:right;font-weight:700}
+/* b339(t645): 이 달 전체 = 날짜 칩 + 고른 날 목록(고정 열: 아이콘·아이템 | 보스 | 캐릭터 | 금액(오른쪽)) */
+.calchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.calchip{cursor:pointer;font:inherit;font-size:.85rem;padding:5px 11px;border-radius:10px;border:1.5px solid rgba(255,210,60,.6);background:rgba(255,210,60,.06);color:#ffe3a3;box-shadow:0 0 6px rgba(255,210,60,.25);transition:box-shadow .2s,background .2s}
+.calchip:hover{box-shadow:0 0 12px rgba(255,210,60,.6)}
+.calchip.on{border-color:#ffd23c;background:rgba(255,210,60,.2);color:#fff4cc;box-shadow:0 0 14px rgba(255,210,60,.8),0 0 28px rgba(255,171,31,.35),inset 0 0 10px rgba(255,210,60,.25)}
+[data-theme=light] .calchip{color:#7a4b00;background:#fffaeb;border-color:rgba(224,168,0,.6);box-shadow:0 1px 4px rgba(224,168,0,.25)}
+[data-theme=light] .calchip.on{background:#ffe9a8;border-color:#e0a800;color:#5c3e00;box-shadow:0 0 12px rgba(224,168,0,.55)}
+.calml{max-height:none!important;overflow:visible!important;margin-top:10px}
+.calmr{display:grid!important;grid-template-columns:24px minmax(0,38%) minmax(0,24%) minmax(0,18%) minmax(0,1fr)!important;gap:10px;justify-items:start;text-align:left}
+.calmr>span{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;justify-self:stretch}
+.calmr>.calmrm{text-align:right}.calmrh{font-size:.75rem;opacity:.6;border-bottom:1px solid rgba(255,255,255,.08)}
+.calmrb,.calmrc{opacity:.85}
+.caldcr{display:grid!important;grid-template-columns:minmax(0,160px) 110px minmax(0,1fr)!important;gap:10px;align-items:center;text-align:left}
+.caldcr>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.calmrh>span:last-child{text-align:right}

@@ -4494,11 +4494,15 @@ function calDay(R,day){ let m=0, ap=false; const it={}, ia={}, by={};
   const c=S.characters; Object.values(by).forEach(b=>{ const x=c.find(y=>y.id===b.id); if(x) b.name=x.name; });
   return {m,ap,it,ia,by:Object.values(by).sort((a,b)=>b.m-a.m)}; }
 const calEok = m => { const e=m/1e8; return e>=1?(e>=100?Math.round(e).toLocaleString():e.toFixed(2).replace(/\.?0+$/,''))+'억':m>=1e4?Math.round(m/1e4).toLocaleString()+'만':Math.round(m)+''; };
+let calMD=null; // b339: 이 달 전체에서 고른 날짜 칩
 function calMonList(R){ const rs=R.filter(r=>r.day.startsWith(calMon)&&(r.m||r.k)).sort((a,b)=>a.day<b.day?-1:a.day>b.day?1:b.m-a.m), g={};
   for(const r of rs) (g[r.day]=g[r.day]||[]).push(r); const ap='<i class="calap" title="대략(정확한 날짜 없음)">≈</i>', cn=id=>((S.characters.find(c=>c.id===id)||{}).name);
-  const days=Object.keys(g); if(!days.length) return '';
-  return `<div class="calml">${days.map(d=>{ const [,mm,dd]=d.split('-').map(Number), t=g[d].reduce((a,r)=>a+r.m,0);
-    return `<div class="calmg"><div class="calmgh" data-calgo="${d}"><b>${mm}월 ${dd}일</b><span>${g[d].some(r=>r.ap)?ap:''}${calEok(t)} 메소</span></div>${g[d].map(r=>`<div class="calmr"><span class="calmri">${r.k?itemIcon(r.k):''}</span><span class="calmrn">${r.k?`${esc(ITEMS[r.k].n)}${r.n>1?` x${r.n}`:''}`:'결정석'}</span><span class="calmrb">${esc(r.bs||'')}</span><span class="calmrc">${esc(cn(r.id)||r.name||'')}</span><span class="calmrm">${r.m?(r.ap?ap:'')+calEok(r.m):(r.ap?ap:'')}</span></div>`).join('')}</div>`; }).join('')}</div>`; }
+  const days=Object.keys(g); if(!days.length) return ''; if(!g[calMD]) calMD=days[days.length-1];
+  const chips=days.map(d=>{ const [,mm,dd]=d.split('-').map(Number), t=g[d].reduce((a,r)=>a+r.m,0);
+    return `<button type="button" class="calchip${d===calMD?' on':''}" data-calmd="${d}" aria-pressed="${d===calMD}">${mm}/${dd} <b>${g[d].some(r=>r.ap&&r.m)?ap:''}${calEok(t)}</b></button>`; }).join('');
+  const rows=g[calMD].map(r=>`<div class="calmr"><span class="calmri">${r.k?itemIcon(r.k):''}</span><span class="calmrn">${r.k?`${esc(ITEMS[r.k].n)}${r.n>1?` x${r.n}`:''}`:'결정석'}</span><span class="calmrb">${esc(r.bs||'')}</span><span class="calmrc">${esc(cn(r.id)||r.name||'')}</span><span class="calmrm">${r.m?(r.ap?ap:'')+calEok(r.m):(r.ap?ap:'')}</span></div>`).join('');
+  const [,mm,dd]=calMD.split('-').map(Number);
+  return `<div class="calchips">${chips}</div><div class="calml" id="calML"><div class="calmgh" data-calgo="${calMD}"><b>${mm}월 ${dd}일</b><span>그 날 상세 보기 ›</span></div><div class="calmr calmrh"><span></span><span>아이템</span><span>보스</span><span>캐릭터</span><span>금액</span></div>${rows}</div>`; }
 function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId(Date.now()); if(!calMon) calMon=monthId(Date.now());
   const [Y,M]=calMon.split('-').map(Number), first=new Date(Date.UTC(Y,M-1,1)), nd=new Date(Date.UTC(Y,M,0)).getUTCDate(), lead=first.getUTCDay();
   let tot=0; const itTot={}; const cells=[];
@@ -4519,6 +4523,7 @@ function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId
     <div class="calgrid">${cells.join('')}</div>${det}<div class="muted calnote">≈ = 정확한 날짜가 없어 그 주 목요일(리셋일)·처치일 등으로 어림 · API 키를 지운 캐릭터는 빠져요</div></div></div>`;
   const cl=$('#charList'); if(cl) v.querySelector('.calwrap').style.fontFamily=getComputedStyle(cl).fontFamily;
   v.querySelectorAll('[data-calmv]').forEach(b=>b.onclick=()=>{ const k=+b.dataset.calmv; if(!k){ calMon=monthId(Date.now()); calSel=today; } else { const t=new Date(Date.UTC(Y,M-1+k,1)); calMon=`${t.getUTCFullYear()}-${pad(t.getUTCMonth()+1)}`; } renderCal(); });
+  v.querySelectorAll('[data-calmd]').forEach(b=>b.onclick=()=>{ calMD=b.dataset.calmd; renderCal(); });
   v.querySelectorAll('[data-calgo]').forEach(b=>b.onclick=()=>{ calSel=b.dataset.calgo; renderCal(); });
   v.querySelectorAll('[data-calday]').forEach(b=>b.onclick=()=>{ calSel=calSel===b.dataset.calday?null:b.dataset.calday; renderCal(); });
   v.querySelectorAll('[data-calmonth]').forEach(b=>b.onclick=()=>{ calSel=isM?null:'M:'+calMon; renderCal(); });
