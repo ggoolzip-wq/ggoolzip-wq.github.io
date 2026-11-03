@@ -7158,7 +7158,7 @@ const AR_DEF={on:true, nameTpl:true, /* t603: 투표로 확정된 닉네임만 �
   airKeep:10,     // b289: 보관할 띠 프레임 수 (airFps 6 → 약 1.7초)
   airWin:1.2,     // b289: 후보 앞뒤 몇 초까지 다시 볼지
   airThr:.73,     // b296: WZ 원본 아이콘 기준 (v01·v07·v11 백옥 .73~.91). b289: 공중 기준 (v01·v07·v11 백옥 .78~.89 / 엉뚱한 곳·다른 아이콘 ≤ .7)
-  airScales:[.62,1],airKeyScales:{mc_:[.62],ipc:[1],'':[1]},airKeyThr:{mc_:.7},airKeySad:{mc_:30,ipc:30}, // t619: 공중 크기 배율(× 바닥 기준 px) — 영상 B 메멘토 큐브는 48px(=.65배), 주보 결정석은 1배
+  airScales:[.62,1],airKeyScales:{mc_:[.62],ipc:[1],'':[1]},airKeyThr:{mc_:.7,eye:.8}, /* b353: 마력이 깃든 안대(eye) 공중 = 데미안 붉은 불꽃 이펙트 오탐 .737~.762 (t657 데미안 80.8~81.7s, v9 40.5s .739, fp_NQ5NW .759) — 참 공중 eye 는 기준 영상에 없음, 바닥 인식(itemLog)은 그대로 */airKeySad:{mc_:30,ipc:30}, // t619: 공중 크기 배율(× 바닥 기준 px) — 영상 B 메멘토 큐브는 48px(=.65배), 주보 결정석은 1배
   airErode:2,     // t619: 공중 템플릿 가장자리 깎기(px) + 색 흐리기
   airRinv:true,   // t619: 회전 평균 템플릿으로 대략 찾기 (공중 1회 0.3초 → 0.1초 이하)
   airSad:40,      // b289: 공중 색 차이 상한 (정답 24~37, 빗나간 각도 ≥ 40)
@@ -7185,6 +7185,7 @@ const ARX={logPrev:[], lastLog:0, logText:'', logBusy:false, counted:[], cfg:nul
 try{ ARX.cfg=Object.assign({},AR_DEF,JSON.parse(localStorage.getItem(AR_KEY)||'{}')); }catch(e){ ARX.cfg=Object.assign({},AR_DEF); }
 if(!ARX.cfg.v288){ ARX.cfg.v288=1; const b=ARX.cfg.banner; if(b&&b.y===.1&&b.h===.2) ARX.cfg.banner=Object.assign({},AR_DEF.banner); }
 /* b297ui: 영역은 항상 고정값 — 저장된 사용자 영역 무시 */
+if(!ARX.cfg.v353){ ARX.cfg.v353=1; ARX.cfg.airKeyThr=Object.assign({},ARX.cfg.airKeyThr||{},{eye:AR_DEF.airKeyThr.eye}); } /* b353: 저장된 airKeyThr 에도 eye .8 */
 if(!ARX.cfg.v333){ ARX.cfg.v333=1; ARX.cfg.confirm=1; } /* b333: 저장된 confirm:2 를 1로 */
 for(const k of ['log','banner','item','map','name','airBand']) ARX.cfg[k]=Object.assign({},AR_DEF[k]);
 if(!ARX.cfg.v285){ ARX.cfg.v285=1; const m=ARX.cfg.map; if(m&&m.h===.045&&!m.y) m.h=AR_DEF.map.h; if(ARX.cfg.logFps===4) ARX.cfg.logFps=AR_DEF.logFps; } // b285: 예전 기본값 저장된 경우만 새 기본값으로
