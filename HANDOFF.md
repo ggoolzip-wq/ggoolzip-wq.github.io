@@ -2,6 +2,11 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b364 (t677) 캘린더 상세: 그 날 결정석은 날짜 옆 한 줄 합계
+- src/app.js: calCry(rs) — 그 날 결정석(r.k 없는 기록) 합계를 `[ipc 아이콘] 결정석 <calEok>` 로 날짜 제목 바로 옆에 표시(날짜 상세 .caldh, 이번 달 목록 날짜 머리 .calmgh). 어림이 섞이면 ≈. 아래 목록(calRows)에는 아이템 줄만(결정석 개별 줄·날짜/시각 없음). calRecs 의 activeIds 필터 그대로라 API 키 지운 캐릭터는 합계에서 빠짐.
+- src/extra.css: .calcry (다크/라이트).
+- 테스트: tests/test_b364_calcry.py, run_all.sh 등록.
+
 ## b363 (t677) 보스 득템 자동 기록 라이브 화면: '영역 보기' 버튼·영역 겹쳐 그리기 제거
 - src/autorec.js: 라이브 화면 제목의 `.ar-roib`(data-ar="roi") 버튼, 토글 처리(ARX.cfg.roi), arPrev 의 인식 영역 박스·라벨 그리기 삭제. 인식(arR 영역·감지 로직)은 그대로. 예전 저장값 cfg.roi 는 무시됨.
 - src/extra.css: .ar-roib 네온 버튼 선택자 제거.

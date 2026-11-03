@@ -4539,6 +4539,8 @@ const calEok = m => { const e=m/1e8; return e>=1?(e>=100?Math.round(e).toLocaleS
 const CAL_AP='<i class="calap" title="대략(정확한 날짜 없음)">≈</i>';
 const calWhen = r => { const [,mm,dd]=r.day.split('-').map(Number); if(r.ap) return CAL_AP+`${mm}/${dd}`; if(!r.ts) return `${mm}/${dd}`; const k=new Date(r.ts+9*36e5); return `${mm}/${dd} ${pad(k.getUTCHours())}:${pad(k.getUTCMinutes())}`; };
 function calRows(rs){ const cn=id=>((S.characters.find(c=>c.id===id)||{}).name); return rs.map(r=>`<div class="calmr"><span class="calmri">${r.k?itemIcon(r.k):''}</span><span class="calmrn">${r.k?`${esc(ITEMS[r.k].n)}${r.n>1?` x${r.n}`:''}`:'결정석'}</span><span class="calmrt">${calWhen(r)}</span><span class="calmrb">${esc(r.bs||'')}</span><span class="calmrc">${esc(cn(r.id)||r.name||'')}</span><span class="calmrm">${r.m?(r.ap?CAL_AP:'')+calEok(r.m):(r.ap?CAL_AP:'')}</span></div>`).join(''); }
+/* b364: 그 날 결정석 = 한 줄 합계(날짜 옆), 개별 결정석 줄 없음 */
+const calCry = rs => { const c=rs.filter(r=>!r.k&&r.m); if(!c.length) return ''; const m=c.reduce((a,r)=>a+r.m,0); return `<span class="calcry">${miniIcon('ipc')}<span>결정석</span><b>${c.some(r=>r.ap)?CAL_AP:''}${calEok(m)}</b></span>`; };
 const calRowHd='<div class="calmr calmrh"><span></span><span>아이템</span><span>날짜</span><span>보스</span><span>캐릭터</span><span>금액</span></div>';
 let calMD=null; // b339: 이 달 전체에서 고른 날짜 칩
 function calMonList(R){ const rs=R.filter(r=>r.day.startsWith(calMon)&&(r.m||r.k)).sort((a,b)=>a.day<b.day?-1:a.day>b.day?1:b.m-a.m), g={};
@@ -4546,9 +4548,9 @@ function calMonList(R){ const rs=R.filter(r=>r.day.startsWith(calMon)&&(r.m||r.k
   const days=Object.keys(g); if(!days.length) return ''; if(!g[calMD]) calMD=days[days.length-1];
   const chips=days.map(d=>{ const [,mm,dd]=d.split('-').map(Number), t=g[d].reduce((a,r)=>a+r.m,0);
     return `<button type="button" class="calchip${d===calMD?' on':''}" data-calmd="${d}" aria-pressed="${d===calMD}">${mm}/${dd} <b>${g[d].some(r=>r.ap&&r.m)?ap:''}${calEok(t)}</b></button>`; }).join('');
-  const rows=calRows(g[calMD]);
+  const rows=calRows(g[calMD].filter(r=>r.k));
   const [,mm,dd]=calMD.split('-').map(Number);
-  return `<div class="calchips">${chips}</div><div class="calml" id="calML"><div class="calmgh" data-calgo="${calMD}"><b>${mm}월 ${dd}일</b><span>그 날 상세 보기 ›</span></div><div class="calmr calmrh"><span></span><span>아이템</span><span>날짜</span><span>보스</span><span>캐릭터</span><span>금액</span></div>${rows}</div>`; }
+  return `<div class="calchips">${chips}</div><div class="calml" id="calML"><div class="calmgh" data-calgo="${calMD}"><b>${mm}월 ${dd}일</b>${calCry(g[calMD])}<span>그 날 상세 보기 ›</span></div><div class="calmr calmrh"><span></span><span>아이템</span><span>날짜</span><span>보스</span><span>캐릭터</span><span>금액</span></div>${rows}</div>`; }
 function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId(Date.now()); if(!calMon) calMon=monthId(Date.now()); if(!calDef){ calDef=1; calSel='M:'+calMon; }
   const [Y,M]=calMon.split('-').map(Number), first=new Date(Date.UTC(Y,M-1,1)), nd=new Date(Date.UTC(Y,M,0)).getUTCDate(), lead=first.getUTCDay();
   let tot=0; const itTot={}; const cells=[];
@@ -4560,9 +4562,9 @@ function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId
   const icnt=Object.values(itTot).reduce((a,b)=>a+b,0);
   let det=''; const isM=calSel==='M:'+calMon;
   if(isM||calSel&&calSel.startsWith(calMon)){ const x=calDay(R,isM?d=>d.startsWith(calMon):calSel), [,mm,dd]=(isM?calMon+'-0':calSel).split('-').map(Number), ks=Object.entries(x.it).sort((a,b)=>b[1]-a[1]);
-    det=`<div class="caldet" id="calDet"><div class="caldh"><b>${isM?`${mm}월 전체`:`${mm}월 ${dd}일`}</b><span class="caldt">합계 <b>${x.ap?'<i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}${calEok(x.m)} 메소</b> · 아이템 ${ks.reduce((a,[,n])=>a+n,0)}개</span><button type="button" class="calx" data-calclose aria-label="닫기">✕</button></div>
+    det=`<div class="caldet" id="calDet"><div class="caldh"><b>${isM?`${mm}월 전체`:`${mm}월 ${dd}일`}</b>${isM?'':calCry(R.filter(r=>r.day===calSel))}<span class="caldt">합계 <b>${x.ap?'<i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}${calEok(x.m)} 메소</b> · 아이템 ${ks.reduce((a,[,n])=>a+n,0)}개</span><button type="button" class="calx" data-calclose aria-label="닫기">✕</button></div>
       ${ks.length?`<div class="caldl">${ks.map(([k,n])=>`<div class="caldi">${itemIcon(k)}<span>${esc(ITEMS[k].n)}${x.ia[k]?' <i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}</span><b>x${n}</b></div>`).join('')}</div>`:`<div class="muted calnone">${isM?'이 달':'이 날'} 기록된 아이템이 없어요</div>`}
-      ${x.by.length?`<div class="caldc">${x.by.map(b=>`<div class="caldcr"><span class="caldcn">${esc(b.name||'')}</span><span class="caldcm">${b.ap?'<i class="calap">≈</i>':''}${calEok(b.m)}</span><span class="caldci">${Object.entries(b.i).map(([k,n])=>`${itemIcon(k)}${n>1?`<b>x${n}</b>`:''}`).join('')}</span></div>`).join('')}</div>`:''}${isM?calMonList(R):(dr=>dr.length?`<div class="calml calml-day">${calRowHd}${calRows(dr)}</div>`:'')(R.filter(r=>r.day===calSel&&(r.m||r.k)).sort((a,b)=>(a.ts||0)-(b.ts||0)||b.m-a.m))}</div>`; }
+      ${x.by.length?`<div class="caldc">${x.by.map(b=>`<div class="caldcr"><span class="caldcn">${esc(b.name||'')}</span><span class="caldcm">${b.ap?'<i class="calap">≈</i>':''}${calEok(b.m)}</span><span class="caldci">${Object.entries(b.i).map(([k,n])=>`${itemIcon(k)}${n>1?`<b>x${n}</b>`:''}`).join('')}</span></div>`).join('')}</div>`:''}${isM?calMonList(R):(dr=>dr.length?`<div class="calml calml-day">${calRowHd}${calRows(dr)}</div>`:'')(R.filter(r=>r.day===calSel&&r.k).sort((a,b)=>(a.ts||0)-(b.ts||0)||b.m-a.m))}</div>`; }
   v.innerHTML=`<div class="calwrap"><div class="card calcard"><div class="calhd"><button type="button" class="calnav" data-calmv="-1" aria-label="이전 달">‹</button><h2 class="calti">${Y}년 ${M}월</h2><button type="button" class="calnav" data-calmv="1" aria-label="다음 달">›</button>
     <button type="button" class="calnav caltd" data-calmv="0">오늘</button><button type="button" class="calsum${isM?' on':''}" data-calmonth aria-pressed="${isM}" title="이 달 기록 전체 보기">이번 달 합계 <b>${calEok(tot)} 메소</b> · 아이템 <b>${icnt}개</b></button></div>
     <div class="calwk">${['일','월','화','수','목','금','토'].map((w,i)=>`<span class="${i===0?'sun':i===6?'sat':''}">${w}</span>`).join('')}</div>

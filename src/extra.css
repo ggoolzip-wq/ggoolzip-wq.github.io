@@ -2341,3 +2341,9 @@ body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPa
 #congrats.prep{display:grid;opacity:0;animation:none}
 #congrats.prep .cg-in{animation:none}
 #iconBurst.hold img{animation-play-state:paused}
+
+/* b364: 캘린더 상세 날짜 옆 결정석 합계 */
+.calcry{display:inline-flex;align-items:center;gap:5px;font-size:.92rem;color:#bfe6ff;white-space:nowrap}
+.calmgh>b+.calcry{margin-left:10px;margin-right:auto}
+.calcry img,.calcry svg{width:18px;height:18px;object-fit:contain;flex:none}.calcry b{font-weight:700;color:#ffd77a}
+[data-theme=light] .calcry{color:#2a5a80}[data-theme=light] .calcry b{color:#a05000}
