@@ -31,7 +31,7 @@ try:
     pg.evaluate("()=>{ arStart(document.createElement('video')); }"); pg.evaluate(REW,'lucid'); pg.evaluate(STUB)
     pg.evaluate(FAKE); pg.evaluate("()=>{ window.__mv=null; }"); pg.locator('#arPanel .ar-cboss .ar-pipb').click(); pg.wait_for_timeout(500)
     m=pg.evaluate("()=>[window.AR.pip.minW,window.AR.pip.minH]"); print('SIZE',m)
-    check('최소 높이 ≤ 300 (b346 630 → 짧게)',m[1]<=300,m)
+    check('최소 높이 ≤ 320 (b346 630 → 짧게, b349 캐릭터 줄 포함)',m[1]<=320,m)
     check('폭 ≥ 320',m[0]>=320,m)
     check('위치 안내 없음',pg.evaluate("()=>!document.getElementById('fakePip').contentDocument.querySelector('.ar-piphint')"))
     check('arPipHint 함수 없음',pg.evaluate("()=>typeof arPipHint==='undefined'"))

@@ -2396,6 +2396,10 @@ body.arpipw{padding:4px!important;height:100vh;display:flex;flex-direction:colum
 .arpipw .ar-pko{padding:2px 4px;gap:4px;font-size:10.5px;border-radius:7px}.arpipw .ar-pko img{width:20px;height:20px}.arpipw .ar-pko .ricx{width:20px;font-size:14px}
 /* b348: 닉네임 직접 알려주기 */
 .ar-teach{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}.ar-teach select{max-width:160px;padding:2px 4px;font:inherit;font-size:12px}
+/* b349: PIP 맨 위 현재 캐릭터 한 줄 */
+.arpipw .ar-pipchar{flex:none;height:28px;display:flex;align-items:center;gap:6px;padding:0 8px;border-radius:10px;background:var(--card,rgba(255,255,255,.05));font-size:.8rem;overflow:hidden;white-space:nowrap}
+.arpipw .ar-pipchar img,.arpipw .ar-pipchar .avatar,.arpipw .ar-pipchar>:first-child:not(b):not(span){width:24px!important;height:24px!important;min-width:24px;font-size:11px;border-radius:6px;flex:none}
+.arpipw .ar-pcn{font-size:.85rem}.arpipw .ar-pcm{font-size:.7rem;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -8064,6 +8068,8 @@ function arPanelLive(p){ p=p||$('#arPanel'); if(!p||p.hidden||!p.querySelector('
   const detC=S.characters.find(x=>x.id===ARX.det.cid), bst=arBossState(), detB=(ARX.det.boss&&findBoss(ARX.det.boss))||(bst&&bst!=='rew'&&ARX.mapSt&&findBoss(ARX.mapSt.boss)), detD=ARX.det.boss?ARX.det.diff:(ARX.mapSt?.diff||''), mapN=(AR_REWARD.find(m=>m[1]===ARX.det.boss)||[''])[0], acc=detC&&typeof accOf==='function'?accOf(detC):null;
   arSetH(q('.ar-cchar .ar-b'),(detC?`<div class="ar-who">${typeof avatar==='function'?avatar(detC):''}<div><div class="ar-big">${esc(detC.name)}</div><div class="muted">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${acc?.name?' · '+esc(acc.name):''}${detC.world?' · '+esc(detC.world):''}</div></div></div>`
     :`<div class="ar-big dim">${on&&!ARX.unkName?'인식 중…':'-'}</div>`+arTeachHtml(on))+arMesoLine());
+  /* b349: PIP 창 맨 위 현재 캐릭터 한 줄 (대시보드와 같은 내용, 0.2초마다 바뀐 것만) */
+  if(ARX.pip){ const pc=ARX.pip.win.document.querySelector('.ar-pipchar'); if(pc) arSetH(pc,detC?`${typeof avatar==='function'?avatar(detC):''}<b class="ar-pcn">${esc(detC.name)}</b><span class="muted ar-pcm">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${detC.world?' · '+esc(detC.world):''}</span>`:`<span class="muted">${on&&!ARX.unkName?'인식 중…':'미인식'}</span>`); }
   /* t603: '현재 보스' → '보상 맵 인식' — 대기/진행 상태 없음. 보상 상자로 보상 맵이 잡힌 동안만 초록 '보상 인식 중' + 보스, 아니면 '-' */
   { const cb=arPipCard(p); if(cb) arPipBind(cb); }
   if(arPipQ(p,'.ar-cboss .ar-b')) arSetH(arPipQ(p,'.ar-cboss .ar-b'),((bst==='rew'?`<div class="ar-bst rew"><i class="ar-dot"></i>보상 인식 중</div>`:'')+(bst==='rew'&&detB?`<div class="ar-big ar-bline">${typeof bossIcon==='function'?bossIcon(detB):''}<span class="ar-bn">${esc(detB.name)}</span>${detD?' '+(typeof diffImg==='function'?diffImg(detD):esc(D[detD])):''}</div>`
@@ -8192,11 +8198,11 @@ async function arPipOpen(cb){ cb=cb||arPipCard(); if(!cb||ARX.pip) return false;
   const W0=320, H0=AR_PIP_H; /* b341: 처음 크기 = 최소 크기. b347: 촘촘한 PIP 전용 배치(.arpipw) — 상태 칸 + 아래 한 칸(득템 목록 ↔ 수익/고르기 칸이 자리 바꿔 씀) */
   let w; try{ w=await documentPictureInPicture.requestWindow({width:W0,height:H0}); }catch(err){ if(m){ m.hidden=false; m.textContent='PIP 창을 열지 못했어요: '+(err&&err.message||err); } return false; }
   if(m) m.hidden=true; arPipStyles(document,w.document); const ph=document.createElement('div'); ph.className='ar-pipph card ar-c ar-cboss-ph'; ph.style.cssText='grid-column:1;grid-row:2;display:flex;align-items:center;justify-content:center;opacity:.6;min-height:'+(cb.offsetHeight||120)+'px'; ph.innerHTML='<span class="muted">PIP 창에 표시 중 · <button type="button" class="btn sm ar-pipback">되돌리기</button></span>';
-  cb.replaceWith(ph); ph.querySelector('.ar-pipback').onclick=()=>arPipClose(); w.document.body.append(cb); cb.classList.add('ar-inpip');
+  cb.replaceWith(ph); ph.querySelector('.ar-pipback').onclick=()=>arPipClose(); const pc=w.document.createElement('div'); pc.className='ar-pipchar'; w.document.body.append(pc,cb); cb.classList.add('ar-inpip');
   const b=cb.querySelector('.ar-pipb'); if(b){ b.textContent='닫기'; b.title='PIP 창 닫고 페이지로 되돌리기'; }
-  ARX.pip={win:w,card:cb,ph,minW:W0,minH:H0}; arPipMinCss(w.document,W0,H0); w.addEventListener('resize',()=>arPipMin(w,W0,H0)); w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); arFitBoss(); arPipAskHide(); arPipPlace(w,W0,H0); return true; }
+  ARX.pip={win:w,card:cb,ph,minW:W0,minH:H0}; arPipMinCss(w.document,W0,H0); w.addEventListener('resize',()=>arPipMin(w,W0,H0)); w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); try{ arPanelLive(); }catch(e){} arFitBoss(); arPipAskHide(); arPipPlace(w,W0,H0); return true; }
 /* b341: Document PiP 는 최소 크기를 못 정함 → resize 때 더 작아지면 처음 크기로 resizeTo (안 되는 환경이면 CSS 최소 크기 = 줄지 않고 스크롤) */
-const AR_PIP_H=286; /* b347: 630 → 286 (2인 수익 칸까지 스크롤 없이) */
+const AR_PIP_H=318; /* b347: 630 → 286 (2인 수익 칸까지 스크롤 없이). b349: +32 맨 위 캐릭터 줄(.ar-pipchar 28px + 간격 4) */
 function arPipMinCss(d,W,H){ const st=d.createElement('style'); st.className='ar-pipmin'; st.textContent=`html,body{min-width:${W}px;min-height:${H}px}`; d.head.append(st); }
 function arPipMin(w,W,H){ const iw=w.innerWidth, ih=w.innerHeight; if(iw>=W-1&&ih>=H-1) return; const dw=Math.max(0,(w.outerWidth||iw)-iw), dh=Math.max(0,(w.outerHeight||ih)-ih); try{ w.resizeTo(Math.max(iw,W)+dw,Math.max(ih,H)+dh); }catch(e){} }
 function arPipStyles(src,dst){ const d=dst.documentElement, s=src.documentElement; for(const a of s.attributes) if(a.name!=='style') d.setAttribute(a.name,a.value); d.style.cssText=s.style.cssText; for(const a of src.body.attributes) dst.body.setAttribute(a.name,a.value);
