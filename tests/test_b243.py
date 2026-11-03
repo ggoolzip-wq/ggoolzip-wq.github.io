@@ -14,7 +14,7 @@ PORT=_tutil.free_port()
 srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 GEO="""()=>{const b=document.querySelector('#congrats .cg-beam'), i=document.querySelector('#congrats .cg-ico img'); if(!b||!i) return null;
  const r=b.getBoundingClientRect(), q=i.getBoundingClientRect(), cs=getComputedStyle(b);
- return {bx:r.left+r.width/2, ix:q.left+q.width/2, by:r.top+r.height*0.6819, iy:q.top+q.height/2, w:b.offsetWidth, bz:+cs.zIndex, iz:+getComputedStyle(i).zIndex, bg:b.tagName+' '+(typeof BEAM!=='undefined'?BEAM.src:''), cw:b.width, mask:(cs.maskImage||cs.webkitMaskImage||''), h:b.offsetHeight, b64:cs.backgroundImage.slice(cs.backgroundImage.indexOf('base64,')+7,-2), ov:document.documentElement.scrollWidth>innerWidth, vw:innerWidth};}"""
+ return {bx:r.left+r.width/2, ix:q.left+q.width/2, by:r.top+r.height*0.6819, iy:q.top+q.height/2, w:b.offsetWidth, bz:+cs.zIndex, iz:+getComputedStyle(i).zIndex, bg:b.tagName+' '+(typeof BEAM!=='undefined'?BEAM.src:''), cw:b.width, baked:b.classList.contains('baked'), mask:(cs.maskImage||cs.webkitMaskImage||''), h:b.offsetHeight, b64:cs.backgroundImage.slice(cs.backgroundImage.indexOf('base64,')+7,-2), ov:document.documentElement.scrollWidth>innerWidth, vw:innerWidth};}"""
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
@@ -30,10 +30,10 @@ try:
           check(f'beam centered x {vw}', abs(g['bx']-g['ix'])<3, g)
           check(f'beam source at icon y {vw}', abs(g['by']-g['iy'])<6, g)
           check(f'icon above beam {vw}', g['iz']>g['bz'], g)
-          check(f'beam is canvas sprite (2x res) {vw}', g['bg']=='CANVAS epicbeam_sprite.webp' and g['cw']==1152, g['bg'])
+          check(f'beam is canvas sprite (2x res) {vw}', g['bg']=='CANVAS epicbeam_sprite.webp' and (g['cw']==1152 or (g['baked'] and g['cw']==576)), (g['bg'],g['cw']))  # b357: 미리 구운 576x344(dpr1) 프레임
           W=576 if vw>480 else 460
           check(f'beam 2x size {vw}', abs(g['w']-W)<2 and abs(g['h']-W*344/576)<3, (g['w'],g['h']))
-          check(f'beam feathered mask {vw}', 'radial-gradient' in g['mask'], g['mask'])
+          check(f'beam feathered mask {vw}', 'radial-gradient' in g['mask'] or (g['baked'] and pg.evaluate('beamBake.fr.length')==16), g['mask'])  # b357: 마스크는 프레임에 구워 둠
           raw=open(os.path.join(os.path.dirname(__file__),'..','epicbeam_sprite.webp'),'rb').read()
           m=pg.evaluate("()=>({...BEAM, nw:beamImg.naturalWidth, nh:beamImg.naturalHeight})")
           check(f'beam 16 frames x 69ms sprite {vw}', m['n']==16 and m['ms']==69 and m['nw']==1152*4 and m['nh']==689*4, m)
@@ -46,7 +46,7 @@ try:
           check(f'beam frame 0 at open #{k+1} {vw}', f0==0, f0)
           pg.wait_for_timeout(500); f1=pg.evaluate("celebrate.beamFrame")
           check(f'beam advances #{k+1} {vw}', 4<=f1<=10, f1)
-          px=pg.evaluate("()=>{const c=document.querySelector('#congrats .cg-beam'),d=c.getContext('2d').getImageData(0,0,1152,689).data;let n=0;for(let i=3;i<d.length;i+=4000)n+=d[i]>0;return n}")
+          px=pg.evaluate("()=>{const c=document.querySelector('#congrats .cg-beam'),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let i=3;i<d.length;i+=(c.width===1152?4000:1000))n+=d[i]>0;return n}")
           check(f'beam canvas painted #{k+1} {vw}', px>20, px)
       pg.close()
     if CHECK:

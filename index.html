@@ -2450,6 +2450,16 @@ nav.tabs button .ecico{display:inline-block;width:16px;height:16px;vertical-alig
 .ecup{position:absolute;left:6px;bottom:5px;font-size:.72rem;padding:1px 5px;border-radius:6px;background:rgba(0,0,0,.65)}
 .ecup.on{color:#8fd3ff}
 .ecload{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#99a}
+
+/* b357: 축하 연출 끊김 — 구운 빛줄기(마스크 포함)는 CSS 마스크 끔, 연출 레이어는 GPU 합성, 연출 중 뒤 페이지 무한 반짝임 애니메이션은 JS(cgAmb)로 잠깐 멈춤 */
+.cg-beam.baked{-webkit-mask-image:none;mask-image:none}
+.cg-beam,#fx,#congrats.show,.cg-in{will-change:transform,opacity}
+#fx{contain:strict}
+/* 뒤 카드의 backdrop 블러(카드 82% 불투명이라 거의 안 보임)는 연출 2.2초 동안만 끔 — 매 프레임 블러 다시 계산이 가장 큰 부하 */
+body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPanel .ar-c{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#congrats.prep{display:grid;opacity:0;animation:none}
+#congrats.prep .cg-in{animation:none}
+#iconBurst.hold img{animation-play-state:paused}
 </style>
 </head>
 <body>
@@ -3128,39 +3138,70 @@ function iconBurst(src){
 const CG_EMOJI=[['😚','1f61a'],['😙','1f619'],['😊','1f60a'],['😘','1f618'],['🥳','1f973']];
 const cgEmoji = () => { const [ch,cp]=CG_EMOJI[Math.random()*CG_EMOJI.length|0]; return `<img class="cg-emo" src="${ITEM_ICONS['emo_'+cp]}" alt="${ch}" data-emo="${ch}" draggable="false">`; };
 /* b246: 에픽 빛줄기 = 4x4 스프라이트(1152x689 프레임 16장, ESPCN x2 업스케일+언샤프) 를 캔버스에 69ms 마다 — 창이 열릴 때마다 0번 프레임부터(animated WebP 는 캐시되면 중간부터 재생됨). 페이지 로드 때 미리 받아 디코드 */
-const BEAM={src:'epicbeam_sprite.webp',w:1152,h:689,cols:4,n:16,ms:69};
+const BEAM={src:'epicbeam_sprite.webp',w:1152,h:689,cols:4,n:16,ms:69,cw:576,ch:344};
 const beamImg=new Image(); beamImg.src=BEAM.src; beamImg.decode?.().catch(()=>{});
-function beamDraw(cv,f){ const g=cv.getContext('2d'); g.clearRect(0,0,BEAM.w,BEAM.h); if(beamImg.complete&&beamImg.naturalWidth) g.drawImage(beamImg,(f%BEAM.cols)*BEAM.w,(f/BEAM.cols|0)*BEAM.h,BEAM.w,BEAM.h,0,0,BEAM.w,BEAM.h); celebrate.beamFrame=f; }
+/* b357: 끊김 원인 = 첫 drawImage 때 4608x2756 스프라이트(약 50MB) 를 메인 스레드에서 다시 디코드(4x 스로틀 ~1초) + CSS mask-image 를 매 프레임 다시 그림.
+   → 페이지가 한가할 때 fetch→createImageBitmap(디코드는 다른 스레드) 로 16장을 화면 크기(576x344×dpr)로 줄이고 둥근 마스크(radial 70%→100%)를 미리 구워 둠. 재생은 작은 비트맵 한 장 drawImage. */
+const beamBake={fr:null,busy:false,dpr:0};
+function beamPrep(){ const dpr=Math.min(2,devicePixelRatio||1); if(beamBake.busy||(beamBake.fr&&beamBake.dpr===dpr)||typeof createImageBitmap!=='function') return; beamBake.busy=true;
+  const W=Math.round(BEAM.cw*dpr), H=Math.round(BEAM.ch*dpr);
+  (/^https?:$/.test(location.protocol)?fetch(BEAM.src).then(r=>r.blob()).then(bl=>createImageBitmap(bl)):beamImg.decode().then(()=>createImageBitmap(beamImg))).then(async full=>{ /* file:// 는 fetch 불가 → 이미 받은 이미지에서 */ const fr=[];
+    for(let f=0;f<BEAM.n;f++){ const bm=await createImageBitmap(full,(f%BEAM.cols)*BEAM.w,(f/BEAM.cols|0)*BEAM.h,BEAM.w,BEAM.h,{resizeWidth:W,resizeHeight:H,resizeQuality:'high'});
+      const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d'); g.drawImage(bm,0,0); bm.close?.();
+      g.globalCompositeOperation='destination-in'; g.setTransform(W/2,0,0,H/2,W/2,H/2); const rg=g.createRadialGradient(0,0,0,0,0,1); rg.addColorStop(0,'#000'); rg.addColorStop(.7,'#000'); rg.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=rg; g.fillRect(-1,-1,2,2);
+      fr.push(await createImageBitmap(c)); await new Promise(r=>(window.requestIdleCallback||setTimeout)(r,{timeout:200})); }
+    full.close?.(); beamBake.fr=fr; beamBake.dpr=dpr; }).catch(()=>{}).finally(()=>{ beamBake.busy=false; }); }
+(window.requestIdleCallback||setTimeout)(beamPrep,{timeout:3000});
+function beamDraw(cv,f){ const g=cv.getContext('2d'); const fr=beamBake.fr;
+  if(fr){ if(cv.width!==fr[0].width){ cv.width=fr[0].width; cv.height=fr[0].height; cv.classList.add('baked'); } g.clearRect(0,0,cv.width,cv.height); g.drawImage(fr[f],0,0); }
+  else { g.clearRect(0,0,cv.width,cv.height); if(beamImg.complete&&beamImg.naturalWidth) g.drawImage(beamImg,(f%BEAM.cols)*BEAM.w,(f/BEAM.cols|0)*BEAM.h,BEAM.w,BEAM.h,0,0,BEAM.w,BEAM.h); }
+  celebrate.beamFrame=f; }
 function beamPlay(cv){ if(!cv) return; const id=(beamPlay._id=(beamPlay._id||0)+1);
   if(matchMedia('(prefers-reduced-motion: reduce)').matches){ celebrate.beamFrame=-1; return; }
-  const t0=performance.now(); beamDraw(cv,0); let last=0;
-  const tick=now=>{ if(id!==beamPlay._id||!celebrate.running||!cv.isConnected) return; const f=Math.max(0,Math.floor((now-t0)/BEAM.ms))%BEAM.n; if(f!==last){ last=f; beamDraw(cv,f); } requestAnimationFrame(tick); };
-  if(!beamImg.complete) beamImg.addEventListener('load',()=>{ if(id===beamPlay._id) beamDraw(cv,last); },{once:true});
+  let t0=0; beamDraw(cv,0); let last=0; // b357: 시간은 첫 화면 프레임부터(직전 저장·다시 그리기로 늦은 첫 프레임에 건너뛰지 않게)
+  const tick=now=>{ if(id!==beamPlay._id||!celebrate.running||!cv.isConnected) return; if(!t0) t0=now; const f=Math.max(0,Math.floor((now-t0)/BEAM.ms))%BEAM.n; if(f!==last){ last=f; beamDraw(cv,f); } requestAnimationFrame(tick); };
+  if(!beamBake.fr&&!beamImg.complete) beamImg.addEventListener('load',()=>{ if(id===beamPlay._id) beamDraw(cv,last); },{once:true});
   requestAnimationFrame(tick); }
+/* b357: 불꽃·꽃가루 = 색·크기별로 미리 그린 작은 스프라이트를 drawImage (arc/save/restore 없음), 다 탄 입자는 배열에서 뺌, 캔버스 크기는 바뀔 때만 다시 잡음 */
+const CG_COL=['#ff5a5f','#ffb400','#4ecdc4','#a66cff','#ffe66d','#ff8fab','#7bdff2','#9be84a'];
+const cgDot={}; const cgDotOf=(col,dpr)=>{ const k=col+dpr; if(cgDot[k]) return cgDot[k]; const R=3.5, s=Math.ceil(R*2*dpr)+2, c=document.createElement('canvas'); c.width=c.height=s; const g=c.getContext('2d'); g.fillStyle=col; g.beginPath(); g.arc(s/2,s/2,R*dpr,0,7); g.fill(); return cgDot[k]={c,R}; };
+// b357: 뒤 페이지의 무한 반복 반짝임(charGlow·tzGlint·spk 등)만 연출 동안 멈춤 — 새로 열리는 창의 등장 애니메이션은 그대로
+function cgAmb(on){ if(!on){ (cgAmb.p||[]).forEach(a=>{ try{ a.play(); }catch(e){} }); cgAmb.p=[]; return; }
+  if(cgAmb.p&&cgAmb.p.length) return; const box=$('#congrats'); cgAmb.p=document.getAnimations().filter(a=>{ const t=a.effect?.target, tm=a.effect?.getTiming?.(); return a.playState==='running'&&tm&&tm.iterations===Infinity&&t&&!box.contains(t)&&!t.closest?.('#iconBurst'); });
+  cgAmb.p.forEach(a=>a.pause()); }
 function celebrate(o,item,boss){
   const cv=$('#fx'), msg=$('#congrats');
   msg.innerHTML=`<div class="cg-in"><span class="cg-ico"><canvas class="cg-beam" width="1152" height="689" aria-hidden="true"></canvas>${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}</span><div class="cg-big">${boss?`<span class="cg-boss">${bossIcon(boss)}</span>`:''}<span class="cg-t">축하드립니다!</span></div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득</div></div>`;
+  celebrate.running=true; const run=(celebrate._run=(celebrate._run||0)+1);
   beamPlay(msg.querySelector('.cg-beam'));
-  const img=null; iconBurst(ITEM_ICONS[item||(o==='r4'?'ring_restraint':'ring_continuous')]);
-  msg.classList.add('show'); cv.classList.add('show'); celebrate.running=true;
-  clearTimeout(celebrate._t); celebrate._t=setTimeout(endCelebrate,2200);
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const dpr=Math.min(2,devicePixelRatio||1), W=innerWidth, H=innerHeight; cv.width=W*dpr; cv.height=H*dpr; const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
-  const P=[], COL=['#ff5a5f','#ffb400','#4ecdc4','#a66cff','#ffe66d','#ff8fab','#7bdff2','#9be84a'];
-  const burst=(x,y)=>{ const n=70, col=COL[Math.random()*COL.length|0]; for(let i=0;i<n;i++){ const a=Math.PI*2*i/n, v=2+Math.random()*4; P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,dec:.012+Math.random()*.012,r:2+Math.random()*1.5,col:Math.random()<.3?COL[Math.random()*COL.length|0]:col,k:'s'}); }};
-  for(let i=0;i<90;i++) P.push({x:Math.random()*W,y:-20-Math.random()*H*.5,vx:(Math.random()-.5)*2,vy:2+Math.random()*3,life:1,dec:.004,r:4+Math.random()*4,col:COL[i%COL.length],k:'c',rot:Math.random()*6,vr:(Math.random()-.5)*.3});
-  const t0=performance.now(); let nb=0;
-  const step=now=>{ if(!celebrate.running) return; const t=now-t0;
-    while(nb<6 && t>nb*320){ burst(W*(.18+Math.random()*.64), H*(.15+Math.random()*.35)); nb++; }
-    g.clearRect(0,0,W,H);
-    for(const q of P){ if(q.life<=0) continue; q.x+=q.vx; q.y+=q.vy; q.life-=q.dec;
-      if(q.k==='i'){ q.vx*=.985; q.vy=q.vy*.985+.05; q.rot+=q.vr; g.globalAlpha=Math.max(0,q.life); g.save(); g.translate(q.x,q.y); g.rotate(q.rot); if(img.complete) g.drawImage(img,-q.r/2,-q.r/2,q.r,q.r); g.restore(); }
-      else if(q.k==='s'){ q.vx*=.985; q.vy=q.vy*.985+.06; g.globalAlpha=Math.max(0,q.life); g.fillStyle=q.col; g.beginPath(); g.arc(q.x,q.y,q.r,0,7); g.fill(); }
-      else { q.vy+=.02; q.rot+=q.vr; g.globalAlpha=Math.max(0,Math.min(1,q.life*1.5)); g.save(); g.translate(q.x,q.y); g.rotate(q.rot); g.fillStyle=q.col; g.fillRect(-q.r/2,-q.r/4,q.r,q.r/2); g.restore(); } }
-    g.globalAlpha=1; if(t<2600) requestAnimationFrame(step); };
+  document.body.classList.add('cg-on'); cgAmb(true); // b357: 뒤 페이지 반짝임 애니메이션 멈춤 + 카드 backdrop 블러 끔(매 프레임 블러 다시 계산 방지)
+  clearTimeout(celebrate._t); celebrate._t=setTimeout(endCelebrate,2200+34);
+  if(!beamBake.fr) beamPrep();
+  // b357: 블러 끄기·직전 저장/다시 그리기로 무거운 한 프레임을 먼저 보낸 뒤(2 프레임) 연출을 보이고 시작 → 연출 중에는 긴 프레임 없음
+  // 보일 준비(레이아웃·래스터)는 이 무거운 프레임에: 겹 화면은 투명하게 미리 깔고, 아이콘 불꽃은 멈춘 채로 만들어 둠
+  msg.classList.add('prep'); cv.classList.add('show'); iconBurst(ITEM_ICONS[item||(o==='r4'?'ring_restraint':'ring_continuous')]); document.querySelector('#iconBurst')?.classList.add('hold');
+  { const dpr=Math.min(2,devicePixelRatio||1), W=Math.round(innerWidth*dpr), H=Math.round(innerHeight*dpr); if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; } }
+  const go=()=>{ if(run!==celebrate._run||!celebrate.running) return; document.querySelector('#iconBurst')?.classList.remove('hold'); msg.classList.add('show'); msg.classList.remove('prep'); if(!matchMedia('(prefers-reduced-motion: reduce)').matches) fx(); };
+  requestAnimationFrame(()=>requestAnimationFrame(go));
+  function fx(){
+  const dpr=Math.min(2,devicePixelRatio||1), W=innerWidth, H=innerHeight; if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); } const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+  const P=[], COL=CG_COL, rnd=Math.random;
+  const burst=(x,y)=>{ const n=70, col=COL[rnd()*COL.length|0]; for(let i=0;i<n;i++){ const a=Math.PI*2*i/n, v=2+rnd()*4; P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,dec:.012+rnd()*.012,r:2+rnd()*1.5,col:rnd()<.3?COL[rnd()*COL.length|0]:col,k:'s'}); }};
+  for(let i=0;i<90;i++) P.push({x:rnd()*W,y:-20-rnd()*H*.5,vx:(rnd()-.5)*2,vy:2+rnd()*3,life:1,dec:.004,r:4+rnd()*4,col:COL[i%COL.length],k:'c',rot:rnd()*6,vr:(rnd()-.5)*.3});
+  let t0=0, nb=0, lt=0; celebrate.fxN=0;
+  const step=now=>{ if(!celebrate.running) return; if(!t0) t0=lt=now; const t=now-t0; const k=Math.min(3,Math.max(.5,(now-lt)/16.67)); lt=now; // 프레임이 늦어도 같은 속도(60fps 기준)
+    while(nb<6 && t>nb*320){ burst(W*(.18+rnd()*.64), H*(.15+rnd()*.35)); nb++; }
+    g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,cv.width,cv.height);
+    let j=0;
+    for(let i=0;i<P.length;i++){ const q=P[i]; q.x+=q.vx*k; q.y+=q.vy*k; q.life-=q.dec*k; if(q.life<=0||q.y>H+40) continue; P[j++]=q;
+      if(q.k==='s'){ const f=Math.pow(.985,k); q.vx*=f; q.vy=q.vy*f+.06*k; const d=cgDotOf(q.col,dpr), s=q.r/d.R*d.c.width/dpr; g.globalAlpha=q.life; g.setTransform(dpr,0,0,dpr,0,0); g.drawImage(d.c,q.x-s/2,q.y-s/2,s,s); }
+      else { q.vy+=.02*k; q.rot+=q.vr*k; g.globalAlpha=Math.min(1,q.life*1.5); const c=Math.cos(q.rot)*dpr, sn=Math.sin(q.rot)*dpr; g.setTransform(c,sn,-sn,c,q.x*dpr,q.y*dpr); g.fillStyle=q.col; g.fillRect(-q.r/2,-q.r/4,q.r,q.r/2); } }
+    P.length=j; celebrate.fxN=Math.max(celebrate.fxN,j);
+    g.globalAlpha=1; if(t<2600&&j) requestAnimationFrame(step); };
   requestAnimationFrame(step);
+  }
 }
-function endCelebrate(){ celebrate.running=false; $('#congrats').classList.remove('show'); const cv=$('#fx'); cv.classList.remove('show'); cv.getContext('2d').clearRect(0,0,cv.width,cv.height); }
+function endCelebrate(){ celebrate.running=false; cgAmb(false); document.querySelector('#iconBurst')?.remove(); document.body.classList.remove('cg-on'); $('#congrats').classList.remove('show','prep'); const cv=$('#fx'); cv.classList.remove('show'); const g=cv.getContext('2d'); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,cv.width,cv.height); }
 const findBoss = (slot) => BOSSES.find(b=>b.id===slot);
 const JOBS = ['히어로','팔라딘','다크나이트','아크메이지(불,독)','아크메이지(썬,콜)','비숍','보우마스터','신궁','패스파인더','나이트로드','섀도어','듀얼블레이드','바이퍼','캡틴','캐논마스터','소울마스터','플레임위자드','윈드브레이커','나이트워커','스트라이커','미하일','아란','에반','루미너스','메르세데스','팬텀','은월','블래스터','배틀메이지','와일드헌터','메카닉','제논','데몬슬레이어','데몬어벤져','카이저','카인','카데나','엔젤릭버스터','아델','일리움','칼리','아크','라라','호영','렌','제로','키네시스'];
 const WORLDS = ['스카니아','베라','루나','제니스','크로아','유니온','엘리시움','이노시스','레드','오로라','아케인','노바','에오스','핼리오스','챌린저스'];

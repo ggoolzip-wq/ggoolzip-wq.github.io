@@ -2,6 +2,15 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b357 (t660) 득템 축하 연출(에픽빔+불꽃·꽃가루) 끊김 없애기
+
+- 측정: CDP 트레이스 + rAF 프레임 로거(1600x900, headless=new, CPU 1x/4x, 5회). 도구·결과·그래프 /workspace/t660 (prof.py, trace.py, chart.py, before/after/compare.png, anim.png).
+- 원인: ① 첫 drawImage 때 4608x2756 빛줄기 스프라이트(약 50MB)를 메인 스레드에서 다시 디코드(Decode Image 1x ~300ms, 4x ~1s — decode() 해도 캔버스에 그릴 때 버려진 디코드를 다시 함) ② .cg-beam CSS mask-image 를 매 프레임 다시 그림 ③ 뒤 카드·헤더의 backdrop-filter blur(10px) 가 무한 반짝임 애니메이션(charGlow·tzGlint·spk·spx…)과 겹 화면 때문에 매 프레임 다시 계산(연출 중 33~50ms 프레임이 계속) ④ 화면 전체 캔버스에 입자 510개 arc/save/restore ⑤ 직전 save()+render()·블러 끄기 스타일 계산이 첫 프레임과 겹침.
+- 고침(app.js celebrate 주변, extra.css 끝 b357): beamPrep — 한가할 때 fetch→createImageBitmap(다른 스레드 디코드, file:// 이면 beamImg) 로 16장을 576x344×dpr 로 줄이고 radial 마스크(70%→100%)를 구워 ImageBitmap 으로 보관(beamBake.fr), 큰 비트맵은 close. 구운 뒤엔 .cg-beam.baked 로 CSS 마스크 끔(모양 차이 평균 0.12/255). 불꽃 = 색별로 미리 그린 점 스프라이트 drawImage, 꽃가루 = setTransform 한 번(save/restore 없음), 다 탄 입자 배열에서 뺌, 캔버스 크기는 바뀔 때만, 속도는 프레임 시간 비례(60fps 기준). 연출 동안 body.cg-on → 카드/헤더/arPanel backdrop-filter 끔(카드 82% 불투명이라 거의 안 보임), cgAmb() 가 뒤 페이지 무한(iterations=Infinity) 애니메이션만 pause/play(새로 여는 창 등장 애니메이션은 그대로 — CSS 로 전부 멈추면 test_tracker4 #fMain 이 안 보임). 무거운 일(블러 끄기 스타일 계산·#congrats 투명 prep 레이아웃·아이콘 불꽃 DOM(.hold 로 멈춤)·캔버스 크기)은 celebrate() 호출 프레임에 몰고, 2 프레임 뒤 show + 불꽃 시작. 빛줄기·불꽃 시간은 첫 rAF 부터. endCelebrate 2200+34ms.
+- 결과(보인 뒤 연출 구간, 5회 합): 1x p95 50.1→16.8 · p99 83.4→16.8 · >33ms 120→0 · 최장 150→16.8ms. 4x p95 66.7→16.8 · p99 149.9→33.3 · >33ms 60→2 · 최장 266.7→50.1ms. 클릭 프레임 포함 전체 최장 1x 333→67ms, 4x 1583→217ms(대부분 직전 save()+render()).
+- 이 박스 메모: headless(old)는 페이지가 30fps 로 묶여 측정 안 됨 → --headless=new. 대시보드 자체가 평소 backdrop 블러로 30fps(소프트웨어 래스터) — 연출 밖은 그대로.
+- 테스트: tests/test_b357_celebperf.py(구운 16장·키프레임 transform/opacity 만·cg-on/블러 복구·입자 ≤600·1x 최장 <100ms·50ms 초과 ≤1, 4x 최장 <400ms), test_b243 갱신(구운 576 캔버스·마스크 구움 허용, getImageData 캔버스 크기).
+
 ## b356 (t670) 에픽빔 탭 '☁ 서버에 저장 — 같은 넥슨 키로…' 문구 삭제
 - src/epicclip.js ecCloudTxt: ok 상태는 빈 문구 → 머리말에 .eccloud 안 그림(오프라인·로그인 전·R2 꺼짐 안내는 그대로). 카드별 ☁/⏳/💾 배지는 유지.
 - tests/test_b354_epic_cloud.py: ok 상태에서 .eccloud 없음·문구 없음 확인. test_b354_epic_server/cloud: wrangler.toml 에 R2 바인딩이 켜진 뒤(b355)에도 임시 설정이 중복 안 되게, 503 확인은 바인딩 뺀 설정으로.

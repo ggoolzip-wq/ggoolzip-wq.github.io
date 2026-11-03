@@ -2326,3 +2326,13 @@ nav.tabs button .ecico{display:inline-block;width:16px;height:16px;vertical-alig
 .ecup{position:absolute;left:6px;bottom:5px;font-size:.72rem;padding:1px 5px;border-radius:6px;background:rgba(0,0,0,.65)}
 .ecup.on{color:#8fd3ff}
 .ecload{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#99a}
+
+/* b357: 축하 연출 끊김 — 구운 빛줄기(마스크 포함)는 CSS 마스크 끔, 연출 레이어는 GPU 합성, 연출 중 뒤 페이지 무한 반짝임 애니메이션은 JS(cgAmb)로 잠깐 멈춤 */
+.cg-beam.baked{-webkit-mask-image:none;mask-image:none}
+.cg-beam,#fx,#congrats.show,.cg-in{will-change:transform,opacity}
+#fx{contain:strict}
+/* 뒤 카드의 backdrop 블러(카드 82% 불투명이라 거의 안 보임)는 연출 2.2초 동안만 끔 — 매 프레임 블러 다시 계산이 가장 큰 부하 */
+body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPanel .ar-c{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#congrats.prep{display:grid;opacity:0;animation:none}
+#congrats.prep .cg-in{animation:none}
+#iconBurst.hold img{animation-play-state:paused}
