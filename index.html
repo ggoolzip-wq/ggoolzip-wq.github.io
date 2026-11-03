@@ -8075,11 +8075,16 @@ function arPipBind(cb){ const b=cb.querySelector('.ar-pipb'); if(!b||b._pip) ret
 function arPipOk(){ return !!(window.documentPictureInPicture&&typeof documentPictureInPicture.requestWindow==='function'); }
 async function arPipOpen(cb){ cb=cb||arPipCard(); if(!cb||ARX.pip) return false; const m=cb.querySelector('.ar-pipmsg');
   if(!arPipOk()){ if(m){ m.hidden=false; m.textContent='PIP 창은 크롬/엣지 최신 버전(116 이상)이 필요해요'; clearTimeout(m._t); m._t=setTimeout(()=>{ m.hidden=true; },4000); } return false; }
-  let w; try{ w=await documentPictureInPicture.requestWindow({width:Math.max(280,Math.round(cb.offsetWidth||320)),height:Math.max(150,Math.round(cb.offsetHeight||170)+16)+230}); }catch(err){ if(m){ m.hidden=false; m.textContent='PIP 창을 열지 못했어요: '+(err&&err.message||err); } return false; }
+  const W0=Math.max(320,Math.round(cb.offsetWidth||320)), H0=Math.max(150,Math.round(cb.offsetHeight||170)+16)+230+AR_PIP_SALE_H; /* b341: 처음 크기 = 최소 크기 (득템 목록 + b342 수익 기록 칸까지 들어가게) */
+  let w; try{ w=await documentPictureInPicture.requestWindow({width:W0,height:H0}); }catch(err){ if(m){ m.hidden=false; m.textContent='PIP 창을 열지 못했어요: '+(err&&err.message||err); } return false; }
   if(m) m.hidden=true; arPipStyles(document,w.document); const ph=document.createElement('div'); ph.className='ar-pipph card ar-c ar-cboss-ph'; ph.style.cssText='grid-column:1;grid-row:2;display:flex;align-items:center;justify-content:center;opacity:.6;min-height:'+(cb.offsetHeight||120)+'px'; ph.innerHTML='<span class="muted">PIP 창에 표시 중 · <button type="button" class="btn sm ar-pipback">되돌리기</button></span>';
   cb.replaceWith(ph); ph.querySelector('.ar-pipback').onclick=()=>arPipClose(); w.document.body.append(cb); cb.classList.add('ar-inpip');
   const b=cb.querySelector('.ar-pipb'); if(b){ b.textContent='닫기'; b.title='PIP 창 닫고 페이지로 되돌리기'; }
-  ARX.pip={win:w,card:cb,ph}; w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); arFitBoss(); return true; }
+  ARX.pip={win:w,card:cb,ph,minW:W0,minH:H0}; arPipMinCss(w.document,W0,H0); w.addEventListener('resize',()=>arPipMin(w,W0,H0)); w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); arFitBoss(); return true; }
+/* b341: Document PiP 는 최소 크기를 못 정함 → resize 때 더 작아지면 처음 크기로 resizeTo (안 되는 환경이면 CSS 최소 크기 = 줄지 않고 스크롤) */
+const AR_PIP_SALE_H=250;
+function arPipMinCss(d,W,H){ const st=d.createElement('style'); st.className='ar-pipmin'; st.textContent=`html,body{min-width:${W}px;min-height:${H}px}`; d.head.append(st); }
+function arPipMin(w,W,H){ const iw=w.innerWidth, ih=w.innerHeight; if(iw>=W-1&&ih>=H-1) return; const dw=Math.max(0,(w.outerWidth||iw)-iw), dh=Math.max(0,(w.outerHeight||ih)-ih); try{ w.resizeTo(Math.max(iw,W)+dw,Math.max(ih,H)+dh); }catch(e){} }
 function arPipStyles(src,dst){ const d=dst.documentElement, s=src.documentElement; for(const a of s.attributes) if(a.name!=='style') d.setAttribute(a.name,a.value); d.style.cssText=s.style.cssText; for(const a of src.body.attributes) dst.body.setAttribute(a.name,a.value);
   for(const ss of [...src.styleSheets]){ try{ const st=dst.createElement('style'); st.textContent=[...ss.cssRules].map(r=>r.cssText).join('\n'); dst.head.append(st); }catch(e){ if(ss.href){ const l=dst.createElement('link'); l.rel='stylesheet'; l.href=ss.href; dst.head.append(l); } } }
   const st=dst.createElement('style'); st.textContent='html,body{margin:0;background:var(--bg,#0b0f1a);min-height:100%}body{padding:8px;box-sizing:border-box}.ar-inpip{margin:0!important;width:100%;box-sizing:border-box}'; dst.head.append(st); }

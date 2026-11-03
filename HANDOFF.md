@@ -2,6 +2,11 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b341 (t646) PIP 창 처음 크기 = 최소 크기
+- arPipOpen: W0=max(320,카드 폭), H0=카드 높이+16+230(득템 목록)+AR_PIP_SALE_H(250, b342 수익 기록 칸) 로 requestWindow.
+- Document PiP 는 최소 크기 옵션이 없음 → arPipMin: resize 때 W0/H0 보다 작으면 w.resizeTo 로 되돌림(try). arPipMinCss: html/body min-width/min-height(되돌리기 안 되는 환경 = 스크롤). 키우기는 자유.
+- 테스트 tests/test_b341_pipmin.py (iframe 가짜 창, resizeTo=iframe 크기, border:0 이어야 inner 크기 맞음). 스크린샷 pip_min.png.
+
 ## b340 (t646) 캘린더 탭 전용 Paperlogy 폰트
 - fonts/Paperlogy-{4Regular,6SemiBold,7Bold}.woff2 = TTF(/workspace/t646/font) pyftsubset 서브셋(한글 AC00-D7A3·자모·Latin·CJK 문장부호 전부 유지, ~138KB).
 - src/extra.css 끝 b340 블록: @font-face(font-display:swap) + `.calwrap`, 캘린더 탭 버튼에만 적용. 디지털 숫자 폰트 쓰는 곳은 그대로.
