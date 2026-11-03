@@ -2270,3 +2270,5 @@ body.arpipw{padding:4px!important;height:100vh;display:flex;flex-direction:colum
 .arpipw .ram{font-size:.66rem}
 .arpipw .ar-pkg{gap:3px}
 .arpipw .ar-pko{padding:2px 4px;gap:4px;font-size:10.5px;border-radius:7px}.arpipw .ar-pko img{width:20px;height:20px}.arpipw .ar-pko .ricx{width:20px;font-size:14px}
+/* b348: 닉네임 직접 알려주기 */
+.ar-teach{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}.ar-teach select{max-width:160px;padding:2px 4px;font:inherit;font-size:12px}
