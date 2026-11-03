@@ -2330,6 +2330,12 @@ button.calsum:hover,button.calsum.on{box-shadow:0 0 14px rgba(255,210,60,.8),0 0
 .caldcr{display:grid!important;grid-template-columns:minmax(0,160px) 110px minmax(0,1fr)!important;gap:10px;align-items:center;text-align:left}
 .caldcr>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .calmrh>span:last-child{text-align:right}
+/* b340(t646): 캘린더 탭·캘린더 화면만 Paperlogy (사용자 제공 무료 글꼴, fonts/*.woff2 = 라틴+KS X 1001 포함 한글 11172자 서브셋). 디지털 글꼴(MrjUnitKo) 쓰는 곳은 그대로 */
+@font-face{font-family:'Paperlogy';src:url(fonts/Paperlogy-4Regular.woff2) format('woff2');font-weight:100 500;font-style:normal;font-display:swap}
+@font-face{font-family:'Paperlogy';src:url(fonts/Paperlogy-6SemiBold.woff2) format('woff2');font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:'Paperlogy';src:url(fonts/Paperlogy-7Bold.woff2) format('woff2');font-weight:700 900;font-style:normal;font-display:swap}
+.calwrap,html body nav.tabs button[data-tab=cal]{font-family:'Paperlogy','Pretendard',system-ui,sans-serif!important}
+.calwrap :where(button,input,select){font-family:inherit}
 </style>
 </head>
 <body>
@@ -6988,7 +6994,7 @@ function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId
     <button type="button" class="calnav caltd" data-calmv="0">오늘</button><button type="button" class="calsum${isM?' on':''}" data-calmonth aria-pressed="${isM}" title="이 달 기록 전체 보기">이번 달 합계 <b>${calEok(tot)} 메소</b> · 아이템 <b>${icnt}개</b></button></div>
     <div class="calwk">${['일','월','화','수','목','금','토'].map((w,i)=>`<span class="${i===0?'sun':i===6?'sat':''}">${w}</span>`).join('')}</div>
     <div class="calgrid">${cells.join('')}</div>${det}<div class="muted calnote">≈ = 정확한 날짜가 없어 그 주 목요일(리셋일)·처치일 등으로 어림 · API 키를 지운 캐릭터는 빠져요</div></div></div>`;
-  const cl=$('#charList'); if(cl) v.querySelector('.calwrap').style.fontFamily=getComputedStyle(cl).fontFamily;
+  /* b340: 글꼴 = Paperlogy (extra.css .calwrap) */
   v.querySelectorAll('[data-calmv]').forEach(b=>b.onclick=()=>{ const k=+b.dataset.calmv; if(!k){ calMon=monthId(Date.now()); calSel=today; } else { const t=new Date(Date.UTC(Y,M-1+k,1)); calMon=`${t.getUTCFullYear()}-${pad(t.getUTCMonth()+1)}`; } renderCal(); });
   v.querySelectorAll('[data-calmd]').forEach(b=>b.onclick=()=>{ calMD=b.dataset.calmd; renderCal(); });
   v.querySelectorAll('[data-calgo]').forEach(b=>b.onclick=()=>{ calSel=b.dataset.calgo; renderCal(); });

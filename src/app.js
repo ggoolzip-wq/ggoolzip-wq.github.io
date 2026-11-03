@@ -4521,7 +4521,7 @@ function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId
     <button type="button" class="calnav caltd" data-calmv="0">오늘</button><button type="button" class="calsum${isM?' on':''}" data-calmonth aria-pressed="${isM}" title="이 달 기록 전체 보기">이번 달 합계 <b>${calEok(tot)} 메소</b> · 아이템 <b>${icnt}개</b></button></div>
     <div class="calwk">${['일','월','화','수','목','금','토'].map((w,i)=>`<span class="${i===0?'sun':i===6?'sat':''}">${w}</span>`).join('')}</div>
     <div class="calgrid">${cells.join('')}</div>${det}<div class="muted calnote">≈ = 정확한 날짜가 없어 그 주 목요일(리셋일)·처치일 등으로 어림 · API 키를 지운 캐릭터는 빠져요</div></div></div>`;
-  const cl=$('#charList'); if(cl) v.querySelector('.calwrap').style.fontFamily=getComputedStyle(cl).fontFamily;
+  /* b340: 글꼴 = Paperlogy (extra.css .calwrap) */
   v.querySelectorAll('[data-calmv]').forEach(b=>b.onclick=()=>{ const k=+b.dataset.calmv; if(!k){ calMon=monthId(Date.now()); calSel=today; } else { const t=new Date(Date.UTC(Y,M-1+k,1)); calMon=`${t.getUTCFullYear()}-${pad(t.getUTCMonth()+1)}`; } renderCal(); });
   v.querySelectorAll('[data-calmd]').forEach(b=>b.onclick=()=>{ calMD=b.dataset.calmd; renderCal(); });
   v.querySelectorAll('[data-calgo]').forEach(b=>b.onclick=()=>{ calSel=b.dataset.calgo; renderCal(); });

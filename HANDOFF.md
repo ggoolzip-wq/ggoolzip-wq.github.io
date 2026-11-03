@@ -2,6 +2,11 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b340 (t646) 캘린더 탭 전용 Paperlogy 폰트
+- fonts/Paperlogy-{4Regular,6SemiBold,7Bold}.woff2 = TTF(/workspace/t646/font) pyftsubset 서브셋(한글 AC00-D7A3·자모·Latin·CJK 문장부호 전부 유지, ~138KB).
+- src/extra.css 끝 b340 블록: @font-face(font-display:swap) + `.calwrap`, 캘린더 탭 버튼에만 적용. 디지털 숫자 폰트 쓰는 곳은 그대로.
+- renderCal 의 #charList 폰트 복사 코드 제거. 테스트 tests/test_b340_calfont.py (임시 사이트에 fonts/ 복사 필요).
+
 ## b339 (t645) 이 달 전체: 정렬 + 날짜 칩
 - 목록 줄(.calmr)을 고정 grid로 바꿈: 아이콘 24px | 아이템 38% | 보스 24% | 캐릭터 18% | 금액(오른쪽). 금액 말고는 모두 왼쪽 정렬이고, 넘치면 말줄임. 머리줄(.calmrh) 추가. 날짜 상세의 캐릭터별 줄(.caldcr)도 고정 grid.
 - 날짜별 긴 목록 대신, 기록 있는 날짜만 칩으로 보여 줌('10/22 ≈92억', 노랑 네온). 누른 날짜 하나의 목록만 아래에 나옴(calMD, 기본 = 가장 최근 날짜). 목록 제목을 누르면 그 날 상세로 감.
