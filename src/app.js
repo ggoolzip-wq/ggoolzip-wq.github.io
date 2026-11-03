@@ -513,12 +513,15 @@ function openRing(key){
   $('#ringModal').classList.add('show'); setTimeout(()=>document.querySelector('#ringModal [data-ring="r4"]')?.focus(),30);
 }
 function closeRing(){ ringPending=null; $('#ringModal').classList.remove('show'); if(pend&&pendSig(S)===pendSig(pend.base)){ pend=null; render(); } } // b110: 닫기(✕·바깥·Esc) = 취소 — 바뀐 게 없으면 저장 대기도 풂
+/* b344: 반지 상자 결과 저장 (chooseRing · PIP 고르기 같이 씀) → 수익 기록할 아이템 키, 꽝이면 null */
+function ringApply(c,b,key,o){ pendStart(); const m=dropMap(c,b.type);
+  if(o==='x'){ m[key]=1; const om=outMap(c,b.type); (om[key]||(om[key]=[])).push('x'); modeMap(c,b.type)[key]='n'; save(); render(); return null; } // 꽝: 블빵 창 없이 1인처럼 (라벨 없음)
+  m[key]=1; (outMap(c,b.type)[key]||(outMap(c,b.type)[key]=[])).push(o); if(curParty(c,b.id)>1) modeMap(c,b.type)[key]='s'; save(); render(); // 반지 상자: 블빵 창 없이 항상 분배
+  return o==='gl'?'g_life':'ring:'+o; }
 function chooseRing(o){
   const p=ringPending; if(!p||!(o in OUT_LABEL)) return; closeRing();
   const c=S.characters.find(x=>x.id===p.cid); if(!c) return; const [slot,item]=p.key.split('|'); const b=findBoss(slot);
-  pendStart(); const m=dropMap(c,b.type);
-  if(o==='x'){ m[p.key]=1; const om=outMap(c,b.type); (om[p.key]||(om[p.key]=[])).push('x'); modeMap(c,b.type)[p.key]='n'; save(); render(); return; } // 꽝: 블빵 창 없이 1인처럼 (라벨 없음)
-  m[p.key]=1; (outMap(c,b.type)[p.key]||(outMap(c,b.type)[p.key]=[])).push(o); if(curParty(c,b.id)>1) modeMap(c,b.type)[p.key]='s'; save(); render(); // 반지 상자: 블빵 창 없이 항상 분배
+  const ik=ringApply(c,b,p.key,o); if(!ik) return;
   askRev(c,b,p.key,o==='gl'?'g_life':'ring:'+o,()=>{ if(o==='gl') celebrate(null,'g_life',b); else celebrate(o,null,b); }); return;
   askBbang(c,b,p.key,()=>{},()=>{},
     o==='gl'?{ico:itemIcon('g_life'),name:ITEMS.g_life.n}:o==='x'?{ico:itemIcon(item),name:ITEMS[item].n+' · 꽝'}:{ico:outIcon(o),name:OUT_NAME[o]});
@@ -952,6 +955,7 @@ const CHAOS_PICK = ['lcm','eye','belt','book','terror','cfe','sos'];
 const hasOut = it => isRing(it)||it==='chaosbox';
 const chaosHtml = (outs,n) => { const l=(outs||[]).filter(o=>/^cb:/.test(o)).map(o=>o.slice(3)).filter(k=>ITEMS[k]);
   return l.map(k=>`<span class="cbx">${miniIcon('chaosbox')} - ${itemIcon(k)}<span class="dln">${esc(ITEMS[k].n)}</span></span>`).join('') + (n>l.length?`<span class="cbx muted">${miniIcon('chaosbox')} - 미기록 ${xN(n-l.length)}</span>`:''); };
+const chaosApply=(c,b,key,k)=>{ dropMap(c,b.type)[key]=1; outMap(c,b.type)[key]=['cb:'+k]; }; // b344: 칠흑 상자 결과 저장 (모달 · PIP 같이 씀)
 function openChaos(key){
   const c=activeChar(); if(!c) return; document.querySelector('#chaosModal')?.remove();
   const el=document.createElement('div'); el.id='chaosModal'; el.className='modal-bg show cbmodal'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
@@ -960,7 +964,7 @@ function openChaos(key){
   el.onclick=e=>{ const t=e.target.closest('[data-cbpick]'); if(!t&&e.target!==el) return; el.remove(); const k=t?t.dataset.cbpick:'';
     if(!k){ if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; render(); return; }
     const cc=S.characters.find(x=>x.id===c.id); const b=findBoss(key.split('|')[0]); if(!cc||!b) return;
-    pendStart(); askBbang(cc,b,key,()=>{ dropMap(cc,b.type)[key]=1; outMap(cc,b.type)[key]=['cb:'+k]; },()=>askRev(cc,b,key,'cb:'+k,()=>celebrate(null,k,b)),{ico:itemIcon(k),name:ITEMS[k].n}); };
+    pendStart(); askBbang(cc,b,key,()=>chaosApply(cc,b,key,k),()=>askRev(cc,b,key,'cb:'+k,()=>celebrate(null,k,b)),{ico:itemIcon(k),name:ITEMS[k].n}); };
 }
 const OUT_NAME = {r4:'리스트레인트 링 4레벨', c4:'컨티뉴어스 링 4레벨'};
 const miniIcon = k => ITEM_ICONS[k] ? `<img class="ric" src="${ITEM_ICONS[k]}" alt="" width="32" height="32" aria-hidden="true">` : '';

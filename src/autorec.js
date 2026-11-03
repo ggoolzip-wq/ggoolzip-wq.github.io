@@ -1063,12 +1063,14 @@ function arPipRecH(){ const R=ARX.sessRec||[]; return `<div class="ar-prh"><span
 function arPipRec(){ const P=ARX.pip; if(!P||!P.win||!P.win.document) return; const d=P.win.document; let el=d.querySelector('.ar-piprec');
   if(!el){ el=d.createElement('div'); el.className='card ar-c ar-piprec'; P.card.after(el); } arSetH(el,arPipRecH()); arPipSale(); }
 /* b342: PIP 열려 있으면 득템 시 모달 대신 PIP 아래 칸에서 수익 기록 (반지·칠흑 상자는 고르는 창이 필요해서 원래대로) — 여러 개면 줄 세워 하나씩 */
-function arSaleTake(c,b,key,ik){ if(!ARX.pip||!ARX.pip.win||isRing(ik)||ik==='chaosbox') return false; const m=dropMap(c,b.type); if((+m[key]||0)>=1) return false;
+function arSaleTake(c,b,key,ik){ if(!ARX.pip||!ARX.pip.win) return false; const m=dropMap(c,b.type); if((+m[key]||0)>=1) return false;
+  if(isRing(ik)||ik==='chaosbox'){ pendStart(); (ARX.saleQ=ARX.saleQ||[]).push({cid:c.id,bid:b.id,key,ik,pick:ik==='chaosbox'?'cb':'ring',u:key+'@'+Date.now()}); arPipSale(); return true; } // b344: 무엇이 나왔는지 PIP 에서 고른 뒤 기록
   pendStart(); m[key]=1; const pty=curParty(c,b.id); if(pty>1) modeMap(c,b.type)[key]='s'; save(); render(); // 2인 이상 = 자동 분배
   (ARX.saleQ=ARX.saleQ||[]).push({cid:c.id,bid:b.id,key,ik,u:key+'@'+Date.now()}); arPipSale(); return true; }
-function arSaleCtx(q){ const c=S.characters.find(x=>x.id===q.cid), b=c&&findBoss(q.bid); if(!c||!b||!((+dropMap(c,b.type)[q.key]||0)>=1)) return null; const pty=curParty(c,b.id), md=modeMap(c,b.type)[q.key]||'', div=pty>1&&md!=='w'&&md!=='n'?pty:1; return {c,b,div}; }
+function arSaleCtx(q){ const c=S.characters.find(x=>x.id===q.cid), b=c&&findBoss(q.bid); if(!c||!b||(!q.pick&&!((+dropMap(c,b.type)[q.key]||0)>=1))) return null; const pty=curParty(c,b.id), md=modeMap(c,b.type)[q.key]||'', div=pty>1&&md!=='w'&&md!=='n'?pty:1; return {c,b,div}; }
+const arIkName=ik=>{ const r=/^ring:(\w+)$/.exec(ik); if(r) return OUT_NAME[r[1]]||ik; const k=String(ik).replace(/^cb:/,''); return ITEMS[k]?.n||ik; }; // b344
 function arPipSaleH(q,x){ const fs=revFeeGet(), ap=admPriceOf(q.ik), row=(k,lab)=>`<div class="rvfrow" data-frow="${k}"><span class="rvflab">${lab} :</span>${[0,3,5].map(v=>`<button type="button" class="rvfbtn${fs[k]===v?' on':''}" data-fee="${k}" data-v="${v}" aria-pressed="${fs[k]===v}">${v}%</button>`).join('')}</div>`, n=ARX.saleQ.length;
-  return `<div class="ar-psh"><span>수익 기록</span>${n>1?`<b>대기 ${n}개</b>`:''}</div><div class="ar-psi"><span class="rvico">${lootIco(q.ik)}</span><b class="ar-psn">${esc(ITEMS[q.ik]?.n||q.ik)}</b><span class="muted ar-psb">${esc(x.b.name)}${x.div>1?` · ${x.div}인 분배`:''}</span></div>
+  return `<div class="ar-psh"><span>수익 기록</span>${n>1?`<b>대기 ${n}개</b>`:''}</div><div class="ar-psi"><span class="rvico">${lootIco(q.ik)}</span><b class="ar-psn">${esc(arIkName(q.ik))}</b><span class="muted ar-psb">${esc(x.b.name)}${x.div>1?` · ${x.div}인 분배`:''}</span></div>
   <label class="rvin ar-psin"><span class="muted">최저가</span><input class="ar-psamt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label>
   <div class="rvfee">${row('s','판매 수수료')}${x.div>1?row('d','분배 수수료'):''}</div><small class="ram ar-psram"></small><div class="rverr ar-pserr" role="alert"></div>
   <div class="ar-psbtn"><button type="button" class="btn rvok" data-ps="ok">기록하기</button><button type="button" class="btn plain rvno" data-ps="no">기록하지 않기</button></div>`; }
@@ -1076,12 +1078,22 @@ function arPipSale(){ const P=ARX.pip; if(!P||!P.win||!P.win.document) return; c
   while(Q.length&&!arSaleCtx(Q[0])) Q.shift(); if(!Q.length){ if(el) el.remove(); return; }
   if(!el){ el=d.createElement('div'); el.className='card ar-c ar-pipsale'; (d.querySelector('.ar-piprec')||P.card).after(el); el.onclick=arSaleClick; el.oninput=()=>arSalePrev(el); el.onkeydown=e=>{ if(e.key==='Enter'&&e.target.classList.contains('ar-psamt')){ e.preventDefault(); arSaleDo(el,'ok'); } }; }
   else if(el.previousElementSibling!==d.querySelector('.ar-piprec')) (d.querySelector('.ar-piprec')||P.card).after(el);
-  if(el._u===Q[0].u){ const h=el.querySelector('.ar-psh'); if(h) h.innerHTML=`<span>수익 기록</span>${Q.length>1?`<b>대기 ${Q.length}개</b>`:''}`; return; } // 같은 아이템이면 다시 그리지 않음 (입력 중 포커스 유지)
-  el._u=Q[0].u; el._fs=revFeeGet(); el.innerHTML=arPipSaleH(Q[0],arSaleCtx(Q[0])); arSalePrev(el); }
+  if(el._u===Q[0].u){ const h=el.querySelector('.ar-psh'); if(h) h.innerHTML=`<span>${Q[0].pick==='cb'?'어떤 장신구를 획득하셨나요?':Q[0].pick?'상자에서 무엇이 나왔나요?':'수익 기록'}</span>${Q.length>1?`<b>대기 ${Q.length}개</b>`:''}`; return; } // 같은 아이템이면 다시 그리지 않음 (입력 중 포커스 유지)
+  el._u=Q[0].u; el._fs=revFeeGet(); el.innerHTML=Q[0].pick?arPipPickH(Q[0],arSaleCtx(Q[0])):arPipSaleH(Q[0],arSaleCtx(Q[0])); arSalePrev(el); }
+/* b344: 반지 상자 = 페이지 반지 창과 같은 고르기(리4·컨4·생명의 연마석(생명 반지만)·꽝), 칠흑 상자 = CHAOS_PICK 아이콘 목록 */
+function arPipPickH(q,x){ const n=ARX.saleQ.length, hd=`<div class="ar-psh"><span>${q.pick==='cb'?'어떤 장신구를 획득하셨나요?':'상자에서 무엇이 나왔나요?'}</span>${n>1?`<b>대기 ${n}개</b>`:''}</div><div class="ar-psi"><span class="rvico">${itemIcon(q.ik)}</span><b class="ar-psn">${esc(ITEMS[q.ik]?.n||q.ik)}</b><span class="muted ar-psb">${esc(x.b.name)}${curParty(x.c,x.b.id)>1?` · ${curParty(x.c,x.b.id)}인 분배`:''}</span></div>`;
+  const opts=q.pick==='cb'?CHAOS_PICK.map(k=>[k,itemIcon(k),ITEMS[k].n]):[['r4',outIcon('r4'),'리스트레인트 링 4레벨'],['c4',outIcon('c4'),'컨티뉴어스 링 4레벨']].concat(q.ik==='r_life'?[['gl',outIcon('gl'),'생명의 연마석']]:[]).concat([['x','<span class="ricx">✕</span>',q.ik==='r_life'?'셋 다 못 먹었어요':'둘 다 못 먹었어요']]);
+  return hd+`<div class="ar-pkg ar-pk-${q.pick}">${opts.map(([k,ic,nm])=>`<button type="button" class="ar-pko" data-pk="${k}">${ic}<span>${esc(nm)}</span></button>`).join('')}</div><div class="ar-psbtn"><button type="button" class="btn ghost" data-ps="skip">기록하지 않기</button></div>`; }
+function arSalePick(q,k){ const x=arSaleCtx(q); if(!x) return; let ik;
+  if(q.pick==='ring'){ if(!(k in OUT_LABEL)) return; ik=ringApply(x.c,x.b,q.key,k); } // = chooseRing
+  else { if(!CHAOS_PICK.includes(k)) return; pendStart(); chaosApply(x.c,x.b,q.key,k); if(curParty(x.c,x.b.id)>1) modeMap(x.c,x.b.type)[q.key]='s'; save(); render(); ik='cb:'+k; } // = openChaos (2인 이상 = 자동 분배)
+  if(!ik){ ARX.saleQ.shift(); return arPipSale(); } // 꽝 = 수익 없음
+  Object.assign(q,{pick:'',ik,u:q.u+'/'+k}); arPipSale(); }
 function arSaleV(el){ return parseFloat(String(el.querySelector('.ar-psamt')?.value||'').replace(',','.')); }
 function arSalePrev(el){ const q=ARX.saleQ?.[0], x=q&&arSaleCtx(q), r=el.querySelector('.ar-psram'); if(!x||!r) return; const v=arSaleV(el), fs=el._fs; r.innerHTML=v>0&&v<=100000?ramHtml(Math.round(revNet(v*1e8,x.div,fs.s,x.div>1?fs.d:0))):''; }
-function arSaleClick(e){ const el=e.currentTarget, f=e.target.closest('[data-fee]'); if(f){ el._fs[f.dataset.fee]=+f.dataset.v; el.querySelectorAll(`[data-fee="${f.dataset.fee}"]`).forEach(b=>{ const on=b===f; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); arSalePrev(el); return; } const t=e.target.closest('[data-ps]'); if(t) arSaleDo(el,t.dataset.ps); }
+function arSaleClick(e){ const el=e.currentTarget, f=e.target.closest('[data-fee]'); if(f){ el._fs[f.dataset.fee]=+f.dataset.v; el.querySelectorAll(`[data-fee="${f.dataset.fee}"]`).forEach(b=>{ const on=b===f; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); arSalePrev(el); return; } const pk=e.target.closest('[data-pk]'); if(pk&&ARX.saleQ?.[0]?.pick) return arSalePick(ARX.saleQ[0],pk.dataset.pk); const t=e.target.closest('[data-ps]'); if(t) arSaleDo(el,t.dataset.ps); }
 function arSaleDo(el,act){ const q=ARX.saleQ?.[0], x=q&&arSaleCtx(q); if(!x){ ARX.saleQ?.shift(); return arPipSale(); }
+  if(act==='skip'||q.pick){ ARX.saleQ.shift(); if(pend&&pendSig(S)===pendSig(pend.base)){ pend=null; render(); } return arPipSale(); } // b344: 고르기 전 [기록하지 않기] = 모달 닫기와 같음 (아무것도 기록 안 함)
   if(act==='ok'){ const v=arSaleV(el); if(!(v>0)||v>100000){ el.querySelector('.ar-pserr').textContent='금액을 입력해주세요.'; el.querySelector('.ar-psamt').focus(); return; } revWrite(x.c,x.b,q.key,q.ik,v,x.div,el._fs); } // = askRev [기록하기]
   ARX.saleQ.shift(); arPipSale(); } // [기록하지 않기] = 득템만 저장 (askRev '기록 없이 저장')
 function arPipCard(p){ return (ARX.pip&&ARX.pip.card)||(p||document).querySelector('.ar-cboss'); }

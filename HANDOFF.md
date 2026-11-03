@@ -2,6 +2,12 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b344 (t648) PIP 에서 반지 상자·칠흑 장신구 상자 고르기
+- arSaleTake: PIP 열려 있으면 반지 상자·chaosbox 도 줄에 넣음(pick:'ring'|'cb', 고르기 전엔 저장 안 함). PIP 닫혀 있으면 원래 openRing/openChaos 창.
+- arPipPickH: 반지 = 페이지 반지 창과 같은 선택지(리4·컨4·생명의 연마석(r_life 만)·꽝), 칠흑 = CHAOS_PICK 아이콘 목록. 2열 격자(PIP 최소 폭 320 에 맞춤).
+- 고르면 arSalePick: 반지 = app.js ringApply(chooseRing 에서 빼낸 함수), 칠흑 = chaosApply(openChaos 와 같은 저장) + 2인 이상 'auto 분배' s. 그 뒤 b342 가격 칸(ik 'ring:r4'/'g_life'/'cb:eye', admPriceOf 미리 채움). 꽝 = 수익 없이 끝. 고르기 전 [기록하지 않기] = 창 닫기처럼 아무것도 안 남김.
+- 테스트 tests/test_b344_pippick.py. 스크린샷 /workspace/t648/pip_ring.png, pip_pitched.png.
+
 ## b343 (2026-11-03 KST) — Paperlogy 글꼴 배포 누락 수정
 - b340의 fonts/*.woff2 가 tools/pages_dist.sh 배포 목록에 없어 사이트에서 404(HTML) → 캘린더가 대체 글꼴로 보였음. fonts/ 폴더를 _site 에 복사하도록 추가.
 

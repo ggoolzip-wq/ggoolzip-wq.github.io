@@ -2345,6 +2345,12 @@ button.calsum:hover,button.calsum.on{box-shadow:0 0 14px rgba(255,210,60,.8),0 0
 .ar-pipsale .rvfee{display:flex;flex-direction:column;gap:4px}
 .ar-psbtn{display:flex;gap:8px}.ar-psbtn .btn{flex:1}
 .ar-pserr:empty,.ar-psram:empty{display:none}
+
+/* b344: PIP 반지·칠흑 상자 고르기 */
+.ar-pkg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.ar-pko{display:flex;align-items:center;gap:6px;padding:6px 7px;border-radius:9px;border:1px solid #ffffff26;background:#ffffff0d;color:inherit;font:inherit;font-size:12px;line-height:1.25;text-align:left;cursor:pointer;min-width:0}
+.ar-pko:hover{border-color:#ffe14d;background:#ffe14d1a}.ar-pko img{width:28px;height:28px;flex:none}.ar-pko span{min-width:0;overflow-wrap:anywhere}
+.ar-pko .ricx{width:28px;text-align:center;font-size:18px;color:#ff6b6b;flex:none}
 </style>
 </head>
 <body>
@@ -2995,12 +3001,15 @@ function openRing(key){
   $('#ringModal').classList.add('show'); setTimeout(()=>document.querySelector('#ringModal [data-ring="r4"]')?.focus(),30);
 }
 function closeRing(){ ringPending=null; $('#ringModal').classList.remove('show'); if(pend&&pendSig(S)===pendSig(pend.base)){ pend=null; render(); } } // b110: 닫기(✕·바깥·Esc) = 취소 — 바뀐 게 없으면 저장 대기도 풂
+/* b344: 반지 상자 결과 저장 (chooseRing · PIP 고르기 같이 씀) → 수익 기록할 아이템 키, 꽝이면 null */
+function ringApply(c,b,key,o){ pendStart(); const m=dropMap(c,b.type);
+  if(o==='x'){ m[key]=1; const om=outMap(c,b.type); (om[key]||(om[key]=[])).push('x'); modeMap(c,b.type)[key]='n'; save(); render(); return null; } // 꽝: 블빵 창 없이 1인처럼 (라벨 없음)
+  m[key]=1; (outMap(c,b.type)[key]||(outMap(c,b.type)[key]=[])).push(o); if(curParty(c,b.id)>1) modeMap(c,b.type)[key]='s'; save(); render(); // 반지 상자: 블빵 창 없이 항상 분배
+  return o==='gl'?'g_life':'ring:'+o; }
 function chooseRing(o){
   const p=ringPending; if(!p||!(o in OUT_LABEL)) return; closeRing();
   const c=S.characters.find(x=>x.id===p.cid); if(!c) return; const [slot,item]=p.key.split('|'); const b=findBoss(slot);
-  pendStart(); const m=dropMap(c,b.type);
-  if(o==='x'){ m[p.key]=1; const om=outMap(c,b.type); (om[p.key]||(om[p.key]=[])).push('x'); modeMap(c,b.type)[p.key]='n'; save(); render(); return; } // 꽝: 블빵 창 없이 1인처럼 (라벨 없음)
-  m[p.key]=1; (outMap(c,b.type)[p.key]||(outMap(c,b.type)[p.key]=[])).push(o); if(curParty(c,b.id)>1) modeMap(c,b.type)[p.key]='s'; save(); render(); // 반지 상자: 블빵 창 없이 항상 분배
+  const ik=ringApply(c,b,p.key,o); if(!ik) return;
   askRev(c,b,p.key,o==='gl'?'g_life':'ring:'+o,()=>{ if(o==='gl') celebrate(null,'g_life',b); else celebrate(o,null,b); }); return;
   askBbang(c,b,p.key,()=>{},()=>{},
     o==='gl'?{ico:itemIcon('g_life'),name:ITEMS.g_life.n}:o==='x'?{ico:itemIcon(item),name:ITEMS[item].n+' · 꽝'}:{ico:outIcon(o),name:OUT_NAME[o]});
@@ -3434,6 +3443,7 @@ const CHAOS_PICK = ['lcm','eye','belt','book','terror','cfe','sos'];
 const hasOut = it => isRing(it)||it==='chaosbox';
 const chaosHtml = (outs,n) => { const l=(outs||[]).filter(o=>/^cb:/.test(o)).map(o=>o.slice(3)).filter(k=>ITEMS[k]);
   return l.map(k=>`<span class="cbx">${miniIcon('chaosbox')} - ${itemIcon(k)}<span class="dln">${esc(ITEMS[k].n)}</span></span>`).join('') + (n>l.length?`<span class="cbx muted">${miniIcon('chaosbox')} - 미기록 ${xN(n-l.length)}</span>`:''); };
+const chaosApply=(c,b,key,k)=>{ dropMap(c,b.type)[key]=1; outMap(c,b.type)[key]=['cb:'+k]; }; // b344: 칠흑 상자 결과 저장 (모달 · PIP 같이 씀)
 function openChaos(key){
   const c=activeChar(); if(!c) return; document.querySelector('#chaosModal')?.remove();
   const el=document.createElement('div'); el.id='chaosModal'; el.className='modal-bg show cbmodal'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
@@ -3442,7 +3452,7 @@ function openChaos(key){
   el.onclick=e=>{ const t=e.target.closest('[data-cbpick]'); if(!t&&e.target!==el) return; el.remove(); const k=t?t.dataset.cbpick:'';
     if(!k){ if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; render(); return; }
     const cc=S.characters.find(x=>x.id===c.id); const b=findBoss(key.split('|')[0]); if(!cc||!b) return;
-    pendStart(); askBbang(cc,b,key,()=>{ dropMap(cc,b.type)[key]=1; outMap(cc,b.type)[key]=['cb:'+k]; },()=>askRev(cc,b,key,'cb:'+k,()=>celebrate(null,k,b)),{ico:itemIcon(k),name:ITEMS[k].n}); };
+    pendStart(); askBbang(cc,b,key,()=>chaosApply(cc,b,key,k),()=>askRev(cc,b,key,'cb:'+k,()=>celebrate(null,k,b)),{ico:itemIcon(k),name:ITEMS[k].n}); };
 }
 const OUT_NAME = {r4:'리스트레인트 링 4레벨', c4:'컨티뉴어스 링 4레벨'};
 const miniIcon = k => ITEM_ICONS[k] ? `<img class="ric" src="${ITEM_ICONS[k]}" alt="" width="32" height="32" aria-hidden="true">` : '';
@@ -8081,12 +8091,14 @@ function arPipRecH(){ const R=ARX.sessRec||[]; return `<div class="ar-prh"><span
 function arPipRec(){ const P=ARX.pip; if(!P||!P.win||!P.win.document) return; const d=P.win.document; let el=d.querySelector('.ar-piprec');
   if(!el){ el=d.createElement('div'); el.className='card ar-c ar-piprec'; P.card.after(el); } arSetH(el,arPipRecH()); arPipSale(); }
 /* b342: PIP 열려 있으면 득템 시 모달 대신 PIP 아래 칸에서 수익 기록 (반지·칠흑 상자는 고르는 창이 필요해서 원래대로) — 여러 개면 줄 세워 하나씩 */
-function arSaleTake(c,b,key,ik){ if(!ARX.pip||!ARX.pip.win||isRing(ik)||ik==='chaosbox') return false; const m=dropMap(c,b.type); if((+m[key]||0)>=1) return false;
+function arSaleTake(c,b,key,ik){ if(!ARX.pip||!ARX.pip.win) return false; const m=dropMap(c,b.type); if((+m[key]||0)>=1) return false;
+  if(isRing(ik)||ik==='chaosbox'){ pendStart(); (ARX.saleQ=ARX.saleQ||[]).push({cid:c.id,bid:b.id,key,ik,pick:ik==='chaosbox'?'cb':'ring',u:key+'@'+Date.now()}); arPipSale(); return true; } // b344: 무엇이 나왔는지 PIP 에서 고른 뒤 기록
   pendStart(); m[key]=1; const pty=curParty(c,b.id); if(pty>1) modeMap(c,b.type)[key]='s'; save(); render(); // 2인 이상 = 자동 분배
   (ARX.saleQ=ARX.saleQ||[]).push({cid:c.id,bid:b.id,key,ik,u:key+'@'+Date.now()}); arPipSale(); return true; }
-function arSaleCtx(q){ const c=S.characters.find(x=>x.id===q.cid), b=c&&findBoss(q.bid); if(!c||!b||!((+dropMap(c,b.type)[q.key]||0)>=1)) return null; const pty=curParty(c,b.id), md=modeMap(c,b.type)[q.key]||'', div=pty>1&&md!=='w'&&md!=='n'?pty:1; return {c,b,div}; }
+function arSaleCtx(q){ const c=S.characters.find(x=>x.id===q.cid), b=c&&findBoss(q.bid); if(!c||!b||(!q.pick&&!((+dropMap(c,b.type)[q.key]||0)>=1))) return null; const pty=curParty(c,b.id), md=modeMap(c,b.type)[q.key]||'', div=pty>1&&md!=='w'&&md!=='n'?pty:1; return {c,b,div}; }
+const arIkName=ik=>{ const r=/^ring:(\w+)$/.exec(ik); if(r) return OUT_NAME[r[1]]||ik; const k=String(ik).replace(/^cb:/,''); return ITEMS[k]?.n||ik; }; // b344
 function arPipSaleH(q,x){ const fs=revFeeGet(), ap=admPriceOf(q.ik), row=(k,lab)=>`<div class="rvfrow" data-frow="${k}"><span class="rvflab">${lab} :</span>${[0,3,5].map(v=>`<button type="button" class="rvfbtn${fs[k]===v?' on':''}" data-fee="${k}" data-v="${v}" aria-pressed="${fs[k]===v}">${v}%</button>`).join('')}</div>`, n=ARX.saleQ.length;
-  return `<div class="ar-psh"><span>수익 기록</span>${n>1?`<b>대기 ${n}개</b>`:''}</div><div class="ar-psi"><span class="rvico">${lootIco(q.ik)}</span><b class="ar-psn">${esc(ITEMS[q.ik]?.n||q.ik)}</b><span class="muted ar-psb">${esc(x.b.name)}${x.div>1?` · ${x.div}인 분배`:''}</span></div>
+  return `<div class="ar-psh"><span>수익 기록</span>${n>1?`<b>대기 ${n}개</b>`:''}</div><div class="ar-psi"><span class="rvico">${lootIco(q.ik)}</span><b class="ar-psn">${esc(arIkName(q.ik))}</b><span class="muted ar-psb">${esc(x.b.name)}${x.div>1?` · ${x.div}인 분배`:''}</span></div>
   <label class="rvin ar-psin"><span class="muted">최저가</span><input class="ar-psamt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="판매 금액 (억 메소)"${ap?` value="${Math.round(ap.p/1e4)/1e4}"`:''}><span>억 메소</span></label>
   <div class="rvfee">${row('s','판매 수수료')}${x.div>1?row('d','분배 수수료'):''}</div><small class="ram ar-psram"></small><div class="rverr ar-pserr" role="alert"></div>
   <div class="ar-psbtn"><button type="button" class="btn rvok" data-ps="ok">기록하기</button><button type="button" class="btn plain rvno" data-ps="no">기록하지 않기</button></div>`; }
@@ -8094,12 +8106,22 @@ function arPipSale(){ const P=ARX.pip; if(!P||!P.win||!P.win.document) return; c
   while(Q.length&&!arSaleCtx(Q[0])) Q.shift(); if(!Q.length){ if(el) el.remove(); return; }
   if(!el){ el=d.createElement('div'); el.className='card ar-c ar-pipsale'; (d.querySelector('.ar-piprec')||P.card).after(el); el.onclick=arSaleClick; el.oninput=()=>arSalePrev(el); el.onkeydown=e=>{ if(e.key==='Enter'&&e.target.classList.contains('ar-psamt')){ e.preventDefault(); arSaleDo(el,'ok'); } }; }
   else if(el.previousElementSibling!==d.querySelector('.ar-piprec')) (d.querySelector('.ar-piprec')||P.card).after(el);
-  if(el._u===Q[0].u){ const h=el.querySelector('.ar-psh'); if(h) h.innerHTML=`<span>수익 기록</span>${Q.length>1?`<b>대기 ${Q.length}개</b>`:''}`; return; } // 같은 아이템이면 다시 그리지 않음 (입력 중 포커스 유지)
-  el._u=Q[0].u; el._fs=revFeeGet(); el.innerHTML=arPipSaleH(Q[0],arSaleCtx(Q[0])); arSalePrev(el); }
+  if(el._u===Q[0].u){ const h=el.querySelector('.ar-psh'); if(h) h.innerHTML=`<span>${Q[0].pick==='cb'?'어떤 장신구를 획득하셨나요?':Q[0].pick?'상자에서 무엇이 나왔나요?':'수익 기록'}</span>${Q.length>1?`<b>대기 ${Q.length}개</b>`:''}`; return; } // 같은 아이템이면 다시 그리지 않음 (입력 중 포커스 유지)
+  el._u=Q[0].u; el._fs=revFeeGet(); el.innerHTML=Q[0].pick?arPipPickH(Q[0],arSaleCtx(Q[0])):arPipSaleH(Q[0],arSaleCtx(Q[0])); arSalePrev(el); }
+/* b344: 반지 상자 = 페이지 반지 창과 같은 고르기(리4·컨4·생명의 연마석(생명 반지만)·꽝), 칠흑 상자 = CHAOS_PICK 아이콘 목록 */
+function arPipPickH(q,x){ const n=ARX.saleQ.length, hd=`<div class="ar-psh"><span>${q.pick==='cb'?'어떤 장신구를 획득하셨나요?':'상자에서 무엇이 나왔나요?'}</span>${n>1?`<b>대기 ${n}개</b>`:''}</div><div class="ar-psi"><span class="rvico">${itemIcon(q.ik)}</span><b class="ar-psn">${esc(ITEMS[q.ik]?.n||q.ik)}</b><span class="muted ar-psb">${esc(x.b.name)}${curParty(x.c,x.b.id)>1?` · ${curParty(x.c,x.b.id)}인 분배`:''}</span></div>`;
+  const opts=q.pick==='cb'?CHAOS_PICK.map(k=>[k,itemIcon(k),ITEMS[k].n]):[['r4',outIcon('r4'),'리스트레인트 링 4레벨'],['c4',outIcon('c4'),'컨티뉴어스 링 4레벨']].concat(q.ik==='r_life'?[['gl',outIcon('gl'),'생명의 연마석']]:[]).concat([['x','<span class="ricx">✕</span>',q.ik==='r_life'?'셋 다 못 먹었어요':'둘 다 못 먹었어요']]);
+  return hd+`<div class="ar-pkg ar-pk-${q.pick}">${opts.map(([k,ic,nm])=>`<button type="button" class="ar-pko" data-pk="${k}">${ic}<span>${esc(nm)}</span></button>`).join('')}</div><div class="ar-psbtn"><button type="button" class="btn ghost" data-ps="skip">기록하지 않기</button></div>`; }
+function arSalePick(q,k){ const x=arSaleCtx(q); if(!x) return; let ik;
+  if(q.pick==='ring'){ if(!(k in OUT_LABEL)) return; ik=ringApply(x.c,x.b,q.key,k); } // = chooseRing
+  else { if(!CHAOS_PICK.includes(k)) return; pendStart(); chaosApply(x.c,x.b,q.key,k); if(curParty(x.c,x.b.id)>1) modeMap(x.c,x.b.type)[q.key]='s'; save(); render(); ik='cb:'+k; } // = openChaos (2인 이상 = 자동 분배)
+  if(!ik){ ARX.saleQ.shift(); return arPipSale(); } // 꽝 = 수익 없음
+  Object.assign(q,{pick:'',ik,u:q.u+'/'+k}); arPipSale(); }
 function arSaleV(el){ return parseFloat(String(el.querySelector('.ar-psamt')?.value||'').replace(',','.')); }
 function arSalePrev(el){ const q=ARX.saleQ?.[0], x=q&&arSaleCtx(q), r=el.querySelector('.ar-psram'); if(!x||!r) return; const v=arSaleV(el), fs=el._fs; r.innerHTML=v>0&&v<=100000?ramHtml(Math.round(revNet(v*1e8,x.div,fs.s,x.div>1?fs.d:0))):''; }
-function arSaleClick(e){ const el=e.currentTarget, f=e.target.closest('[data-fee]'); if(f){ el._fs[f.dataset.fee]=+f.dataset.v; el.querySelectorAll(`[data-fee="${f.dataset.fee}"]`).forEach(b=>{ const on=b===f; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); arSalePrev(el); return; } const t=e.target.closest('[data-ps]'); if(t) arSaleDo(el,t.dataset.ps); }
+function arSaleClick(e){ const el=e.currentTarget, f=e.target.closest('[data-fee]'); if(f){ el._fs[f.dataset.fee]=+f.dataset.v; el.querySelectorAll(`[data-fee="${f.dataset.fee}"]`).forEach(b=>{ const on=b===f; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); }); arSalePrev(el); return; } const pk=e.target.closest('[data-pk]'); if(pk&&ARX.saleQ?.[0]?.pick) return arSalePick(ARX.saleQ[0],pk.dataset.pk); const t=e.target.closest('[data-ps]'); if(t) arSaleDo(el,t.dataset.ps); }
 function arSaleDo(el,act){ const q=ARX.saleQ?.[0], x=q&&arSaleCtx(q); if(!x){ ARX.saleQ?.shift(); return arPipSale(); }
+  if(act==='skip'||q.pick){ ARX.saleQ.shift(); if(pend&&pendSig(S)===pendSig(pend.base)){ pend=null; render(); } return arPipSale(); } // b344: 고르기 전 [기록하지 않기] = 모달 닫기와 같음 (아무것도 기록 안 함)
   if(act==='ok'){ const v=arSaleV(el); if(!(v>0)||v>100000){ el.querySelector('.ar-pserr').textContent='금액을 입력해주세요.'; el.querySelector('.ar-psamt').focus(); return; } revWrite(x.c,x.b,q.key,q.ik,v,x.div,el._fs); } // = askRev [기록하기]
   ARX.saleQ.shift(); arPipSale(); } // [기록하지 않기] = 득템만 저장 (askRev '기록 없이 저장')
 function arPipCard(p){ return (ARX.pip&&ARX.pip.card)||(p||document).querySelector('.ar-cboss'); }

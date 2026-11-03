@@ -2221,3 +2221,9 @@ button.calsum:hover,button.calsum.on{box-shadow:0 0 14px rgba(255,210,60,.8),0 0
 .ar-pipsale .rvfee{display:flex;flex-direction:column;gap:4px}
 .ar-psbtn{display:flex;gap:8px}.ar-psbtn .btn{flex:1}
 .ar-pserr:empty,.ar-psram:empty{display:none}
+
+/* b344: PIP 반지·칠흑 상자 고르기 */
+.ar-pkg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.ar-pko{display:flex;align-items:center;gap:6px;padding:6px 7px;border-radius:9px;border:1px solid #ffffff26;background:#ffffff0d;color:inherit;font:inherit;font-size:12px;line-height:1.25;text-align:left;cursor:pointer;min-width:0}
+.ar-pko:hover{border-color:#ffe14d;background:#ffe14d1a}.ar-pko img{width:28px;height:28px;flex:none}.ar-pko span{min-width:0;overflow-wrap:anywhere}
+.ar-pko .ricx{width:28px;text-align:center;font-size:18px;color:#ff6b6b;flex:none}
