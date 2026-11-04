@@ -10,13 +10,14 @@ from playwright.sync_api import sync_playwright
 site=tempfile.mkdtemp()
 for f in ['index.html','prices.json']: shutil.copy(os.path.join(ROOT,f),site)
 for d in ['data','ocr']: shutil.copytree(os.path.join(ROOT,d),os.path.join(site,d))
+PORT=_tutil.free_port(); srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=site,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 SD=os.environ.get('B369_SHOTDIR') or OUT
 SETUP="""()=>{ const mk=(id,n)=>({id,name:n,level:285,job:'',world:'스카니아',ocid:'',accId:'',image:'',bosses:{},weekly:{},monthly:{},auto:{}});
   const c0=mk('c0','트딕이'); S.characters=[c0];
   c0.bosses={lotus:{enabled:true,party:2,diff:'extreme'},star:{enabled:true,party:2,diff:'normal'},blackmage:{enabled:true,party:3,diff:'hard'}};
   S.history=(S.history||[]).filter(h=>h.week!=='2026-10-15'); S.history.push({week:'2026-10-15',perChar:[{id:'c0',name:'트딕이',bosses:['찬란한 흉성(노말)'],bvals:[1e8]}]});
   S.activeId='c0'; save(); render(); }"""
-ROWS="""(day)=>{ calBM={day,cid:'c0'}; calBossRender(); return Object.fromEntries([...document.querySelectorAll('#calBossModal .calbi')].map(e=>[e.dataset.calbs,(e.disabled?'X':'O')+(e.querySelector('.calbcl')?e.querySelector('.calbcl').textContent:'')])); }"""
+ROWS="""(day)=>{ calBM={day,cids:['c0']}; calBossRender(); return Object.fromEntries([...document.querySelectorAll('#calBossModal .calbi')].map(e=>[e.dataset.calbs,(e.disabled?'X':'O')+(e.querySelector('.calbclr')?e.querySelector('.calbclr').textContent:'')])); }"""
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox'])
@@ -38,7 +39,7 @@ try:
     r=pg.evaluate(ROWS,info['nm']); check('검은 마법사: 다음 달 → 가능', r.get('blackmage')=='O', r)
     pg.evaluate(ROWS,info['wed']); pg.click('#calBossModal [data-calbs="star"]',force=True); pg.wait_for_timeout(100)
     check('비활성 보스 클릭해도 시간 선택 안 열림', pg.locator('#calBossModal .calbh').count()==0)
-    col=pg.evaluate("getComputedStyle(document.querySelector('#calBossModal .calbcl')).color"); check('클리어 완료 글자 밝은 초록', col=='rgb(77, 255, 154)', col)
+    col=pg.evaluate("getComputedStyle(document.querySelector('#calBossModal .calbclr')).color"); check('클리어 완료 글자 밝은 초록', col=='rgb(77, 255, 154)', col)
     pg.mouse.move(5,5); pg.wait_for_timeout(250); pg.locator('#calBossModal .modal').screenshot(path=os.path.join(SD,'modal_cleared.png'))
     pg.click('#calBossModal [data-calbs="lotus"]'); check('클리어 안 한 보스는 선택 가능', pg.locator('#calBossModal .calbh').count()==1)
     check('페이지 오류 없음',not errs,errs)

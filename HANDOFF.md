@@ -8,6 +8,15 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b369+b370 (t683·t684) 파티 보스 일정: 클리어한 보스 비활성 · 여러 캐릭터 묶음 일정
+- 이름: '+파티 보스 일정 추가' / 모달 제목 '파티 보스 일정 추가'. 왼쪽 목록은 2인 이상 파티 보스가 있는 캐릭터만.
+- calCleared(c,slot,b,day): 대상 날짜가 든 보스 주(목 00:00~수 23:59 KST, weekId)·달(검은 마법사 등 monthly)에 이미 클리어 → 'w'|'m'. 이번 주/달 = c.weekly/c.monthly, 지난 주/달 = S.history/S.monthHistory perChar.bosses('보스명(난이도)'). 미래 주는 없음.
+- 클리어한 보스 행 = .calbdone (disabled, 회색) + 오른쪽 끝 밝은 초록 .calbclr '·이번 주 클리어 완료' / '·이번 달 클리어 완료', 여러 명 선택이면 뒤에 '(닉네임들)'.
+- 캐릭터 여러 명 토글(.neonBtn.on, aria-pressed) → calBossCommon: 모두가 같은 보스+난이도+인원으로 둔 보스만. 한 명이라도 그 주/달 클리어면 비활성. 부제 '닉1, 닉2, 보스 (난이도 배지)'.
+- 저장 = 묶음 일정 1개 {cids,ns,slot,boss,d,p,h,mi,at} (모달·선택 유지). b367 단일 {cid,n} 도 calSC 로 1명 묶음 처리. 상세 한 줄: 시간 · 보스 아이콘+이름+난이도 · N인 · 캐릭터들(초상화+닉네임). 칸 배지 = 묶음당 1개.
+- 달력 칸 테두리(t685): 보스 일정 있으면 .cbB 선홍(#ff3b6b, 라이트 #e0144c), 메모만 .cbM 초록(#3ee08a / #0f9d58), 둘 다 선홍. 정적. 오늘 칸은 분홍 2px 유지 + 안쪽 2px 링, 선택은 outline 유지. 라이트 규칙은 .calc.has(라이트) 뒤(파일 끝)에 둬야 이김.
+- 테스트: test_b369_calcleared.py, test_b370_calmulti.py (run_all 등록), test_b367_calnote.py 갱신.
+
 ## b368 (t682) 상시 규칙 '버튼 = 고급 네온' + 공용 .neonBtn
 - HANDOFF 맨 위 '상시 규칙'에 네온 버튼 규칙 추가.
 - src/extra.css: `.neonBtn` (+ nb-green/crimson/cyan/violet/gold/mute, nb-sm, .on, :focus-visible, 라이트 변형, reduced-motion). 상시 애니메이션 없음.

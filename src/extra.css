@@ -2134,6 +2134,11 @@ html body nav.tabs button[data-tab=auto]{--nb1:#ff4d5e;--nb2:#ff2a7a;--nbtx:#ffe
 .calc.today{border:2px solid #ff4fd8;box-shadow:0 0 14px rgba(255,79,216,.55),0 0 4px rgba(255,79,216,.8) inset}
 .calc.today .cald{background:#ff4fd8;color:#fff!important;border-radius:999px;padding:0 7px;box-shadow:0 0 10px #ff4fd8}
 .calc.sel{outline:2px solid var(--n1);outline-offset:1px}
+/* b370b: 일정 있는 칸 테두리 — 보스 일정 선홍(배지색), 메모만 초록. 오늘(분홍 2px)은 안쪽 링으로, 선택은 outline 그대로 */
+.calc.cbB{border-color:#ff3b6b;box-shadow:0 0 8px rgba(255,59,107,.35)}
+.calc.cbM{border-color:#3ee08a;box-shadow:0 0 8px rgba(62,224,138,.3)}
+.calc.today.cbB{border-color:#ff4fd8;box-shadow:0 0 14px rgba(255,79,216,.55),inset 0 0 0 2px #ff3b6b}
+.calc.today.cbM{border-color:#ff4fd8;box-shadow:0 0 14px rgba(255,79,216,.55),inset 0 0 0 2px #3ee08a}
 .cald{font-weight:700;font-size:.95rem;align-self:flex-start}
 .calm{font-weight:700;color:#ffd56b;text-shadow:0 0 8px rgba(255,200,90,.5);font-size:.95rem;font-variant-numeric:tabular-nums}
 .cali{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -2410,3 +2415,17 @@ body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPa
 .calbc{color:inherit}.calbc span{color:inherit}
 .calndel{opacity:.85}
 [data-theme=light] .calbm{color:#0f9d58}[data-theme=light] .calbb,[data-theme=light] .calst{color:#e0144c}[data-theme=light] .calsi,[data-theme=light] .calmi{background:rgba(120,110,220,.07)}
+/* b369(t683): 대상 주/달에 이미 클리어한 보스 = 회색·비활성 + 오른쪽 끝 밝은 초록 '·이번 주 클리어 완료' */
+.neonBtn.calbdone,.neonBtn.calbdone:hover{--nb:120,125,140;cursor:not-allowed;transform:none;box-shadow:none;text-shadow:none;color:#8a8f9c}
+.calbclr{font-style:normal;font-size:.78rem;font-weight:700;color:#4dff9a;white-space:nowrap;margin-left:4px}
+.calbdone>:not(.calbclr){opacity:.5;filter:grayscale(1)}
+[data-theme=light] .calbclr{color:#0a9d4e}
+/* b370(t684): 묶음 일정 행 — 보스 · N인 뒤에 캐릭터들(초상화+닉네임) */
+.calsn{flex:0 1 auto}.calsc{flex:1;display:flex;flex-wrap:wrap;gap:4px 10px;min-width:0}
+.calscc{display:inline-flex;align-items:center;gap:5px;font-size:.88rem}
+.calscc .avatar{width:22px;height:22px;font-size:.7rem;flex:none}
+/* b370b light: .calc.has(라이트) 뒤에 둬야 이김 */
+[data-theme=light] .calc.cbB{border-color:#e0144c;box-shadow:0 0 6px rgba(224,20,76,.25)}
+[data-theme=light] .calc.cbM{border-color:#0f9d58;box-shadow:0 0 6px rgba(15,157,88,.25)}
+[data-theme=light] .calc.today.cbB{border-color:#ff4fd8;box-shadow:inset 0 0 0 2px #e0144c}
+[data-theme=light] .calc.today.cbM{border-color:#ff4fd8;box-shadow:inset 0 0 0 2px #0f9d58}
