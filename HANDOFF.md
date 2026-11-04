@@ -8,6 +8,13 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b371 (t686) 파티 보스 모달: 보스명 줄바꿈/겹침 수정 · 공통 보스 없는 캐릭터 비활성
+- .calbi 를 flex-wrap. 보스명(.calbin)은 flex:1 0 auto + nowrap, 아이콘·난이도·N인은 flex:none → 글자별 세로 줄바꿈·배지 겹침 없음.
+- 클리어 라벨(.calbclr)은 white-space:normal + margin-left:auto: 들어가면 같은 줄 오른쪽, 안 들어가면(여러 명 선택으로 길 때) 다음 줄로 넘어가 여러 줄로 닉네임 전부 표시. 행 높이는 늘어남.
+- 왼쪽 캐릭터: 선택이 있을 때 [선택들+그 캐릭터]의 calBossCommon 이 비면 .calbno(네온 회색, disabled, not-allowed). 토글마다 다시 계산, 해제하면 다시 활성.
+- 보스 목록: 선택한 캐릭터 중 누가 같은 보스 주(목~수 KST, 월간=같은 달)에 같은 보스(난이도 무관) 일정이 이미 있으면 비활성 + 선홍 .calbclr.calbsch '·이번 주 일정 등록됨 (닉, MM/DD HH:MM / ...)'. calSched(c,b,day). 클리어 라벨이 우선. 일정 지우면 다시 활성.
+- 테스트 test_b371_calwrap.py (run_all 등록). test_b367 의 '취소' 단계는 저장한 보스가 비활성이 되어 '닫기'로 바뀜.
+
 ## b369+b370 (t683·t684) 파티 보스 일정: 클리어한 보스 비활성 · 여러 캐릭터 묶음 일정
 - 이름: '+파티 보스 일정 추가' / 모달 제목 '파티 보스 일정 추가'. 왼쪽 목록은 2인 이상 파티 보스가 있는 캐릭터만.
 - calCleared(c,slot,b,day): 대상 날짜가 든 보스 주(목 00:00~수 23:59 KST, weekId)·달(검은 마법사 등 monthly)에 이미 클리어 → 'w'|'m'. 이번 주/달 = c.weekly/c.monthly, 지난 주/달 = S.history/S.monthHistory perChar.bosses('보스명(난이도)'). 미래 주는 없음.

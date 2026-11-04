@@ -4592,9 +4592,13 @@ function calCleared(c,slot,b,day){ const t=Date.parse(day+'T12:00:00+09:00'), mo
 /* b370(t684): 여러 캐릭터 선택(토글) → 모두가 같은 보스·난이도·인원으로 스케줄러에 둔 보스만. 클리어 비활성(b369)은 한 명이라도 그 주/달에 클리어했으면. 저장 = 묶음 일정 1개 {cids,ns,...} (b367 단일 {cid,n} 도 1명 묶음으로 읽음) */
 function calBossList(c){ return Object.entries(c&&c.bosses||{}).map(([slot,cfg])=>({slot,cfg,b:findBoss(slot)})).filter(o=>o.b&&o.cfg&&o.cfg.enabled&&(parseInt(o.cfg.party)||1)>1)
   .map(o=>({slot:o.slot,b:o.b,d:o.cfg.diff||o.b.diffs[0],p:parseInt(o.cfg.party)||1})); }
+function calSched(c,b,day){ const mon=b.type==='monthly', key=d=>mon?d.slice(0,7):weekId(Date.parse(d+'T12:00:00+09:00')), k=key(day), out=[]; /* b371: 같은 보스 주(월간=달)에 이미 등록된 이 캐릭터의 같은 보스 일정(난이도 무관) */
+  Object.entries(S.calNotes||{}).forEach(([d,n])=>{ if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||key(d)!==k) return; Object.values(n.b||{}).forEach(e=>{ if(e.boss===b.id&&calSC(e).some(x=>x.id===c.id)) out.push({d,h:e.h,mi:e.mi}); }); });
+  return out.sort((x,y)=>(x.d+String(x.h).padStart(2,'0')+String(x.mi).padStart(2,'0')).localeCompare(y.d+String(y.h).padStart(2,'0')+String(y.mi).padStart(2,'0')))[0]||null; }
 function calBossCommon(cs,day){ if(!cs.length) return []; const Ls=cs.map(calBossList);
   return Ls[0].filter(o=>Ls.every(L=>L.some(x=>x.slot===o.slot&&x.d===o.d&&x.p===o.p))).map(o=>{ const who=day?cs.filter(c=>calCleared(c,o.slot,o.b,day)):[];
-    return {...o,cl:who.length?(o.b.type==='monthly'?'m':'w'):'',who:who.map(c=>c.name)}; }); }
+    const sc=day&&!who.length?cs.map(c=>[c,calSched(c,o.b,day)]).filter(x=>x[1]):[], p2=n=>String(n||0).padStart(2,'0');
+    return {...o,cl:who.length?(o.b.type==='monthly'?'m':'w'):'',who:who.map(c=>c.name),sc:sc.map(([c,x])=>`${c.name}, ${x.d.slice(5,7)}/${x.d.slice(8)} ${p2(x.h)}:${p2(x.mi)}`)}; }); }
 function calBossRender(){ let m=$('#calBossModal'); if(!calBM){ if(m) m.remove(); return; }
   if(!m){ m=document.createElement('div'); m.id='calBossModal'; m.className='modal-bg show calbmod'; document.body.appendChild(m);
     m.addEventListener('click',e=>{ if(e.target===m){ calBM=null; calBossRender(); } }); }
@@ -4603,10 +4607,11 @@ function calBossRender(){ let m=$('#calBossModal'); if(!calBM){ if(m) m.remove()
   const sub=sel?`${cs.map(c=>esc(c.name)).join(', ')}, ${esc(sel.b.name)} (${diffBadge(sel.d)})`:'보스 일정 캐릭터를 추가하세요.';
   const right=!cs.length?`<div class="muted calbe">왼쪽에서 캐릭터를 고르세요 (여러 명 선택 가능)</div>`
     :sel?`<div class="calbt"><label>시 <select class="calbh">${Array.from({length:24},(_,i)=>`<option value="${i}"${i===21?' selected':''}>${pad(i)}</option>`).join('')}</select></label><label>분 <select class="calbmi">${Array.from({length:12},(_,i)=>`<option value="${i*5}">${pad(i*5)}</option>`).join('')}</select></label></div><div class="calbab"><button type="button" class="neonBtn nb-crimson" data-calbsave>저장</button><button type="button" class="neonBtn nb-mute" data-calbx>취소</button></div>`
-    :L.length?`<div class="calbl">${L.map(o=>`<button type="button" class="neonBtn nb-crimson calbi${o.cl?' calbdone':''}" data-calbs="${esc(o.slot)}"${o.cl?' disabled aria-disabled="true"':''}>${bossIcon(o.b)}<span class="calbin">${esc(o.b.name)}</span>${diffBadge(o.d)}<i class="calsp">${o.p}인</i>${o.cl?`<i class="calbclr">·이번 ${o.cl==='m'?'달':'주'} 클리어 완료${multi?` (${esc(o.who.join(', '))})`:''}</i>`:''}</button>`).join('')}</div>`
+    :L.length?`<div class="calbl">${L.map(o=>`<button type="button" class="neonBtn nb-crimson calbi${o.cl||o.sc.length?' calbdone':''}" data-calbs="${esc(o.slot)}"${o.cl||o.sc.length?' disabled aria-disabled="true"':''}>${bossIcon(o.b)}<span class="calbin">${esc(o.b.name)}</span>${diffBadge(o.d)}<i class="calsp">${o.p}인</i>${o.cl?`<i class="calbclr">·이번 ${o.cl==='m'?'달':'주'} 클리어 완료${multi?` (${esc(o.who.join(', '))})`:''}</i>`:o.sc.length?`<i class="calbclr calbsch">·이번 ${o.b.type==='monthly'?'달':'주'} 일정 등록됨 (${esc(o.sc.join(' / '))})</i>`:''}</button>`).join('')}</div>`
     :`<div class="muted calbe">${multi?'선택한 캐릭터 모두 같은 보스·난이도·인원으로 둔 파티 보스가 없어요':'스케줄러에 저장된 2인 이상 파티 보스가 없어요'}</div>`;
+  const nox=x=>ids.length>0&&!ids.includes(x.id)&&!calBossCommon([...cs,x],calBM.day).length; /* b371: 지금 선택과 공통 보스(보스+난이도+인원) 없는 캐릭터 비활성 */
   m.innerHTML=`<div class="modal wide calbmd" role="dialog" aria-modal="true" aria-label="파티 보스 일정 추가"><button type="button" class="neonBtn nb-mute nb-sm calbcls" data-calbx aria-label="닫기">✕</button><h3>파티 보스 일정 추가</h3><p class="calbsub">${sub}</p>
-    <div class="calbbody"><div class="calbcl">${all.map(x=>`<button type="button" class="neonBtn nb-cyan calbc${ids.includes(x.id)?' on':''}" data-calbc="${esc(x.id)}" aria-pressed="${ids.includes(x.id)}">${avatar(x,'calbav')}<span>${esc(x.name)}</span></button>`).join('')||'<div class="muted">2인 이상 파티 보스가 있는 캐릭터가 없어요</div>'}</div><div class="calbr">${right}</div></div></div>`;
+    <div class="calbbody"><div class="calbcl">${all.map(x=>`<button type="button" class="neonBtn nb-cyan calbc${ids.includes(x.id)?' on':''}${nox(x)?' calbno':''}" data-calbc="${esc(x.id)}" aria-pressed="${ids.includes(x.id)}"${nox(x)?' disabled aria-disabled="true" title="선택한 캐릭터와 겹치는 보스가 없어요"':''}>${avatar(x,'calbav')}<span>${esc(x.name)}</span></button>`).join('')||'<div class="muted">2인 이상 파티 보스가 있는 캐릭터가 없어요</div>'}</div><div class="calbr">${right}</div></div></div>`;
   m.querySelectorAll('[data-calbx]').forEach(b=>b.onclick=()=>{ calBM=null; calBossRender(); });
   m.querySelectorAll('[data-calbc]').forEach(b=>b.onclick=()=>{ const id=b.dataset.calbc; calBM={day:calBM.day,cids:ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]}; calBossRender(); });
   m.querySelectorAll('[data-calbs]').forEach(b=>b.onclick=()=>{ if(b.disabled) return; calBM.slot=b.dataset.calbs; calBossRender(); });

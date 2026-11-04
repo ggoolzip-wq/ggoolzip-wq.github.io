@@ -2417,9 +2417,13 @@ body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPa
 [data-theme=light] .calbm{color:#0f9d58}[data-theme=light] .calbb,[data-theme=light] .calst{color:#e0144c}[data-theme=light] .calsi,[data-theme=light] .calmi{background:rgba(120,110,220,.07)}
 /* b369(t683): 대상 주/달에 이미 클리어한 보스 = 회색·비활성 + 오른쪽 끝 밝은 초록 '·이번 주 클리어 완료' */
 .neonBtn.calbdone,.neonBtn.calbdone:hover{--nb:120,125,140;cursor:not-allowed;transform:none;box-shadow:none;text-shadow:none;color:#8a8f9c}
-.calbclr{font-style:normal;font-size:.78rem;font-weight:700;color:#4dff9a;white-space:nowrap;margin-left:4px}
+.calbclr{font-style:normal;font-size:.78rem;font-weight:700;color:#4dff9a;white-space:normal;margin-left:auto;flex:1 1 auto;text-align:right;line-height:1.35}
+/* b371: 보스명+난이도는 한 덩어리로 줄바꿈·겹침 없음, 긴 클리어 라벨은 다음 줄로 넘어가 여러 줄로 전부 표시 */
+.calbi{flex-wrap:wrap;row-gap:4px}.calbi .calbin{flex:1 0 auto;white-space:nowrap}.calbi>:not(.calbin):not(.calbclr){flex:none;white-space:nowrap}
+.neonBtn.calbno,.neonBtn.calbno:hover{--nb:120,125,140;cursor:not-allowed;transform:none;box-shadow:none;text-shadow:none;color:#8a8f9c;opacity:.45;filter:grayscale(1)}
 .calbdone>:not(.calbclr){opacity:.5;filter:grayscale(1)}
 [data-theme=light] .calbclr{color:#0a9d4e}
+.calbclr.calbsch{color:#ff5c85}[data-theme=light] .calbclr.calbsch{color:#e0144c}
 /* b370(t684): 묶음 일정 행 — 보스 · N인 뒤에 캐릭터들(초상화+닉네임) */
 .calsn{flex:0 1 auto}.calsc{flex:1;display:flex;flex-wrap:wrap;gap:4px 10px;min-width:0}
 .calscc{display:inline-flex;align-items:center;gap:5px;font-size:.88rem}

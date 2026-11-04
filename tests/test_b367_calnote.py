@@ -60,8 +60,9 @@ try:
     check('저장 → 모달 유지, 그 캐릭터 보스 목록으로', pg.locator('#calBossModal').count()==1 and pg.locator('#calBossModal .calbi').count()==2 and pg.locator('#calBossModal .calbc.on').get_attribute('data-calbc')=='c0')
     pg.click('[data-calbs="seren"]'); pg.select_option('.calbh','9'); pg.click('[data-calbsave]'); pg.wait_for_timeout(100)
     pg.locator('#calBossModal .calbab [data-calbx]').count()==0 or None
-    pg.click('[data-calbs="seren"]'); pg.click('#calBossModal .calbab [data-calbx]'); pg.wait_for_timeout(100)
-    check('취소 → 모달 닫힘', pg.locator('#calBossModal').count()==0)
+    check('b371: 이미 등록한 보스는 비활성', pg.locator('#calBossModal [data-calbs="seren"]').is_disabled() and pg.locator('#calBossModal [data-calbs="lucid"]').is_disabled())
+    pg.click('#calBossModal .calbcls'); pg.wait_for_timeout(100)
+    check('닫기 → 모달 닫힘', pg.locator('#calBossModal').count()==0)
     o=pg.evaluate("[...document.querySelectorAll('#calDet .calsi')].map(e=>e.querySelector('.calst').textContent+' '+(e.querySelector('.calsn').textContent+' '+[...e.querySelectorAll('.calscc>span')].map(x=>x.textContent).join(' ')).replace(/\\s+/g,' ').trim())")
     check('상세에 보스 일정(시간순)', o==['09:00 선택받은 세렌 3인 트딕이','22:30 루시드 2인 트딕이'], o)
     bb=pg.evaluate(f"""()=>{{ const g=document.querySelector('{cell} .calbg'); return {{t:[...g.children].map(e=>e.className+':'+e.textContent), c:getComputedStyle(g.querySelector('.calbb')).color, a:getComputedStyle(g.querySelector('.calbb')).animationName}}; }}""")
