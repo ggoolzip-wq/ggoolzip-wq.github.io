@@ -2355,3 +2355,50 @@ body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPa
 .calmb img,.calmb svg{width:18px;height:18px;object-fit:contain}.calmb b{font-weight:700;color:#ffd77a;text-align:right;font-variant-numeric:tabular-nums}
 .calmb-t{border-top:1px solid rgba(255,215,122,.3);padding-top:2px}.calmb-t b{color:#ffcf4a}
 [data-theme=light] .calmb{color:#2a5a80}[data-theme=light] .calmb b{color:#a05000}[data-theme=light] .calmb-t{border-color:rgba(160,80,0,.3)}[data-theme=light] .calmb-t b{color:#8a3c00}
+/* b367(t681): 캘린더 메모·보스 일정 — 칸 배지(투명도만 2.4s 깜빡임 = 크로스 디졸브 느낌, 합성만 해서 가벼움) · 상세 버튼 · 보스 일정 모달 */
+.caldw{display:flex;align-items:center;gap:4px;min-width:0;flex-wrap:wrap;align-self:stretch}
+.calbg{display:inline-flex;flex-wrap:wrap;gap:0 4px;min-width:0;font-size:.68rem;font-weight:700;line-height:1.2}
+.calbg i{font-style:normal;white-space:nowrap;animation:calblink 2.4s ease-in-out infinite;will-change:opacity}
+.calbm{color:#3ee08a}.calbb{color:#ff3b6b}
+@keyframes calblink{0%,100%{opacity:1}50%{opacity:.28}}
+@media (prefers-reduced-motion:reduce){.calbg i{animation:none}}
+.calnb{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 8px}
+.calnbt{font:inherit;font-weight:700;font-size:.85rem;cursor:pointer;padding:6px 12px;border-radius:10px;border:1px solid rgba(62,224,138,.5);background:rgba(62,224,138,.1);color:#3ee08a;transition:.15s}
+.calnbt.calnbb{border-color:rgba(255,59,107,.5);background:rgba(255,59,107,.1);color:#ff3b6b}
+.calnbt:hover{filter:brightness(1.2)}
+.calme{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
+.calmt{font:inherit;width:100%;box-sizing:border-box;resize:vertical;min-height:64px;padding:8px 10px;border-radius:10px;border:1px solid color-mix(in srgb,var(--n1) 35%,transparent);background:rgba(0,0,0,.25);color:inherit}
+.calmeb,.calbab{display:flex;gap:6px;justify-content:flex-end}
+.calsl,.calmm{display:flex;flex-direction:column;gap:5px;margin:0 0 10px}
+.calsi,.calmi{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.04);border-left:3px solid #ff3b6b}
+.calmi{border-left-color:#3ee08a}
+.calst{color:#ff3b6b;font-variant-numeric:tabular-nums}
+.calsi .bicon{width:22px;height:22px}
+.calsn,.calmx{flex:1;min-width:0;white-space:pre-wrap;word-break:break-word}
+.calsp{font-style:normal;opacity:.75;font-size:.85em}
+.calndel{font:inherit;cursor:pointer;border:0;background:none;color:inherit;opacity:.5;padding:2px 4px}.calndel:hover{opacity:1}
+.calbmod{font-family:'Paperlogy','Pretendard',system-ui,sans-serif!important}
+.calbmod *{font-family:inherit}
+.modal.wide.calbmd{max-width:640px;position:relative;max-height:90vh;display:flex;flex-direction:column}
+.calbmd h3{margin:0 0 4px}.calbsub{margin:0 0 12px;opacity:.8;font-size:.9rem;display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.calbcls{position:absolute;top:12px;right:12px}
+.calbbody{display:grid;grid-template-columns:200px 1fr;gap:12px;min-height:240px;overflow:hidden}
+.calbcl,.calbl{display:flex;flex-direction:column;gap:4px;overflow:auto;max-height:60vh}
+.calbc,.calbi{font:inherit;color:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;text-align:left;padding:6px 8px;border-radius:10px;border:1px solid transparent;background:rgba(255,255,255,.04)}
+.calbc:hover,.calbi:hover{border-color:color-mix(in srgb,var(--n1) 45%,transparent)}
+.calbc.on{border-color:var(--n1);background:color-mix(in srgb,var(--n1) 16%,transparent)}
+.calbc .avatar{width:30px;height:30px;flex:none;font-size:.8rem}
+.calbc span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.calbi .bicon{width:26px;height:26px}.calbin{flex:1;min-width:0}
+.calbr{display:flex;flex-direction:column;gap:12px;min-width:0}
+.calbe{padding:20px 6px}
+.calbt{display:flex;gap:12px;flex-wrap:wrap}
+.calbt label{display:flex;align-items:center;gap:6px;font-weight:700}
+.calbt select{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid color-mix(in srgb,var(--n1) 35%,transparent);background:var(--panel);color:inherit}
+@media (max-width:560px){.calbbody{grid-template-columns:1fr}.calbcl{max-height:28vh}}
+[data-theme=light] .calbm,[data-theme=light] .calnbt{color:#0f9d58}[data-theme=light] .calnbt{border-color:rgba(15,157,88,.45);background:rgba(15,157,88,.08)}
+[data-theme=light] .calbb,[data-theme=light] .calst,[data-theme=light] .calnbt.calnbb{color:#e0144c}[data-theme=light] .calnbt.calnbb{border-color:rgba(224,20,76,.45);background:rgba(224,20,76,.07)}
+[data-theme=light] .calmi{border-left-color:#0f9d58}[data-theme=light] .calsi{border-left-color:#e0144c}
+[data-theme=light] .calsi,[data-theme=light] .calmi,[data-theme=light] .calbc,[data-theme=light] .calbi{background:rgba(120,110,220,.07)}
+[data-theme=light] .calmt{background:#fff}
+:is(.calbsub,.calsn,.calbi) .dbadge{position:relative;left:auto;top:auto;display:inline-block;vertical-align:middle;max-width:none;flex:none}

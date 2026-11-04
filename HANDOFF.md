@@ -2,6 +2,13 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## b367 (t681) 캘린더 메모 · 보스 일정
+- 캘린더 날짜 상세: 날짜 머리(.caldh) 바로 아래 `+메모 추가` / `+보스 일정 추가` (.calnb). 메모 = 인라인 textarea + 저장/취소, 여러 개, 상세에 목록(✕ 삭제).
+- 보스 일정 = 가운데 모달 #calBossModal (calBossRender, 상태 calBM={day,cid,slot}). 왼쪽 캐릭터 전체(activeChars, 초상화+닉네임) → 스케줄러에 켠(enabled) 보스 중 party>1 만 + N인 → 보스 고르면 부제 '닉네임, 보스 (난이도 배지)' + 시(0~23, 기본 21)·분(00~55 5분) + 저장/취소. 저장하면 모달 유지·그 캐릭터 보스 목록으로, 취소/✕/바깥 클릭 = 닫기. 상세에 시간순 목록(✕ 삭제).
+- 데이터: S.calNotes={'YYYY-MM-DD':{m:{id:{t,at}},b:{id:{cid,n,slot,boss,d,p,h,mi,at}}}} — S 안이라 save()=로컬 + backupData→서버 계정 동기화 그대로. id 키 객체라 gdMerge 로 다른 PC 것과 충돌 없이 합쳐짐. 비면 날짜 키 삭제.
+- 칸 배지: 날짜 숫자 옆(.caldw 안) 초록 `·메모 n개`(.calbm) → 선홍 `·보스 일정 n개`(.calbb), @keyframes calblink 2.4s opacity만(reduced-motion 이면 정지). 라이트 테마 색 따로, 모달도 Paperlogy.
+- 테스트: tests/test_b367_calnote.py (run_all 등록).
+
 ## b366 (t674) 라이브 인식 중 사이트 전체 끊김·에픽빔 놓침 + 득템 축하 연출 끊김 (2차)
 
 - 원인 ① 라이브: 0.1초 타이머들(이름·맵·프레임·상자·로그·에픽빔)이 매번 메인 스레드에서 `drawImage(video)` (1080p 1회 15~40ms) → 라이브 켜면 메인 스레드 98% 바쁨. ② 보상 맵 상자 NCC(arBoxFind/arNcc)가 메인에서 1회 50~110ms, 20초 중 ~5초 막아 에픽빔 감시(ecTick)가 1~2초씩 건너뜀 → 빔 놓침(01M6E78K: b361 0/5).
