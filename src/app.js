@@ -4498,7 +4498,7 @@ setTimeout(async()=>{ if(SV_ON||!SYNC_TEST_URL||!/github\.io$/.test(location.hos
  * 이전 스냅샷과 비교해 늘어난(줄어든) 만큼을 오늘(KST) 칸에 더함. 이 브라우저 localStorage(CAL_KEY)에만 저장(서버 호출 없음). 주·달이 바뀌면 그 부분 기준 = 0.
  * 처음 켠 순간은 기준만 잡음(빈 달력에서 시작). 표시는 지금 보이는(키 등록된) 캐릭터만(activeIds). */
 const CAL_KEY='mapleBossTracker.cal';
-let calMon=null, calSel=null, calDef=0;
+let calMon=null, calSel=null, calDef=0, calYP=null; /* b372: 년/월 선택 팝오버 (보고 있는 연도, null=닫힘) */
 function calLoad(){ try{ const d=JSON.parse(localStorage.getItem(CAL_KEY)||'{}'); return d&&typeof d==='object'?d:{}; }catch(e){ return {}; } }
 function calSnapOf(c){ const r=charRevenue(c), w=charDrops(c,'weekly'), m=charDrops(c,'monthly');
   const it=d=>{ const o={}; for(const [k,n] of Object.entries(d.items)){ const x=parseIK(k).it; if(ITEMS[x]&&+n>0) o[x]=(o[x]||0)+(+n); } return o; };
@@ -4617,6 +4617,11 @@ function calBossRender(){ let m=$('#calBossModal'); if(!calBM){ if(m) m.remove()
   m.querySelectorAll('[data-calbs]').forEach(b=>b.onclick=()=>{ if(b.disabled) return; calBM.slot=b.dataset.calbs; calBossRender(); });
   m.querySelectorAll('[data-calbsave]').forEach(b=>b.onclick=()=>{ if(!sel) return; const h=+m.querySelector('.calbh').value, mi=+m.querySelector('.calbmi').value, day=calBM.day;
     calNPut(day,'b',{cids:cs.map(c=>c.id),ns:cs.map(c=>c.name),slot:sel.slot,boss:sel.b.id,d:sel.d,p:sel.p,h,mi,at:Date.now()}); calBM={day,cids:ids}; calBossRender(); if(tab==='cal') renderCal(); }); }
+function calYPop(R,Y,M){ const now=new Date(), cy=now.getFullYear(), ys=new Set([cy-1,cy,cy+1,Y]); R.forEach(r=>ys.add(+r.day.slice(0,4))); Object.keys(S.calNotes||{}).forEach(d=>ys.add(+d.slice(0,4)));
+  const L=[...ys].filter(y=>y>2000&&y<3000).sort((a,b)=>a-b), y=calYP, lo=L[0], hi=L[L.length-1];
+  return `<div class="calyp" id="calYP" role="dialog" aria-label="년·월 선택"><div class="calypy"><button type="button" class="neonBtn nb-cyan nb-sm" data-calyy="-1"${y<=lo?' disabled':''} aria-label="이전 해">‹</button><b data-calyv>${y}년</b><button type="button" class="neonBtn nb-cyan nb-sm" data-calyy="1"${y>=hi?' disabled':''} aria-label="다음 해">›</button></div>
+    <div class="calypm">${Array.from({length:12},(_,i)=>`<button type="button" class="neonBtn nb-violet nb-sm${y===Y&&i+1===M?' on':''}${y===cy&&i===now.getMonth()?' calypnow':''}" data-calym2="${i+1}">${i+1}월</button>`).join('')}</div></div>`; }
+let calYPdoc=false;
 function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId(Date.now()); if(!calMon) calMon=monthId(Date.now()); if(!calDef){ calDef=1; calSel='M:'+calMon; }
   const [Y,M]=calMon.split('-').map(Number), first=new Date(Date.UTC(Y,M-1,1)), nd=new Date(Date.UTC(Y,M,0)).getUTCDate(), lead=first.getUTCDay();
   let tot=0; const itTot={}; const cells=[];
@@ -4631,7 +4636,7 @@ function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId
     det=`<div class="caldet" id="calDet"><div class="caldh"><b>${isM?`${mm}월 전체`:`${mm}월 ${dd}일`}</b>${isM?calMonBrk(R.filter(r=>r.day.startsWith(calMon))):calCry(R.filter(r=>r.day===calSel))+`<span class="caldt">합계 <b>${x.ap?'<i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}${calEok(x.m)} 메소</b> · 아이템 ${ks.reduce((a,[,n])=>a+n,0)}개</span>`}<button type="button" class="calx" data-calclose aria-label="닫기">✕</button></div>${isM?'':calNoteDet(calSel)}
       ${ks.length?`<div class="caldl">${ks.map(([k,n])=>`<div class="caldi">${itemIcon(k)}<span>${esc(ITEMS[k].n)}${x.ia[k]?' <i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}</span><b>x${n}</b></div>`).join('')}</div>`:`<div class="muted calnone">${isM?'이 달':'이 날'} 기록된 아이템이 없어요</div>`}
       ${x.by.length?`<div class="caldc">${x.by.map(b=>`<div class="caldcr"><span class="caldcn">${esc(b.name||'')}</span><span class="caldcm">${b.ap?'<i class="calap">≈</i>':''}${calEok(b.m)}</span><span class="caldci">${Object.entries(b.i).map(([k,n])=>`${itemIcon(k)}${n>1?`<b>x${n}</b>`:''}`).join('')}</span></div>`).join('')}</div>`:''}${isM?calMonList(R):(dr=>dr.length?`<div class="calml calml-day">${calRowHd}${calRows(dr)}</div>`:'')(R.filter(r=>r.day===calSel&&r.k).sort((a,b)=>(a.ts||0)-(b.ts||0)||b.m-a.m))}</div>`; }
-  v.innerHTML=`<div class="calwrap"><div class="card calcard"><div class="calhd"><button type="button" class="calnav" data-calmv="-1" aria-label="이전 달">‹</button><h2 class="calti">${Y}년 ${M}월</h2><button type="button" class="calnav" data-calmv="1" aria-label="다음 달">›</button>
+  v.innerHTML=`<div class="calwrap"><div class="card calcard"><div class="calhd"><button type="button" class="calnav" data-calmv="-1" aria-label="이전 달">‹</button><h2 class="calti calym" data-calym role="button" tabindex="0" aria-haspopup="true" aria-expanded="${calYP!=null}" title="년·월 선택">${Y}년 ${M}월</h2>${calYP!=null?calYPop(R,Y,M):''}<button type="button" class="calnav" data-calmv="1" aria-label="다음 달">›</button>
     <button type="button" class="calnav caltd" data-calmv="0">오늘</button><button type="button" class="calsum${isM?' on':''}" data-calmonth aria-pressed="${isM}" title="이 달 기록 전체 보기">이번 달 합계 <b>${calEok(tot)} 메소</b> · 아이템 <b>${icnt}개</b></button></div>
     <div class="calwk">${['일','월','화','수','목','금','토'].map((w,i)=>`<span class="${i===0?'sun':i===6?'sat':''}">${w}</span>`).join('')}</div>
     <div class="calgrid">${cells.join('')}</div>${det}<div class="muted calnote">≈ = 정확한 날짜가 없어 그 주 목요일(리셋일)·처치일 등으로 어림 · API 키를 지운 캐릭터는 빠져요</div></div></div>`;
@@ -4640,6 +4645,12 @@ function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId
   v.querySelectorAll('[data-calmd]').forEach(b=>b.onclick=()=>{ calMD=b.dataset.calmd; renderCal(); });
   v.querySelectorAll('[data-calgo]').forEach(b=>b.onclick=()=>{ calSel=b.dataset.calgo; renderCal(); });
   v.querySelectorAll('[data-calday]').forEach(b=>b.onclick=()=>{ calSel=calSel===b.dataset.calday?null:b.dataset.calday; renderCal(); });
+  { const t=v.querySelector('[data-calym]'), tg=()=>{ calYP=calYP==null?Y:null; renderCal(); }; t.onclick=tg; t.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tg(); } };
+    v.querySelectorAll('[data-calyy]').forEach(b=>b.onclick=()=>{ calYP+= +b.dataset.calyy; renderCal(); });
+    v.querySelectorAll('[data-calym2]').forEach(b=>b.onclick=()=>{ calMon=`${calYP}-${pad(+b.dataset.calym2)}`; calYP=null; renderCal(); });
+    if(!calYPdoc){ calYPdoc=true; const off=()=>{ if(calYP!=null){ calYP=null; if(tab==='cal') renderCal(); } };
+      document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&calYP!=null){ off(); } });
+      document.addEventListener('mousedown',e=>{ if(calYP!=null&&!e.target.closest('#calYP,[data-calym]')) off(); },true); } }
   v.querySelectorAll('[data-calmonth]').forEach(b=>b.onclick=()=>{ calSel=isM?null:'M:'+calMon; renderCal(); });
   v.querySelectorAll('[data-calclose]').forEach(b=>b.onclick=()=>{ calSel=null; renderCal(); }); calNoteBind(v); }
 // b217: 모든 선언이 끝난 뒤 한 번 더 그림 (시작 렌더가 아직 없는 값 때문에 실패했어도 화면이 제대로 나오게)

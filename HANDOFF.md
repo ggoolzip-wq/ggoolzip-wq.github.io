@@ -8,6 +8,11 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b372 (t688) 캘린더 년/월 제목 클릭 → 년·월 선택 팝오버
+- h2.calti 에 .calym(data-calym, role=button, ▾, 호버 배경). 클릭/Enter → #calYP 팝오버(calYP=보고 있는 연도): ‹ 연도 › + 1~12월 네온 그리드(보고 있는 달 .on, 이번 달 밑줄).
+- 연도 범위 = 기록·S.calNotes 가 있는 해 + 올해 ±1 + 보고 있는 해, 끝에서 화살표 비활성. 월 고르면 calMon 이동 + 닫힘. Esc·바깥 mousedown·제목 다시 클릭 = 닫힘.
+- 예시(데모) 화면은 원래처럼 #view 클릭이 막혀 있음(달 이동 버튼과 동일). 테스트는 캐릭터 1개 넣고 확인. test_b372_ympicker.py.
+
 ## b371 (t686) 파티 보스 모달: 보스명 줄바꿈/겹침 수정 · 공통 보스 없는 캐릭터 비활성
 - .calbi 를 flex-wrap. 보스명(.calbin)은 flex:1 0 auto + nowrap, 아이콘·난이도·N인은 flex:none → 글자별 세로 줄바꿈·배지 겹침 없음.
 - 클리어 라벨(.calbclr)은 white-space:normal + margin-left:auto: 들어가면 같은 줄 오른쪽, 안 들어가면(여러 명 선택으로 길 때) 다음 줄로 넘어가 여러 줄로 닉네임 전부 표시. 행 높이는 늘어남.
