@@ -2363,9 +2363,6 @@ body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPa
 @keyframes calblink{0%,100%{opacity:1}50%{opacity:.28}}
 @media (prefers-reduced-motion:reduce){.calbg i{animation:none}}
 .calnb{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 8px}
-.calnbt{font:inherit;font-weight:700;font-size:.85rem;cursor:pointer;padding:6px 12px;border-radius:10px;border:1px solid rgba(62,224,138,.5);background:rgba(62,224,138,.1);color:#3ee08a;transition:.15s}
-.calnbt.calnbb{border-color:rgba(255,59,107,.5);background:rgba(255,59,107,.1);color:#ff3b6b}
-.calnbt:hover{filter:brightness(1.2)}
 .calme{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
 .calmt{font:inherit;width:100%;box-sizing:border-box;resize:vertical;min-height:64px;padding:8px 10px;border-radius:10px;border:1px solid color-mix(in srgb,var(--n1) 35%,transparent);background:rgba(0,0,0,.25);color:inherit}
 .calmeb,.calbab{display:flex;gap:6px;justify-content:flex-end}
@@ -2376,7 +2373,6 @@ body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPa
 .calsi .bicon{width:22px;height:22px}
 .calsn,.calmx{flex:1;min-width:0;white-space:pre-wrap;word-break:break-word}
 .calsp{font-style:normal;opacity:.75;font-size:.85em}
-.calndel{font:inherit;cursor:pointer;border:0;background:none;color:inherit;opacity:.5;padding:2px 4px}.calndel:hover{opacity:1}
 .calbmod{font-family:'Paperlogy','Pretendard',system-ui,sans-serif!important}
 .calbmod *{font-family:inherit}
 .modal.wide.calbmd{max-width:640px;position:relative;max-height:90vh;display:flex;flex-direction:column}
@@ -2384,9 +2380,6 @@ body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPa
 .calbcls{position:absolute;top:12px;right:12px}
 .calbbody{display:grid;grid-template-columns:200px 1fr;gap:12px;min-height:240px;overflow:hidden}
 .calbcl,.calbl{display:flex;flex-direction:column;gap:4px;overflow:auto;max-height:60vh}
-.calbc,.calbi{font:inherit;color:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;text-align:left;padding:6px 8px;border-radius:10px;border:1px solid transparent;background:rgba(255,255,255,.04)}
-.calbc:hover,.calbi:hover{border-color:color-mix(in srgb,var(--n1) 45%,transparent)}
-.calbc.on{border-color:var(--n1);background:color-mix(in srgb,var(--n1) 16%,transparent)}
 .calbc .avatar{width:30px;height:30px;flex:none;font-size:.8rem}
 .calbc span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .calbi .bicon{width:26px;height:26px}.calbin{flex:1;min-width:0}
@@ -2396,9 +2389,24 @@ body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPa
 .calbt label{display:flex;align-items:center;gap:6px;font-weight:700}
 .calbt select{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid color-mix(in srgb,var(--n1) 35%,transparent);background:var(--panel);color:inherit}
 @media (max-width:560px){.calbbody{grid-template-columns:1fr}.calbcl{max-height:28vh}}
-[data-theme=light] .calbm,[data-theme=light] .calnbt{color:#0f9d58}[data-theme=light] .calnbt{border-color:rgba(15,157,88,.45);background:rgba(15,157,88,.08)}
-[data-theme=light] .calbb,[data-theme=light] .calst,[data-theme=light] .calnbt.calnbb{color:#e0144c}[data-theme=light] .calnbt.calnbb{border-color:rgba(224,20,76,.45);background:rgba(224,20,76,.07)}
 [data-theme=light] .calmi{border-left-color:#0f9d58}[data-theme=light] .calsi{border-left-color:#e0144c}
-[data-theme=light] .calsi,[data-theme=light] .calmi,[data-theme=light] .calbc,[data-theme=light] .calbi{background:rgba(120,110,220,.07)}
 [data-theme=light] .calmt{background:#fff}
 :is(.calbsub,.calsn,.calbi) .dbadge{position:relative;left:auto;top:auto;display:inline-block;vertical-align:middle;max-width:none;flex:none}
+/* b368(t682) 상시 규칙: 모든 버튼 = 고급 네온 (.neonBtn + 색 변형). 새 버튼은 이 클래스를 쓰세요. 색은 --nb(R,G,B) 하나로. 상시 애니메이션 없음(hover/active 때 transition 만) */
+.neonBtn{--nb:150,170,255;font:inherit;font-weight:700;cursor:pointer;color:rgb(var(--nb));padding:6px 13px;border-radius:10px;border:1px solid rgba(var(--nb),.55);
+  background:linear-gradient(180deg,rgba(var(--nb),.13),rgba(var(--nb),.04)),rgba(10,12,20,.55);box-shadow:0 0 0 1px rgba(var(--nb),.08) inset,0 0 10px rgba(var(--nb),.22);
+  text-shadow:0 0 6px rgba(var(--nb),.45);transition:box-shadow .18s,transform .18s,border-color .18s,background-color .18s}
+.neonBtn:hover{border-color:rgba(var(--nb),.9);box-shadow:0 0 0 1px rgba(var(--nb),.18) inset,0 0 14px rgba(var(--nb),.45),0 0 28px rgba(var(--nb),.18);transform:translateY(-1px)}
+.neonBtn:active{transform:translateY(0) scale(.98);box-shadow:0 0 0 1px rgba(var(--nb),.3) inset,0 0 6px rgba(var(--nb),.35);background-color:rgba(var(--nb),.12)}
+.neonBtn:focus-visible{outline:none;border-color:rgb(var(--nb));box-shadow:0 0 0 2px rgba(var(--nb),.35),0 0 14px rgba(var(--nb),.4)}
+.neonBtn.on{border-color:rgb(var(--nb));background-color:rgba(var(--nb),.16);box-shadow:0 0 0 1px rgba(var(--nb),.25) inset,0 0 16px rgba(var(--nb),.4)}
+.neonBtn.nb-green{--nb:62,224,138}.neonBtn.nb-crimson{--nb:255,59,107}.neonBtn.nb-cyan{--nb:80,215,255}.neonBtn.nb-violet{--nb:178,140,255}.neonBtn.nb-gold{--nb:255,200,90}.neonBtn.nb-mute{--nb:170,180,205}
+.neonBtn.nb-sm{padding:2px 7px;border-radius:7px;font-size:.8rem}
+[data-theme=light] .neonBtn{background:linear-gradient(180deg,#fff,rgba(var(--nb),.07));text-shadow:none;box-shadow:0 0 0 1px rgba(var(--nb),.1) inset,0 0 8px rgba(var(--nb),.2)}
+[data-theme=light] .neonBtn:hover{box-shadow:0 0 0 1px rgba(var(--nb),.2) inset,0 0 12px rgba(var(--nb),.4)}
+[data-theme=light] .neonBtn{color:color-mix(in srgb,rgb(var(--nb)) 62%,#000)}
+@media (prefers-reduced-motion:reduce){.neonBtn,.neonBtn:hover{transition:none;transform:none}}
+.calnbt{font-size:.85rem}.calbc,.calbi{display:flex;align-items:center;gap:8px;text-align:left;padding:6px 8px;font-weight:600}
+.calbc{color:inherit}.calbc span{color:inherit}
+.calndel{opacity:.85}
+[data-theme=light] .calbm{color:#0f9d58}[data-theme=light] .calbb,[data-theme=light] .calst{color:#e0144c}[data-theme=light] .calsi,[data-theme=light] .calmi{background:rgba(120,110,220,.07)}

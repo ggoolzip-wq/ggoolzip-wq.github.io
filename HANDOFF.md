@@ -2,6 +2,18 @@
 
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
+## 상시 규칙 (항상 지킬 것 — 변경 기록 아님)
+- **버튼은 말이 없어도 무조건 고급진 네온 버전** (사용자 지시 t682). 새로 만드는 버튼·고치는 버튼 전부 공용 클래스 `.neonBtn` + 색 변형(`nb-green`·`nb-crimson`·`nb-cyan`·`nb-violet`·`nb-gold`·`nb-mute`, 작은 버튼 `nb-sm`, 선택됨 `.on`)을 쓴다 (src/extra.css 맨 끝 b368). 새 색은 `--nb:R,G,B` 하나만 지정.
+  - 모양: 어두운 반투명 채움 + 얇은 강조색 테두리 + 은은한 바깥 글로(box-shadow) + 옅은 글자 글로, hover = 글로 강해짐 + 1px 떠오름, active = 눌림. 요란하지 않게.
+  - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
+  - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
+
+## b368 (t682) 상시 규칙 '버튼 = 고급 네온' + 공용 .neonBtn
+- HANDOFF 맨 위 '상시 규칙'에 네온 버튼 규칙 추가.
+- src/extra.css: `.neonBtn` (+ nb-green/crimson/cyan/violet/gold/mute, nb-sm, .on, :focus-visible, 라이트 변형, reduced-motion). 상시 애니메이션 없음.
+- b367 버튼 전부 교체: +메모 추가(초록)·+보스 일정 추가(선홍)·메모 저장(초록)/취소(mute)·모달 캐릭터(시안, 선택 .on)·보스(선홍)·저장(선홍)/취소(mute)·✕ 닫기/삭제(mute nb-sm). 이전 .calnbt/.calbc/.calbi/.calndel 꾸밈 규칙은 지우고 배치만 남김.
+- 테스트: tests/test_b368_neonbtn.py (run_all 등록).
+
 ## b367 (t681) 캘린더 메모 · 보스 일정
 - 캘린더 날짜 상세: 날짜 머리(.caldh) 바로 아래 `+메모 추가` / `+보스 일정 추가` (.calnb). 메모 = 인라인 textarea + 저장/취소, 여러 개, 상세에 목록(✕ 삭제).
 - 보스 일정 = 가운데 모달 #calBossModal (calBossRender, 상태 calBM={day,cid,slot}). 왼쪽 캐릭터 전체(activeChars, 초상화+닉네임) → 스케줄러에 켠(enabled) 보스 중 party>1 만 + N인 → 보스 고르면 부제 '닉네임, 보스 (난이도 배지)' + 시(0~23, 기본 21)·분(00~55 5분) + 저장/취소. 저장하면 모달 유지·그 캐릭터 보스 목록으로, 취소/✕/바깥 클릭 = 닫기. 상세에 시간순 목록(✕ 삭제).
