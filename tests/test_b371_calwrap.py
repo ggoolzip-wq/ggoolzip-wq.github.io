@@ -15,7 +15,7 @@ SD=os.environ.get('B371_SHOTDIR') or OUT
 SETUP="""()=>{ const mk=(id,n)=>({id,name:n,level:285,job:'',world:'스카니아',ocid:'',accId:'',image:'',bosses:{},weekly:{},monthly:{},auto:{}});
   const N=['트덕이','zetking','린벨자','랑트킹','테레사아','부캐냥이'], cs=N.map((n,i)=>{const c=mk('c'+i,n); c.bosses={lotus:{enabled:true,party:2,diff:'extreme'},star:{enabled:true,party:2,diff:'normal'}}; return c;});
   const c6=mk('c6','루시드만'); c6.bosses={lucid:{enabled:true,party:2,diff:'hard'}};
-  const c7=mk('c7','섞임'); c7.bosses={lucid:{enabled:true,party:2,diff:'hard'},lotus:{enabled:true,party:2,diff:'extreme'},blackmage:{enabled:true,party:2,diff:'hard'}};
+  const c7=mk('c7','마법냥'); c7.bosses={lucid:{enabled:true,party:2,diff:'hard'},lotus:{enabled:true,party:2,diff:'extreme'},blackmage:{enabled:true,party:2,diff:'hard'}};
   S.characters=[...cs,c6,c7];
   S.history=[{week:'2026-10-15',perChar:N.map((n,i)=>({id:'c'+i,name:n,bosses:['스우(익스트림)','찬란한 흉성(노말)'],bvals:[1e8]}))}];
   S.activeId='c0'; save(); render(); }"""
@@ -39,11 +39,11 @@ try:
     check('여러 명: 라벨은 이름 아래 다음 줄로', all(x['below'] for x in g), g)
     pg.locator('#calBossModal .modal').screenshot(path=os.path.join(SD,'after_many.png'))
     SR="""(a)=>{ calBM={day:a[0],cids:a[1]}; calBossRender(); return Object.fromEntries([...document.querySelectorAll('#calBossModal .calbi')].map(e=>[e.dataset.calbs,(e.disabled?'X':'O')+(e.querySelector('.calbclr')?e.querySelector('.calbclr').textContent:'')])); }"""
-    pg.evaluate("""()=>{ S.calNotes={'2026-10-16':{m:{},b:{s1:{cids:['c7'],ns:['섞임'],slot:'lucid',boss:'lucid',d:'normal',p:2,h:21,mi:30,at:1},s2:{cids:['c0','c7'],ns:['트덕이','섞임'],slot:'lotus',boss:'lotus',d:'extreme',p:2,h:9,mi:5,at:2}}},
-      '2026-10-02':{m:{},b:{s3:{cid:'c7',n:'섞임',slot:'blackmage',boss:'blackmage',d:'hard',p:2,h:22,mi:0,at:3}}}}; save(); }""")
+    pg.evaluate("""()=>{ S.calNotes={'2026-10-16':{m:{},b:{s1:{cids:['c7'],ns:['마법냥'],slot:'lucid',boss:'lucid',d:'normal',p:2,h:21,mi:30,at:1},s2:{cids:['c0','c7'],ns:['트덕이','마법냥'],slot:'lotus',boss:'lotus',d:'extreme',p:2,h:9,mi:5,at:2}}},
+      '2026-10-02':{m:{},b:{s3:{cid:'c7',n:'마법냥',slot:'blackmage',boss:'blackmage',d:'hard',p:2,h:22,mi:0,at:3}}}}; save(); }""")
     r=pg.evaluate(SR,['2026-10-21',['c7']])
-    check('같은 보스 주에 일정 있음(난이도 달라도) → 비활성 + 누가·언제', r.get('lucid')=='X·이번 주 일정 등록됨 (섞임, 10/16 21:30)' and r.get('lotus','').startswith('X·이번 주 일정 등록됨 (섞임, 10/16 09:05)'), r)
-    check('검은 마법사: 같은 달 일정 → 비활성', r.get('blackmage')=='X·이번 달 일정 등록됨 (섞임, 10/02 22:00)', r)
+    check('같은 보스 주에 일정 있음(난이도 달라도) → 비활성 + 누가·언제', r.get('lucid')=='X·이번 주 일정 등록됨 (마법냥, 10/16 21:30)' and r.get('lotus','').startswith('X·이번 주 일정 등록됨 (마법냥, 10/16 09:05)'), r)
+    check('검은 마법사: 같은 달 일정 → 비활성', r.get('blackmage')=='X·이번 달 일정 등록됨 (마법냥, 10/02 22:00)', r)
     r=pg.evaluate(SR,['2026-10-22',['c7']]); check('다음 보스 주(목) → 다시 활성', r.get('lucid')=='O' and r.get('lotus')=='O' and r.get('blackmage','').startswith('X'), r)
     r=pg.evaluate(SR,['2026-11-02',['c7']]); check('다음 달 → 검은 마법사 활성', r.get('blackmage')=='O', r)
     r=pg.evaluate(SR,['2026-10-21',['c0','c7']]); check('클리어가 일정보다 우선', r.get('lotus')=='X·이번 주 클리어 완료 (트덕이)', r)
