@@ -2445,3 +2445,7 @@ html body .calcard .calhd h2.calti.calym:is(:hover,:focus-visible,[aria-expanded
 [data-theme=light] .calyp{background:#fff;border-color:rgba(90,110,240,.5);box-shadow:0 8px 24px rgba(80,90,180,.2)}
 [data-theme=light] .calypy b{color:#4b4fd6;text-shadow:none}
 html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visible,[aria-expanded=true]){background:rgba(90,110,240,.1)!important}
+/* b374: 보스 여러 개 선택 · 묶음 상세 */
+.calbsb{white-space:nowrap;display:inline-block}
+.calbr .calbt{margin-top:10px}
+.calsbs{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;min-width:0}.calsb{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}

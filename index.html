@@ -2569,6 +2569,10 @@ html body .calcard .calhd h2.calti.calym:is(:hover,:focus-visible,[aria-expanded
 [data-theme=light] .calyp{background:#fff;border-color:rgba(90,110,240,.5);box-shadow:0 8px 24px rgba(80,90,180,.2)}
 [data-theme=light] .calypy b{color:#4b4fd6;text-shadow:none}
 html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visible,[aria-expanded=true]){background:rgba(90,110,240,.1)!important}
+/* b374: 보스 여러 개 선택 · 묶음 상세 */
+.calbsb{white-space:nowrap;display:inline-block}
+.calbr .calbt{margin-top:10px}
+.calsbs{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;min-width:0}.calsb{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -7283,7 +7287,7 @@ function calNoteDet(id){ const o=calNDay(id)||{}, ms=Object.entries(o.m||{}).sor
     bs=Object.entries(o.b||{}).sort((a,b)=>((+a[1].h||0)*60+(+a[1].mi||0))-((+b[1].h||0)*60+(+b[1].mi||0))||(a[1].at||0)-(b[1].at||0));
   return `<div class="calnb"><button type="button" class="neonBtn nb-green calnbt calnbm" data-calmemo>+메모 추가</button><button type="button" class="neonBtn nb-crimson calnbt calnbb" data-calboss>+파티 보스 일정 추가</button></div>`
   +(calMemoOn===id?`<div class="calme"><textarea class="calmt" rows="3" maxlength="500" placeholder="이 날의 메모를 입력하세요"></textarea><div class="calmeb"><button type="button" class="neonBtn nb-green" data-calmsave>저장</button><button type="button" class="neonBtn nb-mute" data-calmcancel>취소</button></div></div>`:'')
-  +(bs.length?`<div class="calsl">${bs.map(([k,s])=>{ const b=findBoss(s.boss)||findBoss(s.slot); return `<div class="calsi"><b class="calst">${calHM(s.h,s.mi)}</b>${b?bossIcon(b):''}<span class="calsn">${esc(b?b.name:String(s.boss||''))} ${diffBadge(s.d)} <i class="calsp">${+s.p||1}인</i></span><span class="calsc">${calSC(s).map(c=>`<span class="calscc">${avatar(c,'calsav')}<span>${esc(c.name)}</span></span>`).join('')}</span><button type="button" class="neonBtn nb-mute nb-sm calndel" data-calndel="b:${esc(k)}" aria-label="삭제" title="삭제">✕</button></div>`; }).join('')}</div>`:'')
+  +(bs.length?`<div class="calsl">${bs.map(([k,s])=>{ const one=x=>{ const b=findBoss(x.boss)||findBoss(x.slot); return `${b?bossIcon(b):''}<span class="calsn">${esc(b?b.name:String(x.boss||''))} ${diffBadge(x.d)} <i class="calsp">${+x.p||1}인</i></span>`; }, B=calSB(s); return `<div class="calsi${B.length>1?' calsim':''}"><b class="calst">${calHM(s.h,s.mi)}</b>${B.length>1?`<span class="calsbs">${B.map(x=>`<span class="calsb">${one(x)}</span>`).join('')}</span>`:one(B[0])}<span class="calsc">${calSC(s).map(c=>`<span class="calscc">${avatar(c,'calsav')}<span>${esc(c.name)}</span></span>`).join('')}</span><button type="button" class="neonBtn nb-mute nb-sm calndel" data-calndel="b:${esc(k)}" aria-label="삭제" title="삭제">✕</button></div>`; }).join('')}</div>`:'')
   +(ms.length?`<div class="calmm">${ms.map(([k,m])=>`<div class="calmi"><span class="calmx">${esc(m.t||'')}</span><button type="button" class="neonBtn nb-mute nb-sm calndel" data-calndel="m:${esc(k)}" aria-label="삭제" title="삭제">✕</button></div>`).join('')}</div>`:''); }
 function calNoteBind(v){ const id=calSel; if(!id||id.startsWith('M:')) return;
   v.querySelectorAll('[data-calmemo]').forEach(b=>b.onclick=()=>{ calMemoOn=calMemoOn===id?null:id; renderCal(); const t=$('#view .calmt'); if(t) t.focus(); });
@@ -7299,8 +7303,9 @@ function calCleared(c,slot,b,day){ const t=Date.parse(day+'T12:00:00+09:00'), mo
 /* b370(t684): 여러 캐릭터 선택(토글) → 모두가 같은 보스·난이도·인원으로 스케줄러에 둔 보스만. 클리어 비활성(b369)은 한 명이라도 그 주/달에 클리어했으면. 저장 = 묶음 일정 1개 {cids,ns,...} (b367 단일 {cid,n} 도 1명 묶음으로 읽음) */
 function calBossList(c){ return Object.entries(c&&c.bosses||{}).map(([slot,cfg])=>({slot,cfg,b:findBoss(slot)})).filter(o=>o.b&&o.cfg&&o.cfg.enabled&&(parseInt(o.cfg.party)||1)>1)
   .map(o=>({slot:o.slot,b:o.b,d:o.cfg.diff||o.b.diffs[0],p:parseInt(o.cfg.party)||1})); }
+const calSB=e=>Array.isArray(e.bs)&&e.bs.length?e.bs:[{slot:e.slot,boss:e.boss,d:e.d,p:e.p}]; /* b374: 묶음 보스(bs) · 예전 단일 보스 둘 다 */
 function calSched(c,b,day){ const mon=b.type==='monthly', key=d=>mon?d.slice(0,7):weekId(Date.parse(d+'T12:00:00+09:00')), k=key(day), out=[]; /* b371: 같은 보스 주(월간=달)에 이미 등록된 이 캐릭터의 같은 보스 일정(난이도 무관) */
-  Object.entries(S.calNotes||{}).forEach(([d,n])=>{ if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||key(d)!==k) return; Object.values(n.b||{}).forEach(e=>{ if(e.boss===b.id&&calSC(e).some(x=>x.id===c.id)) out.push({d,h:e.h,mi:e.mi}); }); });
+  Object.entries(S.calNotes||{}).forEach(([d,n])=>{ if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||key(d)!==k) return; Object.values(n.b||{}).forEach(e=>{ if(calSB(e).some(x=>x.boss===b.id)&&calSC(e).some(x=>x.id===c.id)) out.push({d,h:e.h,mi:e.mi}); }); });
   return out.sort((x,y)=>(x.d+String(x.h).padStart(2,'0')+String(x.mi).padStart(2,'0')).localeCompare(y.d+String(y.h).padStart(2,'0')+String(y.mi).padStart(2,'0')))[0]||null; }
 function calBossCommon(cs,day){ if(!cs.length) return []; const Ls=cs.map(calBossList);
   return Ls[0].filter(o=>Ls.every(L=>L.some(x=>x.slot===o.slot&&x.d===o.d&&x.p===o.p))).map(o=>{ const who=day?cs.filter(c=>calCleared(c,o.slot,o.b,day)):[];
@@ -7310,20 +7315,21 @@ function calBossRender(){ let m=$('#calBossModal'); if(!calBM){ if(m) m.remove()
   if(!m){ m=document.createElement('div'); m.id='calBossModal'; m.className='modal-bg show calbmod'; document.body.appendChild(m);
     m.addEventListener('click',e=>{ if(e.target===m){ calBM=null; calBossRender(); } }); }
   const all=activeChars().filter(c=>calBossList(c).length), ids=(calBM.cids||[]).filter(id=>all.some(c=>c.id===id)), cs=ids.map(id=>all.find(c=>c.id===id));
-  calBM.cids=ids; const multi=cs.length>1, L=calBossCommon(cs,calBM.day), sel=calBM.slot?L.find(o=>o.slot===calBM.slot&&!o.cl):null;
-  const sub=sel?`${cs.map(c=>esc(c.name)).join(', ')}, ${esc(sel.b.name)} (${diffBadge(sel.d)})`:'보스 일정 캐릭터를 추가하세요.';
+  calBM.cids=ids; const multi=cs.length>1, L=calBossCommon(cs,calBM.day), ok=o=>!o.cl&&!o.sc.length, sels=(calBM.slots||(calBM.slot?[calBM.slot]:[])).map(k=>L.find(o=>o.slot===k&&ok(o))).filter(Boolean), sel=sels[0]||null; calBM.slots=sels.map(o=>o.slot); delete calBM.slot; /* b374: 보스 여러 개 선택 */
+  const sub=sel?`${cs.map(c=>esc(c.name)).join(', ')}, ${sels.map(o=>`<span class="calbsb">${esc(o.b.name)} (${diffBadge(o.d)})</span>`).join(', ')}`:'보스 일정 캐릭터를 추가하세요.';
+  const tm=`<div class="calbt"><label>시 <select class="calbh">${Array.from({length:24},(_,i)=>`<option value="${i}"${i===21?' selected':''}>${pad(i)}</option>`).join('')}</select></label><label>분 <select class="calbmi">${Array.from({length:12},(_,i)=>`<option value="${i*5}">${pad(i*5)}</option>`).join('')}</select></label></div><div class="calbab"><button type="button" class="neonBtn nb-crimson" data-calbsave>저장</button><button type="button" class="neonBtn nb-mute" data-calbreset>취소</button></div>`;
   const right=!cs.length?`<div class="muted calbe">왼쪽에서 캐릭터를 고르세요 (여러 명 선택 가능)</div>`
-    :sel?`<div class="calbt"><label>시 <select class="calbh">${Array.from({length:24},(_,i)=>`<option value="${i}"${i===21?' selected':''}>${pad(i)}</option>`).join('')}</select></label><label>분 <select class="calbmi">${Array.from({length:12},(_,i)=>`<option value="${i*5}">${pad(i*5)}</option>`).join('')}</select></label></div><div class="calbab"><button type="button" class="neonBtn nb-crimson" data-calbsave>저장</button><button type="button" class="neonBtn nb-mute" data-calbx>취소</button></div>`
-    :L.length?`<div class="calbl">${L.map(o=>`<button type="button" class="neonBtn nb-crimson calbi${o.cl||o.sc.length?' calbdone':''}" data-calbs="${esc(o.slot)}"${o.cl||o.sc.length?' disabled aria-disabled="true"':''}>${bossIcon(o.b)}<span class="calbin">${esc(o.b.name)}</span>${diffBadge(o.d)}<i class="calsp">${o.p}인</i>${o.cl?`<i class="calbclr">·이번 ${o.cl==='m'?'달':'주'} 클리어 완료${multi?` (${esc(o.who.join(', '))})`:''}</i>`:o.sc.length?`<i class="calbclr calbsch">·이번 ${o.b.type==='monthly'?'달':'주'} 일정 등록됨 (${esc(o.sc.join(' / '))})</i>`:''}</button>`).join('')}</div>`
+    :L.length?`<div class="calbl">${L.map(o=>`<button type="button" class="neonBtn nb-crimson calbi${o.cl||o.sc.length?' calbdone':''}${calBM.slots.includes(o.slot)?' on':''}" data-calbs="${esc(o.slot)}" aria-pressed="${calBM.slots.includes(o.slot)}"${o.cl||o.sc.length?' disabled aria-disabled="true"':''}>${bossIcon(o.b)}<span class="calbin">${esc(o.b.name)}</span>${diffBadge(o.d)}<i class="calsp">${o.p}인</i>${o.cl?`<i class="calbclr">·이번 ${o.cl==='m'?'달':'주'} 클리어 완료${multi?` (${esc(o.who.join(', '))})`:''}</i>`:o.sc.length?`<i class="calbclr calbsch">·이번 ${o.b.type==='monthly'?'달':'주'} 일정 등록됨 (${esc(o.sc.join(' / '))})</i>`:''}</button>`).join('')}</div>${sel?tm:''}`
     :`<div class="muted calbe">${multi?'선택한 캐릭터 모두 같은 보스·난이도·인원으로 둔 파티 보스가 없어요':'스케줄러에 저장된 2인 이상 파티 보스가 없어요'}</div>`;
   const nox=x=>ids.length>0&&!ids.includes(x.id)&&!calBossCommon([...cs,x],calBM.day).length; /* b371: 지금 선택과 공통 보스(보스+난이도+인원) 없는 캐릭터 비활성 */
   m.innerHTML=`<div class="modal wide calbmd" role="dialog" aria-modal="true" aria-label="파티 보스 일정 추가"><button type="button" class="neonBtn nb-mute nb-sm calbcls" data-calbx aria-label="닫기">✕</button><h3>파티 보스 일정 추가</h3><p class="calbsub">${sub}</p>
     <div class="calbbody"><div class="calbcl">${all.map(x=>`<button type="button" class="neonBtn nb-cyan calbc${ids.includes(x.id)?' on':''}${nox(x)?' calbno':''}" data-calbc="${esc(x.id)}" aria-pressed="${ids.includes(x.id)}"${nox(x)?' disabled aria-disabled="true" title="선택한 캐릭터와 겹치는 보스가 없어요"':''}>${avatar(x,'calbav')}<span>${esc(x.name)}</span></button>`).join('')||'<div class="muted">2인 이상 파티 보스가 있는 캐릭터가 없어요</div>'}</div><div class="calbr">${right}</div></div></div>`;
   m.querySelectorAll('[data-calbx]').forEach(b=>b.onclick=()=>{ calBM=null; calBossRender(); });
-  m.querySelectorAll('[data-calbc]').forEach(b=>b.onclick=()=>{ const id=b.dataset.calbc; calBM={day:calBM.day,cids:ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]}; calBossRender(); });
-  m.querySelectorAll('[data-calbs]').forEach(b=>b.onclick=()=>{ if(b.disabled) return; calBM.slot=b.dataset.calbs; calBossRender(); });
+  m.querySelectorAll('[data-calbc]').forEach(b=>b.onclick=()=>{ const id=b.dataset.calbc; calBM={day:calBM.day,cids:ids.includes(id)?ids.filter(x=>x!==id):[...ids,id],slots:calBM.slots}; calBossRender(); });
+  m.querySelectorAll('[data-calbs]').forEach(b=>b.onclick=()=>{ if(b.disabled) return; const k=b.dataset.calbs, ss=calBM.slots; calBM.slots=ss.includes(k)?ss.filter(x=>x!==k):[...ss,k]; calBossRender(); });
+  m.querySelectorAll('[data-calbreset]').forEach(b=>b.onclick=()=>{ calBM.slots=[]; calBossRender(); });
   m.querySelectorAll('[data-calbsave]').forEach(b=>b.onclick=()=>{ if(!sel) return; const h=+m.querySelector('.calbh').value, mi=+m.querySelector('.calbmi').value, day=calBM.day;
-    calNPut(day,'b',{cids:cs.map(c=>c.id),ns:cs.map(c=>c.name),slot:sel.slot,boss:sel.b.id,d:sel.d,p:sel.p,h,mi,at:Date.now()}); calBM={day,cids:ids}; calBossRender(); if(tab==='cal') renderCal(); }); }
+    const bs=sels.map(o=>({slot:o.slot,boss:o.b.id,d:o.d,p:o.p})); calNPut(day,'b',{cids:cs.map(c=>c.id),ns:cs.map(c=>c.name),slot:sel.slot,boss:sel.b.id,d:sel.d,p:sel.p,...(bs.length>1?{bs}:{}),h,mi,at:Date.now()}); calBM={day,cids:ids}; calBossRender(); if(tab==='cal') renderCal(); }); }
 function calYPop(R,Y,M){ const now=new Date(), cy=now.getFullYear(), ys=new Set([cy-1,cy,cy+1,Y]); R.forEach(r=>ys.add(+r.day.slice(0,4))); Object.keys(S.calNotes||{}).forEach(d=>ys.add(+d.slice(0,4)));
   const L=[...ys].filter(y=>y>2000&&y<3000).sort((a,b)=>a-b), y=calYP, lo=L[0], hi=L[L.length-1];
   return `<div class="calyp" id="calYP" role="dialog" aria-label="년·월 선택"><div class="calypy"><button type="button" class="neonBtn nb-cyan nb-sm" data-calyy="-1"${y<=lo?' disabled':''} aria-label="이전 해">‹</button><b data-calyv>${y}년</b><button type="button" class="neonBtn nb-cyan nb-sm" data-calyy="1"${y>=hi?' disabled':''} aria-label="다음 해">›</button></div>
