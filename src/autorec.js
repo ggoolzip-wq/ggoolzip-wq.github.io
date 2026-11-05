@@ -102,12 +102,17 @@ function arDetectBoss(text){ if(!arNorm(text)) return null; { const T=arDetectBM
     for(const [k,v] of Object.entries(ARX.cfg.mapAlias||{})) if(arSim(t,k)>=.8){ return {boss:v.boss,diff:v.diff,src:'맵 등록'}; }
     for(const [m,id] of AR_REWARD) if(arSim(t,m)>=.8||arSimJ(t,m)>=.85){ const b=findBoss(id); if(b) return {boss:id,diff:diffOf(b),src:'보상 맵'}; } }
   return null; }
-function arDetectChar(text){ const lat=arLatChar(text); if(lat) return lat; const L=String(text||'').split('\n').find(l=>/[가-힣]{2}/.test(l))||''; ARX.nameRead='';
+/* b375 (t407u): 이름 앞 숫자(2터래플) — 한글만 비교하면 '2터래플'과 '터래플'이 같은 글자가 되어 목록의 터래플로 잡혔음(숫자 이름은 OCR 투표에서 아예 빠짐).
+   b284 설계대로 '앞 기호 유무'로 구분: 화면 토큰에서 한글 앞에 붙은 글자(숫자 '2' 또는 OCR 이 '2'를 읽은 '<', 'ㅇ' 등)가 있으면 lead.
+   토큰 앞에 레벨 숫자 3자리('.285')가 붙어 읽힌 것은 lead 아님. 목록 이름은 한글 앞에 한글 아닌 글자가 있으면 앞 기호 이름. */
+const arLeadName=n=>{ const m=String(n||'').match(/^([^가-힣]*)[가-힣]/); return !!(m&&m[1].trim()); };
+function arLeadTok(tok){ const i=String(tok).search(/[가-힣]/); if(i<=0) return false; const pre=tok.slice(0,i).replace(/^[\\\/lLvVｌ|!]*[.,·]?\d{3}/,'').replace(/[\s'"“”‘’`,.·]/g,''); return pre.length>0; }
+function arDetectChar(text){ const lat=arLatChar(text); if(lat) return lat; const L=String(text||'').split('\n').find(l=>/[가-힣]{2}/.test(l))||''; ARX.nameRead=''; ARX.nameLead=null;
   /* t574: 화면 닉네임이 목록 이름과 '정확히' 같을 때만 그 캐릭터. 예전(자모 유사도 .5 · b294 ㅌ↔ㄷ 느슨 비교 · 부분 문자열)은 다른 이름도 가장 비슷한 캐릭터(트딕이)로 골랐음 → 폐기.
      허용: 줄 안의 한글 토큰(앞뒤 기호·숫자 떼고) == 이름의 한글 부분. 아주 엄격한 예외 하나: 글자 수 같고 자모 1개만 다르고, 그 거리로 맞는 이름이 목록에 하나뿐일 때. */
-  const toks=L.trim().split(/\s+/).map(x=>x.replace(/[^가-힣]/g,'')).filter(x=>x.length>=2); if(!toks.length) return ''; ARX.nameRead=toks.reduce((a,x)=>x.length>a.length?x:a,'');
-  const names=S.characters.map(c=>({c,h:c.name.replace(/[^가-힣]/g,'')})).filter(x=>x.h.length>=2);
-  for(const t of toks){ const ex=names.filter(x=>x.h===t); if(ex.length===1) return ex[0].c.id; }
+  const raw=L.trim().split(/\s+/).map(x=>({h:x.replace(/[^가-힣]/g,''),lead:arLeadTok(x)})).filter(x=>x.h.length>=2), toks=raw.map(x=>x.h); if(!toks.length) return ''; const best=raw.reduce((a,x)=>x.h.length>a.h.length?x:a,raw[0]); ARX.nameRead=best.h; ARX.nameLead=best.lead;
+  const names=S.characters.map(c=>({c,h:c.name.replace(/[^가-힣]/g,''),lead:arLeadName(c.name)})).filter(x=>x.h.length>=2);
+  for(const t of raw){ const ex=names.filter(x=>x.h===t.h); const m=ex.filter(x=>x.lead===t.lead); if(m.length===1&&(ex.length===1||m.length===1)&&!(m[0].lead&&!t.lead)) return m[0].c.id; } /* b375: 앞 기호 이름(2터래플)은 앞 기호가 읽혔을 때만, 같은 한글 이름이 둘이면 앞 기호 유무로 */
   /* t578: 자모 1개 차이 예외 폐기 — 실게임 프레임에서 '드딕미' 같은 오독이 목록의 다른 이름(드딕이)으로 잡혔음(오인식 14%) */
   return ''; }
 /* b294: 상태바 글꼴에서 OCR 이 거센소리↔예사소리(트↔드, 딕↔틱), 받침, ㅇ↔ㄴ 을 자주 헷갈림 → 같은 글자 수일 때 이걸 묶어서 한 번 더 비교 (드티니·드특니 → 트딕이) */
@@ -672,7 +677,7 @@ function arNameHp(src,sw,sh,r,k){ k=k||1; /* t620: k=2 → 768×56 (음절 대�
 function arNcc1(hp,T,xa,xb){ const W=AR_NT_W; let best=-1,bx=0; for(let y=0;y+T.h<=AR_NT_H;y++) for(let x=Math.max(0,xa);x<=xb&&x+T.w<=W;x++){ let a=0,q=0,b=0; for(let j=0;j<T.h;j++){ const ro=(y+j)*W+x, to=j*T.w; for(let i=0;i<T.w;i++){ const v=hp[ro+i]; a+=v; q+=v*v; b+=v*T.t[to+i]; } }
     const n=T.w*T.h, va=q-a*a/n; if(va<=1e-6) continue; const sc=b/(Math.sqrt(va)*T.n); if(sc>best){ best=sc; bx=x; } } return {sc:best,x:bx}; }
 function arNtMake(H){ if(H.x0<0||H.x1-H.x0<6) return null; const w=Math.min(AR_NT_W-H.x0,H.x1-H.x0+10), /* 뒤 빈칸 8px 포함 → '트딕' 템플릿이 '트딕이' 화면에 안 맞음 */ x=Math.max(0,H.x0-1), h=AR_NT_H-4, t=new Float32Array(w*h), raw=new Uint8Array(w*h); let m=0; for(let j=0;j<h;j++) for(let i=0;i<w;i++){ const v=H.d[(j+2)*AR_NT_W+x+i]; raw[j*w+i]=v; t[j*w+i]=v; m+=v; } m/=t.length; let n=0; for(let i=0;i<t.length;i++){ t[i]-=m; n+=t[i]*t[i]; } return n>0?{w,h,t,n:Math.sqrt(n),raw}:null; }
-function arNtLoad(){ if(ARX.ntpl) return ARX.ntpl; ARX.ntpl={}; try{ const J=JSON.parse(localStorage.getItem('arNTpl')||'{}'); for(const [k,v] of Object.entries(J)){ const raw=Uint8Array.from(atob(v.d),c=>c.charCodeAt(0)), t=new Float32Array(raw.length); let m=0; for(let i=0;i<raw.length;i++){ t[i]=raw[i]; m+=raw[i]; } m/=raw.length; let n=0; for(let i=0;i<t.length;i++){ t[i]-=m; n+=t[i]*t[i]; } ARX.ntpl[k]={w:v.w,h:v.h,t,n:Math.sqrt(n),raw}; } }catch(e){} return ARX.ntpl; }
+function arNtLoad(){ if(ARX.ntpl) return ARX.ntpl; ARX.ntpl={}; try{ const J=JSON.parse(localStorage.getItem('arNTpl')||'{}'); if(localStorage.getItem('arNTplV')!=='375'){ const hb=n=>n.replace(/[^가-힣]/g,''); for(const k of Object.keys(J)) if(S.characters.some(c=>c.name!==k&&hb(c.name)===hb(k))) delete J[k]; localStorage.setItem('arNTpl',JSON.stringify(J)); localStorage.setItem('arNTplV','375'); } /* b375: 예전에 '2터래플' 화면으로 잘못 배운 '터래플' 틀 등 — 한글이 같은 이름 짝의 틀은 한 번 지우고 다시 배움 */ for(const [k,v] of Object.entries(J)){ const raw=Uint8Array.from(atob(v.d),c=>c.charCodeAt(0)), t=new Float32Array(raw.length); let m=0; for(let i=0;i<raw.length;i++){ t[i]=raw[i]; m+=raw[i]; } m/=raw.length; let n=0; for(let i=0;i<t.length;i++){ t[i]-=m; n+=t[i]*t[i]; } ARX.ntpl[k]={w:v.w,h:v.h,t,n:Math.sqrt(n),raw}; } }catch(e){} return ARX.ntpl; }
 function arNtSave(){ try{ const J={}; for(const [k,v] of Object.entries(ARX.ntpl||{})){ let s=''; for(const b of v.raw) s+=String.fromCharCode(b); J[k]={w:v.w,h:v.h,d:btoa(s)}; } localStorage.setItem('arNTpl',JSON.stringify(J)); }catch(e){} }
 /* t613: 첫 캐릭터용 글꼴 템플릿 — 굴림 20px(획 1px)로 상태바 'Lv.xxx 이름'을 384×28 에 그려 같은 고역 처리.
    실영상 대조 결과 굴림 20px/획1/세로중심 4px 가 최고(정답 .63~.69). 전체 NCC 만으론 한 글자 다른 이름과 차이가 작아서
@@ -725,7 +730,7 @@ function arSylLearn(cid){ if(ARX.cfg.nameSyl===false) return; const H=ARX.nOcrHp
     let b=''; for(const x of avg) b+=String.fromCharCode(x); U[u]=btoa(b); got.push(u); }
   if(!got.length) return; try{ localStorage.setItem('arSyl',JSON.stringify(U)); }catch(e){ return; } ARX.sylT=null; arLog(`음절 학습: ${got.join(' ')} (${c.name})`); }
 function arNameTplTick(src,sw,sh,r,now){ if(ARX.cfg.nameTpl!==true) return null; /* t583: 오인식 0 조건 — 실게임 측정에서 OCR 오독(트딕이→드딕이)을 학습해 오인식을 늘려 기본 끔 */ const H=arNameHp(src,sw,sh,r); ARX.nTplT=now; if(H.E<40) return {blank:true,hp:H,x1:H.x1}; const L=arNtLoad(), sc=[];
-  for(const c of S.characters){ const T=L[c.name]; if(!T) continue; const m=arNcc1(H.d,T,40,150); sc.push([m.sc,c.id]); }
+  for(const c of S.characters){ const T=L[c.name]; if(!T) continue; const m=arNcc1(H.d,T,40,150); sc.push([H.x0>=0&&Math.abs(m.x-(H.x0-1))>3?-1:m.sc,c.id]); } /* b375: 이름 시작(x0)에 맞을 때만 — '터래플' 틀이 '2터래플' 화면의 '터' 자리에 맞던 것 막음 */
   sc.sort((a,b)=>b[0]-a[0]); ARX.nTplSc=sc.slice(0,3).map(x=>[x[1],+x[0].toFixed(3)]); const ok=sc.length&&sc[0][0]>=.88&&(sc.length<2||sc[0][0]-sc[1][0]>=.08);
   if(ok){ const cid=sc[0][1]; ARX.nameOk=true; ARX.cidT=now; ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='이미지'; arCidPut(cid,now,'이미지'); return {cid,hp:H,x1:H.x1}; }
   return {hp:H,x1:H.x1}; }
@@ -764,8 +769,12 @@ function arNameVote(){ const H=(ARX.nHist||[]).filter(Boolean), ok=[], no=[]; co
    예사소리 자리는 최근 20번 중 거센 읽기가 하나라도 있으면 없음(그 화면은 ㅌ 일 수 있음). */
 const AR_ICL={16:3,5:3,15:0,6:11,2:11,7:11,17:11,18:11,14:12} /* b348: ㅎ(18)도 ㅇ 묶음 — 실화면 '홀' 을 올·몰 로 읽음 */, AR_ASPI={16:1,15:1,17:1,14:1};
 function arSylM(t,X){ if(t.length!==X.length) return 0; let vm=0, im=0, strong=1; for(let i=0;i<X.length;i++){ const s=arSyl(t[i]), x=arSyl(X[i]); if(!s||!x) return 0; const ic=j=>AR_ICL[j]??j; if(ic(s[0])!==ic(x[0])){ if(X.length<5||++im>1) return 0; } /* b351: 5글자 이상 이름은 첫소리 1자 틀림 허용(홀드유웨이컵: 밝은 돌 배경 위 '홀'을 돌·들로 읽음) */ if(s[1]!==x[1]){ if(++vm>1) return 0; strong=0; } if(s[2]!==x[2]) strong=0; } return strong?2:1; }
-function arNameVote2(){ const A=(ARX.nHist||[]).filter(Boolean), H=A.slice(-10), ok=[], no=[];
-  for(const c of S.characters){ const X=c.name.replace(/[^가-힣]/g,''); if(X.length<2||/[A-Za-z0-9]/.test(c.name)) continue; const R=H.filter(t=>arSylM(t,X)), st=R.filter(t=>arSylM(t,X)===2).length;
+function arNameVote2(){ const NH=ARX.nHist||[], NL=ARX.nLead||[], off=NH.length-NL.length, AL=NH.map((t,i)=>({t,l:i-off>=0?NL[i-off]:null})).filter(x=>x.t), A=AL.map(x=>x.t), H=A.slice(-10), HL=AL.slice(-10), ok=[], no=[];
+  for(const c of S.characters){ const X=c.name.replace(/[^가-힣]/g,''); if(X.length<2||/[A-Za-z]/.test(c.name)||/[0-9]/.test(c.name.replace(/^[^가-힣]+/,''))) continue; const R=H.filter(t=>arSylM(t,X)), st=R.filter(t=>arSylM(t,X)===2).length;
+    /* b375: 앞 기호 이름(2터래플) = 맞는 읽기 중 앞 기호 읽힘이 절반 이상(≥2), 같은 한글 꼴 '앞 기호 없는' 짝이 목록에 있으면 그 짝은 앞 기호 읽힘 20% 이하일 때만 */
+    { const ld=arLeadName(c.name), RL=HL.filter(x=>arSylM(x.t,X)), kn=RL.filter(x=>x.l!==null), yes=kn.filter(x=>x.l).length, pair=S.characters.some(d=>d!==c&&arLeadName(d.name)!==ld&&(()=>{ const Y=d.name.replace(/[^가-힣]/g,''); return Y.length===X.length&&arSylM(Y,X); })());
+      if(ld&&!(yes>=2&&yes*2>=kn.length)){ if(kn.length>=4&&!yes) no.push(c.id); continue; }
+      if(!ld&&pair&&yes>kn.length*.2){ if(kn.length>=4&&yes*2>=kn.length) no.push(c.id); continue; } }
     if(R.length<3||!st){ if(H.length>=6&&!R.length) no.push(c.id); continue; }
     let good=true; [...X].forEach((ch,i)=>{ const x=arSyl(ch); if(!(x[0] in AR_ICL)&&!Object.values(AR_ICL).includes(x[0])) return; const asp=t=>{ const s=arSyl(t[i]); return s&&AR_ASPI[s[0]]; };
       if(AR_ASPI[x[0]]){ if(!R.some(asp)) good=false; } else if(x[0]===3||x[0]===0||x[0]===12||x[0]===7){ const M=A.slice(-20).filter(t=>arSylM(t,X)); if(M.filter(asp).length>=Math.max(1,M.length*(x[0]===0?.8:.2))) good=false; /* t602: 실영상 '겟로스트로바' — 화면 겟 을 켓 으로 ~50% 읽음(ㄱ→ㅋ 헛읽기는 흔함, ㄷ→ㅌ 은 0번) → ㄱ 자리는 거센 읽기 80% 이상일 때만 미정 */ /* 딕→틱 헛읽기(~8%)는 허용 */ } });
@@ -795,7 +804,7 @@ function arBlackTick(src,now){ const c=ARX.bkc||(ARX.bkc=document.createElement(
   if(dark){ if(!ARX.blackT0) ARX.blackT0=now; } else if(ARX.blackT0){ const len=now-ARX.blackT0; ARX.blackT0=0; if(len>=1500){ ARX.blackEnd=now; ARX.blackLen=len; } } }
 function arNameRes(t,eng){ ARX.nameText=t; const n2=Date.now(); ARX.nRes=(ARX.nRes||0)+1; let cid='';
   if(eng){ const toks=String(t||'').split(/\s+/).map(x=>x.replace(/[^A-Za-z0-9]/g,'').toLowerCase()).filter(x=>x.length>=3&&!/^l?v\d*$/.test(x)&&!/^\d+$/.test(x)); ARX.nameRead=''; (ARX.eHist=ARX.eHist||[]).push(toks.reduce((a,x)=>x.length>a.length?x:a,'')); if(ARX.eHist.length>8) ARX.eHist.shift(); }
-  else { arDetectChar(t); (ARX.nHist=ARX.nHist||[]).push(ARX.nameRead||''); if(ARX.nHist.length>20) ARX.nHist.shift(); }
+  else { arDetectChar(t); (ARX.nHist=ARX.nHist||[]).push(ARX.nameRead||''); if(ARX.nHist.length>20) ARX.nHist.shift(); (ARX.nLead=ARX.nLead||[]).push(ARX.nameRead?!!ARX.nameLead:null); if(ARX.nLead.length>20) ARX.nLead.shift(); } /* b375: 읽기마다 앞 기호 유무(뒤쪽 정렬로 nHist 와 짝) */
   { const v=arNameVote2(), e=arLatVote(); cid=v.cid&&e.cid&&v.cid!==e.cid?'':(v.cid||e.cid); const no=[...v.no,...e.no]; if(!cid&&ARX.det.cid&&no.includes(ARX.det.cid)&&!arNameSame()) arCidDrop(n2,'vote'); }
   if(cid){ ARX.cidImg=ARX.nprev?Uint8ClampedArray.from(ARX.nprev):null; ARX.nameOk=true; ARX.cidT=n2; ARX.unkName=0; ARX.nOther=[]; ARX.nameSrc='OCR'; try{ arNtLearn(cid); }catch(e){} try{ arSylLearn(cid); }catch(e){} arCidPut(cid,n2,'OCR'); return; }
   /* t574/t576: 목록과 정확히 같은 이름 → 그 캐릭터. 아니면 '다른 닉네임이 확실히 읽혔을 때만' '-' : ① 'Lv.NNN 이름' 꼴로 읽힘 ② 연속 두 번 비슷하게 읽힌 한글 이름이 지금 캐릭터 이름과 확실히 다름.
