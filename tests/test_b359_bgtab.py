@@ -37,7 +37,7 @@ try:
     check('캘린더 탭에서도 루프 속도 유지(이름·상자·배너)',Bm['n']>=8 and Bm['b']>=8 and Bm['w']>=5 and Bm['n']>=A['n']*.8,(A,Bm))
     pg.evaluate("()=>{ ARX.det.cid='c0'; ARX.nameOk=true; }"); pg.wait_for_timeout(500)
     ch=pg.evaluate("()=>document.getElementById('fakePip').contentDocument.querySelector('.ar-pipchar')?.textContent||''")
-    check('캘린더 탭에서도 PIP 캐릭터 줄 갱신(닉네임)','트딕이' in ch and 'Lv.285' in ch,ch)
+    check('캘린더 탭에서도 PIP 캐릭터 줄 갱신(닉네임)','트딕이' in ch and 'Lv.285' not in ch,ch)
     r=pg.evaluate("""async()=>{ const bo=BOSSES.find(b=>b.id==='kaling'); ARX.det.boss='kaling'; ARX.det.diff='easy'; window.arBoxOk=()=>true; ARX.rwl=null; const c=arCandidates(true); const it=(c.find(x=>x.k==='r_white')||c[0])?.k; arRecord(it,.95,'공중'); await new Promise(r=>setTimeout(r,600));
       const d=document.getElementById('fakePip').contentDocument; return {it, n:(ARX.sessRec||[]).length, pip:d.querySelector('.ar-prh')?.textContent||'', tab, cid:ARX.det.cid}; }""")
     check('캘린더 탭에서 득템 기록 → PIP 득템 목록 1개',r['n']==1 and '1개' in r['pip'] and r['tab']=='cal',r)

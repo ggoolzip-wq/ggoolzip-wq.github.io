@@ -37,7 +37,7 @@ try:
     check('캐릭터 줄이 보상 맵 인식 칸 위',r and r['b']<=r['cb']+1 and r['h']>=20,r)
     check('미인식 표시',r and '미인식' in r['t'],r)
     pg.evaluate("()=>{ ARX.det.cid='c0'; }"); pg.wait_for_timeout(500); r=pg.evaluate(PC); print(r)
-    check('실시간: 인식되면 이름·Lv·월드 표시(따로 그리기 호출 없이)',r and '트딕이' in r['t'] and 'Lv.285' in r['t'] and '스카니아' in r['t'],r)
+    check('실시간: 인식되면 이름 표시(따로 그리기 호출 없이) — b376: Lv·월드 없음, [최소화]',r and '트딕이' in r['t'] and 'Lv.285' not in r['t'] and '스카니아' not in r['t'] and '최소화' in r['t'],r)
     check('아바타 있음',r and r['img'],r)
     for k in ['eye','belt','h_pocket']*4: pg.evaluate(REC,['lucid',k])
     pg.wait_for_timeout(200); f=pg.evaluate(FIT); check('창 안에 다 들어감(스크롤 없음)',f['sh']<=f['ih']+1 and f['sw']<=f['iw']+1,f)
