@@ -1173,7 +1173,7 @@ async function arPipOpen(cb){ cb=cb||arPipCard(); if(!cb||ARX.pip) return false;
 /* b341: Document PiP 는 최소 크기를 못 정함 → resize 때 더 작아지면 처음 크기로 resizeTo (안 되는 환경이면 CSS 최소 크기 = 줄지 않고 스크롤) */
 /* b376 (t409u): PIP 최소화 — 1줄 닉네임 + [최소화 해제], 2줄 보상 맵 인식. 메소·득템 목록·수익 칸은 숨김(수익 칸 대기 줄은 그대로 남음).
  * 최소화 중 새 득템(ARX.sessRec 가 최소화할 때보다 늘었거나 수익/고르기 대기 ARX.saleQ 가 있으면) → 보스 옆 선홍 '·득템 기록 확인'. 해제하면 확인한 것으로 봄. 상태 = localStorage 'arPipMin' */
-const AR_PIP_HMIN=96;
+const AR_PIP_HMIN=88;
 function arPipMinGet(){ try{ return localStorage.getItem('arPipMin')==='1'; }catch(e){ return false; } }
 function arPipMinBtn(){ const m=!!(ARX.pip&&ARX.pip.min); return `<button type="button" class="neonBtn nb-cyan nb-sm ar-pipminb" data-pipmin="${m?0:1}" aria-pressed="${m}" title="${m?'PIP 창 전체 보기':'PIP 창을 두 줄로 작게'}">${m?'최소화 해제':'최소화'}</button>`; }
 function arPipMinNew(){ const P=ARX.pip; return !!(P&&P.min&&(((ARX.sessRec||[]).length>(P.seen||0))||(ARX.saleQ||[]).length)); }
