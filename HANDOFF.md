@@ -8,10 +8,14 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b377 (t410u) PIP '·득템 기록 확인' 애니메이션
+- .ar-pmnew: 선홍 알약 배경(흰 글씨) + 훈장 경고와 같은 mwFade 2.4s(주기적으로 옅어짐) + ::after 흰 빛줄기 mwShine .7s. 라이트 = #e0144c 배경. prefers-reduced-motion 이면 애니 끔. 키프레임은 .medalwarn 것 재사용.
+- 테스트: tests/test_b376_pipmin.py 에 애니 확인 추가. 스크린샷 /workspace/b377/. dataset.build='b377'.
+
 ## b376 (t409u) PIP 최소화 — 레벨·월드 없앰 + [최소화] → 2줄 + 선홍 '·득템 기록 확인'
 - PIP 캐릭터 줄(.ar-pipchar): Lv·직업·월드(.ar-pcm) 삭제 → 아바타·닉네임 + 오른쪽 끝 [최소화] (.neonBtn nb-cyan nb-sm .ar-pipminb, data-pipmin). 미인식 땐 [이 캐릭터예요] 뒤에 버튼.
 - 최소화(arPipSetMin): body.pip-min → 보유 메소·이번 라이브 득템·수익/고르기 칸·'보상 맵 인식' 제목(닫기 버튼 포함) 숨김. 1줄 = 닉네임 + [최소화 해제], 2줄 = arPipMinRow '● 보상 맵' + 보스 아이콘·이름·난이도(보상 맵 아니면 '-'). 창 높이 368 → AR_PIP_HMIN 88 (style.ar-pipmin 최소 크기·resize 되돌림 높이 ARX.pip.minH 도 바꿈, resizeTo 는 PIP 안 클릭이라 사용자 동작 있음). 해제 = 368 로 되돌림.
-- '·득템 기록 확인'(.ar-pmnew 선홍 #ff3b6b / 라이트 #e0144c, 정적): 최소화 중 ARX.sessRec 가 최소화(또는 PIP 열 때)보다 늘었거나 ARX.saleQ(수익 기록·반지/칠흑 고르기 대기)가 있으면 보스 옆에. 보상 맵을 벗어나면 마지막 득템 보스 이름(회색) 옆에 유지. [최소화 해제] = 확인한 것으로 봄(seen 갱신). 수익 대기 줄은 숨겨져 있어도 그대로 → 해제하면 수익 칸 보임.
+- '·득템 기록 확인'(.ar-pmnew 선홍 #ff3b6b / 라이트 #e0144c; b377부터 애니메이션): 최소화 중 ARX.sessRec 가 최소화(또는 PIP 열 때)보다 늘었거나 ARX.saleQ(수익 기록·반지/칠흑 고르기 대기)가 있으면 보스 옆에. 보상 맵을 벗어나면 마지막 득템 보스 이름(회색) 옆에 유지. [최소화 해제] = 확인한 것으로 봄(seen 갱신). 수익 대기 줄은 숨겨져 있어도 그대로 → 해제하면 수익 칸 보임.
 - 상태 localStorage 'arPipMin' (PIP 닫았다 열거나 새로고침 후에도 유지).
 - 테스트: tests/test_b376_pipmin.py (run_all 등록), test_b349_pipchar·test_b359_bgtab 기대값(Lv 없음) 갱신. test_b347_pipshort '최소 높이 ≤320' 은 b351(368) 부터 이미 실패(기존). run_par: tracker53·b213·b288·b370_calmulti = 기존 실패, 새 실패 없음. 스크린샷 /workspace/b376/ (b376_full·b376_min·b376_min_new·b376_min_left). dataset.build='b376'.
 - 배포 확인(15:09 KST): bossmaple.pages.dev·ggoolzip-wq.github.io 둘 다 build b376.

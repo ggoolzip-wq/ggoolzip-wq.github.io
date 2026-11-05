@@ -2464,6 +2464,11 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 .arpipw .ar-pminrow .ar-pmb .bicon{flex:none;width:22px;height:22px;border-radius:6px}
 .arpipw .ar-pminrow .ar-pmb .ar-bn{flex:none}.arpipw .ar-pminrow .ar-pmb .dimg{flex:none;max-height:18px;width:auto}
 .arpipw .ar-pminrow .ar-pmlast{color:var(--muted,#8a93a8);font-size:.85rem}
-.arpipw .ar-pmnew{flex:none;color:#ff3b6b;font-size:.78rem;font-weight:800;text-shadow:0 0 6px rgba(255,59,107,.45)}
-[data-theme=light] .arpipw .ar-pmnew{color:#e0144c;text-shadow:none}
+/* b377 (t410u): 훈장 경고(.medalwarn)와 같은 mwFade 2.4s + 흰 빛줄기 mwShine .7s */
+.arpipw .ar-pmnew{flex:none;position:relative;overflow:hidden;white-space:nowrap;color:#fff;font-size:.78rem;font-weight:800;padding:1px 8px;border-radius:999px;
+  background:linear-gradient(90deg,rgba(255,59,107,.35),rgba(255,59,107,.7) 50%,rgba(255,59,107,.35));text-shadow:0 1px 2px rgba(0,0,0,.6);animation:mwFade 2.4s ease-in-out infinite}
+.arpipw .ar-pmnew::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:35%;transform:skewX(-20deg);pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:mwShine .7s linear infinite}
+[data-theme=light] .arpipw .ar-pmnew{background:linear-gradient(90deg,rgba(224,20,76,.7),#e0144c 50%,rgba(224,20,76,.7));text-shadow:none}
+@media (prefers-reduced-motion:reduce){.arpipw .ar-pmnew,.arpipw .ar-pmnew::after{animation:none}}
 [data-theme=light] .arpipw .ar-pml.rew{color:#0a8f3c}
