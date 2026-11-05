@@ -2480,3 +2480,6 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 [data-theme=light] .arpipw .ar-pmnew{color:#e0144c;text-shadow:none}
 @media (prefers-reduced-motion:reduce){.arpipw .ar-pminrow.ar-pmwarn,.arpipw .ar-pminrow.ar-pmwarn::after{animation:none}}
 [data-theme=light] .arpipw .ar-pml.rew{color:#0a8f3c}
+
+/* b381 (t422): 득템 기록 확인 중 보스 칸 = 누르면 최소화 해제 */
+.arpipw .ar-pminrow.ar-pmwarn{cursor:pointer}

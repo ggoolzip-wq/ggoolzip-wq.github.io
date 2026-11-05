@@ -2604,6 +2604,9 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 [data-theme=light] .arpipw .ar-pmnew{color:#e0144c;text-shadow:none}
 @media (prefers-reduced-motion:reduce){.arpipw .ar-pminrow.ar-pmwarn,.arpipw .ar-pminrow.ar-pmwarn::after{animation:none}}
 [data-theme=light] .arpipw .ar-pml.rew{color:#0a8f3c}
+
+/* b381 (t422): 득템 기록 확인 중 보스 칸 = 누르면 최소화 해제 */
+.arpipw .ar-pminrow.ar-pmwarn{cursor:pointer}
 </style>
 </head>
 <body>
@@ -6807,7 +6810,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b380'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b381'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -8583,7 +8586,7 @@ function arPipMinNew(){ const P=ARX.pip; return !!(P&&P.min&&(((ARX.sessRec||[])
 function arPipMinRow(rew,b,d){ const nw=arPipMinNew(), r0=(ARX.sessRec||[])[0];
   const bl=rew&&b?`<span class="ar-bline ar-pmb">${typeof bossIcon==='function'?bossIcon(b):''}<span class="ar-bn">${esc(b.name)}</span>${d?' '+(typeof diffImg==='function'?diffImg(d):esc(D[d])):''}</span>`:(nw&&r0&&r0.b?`<span class="ar-pmb ar-pmlast">${esc(r0.b)}</span>`:`<span class="dim ar-pmb">-</span>`);
   return `<div class="ar-pminrow${nw?' ar-pmwarn':''}"><span class="ar-pml${rew?' rew':''}"><i class="ar-dot"></i>보상 맵</span>${bl}${nw?'<span class="ar-pmnew">·득템 기록 확인</span>':''}</div>`; }
-function arPipMinClick(e){ const t=e.target.closest&&e.target.closest('[data-pipmin]'); if(!t) return; e.preventDefault(); arPipSetMin(t.dataset.pipmin==='1'); }
+function arPipMinClick(e){ const t=e.target.closest&&e.target.closest('[data-pipmin]'); if(!t){ const r=e.target.closest&&e.target.closest('.ar-pminrow'); if(r&&ARX.pip&&ARX.pip.min&&arPipMinNew()){ e.preventDefault(); arPipSetMin(false); } return; } /* b381 (t422): 득템 기록 확인 중일 때만 보스 칸 눌러 최소화 해제 */ e.preventDefault(); arPipSetMin(t.dataset.pipmin==='1'); }
 function arPipSetMin(on,init){ const P=ARX.pip; if(!P) return; on=!!on; if(!init&&P.min===on) return; P.min=on; if(!on) P.seen=(ARX.sessRec||[]).length; else if(!init) P.seen=(ARX.sessRec||[]).length; try{ localStorage.setItem('arPipMin',on?'1':'0'); }catch(e){}
   const w=P.win, d=w.document; d.body.classList.toggle('pip-min',on); P.minH=on?AR_PIP_HMIN:AR_PIP_H; const st=d.querySelector('style.ar-pipmin'); if(st) st.textContent=`html,body{min-width:${P.minW}px;min-height:${P.minH}px}`;
   const bb=P.card.querySelector('.ar-b'); if(bb){ bb._arH=null; bb._arFit=null; } const pc=d.querySelector('.ar-pipchar'); if(pc) pc._arH=null;

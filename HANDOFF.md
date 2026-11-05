@@ -2959,3 +2959,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - n4: 하네스 9.04초 seren/hard (이전: 못 찾음). 프레임 단위로는 8.80초(메시지 첫 프레임)부터 인식. n6 던켈은 메시지·상자 처치 없음 → 해결 불가.
 - 하네스 counted 가 비는 이유: ARX.counted 는 채팅 로그 OCR 줄만 채움. 아이콘 인식은 ARX.runRec(rr 칸).
 - test_b239/b288 실패는 b330에서도 동일(기존).
+
+## b381 (2026-11-05 KST) t422: PIP 최소화 중 득템 기록 확인일 때만 보스 칸 눌러 해제
+- arPipMinClick: [data-pipmin] 아니면 .ar-pminrow 클릭 + P.min + arPipMinNew()(새 득템/saleQ) 일 때만 arPipSetMin(false). 평소엔 아무 일 없음.
+- extra.css: .ar-pminrow.ar-pmwarn cursor:pointer. 테스트 tests/test_b381.py, 스크린샷 /workspace/b381/b381_*.png.
