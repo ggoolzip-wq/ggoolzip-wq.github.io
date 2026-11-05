@@ -51,9 +51,11 @@ try:
     check('최소화 상태 localStorage 저장',pg.evaluate("localStorage.getItem('arPipMin')")=='1')
     shot(pg,os.path.join(OUT,'b376_min.png'))
     pg.evaluate(REC,['lucid','h_pocket']); pg.wait_for_timeout(400); r=pg.evaluate(B); print(r)
-    check("득템 → 보스 옆 선홍 '·득템 기록 확인'",r['nw']=='·득템 기록 확인' and r['nwc'] in ('rgb(255, 59, 107)',) and r['nwAnim'] in ('none',''),r)
+    check("득템 → 보스 옆 선홍 '·득템 기록 확인'",r['nw']=='·득템 기록 확인' and r['nwc']=='rgb(255, 255, 255)' and r['nwAnim']=='mwFade' and pg.evaluate("()=>getComputedStyle(document.getElementById('fakePip').contentDocument.querySelector('.ar-pmnew'),'::after').animationName")=='mwShine',r)  # b377: 훈장 경고 애니
     check('득템 후에도 2줄 유지(스크롤 없음)',r['sh']<=r['ih']+1 and not r['rec'],r)
     shot(pg,os.path.join(OUT,'b376_min_new.png'))
+    for i,t in enumerate([0,250,1200,700]):  # b377: 애니 프레임
+        pg.wait_for_timeout(t); shot(pg,os.path.join(OUT,f'b377_anim_{i}.png'))
     pg.evaluate("()=>{ window.__bs=window.arBossState; window.arBossState=()=>''; ARX.det.boss=''; ARX.rew=null; arLivePaint(); }"); pg.wait_for_timeout(400); r=pg.evaluate(B); print(r)
     lg=pg.evaluate("()=>{ const d=document.getElementById('fakePip').contentDocument; return [!!d.querySelector('.ar-pml.rew'),!!d.querySelector('.ar-pmlast')]; }")
     check('보상 맵을 벗어나도 마지막 득템 보스 이름 + 표시 유지 (초록 점 꺼짐)',r['row'] and '루시드' in r['row'] and r['nw']=='·득템 기록 확인' and lg==[False,True],(r,lg))
