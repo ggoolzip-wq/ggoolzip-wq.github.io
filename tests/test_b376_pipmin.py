@@ -1,4 +1,4 @@
-# test_b376 (t409u): PIP 레벨·월드 없앰 + [최소화] → 2줄(닉네임+[최소화 해제] / 보상 맵), 득템 시 선홍 '·득템 기록 확인'. MBT_SHOTDIR 에 b376_full.png·b376_min.png·b376_min_new.png
+# test_b376 (t409u·t414u/b378): PIP 최소화 + 득템 시 선홍 '·득템 기록 확인'(정적) + 보스 칸(.ar-pminrow.ar-pmwarn) 훈장경고 애니. MBT_SHOTDIR 에 b376_*.png·b378_anim_*.png
 # 원본 test_b349 (t655): PIP 맨 위 현재 캐릭터 한 줄(아바타·이름·Lv/직업·월드 / 인식 중·미인식), 실시간 갱신, 스크롤 없음. 원본 b347 틀
 # (b347 t651): PIP 위치 안내 없앰 + 창 높이 최소화 (상태 칸·득템 목록·수익 칸·반지 고르기 유지). MBT_SHOTDIR 에 pip_idle.png, pip_sale.png
 #  headless 에 documentPictureInPicture 없음 → iframe 창 흉내(resizeTo = iframe 크기 바꿈)
@@ -25,8 +25,8 @@ def shot(pg,n):
 FIT="""()=>{ const d=document.getElementById('fakePip').contentDocument, w=d.defaultView; return {sh:d.documentElement.scrollHeight, ih:w.innerHeight, iw:w.innerWidth, sw:d.documentElement.scrollWidth}; }"""
 VIS="""s=>{ const d=document.getElementById('fakePip').contentDocument, e=d.querySelector(s); if(!e) return null; const r=e.getBoundingClientRect(); return {h:r.height,b:r.bottom,ih:d.defaultView.innerHeight,show:getComputedStyle(e).display!=='none'&&r.height>0}; }"""
 
-B="""()=>{ const d=document.getElementById('fakePip').contentDocument, q=s=>d.querySelector(s), R=e=>e?e.getBoundingClientRect():null, vis=s=>{ const e=q(s); return !!e&&getComputedStyle(e).display!=='none'&&R(e).height>0; }; const pc=q('.ar-pipchar'), mb=q('.ar-pipchar .ar-pipminb'), nw=q('.ar-pmnew'), cb=q('.ar-cboss');
- return {pc:pc.textContent, btn:mb?mb.textContent:null, btnCls:mb?mb.className:'', btnR:mb?R(mb).right:0, iw:d.defaultView.innerWidth, ih:d.defaultView.innerHeight, sh:d.documentElement.scrollHeight, min:d.body.classList.contains('pip-min'), meso:vis('.ar-pipmeso'), rec:vis('.ar-piprec'), sale:vis('.ar-pipsale'), h2:vis('.ar-cboss h2'), row:q('.ar-pminrow')?q('.ar-pminrow').textContent:null, nw:nw?nw.textContent:null, nwc:nw?getComputedStyle(nw).color:null, nwAnim:nw?getComputedStyle(nw).animationName:null, cbb:R(cb).bottom, minH:window.AR.pip.minH}; }"""
+B="""()=>{ const d=document.getElementById('fakePip').contentDocument, q=s=>d.querySelector(s), R=e=>e?e.getBoundingClientRect():null, vis=s=>{ const e=q(s); return !!e&&getComputedStyle(e).display!=='none'&&R(e).height>0; }; const pc=q('.ar-pipchar'), mb=q('.ar-pipchar .ar-pipminb'), nw=q('.ar-pmnew'), row=q('.ar-pminrow'), cb=q('.ar-cboss');
+ return {pc:pc.textContent, btn:mb?mb.textContent:null, btnCls:mb?mb.className:'', btnR:mb?R(mb).right:0, iw:d.defaultView.innerWidth, ih:d.defaultView.innerHeight, sh:d.documentElement.scrollHeight, min:d.body.classList.contains('pip-min'), meso:vis('.ar-pipmeso'), rec:vis('.ar-piprec'), sale:vis('.ar-pipsale'), h2:vis('.ar-cboss h2'), row:row?row.textContent:null, rowCls:row?row.className:'', rowAnim:row?getComputedStyle(row).animationName:null, rowShine:row?getComputedStyle(row,'::after').animationName:null, nw:nw?nw.textContent:null, nwc:nw?getComputedStyle(nw).color:null, nwAnim:nw?getComputedStyle(nw).animationName:null, cbb:R(cb).bottom, minH:window.AR.pip.minH}; }"""
 CLICK="""()=>document.getElementById('fakePip').contentDocument.querySelector('.ar-pipminb').click()"""
 try:
   with sync_playwright() as p:
@@ -51,11 +51,11 @@ try:
     check('최소화 상태 localStorage 저장',pg.evaluate("localStorage.getItem('arPipMin')")=='1')
     shot(pg,os.path.join(OUT,'b376_min.png'))
     pg.evaluate(REC,['lucid','h_pocket']); pg.wait_for_timeout(400); r=pg.evaluate(B); print(r)
-    check("득템 → 보스 옆 선홍 '·득템 기록 확인'",r['nw']=='·득템 기록 확인' and r['nwc']=='rgb(255, 255, 255)' and r['nwAnim']=='mwFade' and pg.evaluate("()=>getComputedStyle(document.getElementById('fakePip').contentDocument.querySelector('.ar-pmnew'),'::after').animationName")=='mwShine',r)  # b377: 훈장 경고 애니
+    check("득템 → 보스 옆 선홍 '·득템 기록 확인'(정적) + 보스 칸 훈장경고 애니",r['nw']=='·득템 기록 확인' and r['nwc']=='rgb(255, 59, 107)' and (r['nwAnim'] in (None,'none')) and 'ar-pmwarn' in (r['rowCls'] or '') and r['rowAnim']=='mwFade' and r['rowShine']=='mwShine',r)  # b378: 애니=보스 칸
     check('득템 후에도 2줄 유지(스크롤 없음)',r['sh']<=r['ih']+1 and not r['rec'],r)
     shot(pg,os.path.join(OUT,'b376_min_new.png'))
-    for i,t in enumerate([0,250,1200,700]):  # b377: 애니 프레임
-        pg.wait_for_timeout(t); shot(pg,os.path.join(OUT,f'b377_anim_{i}.png'))
+    for i,t in enumerate([0,250,1200,700]):  # b378: 보스 칸 애니 프레임
+        pg.wait_for_timeout(t); shot(pg,os.path.join(OUT,f'b378_anim_{i}.png'))
     pg.evaluate("()=>{ window.__bs=window.arBossState; window.arBossState=()=>''; ARX.det.boss=''; ARX.rew=null; arLivePaint(); }"); pg.wait_for_timeout(400); r=pg.evaluate(B); print(r)
     lg=pg.evaluate("()=>{ const d=document.getElementById('fakePip').contentDocument; return [!!d.querySelector('.ar-pml.rew'),!!d.querySelector('.ar-pmlast')]; }")
     check('보상 맵을 벗어나도 마지막 득템 보스 이름 + 표시 유지 (초록 점 꺼짐)',r['row'] and '루시드' in r['row'] and r['nw']=='·득템 기록 확인' and lg==[False,True],(r,lg))

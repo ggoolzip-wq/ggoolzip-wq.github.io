@@ -1172,14 +1172,14 @@ async function arPipOpen(cb){ cb=cb||arPipCard(); if(!cb||ARX.pip) return false;
   ARX.pip={win:w,card:cb,ph,minW:W0,minH:H0}; arPipMinCss(w.document,W0,H0); w.addEventListener('resize',()=>arPipMin(w,W0,ARX.pip&&ARX.pip.win===w?ARX.pip.minH:H0)); w.document.addEventListener('click',arPipMinClick); ARX.pip.min=false; ARX.pip.seen=(ARX.sessRec||[]).length; if(arPipMinGet()) arPipSetMin(true,1); w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); try{ arPanelLive(); }catch(e){} arFitBoss(); arPipAskHide(); arPipPlace(w,W0,H0); return true; }
 /* b341: Document PiP 는 최소 크기를 못 정함 → resize 때 더 작아지면 처음 크기로 resizeTo (안 되는 환경이면 CSS 최소 크기 = 줄지 않고 스크롤) */
 /* b376 (t409u): PIP 최소화 — 1줄 닉네임 + [최소화 해제], 2줄 보상 맵 인식. 메소·득템 목록·수익 칸은 숨김(수익 칸 대기 줄은 그대로 남음).
- * 최소화 중 새 득템(ARX.sessRec 가 최소화할 때보다 늘었거나 수익/고르기 대기 ARX.saleQ 가 있으면) → 보스 옆 선홍 '·득템 기록 확인'. 해제하면 확인한 것으로 봄. 상태 = localStorage 'arPipMin' */
+ * 최소화 중 새 득템(ARX.sessRec 가 최소화할 때보다 늘었거나 수익/고르기 대기 ARX.saleQ 가 있으면) → 보스 옆 선홍 '·득템 기록 확인' + 보스 칸(.ar-pminrow.ar-pmwarn) 훈장경고 애니. 해제하면 확인한 것으로 봄. 상태 = localStorage 'arPipMin' */
 const AR_PIP_HMIN=88;
 function arPipMinGet(){ try{ return localStorage.getItem('arPipMin')==='1'; }catch(e){ return false; } }
 function arPipMinBtn(){ const m=!!(ARX.pip&&ARX.pip.min); return `<button type="button" class="neonBtn nb-cyan nb-sm ar-pipminb" data-pipmin="${m?0:1}" aria-pressed="${m}" title="${m?'PIP 창 전체 보기':'PIP 창을 두 줄로 작게'}">${m?'최소화 해제':'최소화'}</button>`; }
 function arPipMinNew(){ const P=ARX.pip; return !!(P&&P.min&&(((ARX.sessRec||[]).length>(P.seen||0))||(ARX.saleQ||[]).length)); }
 function arPipMinRow(rew,b,d){ const nw=arPipMinNew(), r0=(ARX.sessRec||[])[0];
   const bl=rew&&b?`<span class="ar-bline ar-pmb">${typeof bossIcon==='function'?bossIcon(b):''}<span class="ar-bn">${esc(b.name)}</span>${d?' '+(typeof diffImg==='function'?diffImg(d):esc(D[d])):''}</span>`:(nw&&r0&&r0.b?`<span class="ar-pmb ar-pmlast">${esc(r0.b)}</span>`:`<span class="dim ar-pmb">-</span>`);
-  return `<div class="ar-pminrow"><span class="ar-pml${rew?' rew':''}"><i class="ar-dot"></i>보상 맵</span>${bl}${nw?'<span class="ar-pmnew">·득템 기록 확인</span>':''}</div>`; }
+  return `<div class="ar-pminrow${nw?' ar-pmwarn':''}"><span class="ar-pml${rew?' rew':''}"><i class="ar-dot"></i>보상 맵</span>${bl}${nw?'<span class="ar-pmnew">·득템 기록 확인</span>':''}</div>`; }
 function arPipMinClick(e){ const t=e.target.closest&&e.target.closest('[data-pipmin]'); if(!t) return; e.preventDefault(); arPipSetMin(t.dataset.pipmin==='1'); }
 function arPipSetMin(on,init){ const P=ARX.pip; if(!P) return; on=!!on; if(!init&&P.min===on) return; P.min=on; if(!on) P.seen=(ARX.sessRec||[]).length; else if(!init) P.seen=(ARX.sessRec||[]).length; try{ localStorage.setItem('arPipMin',on?'1':'0'); }catch(e){}
   const w=P.win, d=w.document; d.body.classList.toggle('pip-min',on); P.minH=on?AR_PIP_HMIN:AR_PIP_H; const st=d.querySelector('style.ar-pipmin'); if(st) st.textContent=`html,body{min-width:${P.minW}px;min-height:${P.minH}px}`;

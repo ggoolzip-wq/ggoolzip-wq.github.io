@@ -2450,7 +2450,7 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 .calbr .calbt{margin-top:10px}
 .calsbs{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;min-width:0}.calsb{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 
-/* b376 (t409u): PIP 최소화 — 캐릭터 줄(닉네임 + [최소화]/[최소화 해제]) + 보상 맵 한 줄만. 득템 감지 시 보스 옆 선홍 '·득템 기록 확인' (정적, 애니메이션 없음) */
+/* b376 (t409u): PIP 최소화 — 캐릭터 줄(닉네임 + [최소화]/[최소화 해제]) + 보상 맵 한 줄만. 득템 감지 시 보스 옆 선홍 '·득템 기록 확인' (b378: 문구 정적, 보스 칸 전체에 훈장경고 애니) */
 .arpipw .ar-pipchar .ar-pcn{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .arpipw .ar-pipchar .ar-pipminb{margin-left:auto;flex:none;padding:2px 9px;font-size:.72rem;line-height:1.3;white-space:nowrap}
 .arpipw .ar-pipchar .ar-teach+.ar-pipminb{margin-left:4px}
@@ -2464,11 +2464,13 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 .arpipw .ar-pminrow .ar-pmb .bicon{flex:none;width:22px;height:22px;border-radius:6px}
 .arpipw .ar-pminrow .ar-pmb .ar-bn{flex:none}.arpipw .ar-pminrow .ar-pmb .dimg{flex:none;max-height:18px;width:auto}
 .arpipw .ar-pminrow .ar-pmlast{color:var(--muted,#8a93a8);font-size:.85rem}
-/* b377 (t410u): 훈장 경고(.medalwarn)와 같은 mwFade 2.4s + 흰 빛줄기 mwShine .7s */
-.arpipw .ar-pmnew{flex:none;position:relative;overflow:hidden;white-space:nowrap;color:#fff;font-size:.78rem;font-weight:800;padding:1px 8px;border-radius:999px;
-  background:linear-gradient(90deg,rgba(255,59,107,.35),rgba(255,59,107,.7) 50%,rgba(255,59,107,.35));text-shadow:0 1px 2px rgba(0,0,0,.6);animation:mwFade 2.4s ease-in-out infinite}
-.arpipw .ar-pmnew::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:35%;transform:skewX(-20deg);pointer-events:none;
+/* b378 (t414u): 득템 시 보스 칸 전체(.ar-pminrow.ar-pmwarn)에 훈장 경고와 같은 mwFade+mwShine. ·득템 기록 확인(.ar-pmnew)은 정적 선홍 글씨만 */
+.arpipw .ar-pminrow.ar-pmwarn{position:relative;overflow:hidden;border-radius:6px;padding:0 4px;box-sizing:border-box;
+  background:linear-gradient(90deg,rgba(220,20,40,.18),rgba(230,30,50,.42) 50%,rgba(220,20,40,.18));animation:mwFade 2.4s ease-in-out infinite}
+.arpipw .ar-pminrow.ar-pmwarn::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:35%;transform:skewX(-20deg);pointer-events:none;z-index:0;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:mwShine .7s linear infinite}
-[data-theme=light] .arpipw .ar-pmnew{background:linear-gradient(90deg,rgba(224,20,76,.7),#e0144c 50%,rgba(224,20,76,.7));text-shadow:none}
-@media (prefers-reduced-motion:reduce){.arpipw .ar-pmnew,.arpipw .ar-pmnew::after{animation:none}}
+.arpipw .ar-pminrow.ar-pmwarn > *{position:relative;z-index:1}
+.arpipw .ar-pmnew{flex:none;white-space:nowrap;color:#ff3b6b;font-size:.78rem;font-weight:800;text-shadow:0 0 6px rgba(255,59,107,.45)}
+[data-theme=light] .arpipw .ar-pmnew{color:#e0144c;text-shadow:none}
+@media (prefers-reduced-motion:reduce){.arpipw .ar-pminrow.ar-pmwarn,.arpipw .ar-pminrow.ar-pmwarn::after{animation:none}}
 [data-theme=light] .arpipw .ar-pml.rew{color:#0a8f3c}
