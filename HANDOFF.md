@@ -14,6 +14,7 @@
 - 고침(src/autorec.js): arLeadTok(토큰) = 한글 앞에 붙은 글자(2·<·ㅇ 등, 단 레벨 3자리 '.285' 만 붙은 건 아님) · arLeadName(이름). arDetectChar 는 ARX.nameLead 도 남기고 같은 한글 이름이 여럿이면 앞 기호로 고름. arNameRes 가 ARX.nLead(nHist 와 뒤쪽 정렬 짝, 최대 20) 기록. arNameVote2: 앞 숫자 이름 허용(한글 뒤 숫자·영문은 그대로 제외) — 앞 기호 이름은 맞는 읽기 중 앞 기호 ≥2·≥절반, 앞 기호 없는 이름은 짝(같은 한글 꼴 앞 기호 이름)이 목록에 있을 때 앞 기호 ≤20%. 모르는(옛 nHist 만) 읽기는 앞 기호 이름엔 불충분. arNameTplTick: 틀 위치가 이름 시작(x0-1) ±3px 일 때만. arNtLoad: 'arNTplV'≠375 면 한글이 같은 이름 짝의 저장 틀 한 번 삭제(잘못 배운 터래플 틀).
 - 결과: 같은 라이브 실험 → 2터래플(1초 안), 2터래플만 등록 → 2터래플, b284 s10(Lv.289 터래플) → 터래플(음절), 같은 세션 터래플 → 2터래플 화면 전환도 2터래플.
 - 한계: JPEG 재압축본에선 OCR 이 '2러래플'만 읽어 ㅌ 거센소리 규칙(거센 읽기 ≥1)으로 미정 '-' (예전과 같음, 오인식은 아님).
+- 배포 확인(12:4x KST): bossmaple.pages.dev·ggoolzip-wq.github.io 둘 다 build b375. 라이브 주소(bossmaple.pages.dev)에서도 같은 가짜 화면 공유 실험 → 2터래플 (/workspace/b375/live_after_panel.png). run_par: 새 실패 없음(tracker53 은 b374 index 로도 같은 7개 실패 = 기존, b370_calmulti 칸 테두리·b213·b288 기존).
 - 테스트: tests/test_b375_leadname.py (+fixtures/b375/live_2terraple.png = 사용자 스샷 상태바 부분만 남김), run_all 등록. 스크린샷 /workspace/b375/{before,after}_{explain,panel,char}.png. dataset.build='b375'.
 
 ## b374 (t690)
