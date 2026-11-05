@@ -86,7 +86,7 @@ function arDetectBMap(text){ let best=null;
   for(const line of String(text||'').split('\n')){ const L=line.trim(); if(!L) continue; const nm0=arNorm(L.replace(/<[^<>]*>?\s*$/,'').split(/[:：]/).filter(x=>arNorm(x).length>=2).pop()||''), nm=nm0.replace(/[0-9]+$/,''); if(nm.length<2) continue; /* t579: 1366 에서 '<이지>'가 '4011:'로 읽혀 끝 ':' 때문에 이름이 비었음 */
     for(const [n,id,k] of AR_BMAP){ const w=arNorm(n), tl=w.length>=5&&nm.length>w.length+2?nm.slice(-w.length):'', sJ=Math.max(arSimJ(nm,w),tl?arSimJ(tl,w):0), sc0=nm===w?2:Math.max(arSim(nm,w)>=1&&nm.length<=w.length+3?1:0,sJ>=(w.length>=5?.8:.85)?sJ:0), sc=sc0||(w.length>=6&&/<[^<>]*>?\s*$/.test(L)&&nm.endsWith(w.slice(-4))&&arTail4(w,id)?.8:0); if(!sc) continue; /* t625: 듄켈 '끝에 가까운 곳 <하드>'가 '…멘 :메 가까운 곳 <하드>'로 읽혀('끝'→':') ':' 뒤 '메가까운곳'만 남음(자모 .73) → <난이도> 태그 줄에서 끝 4글자가 표에서 유일한 이름과 정확히 같으면 .8 */ /* t602: 긴 이름은 자모 .8 (실영상 '끝에'→'글메'·'을메' 3자모 틀림) */ /* tl: 지역명+맵 이름이 ':' 없이 붙어 읽힘 → 끝부분만 비교 */
       if(!best||sc>best.sc||(sc===best.sc&&w.length>best.w.length)) best={sc,w,id,k,L,reg:arNorm((L.split(/[:：]/).length>1?L.split(/[:：]/)[0]:''))}; } }
-  if(!best) return null; const b=findBoss(best.id); if(!b) return null; let diff=arTagDiff(best.L,b);
+  if(!best) return null; const b=findBoss(best.id); if(!b) return null; let diff=ARX.tplNoDiff?'':arTagDiff(best.L,b); /* b380: 맵 이름 '그림' 템플릿으로 읽은 줄은 난이도 글자를 믿지 않음 (아래 arMapWatch) */
   if(!/[:：]/.test(best.L)&&AR_WFULL[best.id]===arNorm(best.L.replace(/<[^<>]*>?\s*$/,''))) best={...best,k:'w'}; /* t585: 칼로스 대기 '카로테：마천루'가 ':' 빠져 '카로테마천루'(=전투맵 이름)로 읽힘 → 대기 */
   { const M=ARX.mapSt; if(!best.k.includes('w')&&M&&M.boss===best.id&&M.kind==='w'&&AR_BMAP.some(([n2,i2,k2])=>i2===best.id&&k2==='w'&&arNorm(n2).length>best.w.length&&arNorm(n2).startsWith(best.w))&&!(best.sc>=2&&/<[^<>]*>?\s*$/.test(best.L))) return null; } /* t602: 실영상 듄켈 — 전투맵 '끝에 가까운 곳 <하드>'가 '을메 가까운 곳'으로만 읽혀 30초 넘게 대기맵에 머묾 → 보스 체력바가 보이면 꼬리 없는 읽기로 전환 */ /* t585: 대기맵 이름 = 전투·보상맵 이름 + 꼬리(데미안 '세계수 정상'+'으로 가는 길', 더스크 '앞', 진힐라 '입구', 듄켈 '앞') → 대기 중에 꼬리 잘린 읽기는 <난이도> 태그가 바로 붙은 정확한 이름일 때만 전환 */
 
@@ -297,7 +297,7 @@ function arMatchCore(J,TS){ const img=J.img, pxs=J.pxs||[J.px], angs=J.angles||[
 /* b288: 기록 가능한 아이템 전체 (모든 보스·난이도의 드롭 표 ∩ 아이콘) — 템플릿은 이 안에서만 */
 function arRecordable(){ if(ARX.recSet) return ARX.recSet; const S0=new Set(); for(const b of BOSSES) for(const d of b.diffs||[]) for(const k of dropsFor(b,d)) if(ITEM_ICONS[k]) S0.add(k); return ARX.recSet=S0; }
 /* b288: 모양은 같고 색·문양만 다른 아이콘 묶음 (아이콘 96개 전부 비교: 모양 NCC ≥ .8·알파 IoU ≥ .93) — 1등 모양 찾은 뒤 묶음 안에서 색으로 다시 고름 */
-const AR_VAR=[['h_face','h_eye','h_belt','h_ear','h_pocket','h_pendant'],['mc_b','mc_s','mc_g'],['ab_w','ab_a'],['ar_w','ar_a'],['r_green','r_red'],['r_white','r_life'],
+const AR_VAR=[['h_face','h_eye','h_belt','h_ear','h_pocket','h_pendant'],['mc_b','mc_s','mc_g'],['ab_w','ab_a'],['ar_w','ar_a'],['r_green','r_red'],['r_white','r_life'],['g_life','g_faith'],
   ['b_adv','b_bellona','b_kaling','b_baldrix','b_kalos','b_limbo'],['ipc','ipcm'],['se3','se4'],['twilight','papmark']];
 /* 색 단계: 같은 자리에서 묶음의 각 아이콘과 (밝기 맞춘) 색 차이 + 색상(hue) 히스토그램 거리 → 1등이 2등보다 확실히 작을 때만 그 아이콘, 아니면 amb(직접 고르기) */
 function arVarDist(Ff,T,ox,oy){ let s=0,n=0,fs=[0,0,0],ts=[0,0,0]; const hf=new Float32Array(12),ht=new Float32Array(12);
@@ -979,7 +979,7 @@ function arMapWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, s
   if(!p||diff/(96*16*3)>=3){ ARX.mChgT=now; ARX.mapOk=false; } if(ARX.lock&&now-(ARX.lhT||0)>=200){ ARX.lhT=now; if(arHashDist(arMapHash(src),ARX.lock.hash)>AR_LOCK_DIST){ ARX.mapOk=false; ARX.mChgT=now; } } /* t537 */ if(ARX.rew&&ARX.rew.hash&&!ARX.rew.pend&&now-(ARX.rhT||0)>=200){ ARX.rhT=now; if(arHashDist(arMapHash(src),ARX.rew.hash)>AR_LOCK_DIST){ if(++ARX.rew.n>=2){ ARX.rew.pend=now; ARX.mapOk=false; ARX.mChgT=now; } } else ARX.rew.n=0; } /* t580: 맵 이름 칸 그림이 바뀜 → 바로 OCR 로 맵 이름 확인 (arRewCheck) */ ARX.mprev=Uint8ClampedArray.from(d);
   if(ARX.mapBusy&&now-(ARX.mOcrT||0)>(+ARX.cfg.ocrTimeout||6000)+2000) ARX.mapBusy=false;
   const need=(!ARX.mapOk&&now-(ARX.mChgT||0)<6000)||now-(ARX.mOcrT||0)>ARX.cfg.ocrEvery; if(!need||ARX.mapBusy) return;
-  { let H=null; try{ H=arMapTplMatch(src); }catch(e){} if(H){ ARX.mOcrT=now; ARX.mapSrc='템플릿'; ARX.mapTplHit=H; arMapGot(H.text,src); return; } } /* t627: 저장된 맵 이름 그림과 정확히 맞으면 OCR 없이 즉시 */
+  { let H=null; try{ H=arMapTplMatch(src); }catch(e){} if(H){ ARX.mOcrT=now; ARX.mapSrc='템플릿'; ARX.mapTplHit=H; ARX.tplNoDiff=true; try{ arMapGot(H.text,src); } finally{ ARX.tplNoDiff=false; } const R=ARX.runDiff; if(R&&R.boss===H.boss) return; } } /* b380 (t416·t418): 템플릿은 '맵 이름'만 확정 — 벨로나 이지 판에서 배운 '솔라툼의 유산 <이지>' 그림이 하드 화면에도 .906 으로 맞아(난이도 두 글자만 다름) 하드인데 이지로 정해짐 → 하드 드롭(신념의 연마석·광기의 방어구 상자·혼돈의 칠흑 상자·생명 반지 상자) 후보에서 빠져 기록 안 됨. 난이도는 같은 판 전투 맵 OCR(runDiff), 없으면 이번 한 번 OCR 로 읽음 */ /* t627: 저장된 맵 이름 그림과 정확히 맞으면 OCR 없이 즉시 */
   if(!ARX.ocr){ if(!ARX.ocrP) try{ arOcrLoad(); }catch(e){} return; }
   ARX.mapBusy=true; ARX.mOcrT=now; const cv=arMapCrop(src,sw,sh,r); const LI=ARX.mtLast||(()=>{ try{ const I=arMapTplImg(src); return I&&{I,B:arMapTplBands(I)}; }catch(e){ return null; } })(); ARX.mtLast=null;
   return arOcr(cv,150,1).then(t=>{ ARX.mapSrc='OCR'; arMapGot(t,src); try{ if(LI) arMapTplLearn(LI.I,LI.B,t,Date.now()); }catch(e){} }).catch(()=>{}).finally(()=>{ ARX.mapBusy=false; }); }
