@@ -1036,11 +1036,12 @@ function arPanelLive(p,pipOnly){ p=p||$('#arPanel'); if(!p||(!pipOnly&&(p.hidden
   arSetH(q('.ar-cchar .ar-b'),(detC?`<div class="ar-who">${typeof avatar==='function'?avatar(detC):''}<div><div class="ar-big">${esc(detC.name)}</div><div class="muted">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${acc?.name?' · '+esc(acc.name):''}${detC.world?' · '+esc(detC.world):''}</div></div></div>`
     :`<div class="ar-big dim">${on&&!ARX.unkName?'인식 중…':'-'}</div>`+arTeachHtml(on))+arMesoLine());
   /* b349: PIP 창 맨 위 현재 캐릭터 한 줄 (대시보드와 같은 내용, 0.2초마다 바뀐 것만) */
-  if(ARX.pip){ const pd=ARX.pip.win.document, pc=pd.querySelector('.ar-pipchar'); if(pc) arSetH(pc,detC?`${typeof avatar==='function'?avatar(detC):''}<b class="ar-pcn">${esc(detC.name)}</b><span class="muted ar-pcm">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${detC.world?' · '+esc(detC.world):''}</span>`:`<span class="muted">${on&&!ARX.unkName?'인식 중…':'미인식'}</span>${arTeachHtml(on)}` /* b351: PIP 에도 [이 캐릭터예요] (보상 맵에서 끊겨도 바로) */);
+  if(ARX.pip){ const pd=ARX.pip.win.document, pc=pd.querySelector('.ar-pipchar'); if(pc) arSetH(pc,(detC?`${typeof avatar==='function'?avatar(detC):''}<b class="ar-pcn">${esc(detC.name)}</b>`:`<span class="muted">${on&&!ARX.unkName?'인식 중…':'미인식'}</span>${arTeachHtml(on)}` /* b351: PIP 에도 [이 캐릭터예요] (보상 맵에서 끊겨도 바로) */)+arPipMinBtn() /* b376: 레벨·직업·월드 빼고 오른쪽 위 [최소화]/[최소화 해제] */);
     arSetH(pd.querySelector('.ar-pipmeso'),arPipMesoHtml(detC)); }
   /* t603: '현재 보스' → '보상 맵 인식' — 대기/진행 상태 없음. 보상 상자로 보상 맵이 잡힌 동안만 초록 '보상 인식 중' + 보스, 아니면 '-' */
   { const cb=arPipCard(p); if(cb) arPipBind(cb); }
-  if(arPipQ(p,'.ar-cboss .ar-b')) arSetH(arPipQ(p,'.ar-cboss .ar-b'),((bst==='rew'?`<div class="ar-bst rew"><i class="ar-dot"></i>보상 인식 중</div>`:'')+(bst==='rew'&&detB?`<div class="ar-big ar-bline">${typeof bossIcon==='function'?bossIcon(detB):''}<span class="ar-bn">${esc(detB.name)}</span>${detD?' '+(typeof diffImg==='function'?diffImg(detD):esc(D[detD])):''}</div>`
+  if(ARX.pip&&ARX.pip.min){ const bb=ARX.pip.card.querySelector('.ar-b'); if(bb) arSetH(bb,arPipMinRow(bst==='rew',detB,detD)); } /* b376: 최소화 = 보상 맵 한 줄 (+ 득템 있으면 선홍 ·득템 기록 확인) */
+  else if(arPipQ(p,'.ar-cboss .ar-b')) arSetH(arPipQ(p,'.ar-cboss .ar-b'),((bst==='rew'?`<div class="ar-bst rew"><i class="ar-dot"></i>보상 인식 중</div>`:'')+(bst==='rew'&&detB?`<div class="ar-big ar-bline">${typeof bossIcon==='function'?bossIcon(detB):''}<span class="ar-bn">${esc(detB.name)}</span>${detD?' '+(typeof diffImg==='function'?diffImg(detD):esc(D[detD])):''}</div>`
     :`<div class="ar-big dim">-</div>`))+arClrLine()); const bc=arPipQ(p,'.ar-cboss .ar-b'); if(bc&&bc._arFit!==bc._arH){ bc._arFit=bc._arH; arFitBoss(); } if(ARX.pip) arPipRec();
   if(pipOnly) return; { const pl=q('.ar-prof'); if(pl){ const L=arProfLab(); pl.textContent=L?L:(ARX.stream?'해상도 확인 중…':''); pl.title=L?'화면 공유 영상에서 자동 감지한 해상도·UI 비율':''; } } 
   }
@@ -1168,8 +1169,23 @@ async function arPipOpen(cb){ cb=cb||arPipCard(); if(!cb||ARX.pip) return false;
   if(m) m.hidden=true; arPipStyles(document,w.document); const ph=document.createElement('div'); ph.className='ar-pipph card ar-c ar-cboss-ph'; ph.style.cssText='grid-column:1;grid-row:2;display:flex;align-items:center;justify-content:center;opacity:.6;min-height:'+(cb.offsetHeight||120)+'px'; ph.innerHTML='<span class="muted">PIP 창에 표시 중 · <button type="button" class="btn sm ar-pipback">되돌리기</button></span>';
   cb.replaceWith(ph); ph.querySelector('.ar-pipback').onclick=()=>arPipClose(); const pc=w.document.createElement('div'); pc.className='ar-pipchar'; const pm=w.document.createElement('div'); pm.className='ar-pipmeso'; w.document.body.append(pc,pm,cb); w.document.addEventListener('click',arTeachClick); /* b351: PIP 문서에도 [이 캐릭터예요] 클릭 */ cb.classList.add('ar-inpip');
   const b=cb.querySelector('.ar-pipb'); if(b){ b.textContent='닫기'; b.title='PIP 창 닫고 페이지로 되돌리기'; }
-  ARX.pip={win:w,card:cb,ph,minW:W0,minH:H0}; arPipMinCss(w.document,W0,H0); w.addEventListener('resize',()=>arPipMin(w,W0,H0)); w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); try{ arPanelLive(); }catch(e){} arFitBoss(); arPipAskHide(); arPipPlace(w,W0,H0); return true; }
+  ARX.pip={win:w,card:cb,ph,minW:W0,minH:H0}; arPipMinCss(w.document,W0,H0); w.addEventListener('resize',()=>arPipMin(w,W0,ARX.pip&&ARX.pip.win===w?ARX.pip.minH:H0)); w.document.addEventListener('click',arPipMinClick); ARX.pip.min=false; ARX.pip.seen=(ARX.sessRec||[]).length; if(arPipMinGet()) arPipSetMin(true,1); w.addEventListener('pagehide',()=>arPipBack()); arPipRec(); try{ arPanelLive(); }catch(e){} arFitBoss(); arPipAskHide(); arPipPlace(w,W0,H0); return true; }
 /* b341: Document PiP 는 최소 크기를 못 정함 → resize 때 더 작아지면 처음 크기로 resizeTo (안 되는 환경이면 CSS 최소 크기 = 줄지 않고 스크롤) */
+/* b376 (t409u): PIP 최소화 — 1줄 닉네임 + [최소화 해제], 2줄 보상 맵 인식. 메소·득템 목록·수익 칸은 숨김(수익 칸 대기 줄은 그대로 남음).
+ * 최소화 중 새 득템(ARX.sessRec 가 최소화할 때보다 늘었거나 수익/고르기 대기 ARX.saleQ 가 있으면) → 보스 옆 선홍 '·득템 기록 확인'. 해제하면 확인한 것으로 봄. 상태 = localStorage 'arPipMin' */
+const AR_PIP_HMIN=96;
+function arPipMinGet(){ try{ return localStorage.getItem('arPipMin')==='1'; }catch(e){ return false; } }
+function arPipMinBtn(){ const m=!!(ARX.pip&&ARX.pip.min); return `<button type="button" class="neonBtn nb-cyan nb-sm ar-pipminb" data-pipmin="${m?0:1}" aria-pressed="${m}" title="${m?'PIP 창 전체 보기':'PIP 창을 두 줄로 작게'}">${m?'최소화 해제':'최소화'}</button>`; }
+function arPipMinNew(){ const P=ARX.pip; return !!(P&&P.min&&(((ARX.sessRec||[]).length>(P.seen||0))||(ARX.saleQ||[]).length)); }
+function arPipMinRow(rew,b,d){ const nw=arPipMinNew(), r0=(ARX.sessRec||[])[0];
+  const bl=rew&&b?`<span class="ar-bline ar-pmb">${typeof bossIcon==='function'?bossIcon(b):''}<span class="ar-bn">${esc(b.name)}</span>${d?' '+(typeof diffImg==='function'?diffImg(d):esc(D[d])):''}</span>`:(nw&&r0&&r0.b?`<span class="ar-pmb ar-pmlast">${esc(r0.b)}</span>`:`<span class="dim ar-pmb">-</span>`);
+  return `<div class="ar-pminrow"><span class="ar-pml${rew?' rew':''}"><i class="ar-dot"></i>보상 맵</span>${bl}${nw?'<span class="ar-pmnew">·득템 기록 확인</span>':''}</div>`; }
+function arPipMinClick(e){ const t=e.target.closest&&e.target.closest('[data-pipmin]'); if(!t) return; e.preventDefault(); arPipSetMin(t.dataset.pipmin==='1'); }
+function arPipSetMin(on,init){ const P=ARX.pip; if(!P) return; on=!!on; if(!init&&P.min===on) return; P.min=on; if(!on) P.seen=(ARX.sessRec||[]).length; else if(!init) P.seen=(ARX.sessRec||[]).length; try{ localStorage.setItem('arPipMin',on?'1':'0'); }catch(e){}
+  const w=P.win, d=w.document; d.body.classList.toggle('pip-min',on); P.minH=on?AR_PIP_HMIN:AR_PIP_H; const st=d.querySelector('style.ar-pipmin'); if(st) st.textContent=`html,body{min-width:${P.minW}px;min-height:${P.minH}px}`;
+  const bb=P.card.querySelector('.ar-b'); if(bb){ bb._arH=null; bb._arFit=null; } const pc=d.querySelector('.ar-pipchar'); if(pc) pc._arH=null;
+  try{ const dw=Math.max(0,(w.outerWidth||w.innerWidth)-w.innerWidth), dh=Math.max(0,(w.outerHeight||w.innerHeight)-w.innerHeight); w.resizeTo(Math.max(w.innerWidth,P.minW)+dw,P.minH+dh); }catch(e){}
+  try{ const ap=$('#arPanel'); arPanelLive(ap&&ap.querySelector('.ar-g')?ap:document.createElement('div'),true); }catch(e){} arFitBoss(); }
 const AR_PIP_H=368; /* b351: +10 캐릭터 줄 28→38(얼굴 보이는 34px 아바타) +40 보유 메소 칸(36+4) */ const AR_PIP_H_OLD=318; /* b347: 630 → 286 (2인 수익 칸까지 스크롤 없이). b349: +32 맨 위 캐릭터 줄(.ar-pipchar 28px + 간격 4) */
 function arPipMinCss(d,W,H){ const st=d.createElement('style'); st.className='ar-pipmin'; st.textContent=`html,body{min-width:${W}px;min-height:${H}px}`; d.head.append(st); }
 function arPipMin(w,W,H){ const iw=w.innerWidth, ih=w.innerHeight; if(iw>=W-1&&ih>=H-1) return; const dw=Math.max(0,(w.outerWidth||iw)-iw), dh=Math.max(0,(w.outerHeight||ih)-ih); try{ w.resizeTo(Math.max(iw,W)+dw,Math.max(ih,H)+dh); }catch(e){} }
