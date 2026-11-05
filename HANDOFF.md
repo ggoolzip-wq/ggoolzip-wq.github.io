@@ -14,6 +14,7 @@
 - '·득템 기록 확인'(.ar-pmnew 선홍 #ff3b6b / 라이트 #e0144c, 정적): 최소화 중 ARX.sessRec 가 최소화(또는 PIP 열 때)보다 늘었거나 ARX.saleQ(수익 기록·반지/칠흑 고르기 대기)가 있으면 보스 옆에. 보상 맵을 벗어나면 마지막 득템 보스 이름(회색) 옆에 유지. [최소화 해제] = 확인한 것으로 봄(seen 갱신). 수익 대기 줄은 숨겨져 있어도 그대로 → 해제하면 수익 칸 보임.
 - 상태 localStorage 'arPipMin' (PIP 닫았다 열거나 새로고침 후에도 유지).
 - 테스트: tests/test_b376_pipmin.py (run_all 등록), test_b349_pipchar·test_b359_bgtab 기대값(Lv 없음) 갱신. test_b347_pipshort '최소 높이 ≤320' 은 b351(368) 부터 이미 실패(기존). run_par: tracker53·b213·b288·b370_calmulti = 기존 실패, 새 실패 없음. 스크린샷 /workspace/b376/ (b376_full·b376_min·b376_min_new·b376_min_left). dataset.build='b376'.
+- 배포 확인(15:09 KST): bossmaple.pages.dev·ggoolzip-wq.github.io 둘 다 build b376.
 
 ## b375 (t407u) 라이브 닉네임 '2터래플' 이 '터래플' 로 잡힘 — 앞 기호 유무로 구분
 - 재현(키 없이, 사용자 스크린샷 1920x1080 을 가짜 getDisplayMedia 로 '보스 득템 자동 기록' 탭에 연결, 목록 터래플·2터래플): OCR raw '\\0.285 2터래플' · '/.285 2터래플' 인데 캐릭터 칸 = 터래플 (src OCR → 이미지).
