@@ -15,6 +15,7 @@
 - 추가: AR_VAR 에 ['g_life','g_faith'] — 생명 연마석 아이콘이 신념 템플릿 모양 .81(바닥 문턱 .75)로 맞아 하드에서 신념으로 잘못 기록될 수 있던 것 → 색 단계로 생명(색 거리 12 vs 52).
 - 테스트: tests/test_b380.py (fixtures/b300/b380_bellona_hard_syn.png = v07 벨로나 이지 실제 프레임의 '<이지>'를 v10 실제 '<하드>' 글자로 교체한 합성). 수정 전 6 FAIL / 후 ALL PASS. b300·b329_maptpl·b289·b291 통과. 실제 g_faith 영상은 없음.
 - 전체: run_par 실패 = tracker53(로그아웃 후 cal/autoBosses 키 남음 — 캘린더 쪽, autorec 무관), b213·b288(기존), b370_calmulti(b379 에서도 같은 2 FAIL).
+- 배포 확인(18:23 KST): bossmaple.pages.dev · ggoolzip-wq.github.io 둘 다 build b380. 설명 그림 /workspace/b380/b380_cause_result.png.
 - 사용자 브라우저에 이미 저장된 '<이지>' 템플릿은 지우지 않음(이제 맵 확정에만 쓰여 무해). dataset.build='b380'. 스크린샷 /workspace/b380/.
 
 ## b379 (t415u) 묶음 보스 일정 상세 — 보스가 많으면 캐릭터는 2줄째 (묶음 분리 금지)
