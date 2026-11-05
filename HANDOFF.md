@@ -8,6 +8,13 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b378 (t414u) PIP 득템 애니 → 보스 칸 전체 (문구는 정적 선홍)
+- 정정: b377 은 ·득템 기록 확인(.ar-pmnew) 알약에 mwFade+mwShine 을 넣었는데, 원모님 의도는 **보스 칸 전체**(최소화 2줄의 보상 맵 줄 `.ar-pminrow`)에 훈장 경고(.char .medalwarn)와 같은 빨간 반투명 띠 + mwFade 2.4s + ::after mwShine .7s.
+- .ar-pmnew = 다시 정적 선홍 글씨만 (#ff3b6b / 라이트 #e0144c, 알약·애니 없음). 득템 있을 때만 `.ar-pminrow.ar-pmwarn` (조건 = 기존 arPipMinNew()).
+- prefers-reduced-motion 이면 보스 칸 애니 끔. 키프레임은 .medalwarn 것 재사용.
+- 테스트: tests/test_b376_pipmin.py 갱신(문구 색 rgb(255,59,107)·nwAnim none + rowCls ar-pmwarn·rowAnim mwFade·rowShine mwShine). 스크린샷 /workspace/b378/ (b376_min_new·b378_anim_0~3). dataset.build='b378'.
+- 배포 확인(17:18 KST): bossmaple.pages.dev · ggoolzip-wq.github.io 둘 다 build b378.
+
 ## b377 (t410u) PIP '·득템 기록 확인' 애니메이션
 - 배포 확인: bossmaple.pages.dev · ggoolzip-wq.github.io 둘 다 b377 (2026-11-05 KST).
 - .ar-pmnew: 선홍 알약 배경(흰 글씨) + 훈장 경고와 같은 mwFade 2.4s(주기적으로 옅어짐) + ::after 흰 빛줄기 mwShine .7s. 라이트 = #e0144c 배경. prefers-reduced-motion 이면 애니 끔. 키프레임은 .medalwarn 것 재사용.
