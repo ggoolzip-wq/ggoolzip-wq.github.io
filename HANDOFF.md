@@ -9,6 +9,7 @@
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
 ## b377 (t410u) PIP '·득템 기록 확인' 애니메이션
+- 배포 확인: bossmaple.pages.dev · ggoolzip-wq.github.io 둘 다 b377 (2026-11-05 KST).
 - .ar-pmnew: 선홍 알약 배경(흰 글씨) + 훈장 경고와 같은 mwFade 2.4s(주기적으로 옅어짐) + ::after 흰 빛줄기 mwShine .7s. 라이트 = #e0144c 배경. prefers-reduced-motion 이면 애니 끔. 키프레임은 .medalwarn 것 재사용.
 - 테스트: tests/test_b376_pipmin.py 에 애니 확인 추가. 스크린샷 /workspace/b377/. dataset.build='b377'.
 
