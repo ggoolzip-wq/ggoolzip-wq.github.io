@@ -8,6 +8,13 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b376 (t409u) PIP 최소화 — 레벨·월드 없앰 + [최소화] → 2줄 + 선홍 '·득템 기록 확인'
+- PIP 캐릭터 줄(.ar-pipchar): Lv·직업·월드(.ar-pcm) 삭제 → 아바타·닉네임 + 오른쪽 끝 [최소화] (.neonBtn nb-cyan nb-sm .ar-pipminb, data-pipmin). 미인식 땐 [이 캐릭터예요] 뒤에 버튼.
+- 최소화(arPipSetMin): body.pip-min → 보유 메소·이번 라이브 득템·수익/고르기 칸·'보상 맵 인식' 제목(닫기 버튼 포함) 숨김. 1줄 = 닉네임 + [최소화 해제], 2줄 = arPipMinRow '● 보상 맵' + 보스 아이콘·이름·난이도(보상 맵 아니면 '-'). 창 높이 368 → AR_PIP_HMIN 88 (style.ar-pipmin 최소 크기·resize 되돌림 높이 ARX.pip.minH 도 바꿈, resizeTo 는 PIP 안 클릭이라 사용자 동작 있음). 해제 = 368 로 되돌림.
+- '·득템 기록 확인'(.ar-pmnew 선홍 #ff3b6b / 라이트 #e0144c, 정적): 최소화 중 ARX.sessRec 가 최소화(또는 PIP 열 때)보다 늘었거나 ARX.saleQ(수익 기록·반지/칠흑 고르기 대기)가 있으면 보스 옆에. 보상 맵을 벗어나면 마지막 득템 보스 이름(회색) 옆에 유지. [최소화 해제] = 확인한 것으로 봄(seen 갱신). 수익 대기 줄은 숨겨져 있어도 그대로 → 해제하면 수익 칸 보임.
+- 상태 localStorage 'arPipMin' (PIP 닫았다 열거나 새로고침 후에도 유지).
+- 테스트: tests/test_b376_pipmin.py (run_all 등록), test_b349_pipchar·test_b359_bgtab 기대값(Lv 없음) 갱신. test_b347_pipshort '최소 높이 ≤320' 은 b351(368) 부터 이미 실패(기존). run_par: tracker53·b213·b288·b370_calmulti = 기존 실패, 새 실패 없음. 스크린샷 /workspace/b376/ (b376_full·b376_min·b376_min_new·b376_min_left). dataset.build='b376'.
+
 ## b375 (t407u) 라이브 닉네임 '2터래플' 이 '터래플' 로 잡힘 — 앞 기호 유무로 구분
 - 재현(키 없이, 사용자 스크린샷 1920x1080 을 가짜 getDisplayMedia 로 '보스 득템 자동 기록' 탭에 연결, 목록 터래플·2터래플): OCR raw '\\0.285 2터래플' · '/.285 2터래플' 인데 캐릭터 칸 = 터래플 (src OCR → 이미지).
 - 원인: ① arDetectChar 가 토큰·목록 이름 모두 한글만 남겨 비교(2터래플 = 터래플) ② arNameVote2 가 숫자 든 이름(/[A-Za-z0-9]/)을 후보에서 아예 뺌 → 2터래플은 OCR 로 절대 확정 안 되고 터래플이 확정 ③ 그 화면이 nameTpl(기본 켬) 로 '터래플' 이미지 틀로 학습 → 다음부터 이미지로 바로 터래플. 2터래플만 등록해도 영원히 '-'. b284 설계('앞 기호 유무')가 t574~t586 재작성 때 빠짐.
