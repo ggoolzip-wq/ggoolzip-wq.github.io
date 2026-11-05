@@ -2449,6 +2449,12 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 .calbsb{white-space:nowrap;display:inline-block}
 .calbr .calbt{margin-top:10px}
 .calsbs{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;min-width:0}.calsb{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+/* b379 (t415u): 보스가 많은 묶음 일정(.calsim) = 1줄 시간+보스+삭제 / 2줄 캐릭터(초상화+닉). 카드·칸 배지는 묶음 1개 유지(분리 금지) */
+.calsim{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"time bosses del" "chars chars chars";align-items:start;column-gap:8px;row-gap:6px}
+.calsim .calst{grid-area:time}
+.calsim .calsbs{grid-area:bosses;min-width:0}
+.calsim>.calndel{grid-area:del;margin-left:0}
+.calsim .calsc{grid-area:chars;width:auto;flex:initial;min-width:0}
 
 /* b376 (t409u): PIP 최소화 — 캐릭터 줄(닉네임 + [최소화]/[최소화 해제]) + 보상 맵 한 줄만. 득템 감지 시 보스 옆 선홍 '·득템 기록 확인' (b378: 문구 정적, 보스 칸 전체에 훈장경고 애니) */
 .arpipw .ar-pipchar .ar-pcn{overflow:hidden;text-overflow:ellipsis;min-width:0}

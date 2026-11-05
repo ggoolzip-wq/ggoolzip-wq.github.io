@@ -8,6 +8,12 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b379 (t415u) 묶음 보스 일정 상세 — 보스가 많으면 캐릭터는 2줄째 (묶음 분리 금지)
+- 증상: 파티 보스 묶음 일정에 보스가 많으면 상세 한 줄(`.calsim`)에서 오른쪽 캐릭터(초상화+닉)가 찌부됨.
+- 고침(CSS만): `.calsim` = CSS grid 2행. 1행 `시간(.calst) | 보스들(.calsbs) | 삭제` / 2행 `캐릭터(.calsc)` 전체 폭. 카드 1개·칸 배지(묶음=1) 유지. 단일(`.calsi` only)은 예전 한 줄.
+- 테스트: tests/test_b379_cal2line.py (run_all 등록). 스크린샷 /workspace/b379/. dataset.build='b379'.
+- 배포 확인: (푸시 후 갱신)
+
 ## b378 (t414u) PIP 득템 애니 → 보스 칸 전체 (문구는 정적 선홍)
 - 정정: b377 은 ·득템 기록 확인(.ar-pmnew) 알약에 mwFade+mwShine 을 넣었는데, 원모님 의도는 **보스 칸 전체**(최소화 2줄의 보상 맵 줄 `.ar-pminrow`)에 훈장 경고(.char .medalwarn)와 같은 빨간 반투명 띠 + mwFade 2.4s + ::after mwShine .7s.
 - .ar-pmnew = 다시 정적 선홍 글씨만 (#ff3b6b / 라이트 #e0144c, 알약·애니 없음). 득템 있을 때만 `.ar-pminrow.ar-pmwarn` (조건 = 기존 arPipMinNew()).
