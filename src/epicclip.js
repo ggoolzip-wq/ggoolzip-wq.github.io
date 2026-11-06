@@ -96,6 +96,7 @@ async function ecPack(F){ const bufs=await Promise.all(F.f.map(b=>b.arrayBuffer(
 function ecUnpack(ab){ const u=new Uint8Array(ab); if(u[0]!==69||u[1]!==67||u[2]!==66||u[3]!==49) throw new Error('bad clip'); const n=new DataView(ab).getUint32(4,true), hd=JSON.parse(new TextDecoder().decode(u.subarray(8,8+n)));
   const old=hd.sz.every((z,i)=>{const o=8+n+hd.sz.slice(0,i).reduce((a,b)=>a+b,0); return u[o]===255&&u[o+1]===216;});
   let o=8+n; const f=hd.sz.map(z=>{ const b=new Blob([u.subarray(o,o+z)],{type:old?'image/jpeg':'image/webp'}); o+=z; return b; }); return {ts:hd.ts,vt:hd.vt,f}; }
+/* b382: 기록지는 공통 avatar()를 그대로 사용하고(넥슨 초상화 유지), 실패한 img 만 빈 원 대신 닉네임 이니셜로. */
 const ecAvatar=c=>{ const cc={...(c||{}),image:safeImg(c&&c.image)?c.image:''}, letter=esc((c&&c.name||'?').slice(0,1));
   return avatar(cc,'ecav').replace('onerror="this.remove()"','onerror="ecAvErr(this)"').replace('<img ','<img data-ecletter="'+letter+'" '); };
 function ecAvErr(im){ const b=document.createElement('b'); b.className='ecfb'; b.textContent=im.dataset.ecletter||'?'; im.replaceWith(b); }

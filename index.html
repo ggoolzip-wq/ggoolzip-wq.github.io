@@ -6818,7 +6818,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b381'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b382'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -8733,6 +8733,7 @@ async function ecPack(F){ const bufs=await Promise.all(F.f.map(b=>b.arrayBuffer(
 function ecUnpack(ab){ const u=new Uint8Array(ab); if(u[0]!==69||u[1]!==67||u[2]!==66||u[3]!==49) throw new Error('bad clip'); const n=new DataView(ab).getUint32(4,true), hd=JSON.parse(new TextDecoder().decode(u.subarray(8,8+n)));
   const old=hd.sz.every((z,i)=>{const o=8+n+hd.sz.slice(0,i).reduce((a,b)=>a+b,0); return u[o]===255&&u[o+1]===216;});
   let o=8+n; const f=hd.sz.map(z=>{ const b=new Blob([u.subarray(o,o+z)],{type:old?'image/jpeg':'image/webp'}); o+=z; return b; }); return {ts:hd.ts,vt:hd.vt,f}; }
+/* b382: 기록지는 공통 avatar()를 그대로 사용하고(넥슨 초상화 유지), 실패한 img 만 빈 원 대신 닉네임 이니셜로. */
 const ecAvatar=c=>{ const cc={...(c||{}),image:safeImg(c&&c.image)?c.image:''}, letter=esc((c&&c.name||'?').slice(0,1));
   return avatar(cc,'ecav').replace('onerror="this.remove()"','onerror="ecAvErr(this)"').replace('<img ','<img data-ecletter="'+letter+'" '); };
 function ecAvErr(im){ const b=document.createElement('b'); b.className='ecfb'; b.textContent=im.dataset.ecletter||'?'; im.replaceWith(b); }
