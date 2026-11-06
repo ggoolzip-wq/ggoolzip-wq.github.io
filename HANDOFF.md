@@ -8,6 +8,15 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b384 (t428) 에픽빔 실제 VP9 30fps·720p WebM (용량 ≤800KB)
+- **임베디드 페이지와 실제 페이지 동일**: src/epicclip.js + src/app.js → `tools/build.py` 로 index.html 한 벌 생성(dataset.build='b384'). 예로만 따로 쓰는 capture 파일 없음.
+- WebCodecs VideoEncoder **VP9 vp09.00.10.08**, 전체 프레임(중앙 크롭 아님), 1.25Mbps→0.95→0.70Mbps 순 실제 mux 인코딩 용량 확인 → 최종 800,000B 안인 것만 우선 저장. 초기 목표 1.45Mbps 대신 복잡한 720p 실측 초과분 보정. 영상 간부 백(maple): frame 중요한 파일은 timestamp i*33333μs로 30fps 보장. 저해상도 입력은 720p로 확대 금지 원칙 그대로 retina 16:9만 default 취급.
+- 프리롤: 기존 감지와 같은 ecTick에서 30fps·최대 1.4초 VideoFrame 보관, 빔 시작 -1~+3초 선택·가까운 프레임 샘플 보간·120장 후 별도 encoder에 재인코딩. 정오 GOP 솎아낼 필요 없음; flush output sort는 monoton timestamps 유지. mux `webm-muxer` ECWebM bundle(MIT). WebCodecs 미지원 fallback은 VideoEncoder/VideoFrame 지원 없는 브라우저 기존 ECB1 WebP 기록(30fps metadata 요구와 무관한 지원 caveat), 그 외 저장 exception 로그는 남기고 일부 누락 가능.
+- 실제 E2E 검증(Chromium synthetic 720p 30fps, browser IndexedDB→WebM disk): **VP9 1280×720, r_frame_rate/avg=30/1, 120 frames, duration 3.966s, saved clip 561,250~782,419B 관측**, 반복 encode는 비트레이트/캡처 시점 따라 변동. 최종 120장 timebase duration=120/30=4초(WebM 마지막 timestamp=3.966초). b383 기준 866,389B보다 작고 **최악 관측 782,419B도 800,000B 이내**.
+- 기존 ECB1 JPEG/WebP 계속 ecUnpack+canvas 재생. 신규 format=webm 은 native video controls/autoplay playback+poster 생성. remote WebM poster 없는 경우 카드는 영상 준비 상태(placeholder)로 렌더. **서버 R2는 MIME octet·최대 2MB 그대로** 올린 raw bytes 저장·반환 → 프론트에서 Blob video/webm 부여, D1 schema 변경없음.
+- Tests: `test_b384_video.py`(actual 720p VP9 fixture→capture→decode + first detection/vt window 30fps/bytes+legacy modal+grid) PASS, `test_b354_epic_cloud.py` expanded 실제 WebM upload bytes→delete local→remote GET Blob same byte cache, `test_b354_epic_server.py` byte exact/max size all PASS, `test_b382.py` 30/720 config & b382 gates & WebP ECB1 PASS. `/workspace/b384/{video_pass.log,cloud_final.log,server.log,b382_final.log}`.
+- 증거: `/workspace/b384/quality_comparison.png` (same tooltip region full & 2x), `clip.webm`, ffprobe / frame PNG. License /workspace/b384/lib/node_modules/webm-muxer/LICENSE 번들 주석 포함. Br fallback 일반 Chromium 기반 권장 iOS Safari codec 미지원 시 legacy. 2026-11-06 KST.
+
 ## b383 (t426ua0) 클립 용량 ≤ 기존 + 선명도 개선 (b382 용량 증가 수정)
 - 요구: 같은 960×540 4초 실제 합성화면의 기존 866,389B 이상은 실패. b382의 1,430,002B 는 요구 위반이므로 b382 클립 720p 정책을 b383으로 대체.
 - 방법: 캡처 감지(240p)와 분리해 원본 최대 540p로 읽고 8fps 프레임을 감지. 저장 때 중앙 크롭을 .8→.7→.6→.5 순으로 적용해 정적인 외곽을 버림. WebP q=.6→.5→.4→.3 및 skip(8→4→2.67fps)의 grid를 순서대로 시도. **각 단계마다 ecPack 실제 ECB1 헤더+프레임 전체 바이트를 측정해 ≤800,000B인 첫 조합만 저장**(벤치 기존치보다 약 8% 예비 여유). 최악 최후 크롭 .4·q .2·skip 6. 원본 작은 해상도 확대 안 함.

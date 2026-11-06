@@ -36,9 +36,9 @@
  *   DELETE /api/account                            (인증) 내 데이터·세션·계정 연결 전부 삭제
  *   GET    /api/health
  *   b354 에픽빔 클립 (R2 = env.EPIC, 없으면 503 r2_off · 메타 = D1 epic_clips · 자동 삭제 없음):
- *   POST   /api/epic/clip?id=ec…  본문 = 클립 묶음(≤2MB, octet-stream), 헤더 X-Epic-Meta = encodeURIComponent(JSON 메타) (인증)
+ *   POST   /api/epic/clip?id=ec…  본문 = WebM 또는 ECB1 클립 묶음(≤2MB, octet-stream), 헤더 X-Epic-Meta = encodeURIComponent(JSON 메타) (인증)
  *   GET    /api/epic/clips?page=0&per=12  (인증) → {total, page, per, items:[메타]}  (같은 넥슨 계정(acct_hash) 기준 — 다른 PC 에서 같은 키로 로그인하면 보임)
- *   GET    /api/epic/clip/<id>            (인증) → 클립 묶음 바이너리
+ *   GET    /api/epic/clip/<id>            (인증) → WebM/ECB1 클립 바이너리
  *   GET    /api/seen  · PUT /api/seen {ids:[...]}   (인증, b62) 소식 카드 읽음 표시 — 서버가 합집합으로 보관 (기기 간 동기화)
  *
  * b62 (2026-10-12):
