@@ -8,6 +8,19 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b382 (t418 후속) 에픽빔 오기록·저장 화질·초상화 + 지난 보스 일정 테두리
+- 증상: 2026-11-05 22:21:32(란별자)·15:02:42(2터래플) 더스크 카오스 "아이템 확인 전" 영상은 각각 전투 스킬·밝은 UI 창. 모든 초상화 빈 원. 지난 날짜도 분홍 테두리.
+- 사용자 허가 라이브 조회: box env WONMO_NEXON_KEY(출력/로그 금지), server mode POST /api/login → HTTP 403 `sub_key`("API KEY 정보가 없습니다"). 실제 저장 영상/route/api 관리자 내역은 읽지 못함. records 변경·삭제 없음. 공유 PNG 두 장과 기존 b352 로그/합성 상태로 재현.
+- 원인: `ecCtx()` 기존 `arRewMap` 버그가 전투 맵 `kind b`까지 최대 60초 보상 맵으로 허용. `ARX.rew`만 추정돼도 map kind b 가 있으면 빔 오인 영상을 저장. 더스크의 반지 상자가 실제 있으므로 보스 드롭 목록은 바꾸지 않음.
+- 수정: `rewardOnly:true` 기본, 별도 `ecRewardMap()`만 `mapSt.kind==='r'` && 같은 보스 && 8초 이내 허용. `arRewMap()` 는 레이아웃에서 그대로 사용(전투용 전초대 기능 공유 주의). b382 regression 두 오기로그 상태를 상태 기반 합성으로 재현. 성공 기존 보상 맵 기록은 유지.
+- 화질: 기존 426×240 JPEG .72, 약 10fps → 원본 해상도(최대 1280×720) WebP .75, 8fps, 작은 원본 확대 없음. 감지 240p 유지(매치 정확도 보존). ECB1 무손실 packing/10바이트 frame-id·len 그대로, MIME image/webp 과 기존 JPEG 둘 다 `ecUnpack()` 복원.
+- 크기 (실제 사용자 960×540 빔 프레임 4s): 기존 240p 40장 866,389B → 새 540p 32장 1,430,002B (약 1.65배). 1080p 합성 한 장 3,941B→11,236B. 해상도 올리고 fps 줄였지만 실제 장면에서 총 크기 감소까지 보장하지는 않음. 서버 2MB 제한 그대로.
+- 초상화: ecCard의 결손 포트레이트만 예전 `avatar(c.image)`에서 재사용(`c` 기존 로컬 캐릭터 image URL). 새 넥슨 키 저장/호출 없음. 공용 `avatar` 실패 `img 제거` 경로를 대체하기 위해 ecAvatar wrapper: `error`→`ecAvErr`가 `<img>`를 `에픽 소유 닉네임 첫 글자 이니셜(<b class=ecfb>)`로 교체. 정상 URL은 넥슨 초상화. img 없으면 공용 avatar 정책답게 이니셜. live 기록 API 제한으로 실제 유저 사진은 조회하지 못함.
+- 달력: `.calc`에 과거면 `.past` 추가. `.calc.past.cbB` 는 일반 날짜의 회색 border/box-shadow. `calbb` 의 분홍 "·보스 일정 N개" 잔존. 미래 cbB 및 오늘은 기존 분홍. 라이트도 같은 원칙.
+- 테스트: test_b382.py (전투 차단/실제 reward 성공/만료/720p WebP·ECB1/portrait 성공·실패/calendar PASS), test_b352_epicbeam.py는 보상 map fixture 추가·8fps/WebP. `CHROME=/usr/bin/google-chrome python3 tests/test_b382.py` PASS.
+- 설명·스크린샷: /workspace/b382/dusk_cause_fix.png, quality_comparison.png, epic_avatar_loaded_after.png(검증용 모의 portrait), epic_avatar_after.png, calendar_after.png, quality_frame_before.jpg / quality_frame_after.webp. 커밋 9a17307, c5dcaff, f4425f8, 2b1ec34.
+- 배포: dataset.build='b382' 빌드; push/두 도메인 검증은 동 작업 마지막에 추가.
+
 ## t423 썬데이 혜택 — 비슷한 줄 버리지 않음 (등장 확률 2배 누락)
 - 증상(1407, 11/8): OCR 줄에 `트레져 헌터 등장 확률 2배` 가 있었는데 feed benefit 은 `트레져 헌터 경험치 3배 · 몬스터파크 클리어 경험치 추가 250%` 만.
 - 원인: `looks_clean` 이 KNOWN 별칭과 ≥0.6 유사하면 버림(등장확률 ↔ 경험치 cover ~0.67) + KNOWN 에 등장 확률 문장 없음. legacy 경로도 substring 유사 중복 제거.
