@@ -8707,7 +8707,7 @@ function ecRecFor(c){ const L=EC.recs.filter(r=>r.bid===c.boss&&r.t>=c.t0-EC.cfg
 function ecLink(m,r){ r.used=1; Object.assign(m,{item:r.k,cid:r.cid||m.cid,cname:r.cname||m.cname,diff:r.diff||m.diff,recT:r.t}); }
 async function ecSave(c,fr){ const C0=EC.cfg; let blobs=(await Promise.all(fr.map(x=>x.p))), ok=fr.map((x,i)=>[x,blobs[i]]).filter(x=>x[1]); if(!ok.length) return;
   /* b383: 빔·아이템 오버레이가 뜨는 가운데 영역을 크롭해 정적인 테두리는 버리고 글자 픽셀을 보존.
-     저장한 파일 전체를 측정해 이전 4초 측정치보다 여유있는 840,000B를 최종 ECB1 예산으로 강제.
+     저장한 파일 전체를 측정해 이전 4초 측정치보다 여유있는 800,000B를 최종 ECB1 예산으로 강제.
      같은 캡처라도 장면 복잡도가 다르므로 실패하면 화면·fps·품질을 내려 표면적인 설정만 믿지 않는다. */
   async function ecEncFit(list,frac,q,skip){ const to=list.filter((_,i)=>i%skip===0), cv=document.createElement('canvas');cv.width=Math.round(c.w*frac);cv.height=Math.round(c.h*frac);const g=cv.getContext('2d'),sx=(c.w-cv.width)/2,sy=(c.h-cv.height)/2,fs=[];
     for(const [f,b] of to){ const im=await createImageBitmap(b); g.drawImage(im,sx,sy,cv.width,cv.height,0,0,cv.width,cv.height); im.close(); const nb=await new Promise(ok=>cv.toBlob(ok,'image/webp',q));fs.push([f,nb]); }
@@ -8715,7 +8715,7 @@ async function ecSave(c,fr){ const C0=EC.cfg; let blobs=(await Promise.all(fr.ma
   if(C0.maxBytes){ let fit=null, packed=Infinity, raw;
     outer: for(const frac of [.8,.7,.6,.5]) for(const skip of [1,2,3]) for(const q of [.6,.5,.4,.3]){ fit=await ecEncFit(ok,frac,q,skip);const F={ts:fit.ts,vt:fit.vt,f:fit.blobs};packed=(await ecPack(F)).size;if(packed<=C0.maxBytes) break outer; }
     if(packed>C0.maxBytes){fit=await ecEncFit(ok,.4,.2,6);raw={ts:fit.ts,vt:fit.vt,f:fit.blobs};packed=(await ecPack(raw)).size;} /* 복잡도 극한: 마지막 단계도 실제 ECB1 확인 */
-    ok=fit.blobs.map((b,i)=>[{t:fit.ts[i],vt:fit.vt[i]},b]);packed=(await ecPack({ts:fit.ts,vt:fit.vt,f:fit.blobs})).size;raw={ts:ok.map(x=>x[0].t-c.t0),vt:fit.vt,f:fit.blobs};packed=(await ecPack(raw)).size;c.w=fit.W;c.h=fit.H;EC.lastFit={...fit,crop:+(fit.W/(c.w/fit.W)).toFixed(2),packed}; }
+    ok=fit.blobs.map((b,i)=>[{t:fit.ts[i],vt:fit.vt[i]},b]);raw={ts:ok.map(x=>x[0].t-c.t0),vt:fit.vt,f:fit.blobs};packed=(await ecPack(raw)).size;c.w=fit.W;c.h=fit.H;EC.lastFit={...fit,crop:+(fit.W/(c.w/fit.W)).toFixed(2),packed}; }
   blobs=ok.map(x=>x[1]);
   const id='ec'+c.t0, mid=ok.reduce((b,x,i)=>Math.abs(x[0].t-c.t0)<Math.abs(ok[b][0].t-c.t0)?i:b,0), pi=Math.min(ok.length-1,mid+3), poster=ok[pi][1];
   let cid='',cname=''; try{ const a=typeof activeChar==='function'?activeChar():null; if(ARX.det.cid){ const x=S.characters.find(z=>z.id===ARX.det.cid); if(x){ cid=x.id; cname=x.name; } } else if(a){ cid=a.id; cname=a.name; } }catch(e){}

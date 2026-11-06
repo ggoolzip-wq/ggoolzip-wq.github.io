@@ -8,6 +8,16 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b383 (t426ua0) 클립 용량 ≤ 기존 + 선명도 개선 (b382 용량 증가 수정)
+- 요구: 같은 960×540 4초 실제 합성화면의 기존 866,389B 이상은 실패. b382의 1,430,002B 는 요구 위반이므로 b382 클립 720p 정책을 b383으로 대체.
+- 방법: 캡처 감지(240p)와 분리해 원본 최대 540p로 읽고 8fps 프레임을 감지. 저장 때 중앙 크롭을 .8→.7→.6→.5 순으로 적용해 정적인 외곽을 버림. WebP q=.6→.5→.4→.3 및 skip(8→4→2.67fps)의 grid를 순서대로 시도. **각 단계마다 ecPack 실제 ECB1 헤더+프레임 전체 바이트를 측정해 ≤800,000B인 첫 조합만 저장**(벤치 기존치보다 약 8% 예비 여유). 최악 최후 크롭 .4·q .2·skip 6. 원본 작은 해상도 확대 안 함.
+- 실제 측정(2026-11-06 Chromium): 기존 **427×240 JPEG .72 /10fps/40장=866,389B** → b383 **768×432 WebP .5 /8fps/32장=790,323B**. **76,066B(8.78%) 감소**. crop w/h 헤더에 저장하고 ecOpen은 캔버스에 그 크기로 정확히 표시.
+- 적응 실증: 복잡한 640×360 32프레임 합성도 frac .8이 초과하면 자동 frac .7 (**512×288, q .6, 8fps, ECB1 783,632B**)으로 저장. 저장 meta.bytes는 마지막 실제 패킹까지 일치(서버 업로드에 쓸 크기). frames skip 헤더 vt 타임스탬프 유지.
+- 호환: ECB1 format 안 바꿈, 기존 JPEG 이나 b382 WebP 모두 ecUnpack 동일. ecPack이 원본 프레임 Mime을 jpeg/webp magic으로 구분하던 방식 유지. 서버 2MB 제한 그대로. 기존 기록 삭제·변경 없음.
+- 테스트: test_b383.py (실제 ecSave·크롭 저용량 자동 강등·메타 크기=ecPack·JPEG ECB1) PASS; test_b352_epicbeam에 실제 영상 용량 ≤866,389·m.w≥768·m.h≥432·meta=packed; test_b382 capture 최대 540p로 갱신. 세 가지 ALL PASS. run_par 결과는 아래에 추가.
+- 증거: `/workspace/b383/quality_comparison.png` — 같은 원본 프레임 전체와 아이템 창 2배 확대; **AFTER는 실제 32장 클립의 한 프레임**, BEFORE 원본을 이용해 ECB1 전체 용량 동시 비교. `source_frame.png`, `crop_frame.webp`, `old_reference.jpg`, `clip_video_time.txt`, `benchmark_result.log`. 설명 생성 `/workspace/b383/compare.py`. 테스트 B383_SHOTDIR=/workspace/b383.
+- 배포: dataset.build='b383'·CloudAgent 없이 local checkout 특화 fixture 필요. core commit 88ab2f2. 이 줄 이후 배포 시각/HEAD 확인.
+
 ## b382 (t418 후속) 에픽빔 오기록·저장 화질·초상화 + 지난 보스 일정 테두리
 - 증상: 2026-11-05 22:21:32(란별자)·15:02:42(2터래플) 더스크 카오스 "아이템 확인 전" 영상은 각각 전투 스킬·밝은 UI 창. 모든 초상화 빈 원. 지난 날짜도 분홍 테두리.
 - 사용자 허가 라이브 조회: box env WONMO_NEXON_KEY(출력/로그 금지), server mode POST /api/login → HTTP 403 `sub_key`("API KEY 정보가 없습니다"). 실제 저장 영상/route/api 관리자 내역은 읽지 못함. records 변경·삭제 없음. 공유 PNG 두 장과 기존 b352 로그/합성 상태로 재현.
