@@ -17,7 +17,7 @@
 - 크기 (실제 사용자 960×540 빔 프레임 4s): 기존 240p 40장 866,389B → 새 540p 32장 1,430,002B (약 1.65배). 1080p 합성 한 장 3,941B→11,236B. 해상도 올리고 fps 줄였지만 실제 장면에서 총 크기 감소까지 보장하지는 않음. 서버 2MB 제한 그대로.
 - 초상화: ecCard의 결손 포트레이트만 예전 `avatar(c.image)`에서 재사용(`c` 기존 로컬 캐릭터 image URL). 새 넥슨 키 저장/호출 없음. 공용 `avatar` 실패 `img 제거` 경로를 대체하기 위해 ecAvatar wrapper: `error`→`ecAvErr`가 `<img>`를 `에픽 소유 닉네임 첫 글자 이니셜(<b class=ecfb>)`로 교체. 정상 URL은 넥슨 초상화. img 없으면 공용 avatar 정책답게 이니셜. live 기록 API 제한으로 실제 유저 사진은 조회하지 못함.
 - 달력: `.calc`에 과거면 `.past` 추가. `.calc.past.cbB` 는 일반 날짜의 회색 border/box-shadow. `calbb` 의 분홍 "·보스 일정 N개" 잔존. 미래 cbB 및 오늘은 기존 분홍. 라이트도 같은 원칙.
-- 테스트: test_b382.py (전투 차단/실제 reward 성공/만료/720p WebP·ECB1/portrait 성공·실패/calendar PASS), test_b352_epicbeam.py는 보상 map fixture 추가·8fps/WebP. `CHROME=/usr/bin/google-chrome python3 tests/test_b382.py` PASS.
+- 테스트: test_b382.py (전투 차단/실제 reward 성공/만료/720p WebP·ECB1/portrait 성공·실패/calendar PASS), b370_calmulti도 지난 보스 테두리 규격 갱신→19 PASS, test_b352_epicbeam.py는 보상 map fixture 추가·8fps/WebP. `CHROME=/usr/bin/google-chrome python3 tests/test_b382.py` PASS.
 - 설명·스크린샷: /workspace/b382/dusk_cause_fix.png, quality_comparison.png, epic_avatar_loaded_after.png(검증용 모의 portrait), epic_avatar_after.png, calendar_after.png, quality_frame_before.jpg / quality_frame_after.webp. 커밋 9a17307, c5dcaff, f4425f8, 2b1ec34.
 - 배포: dataset.build='b382' 빌드; push/두 도메인 검증은 동 작업 마지막에 추가.
 

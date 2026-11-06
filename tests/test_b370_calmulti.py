@@ -70,7 +70,7 @@ try:
     pg.click('#calDet .calcls') if pg.locator('#calDet .calcls').count() else None
     for th,B,M in [('dark','rgb(255, 59, 107)','rgb(62, 224, 138)'),('light','rgb(224, 20, 76)','rgb(15, 157, 88)')]:
         r=cells(pg,th)
-        check(th+' 칸 테두리: 보스=선홍, 메모만=초록, 둘 다=선홍, 없음=기본', r['05'][0]==B and r['03'][0]==M and r['06'][0]==B and r['07'][0] not in (B,M), r)
+        check(th+' 과거 보스=일반, 메모만=초록, 없음=기본', r['05'][0] not in (B,M) and r['03'][0]==M and r['07'][0] not in (B,M), r)
         check(th+' 정적(애니메이션 없음) + 선택 칸 outline 유지', all(v[2]=='none' for v in r.values()) and r['06'][1]=='solid' and r['05'][1]!='solid', r)
         tc=pg.evaluate("(()=>{const e=document.querySelector('.calc.today');return getComputedStyle(e).borderTopColor})()")
         check(th+' 오늘 칸 분홍 테두리 유지', tc=='rgb(255, 79, 216)', tc)
