@@ -99,6 +99,7 @@ KNOWN = [
     ("콤보킬 경험치 획득량 +{n}%", ["콤보킬경험치획득량"]),
     ("룬 재등장·재사용 대기시간 감소", ["룬재등장및재사용대기시간감소"]),
     ("트레져 헌터 경험치 {n}배", ["트레져헌터경험치배"]),
+    ("트레져 헌터 등장 확률 {n}배", ["트레져헌터등장확률배", "트레져헌터등장확률"]),
     ("사냥으로 얻는 솔 에르다 {n}배 증가", ["사냥을통해획득할수있는솔에르다배증가", "솔에르다배증가"]),
     ("몬스터파크 클리어 경험치 추가 {n}%", ["몬스터파크클리어경험치추가증가", "몬스터파크클리어경험치추가"]),
     ("주문의 흔적 강화 비용 {n}% 할인", ["주문의흔적강화비용할인"]),
@@ -172,9 +173,7 @@ def looks_clean(t):
     ws = re.findall(r"[가-힣]+", t)
     if any(len(w) == 1 and w not in "및시수등의개" for w in ws) or len({w for w in ws if len(w) >= 2}) < len([w for w in ws if len(w) >= 2]):
         return False  # 홀로 떨어진 한 글자(오인식) · 같은 낱말 반복
-    h = _hn(t)
-    if any(_cover(a, h) >= 0.6 and 4 <= len(h) <= 1.5 * len(a) for k in KNOWN for a in k[1]):  # 사전 문장이 깨진 것 → 버림
-        return False
+    # t423: 유사도로 혜택 줄 버리지 않음(완전 동일 문자열만 benefits 쪽에서 중복 제거). 깨진 OCR은 아래 한글·기호 비율로만 거름.
     ok = sum(1 for ch in t if "가" <= ch <= "힣" or ch.isdigit() or ch in " %+·.,!~()")
     hang = re.findall(r"[가-힣]{2,}", t)
     return ok / max(1, len(t)) >= 0.9 and len(hang) >= 2
@@ -216,12 +215,12 @@ def benefits(lines, extra_hits=None):
     rest = []
     for y, t, hgt in legacy_benefits(lines):
         t = shorten(t)
-        if not t or not looks_clean(t) or known_match(t) or any(t in p or p in t for _, p in picked):
+        if not t or not looks_clean(t) or known_match(t) or any(t == p for _, p in picked):
             continue
         rest.append((-hgt, y, t))
     for _, y, t in sorted(rest):
         if len(picked) >= 4: break
-        if not any(t == p or t in p or p in t for _, p in picked):
+        if not any(t == p for _, p in picked):
             picked.append((y, t))
     picked.sort()
     if len(picked) > 4:  # 사전 일치가 4개 넘으면 위에서 4개

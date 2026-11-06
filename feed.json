@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-06T13:05:38+09:00",
+ "updatedAt": "2026-11-06T14:01:29+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
@@ -159,13 +159,13 @@
   "end": "2026-11-08T23:59:00+09:00",
   "date": "2026-11-06T10:00:00+09:00",
   "via": "api",
-  "benefit": "트레져 헌터 경험치 3배 · 몬스터파크 클리어 경험치 추가 250%",
+  "benefit": "트레져 헌터 등장 확률 2배 · 트레져 헌터 경험치 3배 · 몬스터파크 클리어 경험치 추가 250%",
   "benefitSrc": "ocr",
   "crop": "sunday.png?v=1407",
   "ocr": {
    "image": "https://lwi.nexon.com/maplestory/2026/1022_board/261108_1K16FRPBN1G02THG.png",
    "ok": true,
-   "at": "2026-11-06T10:02:18+09:00",
+   "at": "2026-11-06T14:01:29+09:00",
    "tries": 1,
    "lines": [
     "|",
@@ -208,7 +208,8 @@
    "cropSize": [
     876,
     890
-   ]
+   ],
+   "benefitFix": "t423: keep all distinct benefit lines (no fuzzy drop)"
   }
  }
 }

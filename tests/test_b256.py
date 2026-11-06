@@ -26,6 +26,10 @@ check("note lines never become benefits", O.benefits([L(0, "ㆍ 기본 획득량
 hits = [(0, "룬 경험치 버프 +100%", .9, "룬 경험치 버프 +{n}%")]
 check("multi-pass vote merges hits", O.benefits([L(0, "콤보킬 경험치 획득량 +300%")], hits) == ["룬 경험치 버프 +100%", "콤보킬 경험치 획득량 +300%"])
 check("max 4", len(O.benefits([L(i * 100, t) for i, t in enumerate(["미라클 타임", "트레져 헌터 경험치 3배", "주문의 흔적 강화 비용 50% 할인", "흔적 복구 비용 20% 할인", "스타포스 강화 비용 30% 할인"])])) == 4)
+# t423: 비슷한 트레져 헌터 줄도 버리지 않고 다 넣음(완전 동일 문자열만 하나로)
+W1407 = ["트레져 헌터 등장 확률 2배", "트레져 헌터 경험치 3배", "몬스터파크 클리어 경험치 추가 250%"]
+check("1407: spawn+exp+monsterpark all kept", O.benefits([L(0, W1407[0]), L(100, W1407[1]), L(200, W1407[2])]) == W1407)
+check("t423: exact same string collapsed once", O.benefits([L(0, "트레져 헌터 경험치 3배"), L(40, "트레져 헌터 경험치 3배"), L(80, "트레져 헌터 등장 확률 2배")]) == ["트레져 헌터 경험치 3배", "트레져 헌터 등장 확률 2배"])
 # feed.json: 못 믿을 글자 → 예전 OCR 혜택(쓰레기) 지우고 제목 표시 / 본문 HTML 글자(text)는 OCR 이 덮지 않음
 tmp = tempfile.mkdtemp(); fp = os.path.join(tmp, "feed.json"); O.FEED, O.CROP = fp, os.path.join(tmp, "s.png")
 class FakeImg:
