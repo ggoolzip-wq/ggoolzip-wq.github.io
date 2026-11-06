@@ -13,7 +13,7 @@
 - 원인: `looks_clean` 이 KNOWN 별칭과 ≥0.6 유사하면 버림(등장확률 ↔ 경험치 cover ~0.67) + KNOWN 에 등장 확률 문장 없음. legacy 경로도 substring 유사 중복 제거.
 - 수정(scripts/sunday_ocr.py): 유사도 버림 제거 · benefits 중복은 **동일 문자열만** · KNOWN 에 `트레져 헌터 등장 확률 {n}배`. 사진 crop(`sunday.png`) 은 건드리지 않음.
 - 테스트: tests/test_b256.py 에 1407 3줄·완전 중복 접기. test_sunday_ocr·기존 1405/fuzzy/garbage 통과(이 박스엔 tesseract 없어 실화상 OCR SKIP).
-- 피드: feed.json sunday.benefit 을 3개로 재생성. 배포 후 ggoolzip-wq.github.io/feed.json · bossmaple 동일 문구 확인.
+- 피드: feed.json sunday.benefit 을 3개로 재생성. 배포 확인(14:03 KST): ggoolzip-wq.github.io · bossmaple.pages.dev 둘 다 3혜택. crop 유지. 스크린샷 /workspace/t423/sun_card_{gh,bossmaple,local}.png. 커밋 515392e.
 
 ## b380 (t416·t417·t418) 벨로나 하드 — 신념의 연마석·광기의 방어구 상자 자동 기록 안 됨
 - 증상: 캐릭터·보상 맵 인식은 됐는데 보스 드롭 신념의 연마석(g_faith)·벨로나 보상(광기의 에테르넬 방어구 상자 b_bellona) 기록 안 됨.
