@@ -19,7 +19,7 @@
 - 달력: `.calc`에 과거면 `.past` 추가. `.calc.past.cbB` 는 일반 날짜의 회색 border/box-shadow. `calbb` 의 분홍 "·보스 일정 N개" 잔존. 미래 cbB 및 오늘은 기존 분홍. 라이트도 같은 원칙.
 - 테스트: test_b382.py (전투 차단/실제 reward 성공/만료/720p WebP·ECB1/portrait 성공·실패/calendar PASS), b370_calmulti도 지난 보스 테두리 규격 갱신→19 PASS, test_b352_epicbeam.py는 보상 map fixture 추가·8fps/WebP. `CHROME=/usr/bin/google-chrome python3 tests/test_b382.py` PASS.
 - 설명·스크린샷: /workspace/b382/dusk_cause_fix.png, quality_comparison.png, epic_avatar_loaded_after.png(검증용 모의 portrait), epic_avatar_after.png, calendar_after.png, quality_frame_before.jpg / quality_frame_after.webp. 커밋 9a17307, c5dcaff, f4425f8, 2b1ec34, 4e2d2a2, 3fdb84a.
-- 배포: dataset.build='b382' 빌드. 전체 run_par(465s): 신규 b382 PASS; b370은 실행 중에 갱신→직렬 재시도 19 PASS. 기존 실패 3개만 tracker53(로그아웃 키)·b213(아이콘 높이)·b288(템플릿 미탐지). 설명 PNG·quality /avatar /calendar 검증은 /workspace/b382/.
+- 배포: dataset.build='b382' 빌드. 2026-11-06 16:25 KST bossmaple.pages.dev · ggoolzip-wq.github.io 실제 브라우저 모두 b382 확인(main HEAD c8746a9). 전체 run_par(465s): 신규 b382 PASS; b370은 실행 중에 갱신→직렬 재시도 19 PASS. 기존 실패 3개만 tracker53(로그아웃 키)·b213(아이콘 높이)·b288(템플릿 미탐지). 설명 PNG·quality /avatar /calendar 검증은 /workspace/b382/.
 
 ## t423 썬데이 혜택 — 비슷한 줄 버리지 않음 (등장 확률 2배 누락)
 - 증상(1407, 11/8): OCR 줄에 `트레져 헌터 등장 확률 2배` 가 있었는데 feed benefit 은 `트레져 헌터 경험치 3배 · 몬스터파크 클리어 경험치 추가 250%` 만.
