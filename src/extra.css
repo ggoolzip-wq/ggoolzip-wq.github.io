@@ -2315,7 +2315,7 @@ nav.tabs button .ecico{display:inline-block;width:16px;height:16px;vertical-alig
 .ectl .ecic img,.ectl .ecic .bicon{width:22px!important;height:22px!important;object-fit:contain;flex:none;border-radius:4px;margin:0!important;vertical-align:middle}
 .ectl .ecic .hongico{position:relative;width:22px;height:22px;display:block;gap:0}.ectl .ecic .hongico>:first-child{width:22px!important;height:22px!important}.ectl .ecic .hongico>:last-child{position:absolute;right:-1px;bottom:-1px;width:11px!important;height:11px!important}
 .ectl .avatar.ecav{width:24px;height:24px;flex:none;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:.7rem;background:rgba(255,255,255,.08);margin:0}
-.ectl .avatar.ecav img{width:48px!important;height:auto!important;min-height:48px!important;max-width:none;max-height:none;object-fit:cover;object-position:50% 30%;border-radius:0}
+.ectl .avatar.ecav img{width:48px!important;height:48px!important;max-width:none;max-height:none;object-fit:cover;object-position:50% 30%;border-radius:0}
 .ecq{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:4px;background:rgba(255,255,255,.08);opacity:.6;font-style:normal}
 .ecempty{padding:40px;text-align:center;opacity:.6}
 .ecpg{display:flex;justify-content:center;gap:6px;margin-top:16px}
@@ -2490,4 +2490,4 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 [data-theme=light] .calc.past.cbB{border-color:rgba(120,110,220,.28);box-shadow:none}
 [data-theme=light] .calc.past.cbB.has{border-color:rgba(90,110,240,.55);box-shadow:0 0 10px rgba(110,130,255,.18) inset}
 
-.ectl .avatar.ecav{position:relative}.ectl .avatar.ecav .ecfb{display:none;position:absolute;inset:0;place-items:center;font-weight:500}.ectl .avatar.ecav.ecbroke .ecfb{display:grid}
+.ectl .avatar.ecav{position:relative}.ectl .avatar.ecav .ecfb{display:grid;position:absolute;inset:0;place-items:center;font-weight:500}.ectl .avatar.ecav.ecbroke .ecfb{display:grid}

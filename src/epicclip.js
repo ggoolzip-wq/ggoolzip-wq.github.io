@@ -96,9 +96,9 @@ async function ecPack(F){ const bufs=await Promise.all(F.f.map(b=>b.arrayBuffer(
 function ecUnpack(ab){ const u=new Uint8Array(ab); if(u[0]!==69||u[1]!==67||u[2]!==66||u[3]!==49) throw new Error('bad clip'); const n=new DataView(ab).getUint32(4,true), hd=JSON.parse(new TextDecoder().decode(u.subarray(8,8+n)));
   const old=hd.sz.every((z,i)=>{const o=8+n+hd.sz.slice(0,i).reduce((a,b)=>a+b,0); return u[o]===255&&u[o+1]===216;});
   let o=8+n; const f=hd.sz.map(z=>{ const b=new Blob([u.subarray(o,o+z)],{type:old?'image/jpeg':'image/webp'}); o+=z; return b; }); return {ts:hd.ts,vt:hd.vt,f}; }
-const ecAvatar=c=>{ const cc={...(c||{}),image:safeImg(c&&c.image)?c.image:''};
-  const letter=esc((c&&c.name||'?').slice(0,1)), err='this.outerHTML=&quot;<b class=ecfb>'+letter+'</b>&quot;';
-  return avatar(cc,'ecav').replace('onerror="this.remove()"','onerror="'+err+'"'); };
+const ecAvatar=c=>{ const cc={...(c||{}),image:safeImg(c&&c.image)?c.image:''}, letter=esc((c&&c.name||'?').slice(0,1));
+  return avatar(cc,'ecav').replace('onerror="this.remove()"','onerror="ecAvErr(this)"').replace('<img ','<img data-ecletter="'+letter+'" '); };
+function ecAvErr(im){ const b=document.createElement('b'); b.className='ecfb'; b.textContent=im.dataset.ecletter||'?'; im.replaceWith(b); }
 const ecMetaOut=m=>{ const {poster,up,remote,...r}=m; return r; };
 async function ecReq(path,opt={}){ const api=ecApi(); if(!api) return {status:0}; let r; try{ r=await fetch(api+path,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+svTok()}}); }catch(e){ return {status:-1}; } return r; }
 async function ecUpOne(m){ const F=await ecFrames(m.id); if(!F) return {status:404}; const b=await ecPack(F); if(b.size>EC_MAXUP) return {status:413};
