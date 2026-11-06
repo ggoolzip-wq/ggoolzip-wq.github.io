@@ -2483,3 +2483,11 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 
 /* b381 (t422): 득템 기록 확인 중 보스 칸 = 누르면 최소화 해제 */
 .arpipw .ar-pminrow.ar-pmwarn{cursor:pointer}
+
+/* b382 (t424): 지난 보스 일정은 선홍 배지·날짜 상세의 선홍 문구는 유지, 칸 테두리만 일반 날짜로. */
+.calc.past.cbB{border-color:color-mix(in srgb,var(--n1) 22%,transparent);box-shadow:none}
+.calc.past.cbB.has{border-color:color-mix(in srgb,var(--n1) 50%,transparent);box-shadow:0 0 10px color-mix(in srgb,var(--n1) 18%,transparent) inset}
+[data-theme=light] .calc.past.cbB{border-color:rgba(120,110,220,.28);box-shadow:none}
+[data-theme=light] .calc.past.cbB.has{border-color:rgba(90,110,240,.55);box-shadow:0 0 10px rgba(110,130,255,.18) inset}
+
+.ectl .avatar.ecav{position:relative}.ectl .avatar.ecav .ecfb{display:none;position:absolute;inset:0;place-items:center;font-weight:500}.ectl .avatar.ecav.ecbroke .ecfb{display:grid}
