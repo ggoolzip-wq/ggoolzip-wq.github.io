@@ -14,9 +14,9 @@
 - 실제 측정(2026-11-06 Chromium): 기존 **427×240 JPEG .72 /10fps/40장=866,389B** → b383 **768×432 WebP .5 /8fps/32장=790,323B**. **76,066B(8.78%) 감소**. crop w/h 헤더에 저장하고 ecOpen은 캔버스에 그 크기로 정확히 표시.
 - 적응 실증: 복잡한 640×360 32프레임 합성도 frac .8이 초과하면 자동 frac .7 (**512×288, q .6, 8fps, ECB1 783,632B**)으로 저장. 저장 meta.bytes는 마지막 실제 패킹까지 일치(서버 업로드에 쓸 크기). frames skip 헤더 vt 타임스탬프 유지.
 - 호환: ECB1 format 안 바꿈, 기존 JPEG 이나 b382 WebP 모두 ecUnpack 동일. ecPack이 원본 프레임 Mime을 jpeg/webp magic으로 구분하던 방식 유지. 서버 2MB 제한 그대로. 기존 기록 삭제·변경 없음.
-- 테스트: test_b383.py (실제 ecSave·크롭 저용량 자동 강등·메타 크기=ecPack·JPEG ECB1) PASS; test_b352_epicbeam에 실제 영상 용량 ≤866,389·m.w≥768·m.h≥432·meta=packed; test_b382 capture 최대 540p로 갱신. 세 가지 ALL PASS. run_par 결과는 아래에 추가.
+- 테스트: test_b383.py (실제 ecSave·크롭 저용량 자동 강등·메타 크기=ecPack·JPEG ECB1) PASS; test_b352_epicbeam에 실제 영상 용량 ≤866,389·m.w≥768·m.h≥432·meta=packed; test_b382 capture 최대 540p로 갱신. 세 가지 ALL PASS. run_par(581.8s) ALL b382/b352/b361/b362/b354 cloud/b370 PASS; 기존 실패 3개만 tracker53(로그아웃 키)·b213(아이콘 높이)·b288(탐지 누락), 나머지 타이밍 실패는 직렬 retry PASS. 로그 /workspace/b383/run_par.log.
 - 증거: `/workspace/b383/quality_comparison.png` — 같은 원본 프레임 전체와 아이템 창 2배 확대; **AFTER는 실제 32장 클립의 한 프레임**, BEFORE 원본을 이용해 ECB1 전체 용량 동시 비교. `source_frame.png`, `crop_frame.webp`, `old_reference.jpg`, `clip_video_time.txt`, `benchmark_result.log`. 설명 생성 `/workspace/b383/compare.py`. 테스트 B383_SHOTDIR=/workspace/b383.
-- 배포: dataset.build='b383'·CloudAgent 없이 local checkout 특화 fixture 필요. core commit 88ab2f2. 이 줄 이후 배포 시각/HEAD 확인.
+- 배포: dataset.build='b383'·CloudAgent 없이 local checkout 특화 fixture 필요. core commit 88ab2f2, validation/document commit 2858f37. 2026-11-06 16:42 KST bossmaple.pages.dev + ggoolzip-wq.github.io **실제 브라우저 b383 확인**.
 
 ## b382 (t418 후속) 에픽빔 오기록·저장 화질·초상화 + 지난 보스 일정 테두리
 - 증상: 2026-11-05 22:21:32(란별자)·15:02:42(2터래플) 더스크 카오스 "아이템 확인 전" 영상은 각각 전투 스킬·밝은 UI 창. 모든 초상화 빈 원. 지난 날짜도 분홍 테두리.
