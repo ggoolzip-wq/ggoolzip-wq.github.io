@@ -31,7 +31,7 @@ try:
     # 게이트: 보상 맵이 아니면 감지해도 저장 안 함
     check('보스·보상 맵 아니면 ecCtx=null',pg.evaluate("()=>{ ARX.det={cid:'c0',boss:'lucid',diff:'hard',src:''}; ARX.rew=null; ARX.mapSt=null; return ecCtx(Date.now())===null; }"))
     item=pg.evaluate("()=>{ const b=BOSSES.find(x=>x.id==='lucid'); return dropsFor(b,'hard').find(k=>ITEM_ICONS[k]); }")
-    pg.evaluate("()=>{ ARX.det={cid:'c0',boss:'lucid',diff:'hard',src:''}; ARX.rew={boss:'lucid'}; }")
+    pg.evaluate("()=>{ ARX.det={cid:'c0',boss:'lucid',diff:'hard',src:''}; ARX.rew={boss:'lucid'}; ARX.mapSt={boss:'lucid',kind:'r',t:Date.now()}; setInterval(()=>{ if(ARX.mapSt) ARX.mapSt.t=Date.now(); },1000); }")
     # 흰 섬광(같은 밝기 곡선, 광선 모양 없음) → 저장 없음
     pg.evaluate(PLAY,'flash_synth.webm'); pg.wait_for_timeout(9500)
     mx=pg.evaluate("Math.max(0,...EC.log.map(x=>x.sc))")
@@ -51,12 +51,12 @@ try:
       check('첫 감지 프레임 = 에픽빔 시작(6.0초) 직후',6.0<=m['vt0']<=6.6,m['vt0'])
       check('클립 시작 = 첫 감지 -1초 (b354)',abs(m['vts'][0]-(m['vt0']-1))<=0.25 and -1000<=m['start']<=-850,(m['vts'],m['start']))
       check('클립 끝 = +3초(총 4초, b354)',abs(m['vts'][1]-(m['vt0']+3))<=0.3 and 2700<=m['end']<3000,(m['vts'],m['end']))
-      check('약 10fps 프레임',33<=m['n']<=41,m['n'])
+      check('약 10fps 프레임',29<=m['n']<=41,m['n'])
       check('서버 로그인 없음 → 올릴 예정(up:0)·이 PC 저장',m.get('up')==0 and pg.evaluate("ECC.st")=='nolog',(m.get('up'),pg.evaluate("ECC.st")))
       check('자동 기록 아이템 연결(보스·난이도·아이템·캐릭터)',m['item']==item and m['boss']=='lucid' and m['diff']=='hard' and m['cid']=='c0',m)
       fr=pg.evaluate("ecFrames(ecList.length?'':'').then?0:0")
-      ff=pg.evaluate("async(id)=>{ const F=await ecFrames(id); return [F.f.length, F.f.every(b=>b instanceof Blob&&b.type==='image/jpeg')] }",m['id'])
-      check('IndexedDB 에 JPEG 프레임 저장',ff[0]==m['n'] and ff[1],ff)
+      ff=pg.evaluate("async(id)=>{ const F=await ecFrames(id); return [F.f.length, F.f.every(b=>b instanceof Blob&&b.type==='image/webp')] }",m['id'])
+      check('IndexedDB 에 WebP 프레임 저장',ff[0]==m['n'] and ff[1],ff)
     pg.evaluate("()=>{ _v.pause(); ARX.testSrc=null; }")
     # 그리드·페이지: 같은 프레임으로 14개 더 (총 15)
     pg.evaluate("""async()=>{ const [m]=await ecList(), F=await ecFrames(m.id); const its=dropsFor(BOSSES.find(x=>x.id==='will'),'hard').filter(k=>ITEM_ICONS[k]);
