@@ -52,7 +52,7 @@ try:
       check('자동 기록 아이템 연결(보스·난이도·아이템·캐릭터)',m['item']==item and m['boss']=='lucid' and m['diff']=='hard' and m['cid']=='c0',m)
       blob=pg.evaluate("async(id)=>{const F=await ecFrames(id);return [...new Uint8Array(await F.video.arrayBuffer())]}",m['id'])
       import pathlib,base64
-      pd=pathlib.Path('/workspace/b384');pd.mkdir(exist_ok=True);(pd/'clip.webm').write_bytes(bytes(blob))
+      pd=pathlib.Path(os.environ.get('B384_VIDEO_DIR','/workspace/b384'));pd.mkdir(exist_ok=True);(pd/'clip.webm').write_bytes(bytes(blob))
       both=pg.evaluate("""async()=>{const src=document.createElement('canvas');src.width=1280;src.height=720;const g=src.getContext('2d');_v.currentTime=6.6;await new Promise(r=>_v.onseeked=r);g.drawImage(_v,0,0,1280,720);const old=await new Promise(r=>{const c=document.createElement('canvas');c.width=427;c.height=240;c.getContext('2d').drawImage(_v,0,0,427,240);c.toBlob(r,'image/jpeg',.72)});return {vt:_v.currentTime,old:[...new Uint8Array(await old.arrayBuffer())]};}""")
       (pd/'clip_video_time.txt').write_text(str(both['vt']));(pd/'old_reference.jpg').write_bytes(bytes(both['old']))
     if m['item']!=item: raise RuntimeError('linked clip disappeared')

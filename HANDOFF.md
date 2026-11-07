@@ -8,6 +8,17 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b385 (t431) 자동 기록 CPU 급증 — 중복 WebP 인코더 제거 + 반복 계산·자원 정리
+- **원인 실측**: b384는 WebM/VideoFrame 경로에서도 사용하지 않는 720p WebP를 `toBlob`으로 초당 30장 압축했다. VP9는 상시 인코딩이 아니라 감지 후 저장할 때만 동작. 상시 고부하의 큰 원인은 버려지는 WebP였음. 12초 에픽 감시에서 365회 → 0회.
+- **변경**: 네이티브 WebCodecs는 VideoFrame만 보관(구형 브라우저 WebP fallback 유지). 별도 소유 canvas로 전체 화면 캡처. VideoFrame(video) 직접 참조는 실제 라이브 트랙 버퍼를 붙잡아 멈추는 회귀를 발견해 폐기(5프레임 후 정체→소유 복사는 snapshot 27회/인식 fallback 0). 실제 30fps 원본으로 캡처하며 10fps arSnap은 인식에만 사용. 큰 원본은 기존 전체 화면 720p 축소 유지.
+- **정확도 유지**: shift NCC 고정 템플릿 통계 캐시 + 프레임 적분합, 상자 메시지·메소 NCC 적분합 공유. 후보 위치·인식 문턱·OCR 빈도·720p/30fps·기존 비트레이트 정책·전체 화면·전1초/후3초 변경 없음. 32개 shift 입력·20개 메시지 입력에서 기존 점수/최고 위치 동일(최대 오차 <1e-9).
+- **자원/중복 시계**: encoder에 넘긴 VideoFrame clone 즉시 close, 오류 때 encoder close, 입력 끊김 때 ring close. pending 보상 맵 게이트의 프리롤 유지·ring 보존식 수정. arStart 재호출은 예전 시계 전부 해제+frame callback 세대 검사(같은 영상 재시작도 7→7, 끊으면 0). 이름/맵 작은 canvas 크기가 같으면 reset 안 함.
+- **측정(사용자 PC 아님)**: 같은 box Chromium/합성 720p 영상, 워밍업3초·각12초, CDP 전체 프로세스 CPU초/실제초. 에픽만 **3.404→1.469(-56.8%)**, 자동 기록+OCR **4.491→2.515(-44.0%)**, 실제 Worker/OCR/상자 매칭 보상 맵 **4.665→3.182(-31.8%)**. 1080p 입력→720p 저장도 **4.756→3.388(-28.8%)**. 메인 점유는 보상 맵 720p **59.1%→56.7%**, 1080p **60.1%→60.2%(거의 같음)**으로 병목이 남음. OCR/매칭만은 **3.016→2.939(거의 같음)**이라 OCR까지 대폭 해결됐다고 말하면 안 됨. 1회 측정·타이밍 편차·프로파일러 오버헤드 있음.
+- **한계**: 실제 VP9 저장 부하는 남음(전 7.22 CPU초/2.069초, 후 6.57 CPU초/1.758초, 사실상 같은 일시 피크). 원모 PC의 100%가 특정 수치로 떨어진다고 보장할 수 없음. unsupported 브라우저 fallback도 기존처럼 비쌈.
+- **검증**: test_b385_cpu PASS(점수·미사용 WebP 0·legacy 1·pending 프리롤·해제·재시작 시계). test_b384_video 실제 capture→IndexedDB→decode PASS: **1280×720 VP9 /30fps/120장/759,457B**, 구형 클립 재생·득템 연결 유지. ffprobe 독립 확인. 전체 회귀 655초: 직렬 retry 후 tracker53·b213·b288 기존 실패 3개와 b366 새 회귀가 남음. b366은 위 직접 참조 제거 후 별도 재검증 PASS(다른 새 실패 없음). b313 실화면 60개 메소 위치·숫자 및 b348 닉네임/인벤 회귀 PASS, b382·b383 fallback PASS. 기존 WebP 테스트들은 네이티브 인코더를 명시적으로 끄고 legacy 경로를 검증하도록 수정, b384_video·b385_cpu는 run_all 등록.
+- **재현**: `tests/bench_b385_cpu.py`(epic/auto/reward/ocr/encode 분리), `tests/perf/b385.md`, `tests/perf/b385_results.json`. 원본 b384 `/workspace/b385/baseline.html`, 로그·실제 영상·ffprobe·설명 사진 `/workspace/b385/` (`cpu_comparison.png`). API 키/실제 사용자 기록 사용 안 함.
+- **배포**: 생성 index.html 한 벌(dataset.build=b385), 예시/실제 동일. 이 변경 push 후 두 도메인 공개 빌드 확인 결과는 작업 최종 보고에 남김(이 문서 작성 시점에는 배포 전).
+
 ## b384 (t428) 에픽빔 실제 VP9 30fps·720p WebM (용량 ≤800KB)
 - **임베디드 페이지와 실제 페이지 동일**: src/epicclip.js + src/app.js → `tools/build.py` 로 index.html 한 벌 생성(dataset.build='b384'). 예로만 따로 쓰는 capture 파일 없음.
 - WebCodecs VideoEncoder **VP9 vp09.00.10.08**, 전체 프레임(중앙 크롭 아님), 1.25Mbps→0.95→0.70Mbps 순 실제 mux 인코딩 용량 확인 → 최종 800,000B 안인 것만 우선 저장. 초기 목표 1.45Mbps 대신 복잡한 720p 실측 초과분 보정. 영상 간부 백(maple): frame 중요한 파일은 timestamp i*33333μs로 30fps 보장. 저해상도 입력은 720p로 확대 금지 원칙 그대로 retina 16:9만 default 취급.

@@ -6818,7 +6818,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b384'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b385'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -9523,9 +9523,20 @@ function arBmTpl(u,D){ const c=ARX.bmT||(ARX.bmT={}), id=D+'|'+u; if(c[id]) retu
 function arBmGray(src,D){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, G=arGeom(sw,sh), s=G.s||1, B=AR_BOXMSG_BAND, w=Math.min(G.gw,B.w*s), h=Math.min(G.gh-B.t*s,B.h*s), x=G.gx+(G.gw-w)/2, y=G.gy+B.t*s;
   const f=s/(AR_BOXMSG.s||1.40625), cw=Math.max(1,Math.round(w/f/D)), ch=Math.max(1,Math.round(h/f/D)) /* 템플릿은 1920 기본 비율(UI 1.40625배) 실제 화면에서 자름 */, cv=document.createElement('canvas'); cv.width=cw; cv.height=ch; const g=cv.getContext('2d',{willReadFrequently:true}); g.imageSmoothingQuality='high'; g.drawImage(src,x,y,w,h,0,0,cw,ch);
   const d=g.getImageData(0,0,cw,ch).data, a=new Float32Array(cw*ch); let pu=0; for(let i=0;i<cw*ch;i++){ const r=d[i*4],gg=d[i*4+1],b=d[i*4+2]; a[i]=.299*r+.587*gg+.114*b; if(b>200&&r>140&&r<235&&gg>90&&gg<190&&b-gg>50) pu++; } return {a,w:cw,h:ch,pu,x,y,f,D}; }
-function arBmNcc(I,T,x0,x1,y0,y1){ let best=-1,bx=0,by=0; for(let y=Math.max(0,y0);y<=Math.min(I.h-T.h,y1);y++) for(let x=Math.max(0,x0);x<=Math.min(I.w-T.w,x1);x++){ let s=0,q=0,st=0;
-    for(let j=0;j<T.h;j++){ const ro=(y+j)*I.w+x, to=j*T.w; for(let i=0;i<T.w;i++){ const v=I.a[ro+i]; s+=v; q+=v*v; st+=v*T.t[to+i]; } }
-    const vi=q-s*s/T.n, den=Math.sqrt(Math.max(0,vi)*T.tt), sc=den>1e-6?st/den:0; if(sc>best){ best=sc; bx=x; by=y; } } return {sc:best,x:bx,y:by}; }
+/* b385: immutable grayscale captures share summed-area statistics. Same NCC,
+   same candidate pixels/thresholds; only the redundant sum/square loops disappear. */
+const AR_GRAY_SUMS=new WeakMap();
+function arGraySums(a,w,h){let out=AR_GRAY_SUMS.get(a);if(out)return out;const stride=w+1,s=new Float64Array(stride*(h+1)),q=new Float64Array(s.length);
+  for(let y=0;y<h;y++){let sm=0,sq=0;for(let x=0;x<w;x++){const v=a[y*w+x],k=(y+1)*stride+x+1;sm+=v;sq+=v*v;s[k]=s[k-stride]+sm;q[k]=q[k-stride]+sq;}}
+  out={s,q,stride};AR_GRAY_SUMS.set(a,out);return out;
+}
+function arBmNcc(I,T,x0,x1,y0,y1){const P=arGraySums(I.a,I.w,I.h),{s,q,stride}=P;let best=-1,bx=0,by=0;
+  for(let y=Math.max(0,y0);y<=Math.min(I.h-T.h,y1);y++)for(let x=Math.max(0,x0);x<=Math.min(I.w-T.w,x1);x++){
+    const a=y*stride+x,b=a+T.w,c=(y+T.h)*stride+x,d=c+T.w,sm=s[d]-s[b]-s[c]+s[a],sq=q[d]-q[b]-q[c]+q[a];let st=0;
+    for(let j=0;j<T.h;j++){const ro=(y+j)*I.w+x,to=j*T.w;for(let i=0;i<T.w;i++)st+=I.a[ro+i]*T.t[to+i];}
+    const vi=sq-sm*sm/T.n,den=Math.sqrt(Math.max(0,vi)*T.tt),sc=den>1e-6?st/den:0;if(sc>best){best=sc;bx=x;by=y;}
+  }return {sc:best,x:bx,y:by};
+}
 function arBmTop(I,T,k,min){ const out=[]; for(let y=0;y<=I.h-T.h;y++) for(let x=0;x<=I.w-T.w;x++){ const r=arBmNcc(I,T,x,x,y,y); if(r.sc>=min) out.push(r); } out.sort((a,b)=>b.sc-a.sc); const top=[]; for(const c of out){ if(top.length>=k) break; if(top.every(t=>Math.abs(t.x-c.x)>3||Math.abs(t.y-c.y)>2)) top.push(c); } return top; }
 async function arBoxMsgScan(src,mapBoss){ if(!AR_BOXMSG.phrase||!AR_BOXMSG.pre) return null; const I4=arBmGray(src,4); if(I4.pu<25) return null; /* 보라 글자 거의 없음 → 건너뜀 (대부분 프레임) */
   const P4=await arBmTpl(AR_BOXMSG.phrase,4), P2=await arBmTpl(AR_BOXMSG.phrase,2), Q2=await arBmTpl(AR_BOXMSG.pre,2); if(!P4||!P2||!Q2) return null;
@@ -9608,12 +9619,12 @@ function arMesoTpl(){ if(ARX.mtplP) return ARX.mtplP; return ARX.mtplP=Promise.a
 function arMesoKey(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; return [sw,sh,ARX.prof?.id||'',ARX.prof?.s||'',ARX.bbKey||''].join('|'); }
 function arMesoFind(src){ const T=ARX.mtpl; if(!T){ arMesoTpl(); return null; } const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, G=arGeom(sw,sh), s=ARX.prof?.s||G.s||1;
   const f=Math.max(1,s*1.5), W=Math.max(8,Math.round(G.gw/f)), H=Math.max(8,Math.round(G.gh/f)), c=ARX.mfc||(ARX.mfc=document.createElement('canvas')); c.width=W; c.height=H;
-  const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,G.gx,G.gy,G.gw,G.gh,0,0,W,H); const I=arGray(g,W,H), out={}, t0=performance.now();
+  const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,G.gx,G.gy,G.gw,G.gh,0,0,W,H); const I=arGray(g,W,H), out={}, t0=performance.now(), sums=arGraySums(I,W,H);
   for(const k of ['inv','stoInv']){ const im=T[k]; if(!im) continue; const tw=Math.max(4,Math.round(im.width*s/f)), th=Math.max(4,Math.round(im.height*s/f));
     const tc=document.createElement('canvas'); tc.width=tw; tc.height=th; const tg=tc.getContext('2d',{willReadFrequently:true}); tg.drawImage(im,0,0,tw,th); const Tp=arGray(tg,tw,th), N=tw*th;
     let tm=0; for(const v of Tp) tm+=v; tm/=N; let tt=0, bi=0, bv=-1; for(let i=0;i<N;i++){ Tp[i]-=tm; tt+=Tp[i]*Tp[i]; if(Tp[i]>bv){ bv=Tp[i]; bi=i; } }
     const bx=bi%tw, by=(bi/tw)|0, bright=tm+bv-40; let best=-1, bxy=null; /* 템플릿에서 가장 밝은 점(흰 칸)이 화면에서도 밝은 곳만 비교 → 빠름 */
-    for(let y=0;y+th<=H;y++) for(let x=0;x+tw<=W;x++){ if(I[(y+by)*W+x+bx]<bright) continue; let a=0,b=0,cc=0; for(let j=0;j<th;j++){ const r=(y+j)*W+x, q=j*tw; for(let i=0;i<tw;i++){ const v=I[r+i]; a+=Tp[q+i]*v; b+=v; cc+=v*v; } }
+    for(let y=0;y+th<=H;y++) for(let x=0;x+tw<=W;x++){ if(I[(y+by)*W+x+bx]<bright) continue; const z=y*sums.stride+x,z1=z+tw,z2=(y+th)*sums.stride+x,z3=z2+tw,b=sums.s[z3]-sums.s[z1]-sums.s[z2]+sums.s[z],cc=sums.q[z3]-sums.q[z1]-sums.q[z2]+sums.q[z]; let a=0; for(let j=0;j<th;j++){ const r=(y+j)*W+x, q=j*tw; for(let i=0;i<tw;i++){ const v=I[r+i]; a+=Tp[q+i]*v; } }
       const vv=cc-b*b/N; if(vv>1e-6){ const n=a/Math.sqrt(vv*tt); if(n>best){ best=n; bxy=[x,y]; } } }
     if(bxy&&best>=(+ARX.cfg.mesoFindThr||.8)){ const P=ARX.prof?.base||AR_PROF[1], ps=(ARX.prof?.s||P.s), R=P[k]||AR_PROF[1][k], rw=R[2]*s/P.s, rh=R[3]*s/P.s; out[k]={x:G.gx+bxy[0]*f, y:G.gy+bxy[1]*f, w:rw, h:rh, sc:+best.toFixed(3)}; } }
   if(out.stoInv){ const P=ARX.prof?.base||AR_PROF[1], R=P.sto, d=(P.stoInv[0]-P.sto[0])*s/P.s; out.sto={x:out.stoInv.x-d,y:out.stoInv.y+(R[1]-P.stoInv[1])*s/P.s,w:R[2]*s/P.s,h:R[3]*s/P.s,sc:out.stoInv.sc}; }
@@ -9655,7 +9666,7 @@ function arMesoFlush(now,force){ const q=ARX.mesoPend; if(!q) return; if(!force&
 function arMesoTick(src,now){ arMesoFlush(now); if(ARX.mesoBusy||now-(ARX.mesoT||0)<(+ARX.cfg.mesoEvery||1000)) return; ARX.mesoT=now; ARX.mesoBusy=true; arMesoNow(src).then(r=>{ ARX.mesoLast=r; if(r&&r.inv>=0) ARX.mesoSeen={cid:r.cid,inv:r.inv,sto:r.sto,at:Date.now()}; /* b351: PIP 보유 메소 칸 */ }).catch(()=>{}).finally(()=>{ ARX.mesoBusy=false; }); }
 function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return; const r=arR('name',src), now=Date.now(); if(!ARX.bbT||now-ARX.bbT>3000){ ARX.bbT=now; const b=arBBox(src); const k=b?[b.x,b.y,b.w,b.h].map(v=>Math.round(v/16)).join(','):''; if(k!==ARX.bbKey){ ARX.bbox=b; ARX.bbKey=k; ARX.profT=0; } }
   if(!ARX.profBusy&&(!ARX.profT||now-ARX.profT>(ARX.prof?15000:3000))){ ARX.profT=now; ARX.profBusy=true; const was=ARX.prof?.lab; arProfDetect(src).then(P=>{ ARX.profBusy=false; if(P&&P.lab!==was){ arLog(`해상도 프로필: ${P.lab} (UI 배율 ${P.s}, 일치 ${P.score})`); try{ arPanel(); }catch(e){} } }).catch(()=>{ ARX.profBusy=false; }); }
-  const sm=ARX.nsm||(ARX.nsm=document.createElement('canvas')); sm.width=96; sm.height=12; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,96,12);
+  const sm=ARX.nsm||(ARX.nsm=document.createElement('canvas')); if(sm.width!==96)sm.width=96; if(sm.height!==12)sm.height=12; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,96,12);
   const d=g.getImageData(0,0,96,12).data, p=ARX.nprev; let diff=0; if(p) for(let i=0;i<d.length;i+=4) diff+=Math.abs(d[i]-p[i])+Math.abs(d[i+1]-p[i+1])+Math.abs(d[i+2]-p[i+2]);
   try{ arBlackTick(src,now); }catch(e){} const changed=!p||diff/(96*12*3)>=3; ARX.nprev=Uint8ClampedArray.from(d); if(changed){ ARX.nChgT=now; ARX.nameOk=false; }
   /* t578: 0.2초 틱마다 항상 확인 (확인 뒤 3초로 늦추던 것 폐기). ① 학습한 실제 화면 닉네임 이미지와 바로 대조(~1ms) ② 대조로 못 정하면 OCR —
@@ -9981,7 +9992,7 @@ function arMapTplLearn(I,B,text,now){ if(ARX.cfg.mapTpl===false||!I||!B) return 
   for(const X of L){ if(Math.abs(X.w-w)>4||Math.abs(X.h-h)>3) continue; const J={v:avg,W:w,H:h}; let s=-1; for(let dx=-3;dx<=3;dx++) for(let dy=-2;dy<=2;dy++){ const Y={...X}; s=Math.max(s,arMapTplAt({v:J.v,W:J.W,H:J.H},X,dx,dy)); } if(s>=.85) return false; }
   let U=[]; try{ U=JSON.parse(localStorage.getItem('arMapTpl')||'[]'); }catch(e){} let bin=''; for(const b of avg) bin+=String.fromCharCode(b); U.push({text:canon,boss:T.boss,w,h,d:btoa(bin),user:true}); try{ localStorage.setItem('arMapTpl',JSON.stringify(U)); }catch(e){ return false; } ARX.mtT=null; delete P[canon]; try{ arLog('맵 이름 템플릿 저장: '+canon); }catch(e){} return true; }
 function arMapWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return; const r=arR('map',src), now=Date.now();
-  const sm=ARX.msm||(ARX.msm=document.createElement('canvas')); sm.width=96; sm.height=16; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,96,16);
+  const sm=ARX.msm||(ARX.msm=document.createElement('canvas')); if(sm.width!==96)sm.width=96; if(sm.height!==16)sm.height=16; const g=sm.getContext('2d',{willReadFrequently:true}); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,96,16);
   const d=g.getImageData(0,0,96,16).data, p=ARX.mprev; let diff=0; if(p) for(let i=0;i<d.length;i+=4) diff+=Math.abs(d[i]-p[i])+Math.abs(d[i+1]-p[i+1])+Math.abs(d[i+2]-p[i+2]);
   if(!p||diff/(96*16*3)>=3){ ARX.mChgT=now; ARX.mapOk=false; } if(ARX.lock&&now-(ARX.lhT||0)>=200){ ARX.lhT=now; if(arHashDist(arMapHash(src),ARX.lock.hash)>AR_LOCK_DIST){ ARX.mapOk=false; ARX.mChgT=now; } } /* t537 */ if(ARX.rew&&ARX.rew.hash&&!ARX.rew.pend&&now-(ARX.rhT||0)>=200){ ARX.rhT=now; if(arHashDist(arMapHash(src),ARX.rew.hash)>AR_LOCK_DIST){ if(++ARX.rew.n>=2){ ARX.rew.pend=now; ARX.mapOk=false; ARX.mChgT=now; } } else ARX.rew.n=0; } /* t580: 맵 이름 칸 그림이 바뀜 → 바로 OCR 로 맵 이름 확인 (arRewCheck) */ ARX.mprev=Uint8ClampedArray.from(d);
   if(ARX.mapBusy&&now-(ARX.mOcrT||0)>(+ARX.cfg.ocrTimeout||6000)+2000) ARX.mapBusy=false;
@@ -10001,14 +10012,16 @@ function arTickW(){ if(AR_TK.w||AR_TK.off) return AR_TK.w; try{ const u=URL.crea
   AR_TK.w=new Worker(u); AR_TK.w.onmessage=e=>{ const f=AR_TK.f.get(e.data); if(f) try{ f(); }catch(err){ console.warn('[arTick]',err); } }; }catch(e){ AR_TK.off=true; AR_TK.w=null; } return AR_TK.w; }
 function arTick(fn,ms){ const w=arTickW(); if(!w) return setInterval(fn,ms); const id=1e6+(++AR_TK.n); AR_TK.f.set(id,fn); w.postMessage(['s',id,ms]); return id; }
 function arUntick(id){ if(!id) return; if(AR_TK.f.has(id)){ AR_TK.f.delete(id); try{ AR_TK.w.postMessage(['c',id]); }catch(e){} } else clearInterval(id); }
-function arStart(v){ ARX.video=v; ARX.sessRec=[]; /* b335: 라이브 시작마다 PIP 득템 목록 새로 */ ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
+function arStart(v){ /* b385: reconnect/restart must own exactly one set of clocks. */
+  for(const k of ['nTimer','timer','wTimer','boxTimer','logTimer','pfTimer','uiTick']){arUntick(ARX[k]);ARX[k]=0;}
+  const gen=ARX.startGen=(ARX.startGen||0)+1; ARX.video=v; ARX.sessRec=[]; /* b335: 라이브 시작마다 PIP 득템 목록 새로 */ ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
   ARX.nprev=null; ARX.nameOk=false; arUntick(ARX.nTimer); ARX.mprev=null; ARX.mOther=0; ARX.nTimer=arTick(()=>{ if(ARX.video){ const sv=arSrc(); arNameWatch(sv); arMapWatch(sv); /* b366: Worker 비트맵 */ try{ arPendFlush(); }catch(e){} } },100); /* t603: 0.1초 */
   ARX.timer=arTick(()=>{ if(!ARX.video) return; const n=Date.now(); if(arBossState()!=='rew'&&n-(ARX.frT||0)<1000/Math.max(.5,ARX.cfg.fps)-20) return; ARX.frT=n; arFrame(arSrc()); },100); /* t603: 보상 맵(보상 인식 중)이면 0.1초마다, 아니면 설정 fps */
-  if(ARX.cfg.watchFps>0){ if(v.requestVideoFrameCallback){ const loop=(now,meta)=>{ if(ARX.video!==v) return; ARX.rvfcT=performance.now(); arPf().frames++; if(arRewOn()){ arBannerWatch(v,meta); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } v.requestVideoFrameCallback(loop); }; v.requestVideoFrameCallback(loop); ARX.wTimer=arTick(()=>{ if(ARX.video!==v||performance.now()-(ARX.rvfcT||0)<250) return; if(arRewOn()){ arBannerWatch(v); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } },Math.round(1000/ARX.cfg.watchFps)); /* b359: 탭이 뒤로 가면 프레임 콜백이 멈춤 → 0.25초 넘게 안 오면 Worker 시계로 대신 */ } else ARX.wTimer=arTick(()=>{ if(ARX.video&&arRewOn()){ arBannerWatch(ARX.video); arAirWatch(ARX.video); } },Math.round(1000/ARX.cfg.watchFps)); }
+  if(ARX.cfg.watchFps>0){ if(v.requestVideoFrameCallback){ const loop=(now,meta)=>{ if(ARX.video!==v||ARX.startGen!==gen) return; ARX.rvfcT=performance.now(); arPf().frames++; if(arRewOn()){ arBannerWatch(v,meta); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } v.requestVideoFrameCallback(loop); }; v.requestVideoFrameCallback(loop); ARX.wTimer=arTick(()=>{ if(ARX.video!==v||performance.now()-(ARX.rvfcT||0)<250) return; if(arRewOn()){ arBannerWatch(v); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } },Math.round(1000/ARX.cfg.watchFps)); /* b359: 탭이 뒤로 가면 프레임 콜백이 멈춤 → 0.25초 넘게 안 오면 Worker 시계로 대신 */ } else ARX.wTimer=arTick(()=>{ if(ARX.video&&arRewOn()){ arBannerWatch(ARX.video); arAirWatch(ARX.video); } },Math.round(1000/ARX.cfg.watchFps)); }
   ARX.boxTimer=arTick(()=>{ if(ARX.video&&!ARX.boxBusy&&(ARX.cfg.boxAlways!==false||arRewMap(Date.now()))&&!arBoxOk()) arBoxStep(arSrc(),false).catch(()=>{}); },AR_BOX_REW_MS); /* t547: 보상 맵에선 프레임(1/fps)과 별도로 0.2초 */
   ARX.logTimer=arTick(()=>{ if(ARX.ocr&&ARX.video) arLogFrame(arSrc()); },Math.round(1000/Math.max(1,ARX.cfg.logFps)));
   ARX.pfTimer=arTick(()=>{ try{ arPerfPaint(); }catch(e){} },1000); arUntick(ARX.uiTick); ARX.uiTick=arTick(()=>{ try{ arPipLive(); }catch(e){} },200); /* b359: 다른 탭이어도 PIP 0.2초마다 갱신 */ arBtnPaint(); arPanel(true); }
-function arDisconnect(){ try{ arSnapStop(); }catch(e){} ARX.rew=null; ARX.rwl=null; ARX.recPend=[]; try{ arMesoFlush(Date.now(),true); }catch(e){} arUntick(ARX.nTimer); ARX.nTimer=0; arUntick(ARX.uiTick); ARX.uiTick=0; ARX.nLock=null; ARX.nSw=null; ARX.nDrop=null; /* b351: 연결 끊김 = 세션 끝 */ arUntick(ARX.pfTimer); arUntick(ARX.logTimer); arUntick(ARX.wTimer); arUntick(ARX.boxTimer); ARX.bq=[]; (ARX.abuf||[]).forEach(e=>e.bmp&&e.bmp.close()); ARX.abuf=[]; ARX.alocs=[]; ARX.airT=0; ARX.bprev=null; ARX.logPrev=[]; arUntick(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.tracks=[]; ARX.iprev=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; ARX.box=null; arBtnPaint(); arPanelPaint(); }
+function arDisconnect(){ ARX.startGen=(ARX.startGen||0)+1; try{ arSnapStop(); }catch(e){} ARX.rew=null; ARX.rwl=null; ARX.recPend=[]; try{ arMesoFlush(Date.now(),true); }catch(e){} arUntick(ARX.nTimer); ARX.nTimer=0; arUntick(ARX.uiTick); ARX.uiTick=0; ARX.nLock=null; ARX.nSw=null; ARX.nDrop=null; /* b351: 연결 끊김 = 세션 끝 */ arUntick(ARX.pfTimer); arUntick(ARX.logTimer); arUntick(ARX.wTimer); arUntick(ARX.boxTimer); ARX.bq=[]; (ARX.abuf||[]).forEach(e=>e.bmp&&e.bmp.close()); ARX.abuf=[]; ARX.alocs=[]; ARX.airT=0; ARX.bprev=null; ARX.logPrev=[]; arUntick(ARX.timer); ARX.timer=0; ARX.stream?.getTracks().forEach(t=>t.stop()); ARX.stream=null; ARX.video?.remove(); ARX.video=null; ARX.tracks=[]; ARX.iprev=null; ARX.hits={}; ARX.det={cid:'',boss:'',diff:'',src:''}; ARX.box=null; arBtnPaint(); arPanelPaint(); }
 function arBtnPaint(){ const b=$('#tabs [data-tab="auto"]'); if(b) b.classList.toggle('arlive',!!ARX.stream); arPanelPaint(); } // b294: 헤더 버튼 대신 탭에 초록 점
 /* 패널: 상태 · 인식 결과 · 수동 선택 · 영역 맞추기(미리보기 드래그) · OCR 미리보기 */
 let arRegionSel='item';
@@ -10251,11 +10264,26 @@ function ecDetect(t,g){ const C=EC.cfg; EC.h.push({t,g}); while(EC.h.length&&EC.
   if(C.shift){ const L=EC.log.slice(-C.sN); if(L.length===C.sN&&L.every(x=>x.ss>=C.sTh)&&L[C.sN-1].t-L[0].t<=600){ let k=EC.log.length-C.sN; while(k>0&&EC.log[k-1].ss>=.5&&EC.log[k-1].t>t-1000) k--; return {t:EC.log[k].t,sc:L[C.sN-1].ss,kind:'shift'}; } } return null; } /* 시작 시각 = 점수가 .5 넘기 시작한 프레임(빔 첫 줄기) */
 /* b361 (t671): 에픽빔이 캐릭터 위치(화면 중앙 아님)에서 터지면 고정 위치 NCC 가 낮음(01M6E78K: 0.48) → 템플릿을 x ±sx, y ±sy 칸 옮겨(겹치는 부분만) NCC.
    흔들림 오감지를 막으려고 옮긴 점수는 더 엄하게: 연속 sN(2) 프레임(0.6초 안) 모두 ≥sTh(.77) — 메인 스레드가 바빠 프레임이 드문드문해도 잡히게. 레퍼런스 47개 오감지 0(게이트 없이). */
-function ecNccShift(D){ const C=EC.cfg; let best=0; const a=new Float32Array(576), b=new Float32Array(576);
-  for(const T of EC_TPL) for(let dy=-C.sy;dy<=C.sy;dy++) for(let dx=-C.sx;dx<=C.sx;dx++){ if(!dx&&!dy) continue; let n=0;
-    for(let y=Math.max(0,dy);y<18+Math.min(0,dy);y++) for(let x=Math.max(0,dx);x<32+Math.min(0,dx);x++){ a[n]=D[y*32+x]; b[n]=T[(y-dy)*32+(x-dx)]; n++; }
-    const s=ecNcc(a.subarray(0,n),b.subarray(0,n)); if(s>best) best=s; }
-  return best; }
+/* b385: exact same overlap NCC, but invariant template sums are cached and
+   frame sums/variance come from a 33x19 integral image. No shifted array copies. */
+let EC_SHIFT=null;
+function ecNccShift(D){ const C=EC.cfg, key=C.sx+','+C.sy;
+  if(!EC_SHIFT||EC_SHIFT.key!==key){ const shifts=[];
+    for(const T of EC_TPL) for(let dy=-C.sy;dy<=C.sy;dy++) for(let dx=-C.sx;dx<=C.sx;dx++){
+      if(!dx&&!dy) continue; const x0=Math.max(0,dx),x1=32+Math.min(0,dx),y0=Math.max(0,dy),y1=18+Math.min(0,dy),n=(x1-x0)*(y1-y0);
+      let sm=0,sq=0; const weights=[];
+      for(let y=y0;y<y1;y++) for(let x=x0;x<x1;x++){const b=T[(y-dy)*32+x-dx];weights.push(b);sm+=b;sq+=b*b;}
+      shifts.push({x0,x1,y0,y1,n,sm,bb:sq-sm*sm/n,w:Float64Array.from(weights)});
+    } EC_SHIFT={key,shifts};
+  }
+  const si=new Float64Array(33*19), qi=new Float64Array(33*19);
+  for(let y=0;y<18;y++){let sm=0,sq=0;for(let x=0;x<32;x++){const d=D[y*32+x],k=(y+1)*33+x+1;sm+=d;sq+=d*d;si[k]=si[k-33]+sm;qi[k]=qi[k-33]+sq;}}
+  let best=0; for(const S of EC_SHIFT.shifts){const {x0,x1,y0,y1,n,w}=S,a=y0*33+x0,b=y0*33+x1,c=y1*33+x0,d=y1*33+x1;
+    const sm=si[d]-si[b]-si[c]+si[a],aa=qi[d]-qi[b]-qi[c]+qi[a]-sm*sm/n;if(aa<=0||S.bb<=0)continue;
+    let dot=0,j=0;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)dot+=D[y*32+x]*w[j++];
+    const sc=(dot-sm*S.sm/n)/Math.sqrt(aa*S.bb);if(sc>best)best=sc;
+  }return best;
+}
 /* b361 (t671): 국소 세로 빛기둥(미트라 등 아이템 위 기둥형 에픽빔) 감지 — 240p 프레임에서 배경(0.6~1.5초 전 최솟값) 대비 새로 생긴 밝은·무채색 픽셀(g≥190, 채도≤70, D≥35) 중
    폭 ≤5px·양옆(±7~16px) 비어 있음·위쪽 80% 높이의 ≥88% 를 잇는 세로 줄이 3프레임 연속 같은 자리(±6px) → 감지. 레퍼런스 47개 오감지 0. */
 function ecPilFeat(px,bg,W,H){ const R=Math.floor(H*.8), m=new Uint8Array(W*R), cs=new Int32Array(W);
@@ -10285,27 +10313,31 @@ function ecGrid(px,W,H){ const gr=new Float32Array(576), n=new Float32Array(576)
 /* b384: 프리롤은 GPU VideoFrame 으로 1.4초간 보관. 감지 후 정확히 -1~+3초만 골라 VP9 WebM 인코딩한다.
    저장 인코더를 분리해 delta/keyframe 지연·순서나 GOP 경계가 저장 구간을 바꾸지 않는다. */
 const ECV={busy:false,frames:[]};
-function ecVPush(now){if(ECV.busy)return;ECV.frames.push({t:now,f:new VideoFrame(EC.cv,{timestamp:Math.round(now*1000)})});const lim=now-(EC.cur?EC.cur.t0-1000:1400);while(ECV.frames.length&&ECV.frames[0].t<lim)ECV.frames.shift().f.close();}
+function ecVPush(now){if(ECV.busy)return;ECV.frames.push({t:now,f:new VideoFrame(EC.cv,{timestamp:Math.round(now*1000)})});const lim=EC.cur?EC.cur.t0-EC.cfg.pre:EC.pend?EC.pend.t-EC.cfg.pre:now-EC.cfg.pre-400;while(ECV.frames.length&&ECV.frames[0].t<lim)ECV.frames.shift().f.close();}
 async function ecVMake(c){ECV.busy=true;const frames=ECV.frames;ECV.frames=[];
   try{let one=frames.filter(f=>f.t>=c.t0-1000&&f.t<c.t0+3000);if(!one.length)throw Error('no frames');
     /* 30fps 가 항상 보장되게 캡처 타이머 누락은 가장 가까운 프레임으로 보간한다. */
     const fill=[],gap=1000/30,t0=c.t0-1000;for(let i=0;i<120;i++){const t=t0+i*gap;let best=one.reduce((b,f)=>Math.abs(f.t-t)<Math.abs(b.t-t)?f:b,one[0]);fill.push(best);}one=fill;const W=c.w,H=c.h;let video;for(const br of [1250000,950000,700000]){const cfg={codec:'vp09.00.10.08',width:W,height:H,bitrate:br,framerate:30,latencyMode:'quality'},sup=await VideoEncoder.isConfigSupported(cfg);if(!sup.supported)throw Error('VP9 unavailable');const rd=[],mux=new ECWebM.Muxer({target:new ECWebM.ArrayBufferTarget(),video:{codec:'V_VP9',width:W,height:H,frameRate:30},firstTimestampBehavior:'offset'});let err=null,enc=new VideoEncoder({output:(ch,mt)=>rd.push([ch,mt]),error:e=>{err=e;}});
-    enc.configure(cfg);for(let i=0;i<one.length;i++){enc.encode(new VideoFrame(one[i].f,{timestamp:i*33333,duration:33333}),{keyFrame:i===0});}await enc.flush();if(err)throw err;rd.sort((a,b)=>a[0].timestamp-b[0].timestamp);for(let i=0;i<rd.length;i++){const[ch,mt]=rd[i];mux.addVideoChunk(ch,ch.type==='key'?{...mt,type:'key'}:{...mt,type:'delta'});}enc.close();mux.finalize();video=new Blob([mux.target.buffer],{type:'video/webm'});if(video.size<=EC.cfg.maxBytes)break;}const id='ec'+c.t0;
+    try{enc.configure(cfg);for(let i=0;i<one.length;i++){const f=new VideoFrame(one[i].f,{timestamp:i*33333,duration:33333});try{enc.encode(f,{keyFrame:i===0});}finally{f.close();}}await enc.flush();if(err)throw err;}finally{if(enc.state!=='closed')enc.close();}rd.sort((a,b)=>a[0].timestamp-b[0].timestamp);for(let i=0;i<rd.length;i++){const[ch,mt]=rd[i];mux.addVideoChunk(ch,ch.type==='key'?{...mt,type:'key'}:{...mt,type:'delta'});}mux.finalize();video=new Blob([mux.target.buffer],{type:'video/webm'});if(video.size<=EC.cfg.maxBytes)break;}const id='ec'+c.t0;
     const m={id,t0:c.t0,vt0:c.vt0,boss:c.boss,diff:c.diff,item:'',cid:'',cname:'',sc:c.sc,w:W,h:H,fps:30,codec:'vp9',n:one.length,start:-1000,end:3000,vts:[c.vt0-1,c.vt0+3],poster:null,pi:0,up:0,bytes:video.size,format:'webm'};
     try{const a=typeof activeChar==='function'?activeChar():null;if(ARX.det.cid){const x=S.characters.find(z=>z.id===ARX.det.cid);if(x){m.cid=x.id;m.cname=x.name;}}else if(a){m.cid=a.id;m.cname=a.name;}}catch(e){}const r=ecRecFor(m);if(r)ecLink(m,r);
     const u=URL.createObjectURL(video),v=document.createElement('video');v.muted=true;v.src=u;await new Promise(ok=>{v.onloadeddata=ok;setTimeout(ok,2500)});if(v.readyState<2)throw Error('WebM decode failed');v.currentTime=Math.min(v.duration/2,1.5);await new Promise(ok=>{v.onseeked=ok;setTimeout(ok,2500)});const pc=document.createElement('canvas');pc.width=W;pc.height=H;pc.getContext('2d').drawImage(v,0,0);m.poster=await new Promise(ok=>pc.toBlob(ok,'image/webp',.8));v.pause();URL.revokeObjectURL(u);
     await ecTx(['meta','frames'],'readwrite',t=>{t.objectStore('meta').put(m);t.objectStore('frames').put({id,video});});try{if(typeof arLog==='function')arLog(`에픽빔 감지 → ${W}×${H} 30fps WebM 저장 (${video.size}B)`);}catch(e){}EC.saved=(EC.saved||0)+1;if(typeof tab!=='undefined'&&tab==='epic')renderEpic();ecSync();
   }catch(e){console.warn('[b384 video]',e);ECV.videoError=String(e);}finally{frames.forEach(x=>x.f?.close());ECV.busy=false;}
 }
-function ecTick(){ const v=typeof ARX!=='undefined'&&(ARX.video?(typeof arSrc==='function'?arSrc():ARX.video):ARX.testSrc); /* b366 */ if(!v||!(v.videoWidth||v.width)){ if(EC.buf.length){ EC.buf=[]; EC.h=[]; EC.log=[]; EC.ph=[]; EC.pl=[]; } return; }
+function ecTick(){ const v=typeof ARX!=='undefined'&&(ARX.video?(typeof arSrc==='function'?arSrc():ARX.video):ARX.testSrc); /* b366 */ if(!v||!(v.videoWidth||v.width)){ if(EC.buf.length||ECV.frames.length){ EC.buf=[]; EC.h=[]; EC.log=[]; EC.ph=[]; EC.pl=[];ECV.frames.forEach(x=>x.f.close());ECV.frames=[];EC.cur=null;EC.pend=null; } return; }
   const C=EC.cfg, vw=v.videoWidth||v.width, vh=v.videoHeight||v.height, now=Date.now(), vt=+(v.currentTime||0);
   const H=Math.min(C.H,vh), W=Math.round(H*vw/vh), H0=Math.min(C.H0,vh), W0=Math.round(H0*vw/vh); if(!EC.cv){ EC.cv=document.createElement('canvas'); EC.sm=document.createElement('canvas'); EC.dc=document.createElement('canvas'); EC.dc.width=32; EC.dc.height=18; }
   const cv=EC.cv; if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
   const sm=EC.sm; if(sm.width!==W0||sm.height!==H0){ sm.width=W0; sm.height=H0; }
-  const g=cv.getContext('2d'), sg=sm.getContext('2d'); try{ g.drawImage(v,0,0,W,H); sg.drawImage(v,0,0,W0,H0); }catch(e){ return; }
-  if(window.VideoEncoder&&window.VideoFrame&&window.ECWebM)ecVPush(now);
+  const native=!!(window.VideoEncoder&&window.VideoFrame&&window.ECWebM);
+  /* b385: copy the full-rate video to an owned canvas. Holding VideoFrame(video)
+     for pre-roll pins a bounded capture buffer pool and can stall live tracks. */
+  const g=cv.getContext('2d'), sg=sm.getContext('2d',{willReadFrequently:true}); try{g.drawImage(ARX.video||v,0,0,W,H);sg.drawImage(v,0,0,W0,H0);}catch(e){return;}
+  if(native)ecVPush(now);
   /* b384: WebCodecs 가 없는 브라우저에서는 기존 WebP 프레임 클립을 유지한다. */
-  const f={t:now,vt,p:new Promise(r=>cv.toBlob(r,'image/webp',C.q))}; EC.buf.push(f);
+  /* b385: WebM uses VideoFrames only. Do NOT also run a discarded 720p WebP encoder 30 times/sec. */
+  const f={t:now,vt,p:native?null:new Promise(r=>cv.toBlob(r,'image/webp',C.q))}; EC.buf.push(f);
   const img=sg.getImageData(0,0,W0,H0).data, gr=ecGrid(img,W0,H0); /* b361: 32x18 은 칸 평균(area) — drawImage 축소는 표본 추출이라 빔 점수가 흔들림(0.48 vs 0.64) */
   let hit=ecDetect(now,gr); if(C.pil){ let ph=null; try{ ph=ecPillar(now,img,W,H); }catch(e){} if(!hit&&ph) hit=ph; }
   if(hit&&!EC.cur&&now-EC.cool>C.cool&&!EC.pend) EC.pend=hit; if(EC.pend&&now-EC.pend.t>C.pendMs) EC.pend=null; /* b361: 보상 맵 인식이 빔보다 늦게(01M6E78K: 빔 8.9초, 보상 맵 8.86~9.1초) 되어도 2초 안이면 그 빔으로 */

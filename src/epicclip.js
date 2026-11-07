@@ -21,11 +21,26 @@ function ecDetect(t,g){ const C=EC.cfg; EC.h.push({t,g}); while(EC.h.length&&EC.
   if(C.shift){ const L=EC.log.slice(-C.sN); if(L.length===C.sN&&L.every(x=>x.ss>=C.sTh)&&L[C.sN-1].t-L[0].t<=600){ let k=EC.log.length-C.sN; while(k>0&&EC.log[k-1].ss>=.5&&EC.log[k-1].t>t-1000) k--; return {t:EC.log[k].t,sc:L[C.sN-1].ss,kind:'shift'}; } } return null; } /* 시작 시각 = 점수가 .5 넘기 시작한 프레임(빔 첫 줄기) */
 /* b361 (t671): 에픽빔이 캐릭터 위치(화면 중앙 아님)에서 터지면 고정 위치 NCC 가 낮음(01M6E78K: 0.48) → 템플릿을 x ±sx, y ±sy 칸 옮겨(겹치는 부분만) NCC.
    흔들림 오감지를 막으려고 옮긴 점수는 더 엄하게: 연속 sN(2) 프레임(0.6초 안) 모두 ≥sTh(.77) — 메인 스레드가 바빠 프레임이 드문드문해도 잡히게. 레퍼런스 47개 오감지 0(게이트 없이). */
-function ecNccShift(D){ const C=EC.cfg; let best=0; const a=new Float32Array(576), b=new Float32Array(576);
-  for(const T of EC_TPL) for(let dy=-C.sy;dy<=C.sy;dy++) for(let dx=-C.sx;dx<=C.sx;dx++){ if(!dx&&!dy) continue; let n=0;
-    for(let y=Math.max(0,dy);y<18+Math.min(0,dy);y++) for(let x=Math.max(0,dx);x<32+Math.min(0,dx);x++){ a[n]=D[y*32+x]; b[n]=T[(y-dy)*32+(x-dx)]; n++; }
-    const s=ecNcc(a.subarray(0,n),b.subarray(0,n)); if(s>best) best=s; }
-  return best; }
+/* b385: exact same overlap NCC, but invariant template sums are cached and
+   frame sums/variance come from a 33x19 integral image. No shifted array copies. */
+let EC_SHIFT=null;
+function ecNccShift(D){ const C=EC.cfg, key=C.sx+','+C.sy;
+  if(!EC_SHIFT||EC_SHIFT.key!==key){ const shifts=[];
+    for(const T of EC_TPL) for(let dy=-C.sy;dy<=C.sy;dy++) for(let dx=-C.sx;dx<=C.sx;dx++){
+      if(!dx&&!dy) continue; const x0=Math.max(0,dx),x1=32+Math.min(0,dx),y0=Math.max(0,dy),y1=18+Math.min(0,dy),n=(x1-x0)*(y1-y0);
+      let sm=0,sq=0; const weights=[];
+      for(let y=y0;y<y1;y++) for(let x=x0;x<x1;x++){const b=T[(y-dy)*32+x-dx];weights.push(b);sm+=b;sq+=b*b;}
+      shifts.push({x0,x1,y0,y1,n,sm,bb:sq-sm*sm/n,w:Float64Array.from(weights)});
+    } EC_SHIFT={key,shifts};
+  }
+  const si=new Float64Array(33*19), qi=new Float64Array(33*19);
+  for(let y=0;y<18;y++){let sm=0,sq=0;for(let x=0;x<32;x++){const d=D[y*32+x],k=(y+1)*33+x+1;sm+=d;sq+=d*d;si[k]=si[k-33]+sm;qi[k]=qi[k-33]+sq;}}
+  let best=0; for(const S of EC_SHIFT.shifts){const {x0,x1,y0,y1,n,w}=S,a=y0*33+x0,b=y0*33+x1,c=y1*33+x0,d=y1*33+x1;
+    const sm=si[d]-si[b]-si[c]+si[a],aa=qi[d]-qi[b]-qi[c]+qi[a]-sm*sm/n;if(aa<=0||S.bb<=0)continue;
+    let dot=0,j=0;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)dot+=D[y*32+x]*w[j++];
+    const sc=(dot-sm*S.sm/n)/Math.sqrt(aa*S.bb);if(sc>best)best=sc;
+  }return best;
+}
 /* b361 (t671): 국소 세로 빛기둥(미트라 등 아이템 위 기둥형 에픽빔) 감지 — 240p 프레임에서 배경(0.6~1.5초 전 최솟값) 대비 새로 생긴 밝은·무채색 픽셀(g≥190, 채도≤70, D≥35) 중
    폭 ≤5px·양옆(±7~16px) 비어 있음·위쪽 80% 높이의 ≥88% 를 잇는 세로 줄이 3프레임 연속 같은 자리(±6px) → 감지. 레퍼런스 47개 오감지 0. */
 function ecPilFeat(px,bg,W,H){ const R=Math.floor(H*.8), m=new Uint8Array(W*R), cs=new Int32Array(W);
@@ -55,27 +70,31 @@ function ecGrid(px,W,H){ const gr=new Float32Array(576), n=new Float32Array(576)
 /* b384: 프리롤은 GPU VideoFrame 으로 1.4초간 보관. 감지 후 정확히 -1~+3초만 골라 VP9 WebM 인코딩한다.
    저장 인코더를 분리해 delta/keyframe 지연·순서나 GOP 경계가 저장 구간을 바꾸지 않는다. */
 const ECV={busy:false,frames:[]};
-function ecVPush(now){if(ECV.busy)return;ECV.frames.push({t:now,f:new VideoFrame(EC.cv,{timestamp:Math.round(now*1000)})});const lim=now-(EC.cur?EC.cur.t0-1000:1400);while(ECV.frames.length&&ECV.frames[0].t<lim)ECV.frames.shift().f.close();}
+function ecVPush(now){if(ECV.busy)return;ECV.frames.push({t:now,f:new VideoFrame(EC.cv,{timestamp:Math.round(now*1000)})});const lim=EC.cur?EC.cur.t0-EC.cfg.pre:EC.pend?EC.pend.t-EC.cfg.pre:now-EC.cfg.pre-400;while(ECV.frames.length&&ECV.frames[0].t<lim)ECV.frames.shift().f.close();}
 async function ecVMake(c){ECV.busy=true;const frames=ECV.frames;ECV.frames=[];
   try{let one=frames.filter(f=>f.t>=c.t0-1000&&f.t<c.t0+3000);if(!one.length)throw Error('no frames');
     /* 30fps 가 항상 보장되게 캡처 타이머 누락은 가장 가까운 프레임으로 보간한다. */
     const fill=[],gap=1000/30,t0=c.t0-1000;for(let i=0;i<120;i++){const t=t0+i*gap;let best=one.reduce((b,f)=>Math.abs(f.t-t)<Math.abs(b.t-t)?f:b,one[0]);fill.push(best);}one=fill;const W=c.w,H=c.h;let video;for(const br of [1250000,950000,700000]){const cfg={codec:'vp09.00.10.08',width:W,height:H,bitrate:br,framerate:30,latencyMode:'quality'},sup=await VideoEncoder.isConfigSupported(cfg);if(!sup.supported)throw Error('VP9 unavailable');const rd=[],mux=new ECWebM.Muxer({target:new ECWebM.ArrayBufferTarget(),video:{codec:'V_VP9',width:W,height:H,frameRate:30},firstTimestampBehavior:'offset'});let err=null,enc=new VideoEncoder({output:(ch,mt)=>rd.push([ch,mt]),error:e=>{err=e;}});
-    enc.configure(cfg);for(let i=0;i<one.length;i++){enc.encode(new VideoFrame(one[i].f,{timestamp:i*33333,duration:33333}),{keyFrame:i===0});}await enc.flush();if(err)throw err;rd.sort((a,b)=>a[0].timestamp-b[0].timestamp);for(let i=0;i<rd.length;i++){const[ch,mt]=rd[i];mux.addVideoChunk(ch,ch.type==='key'?{...mt,type:'key'}:{...mt,type:'delta'});}enc.close();mux.finalize();video=new Blob([mux.target.buffer],{type:'video/webm'});if(video.size<=EC.cfg.maxBytes)break;}const id='ec'+c.t0;
+    try{enc.configure(cfg);for(let i=0;i<one.length;i++){const f=new VideoFrame(one[i].f,{timestamp:i*33333,duration:33333});try{enc.encode(f,{keyFrame:i===0});}finally{f.close();}}await enc.flush();if(err)throw err;}finally{if(enc.state!=='closed')enc.close();}rd.sort((a,b)=>a[0].timestamp-b[0].timestamp);for(let i=0;i<rd.length;i++){const[ch,mt]=rd[i];mux.addVideoChunk(ch,ch.type==='key'?{...mt,type:'key'}:{...mt,type:'delta'});}mux.finalize();video=new Blob([mux.target.buffer],{type:'video/webm'});if(video.size<=EC.cfg.maxBytes)break;}const id='ec'+c.t0;
     const m={id,t0:c.t0,vt0:c.vt0,boss:c.boss,diff:c.diff,item:'',cid:'',cname:'',sc:c.sc,w:W,h:H,fps:30,codec:'vp9',n:one.length,start:-1000,end:3000,vts:[c.vt0-1,c.vt0+3],poster:null,pi:0,up:0,bytes:video.size,format:'webm'};
     try{const a=typeof activeChar==='function'?activeChar():null;if(ARX.det.cid){const x=S.characters.find(z=>z.id===ARX.det.cid);if(x){m.cid=x.id;m.cname=x.name;}}else if(a){m.cid=a.id;m.cname=a.name;}}catch(e){}const r=ecRecFor(m);if(r)ecLink(m,r);
     const u=URL.createObjectURL(video),v=document.createElement('video');v.muted=true;v.src=u;await new Promise(ok=>{v.onloadeddata=ok;setTimeout(ok,2500)});if(v.readyState<2)throw Error('WebM decode failed');v.currentTime=Math.min(v.duration/2,1.5);await new Promise(ok=>{v.onseeked=ok;setTimeout(ok,2500)});const pc=document.createElement('canvas');pc.width=W;pc.height=H;pc.getContext('2d').drawImage(v,0,0);m.poster=await new Promise(ok=>pc.toBlob(ok,'image/webp',.8));v.pause();URL.revokeObjectURL(u);
     await ecTx(['meta','frames'],'readwrite',t=>{t.objectStore('meta').put(m);t.objectStore('frames').put({id,video});});try{if(typeof arLog==='function')arLog(`에픽빔 감지 → ${W}×${H} 30fps WebM 저장 (${video.size}B)`);}catch(e){}EC.saved=(EC.saved||0)+1;if(typeof tab!=='undefined'&&tab==='epic')renderEpic();ecSync();
   }catch(e){console.warn('[b384 video]',e);ECV.videoError=String(e);}finally{frames.forEach(x=>x.f?.close());ECV.busy=false;}
 }
-function ecTick(){ const v=typeof ARX!=='undefined'&&(ARX.video?(typeof arSrc==='function'?arSrc():ARX.video):ARX.testSrc); /* b366 */ if(!v||!(v.videoWidth||v.width)){ if(EC.buf.length){ EC.buf=[]; EC.h=[]; EC.log=[]; EC.ph=[]; EC.pl=[]; } return; }
+function ecTick(){ const v=typeof ARX!=='undefined'&&(ARX.video?(typeof arSrc==='function'?arSrc():ARX.video):ARX.testSrc); /* b366 */ if(!v||!(v.videoWidth||v.width)){ if(EC.buf.length||ECV.frames.length){ EC.buf=[]; EC.h=[]; EC.log=[]; EC.ph=[]; EC.pl=[];ECV.frames.forEach(x=>x.f.close());ECV.frames=[];EC.cur=null;EC.pend=null; } return; }
   const C=EC.cfg, vw=v.videoWidth||v.width, vh=v.videoHeight||v.height, now=Date.now(), vt=+(v.currentTime||0);
   const H=Math.min(C.H,vh), W=Math.round(H*vw/vh), H0=Math.min(C.H0,vh), W0=Math.round(H0*vw/vh); if(!EC.cv){ EC.cv=document.createElement('canvas'); EC.sm=document.createElement('canvas'); EC.dc=document.createElement('canvas'); EC.dc.width=32; EC.dc.height=18; }
   const cv=EC.cv; if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
   const sm=EC.sm; if(sm.width!==W0||sm.height!==H0){ sm.width=W0; sm.height=H0; }
-  const g=cv.getContext('2d'), sg=sm.getContext('2d'); try{ g.drawImage(v,0,0,W,H); sg.drawImage(v,0,0,W0,H0); }catch(e){ return; }
-  if(window.VideoEncoder&&window.VideoFrame&&window.ECWebM)ecVPush(now);
+  const native=!!(window.VideoEncoder&&window.VideoFrame&&window.ECWebM);
+  /* b385: copy the full-rate video to an owned canvas. Holding VideoFrame(video)
+     for pre-roll pins a bounded capture buffer pool and can stall live tracks. */
+  const g=cv.getContext('2d'), sg=sm.getContext('2d',{willReadFrequently:true}); try{g.drawImage(ARX.video||v,0,0,W,H);sg.drawImage(v,0,0,W0,H0);}catch(e){return;}
+  if(native)ecVPush(now);
   /* b384: WebCodecs 가 없는 브라우저에서는 기존 WebP 프레임 클립을 유지한다. */
-  const f={t:now,vt,p:new Promise(r=>cv.toBlob(r,'image/webp',C.q))}; EC.buf.push(f);
+  /* b385: WebM uses VideoFrames only. Do NOT also run a discarded 720p WebP encoder 30 times/sec. */
+  const f={t:now,vt,p:native?null:new Promise(r=>cv.toBlob(r,'image/webp',C.q))}; EC.buf.push(f);
   const img=sg.getImageData(0,0,W0,H0).data, gr=ecGrid(img,W0,H0); /* b361: 32x18 은 칸 평균(area) — drawImage 축소는 표본 추출이라 빔 점수가 흔들림(0.48 vs 0.64) */
   let hit=ecDetect(now,gr); if(C.pil){ let ph=null; try{ ph=ecPillar(now,img,W,H); }catch(e){} if(!hit&&ph) hit=ph; }
   if(hit&&!EC.cur&&now-EC.cool>C.cool&&!EC.pend) EC.pend=hit; if(EC.pend&&now-EC.pend.t>C.pendMs) EC.pend=null; /* b361: 보상 맵 인식이 빔보다 늦게(01M6E78K: 빔 8.9초, 보상 맵 8.86~9.1초) 되어도 2초 안이면 그 빔으로 */

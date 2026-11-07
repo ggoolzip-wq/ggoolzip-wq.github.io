@@ -1,0 +1,1333 @@
+{
+  "baselineCommit": "c96b26f",
+  "baselineBuild": "b384",
+  "newBuild": "b385",
+  "chrome": "Google Chrome 155.0.8059.84",
+  "platform": "Linux-6.12.94+-x86_64-with-glibc2.41",
+  "cpuCount": 8,
+  "measurement": "Chromium CDP SystemInfo process CPU sum / monotonic wall seconds; Performance TaskDuration; 12s sample, 3s warmup, V8 profiler enabled for both. Synthetic beam720.webm; not user machine CPU%. One run per scenario, timing variation applies.",
+  "before": {
+    "epic": {
+      "blobs": 365,
+      "parts": {
+        "ecGrid": {
+          "calls": 365,
+          "ms": 165.79999999701977
+        },
+        "ecTick": {
+          "calls": 365,
+          "ms": 2969.1000012755394
+        },
+        "ecNccShift": {
+          "calls": 18,
+          "ms": 60.1000000089407
+        }
+      },
+      "ocr": false,
+      "ocrError": null,
+      "boxWorker": false,
+      "videoError": null,
+      "ring": 43,
+      "wall": 12.003495729004499,
+      "cpuSeconds": 40.86,
+      "cpuPerWall": 3.4040083757657733,
+      "mainTaskSeconds": 3.938192,
+      "hotSamplesMs": [
+        [
+          "(idle)",
+          8117.5
+        ],
+        [
+          "drawImage",
+          2483.3
+        ],
+        [
+          "(program)",
+          942.7
+        ],
+        [
+          "ecGrid",
+          154.9
+        ],
+        [
+          "close",
+          98.0
+        ],
+        [
+          "getImageData",
+          89.9
+        ],
+        [
+          "(garbage collector)",
+          60.1
+        ],
+        [
+          "ecDetect",
+          35.9
+        ],
+        [
+          "ecNccShift",
+          31.3
+        ],
+        [
+          "ecNcc",
+          24.8
+        ],
+        [
+          "window.<computed>",
+          9.6
+        ],
+        [
+          "ecTick",
+          8.6
+        ],
+        [
+          "VideoFrame",
+          5.4
+        ],
+        [
+          "toBlob",
+          2.1
+        ],
+        [
+          "(anonymous)",
+          1.9
+        ],
+        [
+          "ecVPush",
+          1.1
+        ],
+        [
+          "getContext",
+          1.1
+        ],
+        [
+          "now",
+          1.1
+        ]
+      ]
+    },
+    "auto": {
+      "blobs": 517,
+      "parts": {
+        "arNameWatch": {
+          "calls": 121,
+          "ms": 515.4999998658895
+        },
+        "arMapWatch": {
+          "calls": 121,
+          "ms": 68.79999999701977
+        },
+        "arBoxStep": {
+          "calls": 151,
+          "ms": 0.7000000029802322
+        },
+        "arLogFrame": {
+          "calls": 73,
+          "ms": 239.49999995529652
+        },
+        "ecGrid": {
+          "calls": 363,
+          "ms": 180.20000010728836
+        },
+        "ecTick": {
+          "calls": 363,
+          "ms": 2894.50000038743
+        },
+        "arFrame": {
+          "calls": 30,
+          "ms": 31.399999916553497
+        },
+        "ecNccShift": {
+          "calls": 17,
+          "ms": 60.60000002384186
+        }
+      },
+      "ocr": true,
+      "ocrError": null,
+      "boxWorker": false,
+      "videoError": null,
+      "ring": 43,
+      "wall": 12.002719694995903,
+      "cpuSeconds": 53.9,
+      "cpuPerWall": 4.490648900388105,
+      "mainTaskSeconds": 5.488857,
+      "hotSamplesMs": [
+        [
+          "(idle)",
+          6553.7
+        ],
+        [
+          "drawImage",
+          2962.3
+        ],
+        [
+          "(program)",
+          1091.3
+        ],
+        [
+          "getImageData",
+          221.0
+        ],
+        [
+          "(garbage collector)",
+          209.4
+        ],
+        [
+          "ecGrid",
+          150.7
+        ],
+        [
+          "fillRect",
+          133.5
+        ],
+        [
+          "close",
+          129.5
+        ],
+        [
+          "arNameHp",
+          97.9
+        ],
+        [
+          "arOcr",
+          92.2
+        ],
+        [
+          "toBlob",
+          53.7
+        ],
+        [
+          "ecDetect",
+          39.8
+        ],
+        [
+          "(anonymous)",
+          37.2
+        ],
+        [
+          "ecNccShift",
+          35.3
+        ],
+        [
+          "getContext",
+          32.3
+        ],
+        [
+          "arSetH",
+          30.0
+        ],
+        [
+          "ecNcc",
+          23.2
+        ],
+        [
+          "putImageData",
+          16.2
+        ]
+      ]
+    },
+    "reward": {
+      "blobs": 409,
+      "parts": {
+        "ecGrid": {
+          "calls": 290,
+          "ms": 146.4000001102686
+        },
+        "ecTick": {
+          "calls": 290,
+          "ms": 1331.2999997138977
+        },
+        "arNameWatch": {
+          "calls": 122,
+          "ms": 1560.0999997854233
+        },
+        "arMapWatch": {
+          "calls": 122,
+          "ms": 54.69999998807907
+        },
+        "arBoxStep": {
+          "calls": 70,
+          "ms": 86.80000004172325
+        },
+        "arLogFrame": {
+          "calls": 73,
+          "ms": 61.80000001192093
+        },
+        "arFrame": {
+          "calls": 29,
+          "ms": 19.599999994039536
+        },
+        "ecNccShift": {
+          "calls": 12,
+          "ms": 46.5
+        }
+      },
+      "ocr": true,
+      "ocrError": null,
+      "boxWorker": true,
+      "snapFrames": 128,
+      "videoError": null,
+      "ring": 29,
+      "wall": 12.003308466999442,
+      "cpuSeconds": 56.0,
+      "cpuPerWall": 4.665380395243541,
+      "mainTaskSeconds": 7.0919479999999995,
+      "hotSamplesMs": [
+        [
+          "(idle)",
+          5012.7
+        ],
+        [
+          "arBmNcc",
+          1563.3
+        ],
+        [
+          "arMesoFind",
+          1258.7
+        ],
+        [
+          "(program)",
+          1031.7
+        ],
+        [
+          "VideoFrame",
+          714.1
+        ],
+        [
+          "arBmTop",
+          643.4
+        ],
+        [
+          "getImageData",
+          562.7
+        ],
+        [
+          "(garbage collector)",
+          253.6
+        ],
+        [
+          "close",
+          138.8
+        ],
+        [
+          "ecGrid",
+          125.7
+        ],
+        [
+          "drawImage",
+          125.0
+        ],
+        [
+          "arOcr",
+          123.4
+        ],
+        [
+          "fillRect",
+          96.7
+        ],
+        [
+          "arNameHp",
+          94.5
+        ],
+        [
+          "toBlob",
+          63.9
+        ],
+        [
+          "arBmGray",
+          58.6
+        ],
+        [
+          "arSetH",
+          33.4
+        ],
+        [
+          "arMesoLocate",
+          27.6
+        ]
+      ]
+    },
+    "ocr": {
+      "blobs": 130,
+      "parts": {
+        "arNameWatch": {
+          "calls": 121,
+          "ms": 1626.0000002086163
+        },
+        "arMapWatch": {
+          "calls": 121,
+          "ms": 44.800000071525574
+        },
+        "arLogFrame": {
+          "calls": 72,
+          "ms": 54.60000006854534
+        },
+        "arBoxStep": {
+          "calls": 72,
+          "ms": 67.60000006854534
+        },
+        "arFrame": {
+          "calls": 29,
+          "ms": 14.000000029802322
+        }
+      },
+      "ocr": true,
+      "ocrError": null,
+      "boxWorker": true,
+      "snapFrames": 129,
+      "videoError": null,
+      "ring": 0,
+      "wall": 12.00767029900453,
+      "cpuSeconds": 36.22,
+      "cpuPerWall": 3.0164052724701094,
+      "mainTaskSeconds": 5.375418,
+      "hotSamplesMs": [
+        [
+          "(idle)",
+          6678.2
+        ],
+        [
+          "arBmNcc",
+          1568.7
+        ],
+        [
+          "arMesoFind",
+          1363.5
+        ],
+        [
+          "arBmTop",
+          614.7
+        ],
+        [
+          "(program)",
+          597.0
+        ],
+        [
+          "getImageData",
+          436.9
+        ],
+        [
+          "(garbage collector)",
+          202.8
+        ],
+        [
+          "arNameHp",
+          93.5
+        ],
+        [
+          "fillRect",
+          91.4
+        ],
+        [
+          "drawImage",
+          88.0
+        ],
+        [
+          "arOcr",
+          83.0
+        ],
+        [
+          "arBmGray",
+          49.9
+        ],
+        [
+          "(anonymous)",
+          24.5
+        ],
+        [
+          "toBlob",
+          22.9
+        ],
+        [
+          "arMesoLocate",
+          22.3
+        ],
+        [
+          "arGray",
+          18.3
+        ],
+        [
+          "arSetH",
+          18.0
+        ],
+        [
+          "getContext",
+          13.5
+        ]
+      ]
+    }
+  },
+  "after": {
+    "epic": {
+      "blobs": 0,
+      "parts": {
+        "ecGrid": {
+          "calls": 365,
+          "ms": 165.39999985694885
+        },
+        "ecTick": {
+          "calls": 365,
+          "ms": 2776.4999989569187
+        },
+        "ecNccShift": {
+          "calls": 18,
+          "ms": 33.700000032782555
+        }
+      },
+      "ocr": false,
+      "ocrError": null,
+      "boxWorker": false,
+      "snapFrames": 0,
+      "videoError": null,
+      "ring": 43,
+      "saved": null,
+      "wall": 12.00142078200588,
+      "cpuSeconds": 17.63,
+      "cpuPerWall": 1.4689927401290046,
+      "mainTaskSeconds": 3.5261530000000003,
+      "hotSamplesMs": [
+        [
+          "(idle)",
+          8493.5
+        ],
+        [
+          "drawImage",
+          2342.5
+        ],
+        [
+          "(program)",
+          719.9
+        ],
+        [
+          "ecGrid",
+          166.2
+        ],
+        [
+          "close",
+          104.2
+        ],
+        [
+          "getImageData",
+          89.4
+        ],
+        [
+          "(garbage collector)",
+          42.3
+        ],
+        [
+          "ecDetect",
+          26.3
+        ],
+        [
+          "ecNccShift",
+          24.5
+        ],
+        [
+          "window.<computed>",
+          12.9
+        ],
+        [
+          "VideoFrame",
+          8.5
+        ],
+        [
+          "ecTick",
+          4.2
+        ],
+        [
+          "getContext",
+          4.2
+        ],
+        [
+          "demoSig",
+          2.1
+        ],
+        [
+          "innerSerialize",
+          1.1
+        ],
+        [
+          "itemPrices",
+          1.1
+        ],
+        [
+          "ecVPush",
+          1.1
+        ],
+        [
+          "(anonymous)",
+          1.1
+        ]
+      ]
+    },
+    "auto": {
+      "blobs": 160,
+      "parts": {
+        "ecGrid": {
+          "calls": 365,
+          "ms": 165.9000000655651
+        },
+        "ecTick": {
+          "calls": 365,
+          "ms": 2273.7999999970198
+        },
+        "arNameWatch": {
+          "calls": 120,
+          "ms": 426.5000001192093
+        },
+        "arMapWatch": {
+          "calls": 120,
+          "ms": 87.09999990463257
+        },
+        "arBoxStep": {
+          "calls": 150,
+          "ms": 0.7000000178813934
+        },
+        "arLogFrame": {
+          "calls": 72,
+          "ms": 195.49999994039536
+        },
+        "arFrame": {
+          "calls": 30,
+          "ms": 22.89999994635582
+        },
+        "ecNccShift": {
+          "calls": 19,
+          "ms": 33.90000003576279
+        }
+      },
+      "ocr": true,
+      "ocrError": null,
+      "boxWorker": false,
+      "snapFrames": 0,
+      "videoError": null,
+      "ring": 43,
+      "saved": null,
+      "wall": 12.002844513990567,
+      "cpuSeconds": 30.189999999999998,
+      "cpuPerWall": 2.515237114403207,
+      "mainTaskSeconds": 4.217695,
+      "hotSamplesMs": [
+        [
+          "(idle)",
+          7811.6
+        ],
+        [
+          "drawImage",
+          2405.9
+        ],
+        [
+          "(program)",
+          612.7
+        ],
+        [
+          "getImageData",
+          191.4
+        ],
+        [
+          "(garbage collector)",
+          182.2
+        ],
+        [
+          "ecGrid",
+          172.9
+        ],
+        [
+          "close",
+          108.6
+        ],
+        [
+          "fillRect",
+          101.4
+        ],
+        [
+          "arOcr",
+          95.5
+        ],
+        [
+          "arNameHp",
+          92.1
+        ],
+        [
+          "arSetH",
+          26.8
+        ],
+        [
+          "ecDetect",
+          23.6
+        ],
+        [
+          "t.onmessage",
+          20.4
+        ],
+        [
+          "toBlob",
+          19.8
+        ],
+        [
+          "ecNccShift",
+          18.3
+        ],
+        [
+          "n",
+          16.8
+        ],
+        [
+          "window.<computed>",
+          16.4
+        ],
+        [
+          "(anonymous)",
+          15.9
+        ]
+      ]
+    },
+    "reward": {
+      "blobs": 145,
+      "parts": {
+        "ecGrid": {
+          "calls": 307,
+          "ms": 148.70000004768372
+        },
+        "ecTick": {
+          "calls": 307,
+          "ms": 1863.1999996304512
+        },
+        "arNameWatch": {
+          "calls": 121,
+          "ms": 1187.6000000238419
+        },
+        "arMapWatch": {
+          "calls": 121,
+          "ms": 84.30000004172325
+        },
+        "arLogFrame": {
+          "calls": 72,
+          "ms": 61.80000002682209
+        },
+        "arBoxStep": {
+          "calls": 74,
+          "ms": 92.99999994039536
+        },
+        "arFrame": {
+          "calls": 30,
+          "ms": 22.699999913573265
+        },
+        "ecNccShift": {
+          "calls": 14,
+          "ms": 35.1000000089407
+        }
+      },
+      "ocr": true,
+      "ocrError": null,
+      "boxWorker": true,
+      "snapFrames": 134,
+      "videoError": null,
+      "ring": 35,
+      "saved": null,
+      "wall": 12.00244626798667,
+      "cpuSeconds": 38.19,
+      "cpuPerWall": 3.1818513615729866,
+      "mainTaskSeconds": 6.804932,
+      "hotSamplesMs": [
+        [
+          "(idle)",
+          5203.8
+        ],
+        [
+          "arBmNcc",
+          1890.5
+        ],
+        [
+          "drawImage",
+          1488.7
+        ],
+        [
+          "arMesoFind",
+          880.2
+        ],
+        [
+          "(program)",
+          705.5
+        ],
+        [
+          "getImageData",
+          692.7
+        ],
+        [
+          "(garbage collector)",
+          189.9
+        ],
+        [
+          "ecGrid",
+          165.1
+        ],
+        [
+          "arOcr",
+          125.3
+        ],
+        [
+          "arNameHp",
+          98.4
+        ],
+        [
+          "fillRect",
+          89.7
+        ],
+        [
+          "close",
+          65.2
+        ],
+        [
+          "arBmGray",
+          49.3
+        ],
+        [
+          "toBlob",
+          36.3
+        ],
+        [
+          "arSetH",
+          31.9
+        ],
+        [
+          "arMapCrop",
+          27.0
+        ],
+        [
+          "arMesoLocate",
+          22.8
+        ],
+        [
+          "ecNccShift",
+          22.5
+        ]
+      ]
+    },
+    "ocr": {
+      "blobs": 142,
+      "parts": {
+        "arNameWatch": {
+          "calls": 121,
+          "ms": 1140.2999998778105
+        },
+        "arMapWatch": {
+          "calls": 121,
+          "ms": 52.60000002384186
+        },
+        "arLogFrame": {
+          "calls": 72,
+          "ms": 60.7999999076128
+        },
+        "arBoxStep": {
+          "calls": 71,
+          "ms": 71.7999999821186
+        },
+        "arFrame": {
+          "calls": 29,
+          "ms": 19.5
+        }
+      },
+      "ocr": true,
+      "ocrError": null,
+      "boxWorker": true,
+      "snapFrames": 135,
+      "videoError": null,
+      "ring": 0,
+      "saved": null,
+      "wall": 12.002209341007983,
+      "cpuSeconds": 35.27,
+      "cpuPerWall": 2.938625631157165,
+      "mainTaskSeconds": 4.565256,
+      "hotSamplesMs": [
+        [
+          "(idle)",
+          7500.3
+        ],
+        [
+          "arBmNcc",
+          1830.2
+        ],
+        [
+          "arMesoFind",
+          883.6
+        ],
+        [
+          "(program)",
+          582.4
+        ],
+        [
+          "getImageData",
+          445.0
+        ],
+        [
+          "(garbage collector)",
+          158.7
+        ],
+        [
+          "drawImage",
+          118.0
+        ],
+        [
+          "arOcr",
+          107.1
+        ],
+        [
+          "arNameHp",
+          90.5
+        ],
+        [
+          "fillRect",
+          85.0
+        ],
+        [
+          "arBmGray",
+          48.2
+        ],
+        [
+          "toBlob",
+          31.8
+        ],
+        [
+          "getContext",
+          26.6
+        ],
+        [
+          "arSetH",
+          20.6
+        ],
+        [
+          "arGraySums",
+          20.2
+        ],
+        [
+          "putImageData",
+          17.0
+        ],
+        [
+          "arGray",
+          14.1
+        ],
+        [
+          "arMapCrop",
+          13.3
+        ]
+      ]
+    }
+  },
+  "encodeBefore": {
+    "blobs": 1,
+    "parts": {},
+    "ocr": false,
+    "ocrError": null,
+    "boxWorker": false,
+    "snapFrames": 0,
+    "videoError": null,
+    "ring": 0,
+    "saved": 1,
+    "wall": 2.0688449860026594,
+    "cpuSeconds": 7.219999999999999,
+    "cpuPerWall": 3.489869975203023,
+    "mainTaskSeconds": 0.41049399999999997,
+    "hotSamplesMs": [
+      [
+        "(idle)",
+        1687.6
+      ],
+      [
+        "(program)",
+        224.8
+      ],
+      [
+        "isConfigSupported",
+        117.1
+      ],
+      [
+        "close",
+        46.7
+      ],
+      [
+        "(garbage collector)",
+        7.3
+      ],
+      [
+        "drawImage",
+        4.3
+      ],
+      [
+        "finalize",
+        3.5
+      ],
+      [
+        "Blob",
+        3.2
+      ],
+      [
+        "ecVMake",
+        3.0
+      ],
+      [
+        "encode",
+        2.4
+      ],
+      [
+        "addVideoChunk",
+        2.3
+      ],
+      [
+        "VideoFrame",
+        2.1
+      ],
+      [
+        "Muxer",
+        1.1
+      ],
+      [
+        "writeEBML",
+        1.1
+      ],
+      [
+        "writeEBMLVarInt",
+        1.1
+      ],
+      [
+        "addVideoChunkRaw",
+        1.1
+      ],
+      [
+        "createCodecPrivatePlaceholders_fn",
+        1.1
+      ],
+      [
+        "write",
+        1.1
+      ]
+    ]
+  },
+  "encodeAfter": {
+    "blobs": 1,
+    "parts": {},
+    "ocr": false,
+    "ocrError": null,
+    "boxWorker": false,
+    "snapFrames": 0,
+    "videoError": null,
+    "ring": 0,
+    "saved": 1,
+    "wall": 1.7575165739981458,
+    "cpuSeconds": 6.57,
+    "cpuPerWall": 3.738229327222795,
+    "mainTaskSeconds": 0.30255,
+    "hotSamplesMs": [
+      [
+        "(idle)",
+        1476.1
+      ],
+      [
+        "(program)",
+        185.2
+      ],
+      [
+        "isConfigSupported",
+        76.4
+      ],
+      [
+        "close",
+        23.5
+      ],
+      [
+        "(garbage collector)",
+        6.9
+      ],
+      [
+        "VideoFrame",
+        4.7
+      ],
+      [
+        "ecVMake",
+        4.2
+      ],
+      [
+        "drawImage",
+        4.2
+      ],
+      [
+        "finalize",
+        3.2
+      ],
+      [
+        "addVideoChunk",
+        2.4
+      ],
+      [
+        "Blob",
+        2.3
+      ],
+      [
+        "ensureSize_fn",
+        2.1
+      ],
+      [
+        "(anonymous)",
+        2.0
+      ],
+      [
+        "evaluate",
+        1.1
+      ],
+      [
+        "Muxer",
+        1.1
+      ],
+      [
+        "__privateGet",
+        0.7
+      ]
+    ]
+  },
+  "input1080Before": {
+    "blobs": 408,
+    "parts": {
+      "ecGrid": {
+        "calls": 286,
+        "ms": 137.49999995529652
+      },
+      "ecTick": {
+        "calls": 286,
+        "ms": 1744.0000000447035
+      },
+      "arNameWatch": {
+        "calls": 120,
+        "ms": 1446.6999999433756
+      },
+      "arMapWatch": {
+        "calls": 120,
+        "ms": 71.59999997913837
+      },
+      "arBoxStep": {
+        "calls": 72,
+        "ms": 107.49999994039536
+      },
+      "arLogFrame": {
+        "calls": 72,
+        "ms": 36.099999979138374
+      },
+      "arFrame": {
+        "calls": 29,
+        "ms": 24.099999949336052
+      },
+      "ecNccShift": {
+        "calls": 13,
+        "ms": 42.5
+      }
+    },
+    "ocr": true,
+    "ocrError": null,
+    "boxWorker": true,
+    "snapFrames": 132,
+    "videoError": null,
+    "ring": 32,
+    "saved": null,
+    "wall": 12.002886487010983,
+    "cpuSeconds": 57.089999999999996,
+    "cpuPerWall": 4.756355903372109,
+    "mainTaskSeconds": 7.213509,
+    "hotSamplesMs": [
+      [
+        "(idle)",
+        4899.7
+      ],
+      [
+        "arBmTop",
+        2152.3
+      ],
+      [
+        "VideoFrame",
+        1202.9
+      ],
+      [
+        "arMesoFind",
+        1179.2
+      ],
+      [
+        "(program)",
+        933.5
+      ],
+      [
+        "getImageData",
+        544.3
+      ],
+      [
+        "(garbage collector)",
+        176.6
+      ],
+      [
+        "ecGrid",
+        127.5
+      ],
+      [
+        "drawImage",
+        89.3
+      ],
+      [
+        "close",
+        85.7
+      ],
+      [
+        "arNameHp",
+        80.9
+      ],
+      [
+        "arOcr",
+        68.4
+      ],
+      [
+        "fillRect",
+        56.0
+      ],
+      [
+        "toBlob",
+        52.7
+      ],
+      [
+        "arBmGray",
+        45.7
+      ],
+      [
+        "arBmNcc",
+        32.4
+      ],
+      [
+        "arMesoLocate",
+        24.7
+      ],
+      [
+        "arSetH",
+        21.6
+      ]
+    ]
+  },
+  "input1080After": {
+    "blobs": 131,
+    "parts": {
+      "ecGrid": {
+        "calls": 315,
+        "ms": 143.70000004768372
+      },
+      "ecTick": {
+        "calls": 315,
+        "ms": 2796.7000007629395
+      },
+      "arNameWatch": {
+        "calls": 120,
+        "ms": 1110.3000000566244
+      },
+      "arMapWatch": {
+        "calls": 120,
+        "ms": 46.299999952316284
+      },
+      "arBoxStep": {
+        "calls": 72,
+        "ms": 111.3999999910593
+      },
+      "arLogFrame": {
+        "calls": 72,
+        "ms": 37.20000001788139
+      },
+      "arFrame": {
+        "calls": 30,
+        "ms": 27.399999976158142
+      },
+      "ecNccShift": {
+        "calls": 14,
+        "ms": 30.5
+      }
+    },
+    "ocr": true,
+    "ocrError": null,
+    "boxWorker": true,
+    "snapFrames": 135,
+    "videoError": null,
+    "ring": 34,
+    "saved": null,
+    "wall": 12.002116024988936,
+    "cpuSeconds": 40.660000000000004,
+    "cpuPerWall": 3.3877359555051862,
+    "mainTaskSeconds": 7.225438,
+    "hotSamplesMs": [
+      [
+        "(idle)",
+        4806.0
+      ],
+      [
+        "drawImage",
+        2369.8
+      ],
+      [
+        "arBmNcc",
+        1749.2
+      ],
+      [
+        "arMesoFind",
+        843.4
+      ],
+      [
+        "(program)",
+        665.7
+      ],
+      [
+        "getImageData",
+        620.4
+      ],
+      [
+        "(garbage collector)",
+        155.2
+      ],
+      [
+        "ecGrid",
+        135.5
+      ],
+      [
+        "arNameHp",
+        87.2
+      ],
+      [
+        "close",
+        75.6
+      ],
+      [
+        "arOcr",
+        60.7
+      ],
+      [
+        "arBmGray",
+        54.4
+      ],
+      [
+        "fillRect",
+        53.7
+      ],
+      [
+        "arMesoLocate",
+        28.0
+      ],
+      [
+        "arSetH",
+        26.8
+      ],
+      [
+        "ecNccShift",
+        22.4
+      ],
+      [
+        "t.onmessage",
+        21.4
+      ],
+      [
+        "toBlob",
+        20.8
+      ]
+    ]
+  }
+}

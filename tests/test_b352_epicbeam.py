@@ -22,6 +22,8 @@ try:
     pg=b.new_page(viewport={'width':1600,'height':1100},locale='ko-KR',color_scheme='dark',timezone_id='Asia/Seoul'); pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800); pg.evaluate(SETUP)
+    # b385: explicit legacy-fallback E2E; native 720p30 is test_b384_video.
+    pg.evaluate("window.VideoEncoder=undefined;EC.cfg.fps=8;EC.cfg.H=540;EC.cfg.q=.75;clearInterval(EC.timer);EC.timer=setInterval(ecTick,125)")
     # 탭: 캘린더 바로 뒤, 아이콘, Paperlogy
     order=pg.evaluate("[...document.querySelectorAll('#tabs button')].map(b=>b.dataset.tab)")
     check('탭 순서: 캘린더 바로 뒤 에픽빔 기록지',order[order.index('cal')+1]=='epic',order)

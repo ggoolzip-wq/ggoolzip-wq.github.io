@@ -18,7 +18,7 @@ try:
   pg=b.new_page(viewport={'width':1440,'height':1000},locale='ko-KR',timezone_id='Asia/Seoul');pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:print('CONSOLE',m.text) if m.text.startswith('DBG') else None)
   # 네트워크가 아니라 <img> 망가질 때 한 글자 이니셜이 보이게: 실제 같은 CSS 가로 고정
   pg.route('**/testavatar',lambda r:r.abort())
-  pg.goto(f'http://127.0.0.1:{PORT}/index.html');pg.evaluate('localStorage.clear()');pg.reload();pg.wait_for_timeout(700)
+  pg.goto(f'http://127.0.0.1:{PORT}/index.html');pg.evaluate('localStorage.clear()');pg.reload();pg.wait_for_timeout(700);pg.evaluate("window.VideoEncoder=undefined;EC.cfg.fps=8;EC.cfg.H=540;EC.cfg.q=.75")
   # 실제 사용자 사례 상태(더스크 카오스 전투 맵 + 상자 추정 상태)
   r=pg.evaluate("""()=>{ const now=Date.now(); ARX.det={boss:'dusk',diff:'chaos',cid:'c0'}; ARX.mapSt={boss:'dusk',kind:'b',t:now}; ARX.rew={boss:'dusk'}; return {ctx:ecCtx(now),battle:arRewMap(now)?.kind,state:arBossState()}; }""")
   check('전투 맵 60초 + ARX.rew 상태라도 에픽빔 저장 게이트 닫힘',r['ctx'] is None and r['battle']=='b',r)
