@@ -17,7 +17,7 @@
 - **한계**: 실제 VP9 저장 부하는 남음(전 7.22 CPU초/2.069초, 후 6.57 CPU초/1.758초, 사실상 같은 일시 피크). 원모 PC의 100%가 특정 수치로 떨어진다고 보장할 수 없음. unsupported 브라우저 fallback도 기존처럼 비쌈.
 - **검증**: test_b385_cpu PASS(점수·미사용 WebP 0·legacy 1·pending 프리롤·해제·재시작 시계). test_b384_video 실제 capture→IndexedDB→decode PASS: **1280×720 VP9 /30fps/120장/759,457B**, 구형 클립 재생·득템 연결 유지. ffprobe 독립 확인. 전체 회귀 655초: 직렬 retry 후 tracker53·b213·b288 기존 실패 3개와 b366 새 회귀가 남음. b366은 위 직접 참조 제거 후 별도 재검증 PASS(다른 새 실패 없음). b313 실화면 60개 메소 위치·숫자 및 b348 닉네임/인벤 회귀 PASS, b382·b383 fallback PASS. 기존 WebP 테스트들은 네이티브 인코더를 명시적으로 끄고 legacy 경로를 검증하도록 수정, b384_video·b385_cpu는 run_all 등록.
 - **재현**: `tests/bench_b385_cpu.py`(epic/auto/reward/ocr/encode 분리), `tests/perf/b385.md`, `tests/perf/b385_results.json`. 원본 b384 `/workspace/b385/baseline.html`, 로그·실제 영상·ffprobe·설명 사진 `/workspace/b385/` (`cpu_comparison.png`). API 키/실제 사용자 기록 사용 안 함.
-- **배포**: 생성 index.html 한 벌(dataset.build=b385), 예시/실제 동일. 이 변경 push 후 두 도메인 공개 빌드 확인 결과는 작업 최종 보고에 남김(이 문서 작성 시점에는 배포 전).
+- **배포**: 생성 index.html 한 벌(dataset.build=b385), 예시/실제 동일. 최종 배포 확인: **commit df607d8**, 2026-11-07 14:26 KST 기준 실제 HTTP 둘 다 `dataset.build='b385'` (bossmaple.pages.dev · ggoolzip-wq.github.io). Cloudflare Pages·GitHub Pages workflow 모두 success. 증거 `/workspace/b385/deployed.json`, `live_bossmaple.png`, `live_github.png`.
 
 ## b384 (t428) 에픽빔 실제 VP9 30fps·720p WebM (용량 ≤800KB)
 - **임베디드 페이지와 실제 페이지 동일**: src/epicclip.js + src/app.js → `tools/build.py` 로 index.html 한 벌 생성(dataset.build='b384'). 예로만 따로 쓰는 capture 파일 없음.
