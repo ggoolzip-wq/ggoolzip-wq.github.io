@@ -2508,3 +2508,24 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 #arPanel .ar-piphost[hidden]{display:none!important}
 #arPanel .ar-connectbar{gap:12px}
 #arPanel .ar-maple-connect{flex:0 0 100%;width:100%;min-height:44px;justify-content:center}
+
+/* b398: 캘린더 일별 상세 — 중복 칩/금액 제거, 일정한 3열과 우측 숫자 정렬 */
+.cald-clean{padding:20px;box-shadow:0 6px 24px rgba(0,0,0,.12);border-color:var(--line)}
+.cald-head{display:grid;grid-template-columns:minmax(0,1fr) auto 32px;align-items:start;gap:16px;padding-bottom:18px}
+.cald-head small,.cald-meta,.cald-colhd,.cald-row time{color:var(--muted);font-size:.78rem}
+.cald-head h3{margin:5px 0 0;font-size:1.35rem}.cald-head h3 span{font-size:.85rem;font-weight:500;color:var(--muted)}
+.cald-total{text-align:right;display:grid;gap:5px}.cald-total b{font-size:1.4rem;color:var(--ok,#3ee07a);font-variant-numeric:tabular-nums}
+.cald-close{width:32px;height:32px;padding:0!important;justify-content:center}
+.cald-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:22px}
+.cald-metrics>div{display:grid;gap:8px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.cald-metrics small{font-size:.78rem;color:var(--muted)}.cald-metrics b{text-align:right;font-size:.95rem;font-variant-numeric:tabular-nums}
+.cald-section{margin-top:18px}.cald-sech{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.cald-clean h4{margin:0;font-size:.95rem}.cald-sech h4 small,.cald-chars summary small{margin-left:8px;color:var(--muted);font-size:.75rem;font-weight:500}.cald-sech>b{font-size:.85rem;font-variant-numeric:tabular-nums}
+.cald-colhd,.cald-row{display:grid;grid-template-columns:76px minmax(0,1fr) 120px;align-items:center;gap:12px}.cald-colhd{padding:10px 0 6px;font-size:.72rem}.cald-colhd>span:last-child{text-align:right}
+.cald-row{padding:12px 0;border-bottom:1px solid var(--line)}.cald-row:last-child{border-bottom:0}.cald-row time{font-variant-numeric:tabular-nums}
+.cald-info{display:flex;align-items:center;gap:10px;min-width:0}.cald-info>div{min-width:0}.cald-icon{width:30px;flex:none;display:grid;place-items:center}.cald-icon img{width:28px;height:28px;object-fit:contain}
+.cald-name{font-size:.85rem;font-weight:600;line-height:1.5;overflow-wrap:anywhere}.cald-qty{margin-left:8px;font-size:.75rem;color:var(--muted);white-space:nowrap}.cald-meta{margin-top:3px;line-height:1.4;overflow-wrap:anywhere}
+.cald-money{text-align:right;font-variant-numeric:tabular-nums;font-size:.95rem;white-space:nowrap;color:var(--text)}
+.cald-chars{margin-top:20px;padding:12px 0;border-top:1px solid var(--line)}.cald-chars summary{cursor:pointer;font-size:.85rem;color:var(--muted)}.cald-chars>div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;font-size:.85rem}.cald-chars b{font-variant-numeric:tabular-nums}
+.cald-notes{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}.cald-notes h4{margin-bottom:12px}.cald-notes .calnb{margin:0 0 12px}.cald-notes .calnbt{min-height:36px}
+@media(max-width:650px){.cald-clean{padding:12px}.cald-head{grid-template-columns:minmax(0,1fr) 28px;gap:10px}.cald-head>div:first-child{grid-column:1}.cald-close{grid-column:2;grid-row:1}.cald-total{grid-column:1/-1;grid-row:2;text-align:left}.cald-metrics{gap:6px}.cald-metrics>div{padding:9px 7px;gap:6px}.cald-metrics b{font-size:.78rem}.cald-metrics small{font-size:.68rem}.cald-row,.cald-colhd{grid-template-columns:48px minmax(0,1fr) 72px;gap:8px}.cald-info{gap:6px}.cald-icon{width:24px}.cald-icon img{width:24px;height:24px}.cald-name{font-size:.76rem}.cald-meta,.cald-row time{font-size:.68rem}.cald-money{font-size:.83rem}.cald-head h3{font-size:1.15rem}}

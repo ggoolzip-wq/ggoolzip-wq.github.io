@@ -16,12 +16,13 @@ try:
   pg.screenshot(path='/workspace/maple-boss-tracker/b397_auto_inline.png',full_page=True)
   pg.evaluate(FAKE)
   pg.evaluate('''()=>{window.__calls=0;window.__stopped=false;arConnect=()=>{__calls++;const tr={readyState:'live',stop(){__stopped=true;this.readyState='ended'},getSettings(){return {width:1280,height:720}}};ARX.stream={getVideoTracks:()=>[tr],getTracks:()=>[tr]};ARX.video=document.createElement('video');arPanelPaint();};}''')
-  pg.click('.ar-maple-connect');print('CONNECT',pg.evaluate('({calls:__calls,live:arLive(),stream:!!ARX.stream,video:!!ARX.video})'),pg.locator('.ar-maple-connect').inner_text());assert pg.evaluate('__calls')==1 and pg.locator('.ar-maple-connect').inner_text()=='메이플 연결 해제'
+  pg.click('.ar-maple-connect');assert pg.evaluate('__calls')==1 and pg.locator('.ar-maple-connect').inner_text()=='메이플 연결 해제'
   assert pg.evaluate('arPipOpen(arPipCard())')
   assert pg.evaluate("!!ARX.pip.win.document.querySelector('.ar-cboss .ar-b')")
   pg.evaluate('arPipSetMin(true)') if pg.evaluate('typeof arPipSetMin==="function"') else None
   pg.evaluate('renderAuto(); arPipClose()');assert not pg.locator('#arPanel .ar-cboss').is_visible()
   pg.click('.ar-maple-connect');assert pg.evaluate('__stopped') and pg.locator('.ar-maple-connect').inner_text()=='메이플 연결'
+  pg.evaluate("S.settings.accounts=[]");pg.click('.ar-maple-connect');assert pg.evaluate('__calls')==2;pg.click('.ar-maple-connect')
   assert not errs,errs
   b.close();print('ALL PASS b397: inline guide/no popup, removed page sections, bottom connect/stop uses existing handler, PiP open/re-render/return remains hidden, track stops, JS errors=0')
 finally:srv.terminate()
