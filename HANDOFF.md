@@ -8,18 +8,25 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
-## 현재 전체 상태 요약 (2026-11-08 00:16 KST 기준, 비밀값 없음)
-- **운영**: main = b391(a642879, 11/7 19:32 KST 배포·양 사이트 HTML sha 일치 확인) + 이후 feed 봇 커밋. 운영 Worker 서버는 11/3 20:16 KST(b354 무렵) 배포본 그대로(그 뒤 repo worker.js 는 b384 주석 변경 + 아래 b392 후보만).
+## 현재 전체 상태 요약 (2026-11-08 b393 기준, 비밀값 없음)
+- **b393**: 단일 클립 삭제(b392) 철회. 화면 이름은 **이번 주 에픽빔**. 매주 목요일 00:00 KST 기준 이전 클립은 전 계정 R2·D1 및 이 버전을 연 PC의 IndexedDB에서 영구 폐기. 현재 주 영상은 보존. 사이트·Worker 배포 결과는 최종 작업 보고 참조.
 - **에픽빔 감지 기준(b391)**: 사용자 첨부 GIF(716×428, 16프레임×60ms, sha256 750a98d11c713df9ea130f09edb4df36b04b482e4f14bfeeee5b00c743bc5f35, 보관 /workspace/epic_motion_reference/epic_beam_user.gif) 의 앞(#≤5)→정점(#4~8)→쇠퇴(#≥9) 진행이 보일 때만 저장. 720p 30fps VP9, 앞 1초·뒤 3초, 120프레임, 보상 맵 게이트·OCR·PIP 그대로. 계정 6개(11/7 18:57 KST 목록) 오프라인: 양성 2(ec1793879339857·ec1793873647774 찬란한 흉성 노말) 감지, 음성 4 미감지 — 전체 저장 재현은 보상 맵 게이트 '모의'. 한계: 양성 실례 같은 보스 2개뿐, 축소(0.7배 24/40)·2배속·드문 관측·프레임 누락 시 놓칠 수 있음, 세 장 정지 순서 제시·무작위 섞기 일부(8/40) 통과, 오탐 0/정확도 100% 아님.
 - **CPU(b389)**: 일부 작업 Worker 이동은 배포됐지만 총 CPU 감소·원모님 PC 렉 개선은 입증 안 됨(측정 한계 b389 항목 참고).
 - **원본 추출(WzComparerR2 등)**: 사용자 취소(t476) — 재개 금지, 게임 PC 원본 복사 0건.
-- **오기록 삭제**: 대상 4개 ec1794033431494(데미안 하드)·ec1794032772754(더스크 카오스)·ec1793884892169(더스크 카오스)·ec1793858562894(더스크 카오스), 보존 2개 ec1793879339857·ec1793873647774. t468 요청 → 삭제 API 부재로 중단 → b390 후보(미배포) → t482 재개 → 지금 b392 후보(b391 위, 코드+로컬 검증·stage 만). **실제 계정 삭제 0건, 운영 Worker 미배포.** 남은 일: 부모 검토 → 커밋/사이트 배포 → 운영 Worker 배포(wrangler deploy, epic_tomb 는 첫 요청 ensureSchema 자동) → 본인 인증 정상 경로로 4개 DELETE(화면 삭제 버튼 없음 — 방식은 부모/사용자 결정) → 목록 GET 으로 4개 없음·2개 있음 확인. 이전에 403 을 User-Agent 바꿔 넘긴 경로는 재사용 금지.
-- **삭제 안전성(b392)**: 범위(본인·연결 계정)만, 다른 계정 404, 멱등·R2 실패 재시도, 공유 R2 참조 보존, 업로드-삭제 경합은 INSERT…WHERE NOT EXISTS(epic_tomb) 한 문장으로 부활 차단, 다른 PC 는 삭제 이력 동기화로 사본 삭제·재업로드 410. 경합 테스트 지연 코드는 테스트 진입점에만.
 - **5000명 용량 답변(11/8)**: 코드상 개인 총량 제한 없음(클립당 ≤2MB, 하루 300·분당 30 업로드). 실측 WebM 평균 ≈0.79MB(0.73~0.84MB, maxBytes 800000 은 강제 상한 아님). R2 무료 10GB-month 를 5000명 균등 → 1인 2MB ≈ 약 2개(유료 시 초과분 $0.015/GB-month, 무료량은 물리 상한 아님). Workers 무료 10만 요청/일(전체 기능 공유)이 더 먼저 한계일 수 있음. D1 무료 5GB·쓰기 10만행/일. 실제 요금제·현재 사용량은 미확인(무료 가정). 출처: developers.cloudflare.com/r2/pricing, /d1/platform/pricing, /workers/platform/limits.
 - **Grok Bot 예약(부모 전달 권위 상태, 2026-11-07 19:34 KST 시점)**: ① '썬데이메이플 칸 확인' enabled, 매주 목·금 10:00 Asia/Seoul(automation-1791559100163), 마지막 실행 11/6 10:00:52 KST 성공. ② '메보기 검색 노출 확인' enabled, 11/9 10:00 전후 15분 Asia/Seoul 1회(automation-1792412128359), 아직 실행 없음. 예약 자체는 변경하지 않음. 이와 별도로 저장소 cron: GitHub Actions update-feed(5분마다), update-prices(매일 19:00 KST), sunday-watch(09:45·09:50 KST), Worker cron(매 1분 라이브 감지).
 - **작업 트리·보존**: /workspace/ggoolzip-site(HEAD 85c3464, 미커밋 9개 = b387 원본 작업 — 건드리지 말 것), /workspace/epic_motion_release(b391 배포 완료), /workspace/epic_delete_release(중단된 b390 — 수정 금지, 읽기만), /workspace/epic_delete_b392(현재 b392 후보). 원본 6클립 /workspace/epic_review(sha 목록 /workspace/live_opt_release_result/epic_originals_sha.txt), 최신 목록 /workspace/epic_motion_reference/account/manifest_latest.json. 증거: /workspace/epic_motion_reference/(GIF 분석·eval·deploy), /workspace/epic_cleanup/(삭제 API·로그 logs_b392).
 
-## b392 (t468·t482) 에픽빔 클립 단일 삭제 API + 삭제 이력 동기화 (b391 모션 감지 위, 미배포 — 부모 검토 전)
+
+## b393 (t325u·t326u) 이번 주 에픽빔 + 목요일 주간 영상 폐기
+- b392 단일 DELETE API·삭제 이력 API·epic_tomb 생성·업로드 410·ecDeleteClip 및 관련 후보 테스트 제거. b392 작업 폴더는 손대지 않음. 확인 시 main/공개 페이지는 이미 b392였음(이전 인수인계의 미배포 설명과 다름). 오기록 4개 별도 수동 삭제 없음.
+- 탭·제목은 이번 주 에픽빔, 목요일 00:00 KST 영구 삭제 안내. 탭 버튼은 .neonBtn. 감지 기준·녹화 품질은 변경 없음.
+- Worker 기존 매분 cron에서 주간 경계 이전 영상만 전 계정 폐기. 1회 최대 R2 객체 50개→성공한 뒤 D1 행 삭제, 실패 시 행을 남겨 다음 분 재시도. 첫 cron부터 현재 주 이전 영상 청소. 목록·다운로드는 경계 즉시 지난주 영상 차단, 오래된 PC 업로드도 400으로 차단(410 단일 삭제 아님). D1 인덱스 자동 생성, 수동 데이터 삭제/DDL 없음. 다음 주 경계 2026-11-12 00:00 KST.
+- 클라이언트는 시작·목록·동기화·30초 주기로 지난주 메타/영상/객체 URL 삭제, 오래된 서버 응답을 무시해 목록 부활 방지. 꺼진/오프라인 구버전 PC는 자동 원격 삭제할 수 없으며 새 버전 접속 때 지워짐. 과거 브라우저 HTTP 캐시나 사용자가 별도 다운로드한 파일은 웹앱에서 원격 삭제 불가. 새 영상 응답은 no-store.
+- 직접 검증 PASS: tests/test_b393_weekly.py(운영 아닌 로컬 D1/R2·격리 Chromium) — 경계 1ms 전/정각, R2 실제 객체 소멸, R2 실패 재시도, 멱등, 현재 주 보존, 지난주 업로드 차단, 로컬 영상 삭제·재등장 차단·명칭. JS 문법 검사 PASS. 스크린샷·검증 로그 /workspace/maple-boss-tracker/b393_{before,after}.png, b393_test.log. 배포는 일반 main push + server에서 wrangler deploy, 결과는 최종 보고.
+- 기존 한계: R2 put 이후 D1 INSERT 이전 프로세스가 죽는 기존 고아 객체 가능성은 유지(주간 폐기는 D1에 등록된 영상 대상). 많은 과거 영상은 50개/분씩 순차 처리되어 실제 삭제 완료는 경계보다 늦을 수 있음.
+
+## b392 (과거 기록 — b393에서 철회) 에픽빔 클립 단일 삭제 API + 삭제 이력 동기화
 - **요청**: 사용자 t468 "나머지 영상은 … 삭제해" + t482 재개. 대상은 사용자 라벨 오기록 4개(ec1794033431494·ec1794032772754·ec1793884892169·ec1793858562894)만, 정상 2개(ec1793879339857·ec1793873647774)·새 클립·다른 계정 보존. 이 빌드는 코드만 — 운영 worker 배포·실제 DELETE 는 별도 단계.
 - **서버(worker.js/schema.sql)**: `DELETE /api/epic/clip/<id>` — 로그인 사용자·연결 계정 범위(user_id OR acct_hash IN) 같은 id 행만 삭제 + `epic_tomb` 이력을 한 D1 batch 로 기록, 다른 행이 같은 r2key 를 안 쓸 때만 R2 삭제(실패 시 r2_done=0 → 같은 DELETE 재호출로 재시도, 멱등 already). 다른 계정 클립은 404(존재 비노출). 1분 60회. `GET /api/epic/deleted` = 같은 범위 삭제 이력 커서. `POST /api/epic/clip` 은 이력 있으면 410 + INSERT…SELECT…WHERE NOT EXISTS(epic_tomb) 한 문장으로 부활 경합 차단, 늦게 거부된 업로드의 R2 객체는 이력에 기록 후 참조 없을 때만 정리. epic_tomb·인덱스는 ensureSchema 가 첫 요청에 CREATE IF NOT EXISTS(수동 DDL 불필요). 계정 전체 삭제 API 변경 없음.
 - **클라이언트(epicclip.js)**: 동기화 때 삭제 이력을 끝까지(complete) 받은 경우에만 그 id 의 이 PC 사본 삭제(목록에 없음·오프라인·로그인 없음·일부 실패로는 아무것도 안 지움), 업로드 410 이면 다시 안 올림. window.ecDeleteClip(id) 는 서버 성공·같은 id 일 때만 로컬 삭제. 화면 삭제 버튼은 없음. b391 모션 감지·PIP·OCR·720p30 그대로, build b392.

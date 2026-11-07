@@ -2288,7 +2288,7 @@ body.arpipw{padding:4px!important;height:100vh;display:flex;flex-direction:colum
 .arpipw .ar-pcn{font-size:.85rem}.arpipw .ar-pcm{font-size:.7rem;overflow:hidden;text-overflow:ellipsis}
 /* b350(t657): 위 탭 전부 Paperlogy (캘린더 탭과 같은 글꼴). 색·네온(캘린더 노랑, 자동 기록 빨강)은 그대로 */
 html body nav.tabs button{font-family:'Paperlogy','Pretendard',system-ui,sans-serif!important}
-/* b352(t657): 에픽빔 기록지 탭 — 주황·보라 네온(에픽빔 색), 4열×3행 카드, 가운데 모달 */
+/* b352(t657): 이번 주 에픽빔 탭 — 주황·보라 네온(에픽빔 색), 4열×3행 카드, 가운데 모달 */
 html body nav.tabs button[data-tab=epic]{--nb1:#ff9a3c;--nb2:#b46bff;--nbtx:#ffe9d6}
 [data-theme] body nav.tabs button[data-tab=epic].on,html body nav.tabs button[data-tab=epic].on{color:#fff1e2!important}
 [data-theme=light] body nav.tabs button[data-tab=epic]{--nb1:#e07000;--nb2:#8a3fd6;--nbtx:#5a2a00}

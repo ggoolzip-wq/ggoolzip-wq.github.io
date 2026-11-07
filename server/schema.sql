@@ -91,8 +91,7 @@ CREATE TABLE IF NOT EXISTS seen (user_id TEXT PRIMARY KEY, ids TEXT NOT NULL, up
 CREATE TABLE IF NOT EXISTS epic_clips (id TEXT NOT NULL, user_id TEXT NOT NULL, acct_hash TEXT NOT NULL, t0 INTEGER NOT NULL, boss TEXT, diff TEXT, item TEXT, cid TEXT, cname TEXT, meta TEXT NOT NULL, r2key TEXT NOT NULL, size INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (acct_hash, id));
 CREATE INDEX IF NOT EXISTS epic_acct ON epic_clips(acct_hash, t0);
 CREATE INDEX IF NOT EXISTS epic_user ON epic_clips(user_id, t0);
--- b390: 에픽빔 클립 명시 삭제 이력(tombstone) — 같은 계정 범위 재업로드(부활) 거부·다른 PC 캐시 삭제 전파. 자동 삭제 없음.
-CREATE TABLE IF NOT EXISTS epic_tomb (acct_hash TEXT NOT NULL, id TEXT NOT NULL, user_id TEXT NOT NULL, deleted_at INTEGER NOT NULL, r2key TEXT, r2_done INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (acct_hash, id));
-CREATE INDEX IF NOT EXISTS epic_tomb_user ON epic_tomb(user_id, deleted_at);
-CREATE INDEX IF NOT EXISTS epic_tomb_at ON epic_tomb(acct_hash, deleted_at);
+
+-- b393 weekly retention
+CREATE INDEX IF NOT EXISTS epic_week ON epic_clips(t0);
 CREATE INDEX IF NOT EXISTS epic_r2key ON epic_clips(r2key);
