@@ -28,7 +28,7 @@ try:
     check('클립 1개 저장',len(L)==1,L)
     m=L[0]; dg=m.get('dg') or {}; print('dg',json.dumps(dg)[:1800])
     check('첫 감지 프레임 = 에픽빔 시작(6.0초) 직후(기존과 같음)',6.0<=m['vt0']<=6.6,m['vt0'])
-    check('dg 기본 필드',dg.get('kind') in ('beam','shift') and dg.get('v')==1 and dg.get('build')==pg.evaluate('document.documentElement.dataset.build')=='b388' and dg.get('src') in ('bm','video') and isinstance(dg.get('lg'),list) and len(dg['lg'])>=5,dg)
+    check('dg 기본 필드',dg.get('kind') in ('beam','shift') and dg.get('v')==1 and dg.get('build')==pg.evaluate('document.documentElement.dataset.build')=='b389' and dg.get('src') in ('bm','video') and isinstance(dg.get('lg'),list) and len(dg['lg'])>=5,dg)
     check('감지/저장 시각 순서: hitT≤0≤det≤commit',dg.get('hitT') is not None and dg['hitT']<=0<=dg['det']<=dg['commit']<=2100,(dg.get('hitT'),dg.get('det'),dg.get('commit')))
     check('점수 흐름에 문턱 통과 점수 포함',any(x[1]>=.66 or x[2]>=.77 for x in dg['lg']),dg['lg'][-8:])
     check('보상 맵 상태 기록',dg.get('map',{}).get('k')=='r' and dg['map']['b']=='lucid' and 0<=dg['map']['age']<1500 and dg.get('boss')=='lucid',dg.get('map'))

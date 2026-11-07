@@ -6818,7 +6818,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b388'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b389'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -9484,13 +9484,11 @@ function arBoxOk(){ if(!arBoxNeed()) return true; if(ARX.rwl&&ARX.rwl.boss===ARX
 function arBoxTpl(k,D){ const c=ARX.boxT||(ARX.boxT={}), id=k+'/'+D; if(c[id]) return c[id]; const a=AR_BOX[k]; return c[id]=new Promise(res=>{ const im=new Image(); im.onload=()=>{ const w=Math.max(4,Math.round(im.width*4/D)), h=Math.max(4,Math.round(im.height*4/D)), cv=document.createElement('canvas'); cv.width=w; cv.height=h; const g=cv.getContext('2d',{willReadFrequently:true}); g.drawImage(im,0,0,w,h); const d=g.getImageData(0,0,w,h).data;
   const idx=[]; for(let i=0;i<w*h;i++) if(d[i*4+3]>200) idx.push(i); const n=idx.length; const m=[0,0,0]; for(const i of idx) for(let ch=0;ch<3;ch++) m[ch]+=d[i*4+ch]; for(let ch=0;ch<3;ch++) m[ch]/=n||1;
   const t=new Float32Array(n*3); let tt=0; idx.forEach((i,j)=>{ for(let ch=0;ch<3;ch++){ const v=d[i*4+ch]-m[ch]; t[j*3+ch]=v; tt+=v*v; } }); res({w,h,n,t,tt,ox:Int32Array.from(idx.map(i=>i%w)),oy:Int32Array.from(idx.map(i=>(i/w)|0))}); }; im.onerror=()=>res(null); im.src=a.u; }); }
-function arNcc(I,W,H,T,x0,x1,y0,y1){ const out=[]; for(let y=Math.max(0,y0);y<=Math.min(H-T.h,y1);y++) for(let x=Math.max(0,x0);x<=Math.min(W-T.w,x1);x++){ let st=0, s0=0,s1=0,s2=0,q=0;
-    for(let j=0;j<T.n;j++){ const p=((y+T.oy[j])*W+x+T.ox[j])*4, a=I[p], b=I[p+1], c=I[p+2]; st+=T.t[j*3]*a+T.t[j*3+1]*b+T.t[j*3+2]*c; s0+=a; s1+=b; s2+=c; q+=a*a+b*b+c*c; }
-    const vi=q-(s0*s0+s1*s1+s2*s2)/T.n, den=Math.sqrt(Math.max(0,vi)*T.tt); out.push([den>1e-6?st/den:0,x,y]); } return out; }
-function arBoxGrab(src,D,k){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR('item',src), s=1080/arGH(src,sh)/D, cv=document.createElement('canvas');
+function arNcc(I,W,H,T,x0,x1,y0,y1){ const C=arNcc._off||(arNcc._off=new WeakMap()); let c=C.get(T); if(!c||c.W!==W){ const O=new Float64Array(T.n); for(let j=0;j<T.n;j++) O[j]=(T.oy[j]*W+T.ox[j])*4; c={W,O}; C.set(T,c); } const O=c.O,out=[],xe=Math.min(W-T.w,x1),ye=Math.min(H-T.h,y1); for(let y=Math.max(0,y0);y<=ye;y++) for(let x=Math.max(0,x0);x<=xe;x++){ const base=(y*W+x)*4; let st=0,s0=0,s1=0,s2=0,q=0; for(let j=0;j<T.n;j++){ const p=base+O[j],a=I[p],b=I[p+1],c=I[p+2]; st+=T.t[j*3]*a+T.t[j*3+1]*b+T.t[j*3+2]*c; s0+=a;s1+=b;s2+=c;q+=a*a+b*b+c*c; } const vi=q-(s0*s0+s1*s1+s2*s2)/T.n,den=Math.sqrt(Math.max(0,vi)*T.tt);out.push([den>1e-6?st/den:0,x,y]); }return out; }
+function arBoxGrab(src,D,k){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR('item',src), s=1080/arGH(src,sh)/D, C=arBoxGrab._cv||(arBoxGrab._cv={}), cv=C[D]||(C[D]=document.createElement('canvas'));
   if(k==='blackmage'){ const y=Math.min(r.y,Math.max(0,arGeom(sw,sh).gy/sh)); r.h+=r.y-y; r.y=y; }
-  cv.width=Math.round(r.w*sw*s); cv.height=Math.round(r.h*sh*s);
-  const g=cv.getContext('2d',{willReadFrequently:true}); g.imageSmoothingQuality='high'; g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,cv.width,cv.height); return {d:g.getImageData(0,0,cv.width,cv.height).data,w:cv.width,h:cv.height}; }
+  const w=Math.round(r.w*sw*s),h=Math.round(r.h*sh*s); if(cv.width!==w) cv.width=w; if(cv.height!==h) cv.height=h;
+  const g=cv.getContext('2d',{willReadFrequently:true}); g.imageSmoothingQuality='high'; g.clearRect(0,0,cv.width,cv.height); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,cv.width,cv.height); return {d:g.getImageData(0,0,cv.width,cv.height).data,w:cv.width,h:cv.height}; }
 /* t625: 상자 일부 템플릿(위·아래·왼·오른쪽 절반) — 진힐라(영상 v3)·듄켈(v4·v5) 보상 상자가 캐릭터·날개 이펙트·데미지 숫자에 반쯤 가려
    전체 NCC .53~.72 로 문턱(.75) 미달, 가려지지 않은 절반은 .80~.87. 절반 점수는 AR_BOX_PART_PEN(.1) 빼서 전체와 같은 문턱으로 비교 */
 const AR_BOX_PART_PEN=.1;
@@ -9617,6 +9615,43 @@ function arMesoParse(t){ let s=String(t||'').replace(/[Oo○◯]/g,'0').replace(
  * 템플릿 = UI 배율 1 실측(1920 최적 화면), 프로필 배율 s 로 키움. 찾은 위치는 ARX.mesoLoc 에 두고 1초마다 그 자리에서 읽음.
  * 그 자리에서 메소 칸이 안 보이면(창 이동·닫힘) 지우고 다시 찾기 — 전체 찾기는 최소 2초 간격(느린 주기). 창고 메소 = 창고 옆 인벤 칸에서 프로필 간격(-242×s)만큼 왼쪽 */
 const AR_MESOTPL={inv:['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAaCAIAAAB+V0iAAAAEwklEQVR42q2XS3McSxGFv8yq7lbPe6yRbJnA1yh4BDjY8C/48QQsiGBBcMEGhC3LerVnpqe7KpNFj+41bNUVtaiIroo6nXny5Cn5w5/+EmNUVSO7m6uIulphXamupp1rj/RggLiqK4g44Ehy7U2Si2I1Hnj2iLEQ6Hszd8+4ouLiRiAKqGOueEAUAHN3cMcQg2TuLo4/zecDQvtsPYJKCLEA3EUcCa24CiYCyNP+QKFPa4NSxABQEWWMEc2Tu4mIBsTpza3LTo4qCriCfgMId/txjYCID1AyMkaEMo6KuFjW1OecLYjGovy6vUVMLKorXvxwIJP9CZ644lFdEDfpxgEkMvxl9KyevSDO59PpYvbu/BeGBR8AHe9ygcAP1w4kO35SbJSUqUQzDq1hcrba/OT1y6oG4eBZpVRBBTHcEQUh/3g255QG2mEIOgqJYs6eDz6tF6/PXr9YlwC5Q7oySCanQ65CJJSiSs6HrqumMx80AAkh4PkYK9dvmPYMQH2fF5PFxdmb9VJx8IQ+ElqhjVisBIZkRGJZFRXsoVQKAxXFHE/o/5TiswCVIW425+ulYpAysSE8wJf+4UO7u8v7fRXK+mROuaBaU2yIL8S1tyBBj0TygI8EB+Lp6Xo+rZ9kpUMb8oftxz8WXM9lT+UkT3d99nm1/Bmb30CJTiRrToQA4KYjaRBAPD87rSQMmofsSdfp8a/58PcT/7S9fb9vmrIo6mohYd3sH7rr29N3v6dYxjjLCRMUMh4ZK2PEMgYFEmAc7trm/W7/fcn1/b/+XB3ua2vTLt20qc3Tavlucja1L+/11Rkyk1AhGHho0AAVxOcDUkeygYNkQl9p4+3H7c3fyrQtUx8POT/udp/22+ubtP1nYTfNl+/Z30Efjp3LdLx8AdoRW45Bp/Dm+sNpsfPH/6TdTqx++KT3V0w0TIS+uSr9+vDwgSqTCVmCQdIgM6eE6PD8qQ4uJDtyIIpiOSJi4etj37WhKtZVsQDMrO8zDN3tuN8cUKEYjdSDgAz9gxwzdcqLWJ1//XxVpBzrImqw0MV6PVm/LiZvpbsgz9BAJAvJsxKG9juODikOIgqmWJFl3tqK8tzjrWhP9LY/oNTri5PV5eNhVi2/Q2eouuAkgjvB/s8SPB8QgChxWs1/2jb3HZ83b97m7VV3aMVEi5N6+dKKV812+d3Zz9EZoj0deGBUSkMEU9QMMddQ15vL1D/sm3svast1Me2mZexy3OVVDJfri1/L/C1MMmS6QObJWMpYSn13e7tavggh5mxKRXk2Wf0y6vzrx38Ilyp7EzkInSzK+rfLV78jbNxxQQlKFkzdBcFBRjAg8fPHT5PJZBJmaHALovMwv6znb+qTX3XN3V1z1dLO1qvTxUWYvSUuEJLhSqAQLACW0Thayvq+v/18EzZFXVfimBUqSxDWm3LFS+3RDkAiXgFZEDnWVPCKwdEOrB6DT7EIsWmavvPT0/PVciqKI/2BshhKuUAKMEdNjl5xYEsYhMx0vD42VJnGlNI2bXP+tD+8mM+XJ5WEExIGBzv60uMbSBnMmQZO8PitfQR8FEDZiLF0aNt2t/v33d3DcnU6X5xUE3NsiA2EJ93rhYMQ3AqxeEQrINg4zzL+C9JjfkFL0rYBAAAAAElFTkSuQmCC',272],stoInv:['data:image/png;base64,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',218]};
+/* b387: exact-order arithmetic; async compilation and safe JS fallback. */
+const OrderedNcc = (()=>{
+ const B64="AGFzbQEAAAABEgFgDX9/f39/f39/f39/fHwBfAMCAQAFBQEBAYAIBgsCfwFBfwt/AUF/CwcaBAZtZW1vcnkCAAF4AwABeQMBBW1hdGNoAAAKtQMBsgMCCn8HfEF/JABBfyQBRAAAAAAAAPC/IRcgBiAHbLghHQJAA0AgDiAHaiAFSw0BQQAhDQJAA0AgDSAGaiAESw0BAkAgACAOIApqIARsIA1qIAlqQQRsaioCALsgC2MNACAOIAhsIA1qIREgESAGaiESIA4gB2ogCGwgDWohEyATIAZqIRQgAiAUQQhsaisDACACIBJBCGxqKwMAoSACIBNBCGxqKwMAoSACIBFBCGxqKwMAoCEYIAMgFEEIbGorAwAgAyASQQhsaisDAKEgAyATQQhsaisDAKEgAyARQQhsaisDAKAhGUQAAAAAAAAAACEaQQAhDwJAA0AgDyAHTw0BIA4gD2ogBGwgDWohFSAPIAZsIRZBACEQAkADQCAQIAZPDQEgGiABIBYgEGpBBGxqKgIAuyAAIBUgEGpBBGxqKgIAu6KgIRogEEEBaiEQDAALCyAPQQFqIQ8MAAsLIBkgGCAYoiAdo6EhGyAbRI3ttaD3xrA+ZARAIBogGyAMop+jIRwgHCAXZARAIBwhFyANJAAgDiQBCwsLIA1BAWohDQwACwsgDkEBaiEODAALCyAXCw==", LIMIT=64*1024*1024;
+ let instance=null, pending=null;
+ function bytes(){const s=atob(B64),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;}
+ function ready(sync=false){
+  if(instance)return sync?true:Promise.resolve(true);
+  if(typeof WebAssembly!=="object")return sync?false:Promise.resolve(false);
+  if(sync){try{instance=new WebAssembly.Instance(new WebAssembly.Module(bytes()));return true;}catch(_){return false;}}
+  if(!pending)pending=WebAssembly.instantiate(bytes()).then(r=>{instance=r.instance;return true;},()=>false);
+  return pending;
+ }
+ function match(I,W,H,T,tw,th,sums,bx,by,bright,tt){
+  try{
+   if(!(I instanceof Float32Array)||!(T instanceof Float32Array)||!sums||!(sums.s instanceof Float64Array)||!(sums.q instanceof Float64Array))return null;
+   const stride=sums.stride;
+   if(![W,H,tw,th,stride,bx,by].every(Number.isSafeInteger)||W<1||H<1||tw<1||th<1||stride<W+1||bx<0||bx>=tw||by<0||by>=th||typeof bright!=="number"||typeof tt!=="number")return null;
+   const ni=W*H,nt=tw*th,ns=stride*(H+1);
+   if(![ni,nt,ns].every(Number.isSafeInteger)||I.length<ni||T.length<nt||sums.s.length<ns||sums.q.length<ns)return null;
+   const ip=0,tp=ni*4,sp=Math.ceil((tp+nt*4)/8)*8,qp=sp+ns*8,end=qp+ns*8;
+   if(!Number.isSafeInteger(end)||end>LIMIT)return null;
+   if(!instance){ready();return null;}
+   if(tw>W||th>H)return {best:-1,xy:null};
+   const memory=instance.exports.memory;
+   if(end>memory.buffer.byteLength)memory.grow(Math.ceil((end-memory.buffer.byteLength)/65536));
+   new Float32Array(memory.buffer,ip,ni).set(I.subarray(0,ni));
+   new Float32Array(memory.buffer,tp,nt).set(T.subarray(0,nt));
+   new Float64Array(memory.buffer,sp,ns).set(sums.s.subarray(0,ns));
+   new Float64Array(memory.buffer,qp,ns).set(sums.q.subarray(0,ns));
+   const best=instance.exports.match(ip,tp,sp,qp,W,H,tw,th,stride,bx,by,bright,tt);
+   const x=instance.exports.x.value,y=instance.exports.y.value;
+   return {best,xy:x<0?null:[x,y]};
+  }catch(_){return null;}
+ }
+ return {match,ready,byteLength:B64.length*3/4-(B64.endsWith("==")?2:B64.endsWith("=")?1:0)};
+})();
+
 function arMesoTpl(){ if(ARX.mtplP) return ARX.mtplP; return ARX.mtplP=Promise.all(Object.entries(AR_MESOTPL).map(([k,[u]])=>new Promise(r=>{ const im=new Image(); im.onload=()=>r([k,im]); im.onerror=()=>r([k,null]); im.src=u; }))).then(a=>ARX.mtpl=Object.fromEntries(a)); }
 function arMesoKey(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; return [sw,sh,ARX.prof?.id||'',ARX.prof?.s||'',ARX.bbKey||''].join('|'); }
 function arMesoFind(src){ const T=ARX.mtpl; if(!T){ arMesoTpl(); return null; } const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, G=arGeom(sw,sh), s=ARX.prof?.s||G.s||1;
@@ -9625,8 +9660,8 @@ function arMesoFind(src){ const T=ARX.mtpl; if(!T){ arMesoTpl(); return null; } 
   for(const k of ['inv','stoInv']){ const im=T[k]; if(!im) continue; const tw=Math.max(4,Math.round(im.width*s/f)), th=Math.max(4,Math.round(im.height*s/f));
     const tc=document.createElement('canvas'); tc.width=tw; tc.height=th; const tg=tc.getContext('2d',{willReadFrequently:true}); tg.drawImage(im,0,0,tw,th); const Tp=arGray(tg,tw,th), N=tw*th;
     let tm=0; for(const v of Tp) tm+=v; tm/=N; let tt=0, bi=0, bv=-1; for(let i=0;i<N;i++){ Tp[i]-=tm; tt+=Tp[i]*Tp[i]; if(Tp[i]>bv){ bv=Tp[i]; bi=i; } }
-    const bx=bi%tw, by=(bi/tw)|0, bright=tm+bv-40; let best=-1, bxy=null; /* 템플릿에서 가장 밝은 점(흰 칸)이 화면에서도 밝은 곳만 비교 → 빠름 */
-    for(let y=0;y+th<=H;y++) for(let x=0;x+tw<=W;x++){ if(I[(y+by)*W+x+bx]<bright) continue; const z=y*sums.stride+x,z1=z+tw,z2=(y+th)*sums.stride+x,z3=z2+tw,b=sums.s[z3]-sums.s[z1]-sums.s[z2]+sums.s[z],cc=sums.q[z3]-sums.q[z1]-sums.q[z2]+sums.q[z]; let a=0; for(let j=0;j<th;j++){ const r=(y+j)*W+x, q=j*tw; for(let i=0;i<tw;i++){ const v=I[r+i]; a+=Tp[q+i]*v; } }
+    const bx=bi%tw, by=(bi/tw)|0, bright=tm+bv-40, fast=OrderedNcc.match(I,W,H,Tp,tw,th,sums,bx,by,bright,tt); let best=fast?fast.best:-1, bxy=fast?fast.xy:null; /* 템플릿에서 가장 밝은 점(흰 칸)이 화면에서도 밝은 곳만 비교 → 빠름 */
+    if(!fast) for(let y=0;y+th<=H;y++) for(let x=0;x+tw<=W;x++){ if(I[(y+by)*W+x+bx]<bright) continue; const z=y*sums.stride+x,z1=z+tw,z2=(y+th)*sums.stride+x,z3=z2+tw,b=sums.s[z3]-sums.s[z1]-sums.s[z2]+sums.s[z],cc=sums.q[z3]-sums.q[z1]-sums.q[z2]+sums.q[z]; let a=0; for(let j=0;j<th;j++){ const r=(y+j)*W+x, q=j*tw; for(let i=0;i<tw;i++){ const v=I[r+i]; a+=Tp[q+i]*v; } }
       const vv=cc-b*b/N; if(vv>1e-6){ const n=a/Math.sqrt(vv*tt); if(n>best){ best=n; bxy=[x,y]; } } }
     if(bxy&&best>=(+ARX.cfg.mesoFindThr||.8)){ const P=ARX.prof?.base||AR_PROF[1], ps=(ARX.prof?.s||P.s), R=P[k]||AR_PROF[1][k], rw=R[2]*s/P.s, rh=R[3]*s/P.s; out[k]={x:G.gx+bxy[0]*f, y:G.gy+bxy[1]*f, w:rw, h:rh, sc:+best.toFixed(3)}; } }
   if(out.stoInv){ const P=ARX.prof?.base||AR_PROF[1], R=P.sto, d=(P.stoInv[0]-P.sto[0])*s/P.s; out.sto={x:out.stoInv.x-d,y:out.stoInv.y+(R[1]-P.stoInv[1])*s/P.s,w:R[2]*s/P.s,h:R[3]*s/P.s,sc:out.stoInv.sc}; }
@@ -10161,7 +10196,7 @@ function arPipSale(){ const P=ARX.pip; if(!P||!P.win||!P.win.document) return; c
   while(Q.length&&!arSaleCtx(Q[0])) Q.shift(); d.body.classList.toggle('ps-on',!!Q.length); /* b347: 수익/고르기 칸이 떠 있는 동안 득템 목록 자리 대신 씀 */ if(!Q.length){ if(el) el.remove(); return; }
   if(!el){ el=d.createElement('div'); el.className='card ar-c ar-pipsale'; (d.querySelector('.ar-piprec')||P.card).after(el); el.onclick=arSaleClick; el.oninput=()=>arSalePrev(el); el.onkeydown=e=>{ if(e.key==='Enter'&&e.target.classList.contains('ar-psamt')){ e.preventDefault(); arSaleDo(el,'ok'); } }; }
   else if(el.previousElementSibling!==d.querySelector('.ar-piprec')) (d.querySelector('.ar-piprec')||P.card).after(el);
-  if(el._u===Q[0].u){ const h=el.querySelector('.ar-psh'); if(h) h.innerHTML=`<span>${Q[0].pick==='cb'?'어떤 장신구를 획득하셨나요?':Q[0].pick?'상자에서 무엇이 나왔나요?':'수익 기록'}</span>${Q.length>1?`<b>대기 ${Q.length}개</b>`:''}`; return; } // 같은 아이템이면 다시 그리지 않음 (입력 중 포커스 유지)
+  if(el._u===Q[0].u){ const h=el.querySelector('.ar-psh'); if(h) arSetH(h,`<span>${Q[0].pick==='cb'?'어떤 장신구를 획득하셨나요?':Q[0].pick?'상자에서 무엇이 나왔나요?':'수익 기록'}</span>${Q.length>1?`<b>대기 ${Q.length}개</b>`:''}`); return; } // 같은 아이템이면 다시 그리지 않음 (입력 중 포커스 유지)
   el._u=Q[0].u; el._fs=revFeeGet(); el.innerHTML=Q[0].pick?arPipPickH(Q[0],arSaleCtx(Q[0])):arPipSaleH(Q[0],arSaleCtx(Q[0])); arSalePrev(el); }
 /* b344: 반지 상자 = 페이지 반지 창과 같은 고르기(리4·컨4·생명의 연마석(생명 반지만)·꽝), 칠흑 상자 = CHAOS_PICK 아이콘 목록 */
 function arPipPickH(q,x){ const n=ARX.saleQ.length, hd=`<div class="ar-psh"><span>${q.pick==='cb'?'어떤 장신구를 획득하셨나요?':'상자에서 무엇이 나왔나요?'}</span>${n>1?`<b>대기 ${n}개</b>`:''}</div><div class="ar-psi"><span class="rvico">${itemIcon(q.ik)}</span><b class="ar-psn">${esc(ITEMS[q.ik]?.n||q.ik)}</b><span class="muted ar-psb">${esc(x.b.name)}${curParty(x.c,x.b.id)>1?` · ${curParty(x.c,x.b.id)}인 분배`:''}</span></div>`;
@@ -10323,8 +10358,8 @@ function ecDiagOut(dg,fr){ try{ const o={v:1,build:(document.documentElement.dat
 /* b384: 프리롤은 GPU VideoFrame 으로 1.4초간 보관. 감지 후 정확히 -1~+3초만 골라 VP9 WebM 인코딩한다.
    저장 인코더를 분리해 delta/keyframe 지연·순서나 GOP 경계가 저장 구간을 바꾸지 않는다. */
 const ECV={busy:false,frames:[]};
-function ecVPush(now){if(ECV.busy)return;ECV.frames.push({t:now,f:new VideoFrame(EC.cv,{timestamp:Math.round(now*1000)})});const lim=EC.cur?EC.cur.t0-EC.cfg.pre:EC.pend?EC.pend.t-EC.cfg.pre:now-EC.cfg.pre-400;while(ECV.frames.length&&ECV.frames[0].t<lim)ECV.frames.shift().f.close();}
-async function ecVMake(c){ECV.busy=true;const frames=ECV.frames;ECV.frames=[];
+function ecVPush(now,owned){if(ECV.busy){if(owned)owned.close();return false;}ECV.frames.push({t:now,f:owned||new VideoFrame(EC.cv,{timestamp:Math.round(now*1000)})});const lim=EC.cur?EC.cur.t0-EC.cfg.pre:EC.pend?EC.pend.t-EC.cfg.pre:now-EC.cfg.pre-400;while(ECV.frames.length&&ECV.frames[0].t<lim)ECV.frames.shift().f.close();return true;}
+async function ecVMake(c){ECV.busy=true;if(typeof arSnapClipCfg==='function')arSnapClipCfg();const frames=ECV.frames;ECV.frames=[];
   try{let one=frames.filter(f=>f.t>=c.t0-1000&&f.t<c.t0+3000);if(!one.length)throw Error('no frames');const src=ecDiagFrames(one,c.t0);
     /* 30fps 가 항상 보장되게 캡처 타이머 누락은 가장 가까운 프레임으로 보간한다. */
     const fill=[],gap=1000/30,t0=c.t0-1000;for(let i=0;i<120;i++){const t=t0+i*gap;let best=one.reduce((b,f)=>Math.abs(f.t-t)<Math.abs(b.t-t)?f:b,one[0]);fill.push(best);}one=fill;const W=c.w,H=c.h;let video;for(const br of [1250000,950000,700000]){const cfg={codec:'vp09.00.10.08',width:W,height:H,bitrate:br,framerate:30,latencyMode:'quality'},sup=await VideoEncoder.isConfigSupported(cfg);if(!sup.supported)throw Error('VP9 unavailable');const rd=[],mux=new ECWebM.Muxer({target:new ECWebM.ArrayBufferTarget(),video:{codec:'V_VP9',width:W,height:H,frameRate:30},firstTimestampBehavior:'offset'});let err=null,enc=new VideoEncoder({output:(ch,mt)=>rd.push([ch,mt]),error:e=>{err=e;}});
@@ -10333,22 +10368,23 @@ async function ecVMake(c){ECV.busy=true;const frames=ECV.frames;ECV.frames=[];
     try{const a=typeof activeChar==='function'?activeChar():null;if(ARX.det.cid){const x=S.characters.find(z=>z.id===ARX.det.cid);if(x){m.cid=x.id;m.cname=x.name;}}else if(a){m.cid=a.id;m.cname=a.name;}}catch(e){}const r=ecRecFor(m);if(r)ecLink(m,r);
     const u=URL.createObjectURL(video),v=document.createElement('video');v.muted=true;v.src=u;await new Promise(ok=>{v.onloadeddata=ok;setTimeout(ok,2500)});if(v.readyState<2)throw Error('WebM decode failed');v.currentTime=Math.min(v.duration/2,1.5);await new Promise(ok=>{v.onseeked=ok;setTimeout(ok,2500)});const pc=document.createElement('canvas');pc.width=W;pc.height=H;pc.getContext('2d').drawImage(v,0,0);m.poster=await new Promise(ok=>pc.toBlob(ok,'image/webp',.8));v.pause();URL.revokeObjectURL(u);
     await ecTx(['meta','frames'],'readwrite',t=>{t.objectStore('meta').put(m);t.objectStore('frames').put({id,video});});try{if(typeof arLog==='function')arLog(`에픽빔 감지 → ${W}×${H} 30fps WebM 저장 (${video.size}B)`);}catch(e){}EC.saved=(EC.saved||0)+1;if(typeof tab!=='undefined'&&tab==='epic')renderEpic();ecSync();
-  }catch(e){console.warn('[b384 video]',e);ECV.videoError=String(e);}finally{frames.forEach(x=>x.f?.close());ECV.busy=false;}
+  }catch(e){console.warn('[b384 video]',e);ECV.videoError=String(e);}finally{frames.forEach(x=>x.f?.close());ECV.busy=false;if(typeof arSnapClipCfg==='function')arSnapClipCfg();}
 }
-function ecTick(){ const v=typeof ARX!=='undefined'&&(ARX.video?(typeof arSrc==='function'?arSrc():ARX.video):ARX.testSrc); /* b366 */ if(!v||!(v.videoWidth||v.width)){ if(EC.buf.length||ECV.frames.length){ EC.buf=[]; EC.h=[]; EC.log=[]; EC.ph=[]; EC.pl=[];ECV.frames.forEach(x=>x.f.close());ECV.frames=[];EC.cur=null;EC.pend=null; } return; }
+function ecTick(){ const v=typeof ARX!=='undefined'&&(ARX.video?(typeof arSrc==='function'?arSrc():ARX.video):ARX.testSrc); /* b366 */ if(!v||!(v.videoWidth||v.width)){ EC.snapRead=null; if(EC.buf.length||ECV.frames.length){ EC.buf=[]; EC.h=[]; EC.log=[]; EC.ph=[]; EC.pl=[];ECV.frames.forEach(x=>x.f.close());ECV.frames=[];EC.cur=null;EC.pend=null; } return; }
   const C=EC.cfg, vw=v.videoWidth||v.width, vh=v.videoHeight||v.height, now=Date.now(), vt=+(v.currentTime||0);
   const H=Math.min(C.H,vh), W=Math.round(H*vw/vh), H0=Math.min(C.H0,vh), W0=Math.round(H0*vw/vh); if(!EC.cv){ EC.cv=document.createElement('canvas'); EC.sm=document.createElement('canvas'); EC.dc=document.createElement('canvas'); EC.dc.width=32; EC.dc.height=18; }
   const cv=EC.cv; if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
   const sm=EC.sm; if(sm.width!==W0||sm.height!==H0){ sm.width=W0; sm.height=H0; }
-  const native=!!(window.VideoEncoder&&window.VideoFrame&&window.ECWebM);
+  const native=!!(window.VideoEncoder&&window.VideoFrame&&window.ECWebM);if(typeof arSnapClipCfg==='function')arSnapClipCfg();const workerCapture=!!(native&&typeof ARS!=='undefined'&&ARS.clip&&ARS.s===ARX.stream&&ARS.clip.fresh(W,H));
   /* b385: copy the full-rate video to an owned canvas. Holding VideoFrame(video)
      for pre-roll pins a bounded capture buffer pool and can stall live tracks. */
-  const g=cv.getContext('2d'), sg=sm.getContext('2d',{willReadFrequently:true}); try{g.drawImage(ARX.video||v,0,0,W,H);sg.drawImage(v,0,0,W0,H0);}catch(e){return;}
-  if(native)ecVPush(now);
+  const g=cv.getContext('2d'), sg=sm.getContext('2d',{willReadFrequently:true}), cached=EC.snapRead, reuse=!!(v.arSnap&&v.arOpaque===true&&cached&&cached.src===v&&cached.w===W0&&cached.h===H0); /* b387: only immutable, provably opaque snapshots can reuse detector pixels; mutable/transparent/unknown sources keep the original path. */
+  try{if(!native||(!ECV.busy&&!workerCapture))g.drawImage(ARX.video||v,0,0,W,H);if(!reuse)sg.drawImage(v,0,0,W0,H0);}catch(e){return;}
+  if(native&&!workerCapture)ecVPush(now);
   /* b384: WebCodecs 가 없는 브라우저에서는 기존 WebP 프레임 클립을 유지한다. */
   /* b385: WebM uses VideoFrames only. Do NOT also run a discarded 720p WebP encoder 30 times/sec. */
   const f={t:now,vt,p:native?null:new Promise(r=>cv.toBlob(r,'image/webp',C.q))}; EC.buf.push(f);
-  const img=sg.getImageData(0,0,W0,H0).data, gr=ecGrid(img,W0,H0); /* b361: 32x18 은 칸 평균(area) — drawImage 축소는 표본 추출이라 빔 점수가 흔들림(0.48 vs 0.64) */
+  const img=reuse?cached.img:sg.getImageData(0,0,W0,H0).data, gr=reuse?cached.gr:ecGrid(img,W0,H0); if(!reuse)EC.snapRead=v.arSnap&&v.arOpaque===true?{src:v,w:W0,h:H0,img,gr}:null; /* b361: 32x18 은 칸 평균(area) — drawImage 축소는 표본 추출이라 빔 점수가 흔들림(0.48 vs 0.64) */
   let hit=ecDetect(now,gr); if(C.pil){ let ph=null; try{ ph=ecPillar(now,img,W,H); }catch(e){} if(!hit&&ph) hit=ph; }
   if(hit&&!EC.cur&&now-EC.cool>C.cool&&!EC.pend) EC.pend={...hit,dg:ecDiagHit(now,v,vw,vh)}; /* b388: 감지 순간 진단(점수 흐름·분석 화면 출처) — 감지 때만 1회, 감지 판단은 그대로 */ if(EC.pend&&now-EC.pend.t>C.pendMs) EC.pend=null; /* b361: 보상 맵 인식이 빔보다 늦게(01M6E78K: 빔 8.9초, 보상 맵 8.86~9.1초) 되어도 2초 안이면 그 빔으로 */
   if(!EC.cur&&EC.pend&&now-EC.cool>C.cool){ const hit=EC.pend, ctx=ecCtx(now); if(ctx){ EC.pend=null; const h0=EC.buf.find(x=>x.t>=hit.t)||f; EC.cool=now; EC.cur={t0:h0.t,vt0:h0.vt,sc:hit.sc,kind:hit.kind||'beam',...ctx,w:W,h:H,dg:ecDiagCommit(now,hit,h0.t)}; } }
@@ -10461,18 +10497,130 @@ try{ if(typeof tab!=='undefined'&&tab==='epic') render(); }catch(e){}
    매번 영상 프레임 변환(1080p 한 번 15~40ms)이 메인 스레드에서 일어나 사이트 전체가 끊김(측정: 메인 스레드 98% 바쁨).
    → MediaStreamTrackProcessor(복제 트랙) 의 VideoFrame 을 Worker 로 넘겨 OffscreenCanvas 에 그린 뒤 ImageBitmap 을 0.1초마다 보내 줌.
    분석 함수들은 이 비트맵에서 잘라 씀(자르기 0.05ms). 지원 안 하는 브라우저·시작 전엔 그대로 video. */
-const ARS={on:false,bm:null,old:[],w:null,tr:null,s:null,n:0,ms:0,err:''};
-function arSnapStop(){ try{ ARS.w&&ARS.w.terminate(); }catch(e){} try{ ARS.tr&&ARS.tr.stop(); }catch(e){} ARS.w=null; ARS.tr=null; ARS.s=null; ARS.on=false; ARS.old.forEach(b=>{ try{ b.close(); }catch(e){} }); ARS.old=[]; ARS.bm=null; }
+function OwnedCaptureWorkerMain(){
+ let reader=null,fr=null,stopped=false,ms=100,clipH=720,clipFps=30,enabled=true,paused=false;
+ let bitmapCanvas=null,bg=null,clipCanvas=null,cg=null,lastBitmap=-Infinity;
+ let nextId=0,clipOK=null,loopStarted=false,clipTimer=null,stopPromise=null;
+ const pending=new Set();
+ function ready(ok,error){if(clipOK!==ok||error){clipOK=ok;postMessage(error?{clipReady:ok,clipError:String(error)}:{clipReady:ok});}}
+ function closeSource(){if(fr){fr.close();fr=null;}}
+ function clearClipTimer(){if(clipTimer!==null){clearInterval(clipTimer);clipTimer=null;}}
+ function captureClip(){
+  if(stopped||!fr||!enabled||paused||clipOK===false||pending.size>=2)return;
+  let owned=null;
+  try{const t0=performance.now(),w=fr.displayWidth,h=fr.displayHeight,ch=Math.min(clipH,h),cw=Math.max(1,Math.round(w*ch/h));
+   if(!clipCanvas||clipCanvas.width!==cw||clipCanvas.height!==ch){clipCanvas=new OffscreenCanvas(cw,ch);cg=clipCanvas.getContext('2d');}
+   // Explicit owned pixel copy from latest source; never emit a source clone.
+   cg.drawImage(fr,0,0,w,h,0,0,cw,ch);
+   const at=Date.now(),id=++nextId;owned=new VideoFrame(clipCanvas,{timestamp:Math.round(at*1000)});
+   pending.add(id);try{postMessage({clip:owned,at,id,dt:performance.now()-t0},[owned]);owned=null;}catch(e){pending.delete(id);throw e;}
+   ready(true);
+  }catch(e){if(owned)owned.close();ready(false,e&&e.message||e);clearClipTimer();}
+ }
+ function startClipTimer(){clearClipTimer();if(loopStarted&&!stopped&&enabled&&!paused&&clipOK!==false)clipTimer=setInterval(captureClip,Math.max(1,Math.round(1000/clipFps)));}
+ function stop(){
+  if(stopPromise)return stopPromise;
+  stopped=true;clearClipTimer(); // Must precede asynchronous reader cancellation.
+  stopPromise=(async()=>{try{if(reader)await reader.cancel();}finally{closeSource();pending.clear();if(reader){try{reader.releaseLock();}catch(_){}reader=null;}bitmapCanvas=bg=clipCanvas=cg=null;postMessage({stopped:true,outstanding:pending.size,sourceClosed:fr===null,clipTimerCleared:clipTimer===null});}})();
+  return stopPromise;
+ }
+ function configure(d){
+  let restart=false;
+  if(Number.isFinite(d.ms)&&d.ms>0)ms=d.ms;
+  if(Number.isFinite(d.clipH)&&d.clipH>=1)clipH=Math.floor(d.clipH);
+  if(Number.isFinite(d.clipFps)&&d.clipFps>0){const fps=Math.min(240,d.clipFps);restart=restart||fps!==clipFps;clipFps=fps;}
+  if(typeof d.clipEnabled==='boolean'){restart=restart||enabled!==d.clipEnabled;enabled=d.clipEnabled;}
+  if(typeof d.clipPause==='boolean'){restart=restart||paused!==d.clipPause;paused=d.clipPause;}
+  if(restart)startClipTimer();
+ }
+ async function pump(rs){
+  if(loopStarted)throw Error('Only one input stream is supported');loopStarted=true;
+  reader=rs.getReader();if(typeof VideoFrame!=='function')ready(false);startClipTimer();
+  try{while(!stopped){const item=await reader.read();if(item.done)break;if(stopped){item.value.close();break;}closeSource();fr=item.value;
+   const now=performance.now(),w=fr.displayWidth,h=fr.displayHeight;
+   // Bitmap errors are stream/bitmap errors, never downgraded to clip fallback.
+   if(now-lastBitmap>=Math.max(0,ms-8)){
+    lastBitmap=now;const t0=performance.now();if(!bitmapCanvas||bitmapCanvas.width!==w||bitmapCanvas.height!==h){bitmapCanvas=new OffscreenCanvas(w,h);bg=bitmapCanvas.getContext('2d');}
+    bg.drawImage(fr,0,0,w,h);const bm=bitmapCanvas.transferToImageBitmap();
+    const opaque=/^(?:I420|I422|I444|NV12|RGBX|BGRX)$/.test(fr.format||'');
+    try{postMessage({bm,ts:fr.timestamp,opaque,dt:performance.now()-t0},[bm]);}catch(e){bm.close();throw e;}
+   }
+  }}catch(e){postMessage({bitmapError:String(e&&e.message||e)});}
+  finally{if(!stopped)await stop();}
+ }
+ onmessage=e=>{const d=e.data||{};configure(d);if(Number.isSafeInteger(d.ack))pending.delete(d.ack);if(d.stop){stop().catch(e=>postMessage({stopError:String(e)}));return;}if(d.rs)pump(d.rs).catch(e=>postMessage({bitmapError:String(e)}));};
+}
+
+class OwnedCaptureHost {
+ constructor(workerMain,{onBitmap,onClip,onError=()=>{},expectedSize=()=>null}={}){
+  if(typeof workerMain!=='function'||typeof onBitmap!=='function'||typeof onClip!=='function')throw new TypeError('workerMain, onBitmap and onClip must be functions');
+  this.workerMain=workerMain;this.onBitmap=onBitmap;this.onClip=onClip;this.onError=onError;this.expectedSize=expectedSize;
+  this.worker=null;this.track=null;this.stream=null;this.url=null;this.generation=0;this.config={};this.clipN=0;this.clipError='';this.ready=false;this.width=0;this.height=0;this.lastClip=0;
+ }
+ _clear(){this.ready=false;this.lastClip=0;this.width=0;this.height=0;}
+ _revoke(url){if(url){URL.revokeObjectURL(url);if(this.url===url)this.url=null;}}
+ _report(error){try{this.onError(error instanceof Error?error:new Error(String(error)));}catch(_){}}
+ _clipFailure(error){this._clear();this.clipError=String(error&&error.message||error);this._report(error);}
+ start(stream){
+  this.stop();const generation=this.generation;this.clipN=0;this.clipError='';
+  let worker=null,track=null,url=null;
+  try{
+   if(typeof Worker!=='function'||typeof MediaStreamTrackProcessor!=='function'||typeof OffscreenCanvas==='undefined')throw new Error('Capture Worker APIs unavailable');
+   const original=stream&&stream.getVideoTracks()[0];if(!original)throw new Error('Video track required');
+   track=original.clone();this.track=track;this.stream=stream;
+   const processor=new MediaStreamTrackProcessor({track});
+   url=URL.createObjectURL(new Blob(['('+this.workerMain.toString()+')()'],{type:'text/javascript'}));this.url=url;
+   worker=new Worker(url);this.worker=worker;this.config={clipEnabled:false,clipPause:false,clipH:720,clipFps:30};
+   worker.onmessage=e=>{this._revoke(url);this._dispatch(e.data||{},worker,generation);};
+   worker.onerror=e=>{this._revoke(url);if(this.worker!==worker||generation!==this.generation)return;this.stop();this._report(e.message||e);};
+   worker.postMessage({rs:processor.readable,ms:100,clipEnabled:false},[processor.readable]);return this;
+  }catch(error){this._revoke(url);if(worker)worker.terminate();if(track)track.stop();this.stop();throw error;}
+ }
+ configure(patch){
+  const changed={};for(const key of ['clipEnabled','clipPause','clipH','clipFps'])if(Object.prototype.hasOwnProperty.call(patch,key)&&!Object.is(this.config[key],patch[key])){this.config[key]=patch[key];changed[key]=patch[key];}
+  if(this.config.clipEnabled===false||this.config.clipPause===true)this._clear();
+  if(this.worker&&Object.keys(changed).length)this.worker.postMessage(changed);
+ }
+ _dispatch(d,originalWorker,generation){
+  const current=this.worker===originalWorker&&this.generation===generation;
+  if(d.clip){
+   const frame=d.clip;let owns=false;
+   try{
+    if(!current||!this.config.clipEnabled||this.config.clipPause||!Number.isFinite(d.at)||Math.abs(Date.now()-d.at)>600)return;
+    const w=frame.displayWidth,h=frame.displayHeight,expected=this.expectedSize();
+    if(expected&&(expected.w!==w||expected.h!==h))return;
+    owns=this.onClip(frame,d.at)===true;
+    if(owns&&this.worker===originalWorker&&this.generation===generation&&this.config.clipEnabled&&!this.config.clipPause){this.ready=true;this.lastClip=performance.now();this.width=w;this.height=h;this.clipN++;}
+   }catch(error){if(current)this._clipFailure(error);}
+   finally{if(!owns)try{frame.close();}catch(_){}try{originalWorker.postMessage({ack:d.id});}catch(_){}}
+  }
+  if(d.bm){
+   if(!current){d.bm.close();return;}
+   try{this.onBitmap(d.bm,d.dt,d.opaque);}catch(error){try{d.bm.close();}catch(_){}this.stop();this._report(error);return;}
+  }
+  if(!current)return;
+  if(d.clipReady===false){this._clear();if(d.clipError){this.clipError=String(d.clipError);this._report(d.clipError);}}
+  if(d.bitmapError){this.stop();this._report(d.bitmapError);}
+  if(d.stopped)this._clear();
+ }
+ fresh(w,h,maxAge=300){return !!(this.ready&&this.worker&&this.lastClip>0&&performance.now()-this.lastClip<maxAge&&this.width===w&&this.height===h);}
+ stop(){
+  this.generation++;const worker=this.worker,track=this.track,url=this.url;
+  this.worker=null;this.track=null;this.stream=null;this.url=null;this.config={};this._clear();
+  this._revoke(url);if(worker)try{worker.terminate();}catch(_){}if(track)try{track.stop();}catch(_){}
+ }
+}
+const ARS={on:false,bm:null,old:[],w:null,tr:null,s:null,n:0,ms:0,err:'',clip:null};
+function arSnapStop(){ try{ ARS.clip&&ARS.clip.stop(); }catch(e){} ARS.clip=null; try{ ARS.w&&ARS.w.terminate(); }catch(e){} try{ ARS.tr&&ARS.tr.stop(); }catch(e){} ARS.w=null; ARS.tr=null; ARS.s=null; ARS.on=false; ARS.old.forEach(b=>{ try{ b.close(); }catch(e){} }); ARS.old=[]; ARS.bm=null; }
+function arSnapClipCfg(){const h=ARS.clip;if(!h||typeof EC==='undefined')return;try{h.configure({clipEnabled:!!(window.VideoEncoder&&window.VideoFrame&&window.ECWebM),clipPause:!!ECV.busy,clipH:EC.cfg.H,clipFps:EC.cfg.fps});}catch(e){ARS.err=String(e);}}
 function arSnapStart(st){ arSnapStop(); ARS.s=st; ARS.n=0; if(typeof ARX!=='undefined'&&ARX.cfg&&ARX.cfg.snap===false) return; if(typeof MediaStreamTrackProcessor!=='function'||typeof OffscreenCanvas==='undefined'||typeof Worker==='undefined') return;
   const t=st&&st.getVideoTracks&&st.getVideoTracks()[0]; if(!t) return;
-  try{ const code=`let fr=null,ms=100,lt=0,oc=null,g=null,busy=false;
-const snap=()=>{ if(!fr||busy) return; busy=true; const t0=performance.now(), w=fr.displayWidth, h=fr.displayHeight; if(!oc||oc.width!==w||oc.height!==h){ oc=new OffscreenCanvas(w,h); g=oc.getContext('2d'); } g.drawImage(fr,0,0); const ts=fr.timestamp; const bm=oc.transferToImageBitmap(); postMessage({bm,ts,dt:performance.now()-t0},[bm]); busy=false; };
-onmessage=async e=>{ const d=e.data; if(d.ms) ms=d.ms; if(d.rs){ const rd=d.rs.getReader(); for(;;){ const {value,done}=await rd.read(); if(done) break; if(fr) fr.close(); fr=value; const n=performance.now(); if(n-lt>=ms-8){ lt=n; snap(); } } } };`;
-    const tr=t.clone(), pr=new MediaStreamTrackProcessor({track:tr}), w=new Worker(URL.createObjectURL(new Blob([code],{type:'text/javascript'})));
-    w.onmessage=e=>{ const {bm,dt}=e.data; if(ARS.s!==st){ bm.close(); return; } bm.videoWidth=bm.width; bm.videoHeight=bm.height; bm.readyState=4; bm.currentTime=(ARX.video&&ARX.video.currentTime)||0; bm.arSnap=1;
-      ARS.bm=bm; /* 지난 비트맵은 닫지 않음: 상자·해상도 판정이 await 사이에 같은 화면을 계속 그림(닫으면 조용히 실패) → GC 가 회수 */ ARS.t=performance.now(); ARS.n++; ARS.ms=dt; ARS.on=true; };
-    w.onerror=e=>{ ARS.err=String(e.message||e); arSnapStop(); };
-    w.postMessage({rs:pr.readable,ms:100},[pr.readable]); ARS.w=w; ARS.tr=tr; }
+  try{ const h=new OwnedCaptureHost(OwnedCaptureWorkerMain,{
+    expectedSize:()=>{const v=ARX.video,H=Math.min(EC.cfg.H,v&&v.videoHeight||0);return {w:Math.round(H*(v&&v.videoWidth||0)/(v&&v.videoHeight||1)),h:H};},
+    onBitmap:(bm,dt,opaque)=>{if(ARS.s!==st){bm.close();return;}bm.videoWidth=bm.width;bm.videoHeight=bm.height;bm.readyState=4;bm.currentTime=(ARX.video&&ARX.video.currentTime)||0;bm.arSnap=1;bm.arOpaque=opaque===true;ARS.bm=bm;ARS.t=performance.now();ARS.n++;ARS.ms=dt;ARS.on=true;},
+    onClip:(frame,at)=>ecVPush(at,frame),
+    onError:e=>{ARS.err=String(e.message||e);if(!h.worker)arSnapStop();}
+  });ARS.clip=h;h.start(st);ARS.w=h.worker;ARS.tr=h.track;arSnapClipCfg();}
   catch(e){ ARS.err=String(e); arSnapStop(); ARS.s=st; } }
 /* 분석에 쓸 화면: 최신 Worker 비트맵(0.6초 안 — 멈추면 video), 없으면 video */
 function arSrc(){ const v=ARX.video; if(!v) return v; const st=ARX.stream||null; if(st!==ARS.s){ if(st) arSnapStart(st); else arSnapStop(); }

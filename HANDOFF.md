@@ -8,6 +8,14 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b389 (t467) 라이브 기록 최적화(b387 검증분) 적용 — 사용자 적용 요청, 기능 유지·일부 작업 Worker 이동·b388 진단 유지
+- **요청**: 사용자 t467 "최적화 변경한거 홈페이지에 적용시켜" (CPU 총부하 절감 미확인 한계 설명 후). 원래 조건(t455): 인식 기능·빈도·정확도·720p 30fps 유지. 새 최적화 없음 — 이전에 검증한 b387 로컬 변경만 운영 b388(c44f22d) 위에 이식.
+- **autorec.js**: 같은 PIP 헤더 DOM 쓰기 생략, canvas 재사용(clearRect 유지), NCC offset 캐시 + 520B Ordered NCC WASM(JS fallback, 연산 순서·점수 동등), 명백한 opaque·immutable ImageBitmap 의 pixels/grid 재사용.
+- **arsnap.js**: 독립 OwnedCaptureWorker + OwnedCaptureHost(캡처 소유 컴포넌트) — 일부 CPU 작업을 메인→Worker 로 이동. 독립 OffscreenCanvas 에 소유 픽셀 복사 후 VideoFrame(canvas)만 클립에 보관(raw VideoFrame(video) 장기 보관은 pool 고갈 freeze 실증으로 금지). 최신 입력 1프레임 교체·close, bitmap 100ms read-gated, clip 30fps 독립 timer, 미ACK 2개 한도, pause/config/unsupported fallback/stop cleanup, stale generation close + 원래 Worker ACK, 크기/freshness 검사, clip 오류만으로 bitmap 중지 안 함. /workspace/live_opt2/owned_capture 독립 소스와 함수 본문 동일.
+- **epicclip.js**: ECV 선택적 owned capture 지원 — Worker 가 신선할 때만 메인 중복 복사 생략, encoder 바쁠 때 버릴 복사 생략. ecDetect 호출 횟수·기준 유지. b388 진단(ecDiagHit/Commit/Frames/Out, dg 메타) 그대로 유지(dg.build 는 b389).
+- **측정 한계(반드시 유지)**: 자체 Linux 90초 실험에서 mainTaskDuration live -25.26%, reward -52.57% 였으나 전체 CPU/경과 시간은 live +4.46%, reward -0.54% 이고 처리 건수도 달라 **총 CPU 감소는 입증 안 됨, 원모님 PC 렉 개선도 입증 안 됨**. 'CPU 대폭 감소/렉 해결'로 말하지 말 것. 에픽빔 오탐 원인도 여전히 미확정이며 이 배포는 오탐 원인 수정이 아님.
+- **검증**: headless Chromium(실계정·넥슨 API·업로드 없음) 회귀 — b387_ncc, b385_cpu, b366_livesnap, b384_video(VP9 1280×720 30fps 120프레임 -1/+3초), b348_nameinv, b376_pipmin, b342_pipsale, b387_livevideo(실제 Worker 소유 프레임 사용) 및 b388 진단·b382·b352·b361·b383. 실제 getDisplayMedia 화면 선택 GUI 경로는 이번 headless 범위 밖(이전 GUI 확인만 있음).
+
 ## b388 (t459) 에픽빔 기록지 이상 영상 — 원인 미확정, 재현용 진단 메타만 추가 (미배포 상태로 작성)
 - **상태**: 이 항목 작성 시점 운영은 b386(commit 85c3464) 그대로, **b388 은 배포 전**. 로컬 b387 CPU 최적화(Worker 소유 캡처 등)는 이 빌드에 들어 있지 않음 — b386 위에 진단 패치만 얹음.
 - **재현 결과(원본 6개, 감지 코드 그대로 Node 재생, 임계값/빈도 변경 없음)**: 11/5 구형 2건은 녹화 화면만으로 오감지 재현 — ec1793884892169(더스크 전투 스킬) shift 0.774, ec1793858562894(더스크 파티 UI) beam 0.666~0.685 2회. 둘 다 b382 보상 맵 gate 배포(11/6) 이전 기록. 정상 비교 2건(찬란한 흉성)도 0.0초에 재현(0.896/0.755).

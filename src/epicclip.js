@@ -78,8 +78,8 @@ function ecDiagOut(dg,fr){ try{ const o={v:1,build:(document.documentElement.dat
 /* b384: 프리롤은 GPU VideoFrame 으로 1.4초간 보관. 감지 후 정확히 -1~+3초만 골라 VP9 WebM 인코딩한다.
    저장 인코더를 분리해 delta/keyframe 지연·순서나 GOP 경계가 저장 구간을 바꾸지 않는다. */
 const ECV={busy:false,frames:[]};
-function ecVPush(now){if(ECV.busy)return;ECV.frames.push({t:now,f:new VideoFrame(EC.cv,{timestamp:Math.round(now*1000)})});const lim=EC.cur?EC.cur.t0-EC.cfg.pre:EC.pend?EC.pend.t-EC.cfg.pre:now-EC.cfg.pre-400;while(ECV.frames.length&&ECV.frames[0].t<lim)ECV.frames.shift().f.close();}
-async function ecVMake(c){ECV.busy=true;const frames=ECV.frames;ECV.frames=[];
+function ecVPush(now,owned){if(ECV.busy){if(owned)owned.close();return false;}ECV.frames.push({t:now,f:owned||new VideoFrame(EC.cv,{timestamp:Math.round(now*1000)})});const lim=EC.cur?EC.cur.t0-EC.cfg.pre:EC.pend?EC.pend.t-EC.cfg.pre:now-EC.cfg.pre-400;while(ECV.frames.length&&ECV.frames[0].t<lim)ECV.frames.shift().f.close();return true;}
+async function ecVMake(c){ECV.busy=true;if(typeof arSnapClipCfg==='function')arSnapClipCfg();const frames=ECV.frames;ECV.frames=[];
   try{let one=frames.filter(f=>f.t>=c.t0-1000&&f.t<c.t0+3000);if(!one.length)throw Error('no frames');const src=ecDiagFrames(one,c.t0);
     /* 30fps 가 항상 보장되게 캡처 타이머 누락은 가장 가까운 프레임으로 보간한다. */
     const fill=[],gap=1000/30,t0=c.t0-1000;for(let i=0;i<120;i++){const t=t0+i*gap;let best=one.reduce((b,f)=>Math.abs(f.t-t)<Math.abs(b.t-t)?f:b,one[0]);fill.push(best);}one=fill;const W=c.w,H=c.h;let video;for(const br of [1250000,950000,700000]){const cfg={codec:'vp09.00.10.08',width:W,height:H,bitrate:br,framerate:30,latencyMode:'quality'},sup=await VideoEncoder.isConfigSupported(cfg);if(!sup.supported)throw Error('VP9 unavailable');const rd=[],mux=new ECWebM.Muxer({target:new ECWebM.ArrayBufferTarget(),video:{codec:'V_VP9',width:W,height:H,frameRate:30},firstTimestampBehavior:'offset'});let err=null,enc=new VideoEncoder({output:(ch,mt)=>rd.push([ch,mt]),error:e=>{err=e;}});
@@ -88,22 +88,23 @@ async function ecVMake(c){ECV.busy=true;const frames=ECV.frames;ECV.frames=[];
     try{const a=typeof activeChar==='function'?activeChar():null;if(ARX.det.cid){const x=S.characters.find(z=>z.id===ARX.det.cid);if(x){m.cid=x.id;m.cname=x.name;}}else if(a){m.cid=a.id;m.cname=a.name;}}catch(e){}const r=ecRecFor(m);if(r)ecLink(m,r);
     const u=URL.createObjectURL(video),v=document.createElement('video');v.muted=true;v.src=u;await new Promise(ok=>{v.onloadeddata=ok;setTimeout(ok,2500)});if(v.readyState<2)throw Error('WebM decode failed');v.currentTime=Math.min(v.duration/2,1.5);await new Promise(ok=>{v.onseeked=ok;setTimeout(ok,2500)});const pc=document.createElement('canvas');pc.width=W;pc.height=H;pc.getContext('2d').drawImage(v,0,0);m.poster=await new Promise(ok=>pc.toBlob(ok,'image/webp',.8));v.pause();URL.revokeObjectURL(u);
     await ecTx(['meta','frames'],'readwrite',t=>{t.objectStore('meta').put(m);t.objectStore('frames').put({id,video});});try{if(typeof arLog==='function')arLog(`에픽빔 감지 → ${W}×${H} 30fps WebM 저장 (${video.size}B)`);}catch(e){}EC.saved=(EC.saved||0)+1;if(typeof tab!=='undefined'&&tab==='epic')renderEpic();ecSync();
-  }catch(e){console.warn('[b384 video]',e);ECV.videoError=String(e);}finally{frames.forEach(x=>x.f?.close());ECV.busy=false;}
+  }catch(e){console.warn('[b384 video]',e);ECV.videoError=String(e);}finally{frames.forEach(x=>x.f?.close());ECV.busy=false;if(typeof arSnapClipCfg==='function')arSnapClipCfg();}
 }
-function ecTick(){ const v=typeof ARX!=='undefined'&&(ARX.video?(typeof arSrc==='function'?arSrc():ARX.video):ARX.testSrc); /* b366 */ if(!v||!(v.videoWidth||v.width)){ if(EC.buf.length||ECV.frames.length){ EC.buf=[]; EC.h=[]; EC.log=[]; EC.ph=[]; EC.pl=[];ECV.frames.forEach(x=>x.f.close());ECV.frames=[];EC.cur=null;EC.pend=null; } return; }
+function ecTick(){ const v=typeof ARX!=='undefined'&&(ARX.video?(typeof arSrc==='function'?arSrc():ARX.video):ARX.testSrc); /* b366 */ if(!v||!(v.videoWidth||v.width)){ EC.snapRead=null; if(EC.buf.length||ECV.frames.length){ EC.buf=[]; EC.h=[]; EC.log=[]; EC.ph=[]; EC.pl=[];ECV.frames.forEach(x=>x.f.close());ECV.frames=[];EC.cur=null;EC.pend=null; } return; }
   const C=EC.cfg, vw=v.videoWidth||v.width, vh=v.videoHeight||v.height, now=Date.now(), vt=+(v.currentTime||0);
   const H=Math.min(C.H,vh), W=Math.round(H*vw/vh), H0=Math.min(C.H0,vh), W0=Math.round(H0*vw/vh); if(!EC.cv){ EC.cv=document.createElement('canvas'); EC.sm=document.createElement('canvas'); EC.dc=document.createElement('canvas'); EC.dc.width=32; EC.dc.height=18; }
   const cv=EC.cv; if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
   const sm=EC.sm; if(sm.width!==W0||sm.height!==H0){ sm.width=W0; sm.height=H0; }
-  const native=!!(window.VideoEncoder&&window.VideoFrame&&window.ECWebM);
+  const native=!!(window.VideoEncoder&&window.VideoFrame&&window.ECWebM);if(typeof arSnapClipCfg==='function')arSnapClipCfg();const workerCapture=!!(native&&typeof ARS!=='undefined'&&ARS.clip&&ARS.s===ARX.stream&&ARS.clip.fresh(W,H));
   /* b385: copy the full-rate video to an owned canvas. Holding VideoFrame(video)
      for pre-roll pins a bounded capture buffer pool and can stall live tracks. */
-  const g=cv.getContext('2d'), sg=sm.getContext('2d',{willReadFrequently:true}); try{g.drawImage(ARX.video||v,0,0,W,H);sg.drawImage(v,0,0,W0,H0);}catch(e){return;}
-  if(native)ecVPush(now);
+  const g=cv.getContext('2d'), sg=sm.getContext('2d',{willReadFrequently:true}), cached=EC.snapRead, reuse=!!(v.arSnap&&v.arOpaque===true&&cached&&cached.src===v&&cached.w===W0&&cached.h===H0); /* b387: only immutable, provably opaque snapshots can reuse detector pixels; mutable/transparent/unknown sources keep the original path. */
+  try{if(!native||(!ECV.busy&&!workerCapture))g.drawImage(ARX.video||v,0,0,W,H);if(!reuse)sg.drawImage(v,0,0,W0,H0);}catch(e){return;}
+  if(native&&!workerCapture)ecVPush(now);
   /* b384: WebCodecs 가 없는 브라우저에서는 기존 WebP 프레임 클립을 유지한다. */
   /* b385: WebM uses VideoFrames only. Do NOT also run a discarded 720p WebP encoder 30 times/sec. */
   const f={t:now,vt,p:native?null:new Promise(r=>cv.toBlob(r,'image/webp',C.q))}; EC.buf.push(f);
-  const img=sg.getImageData(0,0,W0,H0).data, gr=ecGrid(img,W0,H0); /* b361: 32x18 은 칸 평균(area) — drawImage 축소는 표본 추출이라 빔 점수가 흔들림(0.48 vs 0.64) */
+  const img=reuse?cached.img:sg.getImageData(0,0,W0,H0).data, gr=reuse?cached.gr:ecGrid(img,W0,H0); if(!reuse)EC.snapRead=v.arSnap&&v.arOpaque===true?{src:v,w:W0,h:H0,img,gr}:null; /* b361: 32x18 은 칸 평균(area) — drawImage 축소는 표본 추출이라 빔 점수가 흔들림(0.48 vs 0.64) */
   let hit=ecDetect(now,gr); if(C.pil){ let ph=null; try{ ph=ecPillar(now,img,W,H); }catch(e){} if(!hit&&ph) hit=ph; }
   if(hit&&!EC.cur&&now-EC.cool>C.cool&&!EC.pend) EC.pend={...hit,dg:ecDiagHit(now,v,vw,vh)}; /* b388: 감지 순간 진단(점수 흐름·분석 화면 출처) — 감지 때만 1회, 감지 판단은 그대로 */ if(EC.pend&&now-EC.pend.t>C.pendMs) EC.pend=null; /* b361: 보상 맵 인식이 빔보다 늦게(01M6E78K: 빔 8.9초, 보상 맵 8.86~9.1초) 되어도 2초 안이면 그 빔으로 */
   if(!EC.cur&&EC.pend&&now-EC.cool>C.cool){ const hit=EC.pend, ctx=ecCtx(now); if(ctx){ EC.pend=null; const h0=EC.buf.find(x=>x.t>=hit.t)||f; EC.cool=now; EC.cur={t0:h0.t,vt0:h0.vt,sc:hit.sc,kind:hit.kind||'beam',...ctx,w:W,h:H,dg:ecDiagCommit(now,hit,h0.t)}; } }
