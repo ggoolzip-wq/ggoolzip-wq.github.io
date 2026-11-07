@@ -39,6 +39,10 @@
  *   POST   /api/epic/clip?id=ec…  본문 = WebM 또는 ECB1 클립 묶음(≤2MB, octet-stream), 헤더 X-Epic-Meta = encodeURIComponent(JSON 메타) (인증)
  *   GET    /api/epic/clips?page=0&per=12  (인증) → {total, page, per, items:[메타]}  (같은 넥슨 계정(acct_hash) 기준 — 다른 PC 에서 같은 키로 로그인하면 보임)
  *   GET    /api/epic/clip/<id>            (인증) → WebM/ECB1 클립 바이너리
+ *   DELETE /api/epic/clip/<id>            (인증, b390) → 이 사용자·연결 계정 범위의 같은 id 행 전부 삭제 + 삭제 이력(epic_tomb) 기록, 다른 행이 안 쓰는 R2 객체만 지움
+ *          → {ok, id, deleted:행 수, already:bool, r2:{deleted,kept,failed}} · 범위에 없고 이력도 없으면 404 no_clip
+ *   GET    /api/epic/deleted?after=0&aid=&limit=500 (인증, b390) → {items:[{id,at}], next:{after,aid}, complete} 같은 범위의 명시 삭제 이력((deleted_at,id) 오름차순, complete=true 면 끝)
+ *   삭제 이력이 있는 id 업로드 → 410 deleted (다른 PC 의 남은 캐시가 다시 올려 부활하지 않게)
  *   GET    /api/seen  · PUT /api/seen {ids:[...]}   (인증, b62) 소식 카드 읽음 표시 — 서버가 합집합으로 보관 (기기 간 동기화)
  *
  * b62 (2026-10-12):
@@ -142,6 +146,7 @@ async function ensureSchema(env) {
   if (schemaOk) return;
   await env.DB.batch([
     env.DB.prepare(EPIC_DDL), env.DB.prepare('CREATE INDEX IF NOT EXISTS epic_acct ON epic_clips(acct_hash, t0)'), env.DB.prepare('CREATE INDEX IF NOT EXISTS epic_user ON epic_clips(user_id, t0)'),
+    env.DB.prepare(EPIC_TOMB_DDL), env.DB.prepare('CREATE INDEX IF NOT EXISTS epic_tomb_user ON epic_tomb(user_id, deleted_at)'), env.DB.prepare('CREATE INDEX IF NOT EXISTS epic_tomb_at ON epic_tomb(acct_hash, deleted_at)'), env.DB.prepare('CREATE INDEX IF NOT EXISTS epic_r2key ON epic_clips(r2key)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS keyvault2 (user_id TEXT PRIMARY KEY, owner_hash TEXT NOT NULL, iv TEXT NOT NULL, ct TEXT NOT NULL, updated_at INTEGER NOT NULL)'),
     env.DB.prepare('CREATE TABLE IF NOT EXISTS keyreg (key_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, kind TEXT NOT NULL, updated_at INTEGER NOT NULL)'),
     env.DB.prepare('CREATE INDEX IF NOT EXISTS keyreg_user ON keyreg(user_id)'),
@@ -283,6 +288,15 @@ async function loadAdmin(env) { if (env.ADMIN_USER) return; const r = await env.
 // b354: epic_clips 는 일부러 USER_TABLES 에 없음 — 30일 미동기화 삭제(syncGoneCron)·강퇴·계정 삭제에도 클립은 지우지 않음(사용자 요청 "영상 자동으로 지우지 마").
 //   클립은 user_id 와 acct_hash(넥슨 계정 해시 = 로그인과 같은 기준) 둘 다 저장 → 같은 넥슨 키로 다시 가입·로그인하면(user_id 가 새로 생겨도) acct_hash 로 그대로 보임.
 const EPIC_DDL = 'CREATE TABLE IF NOT EXISTS epic_clips (id TEXT NOT NULL, user_id TEXT NOT NULL, acct_hash TEXT NOT NULL, t0 INTEGER NOT NULL, boss TEXT, diff TEXT, item TEXT, cid TEXT, cname TEXT, meta TEXT NOT NULL, r2key TEXT NOT NULL, size INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (acct_hash, id))';
+// b390: 명시 삭제 이력(tombstone). 계정(acct_hash)·사용자(user_id) 범위로만 조회. r2_done=0 이면 R2 정리 재시도 대상(다음 DELETE 때).
+const EPIC_TOMB_DDL = 'CREATE TABLE IF NOT EXISTS epic_tomb (acct_hash TEXT NOT NULL, id TEXT NOT NULL, user_id TEXT NOT NULL, deleted_at INTEGER NOT NULL, r2key TEXT, r2_done INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (acct_hash, id))';
+const EPIC_DEL_LIMIT = { n: 60, windowMs: 60e3 }, EPIC_TOMB_PAGE = 500;
+// b390: 행이 하나도 안 가리키는 R2 객체만 지우고 이력 r2_done=1. 실패는 r2_done=0 그대로(다음 DELETE 재시도).
+async function epicR2Gc(env, key, ah, id) {
+  if (await env.DB.prepare('SELECT 1 FROM epic_clips WHERE r2key=? LIMIT 1').bind(key).first()) return 'kept';
+  try { await env.EPIC.delete(key); } catch (e) { return 'failed'; }
+  await env.DB.prepare('UPDATE epic_tomb SET r2_done=1 WHERE acct_hash=? AND id=? AND r2key=?').bind(ah, id, key).run(); return 'deleted';
+}
 const EPIC_MAX = 2 * 1024 * 1024, EPIC_PER_MAX = 48;
 const EPIC_UP_LIMIT = { n: 300, windowMs: 86400e3 }, EPIC_MIN_LIMIT = { n: 30, windowMs: 60e3 }; // 사용자당 하루 300개 · 1분 30개
 const USER_TABLES = ['state', 'state_history', 'sessions', 'accounts', 'keyvault', 'keyvault2', 'keyreg', 'acct_role', 'seen', 'approval', 'cp'];
@@ -903,6 +917,9 @@ async function route(req, env) {
       if (len > EPIC_MAX) throw new HttpError(413, 'too_large', '클립이 너무 큽니다 (최대 2MB)');
       let m; try { m = JSON.parse(decodeURIComponent(req.headers.get('X-Epic-Meta') || '')); } catch (e) { throw new HttpError(400, 'bad_meta', '메타 형식 오류'); }
       if (!m || typeof m !== 'object' || JSON.stringify(m).length > 8192) throw new HttpError(400, 'bad_meta', '메타 형식 오류');
+      // b390: 같은 범위에서 명시 삭제한 id 는 다시 받지 않음(오래된 캐시가 부활시키지 않게)
+      const tomb = await env.DB.prepare(`SELECT 1 FROM epic_tomb WHERE id=? AND ${owner} LIMIT 1`).bind(id, me.userId, ...accts).first();
+      if (tomb) { await req.arrayBuffer().catch(() => {}); throw new HttpError(410, 'deleted', '삭제한 클립입니다'); }
       const ex = await env.DB.prepare(`SELECT size FROM epic_clips WHERE id=? AND ${owner}`).bind(id, me.userId, ...accts).first();
       if (ex) { await req.arrayBuffer().catch(() => {}); return json(200, { ok: true, id, dup: true }); }
       await limit(env, 'epicm:' + me.userId, EPIC_MIN_LIMIT, '클립 업로드가 너무 잦습니다 — 잠시 뒤 다시 시도'); await limit(env, 'epicup:' + me.userId, EPIC_UP_LIMIT, '오늘 올릴 수 있는 클립 수를 넘었습니다');
@@ -913,8 +930,17 @@ async function route(req, env) {
       const str = (v, n) => v == null ? null : String(v).slice(0, n);
       await env.EPIC.put(key, buf, { httpMetadata: { contentType: 'application/octet-stream' } });
       const meta = { ...m, id, size: buf.byteLength }; delete meta.poster; delete meta.up;
-      await env.DB.prepare('INSERT OR IGNORE INTO epic_clips (id,user_id,acct_hash,t0,boss,diff,item,cid,cname,meta,r2key,size,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)')
-        .bind(id, me.userId, ah, t0, str(m.boss, 40), str(m.diff, 20), str(m.item, 80), str(m.cid, 60), str(m.cname, 40), JSON.stringify(meta), key, buf.byteLength, now).run();
+      // b390: 삭제 이력이 없을 때만 넣는 한 문장(원자적) — 앞의 410 검사 뒤 DELETE 가 끼어들어도 행이 부활하지 않음
+      const ins = await env.DB.prepare(`INSERT OR IGNORE INTO epic_clips (id,user_id,acct_hash,t0,boss,diff,item,cid,cname,meta,r2key,size,created_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM epic_tomb WHERE id=? AND ${owner})`)
+        .bind(id, me.userId, ah, t0, str(m.boss, 40), str(m.diff, 20), str(m.item, 80), str(m.cid, 60), str(m.cname, 40), JSON.stringify(meta), key, buf.byteLength, now, id, me.userId, ...accts).run();
+      if (!(ins.meta && ins.meta.changes)) {
+        const tomb2 = await env.DB.prepare(`SELECT 1 FROM epic_tomb WHERE id=? AND ${owner} LIMIT 1`).bind(id, me.userId, ...accts).first();
+        if (!tomb2) return json(200, { ok: true, id, dup: true }); // 동시 중복 업로드 — 행은 하나
+        // 늦게 거부된 업로드가 방금 R2 에 만든 객체: 정리 대상으로 기록 → 참조 행이 없을 때만 지움(실패하면 r2_done=0 으로 남아 다음 DELETE 가 재시도)
+        await env.DB.prepare('INSERT INTO epic_tomb (acct_hash,id,user_id,deleted_at,r2key,r2_done) VALUES (?,?,?,?,?,0) ON CONFLICT(acct_hash,id) DO UPDATE SET r2key=excluded.r2key, r2_done=0').bind(ah, id, me.userId, now, key).run();
+        await epicR2Gc(env, key, ah, id);
+        throw new HttpError(410, 'deleted', '삭제한 클립입니다');
+      }
       return json(200, { ok: true, id, size: buf.byteLength });
     }
     if (p === '/api/epic/clips' && M === 'GET') {
@@ -923,7 +949,39 @@ async function route(req, env) {
       const rows = (await env.DB.prepare(`SELECT id, meta, size, MIN(created_at) created_at FROM epic_clips WHERE ${owner} GROUP BY id ORDER BY t0 DESC, id DESC LIMIT ? OFFSET ?`).bind(me.userId, ...accts, per, page * per).all()).results || [];
       return json(200, { total: tot ? tot.n : 0, page, per, items: rows.map(r => ({ ...JSON.parse(r.meta), id: r.id, size: r.size, upAt: r.created_at })) });
     }
+    if (p === '/api/epic/deleted' && M === 'GET') { // b390: 명시 삭제 이력 — 같은 범위만, id·시각만(키·닉네임·계정 해시 없음)
+      const after = Math.max(0, Math.round(+url.searchParams.get('after') || 0)), aid = String(url.searchParams.get('aid') || ''), lim = Math.max(1, Math.min(EPIC_TOMB_PAGE, Math.round(+url.searchParams.get('limit') || EPIC_TOMB_PAGE)));
+      if (aid && !/^ec\d{10,16}$/.test(aid)) throw new HttpError(400, 'bad_id', '잘못된 클립 id');
+      const rows = (await env.DB.prepare(`SELECT id, MAX(deleted_at) at FROM epic_tomb WHERE ${owner} GROUP BY id HAVING MAX(deleted_at) > ? OR (MAX(deleted_at) = ? AND id > ?) ORDER BY at, id LIMIT ?`).bind(me.userId, ...accts, after, after, aid, lim + 1).all()).results || [];
+      const items = rows.slice(0, lim).map(r => ({ id: r.id, at: r.at })), complete = rows.length <= lim, last = items[items.length - 1];
+      return json(200, { items, next: last ? { after: last.at, aid: last.id } : { after, aid }, complete });
+    }
     const mm = /^\/api\/epic\/clip\/(ec\d{10,16})$/.exec(p);
+    if (mm && M === 'DELETE') { // b390: 계정 소유 단일 클립 삭제 (계정 전체 삭제 아님)
+      const id = mm[1];
+      await limit(env, 'epicdel:' + me.userId, EPIC_DEL_LIMIT, '클립 삭제가 너무 잦습니다 — 잠시 뒤 다시 시도');
+      const rows = (await env.DB.prepare(`SELECT acct_hash, r2key FROM epic_clips WHERE id=? AND ${owner}`).bind(id, me.userId, ...accts).all()).results || [];
+      const prev = (await env.DB.prepare(`SELECT acct_hash, r2key, r2_done FROM epic_tomb WHERE id=? AND ${owner}`).bind(id, me.userId, ...accts).all()).results || [];
+      if (!rows.length && !prev.length) throw new HttpError(404, 'no_clip', '없는 클립');
+      const now = Date.now(), keys = [...new Set(rows.map(r => r.r2key).concat(prev.filter(t => !t.r2_done && t.r2key).map(t => t.r2key)))];
+      const tombAh = [...new Set(accts.concat(rows.map(r => r.acct_hash)))];
+      let deleted = 0;
+      if (rows.length) { // 한 batch = D1 트랜잭션: 이력 기록과 행 삭제가 함께 성공/실패
+        const res = await env.DB.batch(tombAh.map(ah => { const k = (rows.find(r => r.acct_hash === ah) || {}).r2key || null;
+          return env.DB.prepare('INSERT INTO epic_tomb (acct_hash,id,user_id,deleted_at,r2key,r2_done) VALUES (?,?,?,?,?,?) ON CONFLICT(acct_hash,id) DO UPDATE SET deleted_at=excluded.deleted_at, r2key=COALESCE(excluded.r2key,epic_tomb.r2key), r2_done=CASE WHEN excluded.r2key IS NULL THEN epic_tomb.r2_done ELSE 0 END')
+            .bind(ah, id, me.userId, now, k, k ? 0 : 1); })
+          .concat(env.DB.prepare(`DELETE FROM epic_clips WHERE id=? AND ${owner}`).bind(id, me.userId, ...accts)));
+        deleted = (res[res.length - 1].meta || {}).changes || 0; // 동시 DELETE 는 실제로 지운 쪽만 1 이상
+      }
+      const r2 = { deleted: 0, kept: 0, failed: 0 };
+      for (const k of keys) { // 다른 계정·사용자 행이 아직 같은 R2 객체를 가리키면 남김
+        const ref = await env.DB.prepare('SELECT 1 FROM epic_clips WHERE r2key=? LIMIT 1').bind(k).first();
+        if (ref) { r2.kept++; await env.DB.prepare(`UPDATE epic_tomb SET r2_done=1 WHERE r2key=? AND id=? AND ${owner}`).bind(k, id, me.userId, ...accts).run(); continue; }
+        try { await env.EPIC.delete(k); r2.deleted++; await env.DB.prepare(`UPDATE epic_tomb SET r2_done=1 WHERE r2key=? AND id=? AND ${owner}`).bind(k, id, me.userId, ...accts).run(); }
+        catch (e) { r2.failed++; } // 이력은 이미 기록 — r2_done=0 으로 남아 다음 DELETE 때 다시 시도
+      }
+      return json(200, { ok: true, id, deleted, already: !deleted, r2 });
+    }
     if (mm && M === 'GET') {
       const r = await env.DB.prepare(`SELECT r2key FROM epic_clips WHERE id=? AND ${owner} LIMIT 1`).bind(mm[1], me.userId, ...accts).first();
       if (!r) throw new HttpError(404, 'no_clip', '없는 클립');

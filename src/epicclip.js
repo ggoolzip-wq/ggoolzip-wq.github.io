@@ -199,14 +199,30 @@ async function ecFetch(m){ const r=await ecReq('/api/epic/clip/'+encodeURICompon
   await ecTx(['meta','frames'],'readwrite',t=>{ t.objectStore('meta').put(mm); t.objectStore('frames').put({id:m.id,...F}); }); return {id:m.id,...F}; }
 async function ecPosters(L){ for(const m of L.slice(0,12)){ try{ await ecFetch(m); }catch(e){ return; } } if(L.length&&typeof tab!=='undefined'&&tab==='epic') renderEpic(); }
 function ecSyncSoon(){ if(Date.now()-ECC.last>30000) ecSync(); }
+/* b390: 명시 삭제 전파 — 서버가 '이 계정 범위에서 삭제됨'이라고 끝까지(complete) 알려 준 id 만 이 PC 에서 지운다.
+   서버 목록에 없다는 이유·로그인 없음·네트워크/일부 페이지 실패로는 아무것도 지우지 않음(미업로드·오프라인 영상 보존). */
+async function ecTombFetch(){ const ids=new Set(); let after=0, aid='';
+  for(let i=0;i<50;i++){ const r=await ecReq(`/api/epic/deleted?after=${after}&aid=${encodeURIComponent(aid)}&limit=500`); if(!r.ok) return {status:r.status};
+    let b; try{ b=await r.json(); }catch(e){ return {status:-2}; } if(!b||!Array.isArray(b.items)||!b.next) return {status:-2};
+    for(const it of b.items) if(it&&/^ec\d{10,16}$/.test(it.id)) ids.add(it.id);
+    if(b.complete===true) return {status:200,ids:[...ids]}; if(!(b.next.after>after||(b.next.after===after&&String(b.next.aid)>aid))) return {status:-2}; after=b.next.after; aid=String(b.next.aid||''); }
+  return {status:-2}; }
+async function ecDropIds(ids){ const want=new Set(ids), L=await ecList(), del=L.filter(m=>want.has(m.id)).map(m=>m.id); if(!del.length) return 0;
+  await ecTx(['meta','frames'],'readwrite',t=>{ for(const id of del){ t.objectStore('meta').delete(id); t.objectStore('frames').delete(id); } }); return del.length; }
+/* b390: 서버 단일 클립 삭제(이 로그인 계정 범위). 서버가 성공(ok)으로 같은 id 를 돌려줬을 때만 이 PC 사본을 지움. */
+async function ecDeleteClip(id){ if(!/^ec\d{10,16}$/.test(String(id))) return {ok:false,status:400}; const r=await ecReq('/api/epic/clip/'+encodeURIComponent(id),{method:'DELETE'});
+  if(!r.ok) return {ok:false,status:r.status}; let b=null; try{ b=await r.json(); }catch(e){} if(!b||b.ok!==true||b.id!==id) return {ok:false,status:-2};
+  await ecDropIds([id]); if(typeof tab!=='undefined'&&tab==='epic') renderEpic(); return {ok:true,status:200,deleted:b.deleted,already:!!b.already}; }
 async function ecSync(){ if(ECC.busy){ ECC.again=true; return; } const api=ecApi(), st0=ECC.st; ECC.last=Date.now(); ECC.tok=ecApi()?svTok():'';
   if(!api){ ECC.st='nolog'; if(st0!==ECC.st&&typeof tab!=='undefined'&&tab==='epic') renderEpic(); return; }
   ECC.busy=true; let ch=false;
   try{ let L=await ecList(); outer:{
+    { const T=await ecTombFetch(); if(T.status===503){ ECC.st='off'; break outer; } if(T.status===-1){ ECC.st='net'; break outer; } if(T.status===401||T.status===403||T.status===0){ ECC.st='nolog'; break outer; }
+      if(T.ids&&T.ids.length&&await ecDropIds(T.ids)){ ch=true; L=await ecList(); } } /* b390: 다른 PC·이 PC 에서 명시 삭제한 클립 → 이 PC 사본 제거(재업로드 방지) */
     for(const m of L.filter(x=>!x.up&&!x.remote).sort((a,b)=>a.t0-b.t0)){ const r=await ecUpOne(m);
       if(r.status===503){ ECC.st='off'; break outer; } if(r.status===-1){ ECC.st='net'; break outer; } if(r.status===401||r.status===403||r.status===0){ ECC.st='nolog'; break outer; }
       if(r.status===429){ ECC.st='ok'; setTimeout(ecSync,60000); break; }
-      if(r.ok||r.status===413||r.status===400){ m.up=r.ok?1:-1; await ecPutMeta(m); ch=true; } }
+      if(r.ok||r.status===413||r.status===400||r.status===410){ m.up=r.ok?1:-1; if(r.status===410) m.gone=1; await ecPutMeta(m); ch=true; } } /* b390: 410 = 이 계정에서 삭제한 id → 다시 올리지 않음(지우는 건 삭제 이력 동기화가 함) */
     // 서버 목록(12개씩) → 이 PC 에 없는 클립 메타 받아 둠 (영상은 볼 때·미리보기 때 받음)
     const have=new Set(L.map(x=>x.id));
     for(let pgn=0;pgn<200;pgn++){ const r=await ecReq(`/api/epic/clips?page=${pgn}&per=${EC.cfg.per}`); if(r.status===503){ ECC.st='off'; break outer; } if(r.status===-1){ ECC.st='net'; break outer; } if(!r.ok){ ECC.st='nolog'; break outer; }
@@ -245,5 +261,5 @@ function ecClose(){ document.getElementById('ecModal')?.remove(); }
 document.addEventListener('click',e=>{ const o=e.target.closest('[data-ecopen]'); if(o){ ecOpen(o.dataset.ecopen); return; } const p=e.target.closest('[data-ecpg]'); if(p){ EC.page=+p.dataset.ecpg; renderEpic(); } });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') ecClose(); });
 EC.timer=setInterval(()=>{ try{ ecTick(); }catch(e){ console.warn('[에픽빔]',e); } },Math.round(1000/EC.cfg.fps));
-window.ecSave=ecSave; window.ECV=ECV; window.EC=EC; window.ECC=ECC; window.ecGrid=ecGrid; window.ecNcc=ecNcc; window.ecTick=ecTick; window.ecCtx=ecCtx; window.ecSync=ecSync; window.ecPack=ecPack; window.ecUnpack=ecUnpack; window.renderEpic=renderEpic; window.ecOnRec=ecOnRec; window.ecList=ecList; window.ecFrames=ecFrames;
+window.ecDeleteClip=ecDeleteClip; window.ecTombFetch=ecTombFetch; window.ecSave=ecSave; window.ECV=ECV; window.EC=EC; window.ECC=ECC; window.ecGrid=ecGrid; window.ecNcc=ecNcc; window.ecTick=ecTick; window.ecCtx=ecCtx; window.ecSync=ecSync; window.ecPack=ecPack; window.ecUnpack=ecUnpack; window.renderEpic=renderEpic; window.ecOnRec=ecOnRec; window.ecList=ecList; window.ecFrames=ecFrames;
 try{ if(typeof tab!=='undefined'&&tab==='epic') render(); }catch(e){}
