@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image,ImageStat
 sys.path.insert(0,str(Path(__file__).parent));import _tutil
 from playwright.sync_api import sync_playwright
-ROOT=Path(__file__).resolve().parents[1];png=Image.open(ROOT/'epicbeam_static.png').convert('RGBA');assert png.size==(716,428)
+ROOT=Path(__file__).resolve().parents[1];assert 'epicbeam_static.png' in (ROOT/'tools/pages_dist.sh').read_text();png=Image.open(ROOT/'epicbeam_static.png').convert('RGBA');assert png.size==(716,428)
 source=Path('/workspace/epic_beam_user.gif')
 if source.exists():
  im=Image.open(source);means=[];frames=[]
