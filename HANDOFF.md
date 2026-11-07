@@ -8,6 +8,15 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
+## b388 (t459) 에픽빔 기록지 이상 영상 — 원인 미확정, 재현용 진단 메타만 추가 (미배포 상태로 작성)
+- **상태**: 이 항목 작성 시점 운영은 b386(commit 85c3464) 그대로, **b388 은 배포 전**. 로컬 b387 CPU 최적화(Worker 소유 캡처 등)는 이 빌드에 들어 있지 않음 — b386 위에 진단 패치만 얹음.
+- **재현 결과(원본 6개, 감지 코드 그대로 Node 재생, 임계값/빈도 변경 없음)**: 11/5 구형 2건은 녹화 화면만으로 오감지 재현 — ec1793884892169(더스크 전투 스킬) shift 0.774, ec1793858562894(더스크 파티 UI) beam 0.666~0.685 2회. 둘 다 b382 보상 맵 gate 배포(11/6) 이전 기록. 정상 비교 2건(찬란한 흉성)도 0.0초에 재현(0.896/0.755).
+- **원인 미확정**: 11/7 최근 2건(ec1794033431494 데미안 하드, ec1794032772754 더스크 카오스)은 클립 이전 배경을 검정/회색/첫 프레임으로 가정해도 감지 불재현(최고 sc .544/.613, ss .702/.688). 클립에는 감지 전 1초만 있어 배경 1.5초 일부가 없으므로 불재현이 '오탐 아님'의 증명은 아님. 더스크는 t0(0.967초)에 실제 밝기 상승이 있어 정상 감지 가능성. 후보 가설(미검증): 감지는 Worker 비트맵(≤0.6초 지연), 녹화는 원본 video 라 서로 다른 화면 / VP9·축소 차이 / 사용자 PC 빌드 미확인 / 보상 맵 인식 후 8초 gate 창 안의 맵 전환.
+- **진단(dg) 목적**: 다음 이상 영상에서 원인을 확정하기 위한 기록. 감지 판단·문턱·빈도·영상 규격·저장 구간 변경 없음. 감지 순간(ecDiagHit)·저장 확정(ecDiagCommit)·인코딩(ecDiagFrames/ecDiagOut)에서만 1회 생성. 필드: v, build, kind, det/hitT/commit(t0 기준 ms), lg(감지 기준 최근 1.5초 [ms, sc, ss, m] ≤40개), src(bm/video)·bmAge·sn·vw·vh, map{k,b,d,age}, boss, fr{n,gap,first,last}. 키·토큰·세션·닉네임 등 개인정보 없음. dg >1600자면 lg 12개로, 그래도 넘으면 {v,build,fr}만.
+- **서버**: worker.js 변경 없음. 기존 X-Epic-Meta JSON 8192자 검사 → D1 meta 그대로 저장 → 목록 GET 에서 dg deep-equal 보존 확인(tests/test_b388_epicdiag_server.py, 로컬 wrangler/모의 넥슨). 최악 합성 전체 메타 1776자, 최악 dg 1282자.
+- **실측(headless Chromium, 미시 측정 — 기존 CPU 프로파일 표와 별개)**: 감지 없는 flash 영상 5.5초 ecTick 167회 중 진단 호출 0회. beam 영상: 클립 1개에 각 함수 1회. 최악 입력 2000회 평균 ecDiagHit 2.1µs, ecDiagCommit 0.55µs, ecDiagFrames 0.7µs, ecDiagOut 4.65µs. 실제 저장 메타 dg 716자/전체 987자. (tests/bench_b388_epicdiag.py)
+- **검증**: test_b388_epicdiag, b382, b384_video(VP9 1280×720 30fps 120프레임 ffprobe), b385_cpu, b366_livesnap, b348_nameinv, b376_pipmin, b342_pipsale, b352_epicbeam, b361_epic_shift, b383 PASS.
+
 ## b385 (t431) 자동 기록 CPU 급증 — 중복 WebP 인코더 제거 + 반복 계산·자원 정리
 - **원인 실측**: b384는 WebM/VideoFrame 경로에서도 사용하지 않는 720p WebP를 `toBlob`으로 초당 30장 압축했다. VP9는 상시 인코딩이 아니라 감지 후 저장할 때만 동작. 상시 고부하의 큰 원인은 버려지는 WebP였음. 12초 에픽 감시에서 365회 → 0회.
 - **변경**: 네이티브 WebCodecs는 VideoFrame만 보관(구형 브라우저 WebP fallback 유지). 별도 소유 canvas로 전체 화면 캡처. VideoFrame(video) 직접 참조는 실제 라이브 트랙 버퍼를 붙잡아 멈추는 회귀를 발견해 폐기(5프레임 후 정체→소유 복사는 snapshot 27회/인식 fallback 0). 실제 30fps 원본으로 캡처하며 10fps arSnap은 인식에만 사용. 큰 원본은 기존 전체 화면 720p 축소 유지.
