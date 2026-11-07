@@ -1097,15 +1097,15 @@ function arPanelLive(p,pipOnly){ p=p||$('#arPanel'); if(!p||(!pipOnly&&(p.hidden
   }
 function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c=ARX.cfg, t=arTarget(), on=arLive(), dn=k=>({log:'획득 로그',banner:'획득 배너',item:'바닥 아이콘',map:'맵 이름',name:'상태바 이름'})[k];
   const detC=S.characters.find(x=>x.id===ARX.det.cid), bst=arBossState(), detB=(ARX.det.boss&&findBoss(ARX.det.boss))||(bst&&bst!=='rew'&&ARX.mapSt&&findBoss(ARX.mapSt.boss)), detD=ARX.det.boss?ARX.det.diff:(ARX.mapSt?.diff||''), mapN=(AR_REWARD.find(m=>m[1]===ARX.det.boss)||[''])[0], acc=detC&&typeof accOf==='function'?accOf(detC):null;
-  if(!p.querySelector('.ar-g')){ p.innerHTML=`<div class="ar-sbar"></div><div class="ar-g">
-    <div class="card ar-c ar-cchar"><h2>캐릭터 정보</h2><div class="ar-b"></div></div>
-    <div class="card ar-c ar-cboss"><h2>보상 맵 인식 <span class="hspace"></span><button type="button" class="btn sm ar-pipb" title="작은 창으로 항상 맨 위에 띄우기 (크롬/엣지 116+)">PIP</button></h2><div class="ar-pipmsg" hidden></div><div class="ar-b"></div></div>
-    <div class="card ar-c ar-clive"><h2>라이브 화면 <span class="hspace"></span><span class="ar-prof"></span></h2><div class="ar-vw"><video class="ar-vid" muted playsinline autoplay></video><canvas class="ar-prev" width="1280" height="720"></canvas><div class="ar-vnone">연결하면 게임 화면이 여기에 보여요</div></div><div class="ar-b ar-regs"></div></div>
+  if(!p.querySelector('.ar-g')){ p.innerHTML=`<div class="ar-g ar-home">
+    <section id="arGuideInline" class="ar-guide ar-guide-inline">${arGuideHtml()}</section>
     <div class="card ar-c ar-crec"><h2>현재까지 기록</h2><div class="ar-b"></div></div>
-    <div class="card ar-c ar-cset" hidden><div class="ar-b"></div></div></div>`; }
-  const q=s=>p.querySelector(s), vid=q('.ar-vid'); if(vid){ const ss=on?ARX.stream:null; if(vid.srcObject!==ss){ vid.srcObject=ss; if(ss) vid.play().catch(()=>{}); } q('.ar-vw').classList.toggle('on',!!ss||!!ARX.testSrc); }
+    <div class="ar-piphost" hidden><div class="card ar-c ar-cboss"><h2>보상 맵 인식 <span class="hspace"></span><button type="button" class="btn sm ar-pipb" title="작은 창으로 항상 맨 위에 띄우기 (크롬/엣지 116+)">PIP</button></h2><div class="ar-pipmsg" hidden></div><div class="ar-b"></div></div></div>
+    <div class="card ar-c ar-cset" hidden><div class="ar-b"></div></div></div><div class="ar-sbar ar-connectbar"></div>`; }
+  const q=s=>p.querySelector(s);
   arSetH(q('.ar-sbar'),`<span class="ar-st ${on?'on':''}">${on?'● 연결됨':'○ 끊김'}</span><span class="hspace"></span>
-    <label class="ar-sw"><input type="checkbox" name="on" ${c.on?'checked':''}> 자동 기록</label>${on?'<button type="button" class="btn" data-ar="stop">연결 끊기</button>':'<button type="button" class="btn primary" data-ar="guide">연결</button>'}${ARX.connErr?`<div class="ar-err" role="alert">${esc(ARX.connErr)}</div>`:''}`);
+    <label class="ar-sw"><input type="checkbox" name="on" ${c.on?'checked':''}> 자동 기록</label>${ARX.connErr?`<div class="ar-err" role="alert">${esc(ARX.connErr)}</div>`:''}
+    <button type="button" class="neonBtn ${on?'nb-crimson':'nb-cyan'} ar-maple-connect" data-ar="${on?'stop':'connect'}">${on?'메이플 연결 해제':'메이플 연결'}</button>`);
   arPanelLive(p);
   const R=ARX.runRec||[]; arSetH(q('.ar-crec .ar-b'),`${(ARX.amb||[]).map((A,i)=>`<div class="ar-amb">닮은 아이템 — 직접 고르기 ${A.ks.map(k=>`<button type="button" class="chipb" data-ar="pick:${i}:${k}">${ITEM_ICONS[k]?`<img src="${ITEM_ICONS[k]}" alt="">`:''}${esc(ITEMS[k]?.n||k)}</button>`).join('')}</div>`).join('')}
     ${R.length?`<ul class="ar-recl">${R.map(r=>`<li>${ITEM_ICONS[r.k]?`<img src="${ITEM_ICONS[r.k]}" alt="">`:''}<span><b>${esc(ITEMS[r.k]?.n||r.k)}</b><small class="muted">${esc(r.b)} · ${esc(r.c)}</small></span><time>${r.t}</time></li>`).join('')}</ul>`:'<div class="muted">아직 기록 없음</div>'}`);
@@ -1138,17 +1138,12 @@ function arTeachClick(e){ const b=e.target.closest&&e.target.closest('.ar-tbtn')
 document.addEventListener('click',arTeachClick);
 window.arNameTeach=arNameTeach;
 function arLivePaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; arPanelPaint(); } /* t567: 0.2초마다 탭 전체를 그리되 바뀐 칸만 DOM 변경(arSetH) — 서버 호출 없음 */
-/* b294: '보스 득템 자동 기록' 탭 → (연결 안 됐으면) 탭 바로 아래 안내 창 → '확인' 클릭 안에서 바로 getDisplayMedia (사용자 동작). 닫으면 연결 안 함. 이미 연결됐으면 다시 묻지 않음 */
-function arGuide(){ if(arLive()) return; let m=$('#arGuide'); if(!m){ m=document.createElement('div'); m.id='arGuide'; m.className='ar-guide'; m.setAttribute('role','dialog'); m.setAttribute('aria-label','게임 화면 연결 안내'); document.body.appendChild(m);
-    m.addEventListener('click',e=>{ if(e.target.closest('[data-arg="ok"]')){ m.hidden=true; arConnect(); } else if(e.target.closest('[data-arg="x"]')) m.hidden=true; }); }
-  m.innerHTML=`<div class="ar-gh"><b>게임 화면 연결 전에</b><button type="button" class="ar-x" data-arg="x" aria-label="닫기">✕</button></div>
+/* b397: 연결 안내를 홈페이지에 인라인 표시. 화면 공유·PIP 연결 경로는 기존 arConnect 그대로. */
+function arGuideHtml(){ return `<div class="ar-gh"><b>게임 화면 연결 전에</b></div>
     <ul><li>오른쪽 아래 <b class="ar-pk">획득 로그</b>를 읽어야 하니 파티 목록 등으로 가리지 마세요.</li><li>캐릭터 능력치·장비창·인벤토리 등 <b class="ar-or">아이템 인식</b>을 방해하는 창은 띄우지 마세요.</li></ul>
     <div class="ar-gimg"><img src="data/ar_guide_07.webp" alt="예시: 분홍 = 획득 로그, 주황 = 아이템 떨어지는 곳" width="640" height="360"><img src="data/ar_guide_01.webp" alt="예시 2" width="640" height="360" loading="lazy"></div>
-    <small class="muted">분홍 = 획득 로그 · 주황 = 아이템 떨어지는 곳</small><div class="ar-gf"><button type="button" class="btn primary" data-arg="ok">확인</button></div>`;
-  const tb=$('#tabs [data-tab="auto"]')?.getBoundingClientRect(); m.hidden=false; if(tb){ const w=Math.min(1100,innerWidth-24), tp=Math.round(tb.bottom+8); m.style.width=w+'px'; m.style.top=tp+'px'; m.style.maxHeight=Math.max(200,innerHeight-tp-12)+'px'; /* b317(t572): 안내창 560→1100px, 사진 약 2배, 화면 넘치면 창 안 스크롤 */ m.style.left=Math.round(Math.max(12,Math.min(innerWidth-w-12,tb.left+tb.width/2-w/2)))+'px'; } }
-document.addEventListener('click',e=>{ if(e.target.closest('#tabs [data-tab="auto"]')||e.target.closest('#arPanel [data-ar="guide"]')){ if(!arLive()) setTimeout(arGuide,0); return; }
-  const m=$('#arGuide'); if(m&&!m.hidden&&!m.contains(e.target)) m.hidden=true; });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const m=$('#arGuide'); if(m) m.hidden=true; } }); // b288: 위쪽 버튼 한 번에 화면 선택 창 (전엔 패널만 열고 패널의 버튼을 또 눌러야 했음)
+    <small class="muted">분홍 = 획득 로그 · 주황 = 아이템 떨어지는 곳</small>`; }
+function arGuide(){ arPanel(true); document.getElementById('arGuideInline')?.scrollIntoView({block:'nearest'}); }
 window.arNameWatch=arNameWatch; window.arNameRes=arNameRes; window.arMesoFlush=arMesoFlush; window.arTarget=arTarget; window.arClrFinish=arClrFinish; window.arMapWatch=arMapWatch; window.arGuide=arGuide; window.renderAuto=renderAuto; window.AR=ARX; window.arSessAdd=arSessAdd; window.arPipRec=arPipRec; window.arDisconnect=arDisconnect; window.arFrame=arFrame; window.arBannerWatch=arBannerWatch; window.arLogFrame=arLogFrame; window.arLogStep=arLogStep; window.arStart=arStart; window.arItemScan=arItemScan; window.arTrack=arTrack; window.arMatchCore=arMatchCore; window.arDetectBoss=arDetectBoss; window.arLogItem=arLogItem; window.arOcrLoad=arOcrLoad; arBtnPaint();
 
 /* b297ui: 현재 보스 1줄 고정 — 넘치면 글씨 크기 자동 축소(최소 .8rem) */
@@ -1243,7 +1238,7 @@ function arPipStyles(src,dst){ const d=dst.documentElement, s=src.documentElemen
   for(const ss of [...src.styleSheets]){ try{ const st=dst.createElement('style'); st.textContent=[...ss.cssRules].map(r=>r.cssText).join('\n'); dst.head.append(st); }catch(e){ if(ss.href){ const l=dst.createElement('link'); l.rel='stylesheet'; l.href=ss.href; dst.head.append(l); } } }
   const st=dst.createElement('style'); st.textContent='html,body{margin:0;background:var(--bg,#0b0f1a);min-height:100%}body{padding:8px;box-sizing:border-box}.ar-inpip{margin:0!important;width:100%;box-sizing:border-box}'; dst.head.append(st); dst.body.classList.add('arpipw'); }
 function arPipBack(){ const P=ARX.pip; if(!P) return; ARX.pip=null; const cb=P.card; cb.classList.remove('ar-inpip'); const b=cb.querySelector('.ar-pipb'); if(b){ b.textContent='PIP'; b.title='작은 창으로 항상 맨 위에 띄우기 (크롬/엣지 116+)'; }
-  if(P.ph&&P.ph.isConnected) P.ph.replaceWith(cb); else { const g=document.querySelector('#arPanel .ar-g'); if(g) g.append(cb); } try{ arPanelLive(); }catch(e){} }
+  if(P.ph&&P.ph.isConnected) P.ph.replaceWith(cb); else { const g=document.querySelector('#arPanel .ar-piphost')||document.querySelector('#arPanel .ar-g'); if(g){ if(g.classList.contains('ar-piphost')) g.querySelector('.ar-cboss')?.remove(); g.append(cb); } } try{ arPanelLive(); }catch(e){} }
 function arPipClose(){ const P=ARX.pip; if(!P) return; try{ P.win.close(); }catch(e){} arPipBack(); }
 
 /* b346: 화면 공유 시작하면 PIP 기본으로 열기 + 메이플 창 오른쪽 가운데 위치.

@@ -31,7 +31,7 @@ try:
     pg.route('**/*',lambda r:r.continue_() if r.request.url.startswith(f'http://127.0.0.1:{PORT}') else r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.wait_for_timeout(700); pg.evaluate("clearInterval(EC.timer)"); pg.evaluate(LIB)
     c=pg.evaluate("({b:document.documentElement.dataset.build,n:EC_MOT.length,l:EC_MOT.every(t=>t.length===576),cfg:EC.cfg})")
-    check('build b396(b391 모션 유지) · GIF 13단계 템플릿',c['b']=='b396' and c['n']==13 and c['l'],c['b'])
+    check('build b397(b391 모션 유지) · GIF 13단계 템플릿',c['b']=='b397' and c['n']==13 and c['l'],c['b'])
     cf=c['cfg']; check('기존 문턱·빈도·규격 유지 + 모션 설정',all(cf[k]==v for k,v in dict(fps=30,H0=240,H=720,th=.66,minMean=12,pre=1000,post=3000,cool=12000,gate=True,rewardOnly=True,pendMs=2000,shift=True,mo=True,moWin=1200).items()),cf)
     # EC_TPL 이 같은 GIF #3..#8 에서 나온 것인지
     r=pg.evaluate("EC_TPL.map((T,j)=>+ecNcc(EC_MOT[j+2],T).toFixed(4))"); check('EC_TPL ≈ 새 GIF #3..#8 (NCC ≥ .99)',min(r)>=.99,r)

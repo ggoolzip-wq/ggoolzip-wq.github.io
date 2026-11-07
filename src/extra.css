@@ -2499,3 +2499,12 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 .bbbox .cblist .cbopt{width:100%;box-sizing:border-box;min-height:56px;display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:8px 12px;text-align:left;justify-content:initial}
 .bbbox .cblist .cbopt>:first-child{justify-self:center}
 .bbbox .bbsolo .avatar{width:34px;height:34px}
+
+/* b397: 자동 기록 안내 인라인 + 연결 버튼 맨 아래, PIP용 카드는 숨은 호스트에 보존 */
+#arPanel.ar-dash{height:auto;min-height:0}
+#arPanel .ar-home{display:flex;flex-direction:column;gap:12px}
+#arPanel .ar-guide-inline{position:static;z-index:auto;max-height:none;width:100%;box-sizing:border-box;overflow:visible}
+#arPanel .ar-home>.ar-crec{max-height:320px}
+#arPanel .ar-piphost[hidden]{display:none!important}
+#arPanel .ar-connectbar{gap:12px}
+#arPanel .ar-maple-connect{flex:0 0 100%;width:100%;min-height:44px;justify-content:center}

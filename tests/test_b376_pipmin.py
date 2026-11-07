@@ -35,7 +35,7 @@ try:
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800); pg.evaluate(SETUP); pg.wait_for_timeout(300)
     pg.evaluate("()=>{ arStart(document.createElement('video')); }"); pg.evaluate(REW,'lucid'); pg.evaluate(STUB)
-    pg.evaluate(FAKE); pg.locator('#arPanel .ar-cboss .ar-pipb').click(); pg.wait_for_timeout(500)
+    pg.evaluate(FAKE); pg.evaluate('arPipOpen(arPipCard())'); pg.wait_for_timeout(500)
     pg.evaluate("()=>{ ARX.det.cid='c0'; }"); pg.wait_for_timeout(500)
     for k in ['eye','belt']: pg.evaluate(REC,['lucid',k])
     pg.wait_for_timeout(300); r=pg.evaluate(B); print(r)
@@ -66,7 +66,7 @@ try:
     pg.evaluate(CLICK); pg.wait_for_timeout(300); r=pg.evaluate(B)
     check('다시 최소화하면 확인한 득템은 표시 안 함',r['min'] and r['nw'] is None,r)
     # 닫고 다시 열면 최소화 유지
-    pg.evaluate("()=>arPipClose()"); pg.wait_for_timeout(300); pg.evaluate(REW,'lucid'); pg.locator('#arPanel .ar-cboss .ar-pipb').click(); pg.wait_for_timeout(500); r=pg.evaluate(B); print(r)
+    pg.evaluate("()=>arPipClose()"); pg.wait_for_timeout(300); pg.evaluate(REW,'lucid'); pg.evaluate('arPipOpen(arPipCard())'); pg.wait_for_timeout(500); r=pg.evaluate(B); print(r)
     check('PIP 다시 열어도 최소화 유지(작은 창)',r['min'] and r['btn']=='최소화 해제' and r['ih']<140,r)
     # 최소화 중 2인 수익 칸 대기 → 표시, 해제하면 수익 칸 보임
     pg.evaluate("()=>{ S.characters[0].bosses[findBoss('will').id].party=2; save(); }"); pg.evaluate(REW,'will'); pg.evaluate(STUB)

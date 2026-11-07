@@ -10,7 +10,8 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
-## 현재 전체 상태 요약 (2026-11-08 b396 기준, 비밀값 없음)
+## 현재 전체 상태 요약 (2026-11-08 b397 기준, 비밀값 없음)
+- **b397**: 자동 기록 연결 안내는 홈페이지 인라인, 홈페이지의 캐릭터 정보·보상 맵·라이브 미리보기 제거. 맨 아래 메이플 연결/연결 해제. 기존 화면 공유·분석·PIP 동작 유지.
 - **b396**: 축하 메시지 에픽빔은 원본 GIF 7번째(#6) 최고 평균 밝기 프레임의 716×428 무손실 PNG로 고정. 빔 전용 캔버스 반복·16장 디코드/굽기 제거. 감지 템플릿 변경 없음.
 - **b395**: 보스 드롭 표 반지 상자 결과 선택 후에도 파티 블빵승리·패배·분배·독식 선택. 독식 전액, 4개 버튼 폭·높이·아이콘 열·문자 시작선 정렬.
 - **b394**: 2인 이상 드롭 선택에 캐릭터 얼굴 초상화 독식 버튼 추가. 1인 수익 창 그대로, 수익은 전액(파티 나눔 없음).
@@ -22,6 +23,12 @@
 - **Grok Bot 예약(부모 전달 권위 상태, 2026-11-07 19:34 KST 시점)**: ① '썬데이메이플 칸 확인' enabled, 매주 목·금 10:00 Asia/Seoul(automation-1791559100163), 마지막 실행 11/6 10:00:52 KST 성공. ② '메보기 검색 노출 확인' enabled, 11/9 10:00 전후 15분 Asia/Seoul 1회(automation-1792412128359), 아직 실행 없음. 예약 자체는 변경하지 않음. 이와 별도로 저장소 cron: GitHub Actions update-feed(5분마다), update-prices(매일 19:00 KST), sunday-watch(09:45·09:50 KST), Worker cron(매 1분 라이브 감지).
 - **작업 트리·보존**: /workspace/ggoolzip-site(HEAD 85c3464, 미커밋 9개 = b387 원본 작업 — 건드리지 말 것), /workspace/epic_motion_release(b391 배포 완료), /workspace/epic_delete_release(중단된 b390 — 수정 금지, 읽기만), /workspace/epic_delete_b392(현재 b392 후보). 원본 6클립 /workspace/epic_review(sha 목록 /workspace/live_opt_release_result/epic_originals_sha.txt), 최신 목록 /workspace/epic_motion_reference/account/manifest_latest.json. 증거: /workspace/epic_motion_reference/(GIF 분석·eval·deploy), /workspace/epic_cleanup/(삭제 API·로그 logs_b392).
 
+
+## b397 (t332u) 자동 기록 홈페이지 안내 인라인
+- 클릭 시 열리던 연결 안내(문구·예시 이미지)를 페이지에 상시 표시. 자동 안내 팝업/확인 단계 제거. 홈페이지 캐릭터·보상 맵·라이브 미리보기 제거, 현재까지 기록은 유지.
+- 맨 아래 .neonBtn 메이플 연결→기존 arConnect(화면 공유→PIP 자동 연결), 연결 후 메이플 연결 해제→기존 arDisconnect 즉시 호출. 기존 자동 기록 스위치·오류 안내 유지.
+- PIP에서 쓰는 보상 맵 카드는 숨은 호스트에만 보관하고 PIP로 이동시키므로 홈페이지에 안 보임. PIP 내용/열기/닫기/최소화·인식/녹화 동작 유지. 열린 PIP 중 페이지 재방문 후 복귀할 때 숨은 호스트로 되돌리며 중복 카드 제거.
+- tests/test_b397_inline.py PASS: 안내 인라인·홈페이지 3영역 제거·하단 연결/해제·모의 track 즉시 stop·PIP 열기/페이지 재방문/닫기 복귀·JS 오류 0. 실제 OS 화면 선택/실게임 인식은 이번 검증 범위 밖. 사진 /workspace/maple-boss-tracker/b397_auto_inline.png, 로그 b397_test.log.
 
 ## b396 (t331u) 축하창 에픽빔 정지 고화질
 - 원본 /workspace/epic_beam_user.gif = 716×428·16프레임, sha256 750a98d11c713df9ea130f09edb4df36b04b482e4f14bfeeee5b00c743bc5f35(기존 사용자 원본 기록과 동일). 전체 프레임 평균 밝기 비교: #6(0-based, 7번째)이 최대, 평균 휘도 110.72585/255·RGB 평균 112.35289/255.
