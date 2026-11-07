@@ -14,16 +14,15 @@ FT="""async(thr)=>{ const ft=[]; let vis=-1, last=0, on=true; await new Promise(
  const lp=n=>{ ft.push(n-last); last=n; if(vis<0&&document.querySelector('#congrats.show')) vis=ft.length; if(on) requestAnimationFrame(lp); }; requestAnimationFrame(lp);
  celebrate(null,'r_white',BOSSES[0]); const st={on:document.body.classList.contains('cg-on')};
  await new Promise(r=>setTimeout(r,1000)); const c=document.querySelector('#congrats .cg-beam');
- st.baked=c.classList.contains('baked'); st.cw=c.width; st.mask=getComputedStyle(c).maskImage||getComputedStyle(c).webkitMaskImage; st.bd=getComputedStyle(document.querySelector('.card')).backdropFilter;
+ st.static=c.tagName==='IMG'&&c.getAnimations().length===0; st.cw=c.naturalWidth; st.mask=getComputedStyle(c).maskImage||getComputedStyle(c).webkitMaskImage; st.bd=getComputedStyle(document.querySelector('.card')).backdropFilter;
  await new Promise(r=>setTimeout(r,1100)); on=false; st.fxN=celebrate.fxN; endCelebrate(); st.off=!document.body.classList.contains('cg-on'); st.bd2=getComputedStyle(document.querySelector('.card')).backdropFilter;
  const a=ft.slice(vis); st.n=a.length; st.max=Math.max(...a); st.over50=a.filter(x=>x>50).length; st.over33=a.filter(x=>x>34).length; return st; }"""
 try:
   with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME') or None,args=['--no-sandbox','--headless=new'])
     pg=b.new_page(viewport={'width':1600,'height':900}); pg.on('pageerror',lambda e:errs.append(str(e))); pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
-    pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.wait_for_function("beamBake.fr&&beamBake.fr.length===16",timeout=15000)
-    m=pg.evaluate("()=>({w:beamBake.fr[0].width,h:beamBake.fr[0].height,busy:beamBake.busy})")
-    check('빛줄기 16장 미리 구움(화면 크기 576x344, dpr1)', m['w']==576 and m['h']==344, m)
+    pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.wait_for_function("typeof celebrate==='function'")
+    check('b396: 16장 굽기 제거', pg.evaluate("typeof beamPrep==='undefined'&&typeof beamBake==='undefined'"))
     # CSS 연출 키프레임은 transform/opacity 만
     kf=pg.evaluate("""()=>{const o={}; for(const s of document.styleSheets){ let r; try{r=s.cssRules}catch(e){continue} for(const x of r) if(x.type===7&&['cgpop','cgfade','ib'].includes(x.name)) for(const k of x.cssRules) for(const pr of k.style) o[pr]=1; } return Object.keys(o);}""")
     check('축하 키프레임 = transform/opacity 만', kf and set(kf)<={'transform','opacity'}, kf)
@@ -36,7 +35,7 @@ try:
         pg.wait_for_timeout(400)
       st=best
       check(f'x{thr} 연출 중 cg-on·카드 블러 끔, 끝나면 복구', st['on'] and st['bd']=='none' and st['off'] and st['bd2']!='none', st)
-      check(f'x{thr} 빛줄기 = 구운 프레임(마스크 없음)', st['baked'] and st['cw']==576 and st['mask'] in ('none',None,''), st)
+      check(f'x{thr} 빛줄기 = 원본 정지 PNG 716px', st['static'] and st['cw']==716, st)
       check(f'x{thr} 불꽃 입자 ≤ 600', 0<st['fxN']<=600, st['fxN'])
       check(f'x{thr} 프레임 수 충분(≥{60 if thr==1 else 10})', st['n']>=(60 if thr==1 else 10), st['n'])
       check(f'x{thr} 보인 뒤 가장 긴 프레임 < {100 if thr==1 else 400}ms (전: 300~1200ms)', st['max']<(100 if thr==1 else 400), st['max'])  # x4: 예전 첫 프레임 디코드 1000ms+ (CPU 바쁠 땐 x4 프레임이 원래 흔들림)

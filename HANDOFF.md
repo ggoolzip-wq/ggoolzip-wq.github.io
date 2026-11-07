@@ -10,7 +10,8 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
-## 현재 전체 상태 요약 (2026-11-08 b395 기준, 비밀값 없음)
+## 현재 전체 상태 요약 (2026-11-08 b396 기준, 비밀값 없음)
+- **b396**: 축하 메시지 에픽빔은 원본 GIF 7번째(#6) 최고 평균 밝기 프레임의 716×428 무손실 PNG로 고정. 빔 전용 캔버스 반복·16장 디코드/굽기 제거. 감지 템플릿 변경 없음.
 - **b395**: 보스 드롭 표 반지 상자 결과 선택 후에도 파티 블빵승리·패배·분배·독식 선택. 독식 전액, 4개 버튼 폭·높이·아이콘 열·문자 시작선 정렬.
 - **b394**: 2인 이상 드롭 선택에 캐릭터 얼굴 초상화 독식 버튼 추가. 1인 수익 창 그대로, 수익은 전액(파티 나눔 없음).
 - **b393**: 단일 클립 삭제(b392) 철회. 화면 이름은 **이번 주 에픽빔**. 매주 목요일 00:00 KST 기준 이전 클립은 전 계정 R2·D1 및 이 버전을 연 PC의 IndexedDB에서 영구 폐기. 현재 주 영상은 보존. 사이트는 main 일반 push로 배포. Worker는 b393 실제 배포 완료: ad0a789e-bfa6-4e3f-bad0-07d647b84e8a, D1·R2 바인딩 및 매분 cron 확인(2026-11-08 01:58 KST). 사이트 공개 build 확인 결과는 최종 작업 보고 참조.
@@ -21,6 +22,12 @@
 - **Grok Bot 예약(부모 전달 권위 상태, 2026-11-07 19:34 KST 시점)**: ① '썬데이메이플 칸 확인' enabled, 매주 목·금 10:00 Asia/Seoul(automation-1791559100163), 마지막 실행 11/6 10:00:52 KST 성공. ② '메보기 검색 노출 확인' enabled, 11/9 10:00 전후 15분 Asia/Seoul 1회(automation-1792412128359), 아직 실행 없음. 예약 자체는 변경하지 않음. 이와 별도로 저장소 cron: GitHub Actions update-feed(5분마다), update-prices(매일 19:00 KST), sunday-watch(09:45·09:50 KST), Worker cron(매 1분 라이브 감지).
 - **작업 트리·보존**: /workspace/ggoolzip-site(HEAD 85c3464, 미커밋 9개 = b387 원본 작업 — 건드리지 말 것), /workspace/epic_motion_release(b391 배포 완료), /workspace/epic_delete_release(중단된 b390 — 수정 금지, 읽기만), /workspace/epic_delete_b392(현재 b392 후보). 원본 6클립 /workspace/epic_review(sha 목록 /workspace/live_opt_release_result/epic_originals_sha.txt), 최신 목록 /workspace/epic_motion_reference/account/manifest_latest.json. 증거: /workspace/epic_motion_reference/(GIF 분석·eval·deploy), /workspace/epic_cleanup/(삭제 API·로그 logs_b392).
 
+
+## b396 (t331u) 축하창 에픽빔 정지 고화질
+- 원본 /workspace/epic_beam_user.gif = 716×428·16프레임, sha256 750a98d11c713df9ea130f09edb4df36b04b482e4f14bfeeee5b00c743bc5f35(기존 사용자 원본 기록과 동일). 전체 프레임 평균 밝기 비교: #6(0-based, 7번째)이 최대, 평균 휘도 110.72585/255·RGB 평균 112.35289/255.
+- 해당 프레임을 원본 해상도·알파 그대로 무손실 epicbeam_static.png(196,854B)로 저장. 손실 압축·AI 업스케일·추가 샤픈 없음. 기존 빔 위치/크기/정적 가장자리 마스크 유지, 텍스트·아이템 정렬 유지.
+- beamPrep/beamDraw/beamPlay·16프레임 스프라이트 디코드·비트맵 굽기·빔 rAF 제거. 축하창은 정지 img 한 장. 감지 src/epicclip.js·템플릿·기존 감지용 에셋 변경 없음. 다른 꽃가루·팝업 등장 연출은 유지, 전체 렉 해소를 실측한 것은 아님.
+- tests/test_b396_static.py PASS: 원본 최고 밝기 #6·PNG 픽셀 완전 일치, 정지 img 716×428, 빔 캔버스/자체 애니메이션/스프라이트 요청 없음, 닫기 정상·JS 오류 0. node 문법 검사 PASS. 예전 성능 테스트의 빔 굽기 전제는 정지 이미지 전제로 갱신(장시간 성능 테스트는 이번에 생략). 원본 밝기 분석 /workspace/maple-boss-tracker/b396_frame.json, 사진 b396_celebration.png, 로그 b396_test.log.
 
 ## b395 (t329u·t330u) 반지 상자 파티 선택 + 정렬 기본
 - 보스 드롭 표 chooseRing이 수익 창으로 곧바로 넘어가던 경로를 공통 askBbang으로 연결. 결과(r4/c4/gl/x) 선택 후 2인 이상이면 블빵승리·블빵패배·분배·독식, 1인이면 기존처럼 수익 창(꽝은 수익 없음). 선택 취소 시 획득 기록 안 남김. 독식은 기존 n·p=1 전액, 패배는 수익 창 없음. PIP 자동기록 별도 흐름은 변경하지 않음.

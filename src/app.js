@@ -540,30 +540,8 @@ function iconBurst(src){
 // 이모지: 글꼴에 컬러 이모지가 없는 PC(예: PC방 윈도우)에서도 보이게 Twemoji 이미지(CC-BY 4.0)로, alt 에 글자
 const CG_EMOJI=[['😚','1f61a'],['😙','1f619'],['😊','1f60a'],['😘','1f618'],['🥳','1f973']];
 const cgEmoji = () => { const [ch,cp]=CG_EMOJI[Math.random()*CG_EMOJI.length|0]; return `<img class="cg-emo" src="${ITEM_ICONS['emo_'+cp]}" alt="${ch}" data-emo="${ch}" draggable="false">`; };
-/* b246: 에픽 빛줄기 = 4x4 스프라이트(1152x689 프레임 16장, ESPCN x2 업스케일+언샤프) 를 캔버스에 69ms 마다 — 창이 열릴 때마다 0번 프레임부터(animated WebP 는 캐시되면 중간부터 재생됨). 페이지 로드 때 미리 받아 디코드 */
-const BEAM={src:'epicbeam_s720.webp',w:720,h:430,cols:4,n:16,ms:69,cw:576,ch:344,pre:1}; /* b366: 4608x2756(디코딩 50.8MB) → 2880x1720(19.8MB)·마스크 미리 구움. 화면 576x344 기준 1.25배 */
-const beamImg=new Image(); /* b366: 페이지 로드 때 미리 디코딩하지 않음(50MB 상주 제거) — file:// 폴백에서만 씀 */
-function beamImgLoad(){ if(!beamImg.src) beamImg.src=BEAM.src; return beamImg; }
-/* b357: 끊김 원인 = 첫 drawImage 때 4608x2756 스프라이트(약 50MB) 를 메인 스레드에서 다시 디코드(4x 스로틀 ~1초) + CSS mask-image 를 매 프레임 다시 그림.
-   → 페이지가 한가할 때 fetch→createImageBitmap(디코드는 다른 스레드) 로 16장을 화면 크기(576x344×dpr)로 줄이고 둥근 마스크(radial 70%→100%)를 미리 구워 둠. 재생은 작은 비트맵 한 장 drawImage. */
-const beamBake={fr:null,busy:false,dpr:0};
-function beamPrep(){ const dpr=Math.min(2,devicePixelRatio||1); if(beamBake.busy||(beamBake.fr&&beamBake.dpr===dpr)||typeof createImageBitmap!=='function') return; beamBake.busy=true;
-  const W=Math.min(BEAM.w,Math.round(BEAM.cw*dpr)), H=Math.min(BEAM.h,Math.round(BEAM.ch*dpr)); /* b366: 원본(1.25배)보다 크게 굽지 않음 */
-  (/^https?:$/.test(location.protocol)?fetch(BEAM.src).then(r=>r.blob()).then(bl=>createImageBitmap(bl)):beamImgLoad().decode().then(()=>createImageBitmap(beamImg))).then(async full=>{ /* file:// 는 fetch 불가 → 이미 받은 이미지에서 */ const fr=[];
-    for(let f=0;f<BEAM.n;f++){ const bm=await createImageBitmap(full,(f%BEAM.cols)*BEAM.w,(f/BEAM.cols|0)*BEAM.h,BEAM.w,BEAM.h,{resizeWidth:W,resizeHeight:H,resizeQuality:'high'});
-      fr.push(bm); /* b366: 마스크는 에셋에 구워 둠 → 캔버스 왕복 없음 */ await new Promise(r=>(window.requestIdleCallback||setTimeout)(r,{timeout:200})); }
-    full.close?.(); beamBake.fr=fr; beamBake.dpr=dpr; }).catch(()=>{}).finally(()=>{ beamBake.busy=false; }); }
-(window.requestIdleCallback||setTimeout)(beamPrep,{timeout:3000});
-function beamDraw(cv,f){ const g=cv.getContext('2d'); const fr=beamBake.fr;
-  if(fr){ if(cv.width!==fr[0].width){ cv.width=fr[0].width; cv.height=fr[0].height; cv.classList.add('baked'); } g.clearRect(0,0,cv.width,cv.height); g.drawImage(fr[f],0,0); }
-  else { g.clearRect(0,0,cv.width,cv.height); beamImgLoad(); if(beamImg.complete&&beamImg.naturalWidth) g.drawImage(beamImg,(f%BEAM.cols)*BEAM.w,(f/BEAM.cols|0)*BEAM.h,BEAM.w,BEAM.h,0,0,BEAM.w,BEAM.h); }
-  celebrate.beamFrame=f; }
-function beamPlay(cv){ if(!cv) return; const id=(beamPlay._id=(beamPlay._id||0)+1);
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches){ celebrate.beamFrame=-1; return; }
-  let t0=0; beamDraw(cv,0); let last=0; // b357: 시간은 첫 화면 프레임부터(직전 저장·다시 그리기로 늦은 첫 프레임에 건너뛰지 않게)
-  const tick=now=>{ if(id!==beamPlay._id||!celebrate.running||!cv.isConnected) return; if(!t0) t0=now; const f=Math.max(0,Math.floor((now-t0)/BEAM.ms))%BEAM.n; if(f!==last){ last=f; beamDraw(cv,f); } requestAnimationFrame(tick); };
-  if(!beamBake.fr&&!beamImgLoad().complete) beamImg.addEventListener('load',()=>{ if(id===beamPlay._id) beamDraw(cv,last); },{once:true});
-  requestAnimationFrame(tick); }
+/* b396: 사용자 원본 GIF 최고 평균 밝기 #6(0-based, 7번째) 716×428 무손실 PNG.
+   축하창 빔은 정지 이미지 하나만 표시: 스프라이트 디코드/프레임 굽기/캔버스 반복 없음. */
 /* b357: 불꽃·꽃가루 = 색·크기별로 미리 그린 작은 스프라이트를 drawImage (arc/save/restore 없음), 다 탄 입자는 배열에서 뺌, 캔버스 크기는 바뀔 때만 다시 잡음 */
 const CG_COL=['#ff5a5f','#ffb400','#4ecdc4','#a66cff','#ffe66d','#ff8fab','#7bdff2','#9be84a'];
 const cgDot={}; const cgDotOf=(col,dpr)=>{ const k=col+dpr; if(cgDot[k]) return cgDot[k]; const R=3.5, s=Math.ceil(R*2*dpr)+2, c=document.createElement('canvas'); c.width=c.height=s; const g=c.getContext('2d'); g.fillStyle=col; g.beginPath(); g.arc(s/2,s/2,R*dpr,0,7); g.fill(); return cgDot[k]={c,R}; };
@@ -577,12 +555,10 @@ const CGQ={lv:Math.max(0,Math.min(3,+(localStorage.getItem('cgq')||0)||0)),hist:
   set(v){ this.lv=Math.max(0,Math.min(3,v)); try{ localStorage.setItem('cgq',this.lv); }catch(e){} } };
 function celebrate(o,item,boss){
   const cv=$('#fx'), msg=$('#congrats');
-  msg.innerHTML=`<div class="cg-in"><span class="cg-ico"><canvas class="cg-beam baked" width="720" height="430" aria-hidden="true"></canvas>${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}</span><div class="cg-big">${boss?`<span class="cg-boss">${bossIcon(boss)}</span>`:''}<span class="cg-t">축하드립니다!</span></div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득</div></div>`;
+  msg.innerHTML=`<div class="cg-in"><span class="cg-ico"><img class="cg-beam" src="epicbeam_static.png" width="716" height="428" alt="" aria-hidden="true" draggable="false">${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}</span><div class="cg-big">${boss?`<span class="cg-boss">${bossIcon(boss)}</span>`:''}<span class="cg-t">축하드립니다!</span></div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득</div></div>`;
   celebrate.running=true; const run=(celebrate._run=(celebrate._run||0)+1);
-  beamPlay(msg.querySelector('.cg-beam'));
   document.body.classList.add('cg-on'); cgAmb(true); // b357: 뒤 페이지 반짝임 애니메이션 멈춤 + 카드 backdrop 블러 끔(매 프레임 블러 다시 계산 방지)
   clearTimeout(celebrate._t); celebrate._t=setTimeout(endCelebrate,2200+34);
-  if(!beamBake.fr) beamPrep();
   // b357: 블러 끄기·직전 저장/다시 그리기로 무거운 한 프레임을 먼저 보낸 뒤(2 프레임) 연출을 보이고 시작 → 연출 중에는 긴 프레임 없음
   // 보일 준비(레이아웃·래스터)는 이 무거운 프레임에: 겹 화면은 투명하게 미리 깔고, 아이콘 불꽃은 멈춘 채로 만들어 둠
   msg.classList.add('prep'); cv.classList.add('show'); iconBurst(ITEM_ICONS[item||(o==='r4'?'ring_restraint':'ring_continuous')]); document.querySelector('#iconBurst')?.classList.add('hold');
@@ -4066,7 +4042,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b395'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b396'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');

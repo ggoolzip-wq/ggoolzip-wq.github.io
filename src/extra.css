@@ -1849,13 +1849,13 @@ header .logo .logo-d{display:flex;align-items:center}
 
 /* b243: 득템 축하 아이콘 뒤 에픽 빛줄기 — 원본 RewardEffect/ScreenEff 16프레임(60ms) 알파 PNG 를 origin 기준으로 맞춰 192x100 투명 animated WebP(약 69KB)로. 빛 나오는 점(높이 80%)= 아이콘 가운데, 아이콘이 위 */
 .cg-ico{position:relative;display:inline-block;line-height:0;isolation:isolate}
-.cg-ico>img{position:relative;z-index:1}
+.cg-ico>img:not(.cg-beam){position:relative;z-index:1}
 /* b244: 2배(576x343) + 가장자리 페더(프레임에 타원 알파 감쇠 + mask), 위아래 자르지 않음 → 빛 나오는 점 = 높이 68.4% */
 .cg-beam{position:absolute;z-index:0;left:50%;top:50%;width:576px;height:343px;transform:translate(-49.65%,-68.19%);pointer-events:none;-webkit-mask-image:radial-gradient(closest-side,#000 70%,transparent 100%);mask-image:radial-gradient(closest-side,#000 70%,transparent 100%)}
 @media(max-width:480px){.cg-beam{width:460px;height:274px}}
 .cg-in>:not(.cg-ico){position:relative;z-index:1} /* b244: 글자는 빛 위 */
 #congrats{overflow:hidden} /* b244: 큰 빛줄기는 화면에서 잘림(스크롤 없음) */
-@media(prefers-reduced-motion:reduce){.cg-beam{display:none}}
+/* b396: 정지 빔은 동작 줄이기 설정에서도 그대로 표시 */
 /* b246: 빛줄기 = canvas(1152x689 스프라이트 프레임, 2배 해상도), 높이 = 576x344 · 모바일 460x275, 빛 나오는 점 68.19% */
 .cg-beam{height:344px}
 @media(max-width:480px){.cg-beam{height:275px}}
@@ -2338,8 +2338,8 @@ nav.tabs button .ecico{display:inline-block;width:16px;height:16px;vertical-alig
 .ecload{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#99a}
 
 /* b357: 축하 연출 끊김 — 구운 빛줄기(마스크 포함)는 CSS 마스크 끔, 연출 레이어는 GPU 합성, 연출 중 뒤 페이지 무한 반짝임 애니메이션은 JS(cgAmb)로 잠깐 멈춤 */
-.cg-beam.baked{-webkit-mask-image:none;mask-image:none}
-.cg-beam,#fx,#congrats.show,.cg-in{will-change:transform,opacity}
+.cg-beam{animation:none;transition:none;image-rendering:auto;object-fit:contain}
+#fx,#congrats.show,.cg-in{will-change:transform,opacity}
 #fx{contain:strict}
 /* 뒤 카드의 backdrop 블러(카드 82% 불투명이라 거의 안 보임)는 연출 2.2초 동안만 끔 — 매 프레임 블러 다시 계산이 가장 큰 부하 */
 body.cg-on .card,body.cg-on header,body.cg-on #arPanel .ar-sbar,body.cg-on #arPanel .ar-c{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
