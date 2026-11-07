@@ -4042,7 +4042,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b399'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b400'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -4532,10 +4532,11 @@ function calDayDetail(R,day){
     return `<div class="cald-row"><time>${when}</time><div class="cald-info"><span class="cald-icon">${r.k?itemIcon(r.k):miniIcon('ipc')}</span><div><div class="cald-name">${esc(r.k?ITEMS[r.k].n:r.bs||'보스 결정석')}${r.k?`<small class="cald-qty">×${r.n}</small>`:''}</div><div class="cald-meta">${esc(cn)}${r.k&&r.bs?' · '+esc(r.bs):''}</div></div></div><b class="cald-money">${r.m?(r.ap?CAL_AP:'')+calEok(r.m):'—'}</b></div>`;
   }).join('')}</section>`;
   return `<div class="caldet cald-clean" id="calDet"><header class="cald-head"><div><small>일별 상세 내역</small><h3>${mm}월 ${dd}일 <span>${weekday}요일</span></h3></div><div class="cald-total"><small>이 날의 총 수익</small><b>${x.ap?CAL_AP:''}${calEok(x.m)} 메소</b></div><button type="button" class="neonBtn nb-mute nb-sm cald-close" data-calclose aria-label="닫기">✕</button></header>
+  <section class="cald-notes"><h4>메모 · 파티 보스 일정</h4>${calNoteDet(day)}</section>
   <div class="cald-metrics"><div><small>보스 결정석</small><b>${amount(crystals)} 메소</b></div><div><small>아이템 판매 수익</small><b>${amount(items)} 메소</b></div><div><small>획득 아이템</small><b>${count}개</b></div></div>
   ${section('아이템 드롭',items)}${!rs.length?'<p class="muted cald-empty">이 날 기록된 수익이나 아이템이 없어요.</p>':''}
   ${x.by.length?`<details class="cald-chars"><summary>캐릭터별 합계 <small>${x.by.length}명</small></summary>${x.by.map(c=>`<div><span>${esc(c.name)}</span><b>${c.ap?CAL_AP:''}${calEok(c.m)} 메소</b></div>`).join('')}</details>`:''}
-  <section class="cald-notes"><h4>메모 · 파티 보스 일정</h4>${calNoteDet(day)}</section></div>`;
+  </div>`;
 }
 /* b364: 그 날 결정석 = 한 줄 합계(날짜 옆), 개별 결정석 줄 없음 */
 const calCry = rs => { const c=rs.filter(r=>!r.k&&r.m); if(!c.length) return ''; const m=c.reduce((a,r)=>a+r.m,0); return `<span class="calcry">${miniIcon('ipc')}<span>결정석</span><b>${c.some(r=>r.ap)?CAL_AP:''}${calEok(m)}</b></span>`; };

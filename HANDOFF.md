@@ -10,7 +10,8 @@
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
-## 현재 전체 상태 요약 (2026-11-08 b399 기준, 비밀값 없음)
+## 현재 전체 상태 요약 (2026-11-08 b400 기준, 비밀값 없음)
+- **b400**: 캘린더 날짜 상세의 메모·파티 일정을 날짜/총수익 바로 아래, 결정석·아이템 요약보다 위로 이동.
 - **b399**: 캘린더 전체(월 이동·3칸 합산 요약·요일·동일 크기 날짜 칸·작은 메모/일정 표식·월 전체 기록) 정렬 재정리. 결정석은 날짜 상세도 합산값만. 계산/저장/일정 기능 유지. 영상 분석은 사용자 취소(t336)로 중단, 인식 코드 변경 없음.
 - **b398**: 캘린더 날짜 상세를 날짜/총수익→결정석·아이템 구분→캐릭터 합계 접기→메모·일정 순으로 정리. 금액 우측 정렬, 중복 칩 제거. 계산·기록·월 전체·메모 기능 유지.
 - **b397**: 자동 기록 연결 안내는 홈페이지 인라인, 홈페이지의 캐릭터 정보·보상 맵·라이브 미리보기 제거. 맨 아래 메이플 연결/연결 해제. 기존 화면 공유·분석·PIP 동작 유지.
@@ -25,6 +26,10 @@
 - **Grok Bot 예약(부모 전달 권위 상태, 2026-11-07 19:34 KST 시점)**: ① '썬데이메이플 칸 확인' enabled, 매주 목·금 10:00 Asia/Seoul(automation-1791559100163), 마지막 실행 11/6 10:00:52 KST 성공. ② '메보기 검색 노출 확인' enabled, 11/9 10:00 전후 15분 Asia/Seoul 1회(automation-1792412128359), 아직 실행 없음. 예약 자체는 변경하지 않음. 이와 별도로 저장소 cron: GitHub Actions update-feed(5분마다), update-prices(매일 19:00 KST), sunday-watch(09:45·09:50 KST), Worker cron(매 1분 라이브 감지).
 - **작업 트리·보존**: /workspace/ggoolzip-site(HEAD 85c3464, 미커밋 9개 = b387 원본 작업 — 건드리지 말 것), /workspace/epic_motion_release(b391 배포 완료), /workspace/epic_delete_release(중단된 b390 — 수정 금지, 읽기만), /workspace/epic_delete_b392(현재 b392 후보). 원본 6클립 /workspace/epic_review(sha 목록 /workspace/live_opt_release_result/epic_originals_sha.txt), 최신 목록 /workspace/epic_motion_reference/account/manifest_latest.json. 증거: /workspace/epic_motion_reference/(GIF 분석·eval·deploy), /workspace/epic_cleanup/(삭제 API·로그 logs_b392).
 
+
+## b400 (t348u) 메모·파티 일정 위로
+- 날짜/총수익 머리 바로 아래에 메모·파티 일정을 배치하고, 그 아래 결정석 합계/아이템 요약·드롭 내역 표시. 데이터·추가/삭제 기능 유지.
+- 필수 확인: DOM 순서(머리→메모/일정→요약), 메모/일정 버튼·기록 표시, build.py. 사진 /workspace/maple-boss-tracker/b400_calendar_memo_top.png.
 
 ## b399 (t335u·t336u) 캘린더 전체 정렬 · 결정석 합산만
 - 월 이동/년월 선택/오늘과 월 전체 보기를 분리 정렬. 결정석·아이템·합계를 같은 폭의 요약 카드로 표시. 날짜 칸은 빈칸 포함 같은 높이·폭, 날짜/우측 금액/아이템 개수의 고정 기준선. 긴 아이템 이름 나열 대신 개수와 작은 아이콘, 메모·일정은 깜빡임 없는 점/개수 + 범례로 정리. 큰 금액은 칸에서만 조 단위 축약(전체 값은 툴팁/상세 유지).
