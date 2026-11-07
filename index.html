@@ -2653,6 +2653,55 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 .cald-chars{margin-top:20px;padding:12px 0;border-top:1px solid var(--line)}.cald-chars summary{cursor:pointer;font-size:.85rem;color:var(--muted)}.cald-chars>div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;font-size:.85rem}.cald-chars b{font-variant-numeric:tabular-nums}
 .cald-notes{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}.cald-notes h4{margin-bottom:12px}.cald-notes .calnb{margin:0 0 12px}.cald-notes .calnbt{min-height:36px}
 @media(max-width:650px){.cald-clean{padding:12px}.cald-head{grid-template-columns:minmax(0,1fr) 28px;gap:10px}.cald-head>div:first-child{grid-column:1}.cald-close{grid-column:2;grid-row:1}.cald-total{grid-column:1/-1;grid-row:2;text-align:left}.cald-metrics{gap:6px}.cald-metrics>div{padding:9px 7px;gap:6px}.cald-metrics b{font-size:.78rem}.cald-metrics small{font-size:.68rem}.cald-row,.cald-colhd{grid-template-columns:48px minmax(0,1fr) 72px;gap:8px}.cald-info{gap:6px}.cald-icon{width:24px}.cald-icon img{width:24px;height:24px}.cald-name{font-size:.76rem}.cald-meta,.cald-row time{font-size:.68rem}.cald-money{font-size:.83rem}.cald-head h3{font-size:1.15rem}}
+/* b399: 월 탐색/요약/7열 날짜/표식의 고정 기준선. 결정석은 합산값만. */
+.calcard{padding:20px;box-shadow:none}
+.calhd{display:flex;flex-wrap:nowrap;justify-content:space-between;gap:12px;margin-bottom:16px}
+.cal-navigation{display:grid;grid-template-columns:36px minmax(136px,auto) 36px 48px;gap:6px;align-items:center;min-width:0}
+.calcard .cal-navigation .neonBtn{margin:0;min-width:0;height:38px;padding:0 8px;box-shadow:none}
+.calcard .cal-navigation .calti{font-size:1.12rem;font-weight:800;white-space:nowrap;text-align:center}
+.calti small{font-size:.8rem;opacity:.65;margin-left:4px}
+.calcard button.calsum{margin:0;padding:0 14px;height:38px;white-space:nowrap;font-size:.8rem;box-shadow:none!important;text-shadow:none!important;flex-shrink:0;gap:16px}
+.cal-overview{margin:0 0 18px}
+.cal-overview .calmb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cal-overview .calmb>span{display:grid;grid-template-columns:18px minmax(0,1fr);gap:4px 6px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--n1) 18%,transparent);border-radius:10px;background:color-mix(in srgb,var(--n1) 4%,transparent);font-size:.78rem;min-width:0}
+.cal-overview .calmb b{grid-column:1/-1;font-size:1.25rem;line-height:1.4;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.calwk,.calgrid{grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.calwk{margin:0 0 6px;font-size:.8rem;font-weight:700}
+.calwk>span{padding:6px 0;text-align:center;opacity:.8}
+.calgrid .calc,.calgrid .calc.neonBtn{display:grid;grid-template-rows:24px 26px minmax(0,1fr);align-content:stretch;align-items:stretch;justify-items:stretch;gap:8px;box-sizing:border-box;height:128px;min-height:128px;min-width:0;margin:0;padding:10px;border-radius:9px;border-width:1px;box-shadow:none;text-shadow:none;overflow:hidden;font-weight:500;letter-spacing:normal;text-transform:none;transition:border-color .15s,background .15s,transform .15s}
+.calgrid .calc.emp{opacity:.22;border-style:solid}
+.calgrid .calc:not(.today):not(.sel){border-color:color-mix(in srgb,var(--n1) 16%,transparent);background:color-mix(in srgb,var(--n1) 3%,transparent)}
+.calgrid .calc.sel{outline:1px solid var(--n1);outline-offset:-1px;background:color-mix(in srgb,var(--n1) 10%,transparent)}
+.calgrid .calc.today{border-color:#ff52c8;box-shadow:inset 0 0 0 1px #ff52c8}
+.calgrid .calc.past{opacity:1}
+.calgrid .caldw{display:flex;flex-wrap:nowrap;justify-content:space-between;align-items:center;gap:2px;min-width:0}
+.calgrid .cald{display:flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;font-size:.85rem;line-height:1;color:inherit;font-variant-numeric:tabular-nums;flex-shrink:0}
+.calgrid .calc.today .cald{background:#ff52c8;color:#180c29;border-radius:7px}
+.calgrid .calm{display:block;align-self:center;text-align:right;font-size:1rem;line-height:1.4;font-weight:750;min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.calgrid .calm-empty{opacity:.2;color:inherit}
+.calgrid .cali{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:4px;overflow:hidden;min-height:20px;white-space:nowrap}
+.cal-item-count{font-size:.7rem;opacity:.8;white-space:nowrap}.cal-item-count b{font-variant-numeric:tabular-nums;font-weight:700}
+.cal-item-icons{display:flex;align-items:center;gap:2px;min-width:0}.cal-item-icons img,.cal-item-icons svg{width:18px;height:18px;object-fit:contain}.cal-item-icons small{font-size:.65rem;opacity:.7}
+.calgrid .calbg{display:flex;flex-wrap:nowrap;gap:4px;justify-content:flex-end;overflow:hidden;font-size:.65rem;line-height:1}
+.calgrid .calbg i{display:flex;align-items:center;gap:2px;animation:none;will-change:auto;font-style:normal}
+.cal-legend{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin:12px 0 20px;font-size:.7rem;color:var(--muted)}
+.cal-legend>span{display:inline-flex;align-items:center;gap:5px}.cal-legend>span:last-child{margin-left:auto}
+.cal-legend i{font-style:normal}.cal-today-dot{width:7px;height:7px;border-radius:2px;background:#ff52c8}.calbm{color:#63d995}.calbb{color:#ff6a9e}
+.calnote{text-align:left;font-size:.68rem;line-height:1.6;margin-top:18px;opacity:.65}
+.calmonth-clean{padding:18px;border:1px solid color-mix(in srgb,var(--n1) 20%,transparent);border-radius:12px}
+.calmonth-clean .calchips{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin:16px 0}
+.calmonth-clean .calchip{display:flex;justify-content:space-between;gap:8px;min-width:0;margin:0;padding:8px 10px;box-shadow:none;font-size:.75rem;font-variant-numeric:tabular-nums}
+.calmonth-clean .calml{overflow-x:auto}
+.calmonth-clean .calmgh{width:100%;margin:0 0 6px;padding:10px;box-shadow:none;font-size:.8rem;gap:8px;flex-wrap:wrap}
+.calmonth-clean .calmr{min-width:640px;padding:9px 6px;align-items:center}
+.calmonth-clean .cald-chars .caldl{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.calmonth-clean .cald-chars .caldl>.caldi{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:6px;align-items:center;margin:0;padding:6px;font-size:.8rem}
+.calmonth-clean .cald-chars>div:not(.caldl){flex-wrap:wrap}.calmonth-clean .caldci{margin-left:auto}
+@media(max-width:760px){
+ .calcard{padding:10px}.calhd{gap:8px;flex-wrap:wrap;margin-bottom:12px}.cal-navigation{grid-template-columns:30px minmax(110px,1fr) 30px 42px;gap:4px;flex:1}.calcard .cal-navigation .neonBtn{height:34px;padding:0 4px}.calcard .cal-navigation .calti{font-size:.95rem}.calcard button.calsum{height:34px;padding:0 10px;font-size:.7rem;gap:5px}
+ .cal-overview{margin-bottom:12px}.cal-overview .calmb{gap:5px}.cal-overview .calmb>span{padding:8px;gap:3px;font-size:.65rem;grid-template-columns:14px minmax(0,1fr)}.cal-overview .calmb>span>i,.cal-overview .calmb img,.cal-overview .calmb svg{width:14px;height:14px}.cal-overview .calmb b{font-size:.95rem}
+ .calwk,.calgrid{gap:3px}.calwk{font-size:.7rem}.calgrid .calc,.calgrid .calc.neonBtn{height:92px;min-height:92px;padding:4px;grid-template-rows:20px 22px minmax(0,1fr);gap:4px;border-radius:6px}.calgrid .cald{width:19px;height:19px;font-size:.7rem}.calgrid .calm{font-size:.7rem}.calgrid .calbg{gap:2px;font-size:.4rem}.calgrid .calbg i span{display:none}.calgrid .cali{justify-content:flex-end;min-height:16px}.cal-item-count{font-size:.58rem}.cal-item-count>span{display:none}.cal-item-icons{display:none}.cal-legend{gap:10px;font-size:.6rem;margin:10px 0 14px}.calnote{font-size:.6rem}.calmonth-clean{padding:10px}.calmonth-clean .calchips{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+}
 </style>
 </head>
 <body>
@@ -6833,7 +6882,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b398'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b399'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -7324,7 +7373,7 @@ function calDayDetail(R,day){
   }).join('')}</section>`;
   return `<div class="caldet cald-clean" id="calDet"><header class="cald-head"><div><small>일별 상세 내역</small><h3>${mm}월 ${dd}일 <span>${weekday}요일</span></h3></div><div class="cald-total"><small>이 날의 총 수익</small><b>${x.ap?CAL_AP:''}${calEok(x.m)} 메소</b></div><button type="button" class="neonBtn nb-mute nb-sm cald-close" data-calclose aria-label="닫기">✕</button></header>
   <div class="cald-metrics"><div><small>보스 결정석</small><b>${amount(crystals)} 메소</b></div><div><small>아이템 판매 수익</small><b>${amount(items)} 메소</b></div><div><small>획득 아이템</small><b>${count}개</b></div></div>
-  ${section('보스 결정석',crystals)}${section('아이템 드롭',items)}${!rs.length?'<p class="muted cald-empty">이 날 기록된 수익이나 아이템이 없어요.</p>':''}
+  ${section('아이템 드롭',items)}${!rs.length?'<p class="muted cald-empty">이 날 기록된 수익이나 아이템이 없어요.</p>':''}
   ${x.by.length?`<details class="cald-chars"><summary>캐릭터별 합계 <small>${x.by.length}명</small></summary>${x.by.map(c=>`<div><span>${esc(c.name)}</span><b>${c.ap?CAL_AP:''}${calEok(c.m)} 메소</b></div>`).join('')}</details>`:''}
   <section class="cald-notes"><h4>메모 · 파티 보스 일정</h4>${calNoteDet(day)}</section></div>`;
 }
@@ -7339,10 +7388,10 @@ function calMonList(R){ const rs=R.filter(r=>r.day.startsWith(calMon)&&(r.m||r.k
   for(const r of rs) (g[r.day]=g[r.day]||[]).push(r); const ap='<i class="calap" title="대략(정확한 날짜 없음)">≈</i>', cn=id=>((S.characters.find(c=>c.id===id)||{}).name);
   const days=Object.keys(g); if(!days.length) return ''; if(!g[calMD]) calMD=days[days.length-1];
   const chips=days.map(d=>{ const [,mm,dd]=d.split('-').map(Number), t=g[d].reduce((a,r)=>a+r.m,0);
-    return `<button type="button" class="calchip${d===calMD?' on':''}" data-calmd="${d}" aria-pressed="${d===calMD}">${mm}/${dd} <b>${g[d].some(r=>r.ap&&r.m)?ap:''}${calEok(t)}</b></button>`; }).join('');
+    return `<button type="button" class="neonBtn nb-gold nb-sm calchip${d===calMD?' on':''}" data-calmd="${d}" aria-pressed="${d===calMD}">${mm}/${dd} <b>${g[d].some(r=>r.ap&&r.m)?ap:''}${calEok(t)}</b></button>`; }).join('');
   const rows=calRows(g[calMD].filter(r=>r.k));
   const [,mm,dd]=calMD.split('-').map(Number);
-  return `<div class="calchips">${chips}</div><div class="calml" id="calML"><div class="calmgh" data-calgo="${calMD}"><b>${mm}월 ${dd}일</b>${calCry(g[calMD])}<span>그 날 상세 보기 ›</span></div><div class="calmr calmrh"><span></span><span>아이템</span><span>날짜</span><span>보스</span><span>캐릭터</span><span>금액</span></div>${rows}</div>`; }
+  return `<div class="calchips">${chips}</div><div class="calml" id="calML"><button type="button" class="neonBtn nb-cyan calmgh" data-calgo="${calMD}"><b>${mm}월 ${dd}일</b>${calCry(g[calMD])}<span>그 날 상세 보기 ›</span></button><div class="calmr calmrh"><span></span><span>아이템</span><span>날짜</span><span>보스</span><span>캐릭터</span><span>금액</span></div>${rows}</div>`; }
 /* b367(t681): 캘린더 메모·보스 일정 — S.calNotes={'YYYY-MM-DD':{m:{id:{t,at}},b:{id:{cid,n,slot,boss,d,p,h,mi,at}}}}
    S 안에 두어 로컬 저장(save) + 계정 동기화(backupData→gdPush, gdMerge)가 그대로 적용. id 키 객체라 다른 PC와 병합해도 충돌 없이 합쳐짐 */
 let calMemoOn=null, calBM=null;
@@ -7351,7 +7400,7 @@ const calNDay=id=>{ const o=S.calNotes; return o&&typeof o==='object'&&o[id]||nu
 function calNPut(id,k,v){ const N=calNotes(), o=N[id]||(N[id]={}); (o[k]||(o[k]={}))[uid()]=v; save(); }
 function calNDel(id,k,nid){ const N=calNotes(), o=N[id]; if(!o||!o[k]) return; delete o[k][nid]; if(!Object.keys(o[k]).length) delete o[k]; if(!Object.keys(o).length) delete N[id]; save(); }
 const calBadge=id=>{ const o=calNDay(id); if(!o) return ''; const m=Object.keys(o.m||{}).length, b=Object.keys(o.b||{}).length;
-  return m||b?`<span class="calbg">${m?`<i class="calbm">·메모 ${m}개</i>`:''}${b?`<i class="calbb">·보스 일정 ${b}개</i>`:''}</span>`:''; };
+  return m||b?`<span class="calbg">${m?`<i class="calbm" title="메모 ${m}개" aria-label="메모 ${m}개">●<span>${m}</span></i>`:''}${b?`<i class="calbb" title="보스 일정 ${b}개" aria-label="보스 일정 ${b}개">●<span>${b}</span></i>`:''}</span>`:''; };
 const calHM=(h,mi)=>`${pad(+h||0)}:${pad(+mi||0)}`;
 const calSC=s=>{ const ids=Array.isArray(s.cids)?s.cids:s.cid?[s.cid]:[], ns=Array.isArray(s.ns)?s.ns:[s.n]; return ids.map((id,i)=>S.characters.find(c=>c.id===id)||{id,name:ns[i]||'',image:''}); }; /* b370: 묶음(cids) · b367 단일(cid) 둘 다 */
 function calNoteDet(id){ const o=calNDay(id)||{}, ms=Object.entries(o.m||{}).sort((a,b)=>(a[1].at||0)-(b[1].at||0)),
@@ -7412,18 +7461,22 @@ function renderCal(){ const v=$('#view'), D=calLoad(), R=calRecs(D), today=dayId
   for(let i=0;i<lead;i++) cells.push('<div class="calc emp"></div>');
   for(let d=1;d<=nd;d++){ const id=`${calMon}-${pad(d)}`, x=calDay(R,id); tot+=x.m; for(const [k,n] of Object.entries(x.it)) itTot[k]=(itTot[k]||0)+n;
     const ks=Object.entries(x.it).sort((a,b)=>b[1]-a[1]), wd=(lead+d-1)%7;
-    cells.push(`<button type="button" class="calc${id===today?' today':''}${id===calSel?' sel':''}${x.m||ks.length?' has':''}${id<today?' past':''}${(()=>{const n=(S.calNotes||{})[id]||{};return Object.keys(n.b||{}).length?' cbB':Object.keys(n.m||{}).length?' cbM':''})()}${wd===0?' sun':wd===6?' sat':''}" data-calday="${id}"><span class="caldw"><span class="cald">${d}</span>${calBadge(id)}</span>${x.m?`<span class="calm">${x.ap?'<i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}${calEok(x.m)}</span>`:''}<span class="cali">${ks.slice(0,2).map(([k,n])=>`<span class="calit">${x.ia[k]?'<i class="calap">≈</i>':''}${itemIcon(k)}<span class="calin">${esc(ITEMS[k].n)}</span>${n>1?`<b>x${n}</b>`:''}</span>`).join('')}${ks.length>2?`<span class="calmore">+${ks.length-2}개 더</span>`:''}</span></button>`); }
+    const cnt=ks.reduce((n,[,v])=>n+v,0), label=`${id} · 합계 ${calEok(x.m)} 메소 · 아이템 ${cnt}개`, val=x.m>=1e12?(x.m/1e12).toFixed(2).replace(/\.?0+$/,'')+'조':calEok(x.m);
+    cells.push(`<button type="button" class="neonBtn nb-violet calc${id===today?' today':''}${id===calSel?' sel':''}${x.m||ks.length?' has':''}${id<today?' past':''}${(()=>{const n=(S.calNotes||{})[id]||{};return Object.keys(n.b||{}).length?' cbB':Object.keys(n.m||{}).length?' cbM':''})()}${wd===0?' sun':wd===6?' sat':''}" data-calday="${id}" aria-label="${esc(label)}" aria-pressed="${id===calSel}" title="${esc(label)}"><span class="caldw"><span class="cald">${d}</span>${calBadge(id)}</span><span class="calm${x.m?'':' calm-empty'}">${x.m?(x.ap?CAL_AP:'')+val:'—'}</span><span class="cali">${cnt?`<span class="cal-item-count">아이템 <b>${cnt}</b><span>개</span></span><span class="cal-item-icons" aria-hidden="true">${ks.slice(0,2).map(([k,n])=>`<span title="${esc(ITEMS[k].n)} ×${n}">${itemIcon(k)}</span>`).join('')}${ks.length>2?`<small>+${ks.length-2}</small>`:''}</span>`:''}</span></button>`); }
   while(cells.length%7) cells.push('<div class="calc emp"></div>');
   const icnt=Object.values(itTot).reduce((a,b)=>a+b,0);
   let det=''; const isM=calSel==='M:'+calMon;
   if(isM||calSel&&calSel.startsWith(calMon)){ const x=calDay(R,isM?d=>d.startsWith(calMon):calSel), [,mm,dd]=(isM?calMon+'-0':calSel).split('-').map(Number), ks=Object.entries(x.it).sort((a,b)=>b[1]-a[1]);
-    det=`<div class="caldet" id="calDet"><div class="caldh"><b>${isM?`${mm}월 전체`:`${mm}월 ${dd}일`}</b>${isM?calMonBrk(R.filter(r=>r.day.startsWith(calMon))):calCry(R.filter(r=>r.day===calSel))+`<span class="caldt">합계 <b>${x.ap?'<i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}${calEok(x.m)} 메소</b> · 아이템 ${ks.reduce((a,[,n])=>a+n,0)}개</span>`}<button type="button" class="calx" data-calclose aria-label="닫기">✕</button></div>${isM?'':calNoteDet(calSel)}
-      ${ks.length?`<div class="caldl">${ks.map(([k,n])=>`<div class="caldi">${itemIcon(k)}<span>${esc(ITEMS[k].n)}${x.ia[k]?' <i class="calap" title="대략(정확한 날짜 없음)">≈</i>':''}</span><b>x${n}</b></div>`).join('')}</div>`:`<div class="muted calnone">${isM?'이 달':'이 날'} 기록된 아이템이 없어요</div>`}
-      ${x.by.length?`<div class="caldc">${x.by.map(b=>`<div class="caldcr"><span class="caldcn">${esc(b.name||'')}</span><span class="caldcm">${b.ap?'<i class="calap">≈</i>':''}${calEok(b.m)}</span><span class="caldci">${Object.entries(b.i).map(([k,n])=>`${itemIcon(k)}${n>1?`<b>x${n}</b>`:''}`).join('')}</span></div>`).join('')}</div>`:''}${isM?calMonList(R):(dr=>dr.length?`<div class="calml calml-day">${calRowHd}${calRows(dr)}</div>`:'')(R.filter(r=>r.day===calSel&&r.k).sort((a,b)=>(a.ts||0)-(b.ts||0)||b.m-a.m))}</div>`; if(!isM) det=calDayDetail(R,calSel); }
-  v.innerHTML=`<div class="calwrap"><div class="card calcard"><div class="calhd"><button type="button" class="calnav" data-calmv="-1" aria-label="이전 달">‹</button><h2 class="calti calym" data-calym role="button" tabindex="0" aria-haspopup="true" aria-expanded="${calYP!=null}" title="년·월 선택">${Y}년 ${M}월</h2>${calYP!=null?calYPop(R,Y,M):''}<button type="button" class="calnav" data-calmv="1" aria-label="다음 달">›</button>
-    <button type="button" class="calnav caltd" data-calmv="0">오늘</button><button type="button" class="calsum${isM?' on':''}" data-calmonth aria-pressed="${isM}" title="이 달 기록 전체 보기">이번 달 합계 <b>${calEok(tot)} 메소</b> · 아이템 <b>${icnt}개</b></button></div>
+    if(isM) det=`<div class="caldet calmonth-clean" id="calDet"><header class="cald-head"><div><small>날짜별 수익과 획득 기록</small><h3>${mm}월 전체 기록</h3></div><button type="button" class="neonBtn nb-mute nb-sm cald-close" data-calclose aria-label="닫기">✕</button></header>
+      ${calMonList(R)||'<p class="muted cald-empty">이 달 기록된 수익이나 아이템이 없어요.</p>'}
+      ${ks.length?`<details class="cald-chars"><summary>이 달 획득 아이템 <small>${ks.length}종</small></summary><div class="caldl">${ks.map(([k,n])=>`<div class="caldi">${itemIcon(k)}<span>${esc(ITEMS[k].n)}${x.ia[k]?' '+CAL_AP:''}</span><b>×${n}</b></div>`).join('')}</div></details>`:''}
+      ${x.by.length?`<details class="cald-chars"><summary>캐릭터별 월 합계 <small>${x.by.length}명</small></summary>${x.by.map(b=>`<div><span>${esc(b.name||'')}</span><b>${b.ap?CAL_AP:''}${calEok(b.m)} 메소</b><span class="caldci">${Object.entries(b.i).map(([k,n])=>`${itemIcon(k)}${n>1?`<b>×${n}</b>`:''}`).join('')}</span></div>`).join('')}</details>`:''}</div>`;
+    else det=calDayDetail(R,calSel); }
+  v.innerHTML=`<div class="calwrap"><div class="card calcard"><div class="calhd"><div class="cal-navigation"><button type="button" class="neonBtn nb-violet nb-sm calnav" data-calmv="-1" aria-label="이전 달">‹</button><button type="button" class="neonBtn nb-violet calti calym" data-calym aria-haspopup="true" aria-expanded="${calYP!=null}" title="년·월 선택">${Y}년 ${M}월 <small>⌄</small></button><button type="button" class="neonBtn nb-violet nb-sm calnav" data-calmv="1" aria-label="다음 달">›</button><button type="button" class="neonBtn nb-mute nb-sm calnav caltd" data-calmv="0">오늘</button></div>${calYP!=null?calYPop(R,Y,M):''}
+    <button type="button" class="neonBtn nb-gold calsum${isM?' on':''}" data-calmonth aria-pressed="${isM}" title="이 달 기록 전체 보기">월 전체 보기 <span>›</span></button></div>
+    <div class="cal-overview" aria-label="이 달 수익 요약">${calMonBrk(R.filter(r=>r.day.startsWith(calMon)))}</div>
     <div class="calwk">${['일','월','화','수','목','금','토'].map((w,i)=>`<span class="${i===0?'sun':i===6?'sat':''}">${w}</span>`).join('')}</div>
-    <div class="calgrid">${cells.join('')}</div>${det}<div class="muted calnote">≈ = 정확한 날짜가 없어 그 주 목요일(리셋일)·처치일 등으로 어림 · API 키를 지운 캐릭터는 빠져요</div></div></div>`;
+    <div class="calgrid">${cells.join('')}</div><div class="cal-legend"><span><i class="cal-today-dot"></i>오늘</span><span><i class="calbm">●</i>메모</span><span><i class="calbb">●</i>보스 일정</span><span>금액 단위: 메소</span></div>${det}<div class="muted calnote">≈ 정확한 날짜가 없어 목요일 리셋일·처치일 등으로 어림한 기록 · API 키를 지운 캐릭터 제외</div></div></div>`;
   /* b340: 글꼴 = Paperlogy (extra.css .calwrap) */
   v.querySelectorAll('[data-calmv]').forEach(b=>b.onclick=()=>{ const k=+b.dataset.calmv; if(!k){ calMon=monthId(Date.now()); calSel=today; } else { const t=new Date(Date.UTC(Y,M-1+k,1)); calMon=`${t.getUTCFullYear()}-${pad(t.getUTCMonth()+1)}`; } renderCal(); });
   v.querySelectorAll('[data-calmd]').forEach(b=>b.onclick=()=>{ calMD=b.dataset.calmd; renderCal(); });
