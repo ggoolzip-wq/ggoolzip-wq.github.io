@@ -3015,3 +3015,7 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 ## b381 (2026-11-05 KST) t422: PIP 최소화 중 득템 기록 확인일 때만 보스 칸 눌러 해제
 - arPipMinClick: [data-pipmin] 아니면 .ar-pminrow 클릭 + P.min + arPipMinNew()(새 득템/saleQ) 일 때만 arPipSetMin(false). 평소엔 아무 일 없음.
 - extra.css: .ar-pminrow.ar-pmwarn cursor:pointer. 테스트 tests/test_b381.py, 스크린샷 /workspace/b381/b381_*.png.
+
+
+## b386 — 검은 마법사 보상 상자 영역 수정 (2026-11-07)
+검은 마법사만 상자 검색 영역 상단을 게임 화면 상단까지 확장하고 기존 하단을 유지했다. 임계값과 다른 보스 영역은 변경하지 않았다. 동일 원본 영상을 실제 홈페이지 라이브 화면 공유로 대조했다. 운영 b385는 구체가 보이는 동안 보상 맵 미인식, 로컬 b386은 구체 장면에서 보상 인식 중 · 검은 마법사 HARD 표시를 확인했다. 증거: /workspace/blackmage_fix/prod_before_t12s.webp, live_after_orb_loop.webp, live_comparison_ko.png. 기존 test_b366_livesnap.py, test_b385_cpu.py 통과(CHROME=/usr/bin/google-chrome). 캐릭터가 예시 목록에 없으므로 실제 아이템 기록 저장은 검증하지 않았고 사용자 기록은 변경하지 않았다. 원본 전체1080p 상자 위쪽52px이 기존 아이템 ROI에 잘리던 문제이며 검마 ROI만 확대했다.

@@ -480,7 +480,9 @@ function arBoxTpl(k,D){ const c=ARX.boxT||(ARX.boxT={}), id=k+'/'+D; if(c[id]) r
 function arNcc(I,W,H,T,x0,x1,y0,y1){ const out=[]; for(let y=Math.max(0,y0);y<=Math.min(H-T.h,y1);y++) for(let x=Math.max(0,x0);x<=Math.min(W-T.w,x1);x++){ let st=0, s0=0,s1=0,s2=0,q=0;
     for(let j=0;j<T.n;j++){ const p=((y+T.oy[j])*W+x+T.ox[j])*4, a=I[p], b=I[p+1], c=I[p+2]; st+=T.t[j*3]*a+T.t[j*3+1]*b+T.t[j*3+2]*c; s0+=a; s1+=b; s2+=c; q+=a*a+b*b+c*c; }
     const vi=q-(s0*s0+s1*s1+s2*s2)/T.n, den=Math.sqrt(Math.max(0,vi)*T.tt); out.push([den>1e-6?st/den:0,x,y]); } return out; }
-function arBoxGrab(src,D){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR('item',src), k=1080/arGH(src,sh)/D, cv=document.createElement('canvas'); cv.width=Math.round(r.w*sw*k); cv.height=Math.round(r.h*sh*k);
+function arBoxGrab(src,D,k){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR('item',src), s=1080/arGH(src,sh)/D, cv=document.createElement('canvas');
+  if(k==='blackmage'){ const y=Math.min(r.y,Math.max(0,arGeom(sw,sh).gy/sh)); r.h+=r.y-y; r.y=y; }
+  cv.width=Math.round(r.w*sw*s); cv.height=Math.round(r.h*sh*s);
   const g=cv.getContext('2d',{willReadFrequently:true}); g.imageSmoothingQuality='high'; g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,cv.width,cv.height); return {d:g.getImageData(0,0,cv.width,cv.height).data,w:cv.width,h:cv.height}; }
 /* t625: 상자 일부 템플릿(위·아래·왼·오른쪽 절반) — 진힐라(영상 v3)·듄켈(v4·v5) 보상 상자가 캐릭터·날개 이펙트·데미지 숫자에 반쯤 가려
    전체 NCC .53~.72 로 문턱(.75) 미달, 가려지지 않은 절반은 .80~.87. 절반 점수는 AR_BOX_PART_PEN(.1) 빼서 전체와 같은 문턱으로 비교 */
@@ -499,7 +501,7 @@ function arBoxW(){ if(AR_BXW.w||AR_BXW.off) return AR_BXW.w; if(ARX.cfg.boxWorke
     w.onerror=()=>{ AR_BXW.off=true; AR_BXW.w=null; for(const f of AR_BXW.cb.values()) f(null); AR_BXW.cb.clear(); }; AR_BXW.w=w; }catch(e){ AR_BXW.off=true; AR_BXW.w=null; } return AR_BXW.w; }
 function arBoxScoreSync(G8,G4,T8,T4,k){ let best=arBoxFind(G8,G4,T8,T4); if(best>=AR_BOX[k].thr||ARX.cfg.boxPart===false) return best;
   const P8=arBoxParts(T8), P4=arBoxParts(T4); for(let i=0;i<Math.min(P8.length,P4.length);i++) best=Math.max(best,arBoxFind(G8,G4,P8[i],P4[i])-AR_BOX_PART_PEN); return best; }
-async function arBoxScore(src,k){ const T8=await arBoxTpl(k,8), T4=await arBoxTpl(k,4); if(!T8||!T4) return 0; const G8=arBoxGrab(src,8), G4=arBoxGrab(src,4);
+async function arBoxScore(src,k){ const T8=await arBoxTpl(k,8), T4=await arBoxTpl(k,4); if(!T8||!T4) return 0; const G8=arBoxGrab(src,8,k), G4=arBoxGrab(src,4,k);
   const w=arBoxW(); if(w){ if(!AR_BXW.sent.has(k)){ AR_BXW.sent.add(k); w.postMessage({k,tp:{T8,T4,P8:arBoxParts(T8),P4:arBoxParts(T4)}}); } const id=++AR_BXW.id;
     const r=await new Promise(res=>{ AR_BXW.cb.set(id,res); w.postMessage({id,k,G8,G4,thr:AR_BOX[k].thr,part:ARX.cfg.boxPart!==false,pen:AR_BOX_PART_PEN},[G8.d.buffer,G4.d.buffer]); }); if(r!==null) return r; return 0; }
   return arBoxScoreSync(G8,G4,T8,T4,k); }
