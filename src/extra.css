@@ -2578,3 +2578,9 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
  .cal-overview{margin-bottom:12px}.cal-overview .calmb{gap:5px}.cal-overview .calmb>span{padding:8px;gap:3px;font-size:.65rem;grid-template-columns:14px minmax(0,1fr)}.cal-overview .calmb>span>i,.cal-overview .calmb img,.cal-overview .calmb svg{width:14px;height:14px}.cal-overview .calmb b{font-size:.95rem}
  .calwk,.calgrid{gap:3px}.calwk{font-size:.7rem}.calgrid .calc,.calgrid .calc.neonBtn{height:92px;min-height:92px;padding:4px;grid-template-rows:20px 22px minmax(0,1fr);gap:4px;border-radius:6px}.calgrid .cald{width:19px;height:19px;font-size:.7rem}.calgrid .calm{font-size:.7rem}.calgrid .calbg{gap:2px;font-size:.4rem}.calgrid .calbg i span{display:none}.calgrid .cali{justify-content:flex-end;min-height:16px}.cal-item-count{font-size:.58rem}.cal-item-count>span{display:none}.cal-item-icons{display:none}.cal-legend{gap:10px;font-size:.6rem;margin:10px 0 14px}.calnote{font-size:.6rem}.calmonth-clean{padding:10px}.calmonth-clean .calchips{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
 }
+
+/* b400: 메모/일정은 머리 바로 아래, 시각 제거·동일 아이템 합산 2열. */
+.cald-clean .cald-row,.cald-clean .cald-colhd{grid-template-columns:minmax(0,1fr) minmax(85px,auto)}
+.cald-clean .cald-colhd>span:last-child{text-align:right}
+.cald-clean .cald-notes{margin:14px 0 18px;padding:14px 0;border-top:0;border-bottom:1px solid color-mix(in srgb,var(--n1) 16%,transparent)}
+.cald-clean .cald-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

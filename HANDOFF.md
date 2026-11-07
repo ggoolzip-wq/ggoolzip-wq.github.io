@@ -27,8 +27,8 @@
 - **작업 트리·보존**: /workspace/ggoolzip-site(HEAD 85c3464, 미커밋 9개 = b387 원본 작업 — 건드리지 말 것), /workspace/epic_motion_release(b391 배포 완료), /workspace/epic_delete_release(중단된 b390 — 수정 금지, 읽기만), /workspace/epic_delete_b392(현재 b392 후보). 원본 6클립 /workspace/epic_review(sha 목록 /workspace/live_opt_release_result/epic_originals_sha.txt), 최신 목록 /workspace/epic_motion_reference/account/manifest_latest.json. 증거: /workspace/epic_motion_reference/(GIF 분석·eval·deploy), /workspace/epic_cleanup/(삭제 API·로그 logs_b392).
 
 
-## b400 (t348u) 메모·파티 일정 위로
-- 날짜/총수익 머리 바로 아래에 메모·파티 일정을 배치하고, 그 아래 결정석 합계/아이템 요약·드롭 내역 표시. 데이터·추가/삭제 기능 유지.
+## b400 (t348u·t349u) 메모·파티 일정 위로
+- 날짜/총수익 머리 바로 아래에 메모·파티 일정을 배치하고, 그 아래 결정석 합계/아이템 요약·드롭 내역 표시. 시각 열 제거, 같은 아이템은 캐릭터와 무관하게 1줄로 수량·수익 합산(관련 캐릭터/보스 표시는 유지). 데이터·추가/삭제 기능 유지.
 - 필수 확인: DOM 순서(머리→메모/일정→요약), 메모/일정 버튼·기록 표시, build.py. 사진 /workspace/maple-boss-tracker/b400_calendar_memo_top.png.
 
 ## b399 (t335u·t336u) 캘린더 전체 정렬 · 결정석 합산만
