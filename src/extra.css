@@ -2491,3 +2491,6 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 [data-theme=light] .calc.past.cbB.has{border-color:rgba(90,110,240,.55);box-shadow:0 0 10px rgba(110,130,255,.18) inset}
 
 .ectl .avatar.ecav{position:relative}.ectl .avatar.ecav .ecfb{display:grid;position:absolute;inset:0;place-items:center;font-weight:500}.ectl .avatar.ecav.ecbroke .ecfb{display:grid}
+
+/* b394: 독식 — 현재 캐릭터의 공용 얼굴 초상화 크롭 유지(.cbopt img 크기 덮어쓰기 방지) */
+.bbsolo .avatar img{width:64px;height:64px;max-width:none;object-fit:none;object-position:center 60%}

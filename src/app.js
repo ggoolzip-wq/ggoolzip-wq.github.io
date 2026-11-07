@@ -371,7 +371,7 @@ function openRred(slot){
   setTimeout(()=>$('#rrAmt')?.focus(),30);
 }
 /* 파티(2인 이상) 드롭: 블빵승리 / 블빵패배 / 분배 고르기 (결정석 수익은 항상 1/n — 이 선택은 아이템 기록만 바꿈)
- * c.dmode / c.mdmode = {'보스|아이템': 'w'(블빵승리)|'l'(블빵패배)|'s'(분배)} — 없으면 예전 기록(분배와 같게 표시) */
+ * c.dmode / c.mdmode = {'보스|아이템': 'w'(블빵승리)|'l'(블빵패배)|'s'(분배)|'n'(독식·꽝)} — 없으면 예전 기록(분배와 같게 표시) */
 const modeMap = (c,type) => type==='monthly' ? (c.mdmode||(c.mdmode={})) : (c.dmode||(c.dmode={}));
 function askBbang(c,b,key,apply,cel,disp){
   const pty=curParty(c,b.id);
@@ -381,9 +381,10 @@ function askBbang(c,b,key,apply,cel,disp){
   const el=document.createElement('div'); el.id='bbModal'; el.className='modal-bg show cbmodal'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
   const ik=key.split('|')[1], d=disp||{ico:itemIcon(ik), name:ITEMS[ik]?.n||''}; // 반지 상자·칠흑: 고른 결과/장신구
   el.innerHTML=`<div class="modal cbbox bbbox"><div class="bbico">${d.ico}</div><div class="bbname">${esc(d.name)}</div><div class="cblist">
-    <button class="cbopt" data-bb="w">${miniIcon('blink')}<span>블빵승리</span></button>
-    <button class="cbopt" data-bb="l"><span class="gray">${miniIcon('blink')}</span><span>블빵패배</span></button>
-    <button class="cbopt" data-bb="s">${miniIcon('meso')}<span>분배</span></button></div><button class="btn ghost cbcancel" data-bb="">취소</button></div>`;
+    <button class="cbopt neonBtn nb-violet" data-bb="w">${miniIcon('blink')}<span>블빵승리</span></button>
+    <button class="cbopt neonBtn nb-mute" data-bb="l"><span class="gray">${miniIcon('blink')}</span><span>블빵패배</span></button>
+    <button class="cbopt neonBtn nb-cyan" data-bb="s">${miniIcon('meso')}<span>분배</span></button>
+    <button class="cbopt neonBtn nb-gold bbsolo" data-bb="n">${avatar(c)}<span>독식</span></button></div><button class="neonBtn nb-mute cbcancel" data-bb="">취소</button></div>`;
   document.body.appendChild(el);
   el.onclick=e=>{ const t=e.target.closest('[data-bb]'); if(!t&&e.target!==el) return; el.remove(); const m=t?t.dataset.bb:'';
     if(!m){ if(pend&&pendSig(S)===pendSig(pend.base)) pend=null; render(); return; }
@@ -4065,7 +4066,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b393'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b394'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
