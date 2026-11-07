@@ -2618,6 +2618,11 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 
 /* b394: 독식 — 현재 캐릭터의 공용 얼굴 초상화 크롭 유지(.cbopt img 크기 덮어쓰기 방지) */
 .bbsolo .avatar img{width:64px;height:64px;max-width:none;object-fit:none;object-position:center 60%}
+
+/* b395: 선택 4개는 같은 폭·높이·아이콘 열·문자 시작선 */
+.bbbox .cblist .cbopt{width:100%;box-sizing:border-box;min-height:56px;display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:8px 12px;text-align:left;justify-content:initial}
+.bbbox .cblist .cbopt>:first-child{justify-self:center}
+.bbbox .bbsolo .avatar{width:34px;height:34px}
 </style>
 </head>
 <body>
@@ -3265,7 +3270,7 @@ function openRing(key){
   const diff=c.bosses[slot]?.diff;
   $('#ringBoxIcon').innerHTML=itemIcon(item); $('#ringTitle').textContent=`${ITEMS[item].n} 획득!`;
   const pty=curParty(c,slot);
-  $('#ringSub').innerHTML=`${esc(c.name)} · ${esc(b.name)}${diff?` ${dlvHtml(diff)}`:''}${pty>1?` · ${pty}인 분배`:''} — 상자에서 무엇이 나왔나요?`;
+  $('#ringSub').innerHTML=`${esc(c.name)} · ${esc(b.name)}${diff?` ${dlvHtml(diff)}`:''}${pty>1?` · ${pty}인 파티`:''} — 상자에서 무엇이 나왔나요?`;
   { const g=document.querySelector('#ringModal [data-ring="gl"]'); if(g) g.hidden=item!=='r_life'; const xb=document.querySelector('#ringModal [data-ring="x"] b'); if(xb) xb.textContent=item==='r_life'?'셋 다 못 먹었어요':'둘 다 못 먹었어요'; }
   $('#ringModal').classList.add('show'); setTimeout(()=>document.querySelector('#ringModal [data-ring="r4"]')?.focus(),30);
 }
@@ -3273,15 +3278,15 @@ function closeRing(){ ringPending=null; $('#ringModal').classList.remove('show')
 /* b344: 반지 상자 결과 저장 (chooseRing · PIP 고르기 같이 씀) → 수익 기록할 아이템 키, 꽝이면 null */
 function ringApply(c,b,key,o){ pendStart(); const m=dropMap(c,b.type);
   if(o==='x'){ m[key]=1; const om=outMap(c,b.type); (om[key]||(om[key]=[])).push('x'); modeMap(c,b.type)[key]='n'; save(); render(); return null; } // 꽝: 블빵 창 없이 1인처럼 (라벨 없음)
-  m[key]=1; (outMap(c,b.type)[key]||(outMap(c,b.type)[key]=[])).push(o); if(curParty(c,b.id)>1) modeMap(c,b.type)[key]='s'; save(); render(); // 반지 상자: 블빵 창 없이 항상 분배
+  m[key]=1; (outMap(c,b.type)[key]||(outMap(c,b.type)[key]=[])).push(o); if(curParty(c,b.id)>1) modeMap(c,b.type)[key]='s'; save(); render(); // PIP 기본값은 분배; 보스 드롭 표는 이어지는 askBbang 선택으로 덮어씀
   return o==='gl'?'g_life':'ring:'+o; }
 function chooseRing(o){
   const p=ringPending; if(!p||!(o in OUT_LABEL)) return; closeRing();
   const c=S.characters.find(x=>x.id===p.cid); if(!c) return; const [slot,item]=p.key.split('|'); const b=findBoss(slot);
-  const ik=ringApply(c,b,p.key,o); if(!ik) return;
-  askRev(c,b,p.key,o==='gl'?'g_life':'ring:'+o,()=>{ if(o==='gl') celebrate(null,'g_life',b); else celebrate(o,null,b); }); return;
-  askBbang(c,b,p.key,()=>{},()=>{},
-    o==='gl'?{ico:itemIcon('g_life'),name:ITEMS.g_life.n}:o==='x'?{ico:itemIcon(item),name:ITEMS[item].n+' · 꽝'}:{ico:outIcon(o),name:OUT_NAME[o]});
+  pendStart(); let ik;
+  askBbang(c,b,p.key,()=>{ ik=ringApply(c,b,p.key,o); },()=>{
+    if(ik) askRev(c,b,p.key,ik,()=>{ if(o==='gl') celebrate(null,'g_life',b); else celebrate(o,null,b); });
+  },o==='gl'?{ico:itemIcon('g_life'),name:ITEMS.g_life.n}:o==='x'?{ico:itemIcon(item),name:ITEMS[item].n+' · 꽝'}:{ico:outIcon(o),name:OUT_NAME[o]});
 }
 /* 축하 연출: 캔버스 불꽃놀이 + 꽃가루 (~2.6초, 외부 라이브러리 없음) */
 // 아이콘 불꽃: 같은 아이콘 수십 개가 가운데서 사방으로 (CSS transform, 약 2초 후 제거, 모션 줄이기 존중)
@@ -6822,7 +6827,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b394'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b395'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');

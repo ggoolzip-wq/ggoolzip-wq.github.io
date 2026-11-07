@@ -3,13 +3,15 @@
 다른 계정/다른 도우미가 이 저장소만으로 작업을 이어갈 수 있도록 정리한 문서입니다.
 
 ## 상시 규칙 (항상 지킬 것 — 변경 기록 아님)
+- **정렬이 기본: 버튼·칸은 말 안 해도 항상 줄·폭·간격을 맞춰 정렬한다 (사용자 지시 t330, 2026-11-08)**
 - **모든 요청은 꼭 필요한 변경과 테스트만 하고 최대한 빠르게 처리한다 (사용자 지시 t328, 2026-11-08)**
 - **버튼은 말이 없어도 무조건 고급진 네온 버전** (사용자 지시 t682). 새로 만드는 버튼·고치는 버튼 전부 공용 클래스 `.neonBtn` + 색 변형(`nb-green`·`nb-crimson`·`nb-cyan`·`nb-violet`·`nb-gold`·`nb-mute`, 작은 버튼 `nb-sm`, 선택됨 `.on`)을 쓴다 (src/extra.css 맨 끝 b368). 새 색은 `--nb:R,G,B` 하나만 지정.
   - 모양: 어두운 반투명 채움 + 얇은 강조색 테두리 + 은은한 바깥 글로(box-shadow) + 옅은 글자 글로, hover = 글로 강해짐 + 1px 떠오름, active = 눌림. 요란하지 않게.
   - 라이트 테마에서도 읽히게 (흰 바탕 + 강조색을 어둡게 섞은 글자, 이미 .neonBtn 에 포함).
   - 성능: 버튼에 상시(무한) 애니메이션 금지 — hover/active transition 만.
 
-## 현재 전체 상태 요약 (2026-11-08 b394 기준, 비밀값 없음)
+## 현재 전체 상태 요약 (2026-11-08 b395 기준, 비밀값 없음)
+- **b395**: 보스 드롭 표 반지 상자 결과 선택 후에도 파티 블빵승리·패배·분배·독식 선택. 독식 전액, 4개 버튼 폭·높이·아이콘 열·문자 시작선 정렬.
 - **b394**: 2인 이상 드롭 선택에 캐릭터 얼굴 초상화 독식 버튼 추가. 1인 수익 창 그대로, 수익은 전액(파티 나눔 없음).
 - **b393**: 단일 클립 삭제(b392) 철회. 화면 이름은 **이번 주 에픽빔**. 매주 목요일 00:00 KST 기준 이전 클립은 전 계정 R2·D1 및 이 버전을 연 PC의 IndexedDB에서 영구 폐기. 현재 주 영상은 보존. 사이트는 main 일반 push로 배포. Worker는 b393 실제 배포 완료: ad0a789e-bfa6-4e3f-bad0-07d647b84e8a, D1·R2 바인딩 및 매분 cron 확인(2026-11-08 01:58 KST). 사이트 공개 build 확인 결과는 최종 작업 보고 참조.
 - **에픽빔 감지 기준(b391)**: 사용자 첨부 GIF(716×428, 16프레임×60ms, sha256 750a98d11c713df9ea130f09edb4df36b04b482e4f14bfeeee5b00c743bc5f35, 보관 /workspace/epic_motion_reference/epic_beam_user.gif) 의 앞(#≤5)→정점(#4~8)→쇠퇴(#≥9) 진행이 보일 때만 저장. 720p 30fps VP9, 앞 1초·뒤 3초, 120프레임, 보상 맵 게이트·OCR·PIP 그대로. 계정 6개(11/7 18:57 KST 목록) 오프라인: 양성 2(ec1793879339857·ec1793873647774 찬란한 흉성 노말) 감지, 음성 4 미감지 — 전체 저장 재현은 보상 맵 게이트 '모의'. 한계: 양성 실례 같은 보스 2개뿐, 축소(0.7배 24/40)·2배속·드문 관측·프레임 누락 시 놓칠 수 있음, 세 장 정지 순서 제시·무작위 섞기 일부(8/40) 통과, 오탐 0/정확도 100% 아님.
@@ -19,6 +21,11 @@
 - **Grok Bot 예약(부모 전달 권위 상태, 2026-11-07 19:34 KST 시점)**: ① '썬데이메이플 칸 확인' enabled, 매주 목·금 10:00 Asia/Seoul(automation-1791559100163), 마지막 실행 11/6 10:00:52 KST 성공. ② '메보기 검색 노출 확인' enabled, 11/9 10:00 전후 15분 Asia/Seoul 1회(automation-1792412128359), 아직 실행 없음. 예약 자체는 변경하지 않음. 이와 별도로 저장소 cron: GitHub Actions update-feed(5분마다), update-prices(매일 19:00 KST), sunday-watch(09:45·09:50 KST), Worker cron(매 1분 라이브 감지).
 - **작업 트리·보존**: /workspace/ggoolzip-site(HEAD 85c3464, 미커밋 9개 = b387 원본 작업 — 건드리지 말 것), /workspace/epic_motion_release(b391 배포 완료), /workspace/epic_delete_release(중단된 b390 — 수정 금지, 읽기만), /workspace/epic_delete_b392(현재 b392 후보). 원본 6클립 /workspace/epic_review(sha 목록 /workspace/live_opt_release_result/epic_originals_sha.txt), 최신 목록 /workspace/epic_motion_reference/account/manifest_latest.json. 증거: /workspace/epic_motion_reference/(GIF 분석·eval·deploy), /workspace/epic_cleanup/(삭제 API·로그 logs_b392).
 
+
+## b395 (t329u·t330u) 반지 상자 파티 선택 + 정렬 기본
+- 보스 드롭 표 chooseRing이 수익 창으로 곧바로 넘어가던 경로를 공통 askBbang으로 연결. 결과(r4/c4/gl/x) 선택 후 2인 이상이면 블빵승리·블빵패배·분배·독식, 1인이면 기존처럼 수익 창(꽝은 수익 없음). 선택 취소 시 획득 기록 안 남김. 독식은 기존 n·p=1 전액, 패배는 수익 창 없음. PIP 자동기록 별도 흐름은 변경하지 않음.
+- 공통 파티 선택 4개에 동일 100% 폭·56px 최소 높이·40px 아이콘 열·12px 간격 적용. 초상화 34px로 기존 아이콘 크기와 정렬.
+- 상시 규칙에 사용자 t330 정렬 기본 추가. tests/test_b395_ring.py PASS: r4/c4/꽝 파티 선택, 독식 9억 전액 p=1·분배 3인 3억·패배 수익 없음·선택 취소 미기록·1인 직행, 4개 버튼 x/폭/높이/문자 시작선/간격 일치. JS 문법 검사 PASS. 스크린샷 /workspace/maple-boss-tracker/b395_ring_aligned.png, 로그 b395_test.log.
 
 ## b394 (t327u·t328u) 파티 드롭 독식 버튼
 - 블빵승리·블빵패배·분배 아래 .neonBtn 독식 추가, 현재 캐릭터 공용 얼굴 초상화 사용(이미지 없으면 기존 이니셜).

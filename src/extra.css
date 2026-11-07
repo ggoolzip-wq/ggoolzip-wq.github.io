@@ -2494,3 +2494,8 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 
 /* b394: 독식 — 현재 캐릭터의 공용 얼굴 초상화 크롭 유지(.cbopt img 크기 덮어쓰기 방지) */
 .bbsolo .avatar img{width:64px;height:64px;max-width:none;object-fit:none;object-position:center 60%}
+
+/* b395: 선택 4개는 같은 폭·높이·아이콘 열·문자 시작선 */
+.bbbox .cblist .cbopt{width:100%;box-sizing:border-box;min-height:56px;display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;padding:8px 12px;text-align:left;justify-content:initial}
+.bbbox .cblist .cbopt>:first-child{justify-self:center}
+.bbbox .bbsolo .avatar{width:34px;height:34px}
