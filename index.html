@@ -2708,6 +2708,34 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 .cald-clean .cald-colhd>span:last-child{text-align:right}
 .cald-clean .cald-notes{margin:14px 0 18px;padding:14px 0;border-top:0;border-bottom:1px solid color-mix(in srgb,var(--n1) 16%,transparent)}
 .cald-clean .cald-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* b400(t351): 자동 기록 홈페이지 = 준비 안내 → 현재 기록 → 하단 연결. PIP는 별개. */
+#arPanel.ar-dash{max-width:1180px;margin:0 auto;gap:16px;font-family:Paperlogy,sans-serif}
+#arPanel .ar-home{gap:16px}
+#arPanel .ar-guide-inline,#arPanel .ar-c,#arPanel .ar-connectbar{padding:20px;border-radius:14px;border:1px solid color-mix(in srgb,var(--n1) 20%,transparent);box-shadow:none;backdrop-filter:none}
+#arPanel .ar-gh{padding-bottom:12px;border-bottom:1px solid var(--line)}
+#arPanel .ar-gh b,#arPanel .ar-c h2{font-size:1rem;font-weight:750;line-height:1.5;margin:0}
+#arPanel .ar-guide ul{list-style:none;padding:0;margin:14px 0;display:grid;gap:10px;line-height:1.8;font-size:.85rem}
+#arPanel .ar-guide li{position:relative;padding-left:14px;margin:0}
+#arPanel .ar-guide li::before{content:'·';position:absolute;left:0;color:var(--n1);font-weight:800}
+#arPanel .ar-example{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+#arPanel .ar-example summary{display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;font-size:.8rem;color:var(--n1);list-style:none}
+#arPanel .ar-example summary::before{content:'▸';font-size:.75rem}#arPanel .ar-example[open] summary::before{content:'▾'}
+#arPanel .ar-example summary small{margin-left:auto;font-size:.7rem;color:var(--muted)}
+#arPanel .ar-gimg{gap:12px;margin:14px 0 8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+#arPanel .ar-gimg img{display:block;aspect-ratio:16/9;object-fit:contain;margin:0}
+#arPanel .ar-crec h2{padding-bottom:12px;border-bottom:1px solid var(--line)}
+#arPanel .ar-crec .ar-b{padding:14px 0 0}
+#arPanel .ar-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:110px;font-size:.9rem;text-align:center}
+#arPanel .ar-empty small{font-size:.75rem;opacity:.7}
+#arPanel .ar-recl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#arPanel .ar-recl li{display:grid;grid-template-columns:32px minmax(0,1fr) 42px;align-items:center;gap:10px;padding:10px;font-size:.8rem}
+#arPanel .ar-recl li>span{min-width:0;gap:4px}#arPanel .ar-recl small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#arPanel .ar-recl time{text-align:right;font-variant-numeric:tabular-nums}
+#arPanel .ar-connectbar{gap:14px;align-items:center}#arPanel .ar-st{font-size:.8rem}
+#arPanel .ar-connectbar .ar-sw{font-size:.8rem;display:flex;align-items:center;gap:6px;margin:0}
+#arPanel .ar-maple-connect{margin:0;min-height:46px;font-size:.95rem;letter-spacing:0}
+@media(max-width:760px){#arPanel .ar-guide-inline,#arPanel .ar-c,#arPanel .ar-connectbar{padding:14px}#arPanel .ar-guide ul{font-size:.78rem;gap:9px}#arPanel .ar-recl{grid-template-columns:minmax(0,1fr)}#arPanel .ar-gimg{grid-template-columns:minmax(0,1fr)}#arPanel .ar-example summary small{font-size:.6rem}}
 </style>
 </head>
 <body>
@@ -10202,7 +10230,7 @@ function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c
     <button type="button" class="neonBtn ${on?'nb-crimson':'nb-cyan'} ar-maple-connect" data-ar="${on?'stop':'connect'}">${on?'메이플 연결 해제':'메이플 연결'}</button>`);
   arPanelLive(p);
   const R=ARX.runRec||[]; arSetH(q('.ar-crec .ar-b'),`${(ARX.amb||[]).map((A,i)=>`<div class="ar-amb">닮은 아이템 — 직접 고르기 ${A.ks.map(k=>`<button type="button" class="chipb" data-ar="pick:${i}:${k}">${ITEM_ICONS[k]?`<img src="${ITEM_ICONS[k]}" alt="">`:''}${esc(ITEMS[k]?.n||k)}</button>`).join('')}</div>`).join('')}
-    ${R.length?`<ul class="ar-recl">${R.map(r=>`<li>${ITEM_ICONS[r.k]?`<img src="${ITEM_ICONS[r.k]}" alt="">`:''}<span><b>${esc(ITEMS[r.k]?.n||r.k)}</b><small class="muted">${esc(r.b)} · ${esc(r.c)}</small></span><time>${r.t}</time></li>`).join('')}</ul>`:'<div class="muted">아직 기록 없음</div>'}`);
+    ${R.length?`<ul class="ar-recl">${R.map(r=>`<li>${ITEM_ICONS[r.k]?`<img src="${ITEM_ICONS[r.k]}" alt="">`:''}<span><b>${esc(ITEMS[r.k]?.n||r.k)}</b><small class="muted">${esc(r.b)} · ${esc(r.c)}</small></span><time>${r.t}</time></li>`).join('')}</ul>`:'<div class="muted ar-empty">아직 기록 없음<small>연결 후 인식된 아이템이 여기에 표시돼요.</small></div>'}`);
   arSetH(q('.ar-cset .ar-b'),`<details class="ar-dbg"><summary>수동 선택 · 조정 · 디버그</summary>
     <div class="ar-row"><select name="cid" aria-label="수동 캐릭터"><option value="">(수동) 캐릭터: 현재 선택</option>${S.characters.map(x=>`<option value="${esc(x.id)}" ${x.id===c.cid?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
     <select name="boss" aria-label="수동 보스"><option value="">(수동) 보스: 자동</option>${BOSSES.filter(b=>DROPS[b.id]||Object.values(RING_DROPS).some(m=>m[b.id])).map(b=>`<option value="${b.id}" ${b.id===c.boss?'selected':''}>${esc(b.name)}</option>`).join('')}</select></div>
@@ -10235,8 +10263,8 @@ function arLivePaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; arPanelP
 /* b397: 연결 안내를 홈페이지에 인라인 표시. 화면 공유·PIP 연결 경로는 기존 arConnect 그대로. */
 function arGuideHtml(){ return `<div class="ar-gh"><b>게임 화면 연결 전에</b></div>
     <ul><li>오른쪽 아래 <b class="ar-pk">획득 로그</b>를 읽어야 하니 파티 목록 등으로 가리지 마세요.</li><li>캐릭터 능력치·장비창·인벤토리 등 <b class="ar-or">아이템 인식</b>을 방해하는 창은 띄우지 마세요.</li><li>보상 상자를 크게 가리면 인식이 안돼요. 상자와 캐릭터가 겹친 상태, 어센트로 보상 까기 등의 행위를 하지 마세요.</li></ul>
-    <div class="ar-gimg"><img src="data/ar_guide_07.webp" alt="예시: 분홍 = 획득 로그, 주황 = 아이템 떨어지는 곳" width="640" height="360"><img src="data/ar_guide_01.webp" alt="예시 2" width="640" height="360" loading="lazy"></div>
-    <small class="muted">분홍 = 획득 로그 · 주황 = 아이템 떨어지는 곳</small>`; }
+    <details class="ar-example"><summary>인식 영역 예시 보기 <small>획득 로그 · 아이템</small></summary><div class="ar-gimg"><img src="data/ar_guide_07.webp" alt="예시: 분홍 = 획득 로그, 주황 = 아이템 떨어지는 곳" width="640" height="360"><img src="data/ar_guide_01.webp" alt="예시 2" width="640" height="360" loading="lazy"></div>
+    <small class="muted">분홍 = 획득 로그 · 주황 = 아이템 떨어지는 곳</small></details>`; }
 function arGuide(){ arPanel(true); document.getElementById('arGuideInline')?.scrollIntoView({block:'nearest'}); }
 window.arNameWatch=arNameWatch; window.arNameRes=arNameRes; window.arMesoFlush=arMesoFlush; window.arTarget=arTarget; window.arClrFinish=arClrFinish; window.arMapWatch=arMapWatch; window.arGuide=arGuide; window.renderAuto=renderAuto; window.AR=ARX; window.arSessAdd=arSessAdd; window.arPipRec=arPipRec; window.arDisconnect=arDisconnect; window.arFrame=arFrame; window.arBannerWatch=arBannerWatch; window.arLogFrame=arLogFrame; window.arLogStep=arLogStep; window.arStart=arStart; window.arItemScan=arItemScan; window.arTrack=arTrack; window.arMatchCore=arMatchCore; window.arDetectBoss=arDetectBoss; window.arLogItem=arLogItem; window.arOcrLoad=arOcrLoad; arBtnPaint();
 

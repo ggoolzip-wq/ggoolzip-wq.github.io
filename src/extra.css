@@ -2584,3 +2584,31 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 .cald-clean .cald-colhd>span:last-child{text-align:right}
 .cald-clean .cald-notes{margin:14px 0 18px;padding:14px 0;border-top:0;border-bottom:1px solid color-mix(in srgb,var(--n1) 16%,transparent)}
 .cald-clean .cald-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* b400(t351): 자동 기록 홈페이지 = 준비 안내 → 현재 기록 → 하단 연결. PIP는 별개. */
+#arPanel.ar-dash{max-width:1180px;margin:0 auto;gap:16px;font-family:Paperlogy,sans-serif}
+#arPanel .ar-home{gap:16px}
+#arPanel .ar-guide-inline,#arPanel .ar-c,#arPanel .ar-connectbar{padding:20px;border-radius:14px;border:1px solid color-mix(in srgb,var(--n1) 20%,transparent);box-shadow:none;backdrop-filter:none}
+#arPanel .ar-gh{padding-bottom:12px;border-bottom:1px solid var(--line)}
+#arPanel .ar-gh b,#arPanel .ar-c h2{font-size:1rem;font-weight:750;line-height:1.5;margin:0}
+#arPanel .ar-guide ul{list-style:none;padding:0;margin:14px 0;display:grid;gap:10px;line-height:1.8;font-size:.85rem}
+#arPanel .ar-guide li{position:relative;padding-left:14px;margin:0}
+#arPanel .ar-guide li::before{content:'·';position:absolute;left:0;color:var(--n1);font-weight:800}
+#arPanel .ar-example{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+#arPanel .ar-example summary{display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;font-size:.8rem;color:var(--n1);list-style:none}
+#arPanel .ar-example summary::before{content:'▸';font-size:.75rem}#arPanel .ar-example[open] summary::before{content:'▾'}
+#arPanel .ar-example summary small{margin-left:auto;font-size:.7rem;color:var(--muted)}
+#arPanel .ar-gimg{gap:12px;margin:14px 0 8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+#arPanel .ar-gimg img{display:block;aspect-ratio:16/9;object-fit:contain;margin:0}
+#arPanel .ar-crec h2{padding-bottom:12px;border-bottom:1px solid var(--line)}
+#arPanel .ar-crec .ar-b{padding:14px 0 0}
+#arPanel .ar-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:110px;font-size:.9rem;text-align:center}
+#arPanel .ar-empty small{font-size:.75rem;opacity:.7}
+#arPanel .ar-recl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#arPanel .ar-recl li{display:grid;grid-template-columns:32px minmax(0,1fr) 42px;align-items:center;gap:10px;padding:10px;font-size:.8rem}
+#arPanel .ar-recl li>span{min-width:0;gap:4px}#arPanel .ar-recl small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#arPanel .ar-recl time{text-align:right;font-variant-numeric:tabular-nums}
+#arPanel .ar-connectbar{gap:14px;align-items:center}#arPanel .ar-st{font-size:.8rem}
+#arPanel .ar-connectbar .ar-sw{font-size:.8rem;display:flex;align-items:center;gap:6px;margin:0}
+#arPanel .ar-maple-connect{margin:0;min-height:46px;font-size:.95rem;letter-spacing:0}
+@media(max-width:760px){#arPanel .ar-guide-inline,#arPanel .ar-c,#arPanel .ar-connectbar{padding:14px}#arPanel .ar-guide ul{font-size:.78rem;gap:9px}#arPanel .ar-recl{grid-template-columns:minmax(0,1fr)}#arPanel .ar-gimg{grid-template-columns:minmax(0,1fr)}#arPanel .ar-example summary small{font-size:.6rem}}
