@@ -3319,13 +3319,13 @@ function celebrate(o,item,boss){
   msg.innerHTML=`<div class="cg-in"><span class="cg-ico"><img class="cg-beam" src="epicbeam_static.png" width="716" height="428" alt="" aria-hidden="true" draggable="false">${item?itemIcon(item):o==='r4'?miniIcon('ring_restraint'):miniIcon('ring_continuous')}</span><div class="cg-big">${boss?`<span class="cg-boss">${bossIcon(boss)}</span>`:''}<span class="cg-t">축하드립니다!</span></div><div class="cg-sub">${item?ITEMS[item].n:OUT_NAME[o]} 획득</div></div>`;
   celebrate.running=true; const run=(celebrate._run=(celebrate._run||0)+1);
   document.body.classList.add('cg-on'); cgAmb(true); // b357: 뒤 페이지 반짝임 애니메이션 멈춤 + 카드 backdrop 블러 끔(매 프레임 블러 다시 계산 방지)
-  clearTimeout(celebrate._t); celebrate._t=setTimeout(endCelebrate,2200+34);
+  clearTimeout(celebrate._t); // b396: 정지 PNG가 준비된 뒤 표시 시간 시작
   // b357: 블러 끄기·직전 저장/다시 그리기로 무거운 한 프레임을 먼저 보낸 뒤(2 프레임) 연출을 보이고 시작 → 연출 중에는 긴 프레임 없음
   // 보일 준비(레이아웃·래스터)는 이 무거운 프레임에: 겹 화면은 투명하게 미리 깔고, 아이콘 불꽃은 멈춘 채로 만들어 둠
   msg.classList.add('prep'); cv.classList.add('show'); iconBurst(ITEM_ICONS[item||(o==='r4'?'ring_restraint':'ring_continuous')]); document.querySelector('#iconBurst')?.classList.add('hold');
   { const dpr=Math.min(2,devicePixelRatio||1), W=Math.round(innerWidth*dpr), H=Math.round(innerHeight*dpr); if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; } }
-  const go=()=>{ if(run!==celebrate._run||!celebrate.running) return; document.querySelector('#iconBurst')?.classList.remove('hold'); msg.classList.add('show'); msg.classList.remove('prep'); if(!matchMedia('(prefers-reduced-motion: reduce)').matches) fx(); };
-  requestAnimationFrame(()=>requestAnimationFrame(go));
+  const go=()=>{ if(run!==celebrate._run||!celebrate.running) return; celebrate._t=setTimeout(endCelebrate,2200+34); document.querySelector('#iconBurst')?.classList.remove('hold'); msg.classList.add('show'); msg.classList.remove('prep'); if(!matchMedia('(prefers-reduced-motion: reduce)').matches) fx(); };
+  msg.querySelector('.cg-beam').decode().catch(()=>{}).then(()=>requestAnimationFrame(()=>requestAnimationFrame(go)));
   function fx(){
   let Q=CGQ.L[CGQ.lv]; const fr=[]; CGQ.hist.push(fr); if(CGQ.hist.length>5) CGQ.hist.shift();
   let dpr=Math.min(Q.sc,devicePixelRatio||1); const W=innerWidth, H=innerHeight; if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); } const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);

@@ -26,7 +26,7 @@
 ## b396 (t331u) 축하창 에픽빔 정지 고화질
 - 원본 /workspace/epic_beam_user.gif = 716×428·16프레임, sha256 750a98d11c713df9ea130f09edb4df36b04b482e4f14bfeeee5b00c743bc5f35(기존 사용자 원본 기록과 동일). 전체 프레임 평균 밝기 비교: #6(0-based, 7번째)이 최대, 평균 휘도 110.72585/255·RGB 평균 112.35289/255.
 - 해당 프레임을 원본 해상도·알파 그대로 무손실 epicbeam_static.png(196,854B)로 저장. 손실 압축·AI 업스케일·추가 샤픈 없음. 기존 빔 위치/크기/정적 가장자리 마스크 유지, 텍스트·아이템 정렬 유지.
-- beamPrep/beamDraw/beamPlay·16프레임 스프라이트 디코드·비트맵 굽기·빔 rAF 제거. 축하창은 정지 img 한 장. 감지 src/epicclip.js·템플릿·기존 감지용 에셋 변경 없음. 다른 꽃가루·팝업 등장 연출은 유지, 전체 렉 해소를 실측한 것은 아님.
+- beamPrep/beamDraw/beamPlay·16프레임 스프라이트 디코드·비트맵 굽기·빔 rAF 제거. 축하창은 정지 img 한 장. 첫 PNG 로딩이 느려도 표시 전에 사라지지 않도록 decode 완료 후 표시 시간 시작. 감지 src/epicclip.js·템플릿·기존 감지용 에셋 변경 없음. 다른 꽃가루·팝업 등장 연출은 유지, 전체 렉 해소를 실측한 것은 아님.
 - tests/test_b396_static.py PASS: 원본 최고 밝기 #6·PNG 픽셀 완전 일치, 정지 img 716×428, 빔 캔버스/자체 애니메이션/스프라이트 요청 없음, 닫기 정상·JS 오류 0. node 문법 검사 PASS. 예전 성능 테스트의 빔 굽기 전제는 정지 이미지 전제로 갱신(장시간 성능 테스트는 이번에 생략). 원본 밝기 분석 /workspace/maple-boss-tracker/b396_frame.json, 사진 b396_celebration.png, 로그 b396_test.log.
 
 ## b395 (t329u·t330u) 반지 상자 파티 선택 + 정렬 기본
