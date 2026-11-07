@@ -31,7 +31,16 @@ try:
       const a=ecDetect(300,new Float32Array(576)); return true; }""")
     r=pg.evaluate("""()=>{ const T=EC_TPL[0], D=new Float32Array(576); for(let y=0;y<18;y++) for(let x=0;x<32;x++){ const sx=x-7, sy=y-2; D[y*32+x]=(sx>=0&&sx<32&&sy>=0&&sy<18)?T[sy*32+sx]:0; }
       EC.h=[]; EC.log=[]; const z=new Float32Array(576).fill(20); const out=[]; for(let i=0;i<14;i++) out.push(!!ecDetect(i*100,z)); for(let i=14;i<16;i++){ const g=new Float32Array(576); for(let k=0;k<576;k++) g[k]=20+D[k]; out.push(ecDetect(i*100,g)); } return {r:out.slice(14), ss:EC.last.ss, sc:EC.last.sc}; }""")
-    check('shift rule: off-center beam 2 frames → hit kind shift', r['r'][0] is None and r['r'][1] and r['r'][1].get('kind')=='shift', r)
+    # b391 (t477): 감지 기준이 '정지 모양 2회' → '사용자 GIF 모션 진행' 으로 바뀜. 옮겨진 정지 템플릿 2프레임은 이제 감지하면 안 됨(의도된 변경).
+    check('b391: off-center 정지 템플릿 2프레임 → 모션 아님(미감지), shift 점수는 그대로 계산', r['r'][0] is None and r['r'][1] is None and r['ss']>=.95, r)
+    r=pg.evaluate("""()=>{ EC.h=[]; EC.log=[]; EC.mo=[]; EC.lastG=null; const z=()=>{ const g=new Float32Array(576); for(let k=0;k<576;k++) g[k]=20+(k%7)*.3; return g; }; let hit=null;
+      for(let i=0;i<16;i++) ecDetect(i*100,z());
+      for(let i=0;i<14&&!hit;i++){ const t=1600+i*100, k=Math.floor(i*100/60); if(k<1||k>13){ ecDetect(t,z()); continue; } const T=EC_MOT[k-1], g=z();
+        for(let y=0;y<18;y++) for(let x=0;x<32;x++){ const sx=x-6, sy=y-2; if(sx>=0&&sx<32&&sy>=0&&sy<18) g[y*32+x]+=T[sy*32+sx]; } hit=ecDetect(t,g); }
+      return hit; }""")
+    check('b391: 옮겨진(+6,+2) GIF 모션 진행 → 같은 위치에서 감지(kind motion)', bool(r) and r.get('kind')=='motion' and r['mo']['off']!='0,0', r)
+    r=pg.evaluate("()=>{ EC.cfg.mo=false; EC.h=[]; EC.log=[]; const T=EC_TPL[0], D=new Float32Array(576); for(let y=0;y<18;y++) for(let x=0;x<32;x++){ const sx=x-7, sy=y-2; D[y*32+x]=(sx>=0&&sx<32&&sy>=0&&sy<18)?T[sy*32+sx]:0; } const z=new Float32Array(576).fill(20); for(let i=0;i<14;i++) ecDetect(i*100,z); const out=[]; for(let i=14;i<16;i++){ const g=new Float32Array(576); for(let k=0;k<576;k++) g[k]=20+D[k]; out.push(ecDetect(i*100,g)); } EC.cfg.mo=true; return out; }")
+    check('mo:false(되돌림 설정)에서는 예전 shift 규칙 그대로', r[0] is None and r[1] and r[1].get('kind')=='shift', r)
     pg.evaluate("EC.cfg.pil=true")
     r=pg.evaluate(RUN,{'x':90,'y0':0,'w':3,'h':200})
     check('narrow tall new pillar → detected after 3 frames', bool(r['hit']) and r['hit']['i']==22 and abs(r['hit']['x']-91)<=2 and r['hit']['kind']=='pillar', r)
