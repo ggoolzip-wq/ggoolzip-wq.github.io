@@ -1140,7 +1140,7 @@ window.arNameTeach=arNameTeach;
 function arLivePaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; arPanelPaint(); } /* t567: 0.2초마다 탭 전체를 그리되 바뀐 칸만 DOM 변경(arSetH) — 서버 호출 없음 */
 /* b397: 연결 안내를 홈페이지에 인라인 표시. 화면 공유·PIP 연결 경로는 기존 arConnect 그대로. */
 function arGuideHtml(){ return `<div class="ar-gh"><b>게임 화면 연결 전에</b></div>
-    <ul><li>오른쪽 아래 <b class="ar-pk">획득 로그</b>를 읽어야 하니 파티 목록 등으로 가리지 마세요.</li><li>캐릭터 능력치·장비창·인벤토리 등 <b class="ar-or">아이템 인식</b>을 방해하는 창은 띄우지 마세요.</li></ul>
+    <ul><li>오른쪽 아래 <b class="ar-pk">획득 로그</b>를 읽어야 하니 파티 목록 등으로 가리지 마세요.</li><li>캐릭터 능력치·장비창·인벤토리 등 <b class="ar-or">아이템 인식</b>을 방해하는 창은 띄우지 마세요.</li><li>보상 상자를 크게 가리면 인식이 안돼요. 상자와 캐릭터가 겹친 상태, 어센트로 보상 까기 등의 행위를 하지 마세요.</li></ul>
     <div class="ar-gimg"><img src="data/ar_guide_07.webp" alt="예시: 분홍 = 획득 로그, 주황 = 아이템 떨어지는 곳" width="640" height="360"><img src="data/ar_guide_01.webp" alt="예시 2" width="640" height="360" loading="lazy"></div>
     <small class="muted">분홍 = 획득 로그 · 주황 = 아이템 떨어지는 곳</small>`; }
 function arGuide(){ arPanel(true); document.getElementById('arGuideInline')?.scrollIntoView({block:'nearest'}); }
