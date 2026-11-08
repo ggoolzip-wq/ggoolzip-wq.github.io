@@ -2646,3 +2646,7 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
   .calmonth-clean .calmr>:nth-child(6){grid-row:1/3;grid-column:5;align-self:center}
   .calmonth-clean .calmr>:nth-child(3),.calmonth-clean .calmr>:nth-child(4),.calmonth-clean .calmr>:nth-child(5){grid-row:2;font-size:.75rem;opacity:.75}
 }
+/* b407(t379): 모바일에서 이번 주 보스 외 탭은 캐릭터 목록 숨김 → 탭 내용이 바로 위에 */
+@media(max-width:768px){body[data-curtab]:not([data-curtab="boss"]) .side-sticky>.card:has(#charList){display:none}}
+/* b407(t380): 에픽빔 닉네임 초상화 — 48px 그림이 24px 격자 칸 밖으로 밀려 투명 여백만 보이던 것 → 독식 버튼 초상화(b394)와 같은 원본 영역(96px 원본 x16~50, y19~53)을 24px 원에 표시 */
+.ectl .avatar.ecav img{position:absolute;left:50%;top:50%;width:68px!important;height:68px!important;margin:-25px 0 0 -23px!important;object-fit:contain;object-position:center;border-radius:0}

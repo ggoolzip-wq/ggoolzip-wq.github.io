@@ -16,8 +16,19 @@ try:
    pg.set_viewport_size({'width':w,'height':800})
    for t in ['boss','total','loot','cal','epic','live']:
     pg.click(f'[data-tab="{t}"]');pg.wait_for_timeout(200);assert pg.evaluate('document.documentElement.scrollWidth<=innerWidth'),(w,t)
+  for t in ['total','loot','cal','epic','live']:
+   pg.click(f'[data-tab="{t}"]');pg.wait_for_timeout(150);assert pg.locator('#charList').is_hidden(),t
+  pg.click('[data-tab="boss"]');pg.wait_for_timeout(150);assert pg.locator('#charList').is_visible()
+  pg.click('[data-tab="cal"]');pg.set_viewport_size({'width':1440,'height':900});pg.wait_for_timeout(100);assert pg.locator('#charList').is_visible();pg.click('[data-tab="boss"]')
   pg.set_viewport_size({'width':1440,'height':900});pg.wait_for_timeout(100)
   assert pg.locator('[data-tab="auto"]').is_visible() and pg.evaluate("getComputedStyle(document.querySelector('#tabs')).display")=='flex'
   pg.evaluate("()=>{tab='auto';render()}");assert pg.evaluate('tab')=='auto'
-  print('PASS b406: mobile 3-col tabs, auto tab hidden+fallback, no h-scroll; desktop unchanged');b.close()
+  pg.route('https://open.api.nexon.com/static/maplestory/character/look/**',lambda r:r.fulfill(body=open(str(ROOT/'apple-touch-icon.png'),'rb').read(),content_type='image/png'))
+  pg.click('[data-tab="epic"]');pg.wait_for_timeout(300)
+  r=pg.evaluate('''async()=>{const v=document.querySelector('#view');v.insertAdjacentHTML('beforeend','<div class="ecgrid">'+ecCard({id:'t',t0:Date.now(),boss:'lucid',item:'eye',cid:'zz',start:0,end:1000}).replace('<span class="ecq">?</span></i><span>캐릭터','')+'</div>');
+   const h=document.createElement('div');h.className='ectl';h.innerHTML=ecAvatar({name:'가',image:'https://open.api.nexon.com/static/maplestory/character/look/X'});v.append(h);await new Promise(r=>setTimeout(r,400));
+   const a=h.querySelector('.avatar').getBoundingClientRect(),i=h.querySelector('img').getBoundingClientRect();return [a.x-i.x,a.y-i.y,i.width,a.width]}''')
+  assert abs(r[0]-11.3)<1.5 and abs(r[1]-13.4)<1.5 and round(r[2])==68 and round(r[3])==24,r
+  print('PASS b407 epic portrait crop = 독식 portrait region (96px x16~50,y19~53)')
+  print('PASS b406/b407: char list hidden on non-boss mobile tabs; mobile 3-col tabs, auto tab hidden+fallback, no h-scroll; desktop unchanged');b.close()
 finally:srv.terminate()
