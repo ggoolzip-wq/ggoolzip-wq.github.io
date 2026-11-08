@@ -3198,3 +3198,4 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - t380u "이번주 에픽빔 닉네임 아이콘이 비어있어 → 얼굴 초상화": 원인 = `.ectl .avatar.ecav`(24px, display:grid) 안의 48px 그림이 격자 칸을 넘쳐 오른쪽·아래로 밀려(place-items:center 가 안 먹음) 원 안에 원본 96px 의 왼쪽 위 투명 여백만 보였음(이미지 URL·필드는 정상). 수정: 그림을 absolute 가운데 고정, 68px(=96×24/34)로 축소해 독식 버튼 초상화(b394, 34px 원·64px object-fit:none 50% 60%)와 같은 원본 영역 x16~50·y19~53 을 표시. 캐릭터 그림이 없는 수동 캐릭터는 기존대로 첫 글자, 이 계정 목록에 없는 캐릭터는 '?'.
 - 검사: tests/test_b406_mobile.py 에 추가(모바일 5개 탭 #charList 숨김·보스 탭 복귀 시 표시·1440 표시, 에픽빔 초상화 위치·크기). 1440px 7개 탭 원본(b405) 대비: 숫자 카운팅·똥/에픽빔 버튼 hover 글로 외 차이 0. 390·360px 가로 넘침 0.
 - 비교 이미지: /workspace/maple-boss-tracker/b406/08~10 (박스).
+- 배포 확인: 코드 40e3b44 정상 main push, 2026-11-09 00:55 KST https://bossmaple.pages.dev/ 및 https://ggoolzip-wq.github.io/ 모두 390px: 수익/득템/캘린더/에픽빔/라이브 탭 캐릭터 목록 none, 이번 주 보스 block, 에픽빔 초상화 규칙 적용; 1440px 캘린더 탭 캐릭터 목록 block 실제 확인.
