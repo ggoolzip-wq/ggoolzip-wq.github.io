@@ -3209,3 +3209,4 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 수정: `.ectl .avatar.ecav img` = 120px(0.4배), absolute, margin -51px/-45px → 원본 (142,158) 이 24px 원 가운데. PC·모바일 같은 규칙(24px 칸 동일). 독식 버튼 초상화(.avatar img 공통 64px object-fit:none 50% 60%, 34px)는 같은 실제 그림으로 얼굴이 보여서 변경 안 함.
 - 상시 규칙 추가/갱신: '모든 작업은 꼭 필요한 것만 하여 빠르게' (기존 t328 줄 갱신), '모바일과 PC 버전 각각에 맞게 (서로 영향 X)'.
 - 검사: tests/test_b406_mobile.py 초상화 위치 120px·-45/-51 로 갱신 PASS. 실제 그림 390·1440px 렌더 확인. 비교 이미지 /workspace/maple-boss-tracker/b406/11·12 (박스).
+- 배포 확인: 코드 4e8a928 정상 main push, 2026-11-09 01:10 KST https://bossmaple.pages.dev/ 및 https://ggoolzip-wq.github.io/ 390·1440px 에서 실제 넥슨 그림(natural 300px) 초상화 120px·-45/-51 적용, 얼굴이 원 가운데 보임 실제 확인.
