@@ -493,16 +493,23 @@ const AR_BOX_PARTS=[(x,y,w,h)=>y<h/2,(x,y,w,h)=>y>=h/2,(x,y,w,h)=>x<w/2,(x,y,w,h
 function arBoxParts(T){ return T.parts||(T.parts=AR_BOX_PARTS.map(f=>arBoxPart(T,f)).filter(Boolean)); }
 function arBoxFind(G8,G4,T8,T4){ const r=arNcc(G8.d,G8.w,G8.h,T8,0,1e9,0,1e9).sort((a,b)=>b[0]-a[0]), top=[]; for(const c of r){ if(c[0]<.4||top.length>=3) break; if(top.every(t=>Math.abs(t[1]-c[1])>2||Math.abs(t[2]-c[2])>2)) top.push(c); }
   let best=0; for(const [,x,y] of top) for(const c of arNcc(G4.d,G4.w,G4.h,T4,2*x-3,2*x+3,2*y-3,2*y+3)) best=Math.max(best,c[0]); return best; }
+/* b403: 검마 상자의 상단 안내판·하단 캐릭터가 기존 4개 절반까지 가림. 원본 중앙 30~60% 띠는 엄격 .90 + 같은 위치 전체 .60을 동시에 요구. */
+function arBoxMid(T){ return T.mid||(T.mid=arBoxPart(T,(x,y,w,h)=>y>=h*.3&&y<h*.6)); }
+function arBoxBlackmage(G8,G4,T4,B8,B4){ if(!B8||!B4) return 0;
+  const top=[]; for(const c of arNcc(G8.d,G8.w,G8.h,B8,0,1e9,0,1e9).sort((a,b)=>b[0]-a[0])){ if(c[0]<.4||top.length>=3) break; if(top.every(t=>Math.abs(t[1]-c[1])>2||Math.abs(t[2]-c[2])>2)) top.push(c); }
+  let best=0; for(const [,x,y] of top) for(const c of arNcc(G4.d,G4.w,G4.h,B4,2*x-3,2*x+3,2*y-3,2*y+3)){
+    if(c[0]<.90||c[0]-.15<=best) continue; const full=arNcc(G4.d,G4.w,G4.h,T4,c[1],c[1],c[2],c[2])[0]; if(full&&full[0]>=.60) best=c[0]-.15; }
+  return best; }
 /* b366: 상자 NCC(arBoxFind — 보상 맵에서 0.1초마다 1회 50~110ms, 메인 스레드 20초 중 5초)를 Worker 로. 같은 함수 문자열 그대로 → 점수 동일. Worker 못 쓰면 예전처럼 메인 */
 const AR_BXW={w:null,off:false,id:0,cb:new Map(),sent:new Set()};
 function arBoxW(){ if(AR_BXW.w||AR_BXW.off) return AR_BXW.w; if(ARX.cfg.boxWorker===false||typeof Worker==='undefined'){ AR_BXW.off=true; return null; }
-  try{ const code=arNcc.toString()+'\n'+arBoxFind.toString()+`\nconst TP={};onmessage=e=>{const d=e.data;if(d.tp){TP[d.k]=d.tp;return;}const P=TP[d.k];let best=arBoxFind(d.G8,d.G4,P.T8,P.T4);if(!(best>=d.thr)&&d.part){for(let i=0;i<Math.min(P.P8.length,P.P4.length);i++)best=Math.max(best,arBoxFind(d.G8,d.G4,P.P8[i],P.P4[i])-d.pen);}postMessage([d.id,best]);};`;
+  try{ const code=arNcc.toString()+'\n'+arBoxFind.toString()+'\n'+arBoxBlackmage.toString()+`\nconst TP={};onmessage=e=>{const d=e.data;if(d.tp){TP[d.k]=d.tp;return;}const P=TP[d.k];let best=d.k==='blackmage'?arBoxBlackmage(d.G8,d.G4,P.T4,P.B8,P.B4):0;if(best<d.thr)best=arBoxFind(d.G8,d.G4,P.T8,P.T4);if(!(best>=d.thr)&&d.part){for(let i=0;i<Math.min(P.P8.length,P.P4.length);i++)best=Math.max(best,arBoxFind(d.G8,d.G4,P.P8[i],P.P4[i])-d.pen);}postMessage([d.id,best]);};`;
     const w=new Worker(URL.createObjectURL(new Blob([code],{type:'text/javascript'}))); w.onmessage=e=>{ const f=AR_BXW.cb.get(e.data[0]); if(f){ AR_BXW.cb.delete(e.data[0]); f(e.data[1]); } };
     w.onerror=()=>{ AR_BXW.off=true; AR_BXW.w=null; for(const f of AR_BXW.cb.values()) f(null); AR_BXW.cb.clear(); }; AR_BXW.w=w; }catch(e){ AR_BXW.off=true; AR_BXW.w=null; } return AR_BXW.w; }
-function arBoxScoreSync(G8,G4,T8,T4,k){ let best=arBoxFind(G8,G4,T8,T4); if(best>=AR_BOX[k].thr||ARX.cfg.boxPart===false) return best;
+function arBoxScoreSync(G8,G4,T8,T4,k){ let best=k==='blackmage'?arBoxBlackmage(G8,G4,T4,arBoxMid(T8),arBoxMid(T4)):0; if(best>=AR_BOX[k].thr) return best; best=arBoxFind(G8,G4,T8,T4); if(best>=AR_BOX[k].thr||ARX.cfg.boxPart===false) return best;
   const P8=arBoxParts(T8), P4=arBoxParts(T4); for(let i=0;i<Math.min(P8.length,P4.length);i++) best=Math.max(best,arBoxFind(G8,G4,P8[i],P4[i])-AR_BOX_PART_PEN); return best; }
 async function arBoxScore(src,k){ const T8=await arBoxTpl(k,8), T4=await arBoxTpl(k,4); if(!T8||!T4) return 0; const G8=arBoxGrab(src,8,k), G4=arBoxGrab(src,4,k);
-  const w=arBoxW(); if(w){ if(!AR_BXW.sent.has(k)){ AR_BXW.sent.add(k); w.postMessage({k,tp:{T8,T4,P8:arBoxParts(T8),P4:arBoxParts(T4)}}); } const id=++AR_BXW.id;
+  const w=arBoxW(); if(w){ if(!AR_BXW.sent.has(k)){ AR_BXW.sent.add(k); w.postMessage({k,tp:{T8,T4,P8:arBoxParts(T8),P4:arBoxParts(T4),B8:k==='blackmage'?arBoxMid(T8):null,B4:k==='blackmage'?arBoxMid(T4):null}}); } const id=++AR_BXW.id;
     const r=await new Promise(res=>{ AR_BXW.cb.set(id,res); w.postMessage({id,k,G8,G4,thr:AR_BOX[k].thr,part:ARX.cfg.boxPart!==false,pen:AR_BOX_PART_PEN},[G8.d.buffer,G4.d.buffer]); }); if(r!==null) return r; return 0; }
   return arBoxScoreSync(G8,G4,T8,T4,k); }
 /* b331 (t633): 상자 처치 시스템 메시지 '선택받은 <보스>의 보물상자를 처치하여 …' — n4 세렌처럼 상자가 캐릭터·소환수·데미지 숫자에 끝까지 가려져
