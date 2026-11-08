@@ -33,6 +33,7 @@
 
 
 ## b404 (t371u) 새 영상 맵 이름 그림 15장 배포 · 유사 이름 안전 검사
+- 배포 확인: 코드 커밋 91f7c3f 정상 main push, 2026-11-08 16:00 KST 공개 https://bossmaple.pages.dev/ 및 https://ggoolzip-wq.github.io/ 둘 다 b404·추가 템플릿·유사이름 가드 확인. 한국어 결과 그림: /workspace/maple-boss-tracker/reward_analysis/deliver2/10_b404_map_release.png.
 - src/maptemplates.json: 구17+신13 영상에서 실제 글자 줄만 검수한 15장/11종 이름 추가(기존9장+15장=24장). 출처·시제품: /workspace/maple-boss-tracker/reward_analysis/map_proto/{selected.json,training_sources.json,index.md}. 게임 원본 맵 이름 PNG를 구한 것으로 오인해 설명하지 말 것. 공개 KMS389 String.wz 파생 문자열은 별도 조사 자료.
 - KMS389 수집301개 맵ID/39종 이름의 공백 제외 Levenshtein1~2 전수 대조: 4쌍(서로 다른 보스 쌍0). 공허의눈↔공허의눈앞(1), 욕망의제단↔욕망의제단입구(2), 끝에가까운곳↔끝에가까운곳앞(1), 어둠의신전↔어둠의왕좌(2). 입구/앞 유무는 전투/보상과 대기를 바꿀 수 있어 기존·추가·사용자학습 그림에 모두 .95 적용, 그 밖의 새 그림 .90/기존 .80, 경쟁 이름 점수차 .05 유지. 어둠 신전/왕좌 사진은 현재 없지만 추가될 때도 같은 .95 규칙. 증거 map_proto/near_names.json.
 - arMapTplLoad/Match에 추가 데이터·문턱 분리만 적용. arMapWatch의 b380 난도는 OCR/runDiff로 독립확인, 공용 br/wr 맵은 상자 필수, 보상 전용r의 기존 b402 규칙·알 수 없는 난도 후보0·OCR fallback·닉네임·아이템·상자·PIP/연결·UI는 변경 없음. 그림만으로 기존에 막던 보스/보상 확정을 우회하지 않음. Worker API 변경 없어 wrangler 불필요.
