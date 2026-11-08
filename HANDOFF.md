@@ -3190,3 +3190,4 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - src/app.js render(): 폭 768px 이하에서 tab==='auto' 이면 'boss' 로 (기본 탭). 컴퓨터는 그대로.
 - 검사: tests/test_b406_mobile.py (390·360px 모든 탭 가로 넘침 0, 탭 격자·자동 기록 숨김·폴백, 1440px 탭 flex·auto 표시 유지). 1440px 7개 탭 수정 전·후 스크린샷 픽셀 비교: 숫자 카운팅/똥 애니메이션 외 차이 0. test_b400_calendar, test_b394_solo PASS.
 - 비교 이미지: /workspace/maple-boss-tracker/b406/01~06 (박스).
+- 배포 확인: 코드 f42c0c6 정상 main push, 2026-11-09 00:5x KST https://bossmaple.pages.dev/ 및 https://ggoolzip-wq.github.io/ 모두 390·360px: 탭 격자·자동 기록 탭 숨김·auto→boss 폴백·6개 탭 가로 넘침 0, 1440px: 자동 기록 탭 표시·flex 유지 실제 확인.
