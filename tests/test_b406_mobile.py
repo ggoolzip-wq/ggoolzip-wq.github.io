@@ -28,7 +28,7 @@ try:
   r=pg.evaluate('''async()=>{const v=document.querySelector('#view');v.insertAdjacentHTML('beforeend','<div class="ecgrid">'+ecCard({id:'t',t0:Date.now(),boss:'lucid',item:'eye',cid:'zz',start:0,end:1000}).replace('<span class="ecq">?</span></i><span>캐릭터','')+'</div>');
    const h=document.createElement('div');h.className='ectl';h.innerHTML=ecAvatar({name:'가',image:'https://open.api.nexon.com/static/maplestory/character/look/X'});v.append(h);await new Promise(r=>setTimeout(r,400));
    const a=h.querySelector('.avatar').getBoundingClientRect(),i=h.querySelector('img').getBoundingClientRect();return [a.x-i.x,a.y-i.y,i.width,a.width]}''')
-  assert abs(r[0]-11.3)<1.5 and abs(r[1]-13.4)<1.5 and round(r[2])==68 and round(r[3])==24,r
-  print('PASS b407 epic portrait crop = 독식 portrait region (96px x16~50,y19~53)')
+  assert abs(r[0]-45)<1.5 and abs(r[1]-51)<1.5 and round(r[2])==120 and round(r[3])==24,r
+  print('PASS b408 epic portrait = real 300px look, 60px face window (142,158) fills 24px circle')
   print('PASS b406/b407: char list hidden on non-boss mobile tabs; mobile 3-col tabs, auto tab hidden+fallback, no h-scroll; desktop unchanged');b.close()
 finally:srv.terminate()

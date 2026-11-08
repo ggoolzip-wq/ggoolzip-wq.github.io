@@ -2648,5 +2648,6 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 }
 /* b407(t379): 모바일에서 이번 주 보스 외 탭은 캐릭터 목록 숨김 → 탭 내용이 바로 위에 */
 @media(max-width:768px){body[data-curtab]:not([data-curtab="boss"]) .side-sticky>.card:has(#charList){display:none}}
-/* b407(t380): 에픽빔 닉네임 초상화 — 48px 그림이 24px 격자 칸 밖으로 밀려 투명 여백만 보이던 것 → 독식 버튼 초상화(b394)와 같은 원본 영역(96px 원본 x16~50, y19~53)을 24px 원에 표시 */
-.ectl .avatar.ecav img{position:absolute;left:50%;top:50%;width:68px!important;height:68px!important;margin:-25px 0 0 -23px!important;object-fit:contain;object-position:center;border-radius:0}
+/* b408(t381): 에픽빔 닉네임 초상화 — 실제 넥슨 캐릭터 그림은 300×300(캐릭터는 가운데 아래, 얼굴 중심 ≈ 원본 142,158). b407 은 96px 로 잘못 가정해 원 안에 투명 여백만 보였음.
+   원본 60px 창(얼굴 중심 142,158)을 24px 원에 꽉 차게: 300→120px(0.4배), 얼굴 중심(56.8,63.2)을 원 가운데(12,12)로. PC·모바일 같은 24px 칸 */
+.ectl .avatar.ecav img{position:absolute;left:0;top:0;width:120px!important;height:120px!important;max-width:none!important;max-height:none!important;margin:-51px 0 0 -45px!important;object-fit:fill;object-position:0 0;border-radius:0;image-rendering:auto}
