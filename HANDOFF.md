@@ -3222,3 +3222,4 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 회귀: 옛 영상 29개(t625 n1~n10·v1~v9, t630 10개) 라이브 main vs b409: 캐릭터·보스·상자 판정 29/29 동일, 오류 0, 오기록 0, 맵 확정 평균 0.34초 빠름(적대자·칼로스 최대 1.5~2.0초 빠름, 최대 +0.41초 느림=재생 타이밍 편차). 정적 맵 대조 811프레임 중 65프레임 결과 변경, 모두 정답. tests/test_b404_maps.py 19장으로 갱신, tests/test_b409_reward.py 신규 PASS, run_par 실패 항목은 origin/main(9dbd2f7)에서도 동일하게 실패(캘린더·탭 UI, 이 변경과 무관).
 - 증거: /workspace/t692 (h/pNN_{pre,b409b}.json, ho/, regcmp.json, 이미지 00~06 PNG).
 
+- 배포 확인: 코드 b219ca7 정상 main push, 2026-11-09 18:27 KST https://bossmaple.pages.dev/ 및 https://ggoolzip-wq.github.io/ index.html 해시가 로컬 빌드와 같음(새 맵 그림 포함) 확인. run_par 실패 21개는 origin/main 9dbd2f7 에서도 그대로 실패 확인(b239 는 둘 다 통과).
