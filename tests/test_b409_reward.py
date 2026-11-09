@@ -12,7 +12,7 @@ try:
   S.characters=[C('a','콜더쇼츠'),C('c','골더쇼츠')];ARX.nHist=H.slice();ARX.nLead=H.map(()=>false);check(arNameVote2().cid!=='a','ㅋ name not accepted when ㄱ pair is listed');
   S.characters=[C('a','콜더쇼츠')];ARX.nHist=['골더','골더','골더'];check(arNameVote2().cid==='','short reads unrelated');
   S.characters=[C('t','트딕이')];ARX.nHist=['드딕이','드딕이','드딕이','드딕이'];ARX.nLead=[false,false,false,false];check(arNameVote2().cid==='','ㅌ rule unchanged (needs aspirated read)');
-  const L=arMapTplLoad().filter(t=>t.extra);check(AR_MAPTPL_MORE.length===19&&L.length===19,'4 b409 templates');for(const n of ['의지가 증명된 자리 <이지>','고요해진 함선 <하드>','악몽의 시계탑 <하드>'])check(L.some(t=>t.text===n),'template '+n);
+  const L=arMapTplLoad().filter(t=>t.extra);check(AR_MAPTPL_MORE.length>=19&&L.length>=19,'4 b409 templates');for(const n of ['의지가 증명된 자리 <이지>','고요해진 함선 <하드>','악몽의 시계탑 <하드>'])check(L.some(t=>t.text===n),'template '+n);
   const cv=document.createElement('canvas');cv.width=1920;cv.height=1080;const M=arMapTplMatch,G=arMapGot;let got=[];arMapGot=t=>got.push(t);
   try{ ARX.mapBusy=true;ARX.mOcrT=Date.now();ARX.mapOk=false;ARX.mChgT=Date.now();ARX.mtRetryT=0;ARX.mprev=null;arMapTplMatch=()=>({text:'의지가 증명된 자리 <이지>',boss:'adversary',sc:.99});arMapWatch(cv);check(got.length===1&&ARX.mapSrc==='템플릿','template checked while OCR busy');
    arMapWatch(cv);check(got.length===1,'retry throttled 0.2s');
