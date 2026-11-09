@@ -7,7 +7,7 @@ port=_tutil.free_port();srv=_tutil.Popen([sys.executable,'-m','http.server',str(
 try:
  with sync_playwright() as p:
   b=p.chromium.launch(args=['--no-sandbox']);pg=b.new_page();pg.goto(f'http://127.0.0.1:{port}');r=pg.evaluate("""()=>{const check=(v,s)=>{if(!v)throw Error(s)};
-  const loaded=arMapTplLoad();check(AR_MAPTPL_MORE.length===15&&loaded.filter(t=>t.extra).length===15,'15 actual templates built/loaded');
+  const loaded=arMapTplLoad();check(AR_MAPTPL_MORE.length===19&&loaded.filter(t=>t.extra).length===19,'15+4(b409) actual templates built/loaded');
   for(const n of AR_MAPTPL_NEAR)check(arMapTplMin({text:n+' <하드>',extra:false})===.95&&arMapTplMin({text:n+' <하드>',extra:true})===.95,'near-name guard '+n);
   const original=[arMapTplImg,arMapTplBands,arMapTplLoad,arMapTplScore];let L=[];arMapTplImg=()=>({v:[],W:2,H:2});arMapTplBands=()=>[{}];arMapTplLoad=()=>L;arMapTplScore=(I,B,T)=>T.score;
   const T=(text,score,extra)=>({text,score,extra,boss:'will'}),cv=document.createElement('canvas');cv.width=1920;cv.height=1080;
