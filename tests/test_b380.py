@@ -31,7 +31,8 @@ try:
     pg.route('https://open.api.nexon.com/**',lambda r:r.abort())
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800)
     sv=pg.evaluate(SETUP,[u('v07_0120.jpg'),u('b380_bellona_hard_syn.png')])
-    check('이지 판에서 맵 이름 템플릿 저장 (재현 조건)',sv==['솔라툼의 유산 <이지>'],sv)
+    check('솔라툼의 유산 <이지> 그림이 기본 템플릿으로 들어 있음',pg.evaluate("()=>arMapTplLoad().some(t=>t.text==='솔라툼의 유산 <이지>'&&t.boss==='bellona')"))
+    check('이미 있으면 같은 이름 템플릿을 다시 저장하지 않음',sv==[],sv)
     sc=pg.evaluate("()=>{ const r=arMapTplMatch(H); return r&&[r.text,+r.sc.toFixed(3)]; }")
     check('하드 화면도 이지 템플릿에 맞음 (원인 확인)',sc and sc[0]=='솔라툼의 유산 <이지>' and sc[1]>=.8,sc)
     # 전투 맵 OCR '테네아 신전 <하드>' → 보상 맵 템플릿 → 난이도 하드 유지
