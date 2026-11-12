@@ -42,6 +42,7 @@ def http_get(url, **k):
     raise F.FetchError("blocked")
 F.nx, F.http_get = nx, http_get
 os.environ["NEXON_API_KEY"] = "k"; os.environ.pop("GITHUB_OUTPUT", None); os.environ.pop("WATCH_TEST_MINUTES", None); os.environ.pop("WATCH_PRETEND_NEW", None)
+os.environ.pop("WATCH_INTERVAL", None)
 outs = {}
 W.out = lambda **kv: outs.update(kv)
 def run(t0, sunday, **st):
@@ -50,31 +51,39 @@ def run(t0, sunday, **st):
     reset(sunday); W.watch(clock.now, clock.sleep)
     return json.load(open(fp, encoding="utf-8"))
 D = lambda h, m, s=0, day=16: datetime.datetime(2026, 10, day, h, m, s, tzinfo=KST)   # 16일(금): 저장된 썬데이(11일)는 지난 주
-# 1) 새 글 없음: 09:47 시작 → 10:00 까지 대기 → 5초마다 → 10:20 전에 끝, 호출 240회
-run(D(9, 47), OLD)
+# 1) 새 글 없음: 08:30 시작 → 바로 20초마다 → 11:30 전에 끝, 호출 540회
+run(D(8, 30), OLD)
 lc = [c for c in calls if c[0] == "notice-event"]
-check("no new post: waits until 10:00, polls every 5s until 10:20 (240 calls)", len(lc) == 240 and lc[0][1] == "10:00:00" and lc[1][1] == "10:00:05" and lc[-1][1] == "10:19:55" and outs.get("found") == "false", (len(lc), lc[:2], lc[-1:]))
-# 2) 10:03:12 에 새 글 → 10:03:15 확인에서 발견, 즉시 멈춤, detail 1회, feed 갱신, OCR 필요
-feed = run(D(9, 50), OLD, new_at=D(10, 3, 12))
+check("no new post: starts immediately, polls every 20s until 11:30 (540 calls)",
+      len(lc) == 540 and lc[0][1] == "08:30:00" and lc[1][1] == "08:30:20" and lc[-1][1] == "11:29:40" and outs.get("found") == "false",
+      (len(lc), lc[:2], lc[-1:]))
+# 2) 10:03:12 에 새 글 → 10:03:20 확인에서 발견, 즉시 멈춤, detail 1회, feed 갱신, OCR 필요
+feed = run(D(10, 0), OLD, new_at=D(10, 3, 12))
 sd = feed["sunday"]
-check("new post found at next poll, polling stops", outs.get("found") == "true" and calls[-1][0] == "notice-event/detail" and [c for c in calls if c[0] == "notice-event"][-1][1] == "10:03:15" and outs.get("calls") == 40, (outs, calls[-2:]))
+check("new post found at next poll, polling stops",
+      outs.get("found") == "true" and calls[-1][0] == "notice-event/detail" and [c for c in calls if c[0] == "notice-event"][-1][1] == "10:03:20" and outs.get("calls") == 11,
+      (outs, calls[-2:]))
 check("processed like update_feed (detail image, period), OCR requested", sd.get("id") == 1405 and sd.get("image") == "https://lwi.nexon.com/new1405.png" and sd.get("start") == "2026-10-18T00:00:00+09:00" and outs.get("sunday_ocr") == "true", sd)
 check("other feed items untouched", feed["items"]["patch"][0]["id"] == "update:1")
 # 3) API 실패(두 키 모두) → 홈페이지 HTML 로 발견
 feed = run(D(10, 5), OLD, new_at=D(10, 5), api_fail=True)
 check("API down → homepage fallback finds the post", outs.get("found") == "true" and feed["sunday"].get("id") == 1405 and any("Ongoing" in u for u in html_hits) and feed["sunday"].get("via") == "html", (outs, feed["sunday"]))
 # 4) 이번 주 썬데이가 이미 있음(시작일 18일) → 호출 0
-run(D(9, 45), dict(OLD, id=1405, start="2026-10-18T00:00:00+09:00"))
+run(D(8, 30), dict(OLD, id=1405, start="2026-10-18T00:00:00+09:00"))
 check("this week's post already stored → no polling (0 calls)", outs.get("calls") == 0 and not calls, outs)
-# 5) 10:20 이후 시작(예약 지연) → 바로 끝
-run(D(10, 21), OLD); check("started after 10:20 → exits, 0 calls", outs.get("calls") == 0 and not calls)
+# 5) 11:30 이후 시작(예약 지연) → 1회만 확인하고 끝
+run(D(11, 31), OLD)
+check("started after 11:30 → one check then exit", outs.get("calls") == 1 and len(calls) == 1 and calls[0][0] == "notice-event" and outs.get("found") == "false", (outs, calls))
+# 5b) 11:30 이후 시작이지만 이미 올라온 새 글은 그 1회에서 발견
+feed = run(D(16, 46), OLD, new_at=D(10, 0))
+check("late start still finds a post already up", outs.get("found") == "true" and outs.get("calls") == 1 and feed["sunday"].get("id") == 1405, (outs, feed.get("sunday", {}).get("id")))
 # 6) 테스트 옵션: N분만 + 저장된 글도 새 글처럼
 os.environ["WATCH_TEST_MINUTES"] = "1"; os.environ["WATCH_PRETEND_NEW"] = "true"
 feed = run(D(15, 0), dict(OLD, id=1405, start="2026-10-18T00:00:00+09:00"), new_at=D(0, 0))
 check("test mode: starts now, pretend_new re-processes the stored post", outs.get("found") == "true" and calls[0][1] == "15:00:00" and feed["sunday"].get("id") == 1405 and "ocr" not in feed["sunday"] and outs.get("sunday_ocr") == "true", (outs, calls[:2]))
 os.environ["WATCH_PRETEND_NEW"] = "false"
 run(D(15, 0), OLD)
-check("test mode 1 minute: 12 polls (5s) then stop", outs.get("calls") == 12 and outs.get("found") == "false", outs)
+check("test mode 1 minute: 3 polls (20s) then stop", outs.get("calls") == 3 and outs.get("found") == "false", outs)
 os.environ.pop("WATCH_TEST_MINUTES"); os.environ.pop("WATCH_PRETEND_NEW")
 # 7) --save / --apply: 최신 main 의 feed.json(다른 소식이 바뀐 상태)에 sunday 만 덮어씀
 sp = os.path.join(tmp, "s.json")
@@ -85,9 +94,11 @@ f2 = json.load(open(fp, encoding="utf-8"))
 check("--apply keeps update-feed's newer items, replaces only sunday", f2["items"]["patch"][0]["id"] == "update:2" and f2["sunday"]["id"] == 1405 and f2["sunday"]["benefit"] == "미라클 타임", f2)
 # 8) 워크플로
 wf = open(os.path.join(ROOT, ".github", "workflows", "sunday-watch.yml"), encoding="utf-8").read()
-check("workflow: two staggered crons 00:45/00:50 UTC, own concurrency group, key1+key2, OCR step, merge-commit",
-      "'45 0 * * *'" in wf and "'50 0 * * *'" in wf and "group: sunday-watch" in wf and "NEXON_API_KEY2: ${{ secrets.NEXON_API_KEY2 }}" in wf
-      and "steps.watch.outputs.sunday_ocr == 'true'" in wf and "--apply" in wf and "git reset -q --hard origin/main" in wf and "test_minutes" in wf and "pretend_new" in wf and "timeout-minutes: 50" in wf)
+check("workflow: two staggered crons 23:30/00:00 UTC, own concurrency group, key1+key2, OCR step, merge-commit",
+      "'30 23 * * *'" in wf and "'0 0 * * *'" in wf and "group: sunday-watch" in wf and "cancel-in-progress: false" in wf
+      and "NEXON_API_KEY2: ${{ secrets.NEXON_API_KEY2 }}" in wf
+      and "steps.watch.outputs.sunday_ocr == 'true'" in wf and "--apply" in wf and "git reset -q --hard origin/main" in wf
+      and "test_minutes" in wf and "pretend_new" in wf and "timeout-minutes: 210" in wf and "WATCH_INTERVAL: '20'" in wf)
 fw = open(os.path.join(ROOT, ".github", "workflows", "update-feed.yml"), encoding="utf-8").read()
-check("update-feed keeps its own concurrency group (not blocked by the 20-min watch)", "group: update-feed" in fw and "sunday-watch" not in fw)
+check("update-feed keeps its own concurrency group (not blocked by the watch)", "group: update-feed" in fw and "sunday-watch" not in fw)
 print("FAILS", fails); sys.exit(1 if fails else 0)

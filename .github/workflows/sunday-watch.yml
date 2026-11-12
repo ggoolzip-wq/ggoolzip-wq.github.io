@@ -1,15 +1,16 @@
 name: Sunday watch
 
-# 매일 10:00~10:20 KST 에 썬데이 메이플 새 글을 5초마다 확인(최대 240회/일) (GitHub 예약 실행은 몇 분 늦을 수 있어 09:45/09:50 KST 두 번 예약,
-# 같은 그룹이라 동시에 하나만 — 두 번째는 첫 번째가 끝난 뒤 시간이 지났거나 이미 찾았으면 바로 끝남)
+# 매일 08:30·09:00 KST 에 시작해, 실행 시작 시점부터 새 썬데이 메이플 글을 찾거나 11:30 KST까지 20초마다 확인
+# (GitHub 예약 실행이 늦을 수 있어 두 번 예약. 같은 그룹이라 동시에 하나만 — 두 번째는 첫 번째가 끝난 뒤
+# 이미 찾았으면 바로 끝나고, 11:30이 지났으면 1회만 확인하고 끝. 요일 제한 없음 — 금요일 공지 포함)
 on:
   schedule:
-    - cron: '45 0 * * *'   # 09:45 KST
-    - cron: '50 0 * * *'   # 09:50 KST (예비)
+    - cron: '30 23 * * *'  # 08:30 KST
+    - cron: '0 0 * * *'    # 09:00 KST (예비)
   workflow_dispatch:
     inputs:
       test_minutes:
-        description: '테스트: 지금부터 N분만 확인 (0 = 평소대로 10:00~10:20 KST)'
+        description: '테스트: 지금부터 N분만 확인 (0 = 평소대로 시작 시점~11:30 KST, 이미 지났으면 1회)'
         default: '0'
       pretend_new:
         description: '테스트: 이미 저장된 썬데이도 새 글처럼 다시 처리(OCR·자르기 포함)'
@@ -26,7 +27,7 @@ concurrency:
 jobs:
   watch:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 210
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -39,6 +40,7 @@ jobs:
           NEXON_API_KEY2: ${{ secrets.NEXON_API_KEY2 }}
           WATCH_TEST_MINUTES: ${{ github.event.inputs.test_minutes || '0' }}
           WATCH_PRETEND_NEW: ${{ github.event.inputs.pretend_new || 'false' }}
+          WATCH_INTERVAL: '20'
         run: python3 scripts/sunday_watch.py
       - name: Sunday OCR
         id: ocr

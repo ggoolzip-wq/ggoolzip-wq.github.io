@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""썬데이 메이플 새 글 감시 — sunday-watch.yml (매일 09:45/09:50 KST 시작 → 10:00~10:20 KST 동안 5초마다 확인)
+"""썬데이 메이플 새 글 감시 — sunday-watch.yml (매일 08:30/09:00 KST 시작 → 실행 시작 시점부터 새 글을 찾거나 11:30 KST까지 확인)
 
 - 1순위 넥슨 Open API /notice-event (update_feed.nx: 키1 → 호출량 초과·잘못된 키면 키2). API 가 실패하면 그 회차만 홈페이지 이벤트 검색 HTML.
 - 새 글(저장된 sunday.id 보다 큰 번호의 '썬데이 메이플')을 찾으면 바로 멈추고 update_feed.src_sunday 로 처리(detail 1회 → 이미지·기간·글자 혜택)
   → GITHUB_OUTPUT found=true, sunday_ocr=true|false → 워크플로가 OCR(scripts/sunday_ocr.py)·커밋.
 - 이번 주 썬데이(시작일이 아직 안 지난 글)가 이미 저장돼 있으면 확인하지 않고 끝냄(호출 0).
-- API 호출: 최대 20분 ÷ 5초 = 240회 + 새 글 detail 1회 ≈ 하루 최대 241회 (기존 약 530회와 합쳐 약 770회 < 1,000회, 키2 예비). 새 글을 찾으면 바로 멈춤.
+- 11:30 KST 가 이미 지났으면 1회만 확인하고 끝(예약이 늦어도 이미 올라온 글은 잡음).
+- API 호출: 최악 08:30~11:30 = 180분 ÷ 20초 = 540회 + 새 글 detail 1회 ≈ 하루 최대 541회.
+  기존 피드 약 530회와 합쳐 약 1,071회(개발 키 1,000회를 약간 넘으면 키2, 키 2개분 2,000회 안). 새 글을 찾으면 바로 멈춤.
 옵션/환경: WATCH_TEST_MINUTES=N(지금부터 N분만, 테스트), WATCH_PRETEND_NEW=true(저장된 썬데이도 새 글로 처리, 테스트),
-          WATCH_INTERVAL=5, --save 경로(feed.json 의 sunday 를 파일로) / --apply 경로(파일의 sunday 를 최신 feed.json 에 덮어쓰기 — 커밋 충돌 방지용)
+          WATCH_INTERVAL=20, --save 경로(feed.json 의 sunday 를 파일로) / --apply 경로(파일의 sunday 를 최신 feed.json 에 덮어쓰기 — 커밋 충돌 방지용)
 """
 import datetime, json, os, sys, time, urllib.parse
 
@@ -15,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import update_feed as F
 
 KST = F.KST
-START, END = (10, 0), (10, 20)
+END = (11, 30)
 
 def out(**kv):
     go = os.environ.get("GITHUB_OUTPUT")
@@ -38,7 +40,8 @@ def window(now):
     if m > 0:
         return now, now + datetime.timedelta(minutes=m)
     d = now.date()
-    return (datetime.datetime(d.year, d.month, d.day, *START, tzinfo=KST), datetime.datetime(d.year, d.month, d.day, *END, tzinfo=KST))
+    # 고정 시작 시각까지 기다리지 않고, 실행이 시작된 시점부터 확인
+    return now, datetime.datetime(d.year, d.month, d.day, *END, tzinfo=KST)
 
 def newest_sunday(cur_id):
     """(API 목록, 새 썬데이 번호 또는 None, 출처). API 실패 시 홈페이지 검색 HTML."""
@@ -70,13 +73,10 @@ def watch(now_fn=lambda: datetime.datetime.now(KST), sleep=time.sleep):
                 return out(found="false", sunday_ocr="false", calls=0)
         except ValueError:
             pass
-    if now >= end:
-        F.log("확인 시간(~%s)이 이미 지남 → 끝" % end.strftime("%H:%M"))
-        return out(found="false", sunday_ocr="false", calls=0)
-    if now < start:
-        F.log("10:00 KST 까지 대기 %d초" % (start - now).total_seconds())
-        sleep((start - now).total_seconds())
-    interval = float(os.environ.get("WATCH_INTERVAL") or 5)  # 사용자 결정: 5초
+    late = now >= end
+    if late:
+        F.log("확인 시간(~%s)이 이미 지남 → 1회만 확인하고 끝" % end.strftime("%H:%M"))
+    interval = float(os.environ.get("WATCH_INTERVAL") or 20)
     calls = 0
     while True:
         t0 = now_fn()
@@ -91,6 +91,8 @@ def watch(now_fn=lambda: datetime.datetime.now(KST), sleep=time.sleep):
             sd = feed.get("sunday") or {}
             F.log("처리:", sd.get("id"), sd.get("title"), sd.get("image"))
             return out(found="true", sunday_ocr="true" if F.sunday_needs_ocr(sd) else "false", calls=calls)
+        if late:
+            break
         nxt = t0 + datetime.timedelta(seconds=interval)
         if nxt >= end:
             break
