@@ -2579,6 +2579,22 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
  .calwk,.calgrid{gap:3px}.calwk{font-size:.7rem}.calgrid .calc,.calgrid .calc.neonBtn{height:92px;min-height:92px;padding:4px;grid-template-rows:20px 22px minmax(0,1fr);gap:4px;border-radius:6px}.calgrid .cald{width:19px;height:19px;font-size:.7rem}.calgrid .calm{font-size:.7rem}.calgrid .calbg{gap:2px;font-size:.4rem}.calgrid .calbg i span{display:none}.calgrid .cali{justify-content:flex-end;min-height:16px}.cal-item-count{font-size:.58rem}.cal-item-count>span{display:none}.cal-item-icons{display:none}.cal-legend{gap:10px;font-size:.6rem;margin:10px 0 14px}.calnote{font-size:.6rem}.calmonth-clean{padding:10px}.calmonth-clean .calchips{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
 }
 
+/* b412(t489): b399의 .calgrid .calc:not(.today):not(.sel) / .today 규칙이
+   더 높은 특이도로 .cbB·.cbM 테두리를 덮어씀. 지나지 않은 날짜(오늘 포함)의
+   파티 보스 일정만 선홍 테두리 복구. 지난 날짜의 보스 일정은 강조 없음(b382).
+   메모(.cbM) 초록도 같은 덮어쓰기로 깨져 있어 함께 복구(동작 유지). */
+.calgrid .calc.cbB:not(.past){border-color:#ff3b6b;box-shadow:0 0 8px rgba(255,59,107,.35)}
+.calgrid .calc.cbM:not(.cbB){border-color:#3ee08a;box-shadow:0 0 8px rgba(62,224,138,.3)}
+.calgrid .calc.today.cbB{border-color:#ff3b6b;box-shadow:0 0 8px rgba(255,59,107,.35)}
+.calgrid .calc.today.cbM:not(.cbB){border-color:#3ee08a;box-shadow:0 0 8px rgba(62,224,138,.3)}
+.calgrid .calc.past.cbB{border-color:color-mix(in srgb,var(--n1) 16%,transparent);box-shadow:none}
+.calgrid .calc.past.cbB.has{border-color:color-mix(in srgb,var(--n1) 16%,transparent);box-shadow:none}
+[data-theme=light] .calgrid .calc.cbB:not(.past){border-color:#e0144c;box-shadow:0 0 6px rgba(224,20,76,.25)}
+[data-theme=light] .calgrid .calc.cbM:not(.cbB){border-color:#0f9d58;box-shadow:0 0 6px rgba(15,157,88,.25)}
+[data-theme=light] .calgrid .calc.today.cbB{border-color:#e0144c;box-shadow:0 0 6px rgba(224,20,76,.25)}
+[data-theme=light] .calgrid .calc.today.cbM:not(.cbB){border-color:#0f9d58;box-shadow:0 0 6px rgba(15,157,88,.25)}
+[data-theme=light] .calgrid .calc.past.cbB,[data-theme=light] .calgrid .calc.past.cbB.has{border-color:rgba(120,110,220,.28);box-shadow:none}
+
 /* b400: 메모/일정은 머리 바로 아래, 시각 제거·동일 아이템 합산 2열. */
 .cald-clean .cald-row,.cald-clean .cald-colhd{grid-template-columns:minmax(0,1fr) minmax(85px,auto)}
 .cald-clean .cald-colhd>span:last-child{text-align:right}
