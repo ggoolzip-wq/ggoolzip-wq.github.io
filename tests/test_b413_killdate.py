@@ -211,7 +211,7 @@ try:
     check('E 재동기화해도 이번 주에 안 들어감', eres.get('thisWeek') is False, eres)
 
     build=pg.evaluate("document.documentElement.dataset.build")
-    check('dataset.build=b413', build=='b413', build)
+    check('dataset.build>=b413', (lambda b: b and b.startswith('b') and int(b[1:] or 0)>=413)(build), build)
     check('페이지 오류 없음', not errs, errs)
     pg.close(); b.close()
 finally:

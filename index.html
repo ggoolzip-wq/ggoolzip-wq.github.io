@@ -4382,13 +4382,19 @@ async function syncAll(opts={}){
     clearTimeout(rt);
     if(todo.length&&netN===todo.length) throw new Error('네트워크 오류 — 인터넷 연결 또는 브라우저 확장 프로그램·네트워크의 차단 여부를 확인하세요.'); // b184: 목록을 뒤로 미뤄도 전부 네트워크 오류면 '새로고침 실패'
     /* b184: 보스 체크(스케줄러)가 끝나면 바로 '완료' — 되짚기·레벨/이미지·훈장은 뒤에서 이어서 (같은 rateGate = 4건/1.1초 그대로) */
-    if(lb.length||later.length||bgList.length||stamps.length) syncBg=(async()=>{ let bt=0; const bp=()=>{ if(bt) return; bt=setTimeout(()=>{ bt=0; renderChars(); },150); };
+    /* b414: 처치일 보정(되짚기·schedStamp)이 끝난 뒤에만 '새로고침 완료'와 캘린더 반영.
+     *  b413 는 보정(캐릭터 많으면 수십 초)을 뒤로 미루고 먼저 완료를 띄워, 직후 화면은 지난주 목요일에 몰린 채로 보였음.
+     *  이미지·훈장·뒤에 미룬 계정 목록만 이전처럼 뒤에서 이어서 받음. */
+    if(lb.length||stamps.length){
+      await pool(lb,SYNC_CONC,async([c,a])=>{ try{ await schedLookback(c,a); }catch(e){} });
+      await pool(stamps,SYNC_CONC,async([c,a,d])=>{ try{ await schedStamp(c,a,d); }catch(e){} });
+    }
+    if(later.length||bgList.length) syncBg=(async()=>{ let bt=0; const bp=()=>{ if(bt) return; bt=setTimeout(()=>{ bt=0; renderChars(); },150); };
       await pool(bgList,SYNC_CONC,async a=>{ try{ if(assignFromList(a, await listAccount(a))) bp(); }catch(e){} }); /* b296: 계정 목록 동시에 (키별 rateGate 그대로) */
-      await pool(lb,SYNC_CONC,async([c,a])=>{ try{ if(await schedLookback(c,a)) bp(); }catch(e){} });
-      await pool(stamps,SYNC_CONC,async([c,a,d])=>{ try{ if((await schedStamp(c,a,d)).added) bp(); }catch(e){} });
       await pool(later,SYNC_CONC,async f=>{ try{ await f(); bp(); }catch(e){} });
       clearTimeout(bt); save(); if(!syncing) render(); })().finally(()=>{ syncBg=null; });
     S.settings.lastSync=Date.now(); save(); try{ svSyncDone(); }catch(e){} // b229: 관리자 창 '최근 갱신'
+    try{ if(typeof SV_ON!=='undefined'&&SV_ON&&typeof svTok==='function'&&svTok()&&typeof gdMeta!=='undefined'&&gdMeta.on&&typeof svPushBg==='function') svPushBg(); }catch(e){} // b414: 처치일 보정이 반영된 상태를 서버에도 바로 올림
     try{ syncPressMark(Date.now(),badAcc); }catch(e){} // b236: 성공한 동기화(자동 포함) = 30일 삭제 타이머 다시 시작 + /api/sync-press
     // zosu: 성공 알림(toast) 대신 🔄 버튼 옆 초록 글자 '새로고침 완료!' (몇 초 뒤 사라짐). 실패(일부 캐릭터·계정 오류)는 계속 알림
     if(errs||accMsgs.length) toast((errs?`일부 캐릭터 동기화 실패 ${errs}`:'')+(errs&&accMsgs.length?' · ':'')+(accMsgs.length?`계정 오류: ${accMsgs.join(', ')}`:''));
@@ -4518,8 +4524,8 @@ async function schedStamp(c,a,todayData,force){
   }
   const needCatch=force||mark.week!==week||mark.ocid!==c.ocid;
   if(needCatch){
-    let endPay=null, endDay=prevEnd;
-    for(let k=1;k<=7;k++){ const day=dayAdd(week,-k); let p; try{ p=await schedFetchDate(c,a,day); }catch(e){ break; }
+    let endPay=null, endDay=prevEnd, catchFail=false;
+    for(let k=1;k<=7;k++){ const day=dayAdd(week,-k); let p; try{ p=await schedFetchDate(c,a,day); }catch(e){ catchFail=true; break; }
       if(p&&hasWeeklyRows(p)){ endPay=p; endDay=String(p.date||'').slice(0,10)||day; break; } }
     if(endPay&&endDay&&endDay<week){
       const m=schedDoneMap(endPay), have=histBossSlots(prevWeek,c.id);
@@ -4540,7 +4546,7 @@ async function schedStamp(c,a,todayData,force){
         out.dated+=toDate.length;
       }
     }
-    schedCatchAt[c.id]={week,ocid:c.ocid,day:today};
+    if(!catchFail) schedCatchAt[c.id]={week,ocid:c.ocid,day:today};
   } else if(thisWeekData) schedCatchAt[c.id]={...mark,day:today,ocid:c.ocid,week};
   return out;
 }
@@ -7096,7 +7102,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b413'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b414'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
