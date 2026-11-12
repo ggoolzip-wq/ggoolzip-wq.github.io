@@ -16,7 +16,7 @@ PORT=_tutil.free_port(); srv=_tutil.Popen([sys.executable,'-m','http.server',str
 meta=json.load(open(os.path.join(FX,'meta.json')))
 du=lambda f:'data:image/png;base64,'+base64.b64encode(open(os.path.join(FX,f),'rb').read()).decode()
 cases=[(n,meta[str(n)][0],meta[str(n)][1],du('bl%02d.png'%n)) for n in range(1,21)]
-EXP=['1366']*4+['1920o']*4+['1920b']*4+['2560b']*4+['2560o']*4
+EXP=['1366']*4+['1920o']*4+['1920b']*4+['2560b']*4+['2560o']*4  # b415: 09-12는 1.406배 합성(09-10 예전 글꼴, 11-12 현재 글꼴). 원래 09-12는 현재 1920 최적 비율 상태바라 예전 Lv 템플릿이 기본 비율로 오인했음(원본은 fixtures/b415/t523_orig_bl09-12).
 DET="""async ([w,h,u])=>{ const A=window.AR; const im=new Image(); await new Promise(r=>{im.onload=r; im.src=u;});
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const g=cv.getContext('2d'); g.fillStyle='#000'; g.fillRect(0,0,w,h); g.drawImage(im,0,h-im.height);
   A.bbox=null; A.bbKey=''; A.prof=null; A.geo=null; const P=await arProfDetect(cv); const R=k=>{ const r=arR(k,cv); return [Math.round(r.x*w),Math.round(r.y*h),Math.round(r.w*w),Math.round(r.h*h)]; };
@@ -36,7 +36,7 @@ try:
     # 고정 영역 (스크린샷 실측 px)
     M={1:([550,538,272,26],[635,582,200,30]),5:([728,674,272,26],[830,728,200,30]),9:([773,757,382,37],[776,804,281,42]),13:([1031,1009,510,49],[1037,1073,375,56]),17:([100,1012,544,52],[1020,1096,400,60])}
     for n,(inv,sto) in M.items(): check(f'{n:02d}번 프로필 인벤/창고 메소 고정 영역',got[n]['inv']==inv and got[n]['sto']==sto,(got[n]['inv'],got[n]['sto']))
-    check('기본 비율 UI 영역 = 1366 배치 × 배율 (닉네임 높이 28×1.40625)',got[9]['name'][3]==int(28*1.40625+.5) and got[13]['name'][3]==int(28*1.875+.5),(got[9]['name'],got[13]['name']))
+    check('기본 비율 UI 영역 = 1366 배치 × 배율 (닉네임 높이 38×1.40625, b415)',got[9]['name'][3]==int(38*1.40625+.5) and got[13]['name'][3]==int(38*1.875+.5),(got[9]['name'],got[13]['name']))
     # 모르는 해상도
     rb=pg.evaluate(DET,[1600,900,du('u1600b.png')]); ro=pg.evaluate(DET,[1600,900,du('u1600o.png')])
     check('1600x900 기본 비율(1366 화면 확대) → 기본 비율 추정',bool(rb) and rb['est'] and abs(rb['s']-900/768)<.01 and rb['lab']=='1600 x 900(기본 비율)(추정)',rb)

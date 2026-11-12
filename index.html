@@ -7102,7 +7102,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b414'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b415'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -9447,7 +9447,7 @@ function arCandidates0(withE){ if(arLive()&&(!ARX.det.boss||(ARX.rwl?.mapOnly&&!
  * 화면 모서리에 UI 픽셀 × 배율로 붙여 계산(화면 비율 아님). 월드 영역(바닥·공중)은 게임 화면 비율. 게임 화면 = 스트림 안 검은 테두리·창 제목줄 뺀 곳. */
 const AR_RES=[[800,600],[1024,768],[1280,720],[1280,960],[1366,768],[1600,900],[1680,1050],[1920,1080],[1920,1200],[2560,1080],[2560,1440],[2732,1536],[3440,1440],[3840,2160]];
 const AR_UI={ // 1배(UI px) 기준, 1920x1080 최적 비율 실측(b284~b294 화면 비율을 UI px 로 옮김). a=붙는 모서리
-  name:{a:'bl',l:0,b:46,w:384,h:28}, log:{a:'br',r:0,b:356+130,w:614,h:356}, map:{a:'tl',l:0,t:0,w:384,h:86}, banner:{a:'tc',t:162,w:960,h:184} };
+  name:{a:'bl',l:0,b:56,w:384,h:38}, log:{a:'br',r:0,b:356+130,w:614,h:356}, map:{a:'tl',l:0,t:0,w:384,h:86}, banner:{a:'tc',t:162,w:960,h:184} };
 function arUiScale(gw,gh){ const o=+ARX.cfg.uiScale||0; if(o>0) return o; const P=ARX.prof; if(P&&P.gw===gw&&P.gh===gh) return P.s; return gh>=1400?2:1; }
 /* t523: 해상도 프로필 5종 (사용자 기준 스크린샷 20장 실측). s=UI 배율(1920 최적 = 1). 기본 비율 = 1366x768 화면을 통째로 키운 것.
  * 고정 영역(px, 게임 화면 기준): inv=인벤토리 메소, sto=창고 메소, stoInv=창고 열었을 때 옆 인벤토리 메소. 텍스트·닉네임은 AR_UI×s, 상자(월드)는 화면 높이 비율 */
@@ -9459,6 +9459,10 @@ const AR_PROF=[
   {id:'2560o',w:2560,h:1440,s:2,lab:'2560 x 1440(최적 비율)',inv:[100,1012,544,52],sto:[1020,1096,400,60],stoInv:[1504,1096,436,60]}];
 const AR_LVTPL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACIAAAAYCAAAAAC6zXDVAAACW0lEQVQoFWXBSY9MURgG4Pc759x7q25N3apVIWLYlBpiWIgYYk6ERhohSC+wEbEgISGGBRYkxJBYCCLCgq2QIBaN8BMs/AAJCaV1tRruufecT8vpTfM81ICjfpRi6GxPAIwJlCgx807q06et1MCk7JhQOugp/MXQ5Z/6yP4Xp/qnUR1Oacu9QBlKJAAGwIiz+w6cG8nEVIez9Oz2AGQEA4wJXjuTVFc8a7KkOpzateVlnQu2vfnmz1v+KBUpjjIdI3yeT3U4iy+sKfb82bde3smdn3FIBTSWb+fbstO4QnU4C89sLnMbN/MH048/Hy9DF1o+ydaqE2mqw1lyZm0xTb09245Nv3rj1axm4HPHx9rh0nuqw2lcXD1g/PTM61fKw4d+pRE0s7a94bh3/zHV4Cy4uHFOV3ud52/7CkcKUV7LOCyeKz94WKYanEWnN5R9Ynt07sC726VuEFHw/fCO95fzlmpwKpcGvZRq5dfvzV17PTC91Pyi5K7Buy+LCdXg1E9++8XZe1+LV+VQWu4bevFEqN07R1rjIVXhTFsnlOiN/Eht4qcFtWrlxw863LIrySCmKhw/0jFEQNL0kn4bU6QyRscdoVNUxaROBsamxvs0+10BjjySsIKjDC2A4xkrYg828lSSiEBxLIygnukbpwocK6Oc5d+hihOZ1+0oMGE3SVFuNEUVOGQjH8KkY04oFio0MUsP7Sg0VIHDJDUp2ZHChqP5WAtfS5uE1kiqMEmryWP8ixkgAFS1IDAJg/8x/qJlZC0JsoSpGAQwg0D9CrGVMBJTMQTAzBJ/AFRD8y/NHqJpAAAAAElFTkSuQmCC'; // 1배 'Lv.' 글자+레벨 바 (34x24, 05번 스크린샷)
 function arLvTpl(){ if(ARX.lvT) return ARX.lvT; return ARX.lvT=new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>res(null); im.src=AR_LVTPL; }); }
+/* b415: 현재 1920 최적 비율 실영상(게임 바 캡처, 약간 흐림)에서는 예전 Lv 템플릿이 1배에서 .36, 1.406배에서 .89 가 나와 기본 비율로 오인됨.
+   같은 크기(34×24)의 현재 상태바 'Lv.' 템플릿을 하나 더 두고, 배율마다 두 템플릿 점수 중 큰 값을 씀. */
+const AR_LVTPL2='data:image/png;base64,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';
+const arLvTpls=()=>{ if(ARX.lvTs) return ARX.lvTs; const load=src=>new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>res(null); im.src=src; }); return ARX.lvTs=Promise.all([AR_LVTPL,AR_LVTPL2].map(load)).then(a=>a.filter(Boolean)); }
 function arGray(g,w,h){ const d=g.getImageData(0,0,w,h).data, o=new Float32Array(w*h); for(let i=0;i<w*h;i++) o[i]=d[i*4]*.299+d[i*4+1]*.587+d[i*4+2]*.114; return o; }
 /* 왼쪽 아래 'Lv.' 바를 배율 후보마다 키워 맞춰 본 최고 점수 (NCC) */
 function arLvScore(src,G,im,s){ const tw=Math.max(4,Math.round(34*s)), th=Math.max(4,Math.round(24*s)), rw=Math.round(80*s), rh=Math.round(60*s);
@@ -9468,11 +9472,11 @@ function arLvScore(src,G,im,s){ const tw=Math.max(4,Math.round(34*s)), th=Math.m
   for(let y=0;y+th<=rh;y++) for(let x=0;x+tw<=rw;x++){ let a=0,b=0,c=0; for(let j=0;j<th;j++){ const r=(y+j)*rw+x, q=j*tw; for(let i=0;i<tw;i++){ const v=I[r+i]; a+=T[q+i]*v; b+=v; c+=v*v; } }
     const vv=c-b*b/N; if(vv>1e-6){ const n=a/Math.sqrt(vv*tt); if(n>best) best=n; } } return best; }
 /* 화면 공유 영상에서 프로필 고르기: 같은 해상도면 UI 크기(Lv 바)로 기본/최적 구분, 모르는 해상도는 가장 가까운 프로필 배율로 + '(추정)' */
-async function arProfDetect(src){ const sw=src?.videoWidth||src?.width, sh=src?.videoHeight||src?.height; if(!sw||!sh) return null; const im=await arLvTpl(); if(!im) return null;
+async function arProfDetect(src){ const sw=src?.videoWidth||src?.width, sh=src?.videoHeight||src?.height; if(!sw||!sh) return null; const ims=await arLvTpls(); if(!ims||!ims.length) return null;
   ARX.geo=null; const keep=ARX.prof; ARX.prof=null; const G=arGeom(sw,sh); ARX.prof=keep; const exact=AR_PROF.filter(p=>p.w===G.gw&&p.h===G.gh);
   const near=t=>{ let n=null,bd=1e9; for(const p of AR_PROF){ if(p.id==='1366'?(t==='o'&&G.gw>1400):p.id.slice(-1)!==t) continue; /* 1366 창고 위치는 화면이 좁아 다르게 붙음 → 큰 최적 화면은 1920 기준 */ const d=Math.abs(p.h-G.gh)+Math.abs(p.w-G.gw)*.5; if(d<bd){ bd=d; n=p; } } return n; };
   const cand=exact.length?exact.map(p=>({p,s:p.s,t:p.id==='1366'?'':p.id.slice(-1)})):[{p:near('o'),s:G.gh>=1400?2:1,t:'o'},{p:near('b'),s:+(G.gh/768).toFixed(5),t:'b'}];
-  let best=null; for(const c of cand){ const sc=arLvScore(src,G,im,c.s); if(!best||sc>best.sc) best={...c,sc}; }
+  let best=null; for(const c of cand){ const sc=Math.max(...ims.map(im=>arLvScore(src,G,im,c.s))); if(!best||sc>best.sc) best={...c,sc}; }
   if(!best||(best.sc<.55&&cand.length>1)) return null; const est=!exact.length, P=best.p;
   const lab=est?`${G.gw} x ${G.gh}(${best.t==='b'?'기본 비율':'최적 비율'})(추정)`:P.lab;
   ARX.prof={id:P.id,base:P,s:best.s,gw:G.gw,gh:G.gh,est,lab,score:+best.sc.toFixed(3)}; ARX.geo=null; return ARX.prof; }

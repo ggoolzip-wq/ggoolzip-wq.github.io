@@ -40,7 +40,8 @@ try:
     pg.evaluate(SET,['2터래플','제트루']); r=pg.evaluate(RUN,['u.png',12]); print('only2',r)
     check('2터래플만 등록해도 실화면 → 2터래플 (예전엔 숫자 이름이 투표에서 빠져 영원히 -)',r['seq'][-1]=='2터래플',r)
     pg.evaluate(SET,['터래플','2터래플','제트루']); r=pg.evaluate(RUN,['t.jpg',12]); print('plain',r)
-    check('회귀: 터래플 화면(b284 s10 Lv.289 터래플) → 터래플',r['seq'][-1]=='터래플' and '2터래플' not in r['seq'],r)
+    # b415: s10.jpg 화면은 'Lv.289 더래플'(픽셀 그대로). 예전에는 칸이 글자 위를 잘라 '러래플'로 읽고 음절 경로가 터래플로 오인함. 더래플 목록 확정은 test_b415.
+    check('회귀: s10(실제 더래플)을 목록의 터래플/2터래플로 오인하지 않음', '터래플' not in r['seq'] and '2터래플' not in r['seq'], r)
     pg.evaluate("()=>{ const A=window.AR; A.nOther=[]; A.nameOk=false; }"); r=pg.evaluate(RUN,['u.png',30]); print('switch',r)
     check('같은 세션에서 터래플(음절·이미지 학습 뒤) → 2터래플 화면으로 바꾸면 2터래플',r['seq'][-1]=='2터래플',r)
     m=pg.evaluate("""()=>{ localStorage.setItem('arNTpl',JSON.stringify({'터래플':{w:4,h:4,d:btoa('\\x01\\x02\\x03\\x04\\x05\\x06\\x07\\x08\\x09\\x0a\\x0b\\x0c\\x0d\\x0e\\x0f\\x10')},'제트루':{w:4,h:4,d:btoa('\\x01\\x02\\x03\\x04\\x05\\x06\\x07\\x08\\x09\\x0a\\x0b\\x0c\\x0d\\x0e\\x0f\\x10')}})); localStorage.removeItem('arNTplV'); window.AR.ntpl=null; const L=arNtLoad(); return Object.keys(L).sort(); }""")
