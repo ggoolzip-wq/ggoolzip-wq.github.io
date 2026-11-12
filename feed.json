@@ -1,44 +1,44 @@
 {
  "version": 1,
- "updatedAt": "2026-11-12T12:26:09+09:00",
+ "updatedAt": "2026-11-12T20:43:11+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-11-12T12:25:49+09:00",
-   "lastOkAt": "2026-11-12T12:25:49+09:00",
+   "checkedAt": "2026-11-12T20:42:42+09:00",
+   "lastOkAt": "2026-11-12T20:42:42+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-11-12T12:25:49+09:00",
-   "lastOkAt": "2026-11-12T12:25:49+09:00",
+   "checkedAt": "2026-11-12T20:42:42+09:00",
+   "lastOkAt": "2026-11-12T20:42:42+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
    "ok": true,
-   "checkedAt": "2026-11-12T12:25:50+09:00",
-   "lastOkAt": "2026-11-12T12:25:50+09:00",
+   "checkedAt": "2026-11-12T20:42:43+09:00",
+   "lastOkAt": "2026-11-12T20:42:43+09:00",
    "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-11-12T12:26:09+09:00",
-   "lastOkAt": "2026-11-12T12:26:09+09:00",
+   "checkedAt": "2026-11-12T20:43:09+09:00",
+   "lastOkAt": "2026-11-12T20:43:09+09:00",
    "error": ""
   }
  },
  "state": {
   "watermarks": {
-   "notice": 150428,
+   "notice": 150450,
    "notice-event": 1407,
    "notice-update": 815,
-   "test": 202,
-   "inven:5974": 7336462,
-   "inven:2304": 48379,
+   "test": 206,
+   "inven:5974": 7414747,
+   "inven:2304": 48457,
    "inven:2314": 11275,
    "inven:2316": 1786,
    "inven:2587": 2867,
@@ -100,6 +100,12 @@
   ],
   "test": [
    {
+    "id": "test:206",
+    "title": "클라이언트 1.2.208 릴리즈",
+    "url": "https://maplestory.nexon.com/Testworld/News/Update/206",
+    "date": "2026-11-12T16:55:00+09:00"
+   },
+   {
     "id": "test:202",
     "title": "클라이언트 1.2.207 릴리즈",
     "url": "https://maplestory.nexon.com/Testworld/News/Update/202",
@@ -119,6 +125,13 @@
    }
   ],
   "mabbak": [
+   {
+    "id": "inven:5974:7414747",
+    "title": "(추가7) [스압] 11/12(목) 메이플 나우 / 테섭 요약 : 블루 아카이브(블아) 콜라보 / 쇼케 예고 / 신규 이벤트 /",
+    "url": "https://www.inven.co.kr/board/maple/5974/7414747",
+    "date": "2026-11-12T18:25:00+09:00",
+    "board": "5974"
+   },
    {
     "id": "inven:5974:7336462",
     "title": "[대참사 방지] 오늘까지 받아야 하는 것들 요약",
