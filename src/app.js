@@ -856,12 +856,22 @@ function missHtml(){ return `<div class="card"><h2>${missIcon} 지금까지 빠�
   <div class="card"><h2>${missIconM} 지금까지 빠뜨린 보스메소는? (월간 Ver)</h2>${missChart((S.missM||[]).map(r=>activeMiss(r)),'m')}</div>`; }
 
 /* ---------- 리셋 처리 ---------- */
+/* b413: 주간 기록이 넘어가기 전에 처치 시각(c.wat)을 달력 pin 과 주간 기록(wats)에 남김 — 시각이 없으면 캘린더가 목요일(주 시작일)에 합산했음 */
+function calPinWats(wid,cid,wats){
+  if(!wid||!cid||!wats||!Object.keys(wats).length) return;
+  try{ const k='mapleBossTracker.cal'; const D=JSON.parse(localStorage.getItem(k)||'{}')||{}; if(!D||typeof D!=='object') return;
+    D.pin=D.pin||{}; const P=D.pin[wid]||(D.pin[wid]={}); P[cid]=Object.assign(P[cid]||{},wats); localStorage.setItem(k,JSON.stringify(D)); }catch(e){} }
+function histFillWats(ex,sum){ const src={}; (sum.perChar||[]).forEach(p=>{ if(p&&p.id&&p.wats) src[p.id]=p.wats; });
+  (ex.perChar||[]).forEach(p=>{ if(p&&p.id&&src[p.id]) p.wats=Object.assign({},src[p.id],p.wats||{}); }); }
 function resetCore(){
   const now={week:weekId(),day:dayId(),month:monthId()}; let changed=false; const msgs=[];
   if(S.period.week!==now.week){
     missRecord('w',S.period.week,missNow('w')); // 지난 주 빠뜨린 보스메소 (초기화 전 상태로 계산)
     const sum=weekSummary(S.period.week);
-    if(sum.cleared>0 && !S.history.some(h=>h.week===S.period.week)) S.history.push(sum);
+    try{ (S.characters||[]).forEach(c=>{ if(c.wat&&Object.keys(c.wat).length) calPinWats(S.period.week,c.id,c.wat); }); }catch(e){}
+    const ex=(S.history||[]).find(h=>h.week===S.period.week);
+    if(sum.cleared>0 && !ex) S.history.push(sum);
+    else if(ex) histFillWats(ex,sum);
     S.history.sort((a,b)=>a.week<b.week?-1:1);
     S.characters.forEach(c=>{c.weekly={}; c.wat={}; c.drops={}; c.dropOut={}; delete c.dmode; delete c.drev; for(const k in c.auto) if(findBoss(k)?.type==='weekly') delete c.auto[k]; bossNextApply(c);}); // b241: 대기 중 스케줄러 변경 적용
     msgs.push('주간 보스가 초기화되었습니다 (지난 주 기록 저장됨)'); changed=true;
@@ -1005,7 +1015,13 @@ function outHtml(list, n, compact){
 // 주간 기록: 주간 보스 결정석 수익 + 주간 보스 획득 아이템 (월간 보스는 monthSummary 로 따로)
 function weekSummary(wid){
   const a=allRevenue();
-  const perChar=a.per.map(p=>({id:p.c.id, name:p.c.name, job:p.c.job, world:p.c.world, meso:p.r.meso, count:p.r.wlist.length, bosses:p.r.wlist.map(bossTag), bvals:p.r.wlist.map(x=>x.counted?x.value:0), ...(sp=>({items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes), ...(Object.keys(sp.revs).length?{revs:sp.revs}:{})}))(charDrops(p.c,'weekly'))}));
+  const perChar=a.per.map(p=>{
+    const sp=charDrops(p.c,'weekly'), at=p.c.wat||{}, wats={};
+    p.r.wlist.forEach(x=>{ if(at[x.slot]) wats[x.slot]=at[x.slot]; });
+    return {id:p.c.id, name:p.c.name, job:p.c.job, world:p.c.world, meso:p.r.meso, count:p.r.wlist.length, bosses:p.r.wlist.map(bossTag), bvals:p.r.wlist.map(x=>x.counted?x.value:0),
+      ...(Object.keys(wats).length?{wats}:{}),
+      items:cleanItems(sp.items), outcomes:cleanOut(sp.outcomes), ...(Object.keys(sp.revs).length?{revs:sp.revs}:{})};
+  });
   return {week:wid, weeklyOnly:true, total:a.total, cleared:a.per.reduce((s,p)=>s+p.r.wlist.length,0), crystals:a.count, items:perChar.reduce((s,p)=>s+itemSum(p.items),0), perChar};
 }
 function monthSummary(mid){
@@ -1051,7 +1067,9 @@ const fmtMonth = m => { const [y,mm]=String(m).split('-'); return `${y}년 ${+mm
  *  - GET /maplestory/v1/character/list            : 계정 캐릭터 목록 (본인 API 키)
  *  - GET /maplestory/v1/id?character_name=         : ocid 조회
  *  - GET /maplestory/v1/character/basic?ocid=      : 기본 정보 (이미지, 월드, 레벨 등)
- *  - GET /maplestory/v1/scheduler/character-state?ocid= : 스케줄러 (보스 완료 여부, 자기 계정 캐릭터만)
+ *  - GET /maplestory/v1/scheduler/character-state?ocid=&date= : 스케줄러 (보스 완료 여부, 자기 계정 캐릭터만).
+ *    공식 응답 필드: date, boss_contents[].content_name/difficulty/cycle/registration_flag/complete_flag(일부 응답은 clear_flag).
+ *    처치 시각 필드는 없음. date 미지정=오늘(오늘을 date 로 명시하면 OPENAPI00004). 과거일은 date=YYYY-MM-DD (최대 14일).
  * ===================================================================== */
 const API_ERR = {OPENAPI00001:'서버 내부 오류',OPENAPI00002:'권한이 없습니다',OPENAPI00003:'유효하지 않은 식별자(캐릭터)',OPENAPI00004:'파라미터 누락 또는 유효하지 않음',
   OPENAPI00005:'유효하지 않은 API 키입니다',OPENAPI00006:'유효하지 않은 게임 또는 API 경로',OPENAPI00007:'API 호출량 초과 — 잠시 후 다시 시도하세요',
@@ -1315,7 +1333,7 @@ function applyScheduler(c, data){
       seen[b.id]=true;
       if(b.type==='weekly'&&hasReg&&!reg) clrEdit[b.id]={enabled:false}; // b242: 잡은 보스를 스케줄러에서 뺌 = 이번 주는 그대로(클리어 표시), 목 리셋 때 끔
       c.bosses[b.id]={enabled:true,diff,party:cfg?.party||1}; clampParty(c,b.id);
-      if(b.type==='weekly'){ if(!c.weekly[b.id]){ checked++; (c.wat||(c.wat={}))[b.id]=Date.now(); } c.weekly[b.id]=true; }
+      if(b.type==='weekly'){ if(!c.weekly[b.id]){ checked++; (c.wat||(c.wat={}))[b.id]=Date.now(); } c.weekly[b.id]=true; } // b413: 기본은 동기화 시각, schedStamp 가 일별 조회로 처치일로 덮음
       else { if(!c.monthly[b.id]) checked++; c.monthly[b.id]=c.monthly[b.id]||S.period.week; (c.mdate||(c.mdate={}))[b.id]=(c.mdate||{})[b.id]||kstDay(); }
       c.auto[b.id]=true;
     } else if(reg){ // 스케줄러에 등록된 보스 = 이 캐릭터의 보스 (난이도도 API 값, 파티 인원은 유지)
@@ -1422,11 +1440,11 @@ async function syncAll(opts={}){
       if(!a.key||badAcc.has(a.id)){ errs++; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:`'${a.label}' 계정 API 키 오류: ${a.status?.msg||'API 키 미등록'}`}); continue; }
       todo.push([c,a]);
     }
-    let netN=0; const lb=[], later=[]; if(syncBg) await syncBg; // 앞 동기화의 뒤 작업이 남았으면 끝난 뒤 시작
+    let netN=0; const lb=[], later=[], stamps=[]; if(syncBg) await syncBg; // 앞 동기화의 뒤 작업이 남았으면 끝난 뒤 시작
     let rt=0; const paint=()=>{ if(rt) return; rt=setTimeout(()=>{ rt=0; renderChars(); },120); };
     await pool(todo, SYNC_CONC, async([c,a])=>{
       if(!c.ocid){ try{ c.ocid=(await nx('/maplestory/v1/id',{character_name:c.name},a.key)).ocid; }catch(e){ c.sync={...c.sync,ok:false,msg:'ocid 조회 실패: '+e.message}; errs++; return; } }
-      try{ total+=await schedApply(c,a,opts.full?null:lb,opts.full); paint(); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
+      try{ total+=await schedApply(c,a,opts.full?null:lb,opts.full,opts.full?null:stamps); paint(); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
       catch(e){ errs++; if(e.code==='NETWORK') netN++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
       const now=Date.now();
       if(opts.full||!(now-(c.sync?.imgAt||0)<(opts.silent?SYNC_BASIC_LOAD_TTL_MS:SYNC_BASIC_TTL_MS))) later.push(bgJob(c,a,fetchBasic)); // 이미지·레벨·EXP
@@ -1435,9 +1453,10 @@ async function syncAll(opts={}){
     clearTimeout(rt);
     if(todo.length&&netN===todo.length) throw new Error('네트워크 오류 — 인터넷 연결 또는 브라우저 확장 프로그램·네트워크의 차단 여부를 확인하세요.'); // b184: 목록을 뒤로 미뤄도 전부 네트워크 오류면 '새로고침 실패'
     /* b184: 보스 체크(스케줄러)가 끝나면 바로 '완료' — 되짚기·레벨/이미지·훈장은 뒤에서 이어서 (같은 rateGate = 4건/1.1초 그대로) */
-    if(lb.length||later.length||bgList.length) syncBg=(async()=>{ let bt=0; const bp=()=>{ if(bt) return; bt=setTimeout(()=>{ bt=0; renderChars(); },150); };
+    if(lb.length||later.length||bgList.length||stamps.length) syncBg=(async()=>{ let bt=0; const bp=()=>{ if(bt) return; bt=setTimeout(()=>{ bt=0; renderChars(); },150); };
       await pool(bgList,SYNC_CONC,async a=>{ try{ if(assignFromList(a, await listAccount(a))) bp(); }catch(e){} }); /* b296: 계정 목록 동시에 (키별 rateGate 그대로) */
       await pool(lb,SYNC_CONC,async([c,a])=>{ try{ if(await schedLookback(c,a)) bp(); }catch(e){} });
+      await pool(stamps,SYNC_CONC,async([c,a,d])=>{ try{ if((await schedStamp(c,a,d)).added) bp(); }catch(e){} });
       await pool(later,SYNC_CONC,async f=>{ try{ await f(); bp(); }catch(e){} });
       clearTimeout(bt); save(); if(!syncing) render(); })().finally(()=>{ syncBg=null; });
     S.settings.lastSync=Date.now(); save(); try{ svSyncDone(); }catch(e){} // b229: 관리자 창 '최근 갱신'
@@ -1487,24 +1506,130 @@ function schedErr(c,e){ schedC[c.id]={...(schedC[c.id]||{}),errAt:Date.now(),ok:
  * 그래서 등록을 켤 근거가 없어 라인업이 빈 채로 남았음 → 주간 행이 없으면 date= 어제…7일 전 응답(스케줄러 등록 목록)으로 등록만 켬
  * (지난 주 날짜라 클리어로는 안 침 — applyScheduler 의 staleWeek). 아직 준비 안 된 날짜(OPENAPI00009)는 건너뜀. */
 const hasWeeklyRows = d => (d?.boss_contents||[]).some(r=>/weekly/i.test(String(r.cycle||'')));
-/* b184: 지난 날짜 되짚기(이번 주 기록 찾기, 최대 7번 호출) 결과는 캐릭터·KST 날짜별로 기억 → 같은 날 다시 🔄 해도 다시 안 부름.
+const dayAdd = (day,n) => { const t=Date.parse(day+'T12:00:00+09:00'); return Number.isFinite(t)?dayId(t+n*864e5):day; };
+const kstNoon = day => { const t=Date.parse(day+'T12:00:00+09:00'); return Number.isFinite(t)?t:Date.now(); };
+/* b184: 지난 날짜 되짚기(등록 목록) 결과는 캐릭터·KST 날짜별로 기억 → 같은 날 다시 🔄 해도 다시 안 부름.
  * lb 배열을 주면(🔄) 되짚기는 바로 하지 않고 lb 에 넣어 '완료' 표시 뒤 뒤에서 처리 */
 const lbCache={};
+/* b413: 일별 스케줄러 응답 캐시 (ocid|YYYY-MM-DD). 오늘(date 명시 금지)은 넣지 않음. 되짚기·처치일 조회가 같은 날을 두 번 안 부름 */
+const schedDateCache={};
+async function schedFetchDate(c,a,day){
+  if(!c?.ocid||!a?.key||!day||day===dayId()) return null;
+  const key=c.ocid+'|'+day; if(Object.prototype.hasOwnProperty.call(schedDateCache,key)) return schedDateCache[key];
+  try{ const p=await nx('/maplestory/v1/scheduler/character-state',{ocid:c.ocid,date:day},a.key); return schedDateCache[key]=p||null; }
+  catch(e){ if(e.code==='OPENAPI00009'||e.code==='OPENAPI00004'){ schedDateCache[key]=null; return null; } throw e; }
+}
+function schedDoneMap(data){
+  const isDone=r=>flagOn(r.complete_flag)||flagOn(r.clear_flag), m={};
+  for(const r of data?.boss_contents||[]){
+    const cyc=String(r.cycle||'').toLowerCase(); if(/daily|일일|일간/.test(cyc)) continue;
+    const b=matchBoss(r.content_name), diff=normDiff(r.difficulty); if(!b||!diff||!b.diffs.includes(diff)) continue;
+    const done=isDone(r), reg=flagOn(r.registration_flag), prev=m[b.id];
+    if(!prev) m[b.id]={done,reg,diff,b};
+    else { if(done&&!prev.done){ prev.done=true; prev.diff=diff; } if(reg) prev.reg=true; }
+  }
+  return m;
+}
+/* 주어진 보스들이 endDay 에는 완료였을 때, startDay~endDay 안에서 처음 완료로 바뀐 날. 하루 조회가 전 보스 플래그를 주므로 날짜당 1호출.
+ * 오늘은 date 파라미터로 조회하지 않음. 기록이 없는 날은 건너뛰고, 더 과거를 봄. */
+async function schedClearDays(c,a,ids,endDay,startDay){
+  const last={}; (ids||[]).forEach(id=>{ last[id]=endDay; }); const need=new Set(ids||[]); if(!need.size||!endDay||!startDay||endDay<startDay) return last;
+  const today=dayId(); let d=endDay===today?dayAdd(today,-1):dayAdd(endDay,-1);
+  while(d&&d>=startDay&&need.size){
+    if(d===today){ d=dayAdd(d,-1); continue; }
+    let p; try{ p=await schedFetchDate(c,a,d); }catch(e){ break; }
+    if(p&&hasWeeklyRows(p)){ const m=schedDoneMap(p); for(const id of [...need]){ if(m[id]?.done) last[id]=d; else need.delete(id); } }
+    d=dayAdd(d,-1);
+  }
+  return last;
+}
+function histBossSlots(wid,cid){ const h=(S.history||[]).find(x=>x.week===wid), p=h&&(h.perChar||[]).find(x=>x.id===cid), out=new Set();
+  (p?.bosses||[]).forEach(t=>{ const n=(/^(.+?)\(/.exec(t||'')||[])[1], b=BOSSES.find(x=>x.name===n); if(b) out.add(b.id); }); return out; }
+function histMergeClears(wid,c,items){
+  if(!wid||!c||!items||!items.length) return 0;
+  S.history=S.history||[]; let h=S.history.find(x=>x.week===wid);
+  if(!h){ h={week:wid,weeklyOnly:true,total:0,cleared:0,crystals:0,items:0,perChar:[]}; S.history.push(h); S.history.sort((a,b)=>a.week<b.week?-1:1); }
+  let p=(h.perChar||[]).find(x=>x.id===c.id);
+  if(!p){ p={id:c.id,name:c.name,job:c.job,world:c.world,meso:0,count:0,bosses:[],bvals:[],items:{},outcomes:{}}; (h.perChar||(h.perChar=[])).push(p); }
+  p.wats=p.wats||{}; p.bosses=p.bosses||[]; p.bvals=p.bvals||[]; let added=0;
+  for(const it of items){
+    const sl=it.id, b=findBoss(sl); if(!b||b.type!=='weekly') continue;
+    const cfg=c.bosses[sl], diff=(cfg&&b.diffs.includes(cfg.diff)?cfg.diff:null)||(b.diffs.includes(it.diff)?it.diff:b.diffs[0]);
+    const party=Math.max(1,Math.min(partyMax(b,diff),cfg?.party||1)), value=Math.floor(price(b,diff)/party), tag=bossTag({name:b.name,diff,party});
+    if(!p.bosses.some(t=>t.startsWith(b.name+'('))){ p.bosses.push(tag); p.bvals.push(value); p.meso=(+p.meso||0)+value; p.count=(+p.count||0)+1; h.total=(+h.total||0)+value; h.cleared=(+h.cleared||0)+1; h.crystals=(+h.crystals||0)+1; added++; }
+    if(it.day) p.wats[sl]=kstNoon(it.day);
+  }
+  return added;
+}
+function missRecomputeWeek(wid){
+  if(!wid) return; const arr=S.missW||(S.missW=[]), i=arr.findIndex(x=>x.week===wid), lim=S.settings.weeklyLimit, h=(S.history||[]).find(x=>x.week===wid), list=[];
+  for(const c of S.characters||[]){ const p=h&&(h.perChar||[]).find(x=>x.id===c.id), top=expectedAll(c).slice(0,lim);
+    const got=new Set((p?.bosses||[]).map(t=>String(t).split('(')[0]));
+    const miss=top.filter(x=>!got.has(x.name)).slice(0,Math.max(0,top.length-(+p?.count||0)));
+    if(miss.length) list.push({id:c.id,name:c.name,n:miss.length,meso:miss.reduce((a,x)=>a+x.value,0)}); }
+  const pk=missPack(list), rec={week:wid,date:ymdDot(nextWeekId(wid)),...pk,approx:true};
+  if(i>=0) arr[i]=rec; else if(pk.n) arr.push(rec);
+}
+const schedCatchAt={}; // charId → {week,ocid,day} 지난주 보완·오늘 처치일 조회 중복 방지
+/* b413: 동기화 시각이 아니라 처치일로 귀속. API 에 처치 시각이 없으므로 date 파라미터로 처음 complete_flag 가 켜진 날을 찾음.
+ * 이번 주 완료 → c.wat 을 그 날 정오(KST)로 (오늘 처치면 동기화 시각 유지). 지난 주 완료(목 리셋 뒤) → 이번 주에 넣지 않고 지난 주 기록·pin 에만 추가(이미 있으면 합계는 그대로, 날짜만 채움). */
+async function schedStamp(c,a,todayData,force){
+  const out={added:0,dated:0}; if(!c||!a?.key||!c.ocid) return out;
+  const today=dayId(), week=S.period.week, prevWeek=dayAdd(week,-7), prevEnd=dayAdd(week,-1);
+  const todayDate=String(todayData?.date||'').slice(0,10);
+  const thisWeekData=!todayDate||todayDate>=week;
+  const mark=schedCatchAt[c.id]||{};
+  if(thisWeekData){
+    const fresh=Object.keys(c.weekly||{}).filter(id=>findBoss(id)?.type==='weekly'&&(!(c.wat||{})[id]||dayId((c.wat||{})[id])===today));
+    if(fresh.length && (force||mark.day!==today||mark.ocid!==c.ocid)){
+      const map=await schedClearDays(c,a,fresh,today,week);
+      c.wat=c.wat||{};
+      for(const id of fresh){ const day=map[id]||today; if(day!==today){ c.wat[id]=kstNoon(day); out.dated++; } }
+    }
+  }
+  const needCatch=force||mark.week!==week||mark.ocid!==c.ocid;
+  if(needCatch){
+    let endPay=null, endDay=prevEnd;
+    for(let k=1;k<=7;k++){ const day=dayAdd(week,-k); let p; try{ p=await schedFetchDate(c,a,day); }catch(e){ break; }
+      if(p&&hasWeeklyRows(p)){ endPay=p; endDay=String(p.date||'').slice(0,10)||day; break; } }
+    if(endPay&&endDay&&endDay<week){
+      const m=schedDoneMap(endPay), have=histBossSlots(prevWeek,c.id);
+      const h=(S.history||[]).find(x=>x.week===prevWeek), pc=h&&(h.perChar||[]).find(x=>x.id===c.id), wats=pc?.wats||{};
+      const doneIds=Object.keys(m).filter(id=>m[id].done&&m[id].b.type==='weekly');
+      const missing=doneIds.filter(id=>!have.has(id));
+      const undated=doneIds.filter(id=>have.has(id)&&!wats[id]);
+      const toDate=[...new Set([...missing,...undated])];
+      if(toDate.length){
+        const map=await schedClearDays(c,a,toDate,endDay,prevWeek);
+        const rows=toDate.map(id=>({id,day:map[id]||endDay,diff:m[id]?.diff}));
+        out.added+=histMergeClears(prevWeek,c,rows.filter(x=>missing.includes(x.id)));
+        const pin={}; rows.forEach(x=>{ pin[x.id]=kstNoon(x.day); });
+        const rec=(S.history||[]).find(x=>x.week===prevWeek)?.perChar?.find(x=>x.id===c.id);
+        if(rec) rec.wats=Object.assign(rec.wats||{},pin);
+        calPinWats(prevWeek,c.id,pin);
+        if(out.added) try{ missRecomputeWeek(prevWeek); }catch(e){}
+        out.dated+=toDate.length;
+      }
+    }
+    schedCatchAt[c.id]={week,ocid:c.ocid,day:today};
+  } else if(thisWeekData) schedCatchAt[c.id]={...mark,day:today,ocid:c.ocid,week};
+  return out;
+}
 async function schedLookback(c,a,force){ const day=dayId(), hit=lbCache[c.id];
   if(!force&&hit&&hit.day===day&&hit.ocid===c.ocid){ if(hit.p){ const keep=c.sync; const n=applyScheduler(c,hit.p); c.sync=keep; return n; } return 0; }
   let found=null;
   for(let k=1;k<=7;k++){
-    let p; try{ p=await nx('/maplestory/v1/scheduler/character-state',{ocid:c.ocid,date:dayId(Date.now()-k*864e5)},a.key); }
-    catch(e){ if(e.code==='OPENAPI00009'||e.code==='OPENAPI00004') continue; return 0; } // 다른 오류는 기억 안 함(다음에 다시)
+    let p; try{ p=await schedFetchDate(c,a,dayAdd(day,-k)); }catch(e){ return 0; }
     if(hasWeeklyRows(p)){ found=p; break; }
   }
   lbCache[c.id]={day,ocid:c.ocid,p:found};
   if(!found) return 0; const keep=c.sync; const n=applyScheduler(c,found); c.sync=keep; return n; }
-async function schedApply(c,a,lb,force){
+async function schedApply(c,a,lb,force,stampQ){
   const d=await fetchSched(c,a); let n=0;
   const need=(d?.boss_contents||[]).length && !hasWeeklyRows(d); // 응답 자체가 비면(오류·빈 객체) 건너뜀
   if(need&&!lb) n+=await schedLookback(c,a,force);
   n+=applyScheduler(c,d);
+  if(stampQ) stampQ.push([c,a,d]); else { try{ n+=(await schedStamp(c,a,d,force)).added||0; }catch(e){} }
   if(need&&lb){ const h=lbCache[c.id]; if(h&&h.day===dayId()&&h.ocid===c.ocid) n+=await schedLookback(c,a); else lb.push([c,a]); }
   return n;
 }
@@ -4042,7 +4167,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b412'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b413'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -4490,7 +4615,7 @@ function calTick(){ if(typeof pend!=='undefined'&&pend) return; const D=calLoad(
     D.snap[c.id]=s; if(c.wat&&Object.keys(c.wat).length){ const P=(D.pin=D.pin||{})[S.period.week]||(D.pin[S.period.week]={}); P[c.id]=Object.assign(P[c.id]||{},c.wat); } }
   D.init=1; const after=JSON.stringify(D); if(after!==before) try{ localStorage.setItem(CAL_KEY,after); }catch(e){} }
 /* b336: 이미 있는 기록 채우기 — 달력 표시 = 저장된 기록에서 매번 다시 계산(calRecs). b334 차이 기록(log)은 더하지 않고 '날짜 힌트'로만 → 중복 없음.
- *  주간 결정석: c.wat[보스] 처치 시각(이번 주; 지난 주는 이 브라우저가 기억한 D.pin[주][캐릭터]) → 그날, 없으면 그 주 목요일(리셋일) ≈.
+ *  주간 결정석: c.wat[보스] 처치 시각(이번 주; 지난 주는 주간 기록 perChar.wats 또는 이 브라우저 D.pin[주][캐릭터]) → 그날, 없으면 그 주 목요일(리셋일) ≈.
  *  월간(검마): mdate/mdates 날짜 → 그날, 없으면 그 주(mweeks) 목요일 ≈, 그것도 없으면 그달 1일 ≈.
  *  아이템·판매금: 그 보스 처치 날짜 → 없으면 log 에 그 아이템이 처음 늘어난 날(그 주/달 안) → 없으면 위 규칙 ≈. */
 function calRecs(D){ const ids=activeIds(), out=[], pin=D.pin||{}, logDays=Object.keys(D.log||{}).sort();
@@ -4502,7 +4627,7 @@ function calRecs(D){ const ids=activeIds(), out=[], pin=D.pin||{}, logDays=Objec
   const wend=w=>dayId(Date.parse(w+'T00:00:00+09:00')+6*864e5);
   const weeks=[...(S.history||[]).map(h=>[h,false]),[weekSummary(S.period.week),true]];
   for(const [h,cur] of weeks){ const w=h.week; if(!w) continue;
-    for(const p of h.perChar||[]){ if(!ids.has(p.id)) continue; const c=S.characters.find(x=>x.id===p.id), at=Object.assign({},(pin[w]||{})[p.id]||{},cur&&c?c.wat||{}:{});
+    for(const p of h.perChar||[]){ if(!ids.has(p.id)) continue; const c=S.characters.find(x=>x.id===p.id), at=Object.assign({},(pin[w]||{})[p.id]||{},p.wats||{},cur&&c?c.wat||{}:{});
       const dOf=sl=>at[sl]?dayId(at[sl]):null;
       (p.bosses||[]).forEach((t,i)=>{ const v=+(p.bvals||[])[i]||0; if(v>0){ const d=dOf(slotOf(t)); add(d||w,p,v,null,0,!d,t,at[slotOf(t)]); } });
       items(p,dOf,w,wend(w),()=>w,sl=>at[sl]); } }
