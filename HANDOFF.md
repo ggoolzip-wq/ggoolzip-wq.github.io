@@ -3384,6 +3384,6 @@ tests/                  Playwright 회귀 테스트(test_tracker4~15), test_feed
 - 파일: `src/autorec.js`(1920 전용 분기·주석), `src/app.js`·`index.html` `dataset.build='b422'`, `tests/test_b422_1920prof.py`, `tests/fixtures/b422/`(n1·n2·n3·n5·n7 1920 기본, n2 원본·1366·1600·2560).
 - 검사: test_b422_1920prof, test_b420, test_b419, test_b418, test_b417, test_b415, test_b409, test_b410, test_b405, test_b375, test_b328 통과.
 - 사진(01–15는 덮어쓰지 않음): `/workspace/reward_report_1113/16_1920_cause.png`(원인·점수 비교), `17_1920_solution.png`(1920 전용 규칙), `18_1920_live_before_after.png`(수정 전후 라이브 결과표).
-- 배포: 일반 push 1회. GitHub Pages·Cloudflare Pages 확인은 푸시 후 이 절에 시각·해시를 보강. 우회·키 노출 없이 기존 `Deploy Cloudflare Pages` 워크플로만 사용.
+- 배포: 2026-11-14 01:43:49 Asia/Seoul 일반 push(`a381757`). GitHub Pages(`ggoolzip-wq.github.io`)는 01:44:25 Asia/Seoul last-modified, 01:44:49 확인 — sha `e26422ecaf2e4ecec5fac44570a5737d67dae156bdb7df92a7371a26cb496a3d`, `dataset.build='b422'` 일치(pages-build-deployment 43465635550 성공, 01:44:30 완료). Cloudflare Pages(`bossmaple.pages.dev`)는 같은 기존 워크플로(`Deploy Cloudflare Pages` 43465636109)가 01:44:16 Asia/Seoul에 성공, 01:44:50 확인 — 같은 sha·빌드 일치(Cache-Control: no-cache). Workers API 장애는 그때까지 공개 상태가 monitoring·Partially Degraded였으나 이번 배포는 통과. 우회·키 노출 없음.
 - 인수인계: https://github.com/ggoolzip-wq/ggoolzip-wq.github.io/blob/main/HANDOFF.md
 - 홈페이지: https://bossmaple.pages.dev/ , https://ggoolzip-wq.github.io/
