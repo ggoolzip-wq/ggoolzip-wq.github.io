@@ -7102,7 +7102,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b416'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b417'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -9385,7 +9385,7 @@ function arSim(text,word){ const t=arNorm(text), w=arNorm(word); if(!t||!w) retu
   if(t.length<w.length) best=Math.max(best,1-arLev(t,w)/w.length); return best; }
 /* 보스·난이도: 사용자가 묶은 맵 이름 → 보스 이름 들어 있음 → 난이도 글자 */
 /* t538: 표(AR_BMAP)로 맵 이름 → {boss,diff,kind:'b'|'r'|'w'|'br'…,name}. 난이도는 줄 끝 <노멀> 같은 꺾쇠, 없으면 같은 판에서 마지막으로 읽은 난이도 */
-function arTagDiff(L,b){ const t=arNorm(L); if(!/[<>]/.test(L)) return ''; for(const [w,k] of AR_DIFFW) if(t.includes(w)&&(!b||b.diffs.includes(k))) return k;
+function arTagDiff(L,b){ const t=arNorm(L); if(!/[<>]/.test(L)){ /* b417 (t538u): 꺾쇠가 빠진 OCR('솔라톰의유산이지:') — 맵 이름 한글에 난이도 단어가 붙어 줄 끝에 있을 때만 */ const t2=t.replace(/[^가-힣A-Za-z0-9]+$/,''); for(const [w,k] of AR_DIFFW){ if(t2.endsWith(w)&&t2.length>=w.length+2&&(!b||b.diffs.includes(k))) return k; } return ''; } for(const [w,k] of AR_DIFFW) if(t.includes(w)&&(!b||b.diffs.includes(k))) return k;
   const m=L.match(/<\s*([^<>]{1,6})\s*>?\s*$/)||L.match(/<\s*([^<>]{1,6})\s*>/); if(!m) return ''; let best=null; for(const [w,k] of AR_DIFFW){ if(b&&!b.diffs.includes(k)) continue; const s=arSimJ(m[1],w); if(s>=.6&&(!best||s>best.s)) best={k,s}; } return best?best.k:''; }
 /* t558: 대기맵 지역명이 전투·보상맵과 다른 보스 (루시드: '꿈의 도시 레헬른' vs '레헬른') */
 const AR_WREG={lucid:'꿈의도시레헬른'};
@@ -10155,7 +10155,7 @@ function arNameVote2(){ const NH=ARX.nHist||[], NL=ARX.nLead||[], off=NH.length-
       if(!ld&&pair&&yes>kn.length*.2){ if(kn.length>=4&&yes*2>=kn.length) no.push(c.id); continue; } }
     if(R.length<3||!st){ if(H.length>=6&&!R.length) no.push(c.id); continue; }
     let good=true; [...X].forEach((ch,i)=>{ const x=arSyl(ch); if(!(x[0] in AR_ICL)&&!Object.values(AR_ICL).includes(x[0])) return; const asp=t=>{ const s=arSyl(t[i]); return s&&AR_ASPI[s[0]]; };
-      if(AR_ASPI[x[0]]){ if(!R.some(asp)&&!(x[0]===15&&X.length>=4&&!S.characters.some(d=>{ if(d===c) return false; const Y=d.name.replace(/[^가-힣]/g,''); return Y.length===X.length&&arSylM(Y,X); }))) good=false; /* b409 (t692): 실화면 '콜더쇼츠'의 콜을 골·폴·갈로만 읽음(p10 4.9초 동안 콜 0번) — ㄱ↔ㅋ 은 양쪽으로 헛읽어(겟→켓) 거센 읽기가 증거가 못 됨. ㅋ 자리·4글자 이상·같은 꼴 짝 이름이 목록에 없을 때만 거센 읽기 없이 인정 */ } else if(x[0]===3||x[0]===0||x[0]===12||x[0]===7){ const M=A.slice(-20).filter(t=>arSylM(t,X,pw)); if(M.filter(asp).length>=Math.max(1,M.length*(x[0]===0?.8:.2))) good=false; /* t602: 실영상 '겟로스트로바' — 화면 겟 을 켓 으로 ~50% 읽음(ㄱ→ㅋ 헛읽기는 흔함, ㄷ→ㅌ 은 0번) → ㄱ 자리는 거센 읽기 80% 이상일 때만 미정 */ /* 딕→틱 헛읽기(~8%)는 허용 */ } });
+      if(AR_ASPI[x[0]]){ const noPair=!S.characters.some(d=>{ if(d===c) return false; const Y=d.name.replace(/[^가-힣]/g,''); return Y.length===X.length&&arSylM(Y,X); }); const kEx=x[0]===15&&X.length>=4&&noPair, tEx=x[0]===16&&X.length>=3&&noPair&&R.some(tt=>{ const s=arSyl(tt[i]); return s&&s[0]===5; }); if(!R.some(asp)&&!kEx&&!tEx) good=false; /* b409 (t692): 실화면 '콜더쇼츠'의 콜을 골·폴·갈로만 읽음(p10 4.9초 동안 콜 0번) — ㄱ↔ㅋ 은 양쪽으로 헛읽어(겟→켓) 거센 읽기가 증거가 못 됨. ㅋ 자리·4글자 이상·같은 꼴 짝 이름이 목록에 없을 때만 거센 읽기 없이 인정 */ /* b417 (t538u): 실화면 '2터래플'의 터를 러로만 읽음(v1 15초 동안 터 0번). ㅌ↔ㄹ 은 AR_ICL 같은 묶음. ㅌ 자리·3글자 이상·ㄹ 읽기·같은 꼴 짝 이름이 없을 때만 거센 읽기 없이 인정. 드딕이→트딕이(ㄷ 읽기)는 기존대로 거센 읽기 필요 */ } else if(x[0]===3||x[0]===0||x[0]===12||x[0]===7){ const M=A.slice(-20).filter(t=>arSylM(t,X,pw)); if(M.filter(asp).length>=Math.max(1,M.length*(x[0]===0?.8:.2))) good=false; /* t602: 실영상 '겟로스트로바' — 화면 겟 을 켓 으로 ~50% 읽음(ㄱ→ㅋ 헛읽기는 흔함, ㄷ→ㅌ 은 0번) → ㄱ 자리는 거센 읽기 80% 이상일 때만 미정 */ /* 딕→틱 헛읽기(~8%)는 허용 */ } });
     if(good&&X.length<=3&&[...X].some(ch=>{ const x=arSyl(ch); return x&&x[0]===3&&x[1]===18; })) good=false; /* b351: 4글자 이상 이름은 '트' 짝 이름이 목록 밖에 있을 일이 사실상 없어 허용(홀드유웨이컵 실화면 = 들드유웨미컵·돌드유웨미컵 읽기로 확정). 짝 이름이 목록에 있으면 아래 규칙이 막음 */ /* t586: 실측 v06 — 진짜 '트' 화면을 18번 중 15번 '드', '트'는 0번 → '드' 글자가 든 이름은 OCR 로 정하지 않음 (오인식 0) */
     if(good&&S.characters.some(d=>{ if(d===c) return false; const Y=d.name.replace(/[^가-힣]/g,''); if(Y.length!==X.length||!arSylM(Y,X)) return false; return [...X].some((ch,i)=>{ const x=arSyl(ch), y=arSyl(Y[i]); return !AR_ASPI[x[0]]&&AR_ASPI[y[0]]&&(AR_ICL[y[0]]??y[0])===x[0]; }); })) good=false; /* 실측: 밝은 배경에선 진짜 ㅌ 화면이 20번 연속 ㄷ 으로 읽힘 → 거센소리 짝(트딕이)이 목록에 있으면 예사소리 이름(드딕이)은 OCR 로 정하지 않음 */
     if(good) ok.push(c.id); }
@@ -10360,7 +10360,7 @@ function arMapTplOcrLine(src,H){ const L=ARX.mtLast; if(!L?.I.narrowBand||H.sc<.
   const sw=src.videoWidth||src.width,sh=src.videoHeight||src.height,r=arR('map',src),q=1.0667,dx=Math.min(r.w*sw*.5,57*arUS(src,sh)),pad=3,w=band.x1-band.x0+pad*2+1,h=band.y1-band.y0+pad*2+1,cv=document.createElement('canvas'); cv.width=w*3;cv.height=h*3;
   cv.getContext('2d').drawImage(src,r.x*sw+dx+(band.x0-pad)/q,r.y*sh+(band.y0-pad)/q,w/q,h/q,0,0,cv.width,cv.height); return cv; }
 function arMapTplDiff(t,H,src){ if(!H||H.sc<.95||ARX.mapSt?.boss!==H.boss) return false;
-  const tag=String(t||'').match(/<\s*(이지|노멀|노말|하드|카오스|익스트림)\s*>\s*$/m),d=tag&&AR_DIFFW.find(([w])=>w===tag[1]),b=findBoss(H.boss); if(!d||!b?.diffs.includes(d[1])) return false;
+  const raw=String(t||''), tag=raw.match(/<\s*(이지|노멀|노말|하드|카오스|익스트림)\s*>\s*$/m)||raw.match(/[가-힣](이지|노멀|노말|하드|카오스|익스트림)[:：>]?\s*$/m),d=tag&&AR_DIFFW.find(([w])=>w===tag[1]),b=findBoss(H.boss); if(!d||!b?.diffs.includes(d[1])) return false; /* b417 (t538u): 꺾쇠 없이 맵 이름에 붙어 읽힌 '유산이지:' 도 인정. 띄어 쓴 '끗 하드'(b405)는 그대로 거부 */
   ARX.runDiff={boss:H.boss,diff:d[1]}; ARX.mapSrc='템플릿+난도OCR'; ARX.tplNoDiff=true; try{ arMapGot(H.text,src); }finally{ ARX.tplNoDiff=false; } return true; }
 function arMapTplLearn(I,B,text,now){ if(ARX.cfg.mapTpl===false||!I||!B) return false; const T=arDetectBMap(text); if(!T||!T.kind.includes('r')||!(T.sc>=.8)) return false; /* 오독 저장 방지: 맵 표에서 인정된 이름 + 같은 보스 보상 상자 확정(독립 확인) — 저장 이름은 OCR 글자가 아니라 표의 정식 이름 */
   if(!((ARX.rwl&&ARX.rwl.boss===T.boss)||(ARX.lock&&ARX.lock.boss===T.boss))) return false; const canon=arMapCanon(T); if(!canon) return false; const L=arMapTplLoad(); if(L.some(x=>x.text===canon)) return false;
