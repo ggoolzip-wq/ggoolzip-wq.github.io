@@ -500,6 +500,14 @@ function arBoxPart(T,f){ const id=[]; for(let j=0;j<T.n;j++) if(f(T.ox[j],T.oy[j
   const t=new Float32Array(n*3); let tt=0; id.forEach((j,i)=>{ for(let c=0;c<3;c++){ const v=T.t[j*3+c]-m[c]; t[i*3+c]=v; tt+=v*v; } }); return {w:T.w,h:T.h,n,t,tt,ox:Int32Array.from(id.map(j=>T.ox[j])),oy:Int32Array.from(id.map(j=>T.oy[j]))}; }
 const AR_BOX_PARTS=[(x,y,w,h)=>y<h/2,(x,y,w,h)=>y>=h/2,(x,y,w,h)=>x<w/2,(x,y,w,h)=>x>=w/2];
 function arBoxParts(T){ return T.parts||(T.parts=AR_BOX_PARTS.map(f=>arBoxPart(T,f)).filter(Boolean)); }
+/* b418: 상자 하단 30%(발) — 캐릭터·이펙트가 몸통을 가려 전체·절반 NCC 가 문턱(.75) 미달일 때.
+   단일 프레임 문턱은 낮추지 않음. 발 점수 ≥.72 가 0.8초 안에 3틱 이어지면 같은 자리 가림으로 인정. */
+function arBoxFoot(T){ return T.foot||(T.foot=arBoxPart(T,(x,y,w,h)=>y>=h*.7)); }
+function arBoxFootSc(G8,G4,T8,T4){ const F8=arBoxFoot(T8),F4=arBoxFoot(T4); return (F8&&F4)?arBoxFind(G8,G4,F8,F4):0; }
+const AR_BOX_ACC_THR=.72, AR_BOX_ACC_N=3, AR_BOX_ACC_WIN=800;
+function arBoxAccPush(k,foot,now){ const acc=ARX.boxAcc||(ARX.boxAcc={}); if(!(foot>=AR_BOX_ACC_THR)){ acc[k]=[]; return null; }
+  const a=(acc[k]||[]).filter(x=>now-x.t<AR_BOX_ACC_WIN); a.push({t:now,sc:foot}); acc[k]=a;
+  return a.length>=AR_BOX_ACC_N?{k,sc:Math.min(...a.map(x=>x.sc)),via:'가림누적'}:null; }
 function arBoxFind(G8,G4,T8,T4){ const r=arNcc(G8.d,G8.w,G8.h,T8,0,1e9,0,1e9).sort((a,b)=>b[0]-a[0]), top=[]; for(const c of r){ if(c[0]<.4||top.length>=3) break; if(top.every(t=>Math.abs(t[1]-c[1])>2||Math.abs(t[2]-c[2])>2)) top.push(c); }
   let best=0; for(const [,x,y] of top) for(const c of arNcc(G4.d,G4.w,G4.h,T4,2*x-3,2*x+3,2*y-3,2*y+3)) best=Math.max(best,c[0]); return best; }
 /* b403: 검마 상자의 상단 안내판·하단 캐릭터가 기존 4개 절반까지 가림. 원본 중앙 30~60% 띠는 엄격 .90 + 같은 위치 전체 .60을 동시에 요구. */
@@ -515,11 +523,12 @@ function arBoxW(){ if(AR_BXW.w||AR_BXW.off) return AR_BXW.w; if(ARX.cfg.boxWorke
   try{ const code=arNcc.toString()+'\n'+arBoxFind.toString()+'\n'+arBoxBlackmage.toString()+`\nconst TP={};onmessage=e=>{const d=e.data;if(d.tp){TP[d.k]=d.tp;return;}const P=TP[d.k];let best=d.k==='blackmage'?arBoxBlackmage(d.G8,d.G4,P.T4,P.B8,P.B4):0;if(best<d.thr)best=arBoxFind(d.G8,d.G4,P.T8,P.T4);if(!(best>=d.thr)&&d.part){for(let i=0;i<Math.min(P.P8.length,P.P4.length);i++)best=Math.max(best,arBoxFind(d.G8,d.G4,P.P8[i],P.P4[i])-d.pen);}postMessage([d.id,best]);};`;
     const w=new Worker(URL.createObjectURL(new Blob([code],{type:'text/javascript'}))); w.onmessage=e=>{ const f=AR_BXW.cb.get(e.data[0]); if(f){ AR_BXW.cb.delete(e.data[0]); f(e.data[1]); } };
     w.onerror=()=>{ AR_BXW.off=true; AR_BXW.w=null; for(const f of AR_BXW.cb.values()) f(null); AR_BXW.cb.clear(); }; AR_BXW.w=w; }catch(e){ AR_BXW.off=true; AR_BXW.w=null; } return AR_BXW.w; }
-function arBoxScoreSync(G8,G4,T8,T4,k){ let best=k==='blackmage'?arBoxBlackmage(G8,G4,T4,arBoxMid(T8),arBoxMid(T4)):0; if(best>=AR_BOX[k].thr) return best; best=arBoxFind(G8,G4,T8,T4); if(best>=AR_BOX[k].thr||ARX.cfg.boxPart===false) return best;
-  const P8=arBoxParts(T8), P4=arBoxParts(T4); for(let i=0;i<Math.min(P8.length,P4.length);i++) best=Math.max(best,arBoxFind(G8,G4,P8[i],P4[i])-AR_BOX_PART_PEN); return best; }
+function arBoxScoreSync(G8,G4,T8,T4,k){ let best=k==='blackmage'?arBoxBlackmage(G8,G4,T4,arBoxMid(T8),arBoxMid(T4)):0; if(best>=AR_BOX[k].thr){ ARX.boxFootSc=0; return best; } best=arBoxFind(G8,G4,T8,T4); if(best>=AR_BOX[k].thr||ARX.cfg.boxPart===false){ ARX.boxFootSc=best>=AR_BOX[k].thr?0:arBoxFootSc(G8,G4,T8,T4); return best; }
+  const P8=arBoxParts(T8), P4=arBoxParts(T4); for(let i=0;i<Math.min(P8.length,P4.length);i++) best=Math.max(best,arBoxFind(G8,G4,P8[i],P4[i])-AR_BOX_PART_PEN); ARX.boxFootSc=best>=AR_BOX[k].thr?0:arBoxFootSc(G8,G4,T8,T4); return best; }
 async function arBoxScore(src,k){ const T8=await arBoxTpl(k,8), T4=await arBoxTpl(k,4); if(!T8||!T4) return 0; const G8=arBoxGrab(src,8,k), G4=arBoxGrab(src,4,k);
   const w=arBoxW(); if(w){ if(!AR_BXW.sent.has(k)){ AR_BXW.sent.add(k); w.postMessage({k,tp:{T8,T4,P8:arBoxParts(T8),P4:arBoxParts(T4),B8:k==='blackmage'?arBoxMid(T8):null,B4:k==='blackmage'?arBoxMid(T4):null}}); } const id=++AR_BXW.id;
-    const r=await new Promise(res=>{ AR_BXW.cb.set(id,res); w.postMessage({id,k,G8,G4,thr:AR_BOX[k].thr,part:ARX.cfg.boxPart!==false,pen:AR_BOX_PART_PEN},[G8.d.buffer,G4.d.buffer]); }); if(r!==null) return r; return 0; }
+    const r=await new Promise(res=>{ AR_BXW.cb.set(id,res); w.postMessage({id,k,G8,G4,thr:AR_BOX[k].thr,part:ARX.cfg.boxPart!==false,pen:AR_BOX_PART_PEN},[G8.d.buffer,G4.d.buffer]); });
+    if(r!==null){ if(!(r>=AR_BOX[k].thr)){ const g8=arBoxGrab(src,8,k),g4=arBoxGrab(src,4,k); ARX.boxFootSc=arBoxFootSc(g8,g4,T8,T4); } else ARX.boxFootSc=0; return r; } return 0; }
   return arBoxScoreSync(G8,G4,T8,T4,k); }
 /* b331 (t633): 상자 처치 시스템 메시지 '선택받은 <보스>의 보물상자를 처치하여 …' — n4 세렌처럼 상자가 캐릭터·소환수·데미지 숫자에 끝까지 가려져
    그림 점수가 문턱 못 넘어도 인식. 보물상자 위 이름표는 실제 영상 25개 어디에도 없음 → 화면 위쪽 보라 시스템 메시지를 실제 프레임에서 자른 글자 템플릿으로 정확히 대조.
@@ -579,9 +588,10 @@ async function arBoxStep(src,force){ if(!arBoxNeed()) return; if(arBoxOk()&&!(AR
   if(!force&&now-(ARX.boxScanT||0)<(RK.length?AR_BOX_REW_MS:1000/(ARX.cfg.boxFps||1))-5) return; if(ARX.boxBusy) return; ARX.boxScanT=now; ARX.boxBusy=true; try{
   const K=RK.length?RK:Object.keys(AR_BOX), R=force||RK.length?1:Math.max(1,ARX.cfg.boxRounds||3), per=Math.ceil(K.length/R), st=(ARX.boxRR||0)%R; ARX.boxRR=st+1; // 한 번에 1/R 씩 돌아가며 (상자는 몇 초 이상 보임)
   if(RK.length&&ARX.cfg.boxMsg!==false){ const M=await arBoxMsgScan(src,RM.boss); if(M&&M.boss===RM.boss){ ARX.boxLast=[RK[0],+M.sc.toFixed(3)]; arLog(`보물상자 처치 메시지 인식: ${M.boss} (${M.sc.toFixed(2)}, ${M.src})`); arBoxHit({k:RK[0],sc:M.sc},now,src); ARX.box.via='메시지'; return; } } /* b331 */
-  let best=null; for(const k of K.slice(st*per,st*per+per)){ const sc=await arBoxScore(src,k); if(sc>=AR_BOX[k].thr&&(!best||sc-AR_BOX[k].thr>best.sc-AR_BOX[best.k].thr)) best={k,sc}; }
+  let best=null; for(const k of K.slice(st*per,st*per+per)){ ARX.boxFootSc=0; const sc=await arBoxScore(src,k); if(sc>=AR_BOX[k].thr){ if(!best||sc-AR_BOX[k].thr>best.sc-AR_BOX[best.k].thr) best={k,sc}; if(ARX.boxAcc) ARX.boxAcc[k]=[]; }
+    else { const acc=arBoxAccPush(k,ARX.boxFootSc||0,now); if(acc&&(!best||best.via==='가림누적')&&(!best||acc.sc>best.sc)) best=acc; } }
   ARX.boxLast=best?[best.k,+best.sc.toFixed(3)]:null; if(!best) return;
-  arBoxHit(best,now,src); } finally{ ARX.boxBusy=false; } }
+  arBoxHit(best,now,src); if(best.via) ARX.box.via=best.via; } finally{ ARX.boxBusy=false; } }
 function arBoxHit(best,now,src){
   const boss=AR_BOX[best.k].boss||best.k, b=findBoss(boss), m=ARX.mapDet&&ARX.mapDet.boss===boss&&ARX.mapDet.diff?ARX.mapDet.diff:'';
   ARX.box={boss,key:best.k,t:now,score:best.sc}; if(!ARX.rew){ let h=null; try{ h=arMapHash(src); }catch(e){} ARX.rew={hash:h,t:now,n:0,boss}; } /* t580: 보상 맵+상자 → 배너·공중 감시 켬 (맵 이름 칸 그림이 바뀔 때까지 유지) */ ARX.det.boss=boss; ARX.det.diff=m; ARX.det.diffSrc=m?'맵 이름':'캐릭터 설정'; ARX.det.src='보상 상자'; ARX.detT=now; arClrFinish(boss,m||ARX.det.diff,now); arLockTry(src,boss,now);
@@ -730,9 +740,15 @@ function arNameWatch(src){ if(!src) return; const sw=src.videoWidth||src.width, 
   if(T&&(T.cid||T.blank)) return; /* 이미지 대조로 정해짐 / 검은 화면 → 유지 */
   let od=1e9; const q=ARX.nOcrPrev; if(q&&q.length===d.length){ od=0; for(let i=0;i<d.length;i+=4) od+=Math.abs(d[i]-q[i])+Math.abs(d[i+1]-q[i+1])+Math.abs(d[i+2]-q[i+2]); od/=96*12*3; }
   const need=!ARX.nameOk||od>=3; if(!need||ARX.nameBusy) return; ARX.nameBusy=true; ARX.nOcrT=now; ARX.nOcrPrev=Uint8ClampedArray.from(d); ARX.nOcrHp=T&&T.hp||null; ARX.nOcrHp2=ARX.lastHp2||null;
-  const HN=T&&T.hp||(()=>{ try{ return arNameHp(src,sw,sh,r); }catch(e){ return null; } })(), tw=HN&&HN.x1>0?Math.min(1,(HN.x1+((ARX.nTry||0)%3===2?0:30))/384):1, /* b402: 3번 중 한 번은 끝 여백0으로 배경의 가짜 접미사(09 빼) 제거. 나머지는 기존 +30 유지, 이름 투표 기준 그대로. b348: 음절 대조가 없어도(T=null) 글자 끝까지만 — 상태바 끝 뒤 밝은 돌 배경이 OCR 을 망침(실화면 홀드유웨이컵). +30: 밝은 배경 위 마지막 글자(컵)는 x1 에 안 잡힘 */ r2=tw<1?Object.assign({},r,{w:r.w*tw}):r; /* t578: 글자 끝까지만 잘라 OCR (작을수록 빠름) */
-  const cv=arCrop(src,sw,sh,r2,arSc(sh,[3,4,2][(ARX.nTry=(ARX.nTry||0)+1)%3],src)); /* 못 읽으면 다음 번엔 다른 배율 */
-  const eng=S.characters.some(c=>/^[A-Za-z0-9]{2,}$/.test(c.name))&&(!S.characters.some(c=>/[가-힣]/.test(c.name))||ARX.nTry%2===0); /* t586: 영문 이름이 있으면 번갈아 eng 모델 */
+  const HN=T&&T.hp||(()=>{ try{ return arNameHp(src,sw,sh,r); }catch(e){ return null; } })();
+  const eng0=S.characters.some(c=>/^[A-Za-z0-9]{2,}$/.test(c.name)), kor0=S.characters.some(c=>/[가-힣]/.test(c.name));
+  const pad=((ARX.nTry||0)%3===2?0:30); /* b402: 3번 중 한 번은 끝 여백0. +30: 마지막 글자가 x1 에 안 잡힘 */
+  let r2=r; if(HN&&HN.x1>0){ const tw=Math.min(1,(HN.x1+pad)/384); if(tw<1) r2=Object.assign({},r,{w:r.w*tw}); }
+  ARX.nTry=(ARX.nTry||0)+1; /* 원래 arCrop 인자에서 증가 — 배율·eng 교대에 같은 값 사용 */
+  const eng=eng0&&(!kor0||ARX.nTry%2===0); /* t586: 영문 이름이 있으면 번갈아 eng 모델 */
+  /* b418: 영문 틱은 'Lv.NNN' 뒤 닉네임만 잘라 eng 모델에 넣음(kor 는 zetking 을 26100 으로 읽음). 한글 틱·자르기 기준은 그대로. */
+  if(eng&&HN&&HN.x0>0&&HN.x1>HN.x0){ const a=HN.x0/384,b=Math.min(1,(HN.x1+8)/384); r2=Object.assign({},r,{x:r.x+r.w*a,w:r.w*(b-a)}); }
+  const cv=arCrop(src,sw,sh,r2,arSc(sh,[3,4,2][ARX.nTry%3],src)); /* 못 읽으면 다음 번엔 다른 배율 */
   return arOcr(cv,150,eng?'e':1).then(t=>arNameRes(t,eng)).catch(()=>{}).finally(()=>{ ARX.nameBusy=false; }); }
 /* t578: 닉네임 이미지 대조 — 상태바 이름 영역을 UI 1배(384×28)로 줄이고 고역 통과(글자 획만). OCR 이 목록 이름과 정확히 같게 두 번 읽은 화면을
    그 캐릭터의 템플릿으로 저장(localStorage) → 다음부턴 매 틱 NCC 대조. 1등 ≥ .88 이고 2등보다 .08 이상 높을 때만 (템플릿 뒤 빈칸 8px 포함) 채택.
@@ -853,8 +869,9 @@ function arNameVote2(){ const NH=ARX.nHist||[], NL=ARX.nLead||[], off=NH.length-
     if(good) ok.push(c.id); }
   return {cid:ok.length===1?ok[0]:'', no}; }
 /* t586: 영문 — eng 모델 읽기에서 'Lv.NNN' 뒤 영문 토큰. 목록 이름과 대소문자 무시 '정확히' 같은 읽기 ≥2 이고 다른 영문 목록 이름은 0번일 때만 (Drcancel↔Drcance1↔Dreancel 처럼 l/1, c/e 헷갈리는 짝도 안전) */
+function arLatEq(tok,name,key){ const a=key(tok),b=key(name); if(a===b) return 1; return b.length>=5&&Math.abs(a.length-b.length)<=1&&arLev(a,b)<=1?1:0; } /* b418: 기존 arLev. 5글자 이상만 1글자 OCR 오독 허용(zetkina↔zetking). 짧은 이름은 기존처럼 정확 일치 */
 function arLatVote(){ const H=(ARX.eHist||[]).filter(Boolean).slice(-8), L=S.characters.filter(c=>/^[A-Za-z0-9]{2,}$/.test(c.name)); if(!L.length) return {cid:'',no:[]};
-  const key=x=>x.toLowerCase().replace(/^[d0]/,'o').replace(/rn/g,'m').replace(/[1|!iI]/g,'l').replace(/0/g,'o').replace(/e/g,'c'), cnt=L.map(c=>H.filter(t=>key(t)===key(c.name)).length), ok=L.filter((c,i)=>cnt[i]>=2&&cnt[i]*2>=H.length&&cnt.every((n,j)=>j===i||!n)&&!L.some(d=>d!==c&&key(d.name)===key(c.name))); /* t586: 비교는 혼동키로 (eng 가 첫 D 를 O 로 꾸준히 읽음). eng 모델도 Drcancel 을 Dreancel 로 꾸준히 읽음 → 헷갈리는 짝이 목록에 같이 있으면 정하지 않음 */
+  const key=x=>x.toLowerCase().replace(/^[d0]/,'o').replace(/rn/g,'m').replace(/[1|!iI]/g,'l').replace(/0/g,'o').replace(/e/g,'c'), cnt=L.map(c=>H.filter(t=>arLatEq(t,c.name,key)).length), ok=L.filter((c,i)=>cnt[i]>=2&&cnt[i]*2>=H.length&&cnt.every((n,j)=>j===i||!n)&&!L.some(d=>d!==c&&(key(d.name)===key(c.name)||(c.name.length>=5&&arLev(key(d.name),key(c.name))<=1)))); /* t586: 비교는 혼동키로. 헷갈리는 짝이 목록에 같이 있으면 정하지 않음. b418: 1글자 차 짝도 동일 */
   return {cid:ok.length===1?ok[0].id:'', no:H.length>=6?L.filter((c,i)=>!cnt[i]).map(c=>c.id):[]}; }
 /* t603: 실영상(겟로스트로바) — 밝은 배경·이펙트에서 OCR 이 연속으로 엉뚱하게 읽어 확정된 캐릭터를 지움(B 영상 46%) → 확정 때의 이름 칸 그림(96x12)과 지금 그림이 같으면 같은 캐릭터로 유지.
    진짜로 캐릭터가 바뀌면 이름 칸 글자 픽셀이 달라짐(다른 이름) → 그때만 OCR 판정대로 비움. 새 캐릭터로 정하는 건 여전히 OCR 투표만 (오인식 0 유지) */
