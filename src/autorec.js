@@ -173,7 +173,12 @@ async function arProfDetect(src){ const sw=src?.videoWidth||src?.width, sh=src?.
   ARX.geo=null; const keep=ARX.prof; ARX.prof=null; const G=arGeom(sw,sh); ARX.prof=keep; const exact=AR_PROF.filter(p=>p.w===G.gw&&p.h===G.gh);
   const near=t=>{ let n=null,bd=1e9; for(const p of AR_PROF){ if(p.id==='1366'?(t==='o'&&G.gw>1400):p.id.slice(-1)!==t) continue; /* 1366 창고 위치는 화면이 좁아 다르게 붙음 → 큰 최적 화면은 1920 기준 */ const d=Math.abs(p.h-G.gh)+Math.abs(p.w-G.gw)*.5; if(d<bd){ bd=d; n=p; } } return n; };
   const cand=exact.length?exact.map(p=>({p,s:p.s,t:p.id==='1366'?'':p.id.slice(-1)})):[{p:near('o'),s:G.gh>=1400?2:1,t:'o'},{p:near('b'),s:+(G.gh/768).toFixed(5),t:'b'}];
-  let best=null; for(const c of cand){ const sc=Math.max(...ims.map(im=>arLvScore(src,G,im,c.s))); if(!best||sc>best.sc) best={...c,sc}; }
+  let best=null, scored=[]; for(const c of cand){ const sc=Math.max(...ims.map(im=>arLvScore(src,G,im,c.s))); scored.push({...c,sc}); if(!best||sc>best.sc) best={...c,sc}; }
+  /* b422 (t551u·t552u): 1920x1080 전용 배율 인식 범위. 다른 해상도(1366·1600·2560 등)는 기존 최고점 규칙 그대로.
+     실측: 최적(UI 1배) 픽스처는 Lv ≥.96(보통 .99), 1.406배는 .87 부근. 1366 UI를 키운 기본은 1.406배가 본점수(.80–.97)인데,
+     1배 템플릿이 커진 'Lv' 글자 일부에 맞아 항상 .917–.922 띠에 머무름 — Lv가 흐리면 이 띠가 본점수보다 높아 최적으로 오인됨(n1·n3·n5).
+     1920에서만: 1배 점수가 최적 범위(.96 이상)이면 최적, 아니면 기본 범위의 1.406배를 쓴다(.55 미만이면 기존처럼 미정). */
+  if(G.gw===1920&&G.gh===1080&&exact.length>1){ const o=scored.find(c=>c.t==='o'), b=scored.find(c=>c.t==='b'); if(o&&b){ if(o.sc>=.96) best=o; else if(b.sc>=.55) best=b; } }
   if(!best||(best.sc<.55&&cand.length>1)) return null; const est=!exact.length, P=best.p;
   const lab=est?`${G.gw} x ${G.gh}(${best.t==='b'?'기본 비율':'최적 비율'})(추정)`:P.lab;
   ARX.prof={id:P.id,base:P,s:best.s,gw:G.gw,gh:G.gh,est,lab,score:+best.sc.toFixed(3)}; ARX.geo=null; return ARX.prof; }
