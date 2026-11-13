@@ -83,9 +83,14 @@ function arTagDiff(L,b){ const t=arNorm(L); if(!/[<>]/.test(L)){ /* b417 (t538u)
 const AR_WREG={lucid:'꿈의도시레헬른'};
 const AR_WFULL={kalos:'카로테마천루'}; /* t585: 지역+대기맵 이름을 ':' 없이 붙인 꼴이 전투맵 이름과 같은 보스 */
 function arTail4(w,id){ const C=ARX.tail4||(ARX.tail4={}); if(C[w]!==undefined) return C[w]; const t=w.slice(-4); return C[w]=!AR_BMAP.some(([n2,i2])=>i2!==id&&arNorm(n2).endsWith(t)); }
+function arMapTailOk(nm,w,L){ /* b420 (t545u): t625를 확장. ① 꺾쇠 또는 줄 끝 난이도 단어(하드 등). ② 끝 4글자가 정확하거나, 앞 3글자(가까운)가 같고 마지막 글자만 자모 .8(곳→끗·꽃·꽂). ③ 대기맵 '…앞'은 앞을 떼고 같은 규칙. */
+  const hasDiff=/<[^<>]*>?\s*$/.test(L)||AR_DIFFW.some(([dw])=>arNorm(L).endsWith(dw));
+  const near=(a,b)=>{ if(a===b) return 1; if(a.length<4||b.length<4) return 0; const x=a.slice(-4), y=b.slice(-4); if(x===y) return 1; return x.slice(0,3)===y.slice(0,3)&&arSimJ(x,y)>=.8; };
+  if(w.endsWith('앞')&&nm.endsWith('앞')) return near(nm.slice(0,-1),w.slice(0,-1));
+  return hasDiff&&near(nm,w); }
 function arDetectBMap(text){ let best=null;
-  for(const line of String(text||'').split('\n')){ const L=line.trim(); if(!L) continue; const nm0=arNorm(L.replace(/<[^<>]*>?\s*$/,'').split(/[:：]/).filter(x=>arNorm(x).length>=2).pop()||''), nm=nm0.replace(/[0-9]+$/,''); if(nm.length<2) continue; /* t579: 1366 에서 '<이지>'가 '4011:'로 읽혀 끝 ':' 때문에 이름이 비었음 */
-    for(const [n,id,k] of AR_BMAP){ const w=arNorm(n), tl=w.length>=5&&nm.length>w.length+2?nm.slice(-w.length):'', sJ=Math.max(arSimJ(nm,w),tl?arSimJ(tl,w):0), sc0=nm===w?2:Math.max(arSim(nm,w)>=1&&(nm.length<=w.length+3||nm.endsWith(w))?1:0,sJ>=(w.length>=5?.8:.85)?sJ:0), sc=sc0||(w.length>=6&&/<[^<>]*>?\s*$/.test(L)&&nm.endsWith(w.slice(-4))&&arTail4(w,id)?.8:0); if(!sc) continue; /* t625: 듄켈 '끝에 가까운 곳 <하드>'가 '…멘 :메 가까운 곳 <하드>'로 읽혀('끝'→':') ':' 뒤 '메가까운곳'만 남음(자모 .73) → <난이도> 태그 줄에서 끝 4글자가 표에서 유일한 이름과 정확히 같으면 .8 */ /* t602: 긴 이름은 자모 .8 (실영상 '끝에'→'글메'·'을메' 3자모 틀림) */ /* tl: 지역명+맵 이름이 ':' 없이 붙어 읽힘 → 끝부분만 비교. b416: '솔라툼골짜기술라툼의유산'처럼 접두가 길면 길이 제한(w+3)에 걸려 포함 일치가 0점이었음 → 이름이 접미이면 인정 */
+  for(const line of String(text||'').split('\n')){ const L=line.trim(); if(!L) continue; const nm0=arNorm(L.replace(/<[^<>]*>?\s*$/,'').split(/[:：]/).filter(x=>arNorm(x).length>=2).pop()||''); let nm=nm0.replace(/[0-9]+$/,''); for(const [dw] of AR_DIFFW){ if(nm.endsWith(dw)&&nm.length>dw.length+2){ nm=nm.slice(0,-dw.length); break; } } /* b420 (t545u): 꺾쇠 없이 '메 가까운 끗 하드'처럼 난이도 단어가 붙어 있으면 이름 비교에서만 떼어 봄(난이도 판정 arTagDiff 는 원문 L) */ if(nm.length<2) continue; /* t579: 1366 에서 '<이지>'가 '4011:'로 읽혀 끝 ':' 때문에 이름이 비었음 */
+    for(const [n,id,k] of AR_BMAP){ const w=arNorm(n), tl=w.length>=5&&nm.length>w.length+2?nm.slice(-w.length):'', sJ=Math.max(arSimJ(nm,w),tl?arSimJ(tl,w):0), sc0=nm===w?2:Math.max(arSim(nm,w)>=1&&(nm.length<=w.length+3||nm.endsWith(w))?1:0,sJ>=(w.length>=5?.8:.85)?sJ:0), sc=sc0||(w.length>=6&&arTail4(w,id)&&arMapTailOk(nm,w,L)?.8:0); if(!sc) continue; /* t625: 듄켈 '끝에 가까운 곳 <하드>'가 '…멘 :메 가까운 곳 <하드>'로 읽혀('끝'→':') ':' 뒤 '메가까운곳'만 남음(자모 .73) → <난이도> 태그 줄에서 끝 4글자가 표에서 유일한 이름과 정확히 같으면 .8 */ /* t602: 긴 이름은 자모 .8 (실영상 '끝에'→'글메'·'을메' 3자모 틀림) */ /* tl: 지역명+맵 이름이 ':' 없이 붙어 읽힘 → 끝부분만 비교. b416: '솔라툼골짜기술라툼의유산'처럼 접두가 길면 길이 제한(w+3)에 걸려 포함 일치가 0점이었음 → 이름이 접미이면 인정 */
       if(!best||sc>best.sc||(sc===best.sc&&w.length>best.w.length)) best={sc,w,id,k,L,reg:arNorm((L.split(/[:：]/).length>1?L.split(/[:：]/)[0]:''))}; } }
   if(!best) return null; const b=findBoss(best.id); if(!b) return null; let diff=ARX.tplNoDiff?'':arTagDiff(best.L,b); /* b380: 맵 이름 '그림' 템플릿으로 읽은 줄은 난이도 글자를 믿지 않음 (아래 arMapWatch) */
   if(!/[:：]/.test(best.L)&&AR_WFULL[best.id]===arNorm(best.L.replace(/<[^<>]*>?\s*$/,''))) best={...best,k:'w'}; /* t585: 칼로스 대기 '카로테：마천루'가 ':' 빠져 '카로테마천루'(=전투맵 이름)로 읽힘 → 대기 */
@@ -521,7 +526,20 @@ function arSceneTpl(k,D){ const c=ARX.sceneT||(ARX.sceneT={}), id=k+'/'+D; if(c[
   return c[id]=new Promise(res=>{ const im=new Image(); im.onload=()=>{ const w=Math.max(4,Math.round(im.width*4/D)), h=Math.max(4,Math.round(im.height*4/D)), cv=document.createElement('canvas'); cv.width=w; cv.height=h; const g=cv.getContext('2d',{willReadFrequently:true}); g.drawImage(im,0,0,w,h); const d=g.getImageData(0,0,w,h).data;
     const idx=[]; for(let i=0;i<w*h;i++) if(d[i*4+3]>200) idx.push(i); const n=idx.length; if(!n) return res(null); const m=[0,0,0]; for(const i of idx) for(let ch=0;ch<3;ch++) m[ch]+=d[i*4+ch]; for(let ch=0;ch<3;ch++) m[ch]/=n;
     const t=new Float32Array(n*3); let tt=0; idx.forEach((i,j)=>{ for(let ch=0;ch<3;ch++){ const v=d[i*4+ch]-m[ch]; t[j*3+ch]=v; tt+=v*v; } }); res({w,h,n,t,tt,ox:Int32Array.from(idx.map(i=>i%w)),oy:Int32Array.from(idx.map(i=>(i/w)|0))}); }; im.onerror=()=>res(null); im.src=a.u; }); }
-async function arSceneScore(src,k){ const a=AR_SCENE[k]; if(!a) return 0; const T8=await arSceneTpl(k,8), T4=await arSceneTpl(k,4); if(!T8||!T4) return 0;
+function arSceneCyan(src,a){ /* b420 (t545u): 듄켈 보상 청록 빛줄기 비율. 전투(붉은 구체)와 같은 지형이라 회색 NCC 는 겹침(.38 vs .44). 가운데 띠(x.25–.75, y.15–.65) 청록 픽셀 비율. */
+  const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return 0;
+  const x=Math.round(sw*(a.x??.25)), y=Math.round(sh*(a.y??.15)), w=Math.round(sw*(a.w??.5)), h=Math.round(sh*(a.h??.5));
+  if(w<8||h<8) return 0;
+  const cv=arSceneCyan._cv||(arSceneCyan._cv=document.createElement('canvas'));
+  if(cv.width!==w) cv.width=w; if(cv.height!==h) cv.height=h;
+  const g=cv.getContext('2d',{willReadFrequently:true}); g.drawImage(src,x,y,w,h,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data; let cy=0,n=w*h;
+  for(let i=0;i<d.length;i+=4){ const r=d[i],g1=d[i+1],b=d[i+2], mx=Math.max(r,g1,b), mn=Math.min(r,g1,b), s=mx?(mx-mn)/mx:0, v=mx/255;
+    let hh=0, df=mx-mn; if(df){ if(mx===r) hh=60*((g1-b)/df); else if(mx===g1) hh=60*((b-r)/df+2); else hh=60*((r-g1)/df+4); if(hh<0) hh+=360; }
+    const H=hh/2; if(H>=75&&H<=110&&s>=80/255&&v>=80/255) cy++; }
+  return cy/n; }
+async function arSceneScore(src,k){ const a=AR_SCENE[k]; if(!a) return 0; if(a.mode==='cyan') return arSceneCyan(src,a);
+  const T8=await arSceneTpl(k,8), T4=await arSceneTpl(k,4); if(!T8||!T4) return 0;
   return arBoxFind(arSceneGrab(src,8),arSceneGrab(src,4),T8,T4); }
 function arBoxFind(G8,G4,T8,T4){ const r=arNcc(G8.d,G8.w,G8.h,T8,0,1e9,0,1e9).sort((a,b)=>b[0]-a[0]), top=[]; for(const c of r){ if(c[0]<.4||top.length>=3) break; if(top.every(t=>Math.abs(t[1]-c[1])>2||Math.abs(t[2]-c[2])>2)) top.push(c); }
   let best=0; for(const [,x,y] of top) for(const c of arNcc(G4.d,G4.w,G4.h,T4,2*x-3,2*x+3,2*y-3,2*y+3)) best=Math.max(best,c[0]); return best; }
@@ -877,7 +895,7 @@ function arNameVote2(){ const NH=ARX.nHist||[], NL=ARX.nLead||[], off=NH.length-
     { const ld=arLeadName(c.name), RL=HL.filter(x=>arSylM(x.t,X)), kn=RL.filter(x=>x.l!==null), yes=kn.filter(x=>x.l).length, pair=S.characters.some(d=>d!==c&&arLeadName(d.name)!==ld&&(()=>{ const Y=d.name.replace(/[^가-힣]/g,''); return Y.length===X.length&&arSylM(Y,X); })());
       if(ld&&!(yes>=2&&yes*2>=kn.length)){ if(kn.length>=4&&!yes) no.push(c.id); continue; }
       if(!ld&&pair&&yes>kn.length*.2){ if(kn.length>=4&&yes*2>=kn.length) no.push(c.id); continue; } }
-    if(R.length<3||!st){ if(H.length>=6&&!R.length) no.push(c.id); continue; }
+    if(R.length<3||!st){ const loose=X.length>=4&&pw&&R.length>=4; /* b420 (t545u): '릴캉혼망'을 줄곧 '림감온망'·'림감혼망'으로만 읽음(받침만 다름, 강한 읽기 0). 4글자 이상·같은 꼴 짝 없음·느슨 일치 4회 이상이면 강한 읽기 없이 인정 */ if(!loose){ if(H.length>=6&&!R.length) no.push(c.id); continue; } }
     let good=true; [...X].forEach((ch,i)=>{ const x=arSyl(ch); if(!(x[0] in AR_ICL)&&!Object.values(AR_ICL).includes(x[0])) return; const asp=t=>{ const s=arSyl(t[i]); return s&&AR_ASPI[s[0]]; };
       if(AR_ASPI[x[0]]){ const noPair=!S.characters.some(d=>{ if(d===c) return false; const Y=d.name.replace(/[^가-힣]/g,''); return Y.length===X.length&&arSylM(Y,X); }); const kEx=x[0]===15&&X.length>=4&&noPair, tEx=x[0]===16&&X.length>=3&&noPair&&R.some(tt=>{ const s=arSyl(tt[i]); return s&&s[0]===5; }); if(!R.some(asp)&&!kEx&&!tEx) good=false; /* b409 (t692): 실화면 '콜더쇼츠'의 콜을 골·폴·갈로만 읽음(p10 4.9초 동안 콜 0번) — ㄱ↔ㅋ 은 양쪽으로 헛읽어(겟→켓) 거센 읽기가 증거가 못 됨. ㅋ 자리·4글자 이상·같은 꼴 짝 이름이 목록에 없을 때만 거센 읽기 없이 인정 */ /* b417 (t538u): 실화면 '2터래플'의 터를 러로만 읽음(v1 15초 동안 터 0번). ㅌ↔ㄹ 은 AR_ICL 같은 묶음. ㅌ 자리·3글자 이상·ㄹ 읽기·같은 꼴 짝 이름이 없을 때만 거센 읽기 없이 인정. 드딕이→트딕이(ㄷ 읽기)는 기존대로 거센 읽기 필요 */ } else if(x[0]===3||x[0]===0||x[0]===12||x[0]===7){ const M=A.slice(-20).filter(t=>arSylM(t,X,pw)); if(M.filter(asp).length>=Math.max(1,M.length*(x[0]===0?.8:.2))) good=false; /* t602: 실영상 '겟로스트로바' — 화면 겟 을 켓 으로 ~50% 읽음(ㄱ→ㅋ 헛읽기는 흔함, ㄷ→ㅌ 은 0번) → ㄱ 자리는 거센 읽기 80% 이상일 때만 미정 */ /* 딕→틱 헛읽기(~8%)는 허용 */ } });
     if(good&&X.length<=3&&[...X].some(ch=>{ const x=arSyl(ch); return x&&x[0]===3&&x[1]===18; })) good=false; /* b351: 4글자 이상 이름은 '트' 짝 이름이 목록 밖에 있을 일이 사실상 없어 허용(홀드유웨이컵 실화면 = 들드유웨미컵·돌드유웨미컵 읽기로 확정). 짝 이름이 목록에 있으면 아래 규칙이 막음 */ /* t586: 실측 v06 — 진짜 '트' 화면을 18번 중 15번 '드', '트'는 0번 → '드' 글자가 든 이름은 OCR 로 정하지 않음 (오인식 0) */

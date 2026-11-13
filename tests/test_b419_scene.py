@@ -52,7 +52,7 @@ try:
         pg.wait_for_timeout(800)
         has = pg.evaluate("()=>({keys:Object.keys(AR_SCENE||{}), thr:AR_SCENE.bellona&&AR_SCENE.bellona.thr, dunk:!!(AR_SCENE||{}).dunkel})")
         print('SCENE', has)
-        check('벨로나 나무 템플릿이 있고 문턱은 .78', has['keys']==['bellona'] and abs(has['thr']-0.78)<1e-9 and not has['dunk'], has)
+        check('벨로나 나무 템플릿이 있고 문턱은 .78', 'bellona' in has['keys'] and abs(has['thr']-0.78)<1e-9, has)
 
         def sc(path, k, ispng=False):
             src = upng(path) if ispng or path.endswith('.png') else u(path)
@@ -75,9 +75,9 @@ try:
         dunkr = sc(os.path.join(FX328, 'v5_dunkel.jpg'), 'bellona')
         check('듄켈 전투·보상 화면은 벨로나 나무 문턱 미만', fight['scene']<0.78 and dunkr['scene']<0.78, [fight,dunkr])
 
-        # dunkel scene not applied
+        # b420: 듄켈 청록 배경이 적용됨. 상세 문턱·전투 여유는 test_b420. 여기선 벨로나 검사가 깨지지 않는지만 봄.
         dsf = pg.evaluate("async src=>{ const im=new Image(); im.src=src; await im.decode(); return typeof arSceneScore==='function'?await arSceneScore(im,'dunkel'):0; }", u(os.path.join(FX328,'v5_dunkel.jpg')))
-        check('듄켈 배경 템플릿은 없음(미적용, 점수 0)', dsf==0, dsf)
+        check('듄켈 보상 화면 청록 배경 ≥.15 (b420)', dsf>=0.15, dsf)
 
         # box official still 0.75; dunkel combat box still below (regression)
         dfight = sc(os.path.join(FX328, 'v4_fight.jpg'), 'dunkel')
