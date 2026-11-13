@@ -7102,7 +7102,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b420'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b421'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -10203,7 +10203,7 @@ function arNameVote2(){ const NH=ARX.nHist||[], NL=ARX.nLead||[], off=NH.length-
     { const ld=arLeadName(c.name), RL=HL.filter(x=>arSylM(x.t,X)), kn=RL.filter(x=>x.l!==null), yes=kn.filter(x=>x.l).length, pair=S.characters.some(d=>d!==c&&arLeadName(d.name)!==ld&&(()=>{ const Y=d.name.replace(/[^가-힣]/g,''); return Y.length===X.length&&arSylM(Y,X); })());
       if(ld&&!(yes>=2&&yes*2>=kn.length)){ if(kn.length>=4&&!yes) no.push(c.id); continue; }
       if(!ld&&pair&&yes>kn.length*.2){ if(kn.length>=4&&yes*2>=kn.length) no.push(c.id); continue; } }
-    if(R.length<3||!st){ const loose=X.length>=4&&pw&&R.length>=4; /* b420 (t545u): '릴캉혼망'을 줄곧 '림감온망'·'림감혼망'으로만 읽음(받침만 다름, 강한 읽기 0). 4글자 이상·같은 꼴 짝 없음·느슨 일치 4회 이상이면 강한 읽기 없이 인정 */ if(!loose){ if(H.length>=6&&!R.length) no.push(c.id); continue; } }
+    if(R.length<3||!st){ if(H.length>=6&&!R.length) no.push(c.id); continue; } /* b421 (t548u·t549u): b420 느슨 투표 되돌림. n7 실제 닉은 '림강혼망'이고 b419 규칙으로 4.89초에 이미 확정(OCR '림강몬망'이 강한 읽기). '릴캉혼망'은 오표기였고, 같은 읽기로 그 잘못된 이름을 확정하는 오인이 있음 */
     let good=true; [...X].forEach((ch,i)=>{ const x=arSyl(ch); if(!(x[0] in AR_ICL)&&!Object.values(AR_ICL).includes(x[0])) return; const asp=t=>{ const s=arSyl(t[i]); return s&&AR_ASPI[s[0]]; };
       if(AR_ASPI[x[0]]){ const noPair=!S.characters.some(d=>{ if(d===c) return false; const Y=d.name.replace(/[^가-힣]/g,''); return Y.length===X.length&&arSylM(Y,X); }); const kEx=x[0]===15&&X.length>=4&&noPair, tEx=x[0]===16&&X.length>=3&&noPair&&R.some(tt=>{ const s=arSyl(tt[i]); return s&&s[0]===5; }); if(!R.some(asp)&&!kEx&&!tEx) good=false; /* b409 (t692): 실화면 '콜더쇼츠'의 콜을 골·폴·갈로만 읽음(p10 4.9초 동안 콜 0번) — ㄱ↔ㅋ 은 양쪽으로 헛읽어(겟→켓) 거센 읽기가 증거가 못 됨. ㅋ 자리·4글자 이상·같은 꼴 짝 이름이 목록에 없을 때만 거센 읽기 없이 인정 */ /* b417 (t538u): 실화면 '2터래플'의 터를 러로만 읽음(v1 15초 동안 터 0번). ㅌ↔ㄹ 은 AR_ICL 같은 묶음. ㅌ 자리·3글자 이상·ㄹ 읽기·같은 꼴 짝 이름이 없을 때만 거센 읽기 없이 인정. 드딕이→트딕이(ㄷ 읽기)는 기존대로 거센 읽기 필요 */ } else if(x[0]===3||x[0]===0||x[0]===12||x[0]===7){ const M=A.slice(-20).filter(t=>arSylM(t,X,pw)); if(M.filter(asp).length>=Math.max(1,M.length*(x[0]===0?.8:.2))) good=false; /* t602: 실영상 '겟로스트로바' — 화면 겟 을 켓 으로 ~50% 읽음(ㄱ→ㅋ 헛읽기는 흔함, ㄷ→ㅌ 은 0번) → ㄱ 자리는 거센 읽기 80% 이상일 때만 미정 */ /* 딕→틱 헛읽기(~8%)는 허용 */ } });
     if(good&&X.length<=3&&[...X].some(ch=>{ const x=arSyl(ch); return x&&x[0]===3&&x[1]===18; })) good=false; /* b351: 4글자 이상 이름은 '트' 짝 이름이 목록 밖에 있을 일이 사실상 없어 허용(홀드유웨이컵 실화면 = 들드유웨미컵·돌드유웨미컵 읽기로 확정). 짝 이름이 목록에 있으면 아래 규칙이 막음 */ /* t586: 실측 v06 — 진짜 '트' 화면을 18번 중 15번 '드', '트'는 0번 → '드' 글자가 든 이름은 OCR 로 정하지 않음 (오인식 0) */

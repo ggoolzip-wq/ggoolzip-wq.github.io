@@ -1,4 +1,4 @@
-"""b420 (t545u): 듄켈 맵 OCR(곳→끗/꽃)·청록 배경, 릴캉혼망 느슨 투표. 전투 오탐 없음. 공식 상자 문턱 .75 유지."""
+"""b420 듄켈 맵 OCR(곳→끗/꽃)·청록 배경 + b421 림강혼망 인식·릴캉혼망 오인 방지. 전투 오탐 없음. 공식 상자 문턱 .75 유지."""
 import os, sys, tempfile, shutil, subprocess, base64
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _tutil
@@ -46,18 +46,14 @@ MAPJS = r'''() => {
 }'''
 
 NAMEJS = r'''() => {
-  S.characters = [
-    {id:'c0', name:'2터래플'},
-    {id:'c1', name:'릴캉혼망'},
-    {id:'c2', name:'zetking'},
-  ];
-  ARX.nHist = ['림감온망','림감온망','림감혼망','림감몬망','림감온망','림감몬망','림감온망','림감혼망'];
-  ARX.nLead = [false,false,false,false,false,false,false,false];
-  const v = arNameVote2();
-  ARX.nHist = ['림감온망','림감온망'];
-  ARX.nLead = [false,false];
-  const few = arNameVote2();
-  return {v, few};
+  /* b421: n7 실제 OCR 이력(b419 라이브). 림강혼망은 강한 읽기('림강몬망')로 확정. 같은 이력으로 릴캉혼망은 확정하면 안 됨. */
+  const hist = ['립감온망','림감온망','림감몬망','림감온망','림감온망','림강몬망','립감혼망','림감온망'];
+  const run = (chars, H) => { S.characters = chars; ARX.nHist = H.slice(); ARX.nLead = H.map(()=>false); return arNameVote2(); };
+  const real = run([{id:'c0', name:'2터래플'},{id:'c1', name:'림강혼망'},{id:'c2', name:'zetking'}], hist);
+  const wrong = run([{id:'c0', name:'2터래플'},{id:'c3', name:'릴캉혼망'},{id:'c2', name:'zetking'}], hist);
+  const both = run([{id:'c0', name:'2터래플'},{id:'c1', name:'림강혼망'},{id:'c3', name:'릴캉혼망'}], hist);
+  const few = run([{id:'c0', name:'2터래플'},{id:'c1', name:'림강혼망'}], ['림감온망','림감온망']);
+  return {real, wrong, both, few};
 }'''
 
 CYAN = r'''async (src) => {
@@ -95,8 +91,10 @@ try:
 
         nv = pg.evaluate(NAMEJS)
         print('NAME', nv)
-        check('릴캉혼망 느슨 읽기 4회 이상 → 확정', nv['v']['cid']=='c1', nv['v'])
-        check('느슨 읽기 2회는 아직 미확정', nv['few']['cid']!='c1', nv['few'])
+        check('림강혼망은 실 OCR(림강몬망 강한 읽기)로 b419 규칙에서 확정', nv['real']['cid']=='c1', nv['real'])
+        check('같은 읽기로 릴캉혼망만 있으면 확정하지 않음(한글 오인 방지)', nv['wrong']['cid']=='', nv['wrong'])
+        check('비슷한 꼴 두 이름(림강혼망·릴캉혼망)이 같이 있으면 확정하지 않음(모호)', nv['both']['cid']=='', nv['both'])
+        check('읽기 2회는 미확정', nv['few']['cid']=='', nv['few'])
 
         def sc(path):
             r = pg.evaluate(CYAN, u(path))
@@ -127,4 +125,4 @@ if errs:
     print('PAGE ERRORS', errs); fails.append('pageerror')
 if fails:
     print('FAILED', fails); sys.exit(1)
-print('PASS b420')
+print('PASS b420+b421 name')
