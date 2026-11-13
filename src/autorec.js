@@ -508,6 +508,21 @@ const AR_BOX_ACC_THR=.72, AR_BOX_ACC_N=3, AR_BOX_ACC_WIN=800;
 function arBoxAccPush(k,foot,now){ const acc=ARX.boxAcc||(ARX.boxAcc={}); if(!(foot>=AR_BOX_ACC_THR)){ acc[k]=[]; return null; }
   const a=(acc[k]||[]).filter(x=>now-x.t<AR_BOX_ACC_WIN); a.push({t:now,sc:foot}); acc[k]=a;
   return a.length>=AR_BOX_ACC_N?{k,sc:Math.min(...a.map(x=>x.sc)),via:'가림누적'}:null; }
+/* b419: 보상 맵 배경 지형(벨로나 금빛 나무). 상자가 캐릭터에 가려져도 수관은 보임. 문턱 .78 — 가림 프레임 .88~.90, 다른 맵·대기·스우 ≤.52.
+   듄켈은 같은 맵 이름이 전투·보상을 공유하고, 보유 보상 프레임 2장이 서로 .38(전투 .44)라 일반화 안 돼 미적용. */
+const AR_SCENE=/*__SCENE_ICONS__*/{};
+function arSceneGrab(src,D){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, s=1080/arGH(src,sh)/D, G=arGeom(sw,sh);
+  const r={x:G.gx/sw,y:(G.gy+G.gh*.12)/sh,w:G.gw/sw,h:(G.gh*.6)/sh}; /* 수관·상단 지형: 아이템 칸(y.2)보다 조금 위 */
+  const w=Math.round(r.w*sw*s),h=Math.round(r.h*sh*s), C=arSceneGrab._cv||(arSceneGrab._cv={}), cv=C[D]||(C[D]=document.createElement('canvas'));
+  if(cv.width!==w) cv.width=w; if(cv.height!==h) cv.height=h;
+  const g=cv.getContext('2d',{willReadFrequently:true}); g.imageSmoothingQuality='high'; g.clearRect(0,0,w,h); g.drawImage(src,r.x*sw,r.y*sh,r.w*sw,r.h*sh,0,0,w,h);
+  return {d:g.getImageData(0,0,w,h).data,w,h}; }
+function arSceneTpl(k,D){ const c=ARX.sceneT||(ARX.sceneT={}), id=k+'/'+D; if(c[id]) return c[id]; const a=AR_SCENE[k]; if(!a||!a.u) return c[id]=Promise.resolve(null);
+  return c[id]=new Promise(res=>{ const im=new Image(); im.onload=()=>{ const w=Math.max(4,Math.round(im.width*4/D)), h=Math.max(4,Math.round(im.height*4/D)), cv=document.createElement('canvas'); cv.width=w; cv.height=h; const g=cv.getContext('2d',{willReadFrequently:true}); g.drawImage(im,0,0,w,h); const d=g.getImageData(0,0,w,h).data;
+    const idx=[]; for(let i=0;i<w*h;i++) if(d[i*4+3]>200) idx.push(i); const n=idx.length; if(!n) return res(null); const m=[0,0,0]; for(const i of idx) for(let ch=0;ch<3;ch++) m[ch]+=d[i*4+ch]; for(let ch=0;ch<3;ch++) m[ch]/=n;
+    const t=new Float32Array(n*3); let tt=0; idx.forEach((i,j)=>{ for(let ch=0;ch<3;ch++){ const v=d[i*4+ch]-m[ch]; t[j*3+ch]=v; tt+=v*v; } }); res({w,h,n,t,tt,ox:Int32Array.from(idx.map(i=>i%w)),oy:Int32Array.from(idx.map(i=>(i/w)|0))}); }; im.onerror=()=>res(null); im.src=a.u; }); }
+async function arSceneScore(src,k){ const a=AR_SCENE[k]; if(!a) return 0; const T8=await arSceneTpl(k,8), T4=await arSceneTpl(k,4); if(!T8||!T4) return 0;
+  return arBoxFind(arSceneGrab(src,8),arSceneGrab(src,4),T8,T4); }
 function arBoxFind(G8,G4,T8,T4){ const r=arNcc(G8.d,G8.w,G8.h,T8,0,1e9,0,1e9).sort((a,b)=>b[0]-a[0]), top=[]; for(const c of r){ if(c[0]<.4||top.length>=3) break; if(top.every(t=>Math.abs(t[1]-c[1])>2||Math.abs(t[2]-c[2])>2)) top.push(c); }
   let best=0; for(const [,x,y] of top) for(const c of arNcc(G4.d,G4.w,G4.h,T4,2*x-3,2*x+3,2*y-3,2*y+3)) best=Math.max(best,c[0]); return best; }
 /* b403: 검마 상자의 상단 안내판·하단 캐릭터가 기존 4개 절반까지 가림. 원본 중앙 30~60% 띠는 엄격 .90 + 같은 위치 전체 .60을 동시에 요구. */
@@ -589,7 +604,8 @@ async function arBoxStep(src,force){ if(!arBoxNeed()) return; if(arBoxOk()&&!(AR
   const K=RK.length?RK:Object.keys(AR_BOX), R=force||RK.length?1:Math.max(1,ARX.cfg.boxRounds||3), per=Math.ceil(K.length/R), st=(ARX.boxRR||0)%R; ARX.boxRR=st+1; // 한 번에 1/R 씩 돌아가며 (상자는 몇 초 이상 보임)
   if(RK.length&&ARX.cfg.boxMsg!==false){ const M=await arBoxMsgScan(src,RM.boss); if(M&&M.boss===RM.boss){ ARX.boxLast=[RK[0],+M.sc.toFixed(3)]; arLog(`보물상자 처치 메시지 인식: ${M.boss} (${M.sc.toFixed(2)}, ${M.src})`); arBoxHit({k:RK[0],sc:M.sc},now,src); ARX.box.via='메시지'; return; } } /* b331 */
   let best=null; for(const k of K.slice(st*per,st*per+per)){ ARX.boxFootSc=0; const sc=await arBoxScore(src,k); if(sc>=AR_BOX[k].thr){ if(!best||sc-AR_BOX[k].thr>best.sc-AR_BOX[best.k].thr) best={k,sc}; if(ARX.boxAcc) ARX.boxAcc[k]=[]; }
-    else { const acc=arBoxAccPush(k,ARX.boxFootSc||0,now); if(acc&&(!best||best.via==='가림누적')&&(!best||acc.sc>best.sc)) best=acc; } }
+    else { const acc=arBoxAccPush(k,ARX.boxFootSc||0,now); if(acc&&(!best||best.via==='가림누적')&&(!best||acc.sc>best.sc)) best=acc;
+      if(AR_SCENE[k]&&(!best||best.via)){ const ss=await arSceneScore(src,k); ARX.sceneLast=[k,+ss.toFixed(3)]; if(ss>=(AR_SCENE[k].thr||.78)&&(!best||best.via)&&(!best||ss>best.sc)) best={k,sc:ss,via:'배경'}; } } }
   ARX.boxLast=best?[best.k,+best.sc.toFixed(3)]:null; if(!best) return;
   arBoxHit(best,now,src); if(best.via) ARX.box.via=best.via; } finally{ ARX.boxBusy=false; } }
 function arBoxHit(best,now,src){
