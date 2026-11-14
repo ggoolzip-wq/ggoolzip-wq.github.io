@@ -16,7 +16,8 @@ try:
   check('v02 실제 OCR(7.3초 줄) → 진힐라 하드 보상', D(t)==['jinhilla','hard','br'], D(t))
   check('기존 꺾쇠 줄 그대로', D('고통의 미궁 : 욕망의 제단 <하드>')==['jinhilla','hard','br'], D('고통의 미궁 : 욕망의 제단 <하드>'))
   check('난이도 조각만 있는 줄은 맵 아님', D(':하드-') is None, D(':하드-'))
-  check('자모 3개 틀린 이름은 여전히 미인식(문턱 .8 유지)', D('고통되 미궁 혹망의 페단 :하드-') is None, D('고통되 미궁 혹망의 페단 :하드-'))
+  check('난이도 꼬리 없는 자모 3개 틀린 이름은 미인식(문턱 .8)', D('고통되 미궁 혹망의 페단') is None, D('고통되 미궁 혹망의 페단'))
+  check('b425: 꼬리 있는 자모 3개(.77) 진힐라 줄은 인식', D('고통되 미궁 혹망의 페단 :하드-')==['jinhilla','hard','br'], D('고통되 미궁 혹망의 페단 :하드-'))
   check('듄켈 b420 꼴 유지', D('메 가까운 끗 하드')==['dunkel','hard','br'], D('메 가까운 끗 하드'))
   r=pg.evaluate("""()=>{ ARX.rew=null; ARX.rwl=null; ARX.lock=null; ARX.runDiff=null; ARX.mapPend=null;
     ARX.mapSt={boss:'adversary',kind:'b',diff:'normal',name:'전설로거듭나는운명',t:Date.now()}; ARX.mOcrT=12345;
