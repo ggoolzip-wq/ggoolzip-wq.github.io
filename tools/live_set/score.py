@@ -24,6 +24,9 @@ def score(out):
       if not diff:  # 상자 순간 난이도 미정이면 arBossState가 같은 보스 맵 상태(mapSt)의 난이도로 채움 → 같은 보스 맵 읽기 중 가장 많은 난이도
         C=Counter(); [C.update({mp[3]:n}) for mp,n in (s.get('maps') or []) if mp[0]==boss and mp[3]]
         diff=C.most_common(1)[0][0] if C else ''
+    if not bx:  # b430: 상자 못 봤어도 보상 맵 이름으로 보스·난이도가 정해져 기록되면(y18) 그 보상 맵 읽기 중 가장 많은 것으로 채점
+      C=Counter(); [C.update({(mp[0],mp[3]):n}) for mp,n in (s.get('maps') or []) if 'r' in mp[2] and mp[3]]
+      if C: boss,diff=C.most_common(1)[0][0]
     rec=Counter(x['k'] for x in (s.get('runRec') or []))
     want=Counter(t.get('items') or {})
     prof=(s.get('final_prof') or {}); res_ok=bool(prof.get('gw'))
