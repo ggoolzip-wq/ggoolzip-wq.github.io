@@ -7,6 +7,7 @@ from collections import Counter
 from pathlib import Path
 H=Path(__file__).resolve().parent
 T=json.load(open(Path(os.environ.get('LIVE_TRUTH',H/'truth.json'))))
+sys.path.insert(0,str(H)); from pickset import pick as _pick; T=_pick(T)  # t574: 최신 20개 + 증명 아이템 영상
 BOSS={'최초의 대적자':'adversary','벨로나':'bellona','스우':'lotus','선택받은 세렌':'seren','카링':'kaling','가디언 엔젤 슬라임':'slime','윌':'will','감시자 칼로스':'kalos','진 힐라':'jinhilla','듄켈':'dunkel','더스크':'dusk','유피테르':'jupiter'}
 DIFF={'이지':'easy','노멀':'normal','하드':'hard','카오스':'chaos','익스트림':'extreme'}
 def score(out):

@@ -1,45 +1,5 @@
 [
  {
-  "id": "a1",
-  "file": "a1.mp4",
-  "dur": 15.6,
-  "name": "2터래플",
-  "boss": "adversary",
-  "diff": "normal",
-  "items": {},
-  "itemsChecked": false
- },
- {
-  "id": "a2",
-  "file": "a2.mp4",
-  "dur": 4.21,
-  "name": "2터래플",
-  "boss": "bellona",
-  "diff": "easy",
-  "items": {},
-  "itemsChecked": false
- },
- {
-  "id": "a3",
-  "file": "a3.mp4",
-  "dur": 18.2,
-  "name": "2터래플",
-  "boss": "bellona",
-  "diff": "easy",
-  "items": {},
-  "itemsChecked": false
- },
- {
-  "id": "a4",
-  "file": "a4.mp4",
-  "dur": 17.07,
-  "name": "zetking",
-  "boss": "lotus",
-  "diff": "extreme",
-  "items": {},
-  "itemsChecked": false
- },
- {
   "id": "h2",
   "file": "h2.mp4",
   "dur": 15.46,
@@ -47,7 +7,8 @@
   "boss": "bellona",
   "diff": "easy",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 1
  },
  {
   "id": "h3",
@@ -57,7 +18,8 @@
   "boss": "seren",
   "diff": "hard",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 2
  },
  {
   "id": "h4",
@@ -67,7 +29,8 @@
   "boss": "kaling",
   "diff": "easy",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 3
  },
  {
   "id": "h5",
@@ -77,7 +40,8 @@
   "boss": "slime",
   "diff": "chaos",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 4
  },
  {
   "id": "h6",
@@ -87,7 +51,52 @@
   "boss": "will",
   "diff": "hard",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 5
+ },
+ {
+  "id": "a1",
+  "file": "a1.mp4",
+  "dur": 15.6,
+  "name": "2터래플",
+  "boss": "adversary",
+  "diff": "normal",
+  "items": {},
+  "itemsChecked": false,
+  "seq": 6
+ },
+ {
+  "id": "a2",
+  "file": "a2.mp4",
+  "dur": 4.21,
+  "name": "2터래플",
+  "boss": "bellona",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": false,
+  "seq": 7
+ },
+ {
+  "id": "a3",
+  "file": "a3.mp4",
+  "dur": 18.2,
+  "name": "2터래플",
+  "boss": "bellona",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": false,
+  "seq": 8
+ },
+ {
+  "id": "a4",
+  "file": "a4.mp4",
+  "dur": 17.07,
+  "name": "zetking",
+  "boss": "lotus",
+  "diff": "extreme",
+  "items": {},
+  "itemsChecked": false,
+  "seq": 9
  },
  {
   "id": "n1",
@@ -97,7 +106,8 @@
   "boss": "kalos",
   "diff": "normal",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 10
  },
  {
   "id": "n2",
@@ -107,7 +117,8 @@
   "boss": "jinhilla",
   "diff": "hard",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 11
  },
  {
   "id": "n3",
@@ -117,7 +128,8 @@
   "boss": "kaling",
   "diff": "easy",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 12
  },
  {
   "id": "n4",
@@ -129,7 +141,8 @@
   "items": {
    "r_black": 1
   },
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 13
  },
  {
   "id": "n5",
@@ -139,7 +152,8 @@
   "boss": "will",
   "diff": "hard",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 14
  },
  {
   "id": "n6",
@@ -149,7 +163,8 @@
   "boss": "slime",
   "diff": "chaos",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 15
  },
  {
   "id": "n7",
@@ -159,7 +174,8 @@
   "boss": "jupiter",
   "diff": "normal",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 16
  },
  {
   "id": "v01",
@@ -169,7 +185,8 @@
   "boss": "adversary",
   "diff": "normal",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 17
  },
  {
   "id": "v02",
@@ -181,7 +198,8 @@
   "items": {
    "r_black": 1
   },
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 18
  },
  {
   "id": "v03",
@@ -191,7 +209,8 @@
   "boss": "kalos",
   "diff": "normal",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 19
  },
  {
   "id": "v04",
@@ -201,7 +220,8 @@
   "boss": "dunkel",
   "diff": "hard",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 20
  },
  {
   "id": "v05",
@@ -211,7 +231,8 @@
   "boss": "dusk",
   "diff": "chaos",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 21
  },
  {
   "id": "v06",
@@ -221,7 +242,8 @@
   "boss": "slime",
   "diff": "chaos",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 22
  },
  {
   "id": "v07",
@@ -231,7 +253,8 @@
   "boss": "bellona",
   "diff": "easy",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 23
  },
  {
   "id": "v09",
@@ -241,7 +264,8 @@
   "boss": "kaling",
   "diff": "easy",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 24
  },
  {
   "id": "v10",
@@ -251,7 +275,8 @@
   "boss": "will",
   "diff": "hard",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 25
  },
  {
   "id": "w01",
@@ -263,7 +288,8 @@
   "items": {
    "g_life": 1
   },
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 26
  },
  {
   "id": "w02",
@@ -273,7 +299,8 @@
   "boss": "kalos",
   "diff": "normal",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 27
  },
  {
   "id": "w03",
@@ -285,7 +312,8 @@
   "items": {
    "r_white": 1
   },
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 28
  },
  {
   "id": "w04",
@@ -295,7 +323,8 @@
   "boss": "jinhilla",
   "diff": "hard",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 29
  },
  {
   "id": "w05",
@@ -305,7 +334,8 @@
   "boss": "dunkel",
   "diff": "hard",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 30
  },
  {
   "id": "w06",
@@ -315,7 +345,8 @@
   "boss": "dusk",
   "diff": "chaos",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 31
  },
  {
   "id": "w07",
@@ -325,7 +356,8 @@
   "boss": "kaling",
   "diff": "easy",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 32
  },
  {
   "id": "w08",
@@ -337,7 +369,8 @@
   "items": {
    "r_white": 1
   },
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 33
  },
  {
   "id": "w09",
@@ -347,7 +380,8 @@
   "boss": "slime",
   "diff": "chaos",
   "items": {},
-  "itemsChecked": true
+  "itemsChecked": true,
+  "seq": 34
  },
  {
   "id": "x01",
@@ -357,7 +391,8 @@
   "boss": "adversary",
   "diff": "normal",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 35
  },
  {
   "id": "x02",
@@ -367,7 +402,8 @@
   "boss": "kalos",
   "diff": "normal",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 36
  },
  {
   "id": "x03",
@@ -377,7 +413,8 @@
   "boss": "bellona",
   "diff": "easy",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 37
  },
  {
   "id": "x04",
@@ -387,7 +424,8 @@
   "boss": "jinhilla",
   "diff": "hard",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 38
  },
  {
   "id": "x05",
@@ -397,7 +435,8 @@
   "boss": "dunkel",
   "diff": "hard",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 39
  },
  {
   "id": "x06",
@@ -407,7 +446,8 @@
   "boss": "kaling",
   "diff": "easy",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 40
  },
  {
   "id": "x07",
@@ -417,7 +457,8 @@
   "boss": "will",
   "diff": "hard",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 41
  },
  {
   "id": "x08",
@@ -427,6 +468,7 @@
   "boss": "slime",
   "diff": "chaos",
   "items": {},
-  "itemsChecked": false
+  "itemsChecked": false,
+  "seq": 42
  }
 ]

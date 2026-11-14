@@ -12,7 +12,8 @@ sys.path.insert(0, os.path.join(ROOT, 'tests'))
 import _tutil
 
 VIDEOS = json.loads(Path(os.environ['LIVE_SPEC']).read_text())
-if os.environ.get('LIVE_ONLY'): VIDEOS=[v for v in VIDEOS if v['id'] in os.environ['LIVE_ONLY'].split(',')]
+sys.path.insert(0, str(Path(__file__).parent)); from pickset import pick as _pick  # t574: 최신 20개 + 증명 아이템 영상
+VIDEOS=_pick(VIDEOS)
 CHARS = json.loads(os.environ.get('LIVE_CHARS','["2터래플","림강혼망","zetking"]'))
 
 SETUP = """() => {
