@@ -10377,7 +10377,10 @@ function arMapState(text,now){ arRwlCheck(text); const T=arDetectBMap(text); con
 /* t603: 보상 맵 래치 — 보상 상자로 처음 '보상 인식 중'이 되면 그 보상 맵 이름을 잡아 두고, 왼쪽 위 맵 이름이 '다른 맵 이름'으로 연속 2번 읽힐 때까지 유지.
    검은 화면·잘린/짧은 읽기·오독(자리→파리)은 유지 (보상 맵 이름 2글자 묶음의 30% 이상이 보이면 같은 맵) */
 function arBig(t){ const n=arNorm(t||'').replace(/[^가-힣A-Za-z0-9]/g,''), o=new Set(); for(let i=0;i+1<n.length;i++) o.add(n.slice(i,i+2)); return o; }
-function arRwlSim(t){ const L=ARX.rwl; if(!L) return 1; { let D=null; try{ D=arDetectBMap(t); }catch(e){} if(D&&D.boss===L.boss&&D.kind.includes('r')) return 1; } /* t625: 세렌 '세르니움 왕궁 메인홀'이 '르니움 황궁 메민홀'로 읽히면 두 글자 묶음 일치 .25 → 래치가 1~2초 만에 풀리고 보스 모름(후보 130개, 바닥 찾기 1.6초)으로 백옥 반지 상자 놓침. 맵 이름 인식(자모 유사도)으로 같은 보스 보상 맵이면 유지 */ const b=arBig(t); let best=0; for(const nm of L.names){ const a=arBig(nm); let h=0; for(const x of a) if(b.has(x)) h++; best=Math.max(best,a.size?h/a.size:0); } return best; }
+function arRwlSim(t){ const L=ARX.rwl; if(!L) return 1; { let D=null; try{ D=arDetectBMap(t); }catch(e){} if(D&&D.boss===L.boss&&D.kind.includes('r')) return 1; } /* t625: 세렌 '세르니움 왕궁 메인홀'이 '르니움 황궁 메민홀'로 읽히면 두 글자 묶음 일치 .25 → 래치가 1~2초 만에 풀리고 보스 모름(후보 130개, 바닥 찾기 1.6초)으로 백옥 반지 상자 놓침. 맵 이름 인식(자모 유사도)으로 같은 보스 보상 맵이면 유지 */ const b=arBig(t), bc=arBigCho(t); let best=0; for(const nm of L.names){ const a=arBig(nm); let h=0; for(const x of a) if(b.has(x)) h++; best=Math.max(best,a.size?h/a.size:0);
+    /* b430: OCR 은 모음을 자주 틀리고 자음 뼈대는 남김(w03 '솔라툼의 유산'→'술라톰믹 유산', 글자 묶음 .2 → 래치 풀려 보스 모름 5초 → 백옥 놓침). 초성 2글자 묶음 60% 이상 + 실제 글자 묶음도 하나 이상(15%) 같으면 같은 맵 */
+    const ac=arBigCho(nm); if(ac.size>=3){ let hc=0; for(const x of ac) if(bc.has(x)) hc++; if(hc/ac.size>=.6&&a.size&&h/a.size>=.15) best=Math.max(best,.3); } } return best; }
+function arBigCho(t){ const n=arNorm(t||'').replace(/[^가-힣]/g,''), C='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', c=[...n].map(ch=>C[Math.floor((ch.charCodeAt(0)-0xAC00)/588)]).join(''), o=new Set(); for(let i=0;i+1<c.length;i++) o.add(c.slice(i,i+2)); return o; }
 function arRwlCheck(t){ const L=ARX.rwl; if(!L) return; const n=arNorm(t||'').replace(/[^가-힣]/g,''); if(n.length<3) return;
   if(arRwlSim(t)>=.3){ L.diff=0; L.other=''; return; }
   const D=arDetectBMap(t), other=D&&D.sc>=.8?D.name:arMapKey(String(t||'').split('\n').filter(x=>arNorm(x).length>=3).pop()||'');
