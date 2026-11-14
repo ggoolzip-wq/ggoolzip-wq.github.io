@@ -1,0 +1,432 @@
+[
+ {
+  "id": "a1",
+  "file": "a1.mp4",
+  "dur": 15.6,
+  "name": "2터래플",
+  "boss": "adversary",
+  "diff": "normal",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "a2",
+  "file": "a2.mp4",
+  "dur": 4.21,
+  "name": "2터래플",
+  "boss": "bellona",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "a3",
+  "file": "a3.mp4",
+  "dur": 18.2,
+  "name": "2터래플",
+  "boss": "bellona",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "a4",
+  "file": "a4.mp4",
+  "dur": 17.07,
+  "name": "zetking",
+  "boss": "lotus",
+  "diff": "extreme",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "h2",
+  "file": "h2.mp4",
+  "dur": 15.46,
+  "name": "터래플",
+  "boss": "bellona",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "h3",
+  "file": "h3.mp4",
+  "dur": 14.72,
+  "name": "터래플",
+  "boss": "seren",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "h4",
+  "file": "h4.mp4",
+  "dur": 24.0,
+  "name": "터래플",
+  "boss": "kaling",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "h5",
+  "file": "h5.mp4",
+  "dur": 18.49,
+  "name": "터래플",
+  "boss": "slime",
+  "diff": "chaos",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "h6",
+  "file": "h6.mp4",
+  "dur": 13.56,
+  "name": "터래플",
+  "boss": "will",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "n1",
+  "file": "n1.mp4",
+  "dur": 16.72,
+  "name": "2터래플",
+  "boss": "kalos",
+  "diff": "normal",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "n2",
+  "file": "n2.mp4",
+  "dur": 13.58,
+  "name": "2터래플",
+  "boss": "jinhilla",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "n3",
+  "file": "n3.mp4",
+  "dur": 21.86,
+  "name": "2터래플",
+  "boss": "kaling",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "n4",
+  "file": "n4.mp4",
+  "dur": 17.66,
+  "name": "2터래플",
+  "boss": "dunkel",
+  "diff": "hard",
+  "items": {
+   "r_black": 1
+  },
+  "itemsChecked": true
+ },
+ {
+  "id": "n5",
+  "file": "n5.mp4",
+  "dur": 18.66,
+  "name": "2터래플",
+  "boss": "will",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "n6",
+  "file": "n6.mp4",
+  "dur": 13.76,
+  "name": "2터래플",
+  "boss": "slime",
+  "diff": "chaos",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "n7",
+  "file": "n7.mp4",
+  "dur": 14.9,
+  "name": "림강혼망",
+  "boss": "jupiter",
+  "diff": "normal",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "v01",
+  "file": "v01.mp4",
+  "dur": 28.27,
+  "name": "zetking",
+  "boss": "adversary",
+  "diff": "normal",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "v02",
+  "file": "v02.mp4",
+  "dur": 12.36,
+  "name": "zetking",
+  "boss": "jinhilla",
+  "diff": "hard",
+  "items": {
+   "r_black": 1
+  },
+  "itemsChecked": true
+ },
+ {
+  "id": "v03",
+  "file": "v03.mp4",
+  "dur": 15.82,
+  "name": "zetking",
+  "boss": "kalos",
+  "diff": "normal",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "v04",
+  "file": "v04.mp4",
+  "dur": 16.58,
+  "name": "zetking",
+  "boss": "dunkel",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "v05",
+  "file": "v05.mp4",
+  "dur": 19.93,
+  "name": "zetking",
+  "boss": "dusk",
+  "diff": "chaos",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "v06",
+  "file": "v06.mp4",
+  "dur": 17.15,
+  "name": "zetking",
+  "boss": "slime",
+  "diff": "chaos",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "v07",
+  "file": "v07.mp4",
+  "dur": 19.49,
+  "name": "zetking",
+  "boss": "bellona",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "v09",
+  "file": "v09.mp4",
+  "dur": 16.7,
+  "name": "zetking",
+  "boss": "kaling",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "v10",
+  "file": "v10.mp4",
+  "dur": 20.08,
+  "name": "zetking",
+  "boss": "will",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "w01",
+  "file": "w01.mp4",
+  "dur": 18.04,
+  "name": "린벨자",
+  "boss": "adversary",
+  "diff": "normal",
+  "items": {
+   "g_life": 1
+  },
+  "itemsChecked": true
+ },
+ {
+  "id": "w02",
+  "file": "w02.mp4",
+  "dur": 22.62,
+  "name": "린벨자",
+  "boss": "kalos",
+  "diff": "normal",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "w03",
+  "file": "w03.mp4",
+  "dur": 17.64,
+  "name": "린벨자",
+  "boss": "bellona",
+  "diff": "easy",
+  "items": {
+   "r_white": 1
+  },
+  "itemsChecked": true
+ },
+ {
+  "id": "w04",
+  "file": "w04.mp4",
+  "dur": 14.69,
+  "name": "린벨자",
+  "boss": "jinhilla",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "w05",
+  "file": "w05.mp4",
+  "dur": 14.21,
+  "name": "린벨자",
+  "boss": "dunkel",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "w06",
+  "file": "w06.mp4",
+  "dur": 18.36,
+  "name": "린벨자",
+  "boss": "dusk",
+  "diff": "chaos",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "w07",
+  "file": "w07.mp4",
+  "dur": 20.5,
+  "name": "린벨자",
+  "boss": "kaling",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "w08",
+  "file": "w08.mp4",
+  "dur": 16.56,
+  "name": "린벨자",
+  "boss": "seren",
+  "diff": "hard",
+  "items": {
+   "r_white": 1
+  },
+  "itemsChecked": true
+ },
+ {
+  "id": "w09",
+  "file": "w09.mp4",
+  "dur": 15.59,
+  "name": "린벨자",
+  "boss": "slime",
+  "diff": "chaos",
+  "items": {},
+  "itemsChecked": true
+ },
+ {
+  "id": "x01",
+  "file": "x01.mp4",
+  "dur": 19.16,
+  "name": "랑트킹",
+  "boss": "adversary",
+  "diff": "normal",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "x02",
+  "file": "x02.mp4",
+  "dur": 17.57,
+  "name": "랑트킹",
+  "boss": "kalos",
+  "diff": "normal",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "x03",
+  "file": "x03.mp4",
+  "dur": 18.91,
+  "name": "랑트킹",
+  "boss": "bellona",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "x04",
+  "file": "x04.mp4",
+  "dur": 12.3,
+  "name": "랑트킹",
+  "boss": "jinhilla",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "x05",
+  "file": "x05.mp4",
+  "dur": 13.34,
+  "name": "랑트킹",
+  "boss": "dunkel",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "x06",
+  "file": "x06.mp4",
+  "dur": 20.16,
+  "name": "랑트킹",
+  "boss": "kaling",
+  "diff": "easy",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "x07",
+  "file": "x07.mp4",
+  "dur": 16.9,
+  "name": "랑트킹",
+  "boss": "will",
+  "diff": "hard",
+  "items": {},
+  "itemsChecked": false
+ },
+ {
+  "id": "x08",
+  "file": "x08.mp4",
+  "dur": 11.25,
+  "name": "랑트킹",
+  "boss": "slime",
+  "diff": "chaos",
+  "items": {},
+  "itemsChecked": false
+ }
+]
