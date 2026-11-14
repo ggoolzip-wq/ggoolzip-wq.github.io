@@ -18,6 +18,16 @@ try:
   check('난이도 조각만 있는 줄은 맵 아님', D(':하드-') is None, D(':하드-'))
   check('자모 3개 틀린 이름은 여전히 미인식(문턱 .8 유지)', D('고통되 미궁 혹망의 페단 :하드-') is None, D('고통되 미궁 혹망의 페단 :하드-'))
   check('듄켈 b420 꼴 유지', D('메 가까운 끗 하드')==['dunkel','hard','br'], D('메 가까운 끗 하드'))
+  r=pg.evaluate("""()=>{ ARX.rew=null; ARX.rwl=null; ARX.lock=null; ARX.runDiff=null; ARX.mapPend=null;
+    ARX.mapSt={boss:'adversary',kind:'b',diff:'normal',name:'전설로거듭나는운명',t:Date.now()}; ARX.mOcrT=12345;
+    const L='픔명의 전장 의지가 증명된 파리 <노멸>'; arMapState(L,Date.now()); const a=[ARX.mapSt.kind,ARX.mOcrT];
+    arMapState(L,Date.now()); const b=ARX.mapSt.kind;
+    ARX.mapPend=null; ARX.mapSt={boss:'will',kind:'w',diff:'hard',name:'거울에비친빛의신좌',t:Date.now()}; ARX.mOcrT=777;
+    arMapState('에스페라 회절의 회랑 <하드>',Date.now()); const c=[ARX.mapSt.kind,ARX.mOcrT];
+    return {a,b,c}; }""")
+  check('v01 대적자 비슷한 보상 읽기 1번째: 상태 유지 + 확인 읽기 바로(mOcrT=0)', r['a']==['b',0], r)
+  check('2번째 같은 읽기에 보상 맵 확정(2번 확인 규칙 유지)', r['b']=='r', r)
+  check('보상 아닌 바뀜(대기→전투)은 기존 3초 주기 그대로', r['c'][1]==777 and r['c'][0]=='w', r)
   b.close()
 finally: srv.terminate()
 print('PASS b423' if not bad else 'FAIL '+str(bad)); sys.exit(1 if bad else 0)
