@@ -182,7 +182,7 @@ def main():
                 sm['errs']=errs[:5]
                 (vout/'log.json').write_text(json.dumps(allLog, ensure_ascii=False))
                 sm['drops']=drops
-                sm['airMax']=pg.evaluate('()=>{try{return JSON.parse(JSON.stringify({m:ARX.airMax||null,pf:arPf(),cand:(arCandidates(true)||[]).map(c=>c.k),cfg:{air:ARX.cfg.air,airFps:ARX.cfg.airFps}}))}catch(e){return String(e)}}')
+                sm['airMax']=pg.evaluate('()=>{try{return JSON.parse(JSON.stringify({m:ARX.airMax||null,pf:arPf(),cand:(arCandidates(true)||[]).map(c=>c.k),bh:ARX.bannerHits||[],al:(ARX.airLog||[]).slice(-40),koN:arPf().koN||0,cfg:{air:ARX.cfg.air,airFps:ARX.cfg.airFps}}))}catch(e){return String(e)}}')
                 sm['itemLog']=[x for x in allLog if any(w in x[1] for w in ('득템','기록','획득','상자 확인 전','보류'))][:40]
                 (vout/'summary.json').write_text(json.dumps(sm, ensure_ascii=False, indent=2))
                 alls[spec['id']]=sm

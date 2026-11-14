@@ -36,10 +36,11 @@ const AR_DEF={on:true, nameTpl:true, /* t603: 투표로 확정된 닉네임만 �
   airKoStep:20,airKoRef:10,airKoScales:[1],airKoVmax:24, /* b358: 결정·큐브 말고 나머지(미트라의 분노 상자·백옥·안대…) 공중 검사 — 대략 찾기 20도 간격·크기 1개(예전 10도×2크기 = 4배 일) → 정밀 단계에서 ±10도 이웃까지, 정밀 확인 자리 8→24. 미트라 영상 공중 26프레임: 맞춤 4→11장, 1회 293→131ms (t659) */
   airErode:2,     // t619: 공중 템플릿 가장자리 깎기(px) + 색 흐리기
   airRinv:true,   // t619: 회전 평균 템플릿으로 대략 찾기 (공중 1회 0.3초 → 0.1초 이하)
-  airSad:40,      // b289: 공중 색 차이 상한 (정답 24~37, 빗나간 각도 ≥ 40)
+  airSad:40, airSad2:46, /* b429: 색 차이 40~46 '약한 맞춤'은 한 장만으론 기록 안 하고, 같은 아이템이 다른 프레임에서 움직이며 2번 이상 보이면 기록 (w03 백옥: 진짜인데 색 차이 40.9~45.3이라 실행마다 놓치던 것) */
+       // b289: 공중 색 차이 상한 (정답 24~37, 빗나간 각도 ≥ 40)
   itemFps:2,      // b287: 바닥·공중 찾기 최대 횟수/초 (화면이 바뀐 때만, Worker 에서)
   prev:1,         // b287: 미리보기 갱신 횟수/초 (0 = 숨김)
-  bannerPx:0,     // 배너 아이콘 템플릿 크기(px) 0 = 자동 (1080 높이에서 46px — 실제 화면 13장으로 맞춤)
+  bannerPx:0,     // 배너 아이콘 템플릿 크기(px) 0 = 자동 (41px×UI배율 — b430 실영상 측정)
   margin:.04,     // 1등 아이콘이 2등보다 이만큼 높아야 인정
   ds:4,           // 대략 찾기 축소 배율
   thr:.84,        // 아이콘 일치 점수 (NCC, -1~1) 기준 — 실제 배너: 정답 .88 / 닮은 상자 .80 / 배너 없음 < .5
@@ -218,7 +219,8 @@ function arR(k,src){ if(k==='inv'||k==='sto'||k==='stoInv') return arProfR(k,src
   x=Math.max(0,x); y=Math.max(0,y); return {x:x/sw,y:y/sh,w:Math.min(w,sw-x)/sw,h:Math.min(h,sh-y)/sh}; }
 const arGH=(src,sh)=>{ const sw=src?.videoWidth||src?.width; return sw?arGeom(sw,sh).gh:sh; };
 const arUS=(src,sh)=>{ const sw=src?.videoWidth||src?.width; return sw?arGeom(sw,sh).s:1; };
-const arIconPx=(sh,reg,src)=>reg==='banner'?(ARX.cfg.bannerPx>0?ARX.cfg.bannerPx:Math.max(16,Math.round(56*(src?arUS(src,sh):sh/1080)))):(ARX.cfg.iconPx>0?ARX.cfg.iconPx:Math.max(12,Math.round(arGH(src,sh)*40/1080))); // b295: 배너=UI(46px×배율), 바닥=월드(게임 높이 비율)
+/* b430: 배너 아이콘은 실제 화면에서 41px×배율(1366 실영상 n4·v02 흑옥 .85, w03 백옥 .78 최고점 40–41px). t562 WZ 교체 때 56으로 바뀌어 배너 칸이 .31로 사실상 꺼져 있었음 */
+const arIconPx=(sh,reg,src)=>reg==='banner'?(ARX.cfg.bannerPx>0?ARX.cfg.bannerPx:Math.max(16,Math.round(41*(src?arUS(src,sh):sh/1080)))):(ARX.cfg.iconPx>0?ARX.cfg.iconPx:Math.max(12,Math.round(arGH(src,sh)*40/1080))); // b295: 배너=UI(46px×배율), 바닥=월드(게임 높이 비율)
 /* 획득 로그 한 줄 → {k,n} (이름은 '앱솔랩스 방어구..' 처럼 잘려 있어 앞부분으로 맞춤) */
 function arLogItem(line){ const L=String(line||''); if(!/[템탬팀플].{0,4}[\d|Il]+\s*[개거]|얻었|얼었|획득|습니|슬니|있슬|었슬|줍니|니다|\(\s*[소기조][비타]|\)\s*$/.test(L)) return null; const q=+(L.match(/(\d+)\s*개/)||[])[1]||1;
   let name=L.split(/\.\s?\.|…|[,.]\s*[가-힣]?[미이비]?[이디]?[템탬팀]|[아마바미][이미디][템탬팀][을흘플즐글를]|을\s*획득|를\s*획득/)[0]; const pm=L.match(/\(([^()]*)\)\s*$/); if(/^\s*\S+\s*아이템을\s*얻었/.test(L)&&pm) name=pm[1]; // '소비 아이템을 얻었습니다 (이름)'
@@ -366,7 +368,7 @@ async function arFindIcons(img,px,thr,opt){ const C=arCandidates(); if(!C.length
    공중(튀어 오를 때)은 회전·세로 눌림. 프레임 사이 추적해서 같은 자리면 1번, 배너·로그와는 arRecord 에서 중복 제거 */
 function arGroundPx(sh){ const b=ARX.cfg.iconPx>0?ARX.cfg.iconPx:Math.round(sh*84/1080); return [Math.round(b*.97),b,Math.round(b*1.03)]; }
 async function arItemScan(src){ const C=arCandidates(true); if(!C.length) return []; const sh=src.videoHeight||src.height, keys=[...new Set(C.map(c=>c.k))], G=await arGrab(src,arR('item',src)), pxs=arGroundPx(arGH(src,sh));
-  const opt={multi:true,tiles:true,sad:ARX.cfg.groundSad,thr:ARX.cfg.groundThr,f:Math.max(2,Math.round(pxs[1]/9)),angles:[0],sq:[1],pxs}; // b289: 공중(회전)은 arAirScan 으로 옮김
+  const opt={multi:true,tiles:true,sad:ARX.cfg.groundSad,thr:ARX.cfg.groundThr,f:Math.max(2,Math.round(pxs[1]/9)),angles:[0],sq:[1],pxs,drop:ARX.cfg.groundDropSpr!==false}; /* b430: 바닥도 실제 드롭 그림(있는 키만) — 연마석은 바닥에 잠깐 놓일 때 인벤 아이콘과 모양이 달라 놓침 */ // b289: 공중(회전)은 arAirScan 으로 옮김
   const r0=await arMatchRun(G,keys,pxs,opt); const hits=[...r0.hits];
   ARX.lastScore=r0.scores; ARX.itemMs=r0.ms||0; return hits.map(h=>Object.assign(h,{x:h.x+G.ox,y:h.y+G.oy})); }
 /* b289: 공중 아이템 — 보상 상자를 부순 순간 아이템들이 한 줄로 위로 튀어 올라 빙글빙글 돌다 0.4~1초 뒤 바닥에 떨어짐(솔로는 곧 자동 줍기라 바닥엔 거의 안 보임).
@@ -377,13 +379,14 @@ function arAirAngles(step){ const st=Math.max(5,+(step||ARX.cfg.airStep)||10), a
 async function arAirScan(G,sh,ox,oy,thr){ const C=arCandidates(true); if(!C.length){ G.bmp&&G.bmp.close&&G.bmp.close(); return []; } const keys=[...new Set(C.map(c=>c.k))], gp=arGroundPx(sh), px=gp[1], sc=ARX.cfg.airScales&&ARX.cfg.airScales.length?ARX.cfg.airScales:[.97,1], pxs=[...new Set(sc.map(k=>Math.round(px*k)))], KSc=ARX.cfg.airKeyScales||{}, kpx={}; for(const k of keys){ const pf=Object.keys(KSc).find(p=>k.startsWith(p)); if(pf) kpx[k]=KSc[pf].map(v=>Math.round(px*v)); }
   const kx=keys.filter(k=>AR_REWX.includes(k)), ko=keys.filter(k=>!AR_REWX.includes(k)), G2=(kx.length&&ko.length&&G.bmp)?{bmp:await createImageBitmap(G.bmp)}:G;
   /* t619: 결정·큐브(REWX)만 회전 불변 빠른 검사, 나머지(백옥 등)는 b289 방식 그대로 — 섞으면 백옥 놓침 */
-  const AS=kx.length&&ko.length&&ARX.cfg.worker!==false&&!!ARX.wk&&ARX.cfg.airKoAsync!==false, okF=h=>Object.assign(h,{x:h.x+ox,y:h.y+oy,air:true,ok:h.score>=arAirK('airKeyThr',h.k,ARX.cfg.airThr)&&h.sad<=arAirK('airKeySad',h.k,ARX.cfg.airSad)});
+  const AS=kx.length&&ko.length&&ARX.cfg.worker!==false&&!!ARX.wk&&ARX.cfg.airKoAsync!==false, okF=h=>{ Object.assign(h,{x:h.x+ox,y:h.y+oy,air:true,ok:h.score>=arAirK('airKeyThr',h.k,ARX.cfg.airThr)&&h.sad<=arAirK('airKeySad',h.k,ARX.cfg.airSad)}); h.soft=!h.ok&&arAirSoft(h); return h; };
   /* t619: 결정·큐브가 후보일 때(보상 맵) 나머지 아이콘(0.3초)은 두 번째 공중 워커에서 따로 — 기다리지 않고, 끝나면 추적으로 (밀리면 그 프레임은 건너뜀) */
-  const c=ARX.cfg, KP=[...new Set((c.airKoScales&&c.airKoScales.length?c.airKoScales:null)?.map(v=>Math.round(px*v))||[gp[0],px])], KO={multi:true,tiles:true,sad:thr<c.airThr?999:c.airSad,thr:thr??c.airThr,f:Math.max(2,Math.round(Math.min(...KP)/9)),angles:arAirAngles(c.airKoStep),aref:c.airKoRef>0&&c.airKoStep>c.airStep?c.airKoRef:0,vmax:c.airKoVmax||8,sq:[1],lane:'air',lane2:'air2',drop:c.airDropSpr!==false,kvmax:c.airDropSpr!==false?Object.fromEntries(ko.filter(k=>AR_DROP_SPR[k]).map(k=>[k,c.airDropVmax||80])):null}; // b358 · b429 drop=드롭 그림 템플릿
-  let P2=null; if(ko.length){ if(AS){ if(ARX.koBusy){ G2!==G&&G2.bmp&&G2.bmp.close&&G2.bmp.close(); } else { ARX.koBusy=true; const t0=Date.now(); arMatchRun(G2,ko,KP,KO).then(r2=>{ const hs=(r2.hits||[]).map(okF).filter(h=>h.ok); arPf().koN=(arPf().koN||0)+1; if(hs.length&&ARX.cfg.on!==undefined){ ARX.airLog=(ARX.airLog||[]).concat([{t:-1,loc:false,ko:true,hits:hs.map(h=>[h.k,+h.score.toFixed(3),h.x,h.y])}]).slice(-60); arTrack(hs,sh,t0); } }).catch(()=>{}).finally(()=>{ ARX.koBusy=false; }); } } else P2=arMatchRun(G2,ko,KP,KO); }
+  const c=ARX.cfg, KP=[...new Set((c.airKoScales&&c.airKoScales.length?c.airKoScales:null)?.map(v=>Math.round(px*v))||[gp[0],px])], KO={multi:true,tiles:true,sad:thr<c.airThr?999:Math.max(c.airSad,c.airSad2||0),thr:thr??c.airThr,f:Math.max(2,Math.round(Math.min(...KP)/9)),angles:arAirAngles(c.airKoStep),aref:c.airKoRef>0&&c.airKoStep>c.airStep?c.airKoRef:0,vmax:c.airKoVmax||8,sq:[1],lane:'air',lane2:'air2',drop:c.airDropSpr!==false,kvmax:c.airDropSpr!==false?Object.fromEntries(ko.filter(k=>AR_DROP_SPR[k]).map(k=>[k,c.airDropVmax||80])):null}; // b358 · b429 drop=드롭 그림 템플릿
+  let P2=null; if(ko.length){ if(AS){ if(ARX.koBusy){ G2!==G&&G2.bmp&&G2.bmp.close&&G2.bmp.close(); } else { ARX.koBusy=true; const t0=Date.now(); arMatchRun(G2,ko,KP,KO).then(r2=>{ const hs=(r2.hits||[]).map(okF).filter(h=>h.ok||h.soft); arPf().koN=(arPf().koN||0)+1; if(hs.length&&ARX.cfg.on!==undefined){ ARX.airLog=(ARX.airLog||[]).concat([{t:-1,loc:false,ko:true,hits:hs.map(h=>[h.k,+h.score.toFixed(3),h.x,h.y])}]).slice(-60); arTrack(hs,sh,t0); } }).catch(()=>{}).finally(()=>{ ARX.koBusy=false; }); } } else P2=arMatchRun(G2,ko,KP,KO); }
   const r=kx.length?await arMatchRun(G,kx,pxs,{multi:true,tiles:true,sad:thr<ARX.cfg.airThr?999:ARX.cfg.airSad,thr:Math.min(thr??ARX.cfg.airThr,...Object.values(ARX.cfg.airKeyThr||{})),f:Math.max(2,Math.round(Math.min(...pxs)/(ARX.cfg.airDiv||9))),angles:arAirAngles(),sq:[1],rinv:ARX.cfg.airRinv!==false,er:ARX.cfg.airErode??2,rtop:ARX.cfg.airTop||14,rang:ARX.cfg.airRang||1,vmax:64,kpx,lane:'air'}):{hits:[],scores:[],ms:0};
   if(P2){ const r2=await P2; r.hits=r.hits.concat(r2.hits); r.scores=(r.scores||[]).concat(r2.scores||[]); r.ms=(r.ms||0)+(r2.ms||0); }
-  ARX.airScore=r.scores; ARX.airMs=r.ms||0; return r.hits.map(h=>Object.assign(h,{x:h.x+ox,y:h.y+oy,air:true,ok:h.score>=arAirK('airKeyThr',h.k,ARX.cfg.airThr)&&h.sad<=arAirK('airKeySad',h.k,ARX.cfg.airSad)})).filter(h=>thr<ARX.cfg.airThr||h.score>=arAirK('airKeyThr',h.k,ARX.cfg.airThr)); }
+  ARX.airScore=r.scores; ARX.airMs=r.ms||0; return r.hits.map(h=>Object.assign(h,{x:h.x+ox,y:h.y+oy,air:true,ok:h.score>=arAirK('airKeyThr',h.k,ARX.cfg.airThr)&&h.sad<=arAirK('airKeySad',h.k,ARX.cfg.airSad)})).map(h=>(h.soft=!h.ok&&arAirSoft(h),h)).filter(h=>thr<ARX.cfg.airThr||h.score>=arAirK('airKeyThr',h.k,ARX.cfg.airThr)); }
+function arAirSoft(h){ return !AR_REWX.includes(h.k)&&h.score>=arAirK('airKeyThr',h.k,ARX.cfg.airThr)&&h.sad>arAirK('airKeySad',h.k,ARX.cfg.airSad)&&h.sad<=(ARX.cfg.airSad2||0); } /* b429 약한 맞춤 */
 function arAirK(n,k,d){ const M=ARX.cfg[n]||{}, p=Object.keys(M).find(p=>k.startsWith(p)); return p?M[p]:d; } // t619: 키별 공중 기준; }
 async function arAirCrop(e,x,y,w,h){ x=Math.max(0,Math.round(x)); y=Math.max(0,Math.round(y)); w=Math.round(Math.min(w,e.w-x)); h=Math.round(Math.min(h,e.h-y)); if(w<8||h<8) return null;
   if(e.bmp) return {bmp:await createImageBitmap(e.bmp,x,y,w,h)};
@@ -422,7 +425,7 @@ async function arAirStep(){ { const B=ARX.abuf||[], pf=arPf();
       // b289: 공중은 0.4초뿐일 때가 있어 — 전체 훑기 후보(airCand)+근처 확인(airThr) 두 번 보인 걸로 친다
       if(job.L&&ok.length&&!job.L.seed){ job.L.seed=true; const h=ok[0]; arTrack([Object.assign({},h,{air:true})],OS,Math.min(e.at,job.L.at)); }
       const okB=ok.filter(h=>AR_REWX.includes(h.k)); if(!job.L) arAirBatch(okB,e.at); // t619: 큐브·결정석은 같은 게 여러 개 붙어 튀어서 자리 추적이 하나로 합쳐짐 → 한 프레임에 동시에 보인 최대 개수로 셈
-      arTrack(ok.filter(h=>!okB.includes(h)).map(h=>Object.assign({},h,{air:true})),OS,e.at); return true; } }
+      arTrack(ok.filter(h=>!okB.includes(h)).concat(hits.filter(h=>h.soft)).map(h=>Object.assign({},h,{air:true})),OS,e.at); return true; } }
 function arAirBatch(hits,now){ const M=ARX.airMax=ARX.airMax||{}, C={}; for(const h of hits) (C[h.k]=C[h.k]||[]).push(h);
   for(const k of Object.keys(M)) if(now-M[k].t>(ARX.cfg.airBatchMs||4000)) delete M[k];
   for(const [k,L] of Object.entries(C)){ const st=M[k]=M[k]||{n:0,seen:0,rec:0,s:0}; st.t=now; st.seen++; st.n=Math.max(st.n,L.length); st.s=Math.max(st.s,...L.map(h=>h.score));
@@ -432,8 +435,10 @@ function arNeed(){ const c=ARX.cfg.confirm||1; if(c>=2) return c; const M=ARX.ma
 /* 추적: 같은 아이템이 비슷한 자리(바닥 80px·공중 250px, 1080p 기준)에 2.5초 안에 다시 보이면 같은 것 → confirm 번 보이면 1번 기록 */
 function arTrack(hits,sh,now){ now=now||Date.now(); const k1=sh/1080; ARX.tracks=(ARX.tracks||[]).filter(t=>now-t.t<5000); const rec=[];
   for(const h of hits){ const R=(h.air?250:80)*k1; let t=ARX.tracks.find(t=>t.k===h.k&&now-t.t<2500&&Math.hypot(t.x-h.x,t.y-h.y)<R);
-    if(!t){ t={k:h.k,x:h.x,y:h.y,t:now,n:0,done:false,air:!!h.air}; ARX.tracks.push(t); } t.x=h.x; t.y=h.y; t.t=now; t.n++; t.s=Math.max(t.s||0,h.score);
-    if(!t.done&&t.n>=arNeed()){ t.done=true; rec.push(t); if(ARX.cfg.on) arPick(Object.assign({},h,{score:t.s}),h.air?'공중':'바닥'); } }
+    if(!t){ t={k:h.k,x:h.x,y:h.y,t:now,n:0,done:false,air:!!h.air}; ARX.tracks.push(t); } t.x=h.x; t.y=h.y; t.t=now; if(h.soft){ (t.sp=t.sp||[]).push([h.x,h.y,now]); } else t.n++; t.s=Math.max(t.s||0,h.score);
+    /* b429: 약한 맞춤(색 차이 40~46)은 다른 시각 2번 이상 + 그 사이 움직임(1080 기준 8px 이상)일 때만 = 날아가는 진짜 아이템. 한 장짜리 이펙트·제자리 배경은 안 됨 */
+    const sv=t.sp&&t.sp.length>=2&&new Set(t.sp.map(p=>p[2])).size>=2&&t.sp.some(p=>t.sp.some(q=>Math.hypot(p[0]-q[0],p[1]-q[1])>=8*k1));
+    if(!t.done&&(t.n>=arNeed()||sv)){ t.done=true; rec.push(t); if(ARX.cfg.on) arPick(Object.assign({},h,{score:t.s}),h.air?'공중':'바닥'); } }
   return rec; }
 /* OCR (연결할 때만 ./ocr/ 에서 불러옴, 다른 곳으로 보내지 않음) */
 /* b296: 이름·미니맵 감시 전용 두 번째 워커 — 로그 OCR(초당 6번) 뒤에 줄 서지 않게 */
