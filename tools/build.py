@@ -29,6 +29,7 @@ if ar and os.path.exists(os.path.join(SRC, 'epicclip.js')): ar += '\n' + rd('epi
 if ar and os.path.exists(os.path.join(SRC, 'arsnap.js')): ar += '\n' + rd('arsnap.js')  # b366: 라이브 프레임 Worker
 s = s.replace('/*__BOSS_ICONS__*/{}', json.dumps(js('icons.json'), separators=(',', ':')))
 s = s.replace('/*__ITEM_ICONS__*/{}', json.dumps(js('itemicons.json'), separators=(',', ':')))
+if os.path.exists(os.path.join(SRC, 'dropsprites.json')): ar = ar.replace('/*__DROP_SPRITES__*/{}', json.dumps(js('dropsprites.json'), separators=(',', ':')))  # b429 드롭 그림 템플릿
 if os.path.exists(os.path.join(SRC, 'boxicons.json')): ar = ar.replace('/*__BOX_ICONS__*/{}', json.dumps(js('boxicons.json'), separators=(',', ':')))  # b300 보상 상자
 if os.path.exists(os.path.join(SRC, 'sceneicons.json')): ar = ar.replace('/*__SCENE_ICONS__*/{}', json.dumps(js('sceneicons.json'), separators=(',', ':'), ensure_ascii=False))  # b419 보상 맵 배경 지형
 if os.path.exists(os.path.join(SRC, 'boxmsg.json')): ar = ar.replace('/*__BOX_MSG__*/{}', json.dumps(js('boxmsg.json'), separators=(',', ':')))  # b331 상자 처치 메시지 글자 템플릿
