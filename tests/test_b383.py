@@ -21,7 +21,7 @@ try:
   pg.goto(f'http://127.0.0.1:{PORT}/index.html');pg.evaluate('localStorage.clear()');pg.reload();pg.wait_for_timeout(700);pg.evaluate("window.VideoEncoder=undefined;EC.cfg.fps=8;EC.cfg.H=540;EC.cfg.q=.75")
   # 실제 사용자 사례 상태(더스크 카오스 전투 맵 + 상자 추정 상태)
   r=pg.evaluate("""()=>{ const now=Date.now(); ARX.det={boss:'dusk',diff:'chaos',cid:'c0'}; ARX.mapSt={boss:'dusk',kind:'b',t:now}; ARX.rew={boss:'dusk'}; return {ctx:ecCtx(now),battle:arRewMap(now)?.kind,state:arBossState()}; }""")
-  check('전투 맵 60초 + ARX.rew 상태라도 에픽빔 저장 게이트 닫힘',r['ctx'] is None and r['battle']=='b',r)
+  check('전투 맵 + ARX.rew 상태라도 에픽빔 저장 게이트 닫힘 (b431: 전투 맵은 보상 후보 아님 → arRewMap 없음)',r['ctx'] is None and r['battle'] is None,r)
   r=pg.evaluate("""()=>{ const now=Date.now(); ARX.mapSt={boss:'dusk',kind:'r',t:now}; const ok=ecCtx(now); ARX.mapSt.t=now-9000; return {ok,old:ecCtx(now)}; }""")
   check('실제 보상 맵 + 8초 내 = 저장 허용 / 오래되면 닫힘',r['ok']['boss']=='dusk' and r['old'] is None,r)
   check('저장 소스 8fps·최대 540p WebP·용량 제한·감지 240p 분리', pg.evaluate("EC.cfg.fps===8&&EC.cfg.H===540&&EC.cfg.H0===240&&EC.cfg.q===.75&&EC.cfg.maxBytes===800000"))
