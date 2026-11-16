@@ -651,6 +651,7 @@ function normState(obj){
   } finally { S=keep; }
 }
 function load(){
+  load.gen=(load.gen||0)+1; /* b432: 상태(S)를 통째로 바꿀 때마다 +1 — 진행 중 동기화가 옛 객체에 쓴 것을 알아채고 새 상태로 다시 동기화 */
   let o=null;
   try{ const raw=localStorage.getItem(CONFIG.STORAGE_KEY); o=raw?JSON.parse(raw):null; }catch(e){ console.warn(e); }
   S=normState(o);
@@ -1409,7 +1410,11 @@ const medalBand = c => c.medal?.bad&&charShown(c) ? `<div class="medalwarn" titl
 let syncing=false, syncBg=null;
 /* zosu-testfix: b184 뒤 작업(basic·훈장)은 넣을 때의 키를 기억 → 그 사이 캐릭터가 지워졌거나(S.characters 에 없음) 계정 키가 바뀌거나 지워졌으면 요청 안 함
  * (예전엔 실행 시점의 a.key 를 읽어 지운 캐릭터 ocid 를 다른 키로 계속 조회했음) */
-const bgJob=(c,a,fn)=>{ const k=a.key; return ()=>{ if(!S.characters.includes(c)||a.key!==k||!k) return; return fn(c,k); }; };
+/* b432: 캐릭터는 객체가 아니라 id 로 다시 찾음 — 동기화 도중 서버 불러오기(load)로 S 가 새 객체가 돼도 뒤 작업(레벨·EXP·이미지·훈장)이 새 객체에 반영.
+ *  (예전 S.characters.includes(c) 는 새 객체에서 늘 false → 전부 조용히 건너뜀). 지워졌거나 ocid·키가 바뀌었으면 요청 안 함은 그대로 */
+const bgJob=(c,a,fn)=>{ const k=a.key, id=c.id, oc=c.ocid; return ()=>{ const cur=S.characters.find(x=>x.id===id), ac=cur&&accOf(cur); if(!cur||!k||!ac||ac.key!==k||(oc&&cur.ocid!==oc)) return; return fn(cur,k); }; };
+const SYNC_RETRY_MS=1500; // b432: 초당 한도(429)·네트워크 순간 오류·넥슨 일시 오류는 잠깐 쉬고 그 캐릭터만 한 번 더
+const syncRetryable = e => !!e && (e.status===429||e.code==='OPENAPI00007'||e.code==='NETWORK'||e.code==='OPENAPI00001'||e.code==='OPENAPI00009'||(e.status>=500&&e.status<600));
 const SYNC_CONC=6, SYNC_LIST_TTL_MS=10*60e3, SYNC_BASIC_TTL_MS=10*60e3, SYNC_BASIC_LOAD_TTL_MS=60*60e3 /* b112: 페이지 열 때(자동)는 레벨·이미지 1시간, 🔄 는 10분 */, SYNC_MEDAL_TTL_MS=6*3600e3; // b107
 const LOAD_SYNC_GAP_MS=3e3, LOAD_SYNC_KEY='mapleBossTracker.loadSyncAt';
 /* b218: API 키를 등록한 직후 1번 자동 동기화 (🔄 버튼과 같은 syncAll). 보이는 캐릭터가 있을 때만(새 사용자는 캐릭터를 고른 뒤 doImport 가 동기화),
@@ -1420,7 +1425,7 @@ function keySync(){ if(syncing||!hasApi()||demoAllowed()||!vchars().length) retu
   try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(e){} syncAll({silent:true}); return true; } // 페이지 열 때 자동 동기화 최소 간격 (아래 loadSyncDue)
 async function syncAll(opts={}){
   if(syncing) return; if(!hasApi()){ if(!opts.silent) toast('+ 추가에서 넥슨 API 키를 먼저 등록하세요'); return; }
-  syncing=true; renderHeaderSync(); syncLabel('run'); let total=0, errs=0, assigned=0; const badAcc=new Set(), accMsgs=[], bgList=[];
+  syncing=true; renderHeaderSync(); syncLabel('run'); let total=0, errs=0, assigned=0; const badAcc=new Set(), accMsgs=[], bgList=[], gen0=load.gen;
   try{
     // b107: 계정들은 키가 달라 동시에 (같은 키는 rateGate가 초당 5건 이하로). 목록은 10분 안에 받았고 모든 캐릭터 ocid가 있으면 건너뜀
     const vc=vchars(), fresh=a=>{ const L=listCache[a.id]; return L&&L.key===a.key&&Date.now()-L.at<SYNC_LIST_TTL_MS&&!opts.full&&vc.every(c=>c.accId!==a.id||c.ocid); };
@@ -1442,14 +1447,17 @@ async function syncAll(opts={}){
     }
     let netN=0; const lb=[], later=[], stamps=[]; if(syncBg) await syncBg; // 앞 동기화의 뒤 작업이 남았으면 끝난 뒤 시작
     let rt=0; const paint=()=>{ if(rt) return; rt=setTimeout(()=>{ rt=0; renderChars(); },120); };
-    await pool(todo, SYNC_CONC, async([c,a])=>{
-      if(!c.ocid){ try{ c.ocid=(await nx('/maplestory/v1/id',{character_name:c.name},a.key)).ocid; }catch(e){ c.sync={...c.sync,ok:false,msg:'ocid 조회 실패: '+e.message}; errs++; return; } }
+    const again=[]; // b432: 잠깐 오류(429·네트워크·넥슨 일시 오류) 캐릭터 → 다 돈 뒤 한 번 더
+    const one=async([c,a],last)=>{
+      if(!c.ocid){ try{ c.ocid=(await nx('/maplestory/v1/id',{character_name:c.name},a.key)).ocid; }catch(e){ if(!last&&syncRetryable(e)){ again.push([c,a]); return; } c.sync={...c.sync,ok:false,msg:'ocid 조회 실패: '+e.message}; errs++; return; } }
       try{ total+=await schedApply(c,a,opts.full?null:lb,opts.full,opts.full?null:stamps); paint(); } // fetchSched: 같은 응답으로 일퀘/길드 요약도 저장
-      catch(e){ errs++; if(e.code==='NETWORK') netN++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
+      catch(e){ if(!last&&syncRetryable(e)){ again.push([c,a]); return; } errs++; if(e.code==='NETWORK') netN++; const hint=/OPENAPI0000[234]/.test(e.code||'')?` — 스케줄러 조회 불가: '${a.label}' 계정의 캐릭터가 아니거나 2026-06-25 이후 접속 기록이 없을 수 있어요. 수동 체크는 계속 가능합니다.`:''; c.sync=Object.assign(c.sync||{},{at:Date.now(),ok:false,msg:e.message+hint}); }
       const now=Date.now();
       if(opts.full||!(now-(c.sync?.imgAt||0)<(opts.silent?SYNC_BASIC_LOAD_TTL_MS:SYNC_BASIC_TTL_MS))) later.push(bgJob(c,a,fetchBasic)); // 이미지·레벨·EXP
       if(opts.full||!c.medal||c.medal.v!==2||!(now-(c.medal.at||0)<SYNC_MEDAL_TTL_MS)) later.push(bgJob(c,a,fetchMedal)); // b86: 훈장(모든 프리셋)
-    });
+    };
+    await pool(todo, SYNC_CONC, x=>one(x,false));
+    if(again.length){ await sleep(SYNC_RETRY_MS); await pool(again.splice(0), SYNC_CONC, x=>one(x,true)); }
     clearTimeout(rt);
     if(todo.length&&netN===todo.length) throw new Error('네트워크 오류 — 인터넷 연결 또는 브라우저 확장 프로그램·네트워크의 차단 여부를 확인하세요.'); // b184: 목록을 뒤로 미뤄도 전부 네트워크 오류면 '새로고침 실패'
     /* b184: 보스 체크(스케줄러)가 끝나면 바로 '완료' — 되짚기·레벨/이미지·훈장은 뒤에서 이어서 (같은 rateGate = 4건/1.1초 그대로) */
@@ -1462,7 +1470,8 @@ async function syncAll(opts={}){
     }
     if(later.length||bgList.length) syncBg=(async()=>{ let bt=0; const bp=()=>{ if(bt) return; bt=setTimeout(()=>{ bt=0; renderChars(); },150); };
       await pool(bgList,SYNC_CONC,async a=>{ try{ if(assignFromList(a, await listAccount(a))) bp(); }catch(e){} }); /* b296: 계정 목록 동시에 (키별 rateGate 그대로) */
-      await pool(later,SYNC_CONC,async f=>{ try{ await f(); bp(); }catch(e){} });
+      const redo=[]; await pool(later,SYNC_CONC,async f=>{ try{ await f(); bp(); }catch(e){ if(syncRetryable(e)) redo.push(f); } });
+      if(redo.length){ await sleep(SYNC_RETRY_MS); let bad=0; await pool(redo,SYNC_CONC,async f=>{ try{ await f(); bp(); }catch(e){ bad++; } }); if(bad) toast(`레벨·이미지 갱신 실패 ${bad} — 다음 새로고침 때 다시 시도해요`); } // b432: 예전엔 조용히 버림
       clearTimeout(bt); save(); if(!syncing) render(); })().finally(()=>{ syncBg=null; });
     S.settings.lastSync=Date.now(); save(); try{ svSyncDone(); }catch(e){} // b229: 관리자 창 '최근 갱신'
     try{ if(typeof SV_ON!=='undefined'&&SV_ON&&typeof svTok==='function'&&svTok()&&typeof gdMeta!=='undefined'&&gdMeta.on&&typeof svPushBg==='function') svPushBg(); }catch(e){} // b414: 처치일 보정이 반영된 상태를 서버에도 바로 올림
@@ -1471,7 +1480,9 @@ async function syncAll(opts={}){
     if(errs||accMsgs.length) toast((errs?`일부 캐릭터 동기화 실패 ${errs}`:'')+(errs&&accMsgs.length?' · ':'')+(accMsgs.length?`계정 오류: ${accMsgs.join(', ')}`:''));
     syncLabel(errs||accMsgs.length?'part':'ok');
   }catch(e){ syncLabel('fail'); if(!opts.silent) toast('동기화 실패: '+e.message); save(); }
-  finally{ syncing=false; render(); }
+  finally{ syncing=false; render();
+    /* b432: 동기화 도중 상태가 통째로 바뀌었으면(서버·다른 기기 불러오기 등) 이번 결과는 옛 객체에 쓰였음 → 새 상태로 한 번 더 (목록 캐시·되짚기 캐시 그대로라 호출 적음) */
+    if(load.gen!==gen0&&!opts.rerun) setTimeout(()=>syncAll({...opts,silent:true,rerun:1}),0); }
 }
 
 /* =====================================================================
@@ -3780,6 +3791,7 @@ function gdChanged(){
 }
 // 다른 기기에서 바뀐 내용 확인 (탭으로 돌아올 때·1분마다, 메타데이터만 조회 → 바뀌었을 때만 내용 읽어서 합침)
 async function gdPull(force){
+  if(syncing||syncBg) return; // b432: 캐릭터 동기화 중에는 받아 오지 않음(상태 교체로 동기화 결과가 버려지던 것) — 1분 뒤·탭 복귀 때 다시 확인
   if(SV_ON&&gdLocalDirty()) return; // 저장 안 한 변경이 있으면 받아 오지 않음 (합친 뒤 자동 저장되는 것 방지)
   if(!gdMeta.on||!gdUsable()||gd.state!=='on'||gd.busy||gd.timer||!gd.fileId||!gdHasTok()) return; // 토큰 없으면 조용히 건너뜀(로그인 창 X)
   if(!force&&Date.now()-(gd.pulledAt||0)<55e3) return; gd.pulledAt=Date.now();
@@ -4173,7 +4185,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b431'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b432'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -4209,7 +4221,12 @@ function loadSyncDue(){ if(!hasApi()||!S.characters.length) return false; /* 예
 // 겹침 방지 그대로: 동기화 중이거나 마지막 동기화·열 때 동기화 시작이 3초 안이면 건너뜀(loadSyncDue). 예시 화면은 키·캐릭터가 없어 안 함
 function navType(){ try{ const e=performance.getEntriesByType('navigation')[0]; if(e&&e.type) return e.type; const n=performance.navigation; if(n) return n.type===1?'reload':n.type===2?'back_forward':'navigate'; }catch(e){} return 'navigate'; }
 const NAV_SYNC=['navigate','reload','back_forward'].includes(navType()); // b222 (prerender 등 = 안 함)
-if((NAV_SYNC&&loadSyncDue()) || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))){ try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(e){} syncAll({silent:true}); } // + 기존 데이터: 계정 자동 배정
+/* b432: 서버 모드(세션 있음)는 서버 데이터를 먼저 불러온 뒤(gdConnect 끝) 동기화 — 예전엔 동시에 돌아, 다른 기기가 저장해 둔 서버 값이 동기화 도중 S 를 통째로 바꿔
+ *  일부(또는 전부) 캐릭터의 갱신이 버려졌음. 서버가 느리거나 안 되면 LOAD_SYNC_WAIT_MS 뒤 그냥 시작(그 경우도 syncAll 의 load.gen 확인이 다시 동기화) */
+const LOAD_SYNC_WAIT_MS=8e3; let loadSyncPend=false;
+const loadSyncGo=()=>{ if(!loadSyncPend) return; loadSyncPend=false; syncAll({silent:true}); };
+if((NAV_SYNC&&loadSyncDue()) || (hasApi() && S.characters.some(c=>c.ocid&&!c.accId))){ try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(e){}
+  if(SV_ON&&gdMeta.on&&svTok()){ loadSyncPend=true; setTimeout(loadSyncGo,LOAD_SYNC_WAIT_MS); } else syncAll({silent:true}); } // + 기존 데이터: 계정 자동 배정
 window.addEventListener('pageshow',e=>{ if(!e.persisted||syncing||!loadSyncDue()) return; try{ localStorage.setItem(LOAD_SYNC_KEY,String(Date.now())); }catch(x){} syncAll({silent:true}); }); // b222: 뒤로/앞으로가 bfcache 로 복원되면 스크립트가 다시 안 돌므로 여기서 같은 규칙
 setInterval(()=>{ if(checkResets()) render(); else renderResetInfo(); if(!document.hidden) tabTick(); if(!document.hidden) gdPull(); }, 60e3);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(!SV_ON&&(gd.timer||gdLocalDirty())) gdPush({quick:true}); return; } if(checkResets()) render(); tabTick(); gdPull(); }); // (예전: 15분 지났으면 자동 동기화 — 2026-10-10 제거)
@@ -4514,7 +4531,7 @@ feedLoad().then(feedFit);
 setInterval(()=>{ if(!document.hidden) feedLoad(); },3e5);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&Date.now()-feed.at>3e5) feedLoad(); });
 gdRender(); svGate();
-if(SV_ON){ if(gdMeta.on&&svTok()){ gdConnect(false).then(()=>svSeenPull()); } else gdRender(); } // 서버 모드: 남은 세션 토큰으로만 (없으면 ☁ 로그인)
+if(SV_ON){ if(gdMeta.on&&svTok()){ gdConnect(false).finally(loadSyncGo).then(()=>svSeenPull()); } else { loadSyncGo(); gdRender(); } } // 서버 모드: 남은 세션 토큰으로만 (없으면 ☁ 로그인)
 else if(gdUsable()){ gdLoadLib().catch(()=>{}); if(gdMeta.on) gdConnect(false); }
 
 /* ===== b210 예시 화면 (demo): 로그인 전 = 위 탭(이번 주 보스·수익 분석·득템 분석·길드 현황) 마다 '예시 화면'.
