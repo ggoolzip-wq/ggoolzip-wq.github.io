@@ -30,9 +30,14 @@ def score(out):
     rec=Counter(x['k'] for x in (s.get('runRec') or []))
     want=Counter(t.get('items') or {})
     prof=(s.get('final_prof') or {}); res_ok=bool(prof.get('gw'))
-    c={'boss':boss==t['boss'],'diff':diff==t['diff'],'name':(s.get('final_name') or '')==t['name'],'res':res_ok,
+    # b433 (t579): 보상 진입 시각 — noReward(전투만: 보상 인식 0회), rewAfter/rewBefore(첫 '보상 상자 감지' 시각 창: 전투 중 진입 금지·정상 진입 늦추지 않기)
+    rt=[x[0] for x in (s.get('itemLog') or []) if '보상 상자 감지' in x[1]]
+    rew_ok=True
+    if t.get('noReward'): rew_ok=not rt
+    elif 'rewAfter' in t or 'rewBefore' in t: rew_ok=bool(rt) and rt[0]>=t.get('rewAfter',0) and rt[0]<=t.get('rewBefore',1e9)
+    c={'rew':rew_ok,'boss':boss==t['boss'],'diff':diff==t['diff'],'name':(s.get('final_name') or '')==t['name'],'res':res_ok,
        'items':(rec==want) if t.get('itemsChecked') else not (rec-want)}
-    R[t['id']]={'ok':all(c.values()),'c':c,'got':{'boss':boss,'diff':diff,'name':s.get('final_name'),'items':dict(rec),'box':s.get('first_box'),'map':s.get('first_map'),'res':f"{s.get('vw')}x{s.get('vh')}→{prof.get('lab')}"},'want':{k:t[k] for k in ('boss','diff','name','items')}}
+    R[t['id']]={'ok':all(c.values()),'c':c,'got':{'boss':boss,'diff':diff,'name':s.get('final_name'),'items':dict(rec),'box':s.get('first_box'),'rewT':rt,'map':s.get('first_map'),'res':f"{s.get('vw')}x{s.get('vh')}→{prof.get('lab')}"},'want':{k:t[k] for k in ('boss','diff','name','items')}}
   return R
 if __name__=='__main__':
   outs=sys.argv[1:]; RS=[score(o) for o in outs]

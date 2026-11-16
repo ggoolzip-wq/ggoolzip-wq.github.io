@@ -645,12 +645,39 @@ function arRewOn(){ return ARX.cfg.rewGate===false||!!ARX.rew; }
 const AR_BOX_SHARED_MS=250, AR_BOX_CONF_N=2, AR_BOX_CONF_GAP=200, AR_BOX_CONF_GAPMAX=400, AR_BOX_WEAK_MS=700, AR_BOX_CONF_WIN=1000, AR_REW_FLAP_MS=15000;
 function arRewMap(now){ const M=ARX.mapSt; if(!M) return null; return M.kind.includes('r')?M:null; }
 function arRewStrict(M,now){ const F=ARX.rewOff; return !M||M.kind!=='r'||!!(F&&F.boss===M.boss&&now-F.t<AR_REW_FLAP_MS); }
-function arBoxGate(best,now,M){ ARX.gateN=(ARX.gateN||0)+1; if(!arRewStrict(M,now)) return true;
+function arBoxGate(best,now,M){ ARX.gateN=(ARX.gateN||0)+1; if(!arRewStrict(M,now)) return true; if(arShared(M)&&arFightOn(M,now)){ ARX.boxCand=null; ARX.fightBlk=(ARX.fightBlk||0)+1; if(!ARX.fight.blkLog){ ARX.fight.blkLog=1; try{ arLog(`상자 후보(${best.k} ${(+best.sc).toFixed(2)}${best.via?' '+best.via:''}) — 보스 체력바(전투) 중이라 보상 진입 안 함`); }catch(e){} } return false; } /* b433 */
   const strong=!best.via||best.via==='메시지'; let C=ARX.boxCand;
   if(!C||C.k!==best.k||now-C.t>AR_BOX_CONF_GAPMAX) C=ARX.boxCand={k:best.k,t0:now,t:now,n:1,st:strong}; /* 사이가 0.4초 넘게 끊기면 처음부터 (한 틱 번쩍임 무시) */
   else if(now>C.t){ C.n++; C.t=now; C.st=C.st||strong; }
   const ok=C.st?(C.n>=AR_BOX_CONF_N&&now-C.t0>=AR_BOX_CONF_GAP):(C.n>=3&&now-C.t0>=AR_BOX_WEAK_MS); /* 온전한 그림·메시지: 0.2초 이상 2번 / 약한 근거(발 누적·배경)만: 0.7초 넘게 3번 이상 이어져야 */
   if(!strong) ARX.gateWeak=(ARX.gateWeak||0)+1; if(ok){ ARX.boxCand=null; return true; } if(C.n===1){ try{ arLog(`상자 후보(${best.k} ${(+best.sc).toFixed(2)}${best.via?' '+best.via:''}) — ${M&&M.kind==='r'?'재진입':'전투·보상 공용 맵'}이라 이어서 확인`); }catch(e){} } return false; }
+/* b433 (t579 z01·z05, 모든 보스): 전투·보상 이름 공용 맵(세렌 메인홀·윌 바스러지는 빛·진힐라·듄켈·더스크·데미안·칼로스·루시드·검마 등 kind 'br/brw/rw')에서
+   전투 화면이 상자 발 부분 누적(.72~.83)을 0.7초 넘겨 '보상 인식'이 켜짐(z01 세렌 1페이즈 30초 내내, z05 윌 11초 일찍).
+   전투 신호 = 화면 맨 위 가운데 '보스 체력바'(밝은 위·아래 테두리 + 가로로 고른 안쪽 줄, 높이 10~32px×UI배율, 게임 폭 가운데 60%).
+   공용 맵에서 체력바를 0.25초 간격 2번 보면 '전투 잠금' → 보상 진입(arBoxGate) 막음. 풀림: 맵 이동 검은 화면(보상 맵으로 넘어갈 때 항상 0.4초쯤)
+   · 맵 이름이 다른 맵으로 1.5초 넘게 바뀜 · 체력바 마지막으로 본 뒤 25초. 보상 래치 중 체력바가 1초 넘게 3번 이상 보이면 보상 인식 해제(같은 이름 전투 재진입).
+   처리: 공용 맵·잠금 중일 때만, 체력바 = 가로 96칸 줄 띠 0.25초마다, 검은 화면 = 16×9 0.1초마다 (가벼움). 해상도·UI 배율·테두리 무관(arGeom). */
+const AR_FIGHT_BAR_MS=250, AR_FIGHT_HOLD=25000, AR_FIGHT_NC=96;
+function arShared(M){ return !!(M&&M.kind&&M.kind.includes('r')&&M.kind!=='r'); }
+function arFightCv(k,w,h){ const C=ARX.fcv||(ARX.fcv={}); let c=C[k]; if(!c){ c=C[k]=document.createElement('canvas'); } if(c.width!==w) c.width=w; if(c.height!==h) c.height=h; return c.getContext('2d',{willReadFrequently:true}); }
+function arHpBarScan(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return null; const G=arGeom(sw,sh), s=G.s||1;
+  const x0=Math.round(G.gx+G.gw*.2), w=Math.round(G.gw*.6), y0=Math.max(0,Math.round(G.gy)-4), h=Math.min(sh-y0,Math.round(Math.min(G.gh*.08,80*s))+4); if(w<50||h<14) return null;
+  const NC=AR_FIGHT_NC, cx=arFightCv('hp',NC,h); cx.imageSmoothingEnabled=true; cx.drawImage(src,x0,y0,w,h,0,0,NC,h); const d=cx.getImageData(0,0,NC,h).data;
+  const sm=new Float32Array(h), lum=new Float32Array(h), sat=new Float32Array(h);
+  for(let y=0;y<h;y++){ let ok=0,L=0,S=0; for(let x=0;x<NC;x++){ const i=(y*NC+x)*4, r=d[i],g=d[i+1],b=d[i+2]; L+=(r+g+b)/3; S+=Math.max(r,g,b)-Math.min(r,g,b); if(x){ const j=i-4; if(Math.abs(r-d[j])+Math.abs(g-d[j+1])+Math.abs(b-d[j+2])<24) ok++; } } sm[y]=ok/(NC-1); lum[y]=L/NC; sat[y]=S/NC; }
+  const edge=y=>sm[y]>=.8&&lum[y]>=140&&sat[y]<60, gmin=Math.round(10*s), gmax=Math.round(32*s);
+  for(let T=0;T<h;T++){ if(!edge(T)) continue; for(let g=gmin;g<=gmax&&T+g<h;g++){ const B=T+g; if(!edge(B)) continue; let n=0,a=0,l=0; for(let y=T+3;y<B-2;y++){ n++; a+=sm[y]; l+=lum[y]; } if(n<4) continue; a/=n; l/=n; if(a>=.8&&l<Math.min(lum[T],lum[B])-40) return {T:T+y0,B:B+y0,sm:+a.toFixed(2)}; } }
+  return null; }
+function arDarkScan(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return false; const G=arGeom(sw,sh), cx=arFightCv('dk',16,9); cx.drawImage(src,G.gx,G.gy,G.gw,G.gh,0,0,16,9); const d=cx.getImageData(0,0,16,9).data; const v=[]; for(let i=0;i<d.length;i+=4) v.push((d[i]+d[i+1]+d[i+2])/3); v.sort((a,b)=>a-b); const m=v.reduce((a,b)=>a+b,0)/v.length; return m<20&&v[Math.floor(v.length*.9)]<45; }
+function arFightOff(why){ const F=ARX.fight; if(!F) return; ARX.fight=null; if(F.n>=2) try{ arLog(`전투 잠금 풀림(${why}) → 보상 상자 확인 다시 허용`); }catch(e){} }
+function arFightOther(F,M,now){ /* 맵 이름 한 번 오독(z03 '의지가 시작되는 곳')으론 안 풀림 — 다른 맵 이름이 1.5초 넘게 이어져야 */ if(!(M&&F.key&&M.name&&M.name!==F.key)){ F.oT=0; return false; } if(!F.oT) F.oT=now; return now-F.oT>=1500; }
+function arFightOn(M,now){ const F=ARX.fight; if(!F||F.n<2) return false; if(arFightOther(F,M,now)){ arFightOff('다른 맵'); return false; } if(now-F.t>AR_FIGHT_HOLD){ arFightOff('체력바 25초 없음'); return false; } return true; }
+function arFightWatch(src){ if(!src||ARX.cfg?.fightGate===false) return; const M=ARX.mapSt, now=Date.now(), F=ARX.fight; if(!arShared(M)&&!F) return; ARX.fightN=(ARX.fightN||0)+1;
+  if(F&&F.n>=2){ if(arFightOther(F,M,now)){ arFightOff('다른 맵'); return; } let dk=false; try{ dk=arDarkScan(src); }catch(e){} if(dk){ arFightOff('맵 이동 화면'); return; } if(now-F.t>AR_FIGHT_HOLD){ arFightOff('체력바 25초 없음'); return; } }
+  if(!arShared(M)||now-(ARX.fightBarT||0)<AR_FIGHT_BAR_MS-5) return; ARX.fightBarT=now; let hp=null; try{ hp=arHpBarScan(src); }catch(e){} ARX.fightBarN=(ARX.fightBarN||0)+1; if(!hp) return; ARX.fightHits=(ARX.fightHits||0)+1;
+  let G=ARX.fight; if(!G||G.boss!==M.boss||now-G.t>1000&&G.n<2){ G=ARX.fight={boss:M.boss,key:M.name||'',t0:now,t:now,n:1,s0:now}; return; }
+  if(now-G.t>1000) G.s0=now; G.t=now; G.n++; if(G.n===2){ try{ arLog(`보스 체력바 보임(${M.boss}) → 전투 중: 같은 이름 보상 맵 진입 막음 (맵 이동 화면 뒤 풀림)`); }catch(e){} ARX.boxCand=null; }
+  const R=ARX.rwl||ARX.rew; if(R&&R.boss===M.boss&&G.n>=3&&now-G.s0>=1000){ /* 보상 래치 중인데 체력바가 1초 넘게 계속 = 같은 이름 전투 */ arRewOffMark(R.boss); try{ arLog(`보스 체력바 1초 넘게 보임 → 전투라 보상 인식 해제: ${R.boss}`); }catch(e){} ARX.rwl=null; ARX.recPend=[]; ARX.rew=null; ARX.lock=null; ARX.box=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; try{ arLivePaint(); }catch(e){} } }
 function arRewOffMark(boss){ if(boss) ARX.rewOff={boss,t:Date.now()}; ARX.rewFlips=(ARX.rewFlips||0)+1; try{ arLog(`보상 인식 해제: ${boss||''} → 15초 안 같은 보스 재진입은 상자 연속 확인`); }catch(e){} }
 async function arBoxStep(src,force){ if(!arBoxNeed()) return; if(arBoxOk()&&!(ARX.rwl?.mapOnly&&!ARX.box)){ const B=ARX.box, n=Date.now(); /* t537: 상자는 봤는데 그때 맵 이름이 없었으면 상자가 보이는 동안 다시 확인 */
     if(B&&!ARX.lock&&ARX.mapDet&&ARX.mapDet.boss===B.boss&&(force||n-(ARX.boxScanT||0)>=1000/(ARX.cfg.boxFps||2))){ ARX.boxScanT=n; if(await arBoxScore(src,B.key)>=AR_BOX[B.key].thr) arLockTry(src,B.boss,n); } return; } const now=Date.now(), RM=arRewMap(now), RK=RM?Object.keys(AR_BOX).filter(k=>(AR_BOX[k].boss||k)===RM.boss):[]; if(!RM&&!force) return; /* t579: 보상 상자는 보상 맵이 감지됐을 때만 찾음 (다른 맵 0회 — 예전엔 1초마다 모든 상자를 돌아가며) */ /* t547: 보상 맵이면 그 보스 상자만 0.2초마다, 다른 맵은 1초마다 돌아가며 */
@@ -1179,8 +1206,8 @@ function arTick(fn,ms){ const w=arTickW(); if(!w) return setInterval(fn,ms); con
 function arUntick(id){ if(!id) return; if(AR_TK.f.has(id)){ AR_TK.f.delete(id); try{ AR_TK.w.postMessage(['c',id]); }catch(e){} } else clearInterval(id); }
 function arStart(v){ /* b385: reconnect/restart must own exactly one set of clocks. */
   for(const k of ['nTimer','timer','wTimer','boxTimer','logTimer','pfTimer','uiTick']){arUntick(ARX[k]);ARX[k]=0;}
-  const gen=ARX.startGen=(ARX.startGen||0)+1; ARX.video=v; ARX.sessRec=[]; ARX.rewOff=null; ARX.boxCand=null; ARX.rewFlips=0; /* b431 */ /* b335: 라이브 시작마다 PIP 득템 목록 새로 */ ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
-  ARX.nprev=null; ARX.nameOk=false; arUntick(ARX.nTimer); ARX.mprev=null; ARX.mOther=0; ARX.nTimer=arTick(()=>{ if(ARX.video){ const sv=arSrc(); arNameWatch(sv); arMapWatch(sv); /* b366: Worker 비트맵 */ try{ arPendFlush(); }catch(e){} } },100); /* t603: 0.1초 */
+  const gen=ARX.startGen=(ARX.startGen||0)+1; ARX.video=v; ARX.sessRec=[]; ARX.rewOff=null; ARX.boxCand=null; ARX.rewFlips=0; /* b431 */ ARX.fight=null; ARX.fightHits=0; ARX.fightBlk=0; ARX.fightN=0; ARX.fightBarN=0; /* b433 */ /* b335: 라이브 시작마다 PIP 득템 목록 새로 */ ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
+  ARX.nprev=null; ARX.nameOk=false; arUntick(ARX.nTimer); ARX.mprev=null; ARX.mOther=0; ARX.nTimer=arTick(()=>{ if(ARX.video){ const sv=arSrc(); arNameWatch(sv); arMapWatch(sv); try{ arFightWatch(sv); }catch(e){} /* b433 */ /* b366: Worker 비트맵 */ try{ arPendFlush(); }catch(e){} } },100); /* t603: 0.1초 */
   ARX.timer=arTick(()=>{ if(!ARX.video) return; const n=Date.now(); if(arBossState()!=='rew'&&n-(ARX.frT||0)<1000/Math.max(.5,ARX.cfg.fps)-20) return; ARX.frT=n; arFrame(arSrc()); },100); /* t603: 보상 맵(보상 인식 중)이면 0.1초마다, 아니면 설정 fps */
   if(ARX.cfg.watchFps>0){ if(v.requestVideoFrameCallback){ const loop=(now,meta)=>{ if(ARX.video!==v||ARX.startGen!==gen) return; ARX.rvfcT=performance.now(); arPf().frames++; if(arRewOn()){ arBannerWatch(v,meta); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } v.requestVideoFrameCallback(loop); }; v.requestVideoFrameCallback(loop); ARX.wTimer=arTick(()=>{ if(ARX.video!==v||performance.now()-(ARX.rvfcT||0)<250) return; if(arRewOn()){ arBannerWatch(v); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } },Math.round(1000/ARX.cfg.watchFps)); /* b359: 탭이 뒤로 가면 프레임 콜백이 멈춤 → 0.25초 넘게 안 오면 Worker 시계로 대신 */ } else ARX.wTimer=arTick(()=>{ if(ARX.video&&arRewOn()){ arBannerWatch(ARX.video); arAirWatch(ARX.video); } },Math.round(1000/ARX.cfg.watchFps)); }
   ARX.boxTimer=arTick(()=>{ if(ARX.video&&!ARX.boxBusy&&(ARX.cfg.boxAlways!==false||arRewMap(Date.now()))&&(!arBoxOk()||(ARX.rwl?.mapOnly&&!ARX.box))) arBoxStep(arSrc(),false).catch(()=>{}); },AR_BOX_REW_MS); /* t547: 보상 맵에선 프레임(1/fps)과 별도로 0.2초 */
