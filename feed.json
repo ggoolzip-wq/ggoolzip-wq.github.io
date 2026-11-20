@@ -1,40 +1,40 @@
 {
  "version": 1,
- "updatedAt": "2026-11-20T13:07:00+09:00",
+ "updatedAt": "2026-11-20T13:18:35+09:00",
  "sources": {
   "saryo": {
    "label": "사료감지",
    "ok": true,
-   "checkedAt": "2026-11-20T08:38:11+09:00",
-   "lastOkAt": "2026-11-20T08:38:11+09:00",
+   "checkedAt": "2026-11-20T13:18:18+09:00",
+   "lastOkAt": "2026-11-20T13:18:18+09:00",
    "error": ""
   },
   "patch": {
    "label": "패치내역",
    "ok": true,
-   "checkedAt": "2026-11-20T08:38:11+09:00",
-   "lastOkAt": "2026-11-20T08:38:11+09:00",
+   "checkedAt": "2026-11-20T13:18:18+09:00",
+   "lastOkAt": "2026-11-20T13:18:18+09:00",
    "error": ""
   },
   "test": {
    "label": "테섭",
    "ok": true,
-   "checkedAt": "2026-11-20T08:38:12+09:00",
-   "lastOkAt": "2026-11-20T08:38:12+09:00",
+   "checkedAt": "2026-11-20T13:18:19+09:00",
+   "lastOkAt": "2026-11-20T13:18:19+09:00",
    "error": ""
   },
   "mabbak": {
    "label": "마빡도로시",
    "ok": true,
-   "checkedAt": "2026-11-20T08:38:31+09:00",
-   "lastOkAt": "2026-11-20T08:38:31+09:00",
+   "checkedAt": "2026-11-20T13:18:35+09:00",
+   "lastOkAt": "2026-11-20T13:18:35+09:00",
    "error": ""
   }
  },
  "state": {
   "watermarks": {
    "notice": 150495,
-   "notice-event": 1416,
+   "notice-event": 1418,
    "notice-update": 815,
    "test": 206,
    "inven:5974": 7434995,
