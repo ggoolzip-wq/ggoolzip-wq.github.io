@@ -22,7 +22,7 @@ try:
     pg.goto(f'http://127.0.0.1:{PORT}/index.html'); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(800); pg.evaluate(SETUP); pg.wait_for_timeout(300)
     pg.evaluate("()=>{ arOcrLoad(); }"); pg.wait_for_function("()=>!!window.AR.ocr",timeout=60000)
     r=pg.evaluate(MESO,u('live_inv.jpg')); print(r)
-    check('실화면 프로필 = 1920 기본 비율',r['prof']=='1920b',r)
+    check('실화면 프로필 = 1920 최적(HUD 1배, b415 상태바 Lv .99 — z 영상과 같은 HUD) · 메소 칸은 따로 ≈1.406배로 찾음(b434)',r['prof']=='1920o' and r['inv'] and abs(r['inv'].get('m',0)-1.40625)<.03,r)
     check('인벤 메소 칸 찾음(왼쪽 아래 x≈27,y≈869)',r['inv'] and abs(r['inv']['x']*1920-27)<12 and abs(r['inv']['y']*1080-869)<12,r)
     check('메소 = 3억 3717만 4797',r['v']==337174797,r)
     r=pg.evaluate(MESO,u('live_inv_moved.jpg')); print(r)

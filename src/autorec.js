@@ -730,7 +730,7 @@ async function arConnect(){ if(arLive()) return arPanel(true); if(ARX.stream||AR
 /* b294: 상태바 이름 빠른 감시 — 0.2초마다 이름 영역 축소본(96x12)만 비교, 바뀌었거나(캐릭터 접속·변경) 아직 못 읽었으면 바로 OCR 1번.
    예전: 맵+이름 OCR 을 3초(ocrEvery)마다 한 번, 보스·아이템 처리 뒤에 → 접속 후 이름 인식까지 7~9초 */
 /* t520u: 보유 메소 — 프로필 고정 영역(인벤 'inv' / 창고 열림 'sto'+'stoInv')에서 읽음. 닉네임 → 메소 → 닉네임 순서, 앞뒤 닉네임이 같을 때만 저장 */
-function arMesoParse(t){ let s=String(t||'').replace(/[Oo○◯]/g,'0').replace(/[Il!]/g,'1').replace(/[역얻억엌먹]/g,'억').replace(/[민많안믄맨반]/g,'만').replace(/[죠즈]/g,'조').replace(/[^0-9조억만]/g,'');
+function arMesoParse(t){ if(/[?]/.test(String(t||''))) return null; /* b434: 못 읽은 글자(?)가 있으면 버림 — '4492'를 '449?'로 읽고 ?만 지워 449 로 저장하던 것 */ let s=String(t||'').replace(/[Oo○◯]/g,'0').replace(/[Il!]/g,'1').replace(/[역얻억엌먹]/g,'억').replace(/[민많안믄맨반]/g,'만').replace(/[죠즈]/g,'조').replace(/[^0-9조억만]/g,'');
   const m=s.match(/^(?:(\d{1,4})조)?(?:(\d{1,4})억)?(?:(\d{1,4})만)?(\d{1,4})?$/); if(!s||!m||!/\d/.test(s)) return null;
   return (+m[1]||0)*1e12+(+m[2]||0)*1e8+(+m[3]||0)*1e4+(+m[4]||0); }
 /* t565: 메소 칸 위치 찾기 — 고정 좌표 대신 게임 화면 전체에서 '인벤토리 메소 칸(동전+흰 칸)'·'창고 옆 인벤 메소 칸(< 동전 버튼)' 모양을 찾음.
@@ -776,19 +776,31 @@ const OrderedNcc = (()=>{
 
 function arMesoTpl(){ if(ARX.mtplP) return ARX.mtplP; return ARX.mtplP=Promise.all(Object.entries(AR_MESOTPL).map(([k,[u]])=>new Promise(r=>{ const im=new Image(); im.onload=()=>r([k,im]); im.onerror=()=>r([k,null]); im.src=u; }))).then(a=>ARX.mtpl=Object.fromEntries(a)); }
 function arMesoKey(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; return [sw,sh,ARX.prof?.id||'',ARX.prof?.s||'',ARX.bbKey||''].join('|'); }
-function arMesoFind(src){ const T=ARX.mtpl; if(!T){ arMesoTpl(); return null; } const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, G=arGeom(sw,sh), s=ARX.prof?.s||G.s||1;
-  const f=Math.max(1,s*1.5), W=Math.max(8,Math.round(G.gw/f)), H=Math.max(8,Math.round(G.gh/f)), c=ARX.mfc||(ARX.mfc=document.createElement('canvas')); c.width=W; c.height=H;
-  const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,G.gx,G.gy,G.gw,G.gh,0,0,W,H); const I=arGray(g,W,H), out={}, t0=performance.now(), sums=arGraySums(I,W,H);
-  for(const k of ['inv','stoInv']){ const im=T[k]; if(!im) continue; const tw=Math.max(4,Math.round(im.width*s/f)), th=Math.max(4,Math.round(im.height*s/f));
+/* b434 (t582u '메소 기록 못 함'): 메소 칸 배율을 HUD 프로필 배율과 따로 찾음. 원모님 실화면(1920 최적, 현재 상태바 Lv 1배 .99)은 인벤 창이 옛 템플릿(UI 1배 실측)의
+   약 1.4배라, b415 에서 프로필이 1배로 바르게 잡힌 뒤로 메소 칸을 1배로만 찾아 영영 못 찾음(why:'closed' → 저장 0). b359 는 프로필을 1.406배로 잘못 잡아 우연히 맞았음.
+   이제 여러 UI 배율(마지막으로 찾은 배율 → 프로필 배율 → 1·1.406·1.875·2·높이/768·프로필×1.406 등)로 찾고 가장 잘 맞는 배율을 칸 크기·창고 간격에 씀.
+   처음(화면 키 바뀔 때)엔 전부 한 번, 그 뒤엔 마지막·프로필 배율 + 돌아가며 하나씩만(2초 간격 찾기라 가벼움). */
+function arMesoScales(s,G){ const o=[]; for(const v of [s,s*1.40625,s/1.40625,1,1.40625,1.875,2,G.gh/768,G.gh/768*1.40625]){ const x=+(+v).toFixed(4); if(x>=.7&&x<=3&&!o.some(y=>Math.abs(y-x)<.03)) o.push(x); } return o; }
+function arMesoFind1(src,T,G,m){ const f=Math.max(1,m*1.5), W=Math.max(8,Math.round(G.gw/f)), H=Math.max(8,Math.round(G.gh/f)), c=ARX.mfc||(ARX.mfc=document.createElement('canvas')); c.width=W; c.height=H;
+  const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,G.gx,G.gy,G.gw,G.gh,0,0,W,H); const I=arGray(g,W,H), out={}, sums=arGraySums(I,W,H);
+  for(const k of ['inv','stoInv']){ const im=T[k]; if(!im) continue; const tw=Math.max(4,Math.round(im.width*m/f)), th=Math.max(4,Math.round(im.height*m/f)); if(tw>=W||th>=H) continue;
     const tc=document.createElement('canvas'); tc.width=tw; tc.height=th; const tg=tc.getContext('2d',{willReadFrequently:true}); tg.drawImage(im,0,0,tw,th); const Tp=arGray(tg,tw,th), N=tw*th;
     let tm=0; for(const v of Tp) tm+=v; tm/=N; let tt=0, bi=0, bv=-1; for(let i=0;i<N;i++){ Tp[i]-=tm; tt+=Tp[i]*Tp[i]; if(Tp[i]>bv){ bv=Tp[i]; bi=i; } }
     const bx=bi%tw, by=(bi/tw)|0, bright=tm+bv-40, fast=OrderedNcc.match(I,W,H,Tp,tw,th,sums,bx,by,bright,tt); let best=fast?fast.best:-1, bxy=fast?fast.xy:null; /* 템플릿에서 가장 밝은 점(흰 칸)이 화면에서도 밝은 곳만 비교 → 빠름 */
     if(!fast) for(let y=0;y+th<=H;y++) for(let x=0;x+tw<=W;x++){ if(I[(y+by)*W+x+bx]<bright) continue; const z=y*sums.stride+x,z1=z+tw,z2=(y+th)*sums.stride+x,z3=z2+tw,b=sums.s[z3]-sums.s[z1]-sums.s[z2]+sums.s[z],cc=sums.q[z3]-sums.q[z1]-sums.q[z2]+sums.q[z]; let a=0; for(let j=0;j<th;j++){ const r=(y+j)*W+x, q=j*tw; for(let i=0;i<tw;i++){ const v=I[r+i]; a+=Tp[q+i]*v; } }
       const vv=cc-b*b/N; if(vv>1e-6){ const n=a/Math.sqrt(vv*tt); if(n>best){ best=n; bxy=[x,y]; } } }
-    if(bxy&&best>=(+ARX.cfg.mesoFindThr||.8)){ const P=ARX.prof?.base||AR_PROF[1], ps=(ARX.prof?.s||P.s), R=P[k]||AR_PROF[1][k], rw=R[2]*s/P.s, rh=R[3]*s/P.s; out[k]={x:G.gx+bxy[0]*f, y:G.gy+bxy[1]*f, w:rw, h:rh, sc:+best.toFixed(3)}; } }
-  if(out.stoInv){ const P=ARX.prof?.base||AR_PROF[1], R=P.sto, d=(P.stoInv[0]-P.sto[0])*s/P.s; out.sto={x:out.stoInv.x-d,y:out.stoInv.y+(R[1]-P.stoInv[1])*s/P.s,w:R[2]*s/P.s,h:R[3]*s/P.s,sc:out.stoInv.sc}; }
-  const N2=r=>r&&({x:r.x/sw,y:r.y/sh,w:Math.min(r.w,sw-r.x)/sw,h:Math.min(r.h,sh-r.y)/sh,sc:r.sc});
-  ARX.mesoLoc={key:arMesoKey(src),inv:N2(out.inv),sto:N2(out.sto),stoInv:N2(out.stoInv),ms:+(performance.now()-t0).toFixed(1)}; return ARX.mesoLoc; }
+    if(bxy) out[k]={x:G.gx+bxy[0]*f, y:G.gy+bxy[1]*f, sc:best, m}; }
+  return out; }
+function arMesoFind(src){ const T=ARX.mtpl; if(!T){ arMesoTpl(); return null; } const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, G=arGeom(sw,sh), s=ARX.prof?.s||G.s||1, t0=performance.now(), key=arMesoKey(src);
+  const all=arMesoScales(s,G), thr=+ARX.cfg.mesoFindThr||.8; let order;
+  if(ARX.mesoAllKey!==key){ ARX.mesoAllKey=key; order=all; } else { const rest=all.filter(x=>x!==s&&x!==ARX.mesoS); ARX.mesoRR=((ARX.mesoRR||0)+1)%Math.max(1,rest.length); order=[...new Set([ARX.mesoS,s,rest[ARX.mesoRR]].filter(x=>x>0))]; }
+  const best={}; for(const m of order){ const o=arMesoFind1(src,T,G,m); for(const k in o) if(!best[k]||o[k].sc>best[k].sc) best[k]=o[k]; if(best.inv&&best.inv.sc>=.93||best.stoInv&&best.stoInv.sc>=.93) break; }
+  const out={}, P=ARX.prof?.base||AR_PROF[1];
+  for(const k of ['inv','stoInv']){ const B=best[k]; if(!B||B.sc<thr) continue; const R=P[k]||AR_PROF[1][k]; out[k]={x:B.x,y:B.y,w:R[2]*B.m/P.s,h:R[3]*B.m/P.s,sc:+B.sc.toFixed(3),m:B.m}; }
+  if(out.stoInv){ const R=P.sto, m=out.stoInv.m, d=(P.stoInv[0]-P.sto[0])*m/P.s; out.sto={x:out.stoInv.x-d,y:out.stoInv.y+(R[1]-P.stoInv[1])*m/P.s,w:R[2]*m/P.s,h:R[3]*m/P.s,sc:out.stoInv.sc,m}; }
+  const fm=(out.stoInv||out.inv||{}).m; if(fm) ARX.mesoS=fm;
+  const N2=r=>r&&({x:r.x/sw,y:r.y/sh,w:Math.min(r.w,sw-r.x)/sw,h:Math.min(r.h,sh-r.y)/sh,sc:r.sc,m:r.m});
+  ARX.mesoLoc={key,inv:N2(out.inv),sto:N2(out.sto),stoInv:N2(out.stoInv),ms:+(performance.now()-t0).toFixed(1),tried:order.length}; return ARX.mesoLoc; }
 /* 1초 판독 전에: 찾은 자리가 없거나 그 자리에서 칸이 안 보이면 (최소 2초 간격으로) 전체에서 다시 찾기 */
 function arMesoLocate(src,now){ now=now||Date.now(); const L=ARX.mesoLoc, key=arMesoKey(src);
   const okAt=L&&L.key===key&&((L.stoInv&&L.sto&&arMesoPanel(src,'sto')&&arMesoPanel(src,'stoInv'))||(L.inv&&arMesoPanel(src,'inv')));
@@ -796,12 +808,29 @@ function arMesoLocate(src,now){ now=now||Date.now(); const L=ARX.mesoLoc, key=ar
 function arMesoPanel(src,k){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR(k,src); if(!sw||!sh||!r) return false; const cv=arCrop(src,sw,sh,{x:r.x+r.w*.18,y:r.y+r.h*.15,w:r.w*(k==='inv'?.5:.8),h:r.h*.7});
   const d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height).data; let wh=0,dk=0,n=d.length/4; for(let i=0;i<d.length;i+=4){ const lo=Math.min(d[i],d[i+1],d[i+2]), hi=Math.max(d[i],d[i+1],d[i+2]); if(lo>205) wh++; else if(hi<120) dk++; }
   return wh/n>.55&&(k==='sto'||dk/n>.01); } // 흰 바탕 + 어두운 숫자 = 메소 칸
-async function arMesoRead1(src,k,sc,thr){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR(k,src); const cv=arCrop(src,sw,sh,{x:r.x+r.w*.17,y:r.y,w:r.w*(k==='inv'?.53:.79),h:r.h},sc);
+/* b434 (t582u): 메소 글자 칸 오른쪽 끝을 화면에서 찾음 — 예전엔 템플릿 폭의 고정 비율(.17~.70)만 잘라, 칸이 더 넓은 화면(y17 1366: '659억 6392만 4492')에서
+   '659억 6392' 까지만 읽고 659억 0만 6392 로 '틀린 값'을 저장했음. 흰 칸이 끝나는 곳(흰 화소 15% 미만 세로줄이 2×배율 이상 이어짐)까지 자르고,
+   그래도 글자가 자른 끝에 닿아 있으면(잘린 숫자) 그 읽기는 버림(edge). */
+function arMesoSpan(src,k){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR(k,src), x0=r.x+r.w*.17, base=r.w*(k==='inv'?.53:.79), m=ARX.mesoLoc?.[k]?.m||ARX.prof?.s||1;
+  const X0=Math.round(x0*sw), X1=Math.min(sw,Math.round((r.x+r.w*1.9)*sw)), Y0=Math.round((r.y+r.h*.1)*sh), Y1=Math.min(sh,Math.max(Y0+2,Math.round((r.y+r.h*.9)*sh))), W=X1-X0, H=Y1-Y0; if(W<8||H<2) return {x:x0,w:base,edge:false};
+  const c=ARX.msc||(ARX.msc=document.createElement('canvas')); c.width=W; c.height=H; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,X0,Y0,W,H,0,0,W,H); const d=g.getImageData(0,0,W,H).data;
+  const wf=new Float32Array(W), dk=new Uint8Array(W); for(let x=0;x<W;x++){ let w=0,k2=0; for(let y=0;y<H;y++){ const i=(y*W+x)*4, lo=Math.min(d[i],d[i+1],d[i+2]), hi=Math.max(d[i],d[i+1],d[i+2]); if(lo>=236) w++; else if(hi<120) k2++; } wf[x]=w/H; dk[x]=k2>0?1:0; } /* 칸 안 = 거의 흰색(≥236), 칸 사이 바탕 = 연회색(≈205~220) */
+  const gapN=Math.max(2,Math.round(2*m)); let end=W, gap=0, seen=0; for(let x=0;x<W;x++){ if(wf[x]<.15){ if(seen>=gapN&&++gap>=gapN){ end=x-gap+1; break; } } else { gap=0; seen++; } } /* 앞쪽 흰 칸이 시작되기 전(창고 칸 앞 테두리 등)은 끝으로 안 봄 */
+  let e=end; while(e>1&&wf[e-1]<.15) e--; const edge=dk[Math.max(0,e-1)]||dk[Math.max(0,e-2)]; /* 칸 끝 바로 앞 세로줄에 글자 화소 = 잘림 */
+  if(!seen||e<base*sw*.5) return {x:x0,w:base,edge:false}; /* 칸을 못 찾음 → 예전 고정 폭 */
+  return {x:x0,w:Math.max(4,e)/sw,edge:!!edge&&end===W}; }
+async function arMesoRead1(src,k,sc,thr){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR(k,src), sp=arMesoSpan(src,k); if(sp.edge) return {t:'',v:null,edge:1}; const cv=arCrop(src,sw,sh,{x:sp.x,y:r.y,w:sp.w,h:r.h},sc);
   const g=cv.getContext('2d',{willReadFrequently:true}), im=g.getImageData(0,0,cv.width,cv.height), d=im.data; for(let i=0;i<d.length;i+=4){ d[i]=255-d[i]; d[i+1]=255-d[i+1]; d[i+2]=255-d[i+2]; } g.putImageData(im,0,0); // 어두운 글자 → 밝게 (arOcr 는 밝은 글자용)
   const t=await arMesoOcr(cv,thr); return {t,v:arMesoParse(t)}; }
-/* 배율 3·4 두 번 읽어 같을 때만 인정 (다르면 배율 2로 한 번 더 → 두 번 나온 값) */
-async function arMesoRead(src,k){ const thr=+ARX.cfg.mesoThr||100, sl=ARX.cfg.mesoSc?[+ARX.cfg.mesoSc]:[3,4,2], got=[]; let t='';
-  let n=0; for(const sc of sl){ const r=await arMesoRead1(src,k,sc,thr); n++; t=t||r.t; if(r.v==null) continue; if(got.includes(r.v)||sl.length===1) return {t:r.t,v:r.v,hi:n===2&&got.length===1}; got.push(r.v); } /* t554 hi: 배율 3·4 가 처음부터 모든 자리 일치 = 신뢰도 높음 */
+/* 메소 읽기 — b434 (t582u): 예전처럼 글자 진하기 기준(thr) 100 으로 배율 3·4 가 같으면 바로 인정(hi).
+   아니면 배율 2 와 기준 80 으로 더 읽고 6번 중 가장 많은 값이 3번 이상이며 2등의 2배 이상일 때만 인정(아니면 버림 → 틀린 값 0).
+   흐린 1366 영상(x06 '581억 6443만 3608', v09 '520억 2129만 8608')은 기준 100 에선 8 이 0·1 로 깨져 세 배율이 다 달라 영영 못 읽었고 기준 80 에선 세 배율 모두 정답.
+   기준 80 을 먼저 쓰면 창고 옆 '<' 버튼 테두리를 '1' 로(122564211971), 2560 '225억' 앞 2 를 빼고(25억) 같은 값 두 번이 나와 틀림 → 100 먼저, 80 은 다수결에만. */
+async function arMesoRead(src,k){ const tl=ARX.cfg.mesoThr?[+ARX.cfg.mesoThr]:[100,80], sl=ARX.cfg.mesoSc?[+ARX.cfg.mesoSc]:[3,4,2], V=[]; let t='';
+  for(let ti=0;ti<tl.length;ti++){ const g=[]; for(const sc of sl){ const r=await arMesoRead1(src,k,sc,tl[ti]); t=t||r.t; g.push(r.v); if(r.v!=null) V.push(r.v); if(sl.length===1&&tl.length===1) return {t:r.t,v:r.v,hi:false};
+      if(ti===0&&g.length===2&&g[0]!=null&&g[0]===g[1]) return {t,v:g[0],hi:true}; } } /* 첫 기준의 배율 3·4 가 처음부터 같음 = 신뢰도 높음(t554 와 같은 뜻) */
+  const C=new Map(); for(const v of V) C.set(v,(C.get(v)||0)+1); const L=[...C].sort((a,b)=>b[1]-a[1]), a=L[0], b=L[1];
+  if(a&&a[1]>=Math.min(3,tl.length*sl.length)&&a[1]>=2*(b?b[1]:0)) return {t,v:a[0],hi:false};
   return {t,v:null}; }
 /* 메소 전용 워커: 숫자·조억만만 허용(한 줄) → '억'을 '먹', '만'을 '반'으로 읽는 일 줄임 */
 function arMesoWLoad(){ if(ARX.ocrMP) return ARX.ocrMP; ARX.ocrMP=arOcrLoad().then(()=>window.Tesseract?Tesseract.createWorker('kor',1,{workerPath:new URL('ocr/worker.min.js',location.href).href,corePath:new URL('ocr/',location.href).href,langPath:new URL('ocr',location.href).href,gzip:false,workerBlobURL:false}):null)

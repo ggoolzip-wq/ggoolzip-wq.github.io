@@ -3575,6 +3575,10 @@ const GD_BASE_KEY=SV_ON?'mapleBossTracker.svbase':'mapleBossTracker.gdbase';
 const GD_LOCAL_RE=/^(theme|activeId|period|updatedAt|version|startWeek)$|^settings\.(lastSync|autoSync|apiKey|driveKeys|apiMode|prices|priceSource|worldLimit)$|^characters\[[^\]]*\]\.(sync|image|exp|medal|guildAt|guild)$|^settings\.accounts\[[^\]]*\]\.(key|bk|status)$/;
 const GD_SOFT_RE=/^characters\[[^\]]*\]\.(level|job|world|ocid|accId)$/;
 const GD_HIST_RE=/^(history|monthHistory|missW|missM)\[[^\]]*\]$/;
+/* b434 (t582u '메소 기록 못 함'): 시각(at)이 붙은 '기록' 항목 — 보유 메소(meso.<계정키>)는 양쪽 다 있으면 at 이 더 최근인 쪽, 한쪽에만 있으면 있는 쪽.
+   서버 모드 불러오기(gdServerWins)가 '서버 통째로 덮어쓰기'라 이 PC 에서 방금 읽어 저장한(아직 안 올라간) 메소가 지워지거나 예전 값으로 돌아가던 것 막음. */
+const GD_STAMP_RE=/^meso\.[^.]+$/;
+const gdStamp=(l,r)=>gdIsObj(l)&&gdIsObj(r)?((+r.at||0)>(+l.at||0)?r:l):(gdIsObj(l)?l:gdIsObj(r)?r:(r!==undefined?r:l));
 const GD_KEYED={characters:'id',history:'week',monthHistory:'month',missW:'week',missM:'month','settings.accounts':'id'};
 const stable=v=>Array.isArray(v)?'['+v.map(stable).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}':JSON.stringify(v);
 const gdIsObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
@@ -3594,6 +3598,7 @@ function gdMerge(b,l,r,ctx,p=''){
     if(/\.medal$/.test(p)&&gdIsObj(l)&&gdIsObj(r)) return (+r.at||0)>(+l.at||0)?r:l;
     if(/\.guildAt$/.test(p)&&typeof l==='number'&&typeof r==='number') return Math.max(l,r);
     return l!==undefined&&l!==''&&l!==null?l:r; }
+  if(p&&GD_STAMP_RE.test(p)&&gdIsObj(l)&&gdIsObj(r)) return gdStamp(l,r); /* b434: 메소 = 최근 at */
   if(gdSame(l,r)) return l;
   if(ctx.base){ if(gdSame(b,l)) return r; if(gdSame(b,r)) return l; }
   if(l===undefined) return r; if(r===undefined) return l; // 한쪽에만 있음(새로 추가 / 삭제 vs 수정) → 있는 쪽 유지
@@ -3609,6 +3614,8 @@ function gdMerge(b,l,r,ctx,p=''){
 // b216: 서버 값으로 덮어쓰기 — 기기 전용·자동 갱신 값(GD_LOCAL_RE: 테마·선택 캐릭터·키 등)만 이 PC 값 유지, 나머지는 전부 서버(r)
 function gdServerWins(l,r,p=''){
   if(p&&GD_LOCAL_RE.test(p)) return gdMerge(undefined,l,r,{base:false,prefer:'l',conf:[]},p);
+  if(p&&GD_STAMP_RE.test(p)) return gdStamp(l,r); /* b434: 서버가 이겨도 메소는 더 최근에 읽은 값(이 PC 에만 있으면 유지) */
+  if(p==='meso'&&r===undefined&&gdIsObj(l)) r={}; /* b434: 서버에 메소 묶음이 아직 없어도 이 PC 메소는 유지 */
   if(r===undefined) return undefined;
   const kf=GD_KEYED[p];
   if(kf&&Array.isArray(r)){ const L=new Map((Array.isArray(l)?l:[]).filter(x=>gdIsObj(x)&&x[kf]!=null).map(x=>[String(x[kf]),x]));
@@ -4185,7 +4192,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b433'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b434'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');

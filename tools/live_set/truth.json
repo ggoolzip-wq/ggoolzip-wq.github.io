@@ -265,7 +265,13 @@
   "diff": "easy",
   "items": {},
   "itemsChecked": true,
-  "seq": 24
+  "seq": 24,
+  "meso": 52021298608,
+  "mesoMust": false,
+  "proof": [
+   "meso"
+  ],
+  "mesoNote": "인벤 창이 1.3~1.5초만 보이고 흐린 1366 영상 — 저장 안 돼도 되지만 틀린 값 0 (판독 자체는 test_b434_meso 정지 화면으로 검증)"
  },
  {
   "id": "v10",
@@ -447,7 +453,13 @@
   "diff": "easy",
   "items": {},
   "itemsChecked": false,
-  "seq": 40
+  "seq": 40,
+  "meso": 58164433608,
+  "mesoMust": false,
+  "proof": [
+   "meso"
+  ],
+  "mesoNote": "인벤 창이 1.3~1.5초만 보이고 흐린 1366 영상 — 저장 안 돼도 되지만 틀린 값 0 (판독 자체는 test_b434_meso 정지 화면으로 검증)"
  },
  {
   "id": "x07",
@@ -673,7 +685,12 @@
   "items": {},
   "itemsChecked": true,
   "seq": 59,
-  "res": "1376x776→1366x768"
+  "res": "1376x776→1366x768",
+  "meso": 65963924492,
+  "mesoMust": true,
+  "proof": [
+   "meso"
+  ]
  },
  {
   "id": "y18",

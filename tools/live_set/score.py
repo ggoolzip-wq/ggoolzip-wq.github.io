@@ -35,9 +35,19 @@ def score(out):
     rew_ok=True
     if t.get('noReward'): rew_ok=not rt
     elif 'rewAfter' in t or 'rewBefore' in t: rew_ok=bool(rt) and rt[0]>=t.get('rewAfter',0) and rt[0]<=t.get('rewBefore',1e9)
+    # b434 (t582u): 보유 메소 — log.json 의 '보유 메소 저장: <닉> <금액>' 전부가 정답(truth.meso)이어야 함(틀린 값 0), mesoMust 면 정답이 한 번은 저장돼야 함
+    ms=[]; lp=Path(out)/t['id']/'log.json'
+    if lp.exists():
+      import re
+      for x in json.load(open(lp)):
+        if isinstance(x,list) and len(x)>1 and '보유 메소 저장' in str(x[1]):
+          g=re.search(r'보유 메소 저장: (\S+) (?:(\d+)조 )?(?:(\d+)억 )?(?:(\d+)만 )?(\d+)메소',x[1])
+          ms.append((g.group(1),sum(int(g.group(i) or 0)*m for i,m in ((2,10**12),(3,10**8),(4,10**4),(5,1)))) if g else ('?',-1))
+    meso_ok=all(n==t['name'] and v==t['meso'] for n,v in ms) if 'meso' in t else True
+    if t.get('mesoMust'): meso_ok=meso_ok and any(v==t['meso'] for n,v in ms)
     c={'rew':rew_ok,'boss':boss==t['boss'],'diff':diff==t['diff'],'name':(s.get('final_name') or '')==t['name'],'res':res_ok,
-       'items':(rec==want) if t.get('itemsChecked') else not (rec-want)}
-    R[t['id']]={'ok':all(c.values()),'c':c,'got':{'boss':boss,'diff':diff,'name':s.get('final_name'),'items':dict(rec),'box':s.get('first_box'),'rewT':rt,'map':s.get('first_map'),'res':f"{s.get('vw')}x{s.get('vh')}→{prof.get('lab')}"},'want':{k:t[k] for k in ('boss','diff','name','items')}}
+       'items':(rec==want) if t.get('itemsChecked') else not (rec-want),'meso':meso_ok}
+    R[t['id']]={'ok':all(c.values()),'c':c,'got':{'boss':boss,'diff':diff,'name':s.get('final_name'),'items':dict(rec),'box':s.get('first_box'),'rewT':rt,'map':s.get('first_map'),'res':f"{s.get('vw')}x{s.get('vh')}→{prof.get('lab')}",'meso':ms},'want':{k:t[k] for k in ('boss','diff','name','items')}}
   return R
 if __name__=='__main__':
   outs=sys.argv[1:]; RS=[score(o) for o in outs]
