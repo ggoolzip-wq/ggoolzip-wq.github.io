@@ -24,7 +24,7 @@
     확인: 기존 쓰기 API(/api/state PUT·seen·link·subkeys·unlink·epic 등)는 전부 me.userId 고정 — 관리자 토큰으로 남의 데이터 쓰기 경로 없음(관리자 쓰기는 decide·prices 뿐, 변경 없음).
   - t585u: PIP 첫 줄 [최소화]/[최소화 해제] 왼쪽에 **[화면 공유 종료]**(`.neonBtn nb-crimson nb-sm .ar-pipstopb`, 공유 중일 때만). 누르면 기존 [메이플 연결 해제]·브라우저 공유 중지와 같은 `arDisconnect()` 그대로(트랙 stop·인식 타이머 정지·공유 표시 꺼짐). 기존 경로처럼 PIP 창 자체는 닫지 않음. PIP(.arpipw) 전용 CSS — 미인식 [이 캐릭터예요] 고르기와 같이 있어도 한 줄(‘인식 중…’ 글자 숨김·고르기 폭 72px).
   - 시험: 새 `tests/test_b435_adminview.py`(로컬 wrangler D1: 비관리자 403·토큰 없음 401·POST/PUT/DELETE/PATCH 405·키/해시/메모 없음·관리자 PUT /api/state?user= 는 B 안 바뀜 / 화면: 쓰기 요청 0건·관리자 localStorage·S 그대로·B rev·이력·세션 그대로·PC 2열·모바일 1열 가로 넘침 없음) PASS, `tests/test_b435_pipstop.py`(공유 없으면 없음·최소화 왼쪽 같은 줄·최소화 중에도·미인식 고르기와 한 줄·클릭 = arDisconnect 1번·트랙 ended·모바일 없음) PASS. 회귀 b376_pipmin·b225·server_b91·server·tracker68/77/84 PASS. b341/b347/b349/b351/b381 은 b434(a8eb662)에서도 똑같이 `.ar-pipb` 클릭 시간초과로 실패하던 것(이번 변경 무관, 확인함).
-  - 배포: Worker `npx wrangler deploy` 2026-11-23 KST Version 083f67d8-839b-4218-a55a-0295da849093 (운영: 토큰 없음 401 확인). 사이트 커밋·해시는 아래 줄.
+  - 배포: Worker `npx wrangler deploy` 2026-11-23 KST Version 083f67d8-839b-4218-a55a-0295da849093 (운영: 토큰 없음 401 확인). 사이트 커밋 57f2251 일반 push 2026-11-23 13:59 KST, 양사이트 index.html sha256 앞 16자리 836e4d1fb4221b6c(로컬 빌드와 같음), headless dataset.build=b435·PC 1440/모바일 390 pageerror 0.
   - 사진: `/workspace/reward_report_1114/50_admin_view.png`·`51_pip_stop.png`·`52_b435_summary.png`. 진행 기록 `progress_admin_view.md`.
   - 남은 한계: 보기는 요약 화면(캐릭터·클리어·득템·메소·최근 8주) — 사용자 화면을 그대로 복제한 것은 아님. 대상 사용자가 이번 주 아직 안 들어와 주간 초기화가 안 된 경우 '기준 주'가 지난주로 보임(표시함).
 - **b434 (pt582u '메소 기록도 못하고있어', 2026-11-16~21)**: 보유 메소 기록 원인·수정 (`src/autorec.js` 메소 부분, `src/app.js` 동기화 병합).
