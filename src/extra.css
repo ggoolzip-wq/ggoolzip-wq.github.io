@@ -2460,6 +2460,7 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 .arpipw .ar-pipchar .ar-pcn{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .arpipw .ar-pipchar .ar-pipminb{margin-left:auto;flex:none;padding:2px 9px;font-size:.72rem;line-height:1.3;white-space:nowrap}
 .arpipw .ar-pipchar .ar-teach+.ar-pipminb{margin-left:4px}
+.arpipw .ar-pipchar .ar-pipstopb{margin-left:auto;flex:none;padding:2px 9px;font-size:.72rem;line-height:1.3;white-space:nowrap}.arpipw .ar-pipchar .ar-pipstopb+.ar-pipminb,.arpipw .ar-pipchar .ar-teach+.ar-pipstopb{margin-left:4px} /* b435 t585u */
 .arpipw.pip-min .ar-pipmeso,.arpipw.pip-min .ar-piprec,.arpipw.pip-min .ar-pipsale,.arpipw.pip-min .ar-inpip h2,.arpipw.pip-min .ar-inpip .ar-pipmsg{display:none!important}
 .arpipw.pip-min .ar-inpip{padding:4px 9px!important}
 .arpipw .ar-pminrow{display:flex;align-items:center;gap:6px;height:30px;white-space:nowrap;overflow:hidden;min-width:0;font-size:.95rem;font-weight:700}
@@ -2667,3 +2668,24 @@ html[data-theme=light] body .calcard .calhd h2.calti.calym:is(:hover,:focus-visi
 /* b408(t381): 에픽빔 닉네임 초상화 — 실제 넥슨 캐릭터 그림은 300×300(캐릭터는 가운데 아래, 얼굴 중심 ≈ 원본 142,158). b407 은 96px 로 잘못 가정해 원 안에 투명 여백만 보였음.
    원본 60px 창(얼굴 중심 142,158)을 24px 원에 꽉 차게: 300→120px(0.4배), 얼굴 중심(56.8,63.2)을 원 가운데(12,12)로. PC·모바일 같은 24px 칸 */
 .ectl .avatar.ecav img{position:absolute;left:0;top:0;width:120px!important;height:120px!important;max-width:none!important;max-height:none!important;margin:-51px 0 0 -45px!important;object-fit:fill;object-position:0 0;border-radius:0;image-rendering:auto}
+
+/* b435 (t583u): 관리자 기록 보기 — 읽기 전용 모달 (관리자 창 위) */
+#admViewModal{z-index:60}
+.admm .admvname{margin-right:2px}
+.admview{max-height:88vh;overflow:auto}
+.admview .admv-ro{font-size:.72rem;font-weight:700;color:#ffb36b;border:1px solid rgba(255,179,107,.5);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+.admview .admv-meta{margin:2px 0 8px}
+.admview .admv-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.admview .admv-card{border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:8px;background:rgba(255,255,255,.025);min-width:0}
+.admview .admv-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.admview .admv-head img{width:40px;height:40px;object-fit:contain;flex:none}
+.admview .admv-line{display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:.85rem}
+.admview .admv-v{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-width:0;flex:1}
+.admview .admv-k{min-width:76px;flex:none;line-height:1.6;color:var(--muted,#9aa);font-size:.78rem;font-weight:600}
+.admview .admv-chip{font-size:.76rem;padding:1px 6px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+@media(max-width:768px){.admview .admv-grid{grid-template-columns:1fr}.admview .admv-k{min-width:64px}}
+/* b435 t585u: PIP 첫 줄에 [화면 공유 종료]가 있을 때 미인식 고르기(이 캐릭터예요)도 한 줄에 다 들어가게 — PIP 창(.arpipw) 전용 */
+.arpipw .ar-pipchar:has(.ar-pipstopb):has(.ar-teach)>span.muted{display:none}
+.arpipw .ar-pipchar:has(.ar-pipstopb) .ar-teach{flex:0 1 auto;min-width:0;flex-wrap:nowrap}
+.arpipw .ar-pipchar:has(.ar-pipstopb) .ar-tsel{max-width:72px;min-width:0}
+.arpipw .ar-pipchar:has(.ar-pipstopb) .ar-tbtn{flex:none}

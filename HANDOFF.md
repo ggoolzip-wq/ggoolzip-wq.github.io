@@ -18,6 +18,15 @@
 - **작업 보고는 글을 줄이고, 마지막에 아주 알아듣기 쉬운 짧은 요약(1~3줄, 쉬운 말)을 꼭 넣는다** (사용자 지시 t553, 2026-11-14). **이 마지막 요약은 글이 아니라 한눈에 보이는 사진(이미지)으로 쉽게 설명한다** (t554). 고친 것은 직접 라이브로 돌려보고 원인·해결법·전후 결과를 사진으로 설명한다 (t552).
 
 ## 현재 전체 상태 요약 (2026-11-14 b425 기준, 비밀값 없음)
+- **b435 (t583u 관리자 기록 보기 + t585u PIP [화면 공유 종료], 2026-11-23)**:
+  - t583u: 관리자 창 '사용 중' 이름(네온 버튼 `.admvname`) 누르면 그 사용자 기록을 **읽기 전용**으로 봄. 서버 `GET /api/admin/view?user=<id>` (server/worker.js, `/api/admin/*` 관리자 확인 그대로) — GET 외 405 `read_only`, 대상 state 를 읽기만(위장·토큰 발급·rev 변경 없음). `adminViewData` 가 키·계정 해시(ah)·원본 계정 id(mapleAcc)·설정·메모(calNotes)·화면 설정을 빼고 캐릭터·주간/월간 클리어·드롭·메소·주간 기록·계정 라벨만 돌려줌. 승인 대기 사용자는 data null.
+    화면(src/app.js `admViewOpen`/`admViewHtml`/`admViewClose`, body.html `#admViewModal`, extra.css b435): 응답만으로 그리는 순수 함수 — 내 상태 S·save()·동기화와 분리, 입력칸 0·버튼은 ✕ 뿐, 닫기/Esc/바깥 = 보기만 닫힘(관리자 창 유지). PC 2열·모바일(≤768px) 1열.
+    확인: 기존 쓰기 API(/api/state PUT·seen·link·subkeys·unlink·epic 등)는 전부 me.userId 고정 — 관리자 토큰으로 남의 데이터 쓰기 경로 없음(관리자 쓰기는 decide·prices 뿐, 변경 없음).
+  - t585u: PIP 첫 줄 [최소화]/[최소화 해제] 왼쪽에 **[화면 공유 종료]**(`.neonBtn nb-crimson nb-sm .ar-pipstopb`, 공유 중일 때만). 누르면 기존 [메이플 연결 해제]·브라우저 공유 중지와 같은 `arDisconnect()` 그대로(트랙 stop·인식 타이머 정지·공유 표시 꺼짐). 기존 경로처럼 PIP 창 자체는 닫지 않음. PIP(.arpipw) 전용 CSS — 미인식 [이 캐릭터예요] 고르기와 같이 있어도 한 줄(‘인식 중…’ 글자 숨김·고르기 폭 72px).
+  - 시험: 새 `tests/test_b435_adminview.py`(로컬 wrangler D1: 비관리자 403·토큰 없음 401·POST/PUT/DELETE/PATCH 405·키/해시/메모 없음·관리자 PUT /api/state?user= 는 B 안 바뀜 / 화면: 쓰기 요청 0건·관리자 localStorage·S 그대로·B rev·이력·세션 그대로·PC 2열·모바일 1열 가로 넘침 없음) PASS, `tests/test_b435_pipstop.py`(공유 없으면 없음·최소화 왼쪽 같은 줄·최소화 중에도·미인식 고르기와 한 줄·클릭 = arDisconnect 1번·트랙 ended·모바일 없음) PASS. 회귀 b376_pipmin·b225·server_b91·server·tracker68/77/84 PASS. b341/b347/b349/b351/b381 은 b434(a8eb662)에서도 똑같이 `.ar-pipb` 클릭 시간초과로 실패하던 것(이번 변경 무관, 확인함).
+  - 배포: Worker `npx wrangler deploy` 2026-11-23 KST Version 083f67d8-839b-4218-a55a-0295da849093 (운영: 토큰 없음 401 확인). 사이트 커밋·해시는 아래 줄.
+  - 사진: `/workspace/reward_report_1114/50_admin_view.png`·`51_pip_stop.png`·`52_b435_summary.png`. 진행 기록 `progress_admin_view.md`.
+  - 남은 한계: 보기는 요약 화면(캐릭터·클리어·득템·메소·최근 8주) — 사용자 화면을 그대로 복제한 것은 아님. 대상 사용자가 이번 주 아직 안 들어와 주간 초기화가 안 된 경우 '기준 주'가 지난주로 보임(표시함).
 - **b434 (pt582u '메소 기록도 못하고있어', 2026-11-16~21)**: 보유 메소 기록 원인·수정 (`src/autorec.js` 메소 부분, `src/app.js` 동기화 병합).
   - 원인1(확인, 이분탐색): 첫 실패 커밋 b3814463(b415 상태바 프로필). 원모님 실화면(1920 최적, `tests/fixtures/b348/live_inv.jpg`·`b351/live_meso_stone.jpg`)은 HUD 1배가 맞는데 인벤 창 메소 칸은 옛 템플릿의 약 1.406배 → b415 뒤로 `arMesoFind` 가 프로필 배율(1배)로만 찾아 영영 'closed' → 저장 0. (b359 는 프로필을 1.406배로 잘못 잡아 우연히 찾았음)
   - 원인2(확인): 1366 y17 '659억 6392만 4492' 를 고정 비율(.17~.70) 자르기로 '659억 6392' 까지만 읽어 **659억 0만 6392 로 틀리게 저장**(b433 회귀 로그에도 있음 — 메소는 채점 안 해서 못 잡았음).

@@ -11,6 +11,7 @@
  * b68 (2026-10-12): 가입 승인 — 처음 보는 대표 키로 /api/login → users + approval(pending: 대표 캐릭터 이름·월드·레벨·요청 시각) + accounts(계정 해시)만
  *   만들고 세션·금고·데이터 없음 → {status:'pending', pending:{...}}. 거절·차단 → 403 rejected|blocked (세션도 막힘). approval 행이 없는 사용자 = 승인됨(기존 사용자).
  *   관리자(secret ADMIN_USER = users.id): GET /api/admin/users → {users:[{id,status,name,world,level,chars,...}]},
+ *   GET /api/admin/view?user=<id> (b435) → 그 사용자 기록 읽기 전용(GET 외 405, 키·해시·메모 제외).
  *   POST /api/admin/decide {user, action: approve|reject|kick (block|unblock 은 예전 호환)}. b78: kick = 그 사용자의 등록 키·데이터·세션 전부 삭제(넥슨 계정이 완전히 풀려 나중에 새로 가입 가능). 관리자가 아니면 403 not_admin.
  * 초대 비밀번호(친구 전용, b67 에서 폐지): 로그인 전에 기기마다 한 번 POST /api/invite {pass} → 기기 표(device ticket, 365일).
  *   서버는 비밀번호 해시만 secret SITE_PASS_HASH 로 보관 (= sha256('ggoolzip-invite:' + 앞뒤 공백 뺀 비밀번호), 대소문자 구분).
@@ -422,6 +423,17 @@ function stripKeys(data) {
     if (Array.isArray(s.accounts)) s.accounts = s.accounts.map(a => { if (a && typeof a === 'object') { const { key, ...rest } = a; return rest; } return a; });
   }
   return data;
+}
+/* b435: 관리자 보기용 — 기록만 남기고 키·계정 해시(ah/ahs)·설정·메모·화면 설정 제거 (읽기 전용 응답) */
+function adminViewData(text) {
+  let d; try { d = JSON.parse(text); } catch (e) { return null; }
+  if (!d || typeof d !== 'object') return null;
+  const accs = Array.isArray(d.settings?.accounts) ? d.settings.accounts : [];
+  const out = { characters: Array.isArray(d.characters) ? d.characters : [], history: Array.isArray(d.history) ? d.history : [], monthHistory: Array.isArray(d.monthHistory) ? d.monthHistory : [],
+    meso: d.meso && typeof d.meso === 'object' ? d.meso : {}, period: d.period || null, startWeek: d.startWeek || '', updatedAt: +d.updatedAt || 0,
+    accounts: accs.filter(a => a && typeof a === 'object').map(a => ({ id: String(a.id || ''), label: String(a.label || '').slice(0, 40), main: !!a.main })) };
+  for (const c of out.characters) if (c && typeof c === 'object') { delete c.key; delete c.apiKey; delete c.mapleAcc; }
+  return out;
 }
 async function readBody(req, max = MAX_SMALL_BODY) {
   const len = +req.headers.get('Content-Length') || 0;
@@ -845,6 +857,17 @@ async function route(req, env) {
       });
       let prices; if (wantP) { try { prices = pr.results?.[0] ? JSON.parse(pr.results[0].v) : {}; } catch (e) { prices = {}; } }
       return json(200, { users: out, ...(wantP ? { prices } : {}) });
+    }
+    // b435 (t583u): 관리자 기록 보기 — 읽기 전용. GET 만(다른 방법은 405), 대상 사용자 state 를 읽기만 하고 아무것도 쓰지 않음.
+    //   위장·토큰 발급 없음(대상 세션·rev 그대로). 키·계정 해시·금고·메모(calNotes)·설정은 빼고 기록(캐릭터·주간/월간 기록·드롭·메소)만 돌려줌.
+    if (p === '/api/admin/view') {
+      if (M !== 'GET') throw new HttpError(405, 'read_only', '관리자 보기는 읽기 전용입니다');
+      const uid = String(url.searchParams.get('user') || '');
+      if (!uid || uid.length > 100) throw new HttpError(400, 'bad_user', '사용자 id 가 없습니다');
+      const u = await env.DB.prepare('SELECT u.id, a.status, a.name, a.world, a.level FROM users u LEFT JOIN approval a ON a.user_id=u.id WHERE u.id=?').bind(uid).first();
+      if (!u) throw new HttpError(404, 'no_user', '없는 사용자');
+      const row = (u.status || 'ok') === 'pending' ? null : await env.DB.prepare('SELECT rev, updated_at, saved_at, data FROM state WHERE user_id=?').bind(uid).first();
+      return json(200, { user: uid, status: u.status || 'ok', rev: row?.rev || 0, savedAt: row?.saved_at || 0, updatedAt: row?.updated_at || 0, data: row ? adminViewData(row.data) : null });
     }
     // b93: 관리자 전용 경매장 최저가 (크롬 확장이 관리자 본인 브라우저에서 측정 → 페이지가 저장). {prices:{item:{p:메소, t:측정 ms}}}. 넥슨 세션·쿠키는 오지 않음
     // b104: maple.ai.kr 아이템 시세 페이지(본섭 일별 시세)를 한 번 받아 최신 날짜 값만 돌려줌 (관리자만). 같은 KST 날짜에 이미 받았으면 저장한 것(바깥 요청 없음)

@@ -1277,7 +1277,7 @@ function arPanelLive(p,pipOnly){ p=p||$('#arPanel'); if(!p||(!pipOnly&&(p.hidden
   arSetH(q('.ar-cchar .ar-b'),(detC?`<div class="ar-who">${typeof avatar==='function'?avatar(detC):''}<div><div class="ar-big">${esc(detC.name)}</div><div class="muted">Lv.${esc(detC.level||'-')} ${esc(detC.job||'')}${acc?.name?' · '+esc(acc.name):''}${detC.world?' · '+esc(detC.world):''}</div></div></div>`
     :`<div class="ar-big dim">${on&&!ARX.unkName?'인식 중…':'-'}</div>`+arTeachHtml(on))+arMesoLine());
   /* b349: PIP 창 맨 위 현재 캐릭터 한 줄 (대시보드와 같은 내용, 0.2초마다 바뀐 것만) */
-  if(ARX.pip){ const pd=ARX.pip.win.document, pc=pd.querySelector('.ar-pipchar'); if(pc) arSetH(pc,(detC?`${typeof avatar==='function'?avatar(detC):''}<b class="ar-pcn">${esc(detC.name)}</b>`:`<span class="muted">${on&&!ARX.unkName?'인식 중…':'미인식'}</span>${arTeachHtml(on)}` /* b351: PIP 에도 [이 캐릭터예요] (보상 맵에서 끊겨도 바로) */)+arPipMinBtn() /* b376: 레벨·직업·월드 빼고 오른쪽 위 [최소화]/[최소화 해제] */);
+  if(ARX.pip){ const pd=ARX.pip.win.document, pc=pd.querySelector('.ar-pipchar'); if(pc) arSetH(pc,(detC?`${typeof avatar==='function'?avatar(detC):''}<b class="ar-pcn">${esc(detC.name)}</b>`:`<span class="muted">${on&&!ARX.unkName?'인식 중…':'미인식'}</span>${arTeachHtml(on)}` /* b351: PIP 에도 [이 캐릭터예요] (보상 맵에서 끊겨도 바로) */)+arPipStopBtn()+arPipMinBtn() /* b435 t585u: [화면 공유 종료] = 최소화 왼쪽 · b376: 레벨·직업·월드 빼고 오른쪽 위 [최소화]/[최소화 해제] */);
     arSetH(pd.querySelector('.ar-pipmeso'),arPipMesoHtml(detC)); }
   /* t603: '현재 보스' → '보상 맵 인식' — 대기/진행 상태 없음. 보상 상자로 보상 맵이 잡힌 동안만 초록 '보상 인식 중' + 보스, 아니면 '-' */
   { const cb=arPipCard(p); if(cb) arPipBind(cb); }
@@ -1412,11 +1412,13 @@ async function arPipOpen(cb){ cb=cb||arPipCard(); if(!cb||ARX.pip) return false;
 const AR_PIP_HMIN=88;
 function arPipMinGet(){ try{ return localStorage.getItem('arPipMin')==='1'; }catch(e){ return false; } }
 function arPipMinBtn(){ const m=!!(ARX.pip&&ARX.pip.min); return `<button type="button" class="neonBtn nb-cyan nb-sm ar-pipminb" data-pipmin="${m?0:1}" aria-pressed="${m}" title="${m?'PIP 창 전체 보기':'PIP 창을 두 줄로 작게'}">${m?'최소화 해제':'최소화'}</button>`; }
+/* b435 (t585u): PIP [화면 공유 종료] — 최소화 버튼 왼쪽, 공유 중일 때만. 누르면 기존 [메이플 연결 해제]·브라우저 공유 중지와 같은 arDisconnect() 그대로 */
+function arPipStopBtn(){ return ARX.stream?'<button type="button" class="neonBtn nb-crimson nb-sm ar-pipstopb" data-pipstop="1" title="화면 공유를 끝내고 인식을 멈춰요">화면 공유 종료</button>':''; }
 function arPipMinNew(){ const P=ARX.pip; return !!(P&&P.min&&(((ARX.sessRec||[]).length>(P.seen||0))||(ARX.saleQ||[]).length)); }
 function arPipMinRow(rew,b,d){ const nw=arPipMinNew(), r0=(ARX.sessRec||[])[0];
   const bl=rew&&b?`<span class="ar-bline ar-pmb">${typeof bossIcon==='function'?bossIcon(b):''}<span class="ar-bn">${esc(b.name)}</span>${d?' '+(typeof diffImg==='function'?diffImg(d):esc(D[d])):''}</span>`:(nw&&r0&&r0.b?`<span class="ar-pmb ar-pmlast">${esc(r0.b)}</span>`:`<span class="dim ar-pmb">-</span>`);
   return `<div class="ar-pminrow${nw?' ar-pmwarn':''}"><span class="ar-pml${rew?' rew':''}"><i class="ar-dot"></i>보상 맵</span>${bl}${nw?'<span class="ar-pmnew">·득템 기록 확인</span>':''}</div>`; }
-function arPipMinClick(e){ const t=e.target.closest&&e.target.closest('[data-pipmin]'); if(!t){ const r=e.target.closest&&e.target.closest('.ar-pminrow'); if(r&&ARX.pip&&ARX.pip.min&&arPipMinNew()){ e.preventDefault(); arPipSetMin(false); } return; } /* b381 (t422): 득템 기록 확인 중일 때만 보스 칸 눌러 최소화 해제 */ e.preventDefault(); arPipSetMin(t.dataset.pipmin==='1'); }
+function arPipMinClick(e){ if(e.target.closest&&e.target.closest('[data-pipstop]')){ e.preventDefault(); arDisconnect(); return; } const t=e.target.closest&&e.target.closest('[data-pipmin]'); if(!t){ const r=e.target.closest&&e.target.closest('.ar-pminrow'); if(r&&ARX.pip&&ARX.pip.min&&arPipMinNew()){ e.preventDefault(); arPipSetMin(false); } return; } /* b381 (t422): 득템 기록 확인 중일 때만 보스 칸 눌러 최소화 해제 */ e.preventDefault(); arPipSetMin(t.dataset.pipmin==='1'); }
 function arPipSetMin(on,init){ const P=ARX.pip; if(!P) return; on=!!on; if(!init&&P.min===on) return; P.min=on; if(!on) P.seen=(ARX.sessRec||[]).length; else if(!init) P.seen=(ARX.sessRec||[]).length; try{ localStorage.setItem('arPipMin',on?'1':'0'); }catch(e){}
   const w=P.win, d=w.document; d.body.classList.toggle('pip-min',on); P.minH=on?AR_PIP_HMIN:AR_PIP_H; const st=d.querySelector('style.ar-pipmin'); if(st) st.textContent=`html,body{min-width:${P.minW}px;min-height:${P.minH}px}`;
   const bb=P.card.querySelector('.ar-b'); if(bb){ bb._arH=null; bb._arFit=null; } const pc=d.querySelector('.ar-pipchar'); if(pc) pc._arH=null;

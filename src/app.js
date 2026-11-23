@@ -4192,7 +4192,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b434'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b435'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -4259,7 +4259,7 @@ function renderAdmin(){
   const b=$('#admBody'); if(!b) return;
   if(admErr){ b.innerHTML=`<div class="impmsg warn">${esc(admErr)}</div>`; return; }
   if(!admUsers){ b.innerHTML='<div class="muted">불러오는 중…</div>'; return; }
-  const who=u=>`<b>${esc(u.name||'(이름 없음)')}</b><span class="muted">${u.world?' · '+esc(u.world):''}${u.level?' · Lv.'+u.level:''}</span>`;
+  const who=u=>`${u.status==='pending'?`<b>${esc(u.name||'(이름 없음)')}</b>`:`<button type="button" class="admvname neonBtn nb-cyan nb-sm" data-admview="${esc(u.id)}" title="기록 보기 (읽기 전용)">${esc(u.name||'(이름 없음)')}</button>`}<span class="muted">${u.world?' · '+esc(u.world):''}${u.level?' · Lv.'+u.level:''}</span>`; // b435: 이름 = 기록 보기(읽기 전용)
   const row=(u,info,btns)=>`<div class="admrow" data-admuser="${esc(u.id)}"><div class="admwho">${who(u)}<div class="muted tiny">${info}</div></div><div class="admbtns">${btns}</div></div>`;
   const P=admUsers.filter(u=>u.status==='pending'), A=admUsers.filter(u=>u.status==='ok'||u.status==='blocked'); // b78: 차단 없음 — 예전 차단 사용자는 '사용 중'에(강퇴 가능), 거절한 요청은 목록에 안 보임
   const PG=10, np=Math.max(1,Math.ceil(A.length/PG)); admPage=Math.min(Math.max(1,admPage),np); const Ap=A.slice((admPage-1)*PG,admPage*PG);
@@ -4272,6 +4272,40 @@ function renderAdmin(){
     +(np>1?`<div class="admpages">${Array.from({length:np},(_,i)=>`<button class="btn sm ${i+1===admPage?'':'ghost'}" data-admpage="${i+1}">${i+1}</button>`).join('')}</div>`:''); // b78: 10명씩 쪽 번호
   renderAdmPrice();
 }
+/* b435 (t583u): 관리자 기록 보기 — 읽기 전용. GET /api/admin/view 응답만으로 따로 그림(내 상태 S·save·동기화와 완전히 분리, 입력칸·저장 버튼 없음).
+ * 닫으면 관리자 창 그대로. 서버도 이 주소는 GET 만 받음(405). */
+let admvSeq=0;
+async function admViewOpen(id){ const my=++admvSeq, u=(admUsers||[]).find(x=>x.id===id)||{}, el=$('#admViewModal'), b=$('#admvBody'); if(!el||!b) return;
+  $('#admvTitle').innerHTML=`👁 ${esc(u.name||'사용자')} — 기록 보기 <span class="admv-ro">읽기 전용</span>`;
+  b.innerHTML='<div class="muted">불러오는 중…</div>'; el.classList.add('show');
+  try{ const r=await svFetch('/api/admin/view?user='+encodeURIComponent(id)); if(my!==admvSeq) return; b.innerHTML=admViewHtml(r); }
+  catch(e){ if(my!==admvSeq) return; b.innerHTML=`<div class="impmsg warn">${esc(e.message)}</div>`; } }
+function admViewClose(){ admvSeq++; $('#admViewModal')?.classList.remove('show'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('#admViewModal')?.classList.contains('show')){ e.stopImmediatePropagation(); admViewClose(); } },true);
+function admViewHtml(r){ /* 순수 함수: r 만 읽음 (S 를 읽거나 쓰지 않음) */
+  const d=r&&r.data; if(!d) return `<div class="muted">${r&&r.status==='pending'?'승인 대기 중이라 기록이 없어요.':'저장된 기록이 없어요.'}</div>`;
+  const C=(d.characters||[]).filter(c=>c&&typeof c==='object'), per=d.period||{}, M=d.meso||{};
+  const accL=Object.fromEntries((d.accounts||[]).map(a=>[a.id,a.label||(a.main?'본계정':'부계정')]));
+  const bn=s=>{ const b=findBoss(s); return b?b.name:s; }, inm=k=>(ITEMS[k]&&ITEMS[k].n)||k;
+  const drops=m=>Object.entries(m||{}).filter(([,n])=>+n>0).map(([k,n])=>{ const [s,i]=String(k).split('|'); return `<span class="admv-chip">${esc(bn(s))} · ${esc(inm(i||''))}${+n>1?' ×'+(+n):''}</span>`; }).join('');
+  const mesoOfC=c=>Object.values(M).filter(o=>o&&o.by===c.id).sort((a,b)=>(b.at||0)-(a.at||0))[0]||M['c:'+c.id]||null;
+  const used=new Set();
+  const card=c=>{ const bs=c.bosses||{}, wk=Object.keys(c.weekly||{}).filter(s=>c.weekly[s]), mo=Object.keys(c.monthly||{}).filter(s=>c.monthly[s]&&(!per.month||String((c.mdate||{})[s]||'').startsWith(per.month)));
+    const tag=s=>`<span class="admv-chip">${esc(bn(s))}${bs[s]&&D[bs[s].diff]?'('+D[bs[s].diff]+')':''}${bs[s]&&+bs[s].party>1?'/'+(+bs[s].party)+'인':''}</span>`;
+    const ms=mesoOfC(c); if(ms) used.add(ms);
+    const dw=drops(c.drops), dm=drops(c.mdrops);
+    return `<div class="admv-card"><div class="admv-head">${c.image?`<img src="${esc(c.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:''}<div><b>${esc(c.name||'(이름 없음)')}</b>${c.isMain?' <span class="admtag">본캐</span>':''}<div class="muted tiny">${esc(c.world||'')}${c.job?' · '+esc(c.job):''}${c.level?' · Lv.'+(+c.level):''}${accL[c.accId]?' · '+esc(accL[c.accId]):''}</div></div></div>
+      <div class="admv-line"><span class="admv-k">주간 클리어 ${wk.length}</span><span class="admv-v">${wk.map(tag).join('')||'<span class="muted tiny">없음</span>'}</span></div>
+      ${mo.length?`<div class="admv-line"><span class="admv-k">월간</span><span class="admv-v">${mo.map(tag).join('')}</span></div>`:''}
+      <div class="admv-line"><span class="admv-k">득템</span><span class="admv-v">${dw+dm||'<span class="muted tiny">없음</span>'}</span></div>
+      ${ms?`<div class="admv-line"><span class="admv-k">보유 메소</span><span class="admv-v"><span>${esc(meso(ms.inv||0))}${ms.sto!=null?` · 창고 ${esc(meso(ms.sto))}`:''}${ms.at?` <span class="muted tiny">(${hm(ms.at)})</span>`:''}</span></span></div>`:''}</div>`; };
+  const cards=C.map(card).join('');
+  const restM=Object.values(M).filter(o=>o&&!used.has(o)&&o.inv>=0);
+  const H=(d.history||[]).slice(-8).reverse();
+  return `<div class="admv-meta muted tiny">캐릭터 ${C.length} · 기준 주 ${per.week?esc(fmtWeek(per.week)):'-'} · 마지막 저장 ${r.savedAt?hm(r.savedAt):'-'}</div>
+    <div class="admv-grid">${cards||'<div class="muted">캐릭터가 없어요.</div>'}</div>
+    ${restM.length?`<section class="admsec"><h4>보유 메소 (다른 계정)</h4>${restM.map(o=>`<div class="admv-line"><span class="admv-k">${esc(o.name||'')}</span><span class="admv-v"><span>${esc(meso(o.inv||0))}${o.at?` <span class="muted tiny">(${hm(o.at)})</span>`:''}</span></span></div>`).join('')}</section>`:''}
+    <section class="admsec"><h4>주간 수익 기록 <span class="muted">(최근 ${H.length}주)</span></h4>${H.length?H.map(h=>`<div class="admv-line"><span class="admv-k">${esc(h.week?fmtWeek(h.week):'-')}</span><span class="admv-v"><span>${esc(meso(h.total||0))} · 클리어 ${+h.cleared||0}${h.items?` · 득템 ${+h.items}`:''}</span></span></div>`).join(''):'<div class="muted tiny">없음</div>'}</section>`; }
 async function admDecide(id,action){
   const u=(admUsers||[]).find(x=>x.id===id); const nm=u?.name||'이 사용자';
   if(action==='kick'&&!confirm(`${nm}\n정말 강퇴할까요? 이 사용자의 등록 키와 데이터가 모두 삭제됩니다.`)) return; // b78
@@ -4368,7 +4402,7 @@ let admPage=1; const admOpen=new Set(); // b91: 펼친 본계정 id
 const admDay=t=>t?new Date(t+9*3600e3).toISOString().slice(0,10):'-'; // KST
 const admJoinReg=u=>`<span class="admreg muted tiny">가입 : ${admDay(u.joinAt)} · 최근 갱신 : ${u.syncAt?hm(u.syncAt):'-'}</span>`; // b238: 등록 → 최근 갱신(users.sync_click = 마지막으로 끝난 동기화; last_sync_at 은 배포 시각으로 채워져 안 씀), 정보 줄의 중복 '최근 갱신' 제거 · b237: 본계정 줄 = 가입(users.created_at)·등록(본계정 키 등록, 없으면 -) 따로
 const admReg=t=>`<span class="admreg muted tiny">등록 날짜 : ${t?new Date(t+9*3600e3).toISOString().slice(0,10):'-'}</span>`; // KST
-document.addEventListener('click',e=>{ const at=e.target.closest('[data-admalt]'); if(at){ const id=at.dataset.admalt; admOpen.has(id)?admOpen.delete(id):admOpen.add(id); renderAdmin(); return; } const pg=e.target.closest('[data-admpage]'); if(pg){ admPage=+pg.dataset.admpage; renderAdmin(); return; } const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }
+document.addEventListener('click',e=>{ const av=e.target.closest('[data-admview]'); if(av){ admViewOpen(av.dataset.admview); return; } if(e.target.id==='admViewModal'||e.target.closest('#admvClose')){ admViewClose(); return; } const at=e.target.closest('[data-admalt]'); if(at){ const id=at.dataset.admalt; admOpen.has(id)?admOpen.delete(id):admOpen.add(id); renderAdmin(); return; } const pg=e.target.closest('[data-admpage]'); if(pg){ admPage=+pg.dataset.admpage; renderAdmin(); return; } const t=e.target.closest('[data-adm]'); if(t){ const r=t.closest('[data-admuser]'); if(r) admDecide(r.dataset.admuser,t.dataset.adm); return; }
   if(e.target.id==='adminModal') e.target.classList.remove('show'); });
 setTimeout(()=>{ if(!SV_ON) return; itemPriceLoad(); if(svTok()&&gdMeta.on) svAdminCheck(); else if(svPend()?.key) svLogin(svPend().key,'',{quiet:true}); gdRender(); },800); // 승인 대기 → 열 때 한 번 다시 확인
 
