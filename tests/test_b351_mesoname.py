@@ -14,7 +14,7 @@ for d in ['data','ocr']: shutil.copytree(os.path.join(ROOT,d),os.path.join(site,
 PORT=_tutil.free_port(); srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=site,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 SETUP="""()=>{ const all={}; for(const b of BOSSES) all[b.id]={enabled:true,party:1}; const mk=(id,n)=>({id,name:n,level:280,job:'',world:'',ocid:'',accId:'',image:'',bosses:all,weekly:{},monthly:{},auto:{},drops:{},sync:{}}); S.characters=[mk('c0','겟로스트로바'),mk('c1','홀드유웨이컵'),mk('c2','트딕이')]; S.activeId='c0'; save(); S.tab='auto'; renderAuto(); }"""
 RUN="""async src=>{ const im=new Image(); im.src=src; await im.decode(); ARX.bbox=arBBox(im); ARX.bbKey=''; ARX.geo=null; ARX.prof=null; await arProfDetect(im); ARX.mesoLoc=null; await arMesoTpl();
- ARX.det.cid='c1'; ARX.nameSrc='직접'; const saved=[]; const sv=window.saveMeso; window.saveMeso=(c,i,s)=>{saved.push([c,i]); return true;}; const r=await arMesoNow(im); window.saveMeso=sv;
+ ARX.det.cid='c1'; ARX.nameSrc='직접'; ARX.nOkCid='c1'; ARX.nameOk=true; ARX.cidT=Date.now(); /* b436: 닉 확정 상태 (arNameTeach 와 같음) */ const saved=[]; const sv=window.saveMeso; window.saveMeso=(c,i,s)=>{saved.push([c,i]); return true;}; const r=await arMesoNow(im); window.saveMeso=sv;
  ARX.det.cid=''; ARX.nLock=null; ARX.nHist=[]; for(let i=0;i<30&&!ARX.det.cid;i++){ arNameWatch(im); await new Promise(r=>setTimeout(r,250)); } return {r, saved, cid:ARX.det.cid}; }"""
 LOCK="""()=>{ const T=1e6; ARX.det.cid=''; ARX.nLock=null; ARX.nSw=null; ARX.nDrop=null; ARX.blackEnd=0; ARX.blackLen=0;
  const o={}; arCidPut('c1',T,'t'); o.a=ARX.det.cid;

@@ -17,7 +17,7 @@ for d in ['data','ocr']: shutil.copytree(os.path.join(ROOT,d),os.path.join(site,
 PORT=_tutil.free_port(); srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=site,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 SETUP="""()=>{ const mk=(id,n)=>({id,name:n,level:280,job:'',world:'',ocid:'',accId:'',image:'',bosses:{},weekly:{},monthly:{},auto:{},drops:{},sync:{}}); S.characters=[mk('c1','홀드유웨이컵')]; S.meso={}; save(); }"""
 RUN="""async src=>{ const im=new Image(); im.src=src; await im.decode(); ARX.bbox=arBBox(im); ARX.bbKey=''; ARX.geo=null; ARX.prof=null; await arProfDetect(im); ARX.mesoLoc=null; ARX.mesoSus=null; ARX.mesoLast=null; ARX.mesoSaveT=0; ARX.mesoPend=null; await arMesoTpl();
- ARX.det.cid='c1'; ARX.nameSrc='직접'; const saved=[]; const sv=window.saveMeso; window.saveMeso=(c,i,s)=>{saved.push(i); return true;}; const out=[]; for(let i=0;i<4;i++){ out.push(await arMesoNow(im)); } window.saveMeso=sv;
+ ARX.det.cid='c1'; ARX.nameSrc='직접'; ARX.nOkCid='c1'; ARX.nameOk=true; ARX.cidT=Date.now(); /* b436: 닉 확정 상태 (arNameTeach 와 같음) */ const saved=[]; const sv=window.saveMeso; window.saveMeso=(c,i,s)=>{saved.push(i); return true;}; const out=[]; for(let i=0;i<4;i++){ out.push(await arMesoNow(im)); } window.saveMeso=sv;
  return {prof:ARX.prof&&ARX.prof.id, m:ARX.mesoLoc&&ARX.mesoLoc.inv&&ARX.mesoLoc.inv.m, saved, why:out.map(o=>o&&(o.why||'ok'))}; }"""
 CASES=[('b348/live_inv.jpg','1920 최적 실화면(원모님) — 인벤 ≈1.406배',337174797,1.40625,True),
        ('b348/live_inv_moved.jpg','1920 최적, 인벤 창 옮김',337174797,1.40625,True),

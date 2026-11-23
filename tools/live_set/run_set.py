@@ -70,6 +70,10 @@ PLAY = """async (src) => {
   ARX.testSrc = v;
   try { ARX.stream = v.captureStream(); } catch (e) { console.warn('captureStream', e); }
   window._allLog=[]; if(!window._arLogO){ window._arLogO=arLog; arLog=function(x){ try{ _allLog.push([+(v.currentTime||0).toFixed(2),String(x)]); }catch(e){} return window._arLogO(x); }; }
+  if (window.__forceDiff) { /* t586: LIVE_FORCE_DIFF — 보스가 잡힌 동안 인식 난이도를 이 값으로 고정 (난이도별 오기록 시험용) */
+    const F = window.__forceDiff, wrap = o => { if (!o || o.__fd) return o; let d = o.diff; Object.defineProperty(o, 'diff', {configurable:true, enumerable:true, get(){ return this.boss ? F : d; }, set(x){ d = x; }}); Object.defineProperty(o,'__fd',{value:1}); return o; };
+    let cur = wrap(ARX.det); Object.defineProperty(ARX, 'det', {configurable:true, get(){ return cur; }, set(o){ cur = wrap(o); }});
+  }
   arStart(v);
   const tab = document.querySelector('#tabs [data-tab="auto"]');
   if (tab) tab.click();
@@ -158,6 +162,7 @@ def main():
                 pg.wait_for_timeout(800)
                 pg.evaluate(SETUP.replace('__CHARS__', json.dumps(CHARS, ensure_ascii=False)))
                 pg.wait_for_timeout(200)
+                if os.environ.get('LIVE_FORCE_DIFF'): pg.evaluate('d=>{window.__forceDiff=d}', os.environ['LIVE_FORCE_DIFF'])
                 info = pg.evaluate(PLAY, f"/vids/{spec['file']}")
                 print('PLAY', info, flush=True)
                 timeline=[]
