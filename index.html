@@ -7150,7 +7150,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b436'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b437'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -10186,29 +10186,43 @@ function arMesoKey(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight|
    이제 여러 UI 배율(마지막으로 찾은 배율 → 프로필 배율 → 1·1.406·1.875·2·높이/768·프로필×1.406 등)로 찾고 가장 잘 맞는 배율을 칸 크기·창고 간격에 씀.
    처음(화면 키 바뀔 때)엔 전부 한 번, 그 뒤엔 마지막·프로필 배율 + 돌아가며 하나씩만(2초 간격 찾기라 가벼움). */
 function arMesoScales(s,G){ const o=[]; for(const v of [s,s*1.40625,s/1.40625,1,1.40625,1.875,2,G.gh/768,G.gh/768*1.40625]){ const x=+(+v).toFixed(4); if(x>=.7&&x<=3&&!o.some(y=>Math.abs(y-x)<.03)) o.push(x); } return o; }
+/* b437 (t638u '가끔 메소 대신 오른쪽 메이플포인트를 읽음'): 인벤 메소 칸 바로 오른쪽 메이플포인트 칸도 '동전 + 흰 칸' 모양이라 회색조 NCC 가 .84(기준 .8 넘음)로 맞음.
+ * 메소 칸이 잠깐 가려지면(아이템 설명창·마우스) 다시 찾기에서 포인트 칸이 1등 → 그 칸도 흰 바탕+숫자라 창이 안 움직이면 계속 그 자리(포인트)를 메소로 읽었음.
+ * 이제 모양 점수와 별도로 '동전 자리가 금색인지'(메소 동전 = 금색, 메이플포인트 = 회색 P)를 확인 — 금색 아니면 그 후보를 지우고 다음 후보를 찾음(최대 4번).
+ * 찾아 둔 자리를 계속 쓸 때도(arMesoLocate) 동전이 금색일 때만 유지. 해상도·UI 배율과 무관(템플릿 배율 m 기준 상대 위치). */
+const AR_MESOCOIN={inv:[5,9,12,13],stoInv:[18,11,14,13]}; /* 템플릿(UI 1배) 안 메소 동전 칸 x,y,w,h */
+function arMesoGold(src,x,y,m,k){ const b=AR_MESOCOIN[k]; if(!b) return 1; const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, X=Math.max(0,Math.round(x+b[0]*m)), Y=Math.max(0,Math.round(y+b[1]*m)), W=Math.max(2,Math.min(sw-X,Math.round(b[2]*m))), H=Math.max(2,Math.min(sh-Y,Math.round(b[3]*m))); if(W<1||H<1) return 0;
+  const c=ARX.mgc||(ARX.mgc=document.createElement('canvas')); c.width=W; c.height=H; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,X,Y,W,H,0,0,W,H); const d=g.getImageData(0,0,W,H).data; let n=0;
+  for(let i=0;i<d.length;i+=4){ const R=d[i],Gc=d[i+1],B=d[i+2]; if(R>=160&&R-B>=60&&Gc>=80) n++; } return n/(W*H); }
+function arMesoGoldOk(v){ return v>=(+ARX.cfg.mesoGoldThr||.2); }
+function arMesoGoldAt(src,k){ const L=ARX.mesoLoc, r=L&&L[k]; if(!r) return false; const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; return arMesoGoldOk(arMesoGold(src,r.x*sw,r.y*sh,r.m,k)); }
 function arMesoFind1(src,T,G,m){ const f=Math.max(1,m*1.5), W=Math.max(8,Math.round(G.gw/f)), H=Math.max(8,Math.round(G.gh/f)), c=ARX.mfc||(ARX.mfc=document.createElement('canvas')); c.width=W; c.height=H;
-  const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,G.gx,G.gy,G.gw,G.gh,0,0,W,H); const I=arGray(g,W,H), out={}, sums=arGraySums(I,W,H);
+  const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,G.gx,G.gy,G.gw,G.gh,0,0,W,H); const I0=arGray(g,W,H), out={rej:[]}, sums0=arGraySums(I0,W,H), fthr=+ARX.cfg.mesoFindThr||.8;
   for(const k of ['inv','stoInv']){ const im=T[k]; if(!im) continue; const tw=Math.max(4,Math.round(im.width*m/f)), th=Math.max(4,Math.round(im.height*m/f)); if(tw>=W||th>=H) continue;
     const tc=document.createElement('canvas'); tc.width=tw; tc.height=th; const tg=tc.getContext('2d',{willReadFrequently:true}); tg.drawImage(im,0,0,tw,th); const Tp=arGray(tg,tw,th), N=tw*th;
     let tm=0; for(const v of Tp) tm+=v; tm/=N; let tt=0, bi=0, bv=-1; for(let i=0;i<N;i++){ Tp[i]-=tm; tt+=Tp[i]*Tp[i]; if(Tp[i]>bv){ bv=Tp[i]; bi=i; } }
-    const bx=bi%tw, by=(bi/tw)|0, bright=tm+bv-40, fast=OrderedNcc.match(I,W,H,Tp,tw,th,sums,bx,by,bright,tt); let best=fast?fast.best:-1, bxy=fast?fast.xy:null; /* 템플릿에서 가장 밝은 점(흰 칸)이 화면에서도 밝은 곳만 비교 → 빠름 */
-    if(!fast) for(let y=0;y+th<=H;y++) for(let x=0;x+tw<=W;x++){ if(I[(y+by)*W+x+bx]<bright) continue; const z=y*sums.stride+x,z1=z+tw,z2=(y+th)*sums.stride+x,z3=z2+tw,b=sums.s[z3]-sums.s[z1]-sums.s[z2]+sums.s[z],cc=sums.q[z3]-sums.q[z1]-sums.q[z2]+sums.q[z]; let a=0; for(let j=0;j<th;j++){ const r=(y+j)*W+x, q=j*tw; for(let i=0;i<tw;i++){ const v=I[r+i]; a+=Tp[q+i]*v; } }
-      const vv=cc-b*b/N; if(vv>1e-6){ const n=a/Math.sqrt(vv*tt); if(n>best){ best=n; bxy=[x,y]; } } }
-    if(bxy) out[k]={x:G.gx+bxy[0]*f, y:G.gy+bxy[1]*f, sc:best, m}; }
+    const bx=bi%tw, by=(bi/tw)|0, bright=tm+bv-40; let I=I0, sums=sums0;
+    for(let tr=0;tr<4;tr++){ const fast=OrderedNcc.match(I,W,H,Tp,tw,th,sums,bx,by,bright,tt); let best=fast?fast.best:-1, bxy=fast?fast.xy:null; /* 템플릿에서 가장 밝은 점(흰 칸)이 화면에서도 밝은 곳만 비교 → 빠름 */
+      if(!fast) for(let y=0;y+th<=H;y++) for(let x=0;x+tw<=W;x++){ if(I[(y+by)*W+x+bx]<bright) continue; const z=y*sums.stride+x,z1=z+tw,z2=(y+th)*sums.stride+x,z3=z2+tw,b=sums.s[z3]-sums.s[z1]-sums.s[z2]+sums.s[z],cc=sums.q[z3]-sums.q[z1]-sums.q[z2]+sums.q[z]; let a=0; for(let j=0;j<th;j++){ const r=(y+j)*W+x, q=j*tw; for(let i=0;i<tw;i++){ const v=I[r+i]; a+=Tp[q+i]*v; } }
+        const vv=cc-b*b/N; if(vv>1e-6){ const n=a/Math.sqrt(vv*tt); if(n>best){ best=n; bxy=[x,y]; } } }
+      if(!bxy) break; const X=G.gx+bxy[0]*f, Y=G.gy+bxy[1]*f, gd=arMesoGold(src,X,Y,m,k);
+      if(arMesoGoldOk(gd)){ out[k]={x:X, y:Y, sc:best, m, gold:+gd.toFixed(2)}; break; }
+      out.rej.push({k,x:X,y:Y,w:im.width*m,h:im.height*m,sc:+best.toFixed(3),m,gold:+gd.toFixed(2)}); if(best<fthr) break; /* 금색 동전이 아님(메이플포인트 등) → 그 자리 지우고 다음 후보 */
+      if(I===I0) I=I0.slice(); for(let y=Math.max(0,bxy[1]-(th>>1));y<Math.min(H,bxy[1]+th);y++) for(let x=Math.max(0,bxy[0]-(tw>>1));x<Math.min(W,bxy[0]+tw);x++) I[y*W+x]=0; sums=arGraySums(I,W,H); } }
   return out; }
 function arMesoFind(src){ const T=ARX.mtpl; if(!T){ arMesoTpl(); return null; } const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, G=arGeom(sw,sh), s=ARX.prof?.s||G.s||1, t0=performance.now(), key=arMesoKey(src);
   const all=arMesoScales(s,G), thr=+ARX.cfg.mesoFindThr||.8; let order;
   if(ARX.mesoAllKey!==key){ ARX.mesoAllKey=key; order=all; } else { const rest=all.filter(x=>x!==s&&x!==ARX.mesoS); ARX.mesoRR=((ARX.mesoRR||0)+1)%Math.max(1,rest.length); order=[...new Set([ARX.mesoS,s,rest[ARX.mesoRR]].filter(x=>x>0))]; }
-  const best={}; for(const m of order){ const o=arMesoFind1(src,T,G,m); for(const k in o) if(!best[k]||o[k].sc>best[k].sc) best[k]=o[k]; if(best.inv&&best.inv.sc>=.93||best.stoInv&&best.stoInv.sc>=.93) break; }
+  const best={}, rej=[]; for(const m of order){ const o=arMesoFind1(src,T,G,m); for(const r of o.rej) if(r.sc>=thr) rej.push(r); for(const k of ['inv','stoInv']) if(o[k]&&(!best[k]||o[k].sc>best[k].sc)) best[k]=o[k]; if(best.inv&&best.inv.sc>=.93||best.stoInv&&best.stoInv.sc>=.93) break; }
   const out={}, P=ARX.prof?.base||AR_PROF[1];
   for(const k of ['inv','stoInv']){ const B=best[k]; if(!B||B.sc<thr) continue; const R=P[k]||AR_PROF[1][k]; out[k]={x:B.x,y:B.y,w:R[2]*B.m/P.s,h:R[3]*B.m/P.s,sc:+B.sc.toFixed(3),m:B.m}; }
   if(out.stoInv){ const R=P.sto, m=out.stoInv.m, d=(P.stoInv[0]-P.sto[0])*m/P.s; out.sto={x:out.stoInv.x-d,y:out.stoInv.y+(R[1]-P.stoInv[1])*m/P.s,w:R[2]*m/P.s,h:R[3]*m/P.s,sc:out.stoInv.sc,m}; }
   const fm=(out.stoInv||out.inv||{}).m; if(fm) ARX.mesoS=fm;
   const N2=r=>r&&({x:r.x/sw,y:r.y/sh,w:Math.min(r.w,sw-r.x)/sw,h:Math.min(r.h,sh-r.y)/sh,sc:r.sc,m:r.m});
-  ARX.mesoLoc={key,inv:N2(out.inv),sto:N2(out.sto),stoInv:N2(out.stoInv),ms:+(performance.now()-t0).toFixed(1),tried:order.length}; return ARX.mesoLoc; }
+  ARX.mesoLoc={key,inv:N2(out.inv),sto:N2(out.sto),stoInv:N2(out.stoInv),rej:rej.map(N2),ms:+(performance.now()-t0).toFixed(1),tried:order.length}; return ARX.mesoLoc; }
 /* 1초 판독 전에: 찾은 자리가 없거나 그 자리에서 칸이 안 보이면 (최소 2초 간격으로) 전체에서 다시 찾기 */
 function arMesoLocate(src,now){ now=now||Date.now(); const L=ARX.mesoLoc, key=arMesoKey(src);
-  const okAt=L&&L.key===key&&((L.stoInv&&L.sto&&arMesoPanel(src,'sto')&&arMesoPanel(src,'stoInv'))||(L.inv&&arMesoPanel(src,'inv')));
+  const okAt=L&&L.key===key&&((L.stoInv&&L.sto&&arMesoPanel(src,'sto')&&arMesoPanel(src,'stoInv')&&arMesoGoldAt(src,'stoInv'))||(L.inv&&arMesoPanel(src,'inv')&&arMesoGoldAt(src,'inv'))); /* b437: 동전이 금색일 때만 그 자리 유지 */
   if(okAt) return L; if(ARX.mesoLocT&&now-ARX.mesoLocT<(+ARX.cfg.mesoFindMs||2000)&&L&&L.key===key) return L; ARX.mesoLocT=now; return arMesoFind(src); }
 function arMesoPanel(src,k){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR(k,src); if(!sw||!sh||!r) return false; const cv=arCrop(src,sw,sh,{x:r.x+r.w*.18,y:r.y+r.h*.15,w:r.w*(k==='inv'?.5:.8),h:r.h*.7});
   const d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height).data; let wh=0,dk=0,n=d.length/4; for(let i=0;i<d.length;i+=4){ const lo=Math.min(d[i],d[i+1],d[i+2]), hi=Math.max(d[i],d[i+1],d[i+2]); if(lo>205) wh++; else if(hi<120) dk++; }
