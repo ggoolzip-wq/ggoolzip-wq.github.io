@@ -843,6 +843,16 @@ function arMesoSpan(src,k){ const sw=src.videoWidth||src.width, sh=src.videoHeig
   let e=end; while(e>1&&wf[e-1]<.15) e--; const edge=dk[Math.max(0,e-1)]||dk[Math.max(0,e-2)]; /* 칸 끝 바로 앞 세로줄에 글자 화소 = 잘림 */
   if(!seen||e<base*sw*.5) return {x:x0,w:base,edge:false}; /* 칸을 못 찾음 → 예전 고정 폭 */
   return {x:x0,w:Math.max(4,e)/sw,edge:!!edge&&end===W}; }
+/* b438 (t677u '메소 칸 일부를 마우스 커서가 가리면 가린 자리를 빼고 기록'): 1층 = 가림 감지. 메소 글자는 칸 가운데 가로 띠(칸 높이 .30~.80)에만 있음(실화면 1920·1366: 글자 어두운 화소가 이 띠 밖에 0개).
+ * 칸 안(흰 바탕) 띠 밖에 어두운 화소가 cfg.mesoOcclPx(4)개 넘으면 커서·설명창 조각 등 '글자가 아닌 것'이 칸을 덮은 것 → 읽지도 저장도 않고 보류(마지막 정상값 유지, 치워지면 바로 이어서 읽음). 해상도·UI 배율 무관(칸 높이 비율). */
+function arMesoOccl(src,k){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR(k,src); if(!sw||!sh||!r) return 0; const fx=r.x+r.w*.17, X0=Math.max(0,Math.round(fx*sw)), W=Math.min(sw-X0,Math.round(r.w*(k==='inv'?.53:.79)*.9*sw)), /* 글자 칸 고정 범위(arMesoSpan 끝 찾기는 세로로 긴 커서 선을 칸 끝으로 착각해 짧아짐) */ Y0=Math.round((r.y+r.h*.06)*sh), H=Math.min(sh,Math.round((r.y+r.h*.94)*sh))-Y0; if(W<8||H<4) return 0;
+  const c=ARX.msc2||(ARX.msc2=document.createElement('canvas')); c.width=W; c.height=H; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,X0,Y0,W,H,0,0,W,H); const d=g.getImageData(0,0,W,H).data, ya=Math.round((r.y+r.h*.30)*sh)-Y0, yb=Math.round((r.y+r.h*.80)*sh)-Y0; let n=0;
+  for(let y=0;y<H;y++){ if(y>=ya&&y<=yb) continue; for(let x=0;x<W;x++){ const i=(y*W+x)*4; if(Math.max(d[i],d[i+1],d[i+2])<120) n++; } } return n>=(+ARX.cfg.mesoOcclPx||4)?n:0; }
+/* b438 2층 = 직전 정상값 비교. 새로 읽은 값이 직전 저장값에서 '글자가 빠진 모양'(0이 아닌 자리묶음[조·억·만·일]을 차례로 놓았을 때 새 묶음이 옛 묶음의 일부 글자열)이면 가려진 읽기로 보고 보류
+ * (151억 7721만 4644 → 7721만 4644 / 151억 7721만 / 151억 4644 / 51억…). 진짜 변화일 수도 있으니 같은 값이 cfg.mesoDmgReads(8)번 연속 읽히면 받아들임. */
+function arMesoGroups(v){ return [Math.floor(v/1e12),Math.floor(v/1e8)%1e4,Math.floor(v/1e4)%1e4,v%1e4].map(String); }
+function arMesoDamaged(nv,ov){ if(nv==null||ov==null||nv>=ov) return false; /* 가려지면 글자가 빠지므로 값은 항상 작아짐 */ const A=arMesoGroups(nv).filter(x=>x!=='0'), B=arMesoGroups(ov).filter(x=>x!=='0'); if(!A.length) return false; const sub=(a,b)=>{ let j=0; for(const ch of b) if(j<a.length&&a[j]===ch) j++; return j===a.length; };
+  let j=0; for(const a of A){ while(j<B.length&&!sub(a,B[j])) j++; if(j>=B.length) return false; j++; } return A.join('').length<B.join('').length; }
 async function arMesoRead1(src,k,sc,thr){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, r=arR(k,src), sp=arMesoSpan(src,k); if(sp.edge) return {t:'',v:null,edge:1}; const cv=arCrop(src,sw,sh,{x:sp.x,y:r.y,w:sp.w,h:r.h},sc);
   const g=cv.getContext('2d',{willReadFrequently:true}), im=g.getImageData(0,0,cv.width,cv.height), d=im.data; for(let i=0;i<d.length;i+=4){ d[i]=255-d[i]; d[i+1]=255-d[i+1]; d[i+2]=255-d[i+2]; } g.putImageData(im,0,0); // 어두운 글자 → 밝게 (arOcr 는 밝은 글자용)
   const t=await arMesoOcr(cv,thr); return {t,v:arMesoParse(t)}; }
@@ -865,6 +875,7 @@ async function arMesoOcr(cv,thr){ await arMesoWLoad(); if(!ARX.ocrM) return arOc
 function arNameFresh(cid){ return !!(cid&&ARX.det.cid===cid&&ARX.nOkCid===cid&&ARX.nameOk&&(ARX.cidT||0)>=(ARX.nResetT||0)); }
 function arNameReset(now,why){ ARX.nameOk=false; ARX.nResetT=now; ARX.nResetWhy=why; }
 async function arMesoNow(src){ const cid0=ARX.det.cid; if(!cid0) return {why:'nocid'}; if(!ARX.nameOf&&!arNameFresh(cid0)) return {why:'nameWait',cid0}; /* b436: 닉 미확정이면 메소 읽기·저장 보류 */ if(!ARX.mtpl) await arMesoTpl(); arMesoLocate(src); const stoOpen=arMesoPanel(src,'sto')&&arMesoPanel(src,'stoInv'), invOpen=!stoOpen&&arMesoPanel(src,'inv'); if(!stoOpen&&!invOpen) return {why:'closed'};
+  { const oc=arMesoOccl(src,stoOpen?'stoInv':'inv')||(stoOpen?arMesoOccl(src,'sto'):0); if(oc){ ARX.mesoSus=null; return {why:'occluded',px:oc}; } } /* b438: 커서 등이 칸을 덮음 → 보류 */
   const a=await arMesoRead(src,stoOpen?'stoInv':'inv'), b=stoOpen?await arMesoRead(src,'sto'):null; if(a.v==null) return {why:'ocr',t:a.t};
   /* b351 (t657): 예전엔 이름 칸 전체(밝은 돌 배경 포함)를 다시 OCR 해 arDetectChar 와 같아야 저장 → 홀드유웨이컵 실화면은 '.280 900 아오 오우' 로 읽혀 영원히 why:'name'. 이제 고정된 캐릭터(det.cid/nLock)가 읽는 동안 그대로면 저장. nameOf: 테스트용 */
   const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height, cid1=ARX.nameOf?ARX.nameOf(await arOcr(arCrop(src,sw,sh,arR('name',src),arSc(sh,3,src)),150,1)):ARX.det.cid;
@@ -874,7 +885,8 @@ async function arMesoNow(src){ const cid0=ARX.det.cid; if(!cid0) return {why:'no
    * 신뢰도 낮은 판독만 다음 판독과 같으면 확정. (t550 '3번 연속 같은 값'은 사냥 중 메소가 계속 변하면 영영 저장 안 돼서 폐기) */
   const hi=a.hi&&(!b||b.hi), VK=cid0+'|'+res.inv+'|'+res.sto+'|'+res.src, Q=ARX.mesoSus;
   if(!hi){ if(Q&&Q.k===VK){ ARX.mesoSus=null; res.why2='recheck'; } else { ARX.mesoSus={k:VK}; return {...res,why:'suspect'}; } } else ARX.mesoSus=null;
-  arMesoSave(cid0,res.inv,res.sto,Date.now()); return res; }
+  { const G=ARX.mesoGood; if(G&&G.cid===cid0&&(arMesoDamaged(res.inv,G.inv)||(res.sto!=null&&arMesoDamaged(res.sto,G.sto)))){ const D=ARX.mesoDmg; if(D&&D.k===VK) D.n++; else ARX.mesoDmg={k:VK,n:1}; if(ARX.mesoDmg.n<(+ARX.cfg.mesoDmgReads||8)) return {...res,why:'damaged'}; } ARX.mesoDmg=null; } /* b438: 직전 정상값에서 글자가 빠진 모양 → 보류 */
+  ARX.mesoGood={cid:cid0,inv:res.inv,sto:res.sto}; arMesoSave(cid0,res.inv,res.sto,Date.now()); return res; }
 /* t554: 서버 호출 폭증 방지 — 값이 바뀌었을 때만, 최소 1분 간격으로 저장(그 사이 값은 보류했다가 다음 틱/연결 끊김 때 저장) */
 function arMesoSave(cid,inv,sto,now){ ARX.mesoPend={cid,inv,sto}; arMesoFlush(now); }
 function arMesoFlush(now,force){ const q=ARX.mesoPend; if(!q) return; if(!force&&ARX.mesoSaveT&&now-ARX.mesoSaveT<(+ARX.cfg.mesoSaveMs||60000)) return; ARX.mesoPend=null;
