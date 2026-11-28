@@ -11,12 +11,13 @@ site=tempfile.mkdtemp()
 for f in ['index.html','prices.json']: shutil.copy(os.path.join(ROOT,f),site)
 for d in ['data','ocr']: shutil.copytree(os.path.join(ROOT,d),os.path.join(site,d))
 PORT=_tutil.free_port(); srv=_tutil.Popen([sys.executable,'-m','http.server',str(PORT),'--bind','127.0.0.1'],cwd=site,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+# b441: 공중 기록은 '움직임'도 필요(test_b441_airmove.py) → 이 시험(확인 횟수 confirm)은 바닥 추적으로 셈
 T="""()=>{ const A=window.AR, P=[]; const o=window.arPick; window.arPick=(h,via)=>P.push(h.k+'/'+via); A.cfg.on=true; A.tracks=[]; const t=1e6;
  A.mapSt={boss:'seren',kind:'brw',diff:'hard'}; A.mapText='왕궁 메인홀 <하드>';
- arTrack([{k:'mitra',x:900,y:500,score:.9,air:true}],1080,t); const a=P.length;
- arTrack([{k:'mitra',x:930,y:520,score:.9,air:true}],1080,t+100); arTrack([{k:'mitra',x:950,y:510,score:.9,air:true}],1080,t+1500); const b=P.length;
+ arTrack([{k:'mitra',x:900,y:500,score:.9}],1080,t); const a=P.length;
+ arTrack([{k:'mitra',x:930,y:520,score:.9}],1080,t+100); arTrack([{k:'mitra',x:950,y:510,score:.9}],1080,t+1500); const b=P.length;
  arTrack([{k:'r_white',x:300,y:900,score:.9}],1080,t+1600); const c=P.length;
- A.mapText=''; arTrack([{k:'eye',x:500,y:500,score:.74,air:true}],1080,t+2000); const d=P.length; arTrack([{k:'eye',x:510,y:500,score:.74,air:true}],1080,t+2100); const e=P.length;
+ A.mapText=''; arTrack([{k:'eye',x:500,y:500,score:.74}],1080,t+2000); const d=P.length; arTrack([{k:'eye',x:510,y:500,score:.74}],1080,t+2100); const e=P.length;
  window.arPick=o; return {conf:A.cfg.confirm,a,b,c,d,e,P}; }"""
 try:
   with sync_playwright() as p:

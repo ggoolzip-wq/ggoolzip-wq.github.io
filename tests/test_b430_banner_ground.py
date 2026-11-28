@@ -18,7 +18,7 @@ GND="""async ([img])=>{ const im=new Image(); im.src='data:image/jpeg;base64,'+i
  const out=[]; for(const d of [true,false]){ const bmp=await createImageBitmap(im); const r=await arMatchRun({bmp},['g_life'],pxs,o(d)); const h=(r.hits||[]).sort((a,b)=>b.score-a.score)[0]; out.push(h?[+h.score.toFixed(3),+(h.sad||0).toFixed(1)]:null); } return out; }"""
 SOFT="""()=>{ const on=ARX.cfg.on; ARX.cfg.on=false; const t0=1e6, H=(x,y,sad)=>({k:'r_white',x,y,w:56,h:56,score:.76,sad,air:true});
  const mk=h=>(h.ok=h.sad<=ARX.cfg.airSad,h.soft=!h.ok&&arAirSoft(h),h); const run=seq=>{ ARX.tracks=[]; let n=0; for(const [h,t] of seq){ const H2=mk(h); if(H2.ok||H2.soft) n+=arTrack([H2],720,t).length; } return n; };
- const r={moving:run([[H(600,300,43),t0],[H(612,240,44),t0+170]]), single:run([[H(600,300,43),t0]]), still:run([[H(600,300,43),t0],[H(601,300,43),t0+170]]), toohigh:run([[H(600,300,49),t0],[H(612,240,49),t0+170]])};
+ const r={moving:run([[H(600,300,43),t0],[H(612,240,44),t0+170]]), strongMoving:run([[H(600,300,38),t0],[H(612,240,44),t0+170]]), single:run([[H(600,300,43),t0]]), still:run([[H(600,300,43),t0],[H(601,300,43),t0+170]]), toohigh:run([[H(600,300,49),t0],[H(612,240,49),t0+170]])};
  ARX.cfg.on=on; return r; }"""
 try:
  with sync_playwright() as p:
@@ -34,7 +34,7 @@ try:
   check('w01 바닥 연마석: 인벤 아이콘으론 groundThr 아래 (못 보던 원인)',g[1] is None or g[1][0]<pg.evaluate('ARX.cfg.groundThr'),g)
   check('바닥 칸이 드롭 그림을 씀 (arItemScan drop)',pg.evaluate("()=>/drop:ARX\\.cfg\\.groundDropSpr!==false/.test(arItemScan.toString())"),'')
   s=pg.evaluate(SOFT)
-  check('약한 맞춤: 2번+움직임 → 1건, 한 장·제자리·색차 46 초과 → 0건',s=={'moving':1,'single':0,'still':0,'toohigh':0},s)
+  check('약한 맞춤(b441): 약한 맞춤만 2번+움직임 → 0건(혼자 기록 못 함), 확실한 맞춤+약한 맞춤 움직임 → 1건, 한 장·제자리·색차 46 초과 → 0건',s=={'moving':0,'strongMoving':1,'single':0,'still':0,'toohigh':0},s)
   check('빌드 b430 이상',pg.evaluate("document.documentElement.dataset.build||document.body.dataset.build||''")>='b430',pg.evaluate("document.documentElement.dataset.build||document.body.dataset.build||''"))
   b.close()
 finally: srv.terminate()

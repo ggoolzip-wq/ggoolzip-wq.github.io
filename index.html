@@ -7150,7 +7150,7 @@ function applyData(d){
  *  시작
  * ===================================================================== */
 /* b217: 시작 렌더 보호 — 렌더 오류로 스크립트가 멈추면 body.html 의 빈 뼈대(예전 헤더 문구·빈 칸)만 남았음 */
-document.documentElement.dataset.build='b440'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
+document.documentElement.dataset.build='b441'; // 배포 확인용 (개발자 도구: document.documentElement.dataset.build)
 function bootRender(where){ try{ render(); }catch(e){ console.error('render@'+where,e); } try{ gdRender(); }catch(e){ console.error('gdRender@'+where,e); } }
 $('#jobList').innerHTML=JOBS.map(j=>`<option value="${j}">`).join('');
 $('#worldList').innerHTML=WORLDS.map(j=>`<option value="${j}">`).join('');
@@ -9841,10 +9841,14 @@ function arNeed(){ const c=ARX.cfg.confirm||1; if(c>=2) return c; const M=ARX.ma
 /* 추적: 같은 아이템이 비슷한 자리(바닥 80px·공중 250px, 1080p 기준)에 2.5초 안에 다시 보이면 같은 것 → confirm 번 보이면 1번 기록 */
 function arTrack(hits,sh,now){ now=now||Date.now(); const k1=sh/1080; ARX.tracks=(ARX.tracks||[]).filter(t=>now-t.t<5000); const rec=[];
   for(const h of hits){ const R=(h.air?250:80)*k1; let t=ARX.tracks.find(t=>t.k===h.k&&now-t.t<2500&&Math.hypot(t.x-h.x,t.y-h.y)<R);
-    if(!t){ t={k:h.k,x:h.x,y:h.y,t:now,n:0,done:false,air:!!h.air}; ARX.tracks.push(t); } t.x=h.x; t.y=h.y; t.t=now; if(h.soft){ (t.sp=t.sp||[]).push([h.x,h.y,now]); } else t.n++; t.s=Math.max(t.s||0,h.score);
-    /* b429: 약한 맞춤(색 차이 40~46)은 다른 시각 2번 이상 + 그 사이 움직임(1080 기준 8px 이상)일 때만 = 날아가는 진짜 아이템. 한 장짜리 이펙트·제자리 배경은 안 됨 */
-    const sv=t.sp&&t.sp.length>=2&&new Set(t.sp.map(p=>p[2])).size>=2&&t.sp.some(p=>t.sp.some(q=>Math.hypot(p[0]-q[0],p[1]-q[1])>=8*k1));
-    if(!t.done&&(t.n>=arNeed()||sv)){ t.done=true; rec.push(t); if(ARX.cfg.on) arPick(Object.assign({},h,{score:t.s}),h.air?'공중':'바닥'); } }
+    if(!t){ t={k:h.k,x:h.x,y:h.y,t:now,n:0,done:false,air:!!h.air}; ARX.tracks.push(t); } t.x=h.x; t.y=h.y; t.t=now; if(h.soft){ (t.sp=t.sp||[]).push([h.x,h.y,now]); } else { t.n++; (t.op=t.op||[]).push([h.x,h.y,now]); } t.s=Math.max(t.s||0,h.score);
+    /* b429: 약한 맞춤(색 차이 40~46)은 한 장짜리 이펙트·제자리 배경을 막으려고 다른 시각 2번 이상 + 움직임일 때만 기록했음.
+       b441 (t705u 진힐라 '고근' 오기록): 진힐라 맵의 연두색 빛(석상·바닥 이펙트)이 고근과 .72~.77·색 차이 43~50 으로 맞고, 빛이 출렁이며 자리가 바뀌어 약한 맞춤 2번 + 움직임 = 기록이 됨.
+       → 공중(회전 검사) 기록은 모든 보스·아이템 공통으로 ① 기준 넘은 '확실한 맞춤'(airThr·airSad) arNeed()번 이상 + ② 다른 시각 2번 이상 + 그 사이 움직임(1080 기준 airMovePx, 기본 20px)
+       약한 맞춤은 ②의 움직임 근거로만 쓰고 혼자서는 기록 못 함. 실제 공중 아이템(세트 6건)은 확실한 맞춤 2~4번·이동 58~427px 이라 그대로. 바닥(제자리가 정상)은 그대로. cfg.airMove=false 면 예전 규칙. */
+    const mv=(L,px)=>L&&L.length>=2&&new Set(L.map(p=>p[2])).size>=2&&L.some(p=>L.some(q=>Math.hypot(p[0]-q[0],p[1]-q[1])>=px*k1));
+    const okN=!t.air?t.n>=arNeed():ARX.cfg.airMove===false?(t.n>=arNeed()||mv(t.sp,8)):(t.n>=arNeed()&&mv((t.op||[]).concat(t.sp||[]),ARX.cfg.airMovePx??20));
+    if(!t.done&&okN){ t.done=true; rec.push(t); if(ARX.cfg.on) arPick(Object.assign({},h,{score:t.s}),h.air?'공중':'바닥'); } }
   return rec; }
 /* OCR (연결할 때만 ./ocr/ 에서 불러옴, 다른 곳으로 보내지 않음) */
 /* b296: 이름·미니맵 감시 전용 두 번째 워커 — 로그 OCR(초당 6번) 뒤에 줄 서지 않게 */
