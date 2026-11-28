@@ -16,7 +16,7 @@ BAN="""async ([img,px])=>{ const im=new Image(); im.src='data:image/png;base64,'
  const r=await arMatchRun({bmp},['r_white'],[px],{thr:.3}); let b=0; for(const h of r.hits||[]) b=Math.max(b,h.score); return +b.toFixed(3); }"""
 GND="""async ([img])=>{ const im=new Image(); im.src='data:image/jpeg;base64,'+img; await im.decode(); const pxs=arGroundPx(720), o=d=>({multi:true,tiles:true,sad:ARX.cfg.groundSad,thr:.3,f:Math.max(2,Math.round(pxs[1]/9)),angles:[0],sq:[1],pxs,drop:d});
  const out=[]; for(const d of [true,false]){ const bmp=await createImageBitmap(im); const r=await arMatchRun({bmp},['g_life'],pxs,o(d)); const h=(r.hits||[]).sort((a,b)=>b.score-a.score)[0]; out.push(h?[+h.score.toFixed(3),+(h.sad||0).toFixed(1)]:null); } return out; }"""
-SOFT="""()=>{ const on=ARX.cfg.on; ARX.cfg.on=false; const t0=1e6, H=(x,y,sad)=>({k:'r_white',x,y,w:56,h:56,score:.76,sad,air:true});
+SOFT="""()=>{ const on=ARX.cfg.on; ARX.cfg.on=false; ARX.mapSt={boss:'bellona',kind:'r',diff:'easy'}; ARX.mapText='보상 맵'; /* b441: 보상 맵(확인 1번) 기준 */ const t0=1e6, H=(x,y,sad)=>({k:'r_white',x,y,w:56,h:56,score:.76,sad,air:true});
  const mk=h=>(h.ok=h.sad<=ARX.cfg.airSad,h.soft=!h.ok&&arAirSoft(h),h); const run=seq=>{ ARX.tracks=[]; let n=0; for(const [h,t] of seq){ const H2=mk(h); if(H2.ok||H2.soft) n+=arTrack([H2],720,t).length; } return n; };
  const r={moving:run([[H(600,300,43),t0],[H(612,240,44),t0+170]]), strongMoving:run([[H(600,300,38),t0],[H(612,240,44),t0+170]]), single:run([[H(600,300,43),t0]]), still:run([[H(600,300,43),t0],[H(601,300,43),t0+170]]), toohigh:run([[H(600,300,49),t0],[H(612,240,49),t0+170]])};
  ARX.cfg.on=on; return r; }"""
