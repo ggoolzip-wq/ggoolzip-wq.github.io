@@ -52,6 +52,8 @@ const AR_DEF={on:true, nameTpl:true, /* t603: 투표로 확정된 닉네임만 �
   nameThr:.5, mapAlias:{}, cid:'', boss:''};
 /* b291 (사용자 규칙): 보스 보상 맵 18개만 읽음 — 미니맵이 이 맵 이름(+ <난이도>)일 때만 보스를 정하고 아이템을 인식.
    입구·전투 맵·마을 등 다른 맵은 전부 무시 (보스 안 바꿈, 기록 안 함). 근거: /workspace/b287/boss_maps.md */
+/* b442 (t708u): 자쿰·피에르·반반·블러디퀸·벨룸·매그너스·파풀라투스는 보상 맵 자동 인식 대상 아님 — 인식기(후보·수동 보스·맵 등록·기록)에서만 뺌. 보스 현황·수동 기록·수익·드롭표(app.js)·기존 기록은 그대로 */
+const AR_SKIP=new Set(['zakum','pierre','vonbon','queen','vellum','magnus','papulatus']), arBossOn=id=>!!id&&!AR_SKIP.has(id);
 const AR_REWARD=[['고요해진함선','lotus'],['세계수정상','damien'],['고요한제단','slime'],['악몽의시계탑','lucid'],['바스러지는빛','will'],['공허의눈','dusk'],
   ['욕망의제단','jinhilla'],['끝에가까운곳','dunkel'],['존재하지않는공간','blackmage'],['왕궁메인홀','seren'],['카로테마천루','kalos'],['의지가증명된자리','adversary'],
   ['빛을되찾은사계','kaling'],['잠든환상','star'],['솔라툼의유산','bellona'],['해방된나무정상','limbo'],['폭풍이사그라든여명','baldrix'],['적막한용광로','jupiter']];
@@ -114,7 +116,7 @@ function arDetectBoss(text){ if(!arNorm(text)) return null; { const T=arDetectBM
     const diffOf=b=>{ for(const [w,k] of AR_DIFFW) if(t.includes(w)&&b.diffs.includes(k)) return k; // '<미지>'(이지)·'<노말>' 같은 OCR 변형 → 괄호 안을 자모로 비교
       const m=L.match(/<\s*([^<>]{1,6})\s*>?\s*$/)||L.match(/<\s*([^<>]{1,6})\s*>/); if(!m) return ''; let best=null;
       for(const [w,k] of AR_DIFFW){ if(!b.diffs.includes(k)) continue; const s=arSimJ(m[1],w); if(s>=.6&&(!best||s>best.s)) best={k,s}; } return best?best.k:''; };
-    for(const [k,v] of Object.entries(ARX.cfg.mapAlias||{})) if(arSim(t,k)>=.8){ return {boss:v.boss,diff:v.diff,src:'맵 등록'}; }
+    for(const [k,v] of Object.entries(ARX.cfg.mapAlias||{})) if(arSim(t,k)>=.8&&arBossOn(v.boss)){ return {boss:v.boss,diff:v.diff,src:'맵 등록'}; }
     for(const [m,id] of AR_REWARD) if(arSim(t,m)>=.8||arSimJ(t,m)>=.85){ const b=findBoss(id); if(b) return {boss:id,diff:diffOf(b),src:'보상 맵'}; } }
   return null; }
 /* b375 (t407u): 이름 앞 숫자(2터래플) — 한글만 비교하면 '2터래플'과 '터래플'이 같은 글자가 되어 목록의 터래플로 잡혔음(숫자 이름은 OCR 투표에서 아예 빠짐).
@@ -140,12 +142,12 @@ function arLatChar(text){ const fx=x=>String(x||'').toLowerCase().replace(/[1|!]
 /* 지금 기록 대상 (인식 우선, 실패하면 수동 선택) */
 function arTarget(){ if(arLive()&&!ARX.det.cid) return null; /* t551: 화면 공유 중 인식된 캐릭터가 목록에 없으면(또는 아직 모르면) 기록 대상 없음 — 이전·수동 캐릭터로 넘어가지 않음 */
   const c=S.characters.find(x=>x.id===(ARX.det.cid||ARX.cfg.cid))||activeChar(); if(!c) return null;
-  const bid=ARX.det.boss||ARX.cfg.boss; const b=bid?findBoss(bid):null; return {c,b,diff:b?((ARX.det.boss===b.id&&ARX.det.diff)||c.bosses?.[b.id]?.diff||b.diffs[0]):''}; }
+  const bid=ARX.det.boss||(arBossOn(ARX.cfg.boss)?ARX.cfg.boss:''); const b=arBossOn(bid)?findBoss(bid):null; return {c,b,diff:b?((ARX.det.boss===b.id&&ARX.det.diff)||c.bosses?.[b.id]?.diff||b.diffs[0]):''}; }
 const AR_REWX=['ipc','ipcm','mc_b','mc_g','mc_s']; /* t625: 사용자 요청 '잡다한 아이템은 필요없고 드랍 테이블 아이템만' → 기본은 안 찾음(cfg.rewx=true 일 때만) */ // t619: 보상 인식 중엔 드롭 표 + 결정석·큐브 전부
 function arCandidates(withE){ if(arLive()&&ARX.rwl?.mapOnly&&!ARX.det.diff) return []; let o=arCandidates0(withE); if(!(withE&&ARX.rwl&&(o.length||arLive()))) return o; /* 공중 검사만 — 바닥은 혼자면 곧 자동 줍기, 같은 워커라 공중을 늦춤 */ o=o.filter(c=>!/^(emo_|dif_)/.test(c.k)); const b=o[0]?.b||null; if(ARX.cfg.rewx===true) for(const k of AR_REWX) if(ITEM_ICONS[k]&&!o.some(c=>c.k===k)) o.push({k,b,info:false,rew:true}); return o; }
 /* b401: 화면 연결 중 보스 없음 = 후보 없음. 이동 직후 남은 공중 틱이 전 보스 후보를 훑지 않게. */
 function arCandidates0(withE){ if(arLive()&&(!ARX.det.boss||(ARX.rwl?.mapOnly&&!ARX.det.diff))) return []; const t=arTarget(); if(!t){ /* t613: 보상 인식 중인데 캐릭터 아직 모름 → 보스 드롭으로 찾기만 하고 기록은 보류(arRecord) */ if(!(arLive()&&ARX.rwl&&ARX.det.boss)) return []; const b=findBoss(ARX.det.boss); if(!b) return []; const out=[]; for(const d of (ARX.det.diff?[ARX.det.diff]:b.diffs)) for(const k of dropsFor(b,d)) if(ITEM_ICONS[k]&&!out.some(o=>o.k===k)) out.push({k,b,info:false}); return out; }
-  const list=t.b?[[t.b,t.diff]]:BOSSES.filter(b=>t.c.bosses?.[b.id]?.enabled).flatMap(b=>t.c.bosses[b.id].diff?[[b,t.c.bosses[b.id].diff]]:b.diffs.map(d=>[b,d])); // b285: 난이도 안 정한 보스는 모든 난이도
+  const list=t.b?[[t.b,t.diff]]:BOSSES.filter(b=>arBossOn(b.id)&&t.c.bosses?.[b.id]?.enabled).flatMap(b=>t.c.bosses[b.id].diff?[[b,t.c.bosses[b.id].diff]]:b.diffs.map(d=>[b,d])); // b285: 난이도 안 정한 보스는 모든 난이도
   const out=[]; for(const [b,d] of list) for(const k of dropsFor(b,d)) if(ITEM_ICONS[k]) out.push({k,b,info:false}); // b288 사용자 규칙: 대시보드 드롭 표에서 수익 기록되는 것만 (앱솔·아케인 상자·에테르넬 조각 등 정보용은 아예 안 찾음)
   return out; }
 
@@ -765,7 +767,7 @@ function arBoxHit(best,now,src){
   ARX.box={boss,key:best.k,t:now,score:best.sc}; if(!ARX.rew){ let h=null; try{ h=arMapHash(src); }catch(e){} ARX.rew={hash:h,t:now,n:0,boss}; } /* t580: 보상 맵+상자 → 배너·공중 감시 켬 (맵 이름 칸 그림이 바뀔 때까지 유지) */ ARX.det.boss=boss; ARX.det.diff=m; ARX.det.diffSrc=m?'맵 이름':'캐릭터 설정'; ARX.det.src='보상 상자'; ARX.detT=now; arClrFinish(boss,m||ARX.det.diff,now); arLockTry(src,boss,now);
   arLog(`보상 상자 감지: ${b?.name||boss} (${best.sc.toFixed(2)}${best.via?' '+best.via:''}) → 현재 보스로 정하고 아이템 기록 시작${m?' · 난이도 '+({easy:'이지',normal:'노멀',hard:'하드',chaos:'카오스',extreme:'익스트림'}[m]||m)+' (맵 이름)':' · 난이도는 캐릭터 설정'}`); }
 function arPendFlush(){ const P=ARX.recPend; if(!P||!P.length||!ARX.det.cid||!S.characters.some(c=>c.id===ARX.det.cid)) return; ARX.recPend=[]; for(const x of P){ if(x.boss!==ARX.det.boss) continue; arLog(`보류 득템 → ${S.characters.find(c=>c.id===ARX.det.cid).name}`); arRecord(x.item,x.score,x.via+' 보류',x.n); } }
-function arRecord(item,score,via='',n=1){ if(!ARX.det.boss) return; if(!arBoxOk()){ if(!ARX.noBoxT||Date.now()-ARX.noBoxT>5000){ ARX.noBoxT=Date.now(); arLog(`보상 상자 확인 전이라 기록 안 함: ${ITEMS[item]?.n||item} [${via}]`); } return; } /* b300 */ /* b291: 보상 맵에서 보스를 읽었을 때만 기록 */ const t=arTarget(); if(!t){ /* t613: 캐릭터 확정 전 보상 맵 득템 → 보류, 목록과 정확히 일치하는 캐릭터가 확정되면 그 캐릭터로 기록 (다른 캐릭터로 대신하지 않음) */ if(arLive()&&ARX.rwl&&arCandidates(true).some(c=>c.k===item)){ const P=ARX.recPend=ARX.recPend||[]; if(!P.some(x=>x.item===item&&x.boss===ARX.det.boss)){ P.push({item,score,via,n,boss:ARX.det.boss,t:Date.now()}); arLog(`캐릭터 확인 전 득템 보류: ${ITEMS[item]?.n||item} [${via}]`); } } return; } const C=arCandidates(true).filter(c=>c.k===item); if(!C.length) return;
+function arRecord(item,score,via='',n=1){ if(!ARX.det.boss||!arBossOn(ARX.det.boss)) return; if(!arBoxOk()){ if(!ARX.noBoxT||Date.now()-ARX.noBoxT>5000){ ARX.noBoxT=Date.now(); arLog(`보상 상자 확인 전이라 기록 안 함: ${ITEMS[item]?.n||item} [${via}]`); } return; } /* b300 */ /* b291: 보상 맵에서 보스를 읽었을 때만 기록 */ const t=arTarget(); if(!t){ /* t613: 캐릭터 확정 전 보상 맵 득템 → 보류, 목록과 정확히 일치하는 캐릭터가 확정되면 그 캐릭터로 기록 (다른 캐릭터로 대신하지 않음) */ if(arLive()&&ARX.rwl&&arCandidates(true).some(c=>c.k===item)){ const P=ARX.recPend=ARX.recPend||[]; if(!P.some(x=>x.item===item&&x.boss===ARX.det.boss)){ P.push({item,score,via,n,boss:ARX.det.boss,t:Date.now()}); arLog(`캐릭터 확인 전 득템 보류: ${ITEMS[item]?.n||item} [${via}]`); } } return; } const C=arCandidates(true).filter(c=>c.k===item); if(!C.length) return;
   const b=C.find(c=>t.c.weekly?.[c.b.id]===false)?.b||C[0].b, key=b.id+'|'+item, now=Date.now();
   if(ARX.recent[key]&&now-ARX.recent[key]<ARX.cfg.dedupSec*1000){ if(via) ARX.recentVia[key]=(ARX.recentVia[key]||'')+'+'+via; return; } ARX.recent[key]=now; ARX.recentVia[key]=via;
   if(C.find(c=>c.b===b)?.info){ arLog(`획득 감지(정보 칩, 기록 안 함): ${ITEMS[item]?.n} · ${b.name}${n>1?' ×'+n:''} [${via}]`); ARX.infoSeen=(ARX.infoSeen||[]).concat(key); arPanelPaint(); return; }
@@ -1403,7 +1405,7 @@ function arPanelPaint(){ const p=$('#arPanel'); if(!p||p.hidden) return; const c
     ${R.length?`<ul class="ar-recl">${R.map(r=>`<li>${ITEM_ICONS[r.k]?`<img src="${ITEM_ICONS[r.k]}" alt="">`:''}<span><b>${esc(ITEMS[r.k]?.n||r.k)}</b><small class="muted">${esc(r.b)} · ${esc(r.c)}</small></span><time>${r.t}</time></li>`).join('')}</ul>`:'<div class="muted ar-empty">아직 기록 없음<small>연결 후 인식된 아이템이 여기에 표시돼요.</small></div>'}`);
   arSetH(q('.ar-cset .ar-b'),`<details class="ar-dbg"><summary>수동 선택 · 조정 · 디버그</summary>
     <div class="ar-row"><select name="cid" aria-label="수동 캐릭터"><option value="">(수동) 캐릭터: 현재 선택</option>${S.characters.map(x=>`<option value="${esc(x.id)}" ${x.id===c.cid?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
-    <select name="boss" aria-label="수동 보스"><option value="">(수동) 보스: 자동</option>${BOSSES.filter(b=>DROPS[b.id]||Object.values(RING_DROPS).some(m=>m[b.id])).map(b=>`<option value="${b.id}" ${b.id===c.boss?'selected':''}>${esc(b.name)}</option>`).join('')}</select></div>
+    <select name="boss" aria-label="수동 보스"><option value="">(수동) 보스: 자동</option>${BOSSES.filter(b=>arBossOn(b.id)&&(DROPS[b.id]||Object.values(RING_DROPS).some(m=>m[b.id]))).map(b=>`<option value="${b.id}" ${b.id===c.boss?'selected':''}>${esc(b.name)}</option>`).join('')}</select></div>
     <div class="ar-grid">${[['thr','아이콘 일치 기준',.5,1,.01],['groundThr','바닥 아이콘 기준',.5,1,.01],['itemFps','바닥 찾기(회/초)',.2,5,.2],['iconPx','아이콘 크기(px, 0=자동)',0,64,1],['logFps','로그 읽기(회/초)',1,6,1],['ds','대략 찾기 축소',1,8,1],['confirm','연속 프레임',1,5,1],['fps','초당 프레임',1,4,1],['dedupSec','중복 막기(초)',10,600,10]].map(([n,l,a,b,s])=>`<label>${l}<input type="number" name="${n}" min="${a}" max="${b}" step="${s}" value="${c[n]}"></label>`).join('')}</div>
     <label class="ar-sw"><input type="checkbox" name="air" ${c.air?'checked':''}> 공중 아이템(회전)도 찾기</label>
     <div>맵 OCR: <code>${esc(ARX.mapText||'-')}</code> ${ARX.cfg.boss&&ARX.mapText?'<button type="button" class="btn sm" data-ar="bindmap">이 맵 = 선택한 보스로 등록</button>':''}</div>
