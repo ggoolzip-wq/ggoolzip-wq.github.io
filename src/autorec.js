@@ -652,14 +652,29 @@ function arRewOn(){ return ARX.cfg.rewGate===false||!!ARX.rew; }
       0.2초 넘게 2번, 약한 근거(발 부분 누적·배경 — 세렌·칼로스·윌·듄켈 실제 보상도 이것뿐인 경우 있음)는 0.7초 넘게 3번, 사이 끊김 0.4초 이하.
       한 틱 번쩍이는 오감지는 진입 못 함. 보상 전용 이름(r)은 예전처럼 0.1초·1번.
    ③ 보상 인식이 풀린 뒤 15초 안 같은 보스 재진입은 맵 종류와 상관없이 ②의 엄격한 확인(깜빡임 반복 원천 차단). */
-const AR_BOX_SHARED_MS=250, AR_BOX_CONF_N=2, AR_BOX_CONF_GAP=200, AR_BOX_CONF_GAPMAX=400, AR_BOX_WEAK_MS=700, AR_BOX_CONF_WIN=1000, AR_REW_FLAP_MS=15000;
+/* b439 (t679u 듄켈 보상상자가 보이는데도 미인식): 상자가 캐릭터·이펙트 때문에 '온전히(≥문턱 .75)' 보이는 시간이 0.2~0.3초뿐인 보상 맵이 있다(듄켈 y19 실측: 상자 .80~.86 이 0.21초, 이어서 초록 선택 테두리·가림으로 .62~.69 가 0.3초 더).
+   전투·보상 공용 맵의 확인(arBoxGate)은 온전한 그림 2번 + 0.2초 이상을 요구해 틱 2~3번 안에 끝나야 했고, 처음 후보를 찾는 틱도 0.25초 간격이라 통째로 놓치기도 했다(같은 영상 3번 중 1번만 인식).
+   ① 문턱 바로 아래(문턱-.1, 절반 가림 감점과 같음) 점수는 '가까이 닮음' → 그것만으론 후보를 만들지 않고 검사 간격만 0.1초로 당겨 이어지는 프레임을 놓치지 않음.
+   ② 이미 온전한 그림 후보(strong)가 있고 같은 상자가 0.4초 안에 이어서 문턱-.1 이상이면 '이어짐'으로 셈 — 이어짐이 끼어도 2번 이상·0.15초 이상(온전 1 + 이어짐 1)(문턱 .75 자체와 첫 후보 조건은 그대로).
+   ③ 후보 확인 시간 0.2→0.15초(AR_BOX_CONF_GAP): 인식 틱이 0.1초 간격이라 두 번 다 온전하면 서로 다른 프레임 — 한 프레임 번쩍임(16~50ms)은 여전히 못 들어옴. */
+const AR_BOX_NEAR_PEN=.1, AR_BOX_CONT_N=2, AR_BOX_BURST_MS=500, AR_BOX_BURST_STEP=40;
+/* b439 ④ 온전한 그림 후보가 막 생겼을 때만(공용 맵에서 한 번 ≥문턱) 0.5초 동안 새 프레임이 올 때마다(40ms~) 같은 상자를 바로 다시 잰다 — 인식 틱(0.1초+처리 시간)만 기다리면 0.2초뿐인 상자가 틱 사이로 빠짐.
+   프레임이 안 바뀌면(같은 비트맵·같은 시각) 세지 않음 → 한 프레임을 두 번 세는 일 없음. 연속 2번 문턱-.1 미만이면 바로 중단. 평소(후보 없음) 비용은 0. */
+function arBoxFrameId(s){ return s&&s.arSnap?s:(s&&s.currentTime); }
+async function arBoxBurst(k,RM){ const t0=Date.now(), wait=ARX.burstWait||(ms=>new Promise(r=>setTimeout(r,ms))); let id0=arBoxFrameId(arSrc()), miss=0, n=0;
+  while(Date.now()-t0<AR_BOX_BURST_MS){ await wait(AR_BOX_BURST_STEP); const s=arSrc(); if(!s) return null; const id=arBoxFrameId(s); if(id===id0) continue; id0=id; n++;
+    ARX.boxFootSc=0; const sc=await arBoxScore(s,k), now=Date.now(), thr=AR_BOX[k].thr; ARX.boxBurstN=(ARX.boxBurstN||0)+1;
+    const b=sc>=thr?{k,sc}:(sc>=thr-AR_BOX_NEAR_PEN?{k,sc,cont:true}:null); if(!b){ if(++miss>=2) return null; continue; } miss=0; ARX.boxLast=[k,+sc.toFixed(3)]; if(arBoxGate(b,now,RM)) return b; }
+  return null; }
+const AR_BOX_SHARED_MS=150, AR_BOX_CONF_N=2, AR_BOX_CONF_GAP=150, AR_BOX_CONF_GAPMAX=400, AR_BOX_WEAK_MS=700, AR_BOX_CONF_WIN=1000, AR_REW_FLAP_MS=15000;
 function arRewMap(now){ const M=ARX.mapSt; if(!M) return null; return M.kind.includes('r')?M:null; }
 function arRewStrict(M,now){ const F=ARX.rewOff; return !M||M.kind!=='r'||!!(F&&F.boss===M.boss&&now-F.t<AR_REW_FLAP_MS); }
 function arBoxGate(best,now,M){ ARX.gateN=(ARX.gateN||0)+1; if(!arRewStrict(M,now)) return true; if(arShared(M)&&arFightOn(M,now)){ ARX.boxCand=null; ARX.fightBlk=(ARX.fightBlk||0)+1; if(!ARX.fight.blkLog){ ARX.fight.blkLog=1; try{ arLog(`상자 후보(${best.k} ${(+best.sc).toFixed(2)}${best.via?' '+best.via:''}) — 보스 체력바(전투) 중이라 보상 진입 안 함`); }catch(e){} } return false; } /* b433 */
-  const strong=!best.via||best.via==='메시지'; let C=ARX.boxCand;
+  const strong=(!best.via||best.via==='메시지')&&!best.cont; let C=ARX.boxCand;
+  if(best.cont&&(!C||C.k!==best.k||!C.st||now-C.t>AR_BOX_CONF_GAPMAX)) return false; /* b439: 이어짐은 이미 있는 온전한 그림 후보에만 붙음 (혼자서는 후보가 못 됨) */
   if(!C||C.k!==best.k||now-C.t>AR_BOX_CONF_GAPMAX) C=ARX.boxCand={k:best.k,t0:now,t:now,n:1,st:strong}; /* 사이가 0.4초 넘게 끊기면 처음부터 (한 틱 번쩍임 무시) */
-  else if(now>C.t){ C.n++; C.t=now; C.st=C.st||strong; }
-  const ok=C.st?(C.n>=AR_BOX_CONF_N&&now-C.t0>=AR_BOX_CONF_GAP):(C.n>=3&&now-C.t0>=AR_BOX_WEAK_MS); /* 온전한 그림·메시지: 0.2초 이상 2번 / 약한 근거(발 누적·배경)만: 0.7초 넘게 3번 이상 이어져야 */
+  else if(now>C.t){ C.n++; C.t=now; if(best.cont) C.cont=(C.cont||0)+1; else C.st=C.st||strong; }
+  const ok=C.st?(C.n>=(C.cont?AR_BOX_CONT_N:AR_BOX_CONF_N)&&now-C.t0>=AR_BOX_CONF_GAP):(C.n>=3&&now-C.t0>=AR_BOX_WEAK_MS); /* 온전한 그림·메시지: 0.2초 이상 2번 / 약한 근거(발 누적·배경)만: 0.7초 넘게 3번 이상 이어져야 */
   if(!strong) ARX.gateWeak=(ARX.gateWeak||0)+1; if(ok){ ARX.boxCand=null; return true; } if(C.n===1){ try{ arLog(`상자 후보(${best.k} ${(+best.sc).toFixed(2)}${best.via?' '+best.via:''}) — ${M&&M.kind==='r'?'재진입':'전투·보상 공용 맵'}이라 이어서 확인`); }catch(e){} } return false; }
 /* b433 (t579 z01·z05, 모든 보스): 전투·보상 이름 공용 맵(세렌 메인홀·윌 바스러지는 빛·진힐라·듄켈·더스크·데미안·칼로스·루시드·검마 등 kind 'br/brw/rw')에서
    전투 화면이 상자 발 부분 누적(.72~.83)을 0.7초 넘겨 '보상 인식'이 켜짐(z01 세렌 1페이즈 30초 내내, z05 윌 11초 일찍).
@@ -691,13 +706,17 @@ function arFightWatch(src){ if(!src||ARX.cfg?.fightGate===false) return; const M
 function arRewOffMark(boss){ if(boss) ARX.rewOff={boss,t:Date.now()}; ARX.rewFlips=(ARX.rewFlips||0)+1; try{ arLog(`보상 인식 해제: ${boss||''} → 15초 안 같은 보스 재진입은 상자 연속 확인`); }catch(e){} }
 async function arBoxStep(src,force){ if(!arBoxNeed()) return; if(arBoxOk()&&!(ARX.rwl?.mapOnly&&!ARX.box)){ const B=ARX.box, n=Date.now(); /* t537: 상자는 봤는데 그때 맵 이름이 없었으면 상자가 보이는 동안 다시 확인 */
     if(B&&!ARX.lock&&ARX.mapDet&&ARX.mapDet.boss===B.boss&&(force||n-(ARX.boxScanT||0)>=1000/(ARX.cfg.boxFps||2))){ ARX.boxScanT=n; if(await arBoxScore(src,B.key)>=AR_BOX[B.key].thr) arLockTry(src,B.boss,n); } return; } const now=Date.now(), RM=arRewMap(now), RK=RM?Object.keys(AR_BOX).filter(k=>(AR_BOX[k].boss||k)===RM.boss):[]; if(!RM&&!force) return; /* t579: 보상 상자는 보상 맵이 감지됐을 때만 찾음 (다른 맵 0회 — 예전엔 1초마다 모든 상자를 돌아가며) */ /* t547: 보상 맵이면 그 보스 상자만 0.2초마다, 다른 맵은 1초마다 돌아가며 */
-  if(!force&&now-(ARX.boxScanT||0)<(RK.length?(RM.kind==='r'||(ARX.boxCand&&now-ARX.boxCand.t<AR_BOX_CONF_WIN)?AR_BOX_REW_MS:AR_BOX_SHARED_MS):1000/(ARX.cfg.boxFps||1))-5) return; if(ARX.boxBusy) return; ARX.boxScanT=now; ARX.boxBusy=true; try{
+  if(!force&&now-(ARX.boxScanT||0)<(RK.length?(RM.kind==='r'||(ARX.boxCand&&now-ARX.boxCand.t<AR_BOX_CONF_WIN)||(ARX.boxNear&&now-ARX.boxNear<AR_BOX_CONF_WIN)?AR_BOX_REW_MS:AR_BOX_SHARED_MS):1000/(ARX.cfg.boxFps||1))-5) return; if(ARX.boxBusy) return; ARX.boxScanT=now; ARX.boxBusy=true; try{
   const K=RK.length?RK:Object.keys(AR_BOX), R=force||RK.length?1:Math.max(1,ARX.cfg.boxRounds||3), per=Math.ceil(K.length/R), st=(ARX.boxRR||0)%R; ARX.boxRR=st+1; // 한 번에 1/R 씩 돌아가며 (상자는 몇 초 이상 보임)
   if(RK.length&&ARX.cfg.boxMsg!==false){ const M=await arBoxMsgScan(src,RM.boss); if(M&&M.boss===RM.boss){ ARX.boxLast=[RK[0],+M.sc.toFixed(3)]; if(!arBoxGate({k:RK[0],sc:M.sc,via:'메시지'},now,RM)) return; arLog(`보물상자 처치 메시지 인식: ${M.boss} (${M.sc.toFixed(2)}, ${M.src})`); arBoxHit({k:RK[0],sc:M.sc,via:'메시지'},now,src); ARX.box.via='메시지'; return; } } /* b331 */
-  let best=null; for(const k of K.slice(st*per,st*per+per)){ ARX.boxFootSc=0; const sc=await arBoxScore(src,k); if(sc>=AR_BOX[k].thr){ if(!best||sc-AR_BOX[k].thr>best.sc-AR_BOX[best.k].thr) best={k,sc}; if(ARX.boxAcc) ARX.boxAcc[k]=[]; }
-    else { const acc=arBoxAccPush(k,ARX.boxFootSc||0,now); if(acc&&(!best||best.via==='가림누적')&&(!best||acc.sc>best.sc)) best=acc;
+  let best=null, cont=null, nearK=null; for(const k of K.slice(st*per,st*per+per)){ ARX.boxFootSc=0; const sc=await arBoxScore(src,k); if(sc>=AR_BOX[k].thr){ if(!best||sc-AR_BOX[k].thr>best.sc-AR_BOX[best.k].thr) best={k,sc}; if(ARX.boxAcc) ARX.boxAcc[k]=[]; }
+    else { if(sc>=AR_BOX[k].thr-AR_BOX_NEAR_PEN){ ARX.boxNear=now; nearK=k; const C0=ARX.boxCand; if(C0&&C0.k===k&&C0.st&&now-C0.t<=AR_BOX_CONF_GAPMAX&&(!cont||sc>cont.sc)) cont={k,sc,cont:true}; } /* b439 */
+      const acc=arBoxAccPush(k,ARX.boxFootSc||0,now); if(acc&&(!best||best.via==='가림누적')&&(!best||acc.sc>best.sc)) best=acc;
       if(AR_SCENE[k]&&(!best||best.via)){ const ss=await arSceneScore(src,k); ARX.sceneLast=[k,+ss.toFixed(3)]; if(ss>=(AR_SCENE[k].thr||.78)&&(!best||best.via)&&(!best||ss>best.sc)) best={k,sc:ss,via:'배경'}; } } }
-  ARX.boxLast=best?[best.k,+best.sc.toFixed(3)]:null; if(!best) return; if(!force&&!arBoxGate(best,now,RM)) return;
+  if(cont&&(!best||best.via)) best=cont; /* b439: 이어짐이 발 누적·배경보다 강한 근거 */
+  if(!best&&nearK&&!force&&arRewStrict(RM,now)&&now-(ARX.boxBurstT||0)>1000){ ARX.boxBurstT=now; const b2=await arBoxBurst(nearK,RM); if(b2){ arBoxHit(b2,Date.now(),src); return; } } /* b439 ⑤ 문턱 바로 아래만 보여도(.65~.75) 0.5초 새 프레임 확인 — 처음 온전한 순간이 틱 사이로 빠진 경우 */
+  ARX.boxLast=best?[best.k,+best.sc.toFixed(3)]:null; if(!best) return;
+  if(!force&&!arBoxGate(best,now,RM)){ const C=ARX.boxCand; if(!(C&&C.st&&C.k===best.k&&!best.via)) return; const b2=await arBoxBurst(best.k,RM); if(!b2) return; best=b2; } /* b439 ④ */
   arBoxHit(best,now,src); if(best.via) ARX.box.via=best.via; } finally{ ARX.boxBusy=false; } }
 function arBoxHit(best,now,src){
   const boss=AR_BOX[best.k].boss||best.k, b=findBoss(boss), m=ARX.mapDet&&ARX.mapDet.boss===boss&&ARX.mapDet.diff?ARX.mapDet.diff:(ARX.mapSt&&ARX.mapSt.boss===boss&&ARX.mapSt.diff||''); /* b427 (t561u): 마지막 맵 읽기(mapDet)에 난이도가 없으면(꼬리 오독) 같은 보스로 확정된 맵 상태(mapSt)의 난이도 — 예전엔 상자 순간 '난이도는 캐릭터 설정'으로 비웠다가 arBossState가 곧 mapSt로 채움(w02·w03·w05·w06·w08) */
