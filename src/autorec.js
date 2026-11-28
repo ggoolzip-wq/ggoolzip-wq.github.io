@@ -674,7 +674,10 @@ function arBoxGate(best,now,M){ ARX.gateN=(ARX.gateN||0)+1; if(!arRewStrict(M,no
   if(best.cont&&(!C||C.k!==best.k||!C.st||now-C.t>AR_BOX_CONF_GAPMAX)) return false; /* b439: 이어짐은 이미 있는 온전한 그림 후보에만 붙음 (혼자서는 후보가 못 됨) */
   if(!C||C.k!==best.k||now-C.t>AR_BOX_CONF_GAPMAX) C=ARX.boxCand={k:best.k,t0:now,t:now,n:1,st:strong}; /* 사이가 0.4초 넘게 끊기면 처음부터 (한 틱 번쩍임 무시) */
   else if(now>C.t){ C.n++; C.t=now; if(best.cont) C.cont=(C.cont||0)+1; else C.st=C.st||strong; }
-  const ok=C.st?(C.n>=(C.cont?AR_BOX_CONT_N:AR_BOX_CONF_N)&&now-C.t0>=AR_BOX_CONF_GAP):(C.n>=3&&now-C.t0>=AR_BOX_WEAK_MS); /* 온전한 그림·메시지: 0.2초 이상 2번 / 약한 근거(발 누적·배경)만: 0.7초 넘게 3번 이상 이어져야 */
+  if(arShared(M)&&M.kind.includes('b')&&arTimerFight(now)&&ARX.cfg?.fightGate!==false){ ARX.boxCand=null; ARX.tmBlk=(ARX.tmBlk||0)+1; if(!ARX.tmBlkLog||now-ARX.tmBlkLog>10000){ ARX.tmBlkLog=now; try{ arLog(`상자 후보(${best.k} ${(+best.sc).toFixed(2)}${best.via?' '+best.via:''}) — 남은 시간이 5분 넘음(전투)이라 보상 진입 안 함`); }catch(e){} } return false; } /* b440 */
+  let ok=C.st?(C.n>=(C.cont?AR_BOX_CONT_N:AR_BOX_CONF_N)&&now-C.t0>=AR_BOX_CONF_GAP):(C.n>=3&&now-C.t0>=AR_BOX_WEAK_MS);
+  if(best.via==='배경') C.bg=1; if(!C.st&&arShared(M)&&M.kind.includes('b')&&ARX.tmKill&&now-ARX.tmKill<15000&&!(ARX.fq&&ARX.fq.dk>ARX.tmKill)){ ARX.quietBlk=(ARX.quietBlk||0)+1; if(!C.kLog){ C.kLog=1; try{ arLog(`상자 후보(${best.k} ${(+best.sc).toFixed(2)}${best.via?' '+best.via:''}) — 처치 직후 전투 맵이라 맵 이동 기다림`); }catch(e){} } ok=false; } /* b440: 처치(남은 시간 5:00으로 바뀜) 뒤 같은 이름 전투 맵에서 약한 근거로 미리 들어가지 않음 (15초 넘게 맵 이동이 안 보이면 허용) */
+  else if(!C.st&&!C.bg&&arShared(M)&&M.kind.includes('b')&&!(ARX.tmRew&&now-ARX.tmRew<=3000)){ const q=arFightQuiet(M,now); if(q<arFightQuietMs()){ ARX.quietBlk=(ARX.quietBlk||0)+1; if(!C.qLog){ C.qLog=1; try{ arLog(`상자 후보(${best.k} ${(+best.sc).toFixed(2)}${best.via?' '+best.via:''}) — 약한 근거라 체력바 없는 ${(arFightQuietMs()/1000).toFixed(0)}초 확인 중 (전투 시작·체력바 공백 구분)`); }catch(e){} } ok=false; } } /* b440 */ /* 온전한 그림·메시지: 0.2초 이상 2번 / 약한 근거(발 누적·배경)만: 0.7초 넘게 3번 이상 이어져야 */
   if(!strong) ARX.gateWeak=(ARX.gateWeak||0)+1; if(ok){ ARX.boxCand=null; return true; } if(C.n===1){ try{ arLog(`상자 후보(${best.k} ${(+best.sc).toFixed(2)}${best.via?' '+best.via:''}) — ${M&&M.kind==='r'?'재진입':'전투·보상 공용 맵'}이라 이어서 확인`); }catch(e){} } return false; }
 /* b433 (t579 z01·z05, 모든 보스): 전투·보상 이름 공용 맵(세렌 메인홀·윌 바스러지는 빛·진힐라·듄켈·더스크·데미안·칼로스·루시드·검마 등 kind 'br/brw/rw')에서
    전투 화면이 상자 발 부분 누적(.72~.83)을 0.7초 넘겨 '보상 인식'이 켜짐(z01 세렌 1페이즈 30초 내내, z05 윌 11초 일찍).
@@ -682,7 +685,39 @@ function arBoxGate(best,now,M){ ARX.gateN=(ARX.gateN||0)+1; if(!arRewStrict(M,no
    공용 맵에서 체력바를 0.25초 간격 2번 보면 '전투 잠금' → 보상 진입(arBoxGate) 막음. 풀림: 맵 이동 검은 화면(보상 맵으로 넘어갈 때 항상 0.4초쯤)
    · 맵 이름이 다른 맵으로 1.5초 넘게 바뀜 · 체력바 마지막으로 본 뒤 25초. 보상 래치 중 체력바가 1초 넘게 3번 이상 보이면 보상 인식 해제(같은 이름 전투 재진입).
    처리: 공용 맵·잠금 중일 때만, 체력바 = 가로 96칸 줄 띠 0.25초마다, 검은 화면 = 16×9 0.1초마다 (가벼움). 해상도·UI 배율·테두리 무관(arGeom). */
-const AR_FIGHT_BAR_MS=250, AR_FIGHT_HOLD=25000, AR_FIGHT_NC=96;
+const AR_FIGHT_BAR_MS=250, AR_FIGHT_HOLD=25000, AR_FIGHT_NC=96, AR_FIGHT_QUIET_MS=5000;
+/* b440 (pt702u, 세렌 등 전투·보상 이름 공용 9보스 전부): 전투 시작 직후(체력바 아직 없음)·체력바가 잠깐 사라질 때(페이즈 전환·연출, 검은 화면이 잠금을 풀기도 함)는
+   b433 '전투 잠금'이 없어 약한 근거(발 부분 누적·배경)가 0.7초 만에 '보상 인식'을 켰음(z01 체력바 가린 합성 5.6초·공백 9.96초 재현).
+   보상 맵은 들어온 뒤 체력바가 다시 나오지 않음 → 공용 전투 맵(kind에 b)에서 발 부분 누적(가림누적)만으로 들어가려면 '체력바 없는 시간'이 5초 이어져야 함.
+   보상 맵 전용 배경 그림(sceneicons: 듄켈 청록 등, 전투 화면 0회 확인 — z04 체력바 가린 합성 0~12.7초 후보 0)이 함께면 그대로(z04 14.3초 유지).
+   기준 시각 = 이 공용 맵을 처음 읽은 때 · 맵 이동 검은 화면 · 체력바를 마지막으로 본 때(한 번이라도) 중 가장 늦은 것. 온전한 상자 그림·처치 메시지(강한 근거)는 그대로(b439 듄켈 빠른 확인 유지).
+   끄기/조절: ARX.cfg.fightQuiet=0 / ms. 검은 화면 확인은 공용 맵에서만 16×9 (가벼움). */
+/* b440: '남은 시간' 타이머(화면 위 가운데 노란 숫자) 읽기 — 보상 맵은 항상 5:00부터 줄어듦(처치 순간 5:00으로 바뀜, 66영상 보상 화면 전부 4:xx·0:01),
+   전투는 그보다 큼(세렌 18분·윌 16분·듄켈 18분 등). 남은 시간 > 5:02 이 2번 맞으면 '전투 시간' → 같은 이름 보상 맵 진입 안 함(체력바 없어도). 풀림: 5:02 이하 2번(처치·보상 맵) · 20초 동안 다시 못 읽음.
+   찾기: 게임 폭 가운데 24%·위 20%에서 진한 노랑(숫자 아래쪽) 줄 띠 → 초(두 자리)·분 묶음 → 숫자 높이(위쪽 흰빛까지) 비례 칸 7획 판독. 숫자 높이 비례라 해상도·UI 배율 무관. */
+const AR_TM_SEG=[[.25,.75,0,.12],[.75,1,.12,.42],[.75,1,.58,.88],[.25,.75,.88,1],[0,.25,.58,.88],[0,.25,.12,.42],[.25,.75,.42,.58]], AR_TM_DIG={'1111110':0,'0110000':1,'1101101':2,'1111001':3,'0110011':4,'1011011':5,'1011111':6,'1110000':7,'1110010':7,'1111111':8,'1111011':9}, AR_TM_MS=500, AR_TM_HOLD=20000;
+function arTmDigit(br,W,x1,x2,y1,y2){ let k=''; for(const [u0,u1,v0,v1] of AR_TM_SEG){ const X1=Math.round(x1+(x2-x1)*u0), X2=Math.max(X1+1,Math.round(x1+(x2-x1)*u1)), Y1=Math.round(y1+(y2-y1)*v0), Y2=Math.max(Y1+1,Math.round(y1+(y2-y1)*v1)); if(X1<0||X2>W||Y1<0) return null; let n=0,c=0; for(let y=Y1;y<Y2;y++) for(let x=X1;x<X2;x++){ n++; c+=br[y*W+x]; } k+=c/n>=.35?'1':'0'; } if(k==='0000000') return -1; const d=AR_TM_DIG[k]; return d===undefined?null:d; }
+function arTimerScan(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return null; const G=arGeom(sw,sh);
+  const x0=Math.round(G.gx+G.gw*.38), W=Math.round(G.gw*.24), y0=Math.max(0,Math.round(G.gy)), h=Math.round(G.gh*.2); if(W<60||h<30) return null;
+  const cx=arFightCv('tm',W,h); cx.imageSmoothingEnabled=false; cx.drawImage(src,x0,y0,W,h,0,0,W,h); const d=cx.getImageData(0,0,W,h).data;
+  const ys=new Uint8Array(W*h), br=new Uint8Array(W*h), rc=new Uint16Array(h);
+  for(let i=0,p=0;p<W*h;p++,i+=4){ const r=d[i],g=d[i+1],b=d[i+2]; if(r>=190&&g>=130&&b<=125&&r-b>=100){ ys[p]=1; rc[(p/W)|0]++; } if(r>=130&&g>=110&&r+8>=b) br[p]=1; }
+  let best=null;
+  for(let i=0;i<h;){ if(rc[i]<3){ i++; continue; } let j=i; while(j+1<h&&(rc[j+1]>=3||(j+2<h&&rc[j+2]>=3))) j++; const t=i, bm=j+1, BH=bm-t; i=j+1; if(BH<12||BH>60) continue;
+    const grp=[]; let k=0; while(k<W){ let on=false; for(let y=t;y<bm;y++) if(ys[y*W+k]){ on=true; break; } if(!on){ k++; continue; } const s=k; for(;k<W;k++){ let o=false; for(let y=t;y<bm;y++) if(ys[y*W+k]){ o=true; break; } if(!o) break; } if(grp.length&&s-grp[grp.length-1][1]<=BH*.85) grp[grp.length-1][1]=k; else grp.push([s,k]); }
+    for(let q=0;q+1<grp.length;q++){ const A=grp[q], B=grp[q+1], gap=B[0]-A[1], swd=B[1]-B[0]; if(gap<.5*BH||gap>1.9*BH||swd<.8*BH||swd>2*BH) continue;
+      let top=t; while(top>0){ let n=0; for(let x=B[0];x<B[1];x++) n+=br[(top-1)*W+x]; if(n<2) break; top--; }
+      const DH=bm-top, cw=DH*.55, pt=DH*.72, sr=B[1], mr=A[1];
+      const s0=arTmDigit(br,W,sr-pt-cw,sr-pt,top,bm), s1=arTmDigit(br,W,sr-cw,sr,top,bm), m0=arTmDigit(br,W,mr-pt-cw,mr-pt,top,bm), m1=arTmDigit(br,W,mr-cw,mr,top,bm);
+      if(s0==null||s1==null||m1==null||s0<0||s1<0||m1<0||s0>5) continue; const sec=((m0>0?m0:0)*10+m1)*60+s0*10+s1; if(!best||DH>best.DH) best={sec,DH}; } }
+  return best; }
+function arTimerWatch(src,now){ if(now-(ARX.tmT||0)<AR_TM_MS-5) return; ARX.tmT=now; let r=null; try{ r=arTimerScan(src); }catch(e){} ARX.tmN=(ARX.tmN||0)+1; if(!r) return; ARX.tmHits=(ARX.tmHits||0)+1;
+  const P=ARX.tmLast; ARX.tmLast={sec:r.sec,t:now};
+  if(r.sec>302){ if(P&&P.sec>302&&now-P.t<=2500&&Math.abs((P.sec-r.sec)-(now-P.t)/1000)<=4){ if(!arTimerFight(now)){ try{ arLog(`남은 시간 ${Math.floor(r.sec/60)}분 ${r.sec%60}초 — 보상 맵(5분부터)이 아니라 전투 시간: 같은 이름 보상 맵 진입 막음`); }catch(e){} } ARX.tmFight=now; ARX.boxCand=null; } }
+  else if(P&&P.sec<=302&&now-P.t<=3000){ if(arTimerFight(now)){ ARX.tmKill=now; try{ arLog(`남은 시간 ${Math.floor(r.sec/60)}분 ${r.sec%60}초로 바뀜 — 보스 처치로 봄: 맵 이동(검은 화면) 뒤 보상 맵 확인`); }catch(e){} } ARX.tmRew=now; } } /* 5:02 이하도 2번 맞아야 (한 번 오독으로 안 풀림) */
+function arTimerFight(now){ return !!(ARX.tmFight&&now-ARX.tmFight<=AR_TM_HOLD&&!(ARX.tmRew>ARX.tmFight)); } /* 한 번 '전투 시간'이면 5:02 이하를 2번 읽거나 20초 동안 다시 못 읽을 때까지 (연출·가림으로 못 읽는 틈 메움) */
+function arFightQuietMs(){ const v=ARX.cfg?.fightQuiet; return v===0||v===false?0:(+v>0?+v:AR_FIGHT_QUIET_MS); }
+function arFightQuiet(M,now){ if(ARX.cfg?.fightGate===false) return Infinity; const Q=ARX.fq; if(!Q||Q.key!==(M.boss+'|'+M.kind)) return 0; return now-Math.max(Q.t,Q.dk||0,Q.hp||0); }
 function arShared(M){ return !!(M&&M.kind&&M.kind.includes('r')&&M.kind!=='r'); }
 function arFightCv(k,w,h){ const C=ARX.fcv||(ARX.fcv={}); let c=C[k]; if(!c){ c=C[k]=document.createElement('canvas'); } if(c.width!==w) c.width=w; if(c.height!==h) c.height=h; return c.getContext('2d',{willReadFrequently:true}); }
 function arHpBarScan(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return null; const G=arGeom(sw,sh), s=G.s||1;
@@ -698,8 +733,11 @@ function arFightOff(why){ const F=ARX.fight; if(!F) return; ARX.fight=null; if(F
 function arFightOther(F,M,now){ /* 맵 이름 한 번 오독(z03 '의지가 시작되는 곳')으론 안 풀림 — 다른 맵 이름이 1.5초 넘게 이어져야 */ if(!(M&&F.key&&M.name&&M.name!==F.key)){ F.oT=0; return false; } if(!F.oT) F.oT=now; return now-F.oT>=1500; }
 function arFightOn(M,now){ const F=ARX.fight; if(!F||F.n<2) return false; if(arFightOther(F,M,now)){ arFightOff('다른 맵'); return false; } if(now-F.t>AR_FIGHT_HOLD){ arFightOff('체력바 25초 없음'); return false; } return true; }
 function arFightWatch(src){ if(!src||ARX.cfg?.fightGate===false) return; const M=ARX.mapSt, now=Date.now(), F=ARX.fight; if(!arShared(M)&&!F) return; ARX.fightN=(ARX.fightN||0)+1;
-  if(F&&F.n>=2){ if(arFightOther(F,M,now)){ arFightOff('다른 맵'); return; } let dk=false; try{ dk=arDarkScan(src); }catch(e){} if(dk){ arFightOff('맵 이동 화면'); return; } if(now-F.t>AR_FIGHT_HOLD){ arFightOff('체력바 25초 없음'); return; } }
-  if(!arShared(M)||now-(ARX.fightBarT||0)<AR_FIGHT_BAR_MS-5) return; ARX.fightBarT=now; let hp=null; try{ hp=arHpBarScan(src); }catch(e){} ARX.fightBarN=(ARX.fightBarN||0)+1; if(!hp) return; ARX.fightHits=(ARX.fightHits||0)+1;
+  if(arShared(M)){ const k=M.boss+'|'+M.kind; if(!ARX.fq||ARX.fq.key!==k) ARX.fq={key:k,t:now}; } /* b440: 체력바 없는 시간 기준 */
+  if(F&&F.n>=2){ if(arFightOther(F,M,now)){ arFightOff('다른 맵'); return; } let dk=false; try{ dk=arDarkScan(src); }catch(e){} if(dk){ if(ARX.fq) ARX.fq.dk=now; arFightOff('맵 이동 화면'); return; } if(now-F.t>AR_FIGHT_HOLD){ arFightOff('체력바 25초 없음'); return; } }
+  else if(arShared(M)&&ARX.fq){ let dk=false; try{ dk=arDarkScan(src); }catch(e){} if(dk){ ARX.fq.dk=now; ARX.boxCand=null; } } /* b440: 잠금 전에도 검은 화면(맵 이동·연출) 뒤엔 체력바 없는 시간을 처음부터 */
+  if(arShared(M)&&M.kind.includes('b')) arTimerWatch(src,now); /* b440 */
+  if(!arShared(M)||now-(ARX.fightBarT||0)<AR_FIGHT_BAR_MS-5) return; ARX.fightBarT=now; let hp=null; try{ hp=arHpBarScan(src); }catch(e){} ARX.fightBarN=(ARX.fightBarN||0)+1; if(!hp) return; ARX.fightHits=(ARX.fightHits||0)+1; if(ARX.fq) ARX.fq.hp=now;
   let G=ARX.fight; if(!G||G.boss!==M.boss||now-G.t>1000&&G.n<2){ G=ARX.fight={boss:M.boss,key:M.name||'',t0:now,t:now,n:1,s0:now}; return; }
   if(now-G.t>1000) G.s0=now; G.t=now; G.n++; if(G.n===2){ try{ arLog(`보스 체력바 보임(${M.boss}) → 전투 중: 같은 이름 보상 맵 진입 막음 (맵 이동 화면 뒤 풀림)`); }catch(e){} ARX.boxCand=null; }
   const R=ARX.rwl||ARX.rew; if(R&&R.boss===M.boss&&G.n>=3&&now-G.s0>=1000){ /* 보상 래치 중인데 체력바가 1초 넘게 계속 = 같은 이름 전투 */ arRewOffMark(R.boss); try{ arLog(`보스 체력바 1초 넘게 보임 → 전투라 보상 인식 해제: ${R.boss}`); }catch(e){} ARX.rwl=null; ARX.recPend=[]; ARX.rew=null; ARX.lock=null; ARX.box=null; ARX.det.boss=''; ARX.det.diff=''; ARX.det.src=''; try{ arLivePaint(); }catch(e){} } }
@@ -1294,7 +1332,7 @@ function arTick(fn,ms){ const w=arTickW(); if(!w) return setInterval(fn,ms); con
 function arUntick(id){ if(!id) return; if(AR_TK.f.has(id)){ AR_TK.f.delete(id); try{ AR_TK.w.postMessage(['c',id]); }catch(e){} } else clearInterval(id); }
 function arStart(v){ /* b385: reconnect/restart must own exactly one set of clocks. */
   for(const k of ['nTimer','timer','wTimer','boxTimer','logTimer','pfTimer','uiTick']){arUntick(ARX[k]);ARX[k]=0;}
-  const gen=ARX.startGen=(ARX.startGen||0)+1; ARX.video=v; ARX.sessRec=[]; ARX.rewOff=null; ARX.boxCand=null; ARX.rewFlips=0; /* b431 */ ARX.fight=null; ARX.fightHits=0; ARX.fightBlk=0; ARX.fightN=0; ARX.fightBarN=0; /* b433 */ /* b335: 라이브 시작마다 PIP 득템 목록 새로 */ ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
+  const gen=ARX.startGen=(ARX.startGen||0)+1; ARX.video=v; ARX.sessRec=[]; ARX.rewOff=null; ARX.boxCand=null; ARX.rewFlips=0; /* b431 */ ARX.fq=null; ARX.tmLast=null; ARX.tmFight=0; ARX.tmRew=0; ARX.tmKill=0; ARX.fight=null; ARX.fightHits=0; ARX.fightBlk=0; ARX.fightN=0; ARX.fightBarN=0; /* b433 */ /* b335: 라이브 시작마다 PIP 득템 목록 새로 */ ARX.lastOcr=0; ARX.pf=null; arPf(); try{ arOcrLoad(); }catch(e){ ARX.ocrErr=true; } try{ arWorker(); }catch(e){ ARX.wk=null; ARX.wkOff=String(e); }
   ARX.nprev=null; ARX.nameOk=false; arUntick(ARX.nTimer); ARX.mprev=null; ARX.mOther=0; ARX.nTimer=arTick(()=>{ if(ARX.video){ const sv=arSrc(); arNameWatch(sv); arMapWatch(sv); try{ arFightWatch(sv); }catch(e){} /* b433 */ /* b366: Worker 비트맵 */ try{ arPendFlush(); }catch(e){} } },100); /* t603: 0.1초 */
   ARX.timer=arTick(()=>{ if(!ARX.video) return; const n=Date.now(); if(arBossState()!=='rew'&&n-(ARX.frT||0)<1000/Math.max(.5,ARX.cfg.fps)-20) return; ARX.frT=n; arFrame(arSrc()); },100); /* t603: 보상 맵(보상 인식 중)이면 0.1초마다, 아니면 설정 fps */
   if(ARX.cfg.watchFps>0){ if(v.requestVideoFrameCallback){ const loop=(now,meta)=>{ if(ARX.video!==v||ARX.startGen!==gen) return; ARX.rvfcT=performance.now(); arPf().frames++; if(arRewOn()){ arBannerWatch(v,meta); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } v.requestVideoFrameCallback(loop); }; v.requestVideoFrameCallback(loop); ARX.wTimer=arTick(()=>{ if(ARX.video!==v||performance.now()-(ARX.rvfcT||0)<250) return; if(arRewOn()){ arBannerWatch(v); arAirWatch(v); } if(ARX.airHot&&!ARX.itemBusy){ const sh=v.videoHeight; if(sh) arItemStep(v,sh); } },Math.round(1000/ARX.cfg.watchFps)); /* b359: 탭이 뒤로 가면 프레임 콜백이 멈춤 → 0.25초 넘게 안 오면 Worker 시계로 대신 */ } else ARX.wTimer=arTick(()=>{ if(ARX.video&&arRewOn()){ arBannerWatch(ARX.video); arAirWatch(ARX.video); } },Math.round(1000/ARX.cfg.watchFps)); }
