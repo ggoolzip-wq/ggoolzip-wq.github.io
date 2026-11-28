@@ -60,7 +60,8 @@ try:
     rw=[o for o in out if o[0]=='rew']; fi=[o for o in out if o[0]=='fight']
     rr=[o for o in rw if o[3] is not None]; fr=[o for o in fi if o[3] is not None]
     check(f'A1 보상 화면 {len(rw)}장(영상 {len({o[1] for o in rw})}개) 5:02 넘게 읽힘 0 (읽음 {len(rr)}장)',not any(o[3]>302 for o in rr),[o[:4] for o in rr if o[3]>302] or 0)
-    check(f'A2 전투 화면 {len(fi)}장 5:02 이하로 읽힘 0, 절반 넘게 읽음 ({len(fr)}장)',not any(o[3]<=302 for o in fr) and len(fr)*2>len(fi),[o[:4] for o in fi if o[3] is None or o[3]<=302])
+    zs=[o for o in fi if o[1]=='z01']; zr=[o for o in zs if o[3] is not None]
+    check(f'A2 전투 화면 {len(fi)}장 5:02 이하로 읽힘 0 (읽음 {len(fr)}장: 못 읽으면 5초 규칙) · 세렌 z01 절반 넘게 읽음 ({len(zr)}/{len(zs)})',not any(o[3]<=302 for o in fr) and len(zr)*2>len(zs),{'오독':[o[:4] for o in fr if o[3]<=302],'못읽음':[o[1:3] for o in fi if o[3] is None]})
   else: print('SKIP A')
   R=pg.evaluate(JSB,''); print(json.dumps(R,ensure_ascii=False))
   check('B1 전투 시간(18분)·체력바 없음·약한 근거 10초 → 진입 0',R['b1']['ent']==0,R['b1'])

@@ -4,7 +4,7 @@
  S2 전투/대기 전용 이름 + 가끔 강한 오감지(.95 한 틱) → 진입 0
  S3 전투·보상 공용 이름(세렌 왕궁 메인홀 1페이즈 등) + 이펙트처럼 끊기는 약한 근거(0.4초 켜짐/0.5초 꺼짐) → 진입 0
  S4 공용 이름 + 강한 오감지 한 틱씩(1.3초 간격) → 진입 0
- S5 공용 이름 실제 보상(온전한 상자 계속 / 가려진 상자=약한 근거 계속) → 1번 진입·유지, 깜빡임 0, 1.6초 안
+ S5 공용 이름 실제 보상(온전한 상자 계속 / 가려진 상자=약한 근거 계속) → 1번 진입·유지, 깜빡임 0, 1.6초 안 (b440: 가려진 상자+남은 시간 못 읽음은 6.6초 안)
  S6 보상 전용 이름 실제 보상 → 1번 진입, 0.15초 안
  S7 세렌 실제 흐름: 세계의 경계(약한 근거 10초) → 왕궁 메인홀 보상(상자) → 진입 1번, 전투 중 0번
 LIVE_ROOT 로 다른 빌드(예: b430)를 돌려 전후 비교 가능(B431_REPORT=경로 에 숫자 저장)."""
@@ -99,7 +99,8 @@ try:
   check(f'S2 전투/대기 전용 이름 + 강한 오감지 한 틱: 진입 0',ok('S2') and rep['S2']['entries']==0,rep['S2'])
   check(f'S3 공용 이름(전투 페이즈) {len(S3)}줄 + 끊기는 약한 근거: 진입 0',ok('S3') and rep['S3']['entries']==0,rep['S3'])
   check(f'S4 공용 이름 + 강한 오감지 1.3초 간격 한 틱: 진입 0',ok('S4') and rep['S4']['entries']==0,rep['S4'])
-  s5=R['S5']; check(f'S5 공용 이름 실제 보상 {len(s5)}개: 1번 진입·깜빡임 0·1.6초 안(온전한 상자/가려진 상자)',ok('S5') and all(o['ent']==1 and o['flips']==1 and o['first']<=1.6 for o in s5),[(o['id'],o['ent'],o['flips'],o['first']) for o in s5 if not(o['ent']==1 and o['flips']==1 and o['first']<=1.6)] or 'all ok')
+  s5=R['S5']; lim=lambda o: 1.6 if not o['id'].startswith('S5w') else 6.6  # b440: 가려진 상자(약한 근거)+남은 시간 못 읽음 → 체력바 없는 5초 확인 뒤 (남은 시간 4:xx 읽히면 1.6초 안 = test_b440 B4)
+  check(f'S5 공용 이름 실제 보상 {len(s5)}개: 1번 진입·깜빡임 0·온전한 상자 1.6초 안/가려진 상자 6.6초 안',ok('S5') and all(o['ent']==1 and o['flips']==1 and o['first']<=lim(o) for o in s5),[(o['id'],o['ent'],o['flips'],o['first']) for o in s5 if not(o['ent']==1 and o['flips']==1 and o['first']<=lim(o))] or 'all ok')
   s6=R['S6']; check(f'S6 보상 전용 이름 {len(s6)}개: 1번 진입 0.15초 안',ok('S6') and all(o['ent']==1 and o['flips']==1 and o['first']<=.15 for o in s6),[(o['id'],o['ent'],o['first']) for o in s6 if not(o['ent']==1 and o['first']<=.15)] or 'all ok')
   s7=R['S7'][0]; check('S7 세렌: 세계의 경계 10초 진입 0 → 보상 맵 상자에서 1번 진입',s7.get('ent')==1 and s7.get('flips')==1 and s7.get('first',0)>=14,s7)
   rep['bosses']=len({nm(s) for s in battle+shared}) and len(D)

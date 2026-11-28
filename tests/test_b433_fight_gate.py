@@ -41,7 +41,7 @@ JSB="""async (url)=>{ let T=1e12; const RD=Date.now; Date.now=()=>T; const R={};
   // B1 전투 프레임(체력바) 0.5초 + 약한 근거 3초 → 진입 0
   R.b1=await run(35,i=>i<5?{src:bat,foot:.8,full:.5}:{foot:.8,full:.5}); R.b1.fight=!!(ARX.fight&&ARX.fight.n>=2);
   // B2 검은 화면(맵 이동) → 잠금 풀림 → 실제 보상(가려진 상자=약한 근거) 진입 1번
-  R.b2=await run(30,i=>i<3?{src:dark}:{foot:.8,full:.5}); R.b2.fight=!!ARX.fight;
+  R.b2=await run(80,i=>i<3?{src:dark}:{foot:.8,full:.5}); /* b440: 남은 시간 못 읽는 약한 근거 → 검은 화면 뒤 체력바 없는 5초 */ R.b2.fight=!!ARX.fight;
   // B3 보상 래치 중 체력바 1.2초 → 해제
   R.b3=await run(15,i=>({src:bat})); R.b3.rew=arBossState()==='rew';
   // B4 잠금 없는 공용 맵 실제 보상 → 1.6초 안 (b431과 같음)
@@ -75,7 +75,7 @@ try:
   if u:
     R=pg.evaluate(JSB,u); print(json.dumps(R,ensure_ascii=False))
     check('B1 전투 잠금 중 약한 근거 3초 → 보상 진입 0',R['b1']['fight'] and R['b1']['ent']==0,R['b1'])
-    check('B2 맵 이동 검은 화면 뒤 실제 보상 → 1번 진입, 잠금 풀림',R['b2']['ent']==1 and not R['b2']['fight'],R['b2'])
+    check('B2 맵 이동 검은 화면 뒤 실제 보상 → 1번 진입(b440: 체력바 없는 5초 뒤, 8초 안), 잠금 풀림',R['b2']['ent']==1 and 5<=R['b2']['first']<=8 and not R['b2']['fight'],R['b2'])
     check('B3 보상 래치 중 체력바 1초 넘게 → 보상 인식 해제',not R['b3']['rew'],R['b3'])
     check('B4 잠금 없는 공용 맵 실제 보상 → 1.6초 안 진입(안 늦춤)',R['b4']['ent']==1 and R['b4']['first']<=1.6,R['b4'])
   else: print('SKIP B (z01 없음)')

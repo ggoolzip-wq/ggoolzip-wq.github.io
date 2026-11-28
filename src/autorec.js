@@ -705,7 +705,7 @@ function arTimerScan(src){ const sw=src.videoWidth||src.width, sh=src.videoHeigh
   let best=null;
   for(let i=0;i<h;){ if(rc[i]<3){ i++; continue; } let j=i; while(j+1<h&&(rc[j+1]>=3||(j+2<h&&rc[j+2]>=3))) j++; const t=i, bm=j+1, BH=bm-t; i=j+1; if(BH<12||BH>60) continue;
     const grp=[]; let k=0; while(k<W){ let on=false; for(let y=t;y<bm;y++) if(ys[y*W+k]){ on=true; break; } if(!on){ k++; continue; } const s=k; for(;k<W;k++){ let o=false; for(let y=t;y<bm;y++) if(ys[y*W+k]){ o=true; break; } if(!o) break; } if(grp.length&&s-grp[grp.length-1][1]<=BH*.85) grp[grp.length-1][1]=k; else grp.push([s,k]); }
-    for(let q=0;q+1<grp.length;q++){ const A=grp[q], B=grp[q+1], gap=B[0]-A[1], swd=B[1]-B[0]; if(gap<.5*BH||gap>1.9*BH||swd<.8*BH||swd>2*BH) continue;
+    for(let q=0;q+1<grp.length;q++){ const A=grp[q], B=grp[q+1], gap=B[0]-A[1], swd=B[1]-B[0]; if(gap<.5*BH||gap>2.6*BH||swd<.8*BH||swd>2*BH) continue; /* 사이 2.6배: 분·초 앞자리가 좁은 1이면 노란 묶음 사이가 넓어 보임 (진힐라 17:12) */
       let top=t; while(top>0){ let n=0; for(let x=B[0];x<B[1];x++) n+=br[(top-1)*W+x]; if(n<2) break; top--; }
       const DH=bm-top, cw=DH*.55, pt=DH*.72, sr=B[1], mr=A[1];
       const s0=arTmDigit(br,W,sr-pt-cw,sr-pt,top,bm), s1=arTmDigit(br,W,sr-cw,sr,top,bm), m0=arTmDigit(br,W,mr-pt-cw,mr-pt,top,bm), m1=arTmDigit(br,W,mr-cw,mr,top,bm);
@@ -717,7 +717,7 @@ function arTimerWatch(src,now){ if(now-(ARX.tmT||0)<AR_TM_MS-5) return; ARX.tmT=
   else if(P&&P.sec<=302&&now-P.t<=3000){ if(arTimerFight(now)){ ARX.tmKill=now; try{ arLog(`남은 시간 ${Math.floor(r.sec/60)}분 ${r.sec%60}초로 바뀜 — 보스 처치로 봄: 맵 이동(검은 화면) 뒤 보상 맵 확인`); }catch(e){} } ARX.tmRew=now; } } /* 5:02 이하도 2번 맞아야 (한 번 오독으로 안 풀림) */
 function arTimerFight(now){ return !!(ARX.tmFight&&now-ARX.tmFight<=AR_TM_HOLD&&!(ARX.tmRew>ARX.tmFight)); } /* 한 번 '전투 시간'이면 5:02 이하를 2번 읽거나 20초 동안 다시 못 읽을 때까지 (연출·가림으로 못 읽는 틈 메움) */
 function arFightQuietMs(){ const v=ARX.cfg?.fightQuiet; return v===0||v===false?0:(+v>0?+v:AR_FIGHT_QUIET_MS); }
-function arFightQuiet(M,now){ if(ARX.cfg?.fightGate===false) return Infinity; const Q=ARX.fq; if(!Q||Q.key!==(M.boss+'|'+M.kind)) return 0; return now-Math.max(Q.t,Q.dk||0,Q.hp||0); }
+function arFightQuiet(M,now){ if(ARX.cfg?.fightGate===false) return Infinity; const k=M.boss+'|'+M.kind; if(!ARX.fq||ARX.fq.key!==k){ ARX.fq={key:k,t:now}; return 0; } const Q=ARX.fq; return now-Math.max(Q.t,Q.dk||0,Q.hp||0); } /* b440: 체력바 감시가 아직 안 돌았으면 지금부터 셈 (영영 0으로 막히지 않게) */
 function arShared(M){ return !!(M&&M.kind&&M.kind.includes('r')&&M.kind!=='r'); }
 function arFightCv(k,w,h){ const C=ARX.fcv||(ARX.fcv={}); let c=C[k]; if(!c){ c=C[k]=document.createElement('canvas'); } if(c.width!==w) c.width=w; if(c.height!==h) c.height=h; return c.getContext('2d',{willReadFrequently:true}); }
 function arHpBarScan(src){ const sw=src.videoWidth||src.width, sh=src.videoHeight||src.height; if(!sw||!sh) return null; const G=arGeom(sw,sh), s=G.s||1;
